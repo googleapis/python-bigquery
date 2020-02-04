@@ -1,5 +1,5 @@
 {
-  "updateTime": "2020-02-04T10:18:33.795889Z",
+  "updateTime": "2020-02-04T10:56:36.759153Z",
   "sources": [
     {
       "generator": {
@@ -14,6 +14,13 @@
         "remote": "https://github.com/googleapis/googleapis.git",
         "sha": "69d9945330a5721cd679f17331a78850e2618226",
         "internalRef": "293080182"
+      }
+    },
+    {
+      "template": {
+        "name": "python_split_library",
+        "origin": "synthtool.gcp",
+        "version": "2019.10.17"
       }
     }
   ],

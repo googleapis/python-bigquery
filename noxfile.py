@@ -120,6 +120,7 @@ def snippets(session):
     # Install all test dependencies, then install local packages in place.
     session.install("mock", "pytest")
     session.install("google-cloud-storage")
+    session.install("grpcio")
     session.install("-e", "test_utils")
     session.install("-e", ".[all]")
 

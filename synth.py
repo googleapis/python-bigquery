@@ -18,7 +18,7 @@ import synthtool as s
 from synthtool import gcp
 
 gapic = gcp.GAPICGenerator()
-
+common = gcp.CommonTemplates()
 version = 'v2'
 
 library = gapic.py_library(
@@ -56,5 +56,11 @@ s.replace(
 # Remove non-ascii characters from docstrings for Python 2.7.
 # Format quoted strings as plain text.
 s.replace("google/cloud/bigquery_v2/proto/*.py", "[“”]", '``')
+
+# ----------------------------------------------------------------------------
+# Add templated files
+# ----------------------------------------------------------------------------
+templated_files = common.py_library(cov_level=100)
+s.move(templated_files)
 
 s.shell.run(["nox", "-s", "blacken"], hide_output=False)

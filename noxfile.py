@@ -33,8 +33,8 @@ def default(session):
     """
     # Install all test dependencies, then install local packages in-place.
     session.install("mock", "pytest", "pytest-cov", "freezegun")
-
-    session.install("-e", os.path.join("..", "test_utils"))
+    session.install("grpcio")
+    session.install("-e", "test_utils")
 
     coverage_fail_under = "--cov-fail-under=97"
 
@@ -93,8 +93,8 @@ def system(session):
 
     # Install all test dependencies, then install local packages in place.
     session.install("mock", "pytest", "psutil")
-    session.install("-e", os.path.join("..", "storage"))
-    session.install("-e", os.path.join("..", "test_utils"))
+    session.install("google-cloud-storage")
+    session.install("-e", "test_utils")
     session.install("-e", ".[all]")
 
     # IPython does not support Python 2 after version 5.x
@@ -119,8 +119,8 @@ def snippets(session):
 
     # Install all test dependencies, then install local packages in place.
     session.install("mock", "pytest")
-    session.install("-e", os.path.join("..", "storage"))
-    session.install("-e", os.path.join("..", "test_utils"))
+    session.install("google-cloud-storage")
+    session.install("-e", "test_utils")
     session.install("-e", ".[all]")
 
     # Run py.test against the snippets tests.
@@ -183,7 +183,7 @@ def docs(session):
     """Build the docs."""
 
     session.install("ipython", "recommonmark", "sphinx", "sphinx_rtd_theme")
-    session.install("-e", os.path.join("..", "storage"))
+    session.install("google-cloud-storage")
     session.install("-e", ".[all]")
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)

@@ -27,19 +27,29 @@ class TestConnection(unittest.TestCase):
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)
 
-    def _mock_client(self, rows=None, schema=None):
+    def _mock_client(self):
         from google.cloud.bigquery import client
 
         mock_client = mock.create_autospec(client.Client)
+        return mock_client
+
+    def _mock_bqstorage_client(self):
+        from google.cloud.bigquery_storage_v1beta1 import client
+
+        mock_client = mock.create_autospec(client.BigQueryStorageClient)
         return mock_client
 
     def test_ctor(self):
         from google.cloud.bigquery.dbapi import Connection
 
         mock_client = self._mock_client()
-        connection = self._make_one(client=mock_client)
+        mock_bqstorage_client = self._mock_bqstorage_client()
+        connection = self._make_one(
+            client=mock_client, bqstorage_client=mock_bqstorage_client,
+        )
         self.assertIsInstance(connection, Connection)
         self.assertIs(connection._client, mock_client)
+        self.assertIs(connection._bqstorage_client, mock_bqstorage_client)
 
     @mock.patch("google.cloud.bigquery.Client", autospec=True)
     def test_connect_wo_client(self, mock_client):
@@ -58,6 +68,19 @@ class TestConnection(unittest.TestCase):
         connection = connect(client=mock_client)
         self.assertIsInstance(connection, Connection)
         self.assertIs(connection._client, mock_client)
+
+    def test_connect_w_both_clients(self):
+        from google.cloud.bigquery.dbapi import connect
+        from google.cloud.bigquery.dbapi import Connection
+
+        mock_client = self._mock_client()
+        mock_bqstorage_client = self._mock_bqstorage_client()
+        connection = connect(
+            client=mock_client, bqstorage_client=mock_bqstorage_client,
+        )
+        self.assertIsInstance(connection, Connection)
+        self.assertIs(connection._client, mock_client)
+        self.assertIs(connection._bqstorage_client, mock_bqstorage_client)
 
     def test_close(self):
         connection = self._make_one(client=self._mock_client())

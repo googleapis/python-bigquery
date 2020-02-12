@@ -57,6 +57,7 @@ from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery._helpers import _verify_job_config_type
+from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
@@ -1338,9 +1339,7 @@ class Client(ClientWithProject):
             load_job_config = google.cloud.bigquery.job.LoadJobConfig.from_api_repr(
                 job_config
             )
-            destination = TableReference.from_api_repr(
-                job_config["load"]["destinationTable"]
-            )
+            destination = _get_sub_prop(job_config, ["load", "destinationTable"])
             source_uris = _get_sub_prop(job_config, ["load", "sourceUris"])
             return self.load_table_from_uri(
                 source_uris, destination, job_config=load_job_config, retry=retry
@@ -1349,14 +1348,12 @@ class Client(ClientWithProject):
             copy_job_config = google.cloud.bigquery.job.CopyJobConfig.from_api_repr(
                 job_config
             )
-            copy_resource = job_config["copy"]
-            destination = TableReference.from_api_repr(
-                copy_resource["destinationTable"]
-            )
+            destination = _get_sub_prop(job_config, ["copy", "destinationTable"])
             sources = []
-            source_configs = copy_resource.get("sourceTables")
+            source_configs = _get_sub_prop(job_config, ["copy", "sourceTables"])
+
             if source_configs is None:
-                source_configs = [copy_resource["sourceTable"]]
+                source_configs = [_get_sub_prop(job_config, ["copy", "sourceTable"])]
             for source_config in source_configs:
                 table_ref = TableReference.from_api_repr(source_config)
                 sources.append(table_ref)
@@ -1367,13 +1364,13 @@ class Client(ClientWithProject):
             extract_job_config = google.cloud.bigquery.job.ExtractJobConfig.from_api_repr(
                 job_config
             )
-            source = TableReference.from_api_repr(job_config["extract"]["sourceTable"])
+            source = _get_sub_prop(job_config, ["extract", "sourceTable"])
             destination_uris = _get_sub_prop(job_config, ["extract", "destinationUris"])
             return self.extract_table(
                 source, destination_uris, job_config=extract_job_config, retry=retry
             )
         elif "query" in job_config:
-            del job_config["query"]["destinationTable"]
+            _del_sub_prop(job_config, ["query", "destinationTable"])
             query_job_config = google.cloud.bigquery.job.QueryJobConfig.from_api_repr(
                 job_config
             )

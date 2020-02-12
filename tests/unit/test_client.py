@@ -2893,6 +2893,68 @@ class TestClient(unittest.TestCase):
             configuration, "google.cloud.bigquery.client.Client.query",
         )
 
+    def test_create_job_query_config_w_rateLimitExceeded_error(self):
+        from google.cloud.exceptions import Forbidden
+        from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+        query = "select count(*) from persons"
+        configuration = {
+            "query": {
+                "query": query,
+                "useLegacySql": False,
+                "destinationTable": {"tableId": "table_id"},
+            }
+        }
+        resource = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
+            "configuration": {
+                "query": {
+                    "query": query,
+                    "useLegacySql": False,
+                    "destinationTable": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "tableId": "query_destination_table",
+                    },
+                }
+            },
+        }
+        data_without_destination = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
+            "configuration": {"query": {"query": query, "useLegacySql": False}},
+        }
+
+        creds = _make_credentials()
+        http = object()
+        retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
+            lambda exc: isinstance(exc, Forbidden)
+        )
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        api_request_patcher = mock.patch.object(
+            client._connection,
+            "api_request",
+            side_effect=[
+                Forbidden("", errors=[{"reason": "rateLimitExceeded"}]),
+                resource,
+            ],
+        )
+
+        with api_request_patcher as fake_api_request:
+            job = client.create_job(job_config=configuration, retry=retry)
+
+        self.assertEqual(job.destination.table_id, "query_destination_table")
+        self.assertEqual(len(fake_api_request.call_args_list), 2)  # was retried once
+        self.assertEqual(
+            fake_api_request.call_args_list[1],
+            mock.call(
+                method="POST",
+                path="/projects/PROJECT/jobs",
+                data=data_without_destination,
+                timeout=None,
+            ),
+        )
+
     def test_create_job_w_invalid_job_config(self):
         configuration = {"unknown": {}}
         creds = _make_credentials()

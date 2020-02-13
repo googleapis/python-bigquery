@@ -1139,12 +1139,12 @@ class StreamingBuffer(object):
     """
 
     def __init__(self, resource):
-        if resource["estimatedBytes"]:
+        if "estimatedBytes" in resource:
             self.estimated_bytes = int(resource["estimatedBytes"])
-        if resource["estimatedRows"]:
+        if "estimatedRows" in resource:
             self.estimated_rows = int(resource["estimatedRows"])
         # time is in milliseconds since the epoch.
-        if resource["oldestEntryTime"]:
+        if "oldestEntryTime" in resource:
             self.oldest_entry_time = google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * int(resource["oldestEntryTime"])
             )

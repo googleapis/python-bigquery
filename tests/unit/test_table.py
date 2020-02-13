@@ -855,6 +855,21 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table = klass.from_api_repr(RESOURCE)
         self._verifyResourceProperties(table, RESOURCE)
 
+    def test_from_api_repr_w_partial_streamingbuffer(self):
+        import datetime
+        from google.cloud._helpers import UTC
+        from google.cloud._helpers import _millis
+
+        RESOURCE = self._make_resource()
+        self.OLDEST_TIME = datetime.datetime(2015, 8, 1, 23, 59, 59, tzinfo=UTC)
+        RESOURCE["streamingBuffer"] = {"oldestEntryTime": _millis(self.OLDEST_TIME)}
+        klass = self._get_target_class()
+        table = klass.from_api_repr(RESOURCE)
+        self.assertIsNotNone(table.streaming_buffer)
+        self.assertIsNone(table.streaming_buffer.estimated_rows)
+        self.assertIsNone(table.streaming_buffer.estimated_bytes)
+        self.assertEqual(table.streaming_buffer.oldest_entry_time, self.OLDEST_TIME)
+
     def test_from_api_with_encryption(self):
         self._setUpConstants()
         RESOURCE = {

@@ -869,6 +869,14 @@ class TestTable(unittest.TestCase, _SchemaBase):
         self.assertIsNone(table.streaming_buffer.estimated_rows)
         self.assertIsNone(table.streaming_buffer.estimated_bytes)
         self.assertEqual(table.streaming_buffer.oldest_entry_time, self.OLDEST_TIME)
+        # Another partial construction
+        RESOURCE["streamingBuffer"] = {"estimatedRows": 1}
+        klass = self._get_target_class()
+        table = klass.from_api_repr(RESOURCE)
+        self.assertIsNotNone(table.streaming_buffer)
+        self.assertIsEqual(table.streaming_buffer.estimated_rows, 1)
+        self.assertIsNone(table.streaming_buffer.estimated_bytes)
+        self.assertIsNone(table.streaming_buffer.oldest_entry_time)
 
     def test_from_api_with_encryption(self):
         self._setUpConstants()

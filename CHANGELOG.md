@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [1.24.1](https://www.github.com/googleapis/python-bigquery/compare/v1.24.0...v1.24.1) (2020-02-14)
+
+
+### Bug Fixes
+
+* allow partial streaming_buffer statistics ([#37](https://www.github.com/googleapis/python-bigquery/issues/37)) ([645f0fd](https://www.github.com/googleapis/python-bigquery/commit/645f0fdb35ee0e81ee70f7459e796a42a1f03210))
+
 ## 1.24.0
 
 02-03-2020 01:38 PST

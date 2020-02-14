@@ -20,6 +20,11 @@ import six
 
 from google.api_core import exceptions
 
+try:
+    from google.cloud import bigquery_storage_v1beta1
+except ImportError:  # pragma: NO COVER
+    bigquery_storage_v1beta1 = None
+
 
 class TestCursor(unittest.TestCase):
     @staticmethod
@@ -207,6 +212,9 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0], (1,))
 
+    @unittest.skipIf(
+        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_fetchall_w_bqstorage_client_fetch_success(self):
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table
@@ -247,6 +255,9 @@ class TestCursor(unittest.TestCase):
 
         self.assertEqual(sorted_row_data, expected_row_data)
 
+    @unittest.skipIf(
+        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_fetchall_w_bqstorage_client_fetch_no_rows(self):
         from google.cloud.bigquery import dbapi
 
@@ -267,6 +278,9 @@ class TestCursor(unittest.TestCase):
         # check the data returned
         self.assertEqual(rows, [])
 
+    @unittest.skipIf(
+        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_fetchall_w_bqstorage_client_fetch_error_no_fallback(self):
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table
@@ -292,6 +306,9 @@ class TestCursor(unittest.TestCase):
         # the default client was not used
         mock_client.list_rows.assert_not_called()
 
+    @unittest.skipIf(
+        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_fetchall_w_bqstorage_client_fetch_error_fallback_on_client(self):
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table

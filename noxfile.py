@@ -48,7 +48,7 @@ def default(session):
         # Since many tests are skipped due to missing dependencies, test
         # coverage is much lower in Python 3.8. Remove once we can test with
         # pyarrow.
-        coverage_fail_under = "--cov-fail-under=92"
+        coverage_fail_under = "--cov-fail-under=91"
         dev_install = ".[pandas,tqdm]"
 
     session.install("-e", dev_install)

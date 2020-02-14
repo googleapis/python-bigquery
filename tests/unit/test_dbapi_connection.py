@@ -16,6 +16,11 @@ import unittest
 
 import mock
 
+try:
+    from google.cloud import bigquery_storage_v1beta1
+except ImportError:  # pragma: NO COVER
+    bigquery_storage_v1beta1 = None
+
 
 class TestConnection(unittest.TestCase):
     @staticmethod
@@ -39,6 +44,9 @@ class TestConnection(unittest.TestCase):
         mock_client = mock.create_autospec(client.BigQueryStorageClient)
         return mock_client
 
+    @unittest.skipIf(
+        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_ctor(self):
         from google.cloud.bigquery.dbapi import Connection
 
@@ -69,6 +77,9 @@ class TestConnection(unittest.TestCase):
         self.assertIsInstance(connection, Connection)
         self.assertIs(connection._client, mock_client)
 
+    @unittest.skipIf(
+        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_connect_w_both_clients(self):
         from google.cloud.bigquery.dbapi import connect
         from google.cloud.bigquery.dbapi import Connection

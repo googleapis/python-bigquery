@@ -874,7 +874,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         klass = self._get_target_class()
         table = klass.from_api_repr(RESOURCE)
         self.assertIsNotNone(table.streaming_buffer)
-        self.assertIsEqual(table.streaming_buffer.estimated_rows, 1)
+        self.assertEqual(table.streaming_buffer.estimated_rows, 1)
         self.assertIsNone(table.streaming_buffer.estimated_bytes)
         self.assertIsNone(table.streaming_buffer.oldest_entry_time)
 

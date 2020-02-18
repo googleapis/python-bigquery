@@ -6633,7 +6633,7 @@ class TestClientUpload(object):
 
     @unittest.skipIf(
         pandas is None or pandas.__version__ < "1.0.1",
-        "Only `pandas version >=1.0.1` supports",
+        "Only `pandas version >=1.0.1` is supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_none_value(self):
@@ -6679,7 +6679,7 @@ class TestClientUpload(object):
 
     @unittest.skipIf(
         pandas is None or pandas.__version__ < "1.0.1",
-        "Only `pandas version >=1.0.1` supports",
+        "Only `pandas version >=1.0.1` is supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_automatic_schema_w_none_value(self):

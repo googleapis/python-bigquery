@@ -738,61 +738,62 @@ class TestBigQuery(unittest.TestCase):
 
     @unittest.skipIf(
         pandas is None or pandas.__version__ < "1.0.1",
-        "Only `pandas version >=1.0.1` supports",
+        "Only `pandas version >=1.0.1` is supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_none_value(self):
-        """Test that a DataFrame with dtypes that map well to BigQuery types
-        can be uploaded without specifying a schema.
+        """Test that a DataFrame containing None-type values can be uploaded
+        if a BigQuery schema is specified.
 
         https://github.com/googleapis/python-bigquery/issues/22
         """
-        df_data = collections.OrderedDict(
-            [("x", pandas.Series([1, 2, None, 4], dtype="Int64"))]
-        )
-        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
-        table_schema = (bigquery.SchemaField("x", "INTEGER", mode="NULLABLE"),)
+
         dataset_id = _make_dataset_id("bq_load_test")
         self.temp_dataset(dataset_id)
         table_id = "{}.{}.load_table_from_dataframe_w_none_value".format(
             Config.CLIENT.project, dataset_id
         )
+        table_schema = (bigquery.SchemaField("x", "INTEGER", mode="NULLABLE"),)
         table = retry_403(Config.CLIENT.create_table)(
             Table(table_id, schema=table_schema)
         )
         self.to_delete.insert(0, table)
 
-        load_job = Config.CLIENT.load_table_from_dataframe(dataframe, table_id)
-        load_job.result()
-        table = Config.CLIENT.get_table(table_id)
-        self.assertEqual(tuple(table.schema), ((bigquery.SchemaField("x", "INTEGER"),)))
-        self.assertEqual(table.num_rows, 4)
-
-    @unittest.skipIf(
-        pandas is None or pandas.__version__ < "1.0.1",
-        "Only `pandas version >=1.0.1` supports",
-    )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_automatic_schema_w_none_value(self):
-        """Test that a DataFrame with dtypes that map well to BigQuery types
-        can be uploaded without specifying a schema.
-
-        https://github.com/googleapis/python-bigquery/issues/22
-        """
         df_data = collections.OrderedDict(
             [("x", pandas.Series([1, 2, None, 4], dtype="Int64"))]
         )
         dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
+        load_job = Config.CLIENT.load_table_from_dataframe(dataframe, table_id)
+        load_job.result()
+        table = Config.CLIENT.get_table(table_id)
+        self.assertEqual(tuple(table.schema), (bigquery.SchemaField("x", "INTEGER"),))
+        self.assertEqual(table.num_rows, 4)
+
+    @unittest.skipIf(
+        pandas is None or pandas.__version__ < "1.0.1",
+        "Only `pandas version >=1.0.1` is supported",
+    )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_automatic_schema_w_none_value(self):
+        """Test that a DataFrame containing None-type values can be uploaded
+        without specifying a schema.
+
+        https://github.com/googleapis/python-bigquery/issues/22
+        """
+
         dataset_id = _make_dataset_id("bq_load_test")
         self.temp_dataset(dataset_id)
         table_id = "{}.{}.load_table_from_dataframe_w_automatic_schema_w_none_value".format(
             Config.CLIENT.project, dataset_id
         )
-
+        df_data = collections.OrderedDict(
+            [("x", pandas.Series([1, 2, None, 4], dtype="Int64"))]
+        )
+        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
         load_job = Config.CLIENT.load_table_from_dataframe(dataframe, table_id)
         load_job.result()
         table = Config.CLIENT.get_table(table_id)
-        self.assertEqual(tuple(table.schema), ((bigquery.SchemaField("x", "INTEGER"),)))
+        self.assertEqual(tuple(table.schema), (bigquery.SchemaField("x", "INTEGER"),))
         self.assertEqual(table.num_rows, 4)
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")

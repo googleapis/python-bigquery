@@ -44,10 +44,19 @@ class TestConnection(unittest.TestCase):
         mock_client = mock.create_autospec(client.BigQueryStorageClient)
         return mock_client
 
+    def test_ctor_wo_bqstorage_client(self):
+        from google.cloud.bigquery.dbapi import Connection
+
+        mock_client = self._mock_client()
+        connection = self._make_one(client=mock_client)
+        self.assertIsInstance(connection, Connection)
+        self.assertIs(connection._client, mock_client)
+        self.assertIsNone(connection._bqstorage_client)
+
     @unittest.skipIf(
         bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
     )
-    def test_ctor(self):
+    def test_ctor_w_bqstorage_client(self):
         from google.cloud.bigquery.dbapi import Connection
 
         mock_client = self._mock_client()
@@ -67,6 +76,7 @@ class TestConnection(unittest.TestCase):
         connection = connect()
         self.assertIsInstance(connection, Connection)
         self.assertIsNotNone(connection._client)
+        self.assertIsNone(connection._bqstorage_client)
 
     def test_connect_w_client(self):
         from google.cloud.bigquery.dbapi import connect
@@ -76,6 +86,7 @@ class TestConnection(unittest.TestCase):
         connection = connect(client=mock_client)
         self.assertIsInstance(connection, Connection)
         self.assertIs(connection._client, mock_client)
+        self.assertIsNone(connection._bqstorage_client)
 
     @unittest.skipIf(
         bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"

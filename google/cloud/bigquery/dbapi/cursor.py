@@ -219,7 +219,7 @@ class Cursor(object):
             client = self.connection._client
             bqstorage_client = self.connection._bqstorage_client
 
-            if bqstorage_client:
+            if bqstorage_client is not None:
                 try:
                     rows_iterable = self._bqstorage_fetch(bqstorage_client)
                     self._query_data = _helpers.to_bq_table_rows(rows_iterable)

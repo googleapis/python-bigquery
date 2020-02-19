@@ -273,7 +273,7 @@ class Cursor(object):
         read_session = bqstorage_client.create_read_session(
             table_reference.to_bqstorage(),
             "projects/{}".format(table_reference.project),
-            # only a single stream only, as DB API is not well-suited for multithreading
+            # a single stream only, as DB API is not well-suited for multithreading
             requested_streams=1,
         )
 

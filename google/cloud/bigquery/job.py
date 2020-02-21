@@ -814,8 +814,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             ) as guard:
                 self._begin(retry=retry, timeout=timeout)
             timeout = guard.remaining_timeout
-        # TODO: modify PollingFuture so it can pass a retry argument to done().
-        return super(_AsyncJob, self).result(timeout=timeout)
+        return super(_AsyncJob, self).result(timeout=timeout, retry=retry)
 
     def cancelled(self):
         """Check if the job has been cancelled.

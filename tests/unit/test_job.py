@@ -847,7 +847,7 @@ class Test_AsyncJob(unittest.TestCase):
         job = self._set_properties_job()
 
         api_request_patcher = mock.patch.object(
-            job._client._connection, "api_request", side_effect=[ValueError, response],
+            job._client._connection, "api_request", side_effect=[ValueError, response]
         )
         retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
             lambda exc: isinstance(exc, ValueError)
@@ -863,7 +863,7 @@ class Test_AsyncJob(unittest.TestCase):
             [
                 mock.call(method="POST", path=api_path, query_params={}, timeout=7.5),
                 mock.call(
-                    method="POST", path=api_path, query_params={}, timeout=7.5,
+                    method="POST", path=api_path, query_params={}, timeout=7.5
                 ),  # was retried once
             ],
         )
@@ -980,6 +980,15 @@ class Test_AsyncJob(unittest.TestCase):
 
         begin.assert_called_once_with(retry=retry, timeout=None)
         result.assert_called_once_with(timeout=None)
+
+    def test_result_retry_to_done(self):
+        client = _make_client(project=self.PROJECT)
+        job = self._make_one(self.JOB_ID, client)
+        done = job.done = mock.Mock()
+        retry = mock.Mock()
+
+        job.result(retry=retry)
+        done.assert_called_once_with(retry=retry, timeout=None)
 
     @mock.patch("google.api_core.future.polling.PollingFuture.result")
     def test_result_explicit_w_state(self, result):
@@ -2628,7 +2637,7 @@ class TestLoadJob(unittest.TestCase, _Base):
         job.cancel()
 
         conn.api_request.assert_called_once_with(
-            method="POST", path=PATH, query_params={}, timeout=None,
+            method="POST", path=PATH, query_params={}, timeout=None
         )
         self._verifyResourceProperties(job, RESOURCE)
 
@@ -2646,7 +2655,7 @@ class TestLoadJob(unittest.TestCase, _Base):
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
-            method="POST", path=PATH, query_params={}, timeout=None,
+            method="POST", path=PATH, query_params={}, timeout=None
         )
         self._verifyResourceProperties(job, RESOURCE)
 
@@ -3047,7 +3056,7 @@ class TestCopyJob(unittest.TestCase, _Base):
         self.assertFalse(job.exists())
 
         conn.api_request.assert_called_once_with(
-            method="GET", path=PATH, query_params={"fields": "id"}, timeout=None,
+            method="GET", path=PATH, query_params={"fields": "id"}, timeout=None
         )
 
     def test_exists_hit_w_alternate_client(self):
@@ -3410,7 +3419,7 @@ class TestExtractJob(unittest.TestCase, _Base):
         self.assertFalse(job.exists())
 
         conn.api_request.assert_called_once_with(
-            method="GET", path=PATH, query_params={"fields": "id"}, timeout=None,
+            method="GET", path=PATH, query_params={"fields": "id"}, timeout=None
         )
 
     def test_exists_hit_w_alternate_client(self):

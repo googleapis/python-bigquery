@@ -43,14 +43,6 @@ def default(session):
     # serialization, though.
     dev_install = ".[all,fastparquet]"
 
-    # There is no pyarrow or fastparquet wheel for Python 3.8.
-    if session.python == "3.8":
-        # Since many tests are skipped due to missing dependencies, test
-        # coverage is much lower in Python 3.8. Remove once we can test with
-        # pyarrow.
-        coverage_fail_under = "--cov-fail-under=91"
-        dev_install = ".[pandas,tqdm]"
-
     session.install("-e", dev_install)
 
     # IPython does not support Python 2 after version 5.x

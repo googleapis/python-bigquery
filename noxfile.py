@@ -36,8 +36,6 @@ def default(session):
     session.install("grpcio")
     session.install("-e", "test_utils")
 
-    coverage_fail_under = "--cov-fail-under=97"
-
     # fastparquet is not included in .[all] because, in general, it's redundant
     # with pyarrow. We still want to run some unit tests with fastparquet
     # serialization, though.
@@ -45,10 +43,6 @@ def default(session):
 
     # There is no pyarrow or fastparquet wheel for Python 3.8.
     if session.python == "3.8":
-        # Since many tests are skipped due to missing dependencies, test
-        # coverage is much lower in Python 3.8. Remove once we can test with
-        # pyarrow.
-        coverage_fail_under = "--cov-fail-under=91"
         dev_install = ".[pandas,tqdm]"
 
     session.install("-e", dev_install)
@@ -68,7 +62,7 @@ def default(session):
         "--cov-append",
         "--cov-config=.coveragerc",
         "--cov-report=",
-        coverage_fail_under,
+        "--cov-fail-under=0",
         os.path.join("tests", "unit"),
         *session.posargs,
     )

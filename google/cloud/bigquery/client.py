@@ -61,6 +61,7 @@ from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery.exceptions import PyarrowMissingWarning
 from google.cloud.bigquery import job
 from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference
@@ -1850,6 +1851,15 @@ class Client(ClientWithProject):
                     parquet_compression=parquet_compression,
                 )
             else:
+                if not pyarrow:
+                    warnings.warn(
+                        "Loading dataframe data without pyarrow installed is "
+                        "deprecated and will become unsupported in the future. "
+                        "Please install the pyarrow package.",
+                        PyarrowMissingWarning,
+                        stacklevel=2,
+                    )
+
                 if job_config.schema:
                     warnings.warn(
                         "job_config.schema is set, but not used to assist in "

@@ -72,7 +72,7 @@ def unit(session):
     default(session)
 
 
-@nox.session(python=["2.7", "3.7"])
+@nox.session(python=["2.7", "3.8"])
 def system(session):
     """Run the system test suite."""
 
@@ -102,7 +102,7 @@ def system(session):
     )
 
 
-@nox.session(python=["2.7", "3.7"])
+@nox.session(python=["2.7", "3.8"])
 def snippets(session):
     """Run the snippets test suite."""
 
@@ -122,7 +122,7 @@ def snippets(session):
     session.run("py.test", "samples", *session.posargs)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def cover(session):
     """Run the final coverage report.
 
@@ -134,7 +134,7 @@ def cover(session):
     session.run("coverage", "erase")
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def lint(session):
     """Run linters.
 
@@ -151,7 +151,7 @@ def lint(session):
     session.run("black", "--check", *BLACK_PATHS)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
@@ -172,7 +172,7 @@ def blacken(session):
     session.run("black", *BLACK_PATHS)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def docs(session):
     """Build the docs."""
 

@@ -31,6 +31,7 @@ import six
 import psutil
 import pytest
 import pytz
+import pkg_resources
 
 try:
     from google.cloud import bigquery_storage_v1beta1
@@ -118,6 +119,9 @@ SAMPLES_BUCKET = os.environ.get("GCLOUD_TEST_SAMPLES_BUCKET", "cloud-samples-dat
 retry_storage_errors = RetryErrors(
     (TooManyRequests, InternalServerError, ServiceUnavailable)
 )
+
+PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
+PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 
 
 def _has_rows(result):
@@ -737,20 +741,20 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(table.num_rows, 3)
 
     @unittest.skipIf(
-        pandas is None or pandas.__version__ < "1.0.1",
-        "Only `pandas version >=1.0.1` is supported",
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        "Only `pandas version >=1.0.0` is supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_none_value(self):
-        """Test that a DataFrame containing None-type values can be uploaded
-        if a BigQuery schema is specified.
+    def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
+        """Test that a DataFrame containing column with None-type values and int64 datatype
+        can be uploaded if a BigQuery schema is specified.
 
         https://github.com/googleapis/python-bigquery/issues/22
         """
 
         dataset_id = _make_dataset_id("bq_load_test")
         self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_none_value".format(
+        table_id = "{}.{}.load_table_from_dataframe_w_nullable_int64_datatype".format(
             Config.CLIENT.project, dataset_id
         )
         table_schema = (bigquery.SchemaField("x", "INTEGER", mode="NULLABLE"),)
@@ -770,20 +774,20 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(table.num_rows, 4)
 
     @unittest.skipIf(
-        pandas is None or pandas.__version__ < "1.0.1",
-        "Only `pandas version >=1.0.1` is supported",
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        "Only `pandas version >=1.0.0` is supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_automatic_schema_w_none_value(self):
-        """Test that a DataFrame containing None-type values can be uploaded
-        without specifying a schema.
+    def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
+        """Test that a DataFrame containing column with None-type values and int64 datatype
+        can be uploaded without specifying a schema.
 
         https://github.com/googleapis/python-bigquery/issues/22
         """
 
         dataset_id = _make_dataset_id("bq_load_test")
         self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_automatic_schema_w_none_value".format(
+        table_id = "{}.{}.load_table_from_dataframe_w_nullable_int64_datatype".format(
             Config.CLIENT.project, dataset_id
         )
         df_data = collections.OrderedDict(

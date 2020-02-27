@@ -31,6 +31,7 @@ import six
 from six.moves import http_client
 import pytest
 import pytz
+import pkg_resources
 
 try:
     import fastparquet
@@ -56,6 +57,9 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     bigquery_storage_v1beta1 = None
 from tests.unit.helpers import make_connection
+
+PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
+PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 
 
 def _make_credentials():
@@ -6632,11 +6636,11 @@ class TestClientUpload(object):
         assert matches, "A missing schema deprecation warning was not raised."
 
     @unittest.skipIf(
-        pandas is None or pandas.__version__ < "1.0.1",
-        "Only `pandas version >=1.0.1` is supported",
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        "Only `pandas version >=1.0.0` supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_none_value(self):
+    def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -6678,11 +6682,11 @@ class TestClientUpload(object):
         )
 
     @unittest.skipIf(
-        pandas is None or pandas.__version__ < "1.0.1",
-        "Only `pandas version >=1.0.1` is supported",
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        "Only `pandas version >=1.0.0` supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_automatic_schema_w_none_value(self):
+    def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField

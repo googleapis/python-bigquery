@@ -42,7 +42,7 @@ extras = {
         "google-cloud-bigquery-storage >= 0.6.0, <2.0.0dev",
         # Bad Linux release for 0.14.0.
         # https://issues.apache.org/jira/browse/ARROW-5868
-        "pyarrow>=0.13.0, != 0.14.0",
+        "pyarrow>=0.16.0, < 1.0dev",
     ],
     "pandas": ["pandas>=0.17.1"],
     # Exclude PyArrow dependency from Windows Python 2.7.

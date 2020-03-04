@@ -1370,11 +1370,12 @@ class Client(ClientWithProject):
                 source, destination_uris, job_config=extract_job_config, retry=retry
             )
         elif "query" in job_config:
-            _del_sub_prop(job_config, ["query", "destinationTable"])
+            copy_config = copy.deepcopy(job_config)
+            _del_sub_prop(copy_config, ["query", "destinationTable"])
             query_job_config = google.cloud.bigquery.job.QueryJobConfig.from_api_repr(
-                job_config
+                copy_config
             )
-            query = _get_sub_prop(job_config, ["query", "query"])
+            query = _get_sub_prop(copy_config, ["query", "query"])
             return self.query(query, job_config=query_job_config, retry=retry)
         else:
             raise TypeError("Invalid job configuration received.")

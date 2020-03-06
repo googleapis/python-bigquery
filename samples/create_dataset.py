@@ -30,7 +30,7 @@ def create_dataset(dataset_id):
     # TODO(developer): Specify the geographic location where the dataset should reside.
     dataset.location = "US"
 
-    # Send the dataset to the API for creation, with a timeout.
+    # Send the dataset to the API for creation, with an explicit timeout.
     # Raises google.api_core.exceptions.Conflict if the Dataset already
     # exists within the project.
     dataset = client.create_dataset(dataset, timeout=30)  # Make an API request.

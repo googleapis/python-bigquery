@@ -396,11 +396,21 @@ class Client(ClientWithProject):
     def _create_bqstorage_client(self):
         """Create a BigQuery Storage API client using this client's credentials.
 
+        If a client cannot be created due to missing dependencies, raise a
+        warning and return ``None``.
+
         Returns:
-            google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient:
+            Optional[google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient]:
                 A BigQuery Storage API client.
         """
-        from google.cloud import bigquery_storage_v1beta1
+        try:
+            from google.cloud import bigquery_storage_v1beta1
+        except ImportError:
+            warnings.warn(
+                "Cannot create BigQuery Storage client, the dependency "
+                "google-cloud-bigquery-storage is not installed."
+            )
+            return None
 
         return bigquery_storage_v1beta1.BigQueryStorageClient(
             credentials=self._credentials

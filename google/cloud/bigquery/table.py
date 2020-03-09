@@ -1468,7 +1468,7 @@ class RowIterator(HTTPIterator):
         self,
         progress_bar_type=None,
         bqstorage_client=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
     ):
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
@@ -1493,9 +1493,9 @@ class RowIterator(HTTPIterator):
                   Use the :func:`tqdm.tqdm_gui` function to display a
                   progress bar as a graphical dialog box.
             bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
-                **Beta Feature** Optional. A BigQuery Storage API client. If
-                supplied, use the faster BigQuery Storage API to fetch rows
-                from BigQuery. This API is a billable API.
+                Optional. A BigQuery Storage API client. If supplied, use the
+                faster BigQuery Storage API to fetch rows from BigQuery. This
+                API is a billable API.
 
                 This method requires the ``pyarrow`` and
                 ``google-cloud-bigquery-storage`` libraries.
@@ -1503,11 +1503,10 @@ class RowIterator(HTTPIterator):
                 Reading from a specific partition or snapshot is not
                 currently supported by this method.
             create_bqstorage_client (bool):
-                **Beta Feature** Optional. If ``True``, create a BigQuery
-                Storage API client using the default API settings. The
-                BigQuery Storage API is a faster way to fetch rows from
-                BigQuery. See the ``bqstorage_client`` parameter for more
-                information.
+                Optional. If ``True`` (default), create a BigQuery Storage API
+                client using the default API settings. The BigQuery Storage API
+                is a faster way to fetch rows from BigQuery. See the
+                ``bqstorage_client`` parameter for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
@@ -1578,9 +1577,8 @@ class RowIterator(HTTPIterator):
 
         Args:
             bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
-                **Beta Feature** Optional. A BigQuery Storage API client. If
-                supplied, use the faster BigQuery Storage API to fetch rows
-                from BigQuery.
+                Optional. A BigQuery Storage API client. If supplied, use the
+                faster BigQuery Storage API to fetch rows from BigQuery.
 
                 This method requires the ``pyarrow`` and
                 ``google-cloud-bigquery-storage`` libraries.
@@ -1641,15 +1639,14 @@ class RowIterator(HTTPIterator):
         bqstorage_client=None,
         dtypes=None,
         progress_bar_type=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
     ):
         """Create a pandas DataFrame by loading all pages of a query.
 
         Args:
             bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
-                **Beta Feature** Optional. A BigQuery Storage API client. If
-                supplied, use the faster BigQuery Storage API to fetch rows
-                from BigQuery.
+                Optional. A BigQuery Storage API client. If supplied, use the
+                faster BigQuery Storage API to fetch rows from BigQuery.
 
                 This method requires the ``pyarrow`` and
                 ``google-cloud-bigquery-storage`` libraries.
@@ -1687,11 +1684,10 @@ class RowIterator(HTTPIterator):
 
                 ..versionadded:: 1.11.0
             create_bqstorage_client (bool):
-                **Beta Feature** Optional. If ``True``, create a BigQuery
-                Storage API client using the default API settings. The
-                BigQuery Storage API is a faster way to fetch rows from
-                BigQuery. See the ``bqstorage_client`` parameter for more
-                information.
+                Optional. If ``True`` (default), create a BigQuery Storage API
+                client using the default API settings. The BigQuery Storage API
+                is a faster way to fetch rows from BigQuery. See the
+                ``bqstorage_client`` parameter for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
@@ -1791,7 +1787,7 @@ class _EmptyRowIterator(object):
         self,
         progress_bar_type=None,
         bqstorage_client=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
     ):
         """[Beta] Create an empty class:`pyarrow.Table`.
 
@@ -1812,7 +1808,7 @@ class _EmptyRowIterator(object):
         bqstorage_client=None,
         dtypes=None,
         progress_bar_type=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
     ):
         """Create an empty dataframe.
 

@@ -1492,7 +1492,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe(self):
         row_iterator = self._make_one()
-        df = row_iterator.to_dataframe()
+        df = row_iterator.to_dataframe(create_bqstorage_client=False)
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 0)  # verify the number of rows
 
@@ -1687,7 +1687,7 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        tbl = row_iterator.to_arrow()
+        tbl = row_iterator.to_arrow(create_bqstorage_client=False)
 
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 2)
@@ -1737,7 +1737,7 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        tbl = row_iterator.to_arrow()
+        tbl = row_iterator.to_arrow(create_bqstorage_client=False)
 
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 4)
@@ -1772,7 +1772,7 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        tbl = row_iterator.to_arrow()
+        tbl = row_iterator.to_arrow(create_bqstorage_client=False)
 
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 2)
@@ -1815,7 +1815,7 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        tbl = row_iterator.to_arrow()
+        tbl = row_iterator.to_arrow(create_bqstorage_client=False)
 
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 0)
@@ -2059,7 +2059,9 @@ class TestRowIterator(unittest.TestCase):
 
         for progress_bar_type, progress_bar_mock in progress_bars:
             row_iterator = self._make_one(_mock_client(), api_request, path, schema)
-            tbl = row_iterator.to_arrow(progress_bar_type=progress_bar_type)
+            tbl = row_iterator.to_arrow(
+                progress_bar_type=progress_bar_type, create_bqstorage_client=False,
+            )
 
             progress_bar_mock.assert_called()
             progress_bar_mock().update.assert_called()
@@ -2231,7 +2233,7 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        df = row_iterator.to_dataframe()
+        df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 4)  # verify the number of rows
@@ -2302,7 +2304,9 @@ class TestRowIterator(unittest.TestCase):
 
         for progress_bar_type, progress_bar_mock in progress_bars:
             row_iterator = self._make_one(_mock_client(), api_request, path, schema)
-            df = row_iterator.to_dataframe(progress_bar_type=progress_bar_type)
+            df = row_iterator.to_dataframe(
+                progress_bar_type=progress_bar_type, create_bqstorage_client=False,
+            )
 
             progress_bar_mock.assert_called()
             progress_bar_mock().update.assert_called()
@@ -2368,7 +2372,7 @@ class TestRowIterator(unittest.TestCase):
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
         with warnings.catch_warnings(record=True) as warned:
-            df = row_iterator.to_dataframe()
+            df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
         self.assertEqual(len(warned), 0)
         self.assertEqual(len(df), 4)
@@ -2393,7 +2397,9 @@ class TestRowIterator(unittest.TestCase):
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
         with warnings.catch_warnings(record=True) as warned:
-            df = row_iterator.to_dataframe(progress_bar_type="tqdm")
+            df = row_iterator.to_dataframe(
+                progress_bar_type="tqdm", create_bqstorage_client=False,
+            )
 
         self.assertEqual(len(warned), 1)
         for warning in warned:
@@ -2428,7 +2434,9 @@ class TestRowIterator(unittest.TestCase):
             row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
             with warnings.catch_warnings(record=True) as warned:
-                df = row_iterator.to_dataframe(progress_bar_type=progress_bar_type)
+                df = row_iterator.to_dataframe(
+                    progress_bar_type=progress_bar_type, create_bqstorage_client=False,
+                )
 
             self.assertEqual(len(df), 4)  # all should be well
 
@@ -2448,7 +2456,7 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": []})
         row_iterator = self._make_one(_mock_client(), api_request, schema=schema)
 
-        df = row_iterator.to_dataframe()
+        df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 0)  # verify the number of rows
@@ -2506,7 +2514,7 @@ class TestRowIterator(unittest.TestCase):
         )
 
         with mock.patch("google.cloud.bigquery.table._LOGGER", mock_logger):
-            row_iterator.to_dataframe()
+            row_iterator.to_dataframe(create_bqstorage_client=False)
 
         mock_logger.debug.assert_any_call(
             "Started reading table 'debug-proj.debug_dset.debug_tbl' with tabledata.list."
@@ -2536,7 +2544,7 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        df = row_iterator.to_dataframe()
+        df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 4)  # verify the number of rows
@@ -2576,7 +2584,9 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        df = row_iterator.to_dataframe(dtypes={"km": "float16"})
+        df = row_iterator.to_dataframe(
+            dtypes={"km": "float16"}, create_bqstorage_client=False,
+        )
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 3)  # verify the number of rows
@@ -3201,7 +3211,9 @@ class TestRowIterator(unittest.TestCase):
             table=mut.Table("proj.dset.tbl"),
         )
 
-        df = row_iterator.to_dataframe(bqstorage_client=None)
+        df = row_iterator.to_dataframe(
+            bqstorage_client=None, create_bqstorage_client=False,
+        )
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 2)

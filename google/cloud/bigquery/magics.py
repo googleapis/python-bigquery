@@ -68,8 +68,7 @@
     * ``<query>`` (required, cell argument):
         SQL query to run. If the query does not contain any whitespace (aside
         from leading and trailing whitespace), it is assumed to represent a
-        fully-qualified table ID, and the latter's data will be fetched and
-        returned as ``pandas.DataFrame``.
+        fully-qualified table ID, and the latter's data will be fetched.
 
     Returns:
         A :class:`pandas.DataFrame` with the query results.

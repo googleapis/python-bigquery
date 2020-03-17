@@ -24,7 +24,6 @@ import operator
 import unittest
 import warnings
 
-import freezegun
 import mock
 import requests
 import six
@@ -5496,43 +5495,6 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(len(partition_list), 0)
 
-    def test_list_partitions_splitting_timout_between_requests(self):
-        from google.cloud.bigquery.table import Table
-
-        row_count = 2
-        meta_info = _make_list_partitons_meta_info(
-            self.PROJECT, self.DS_ID, self.TABLE_ID, row_count
-        )
-
-        data = {
-            "totalRows": str(row_count),
-            "rows": [{"f": [{"v": "20180101"}]}, {"f": [{"v": "20180102"}]}],
-        }
-        creds = _make_credentials()
-        http = object()
-        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        client._connection = make_connection(meta_info, data)
-        table = Table(self.TABLE_REF)
-
-        with freezegun.freeze_time("2019-01-01 00:00:00", tick=False) as frozen_time:
-
-            def delayed_get_table(*args, **kwargs):
-                frozen_time.tick(delta=1.4)
-                return orig_get_table(*args, **kwargs)
-
-            orig_get_table = client.get_table
-            client.get_table = mock.Mock(side_effect=delayed_get_table)
-
-            client.list_partitions(table, timeout=5.0)
-
-        client.get_table.assert_called_once()
-        _, kwargs = client.get_table.call_args
-        self.assertEqual(kwargs.get("timeout"), 5.0)
-
-        client._connection.api_request.assert_called()
-        _, kwargs = client._connection.api_request.call_args
-        self.assertAlmostEqual(kwargs.get("timeout"), 3.6, places=5)
-
     def test_list_rows(self):
         import datetime
         from google.cloud._helpers import UTC
@@ -5917,46 +5879,6 @@ class TestClient(unittest.TestCase):
             self.assertEqual(rows[0].name, "Phred Phlyntstone", msg=repr(table))
             self.assertEqual(rows[1].age, 31, msg=repr(table))
             self.assertIsNone(rows[2].age, msg=repr(table))
-
-    def test_list_rows_splitting_timout_between_requests(self):
-        from google.cloud.bigquery.schema import SchemaField
-        from google.cloud.bigquery.table import Table
-
-        response = {"totalRows": "0", "rows": []}
-        creds = _make_credentials()
-        http = object()
-        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        client._connection = make_connection(response, response)
-
-        table = Table(
-            self.TABLE_REF, schema=[SchemaField("field_x", "INTEGER", mode="NULLABLE")]
-        )
-
-        with freezegun.freeze_time("1970-01-01 00:00:00", tick=False) as frozen_time:
-
-            def delayed_get_table(*args, **kwargs):
-                frozen_time.tick(delta=1.4)
-                return table
-
-            client.get_table = mock.Mock(side_effect=delayed_get_table)
-
-            rows_iter = client.list_rows(
-                "{}.{}.{}".format(
-                    self.TABLE_REF.project,
-                    self.TABLE_REF.dataset_id,
-                    self.TABLE_REF.table_id,
-                ),
-                timeout=5.0,
-            )
-            six.next(rows_iter.pages)
-
-        client.get_table.assert_called_once()
-        _, kwargs = client.get_table.call_args
-        self.assertEqual(kwargs.get("timeout"), 5.0)
-
-        client._connection.api_request.assert_called_once()
-        _, kwargs = client._connection.api_request.call_args
-        self.assertAlmostEqual(kwargs.get("timeout"), 3.6)
 
     def test_list_rows_error(self):
         creds = _make_credentials()
@@ -6660,6 +6582,42 @@ class TestClientUpload(object):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(fastparquet is None, "Requires `fastparquet`")
+    def test_load_table_from_dataframe_no_pyarrow_warning(self):
+        from google.cloud.bigquery.client import PyarrowMissingWarning
+
+        client = self._make_client()
+
+        # Pick at least one column type that translates to Pandas dtype
+        # "object". A string column matches that.
+        records = [{"name": "Monty", "age": 100}, {"name": "Python", "age": 60}]
+        dataframe = pandas.DataFrame(records)
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        pyarrow_patch = mock.patch("google.cloud.bigquery.client.pyarrow", None)
+        pyarrow_patch_helpers = mock.patch(
+            "google.cloud.bigquery._pandas_helpers.pyarrow", None
+        )
+        catch_warnings = warnings.catch_warnings(record=True)
+
+        with get_table_patch, load_patch, pyarrow_patch, pyarrow_patch_helpers, catch_warnings as warned:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, location=self.LOCATION
+            )
+
+        matches = [
+            warning for warning in warned if warning.category is PyarrowMissingWarning
+        ]
+        assert matches, "A missing pyarrow deprecation warning was not raised."
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(fastparquet is None, "Requires `fastparquet`")
     def test_load_table_from_dataframe_no_schema_warning_wo_pyarrow(self):
         client = self._make_client()
 
@@ -6932,7 +6890,9 @@ class TestClientUpload(object):
         assert warned  # there should be at least one warning
         for warning in warned:
             assert "pyarrow" in str(warning)
-            assert warning.category in (DeprecationWarning, PendingDeprecationWarning)
+            assert issubclass(
+                warning.category, (DeprecationWarning, PendingDeprecationWarning)
+            )
 
         load_table_from_file.assert_called_once_with(
             client,

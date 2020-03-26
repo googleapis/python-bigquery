@@ -54,6 +54,7 @@ from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
+from google.cloud.bigquery.exceptions import PyarrowMissingWarning
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
@@ -1139,12 +1140,17 @@ class StreamingBuffer(object):
     """
 
     def __init__(self, resource):
-        self.estimated_bytes = int(resource["estimatedBytes"])
-        self.estimated_rows = int(resource["estimatedRows"])
-        # time is in milliseconds since the epoch.
-        self.oldest_entry_time = google.cloud._helpers._datetime_from_microseconds(
-            1000.0 * int(resource["oldestEntryTime"])
-        )
+        self.estimated_bytes = None
+        if "estimatedBytes" in resource:
+            self.estimated_bytes = int(resource["estimatedBytes"])
+        self.estimated_rows = None
+        if "estimatedRows" in resource:
+            self.estimated_rows = int(resource["estimatedRows"])
+        self.oldest_entry_time = None
+        if "oldestEntryTime" in resource:
+            self.oldest_entry_time = google.cloud._helpers._datetime_from_microseconds(
+                1000.0 * int(resource["oldestEntryTime"])
+            )
 
 
 class Row(object):
@@ -1362,6 +1368,8 @@ class RowIterator(HTTPIterator):
         """
         params = self._get_query_params()
         if self._page_size is not None:
+            if self.page_number and "startIndex" in params:
+                del params["startIndex"]
             params["maxResults"] = self._page_size
         return self.api_request(
             method=self._HTTP_METHOD, path=self.path, query_params=params
@@ -1732,6 +1740,14 @@ class RowIterator(HTTPIterator):
             for column in dtypes:
                 df[column] = pandas.Series(df[column], dtype=dtypes[column])
             return df
+        else:
+            warnings.warn(
+                "Converting to a dataframe without pyarrow installed is "
+                "often slower and will become unsupported in the future. "
+                "Please install the pyarrow package.",
+                PyarrowMissingWarning,
+                stacklevel=2,
+            )
 
         # The bqstorage_client is only used if pyarrow is available, so the
         # rest of this method only needs to account for tabledata.list.

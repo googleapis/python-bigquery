@@ -855,6 +855,29 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table = klass.from_api_repr(RESOURCE)
         self._verifyResourceProperties(table, RESOURCE)
 
+    def test_from_api_repr_w_partial_streamingbuffer(self):
+        import datetime
+        from google.cloud._helpers import UTC
+        from google.cloud._helpers import _millis
+
+        RESOURCE = self._make_resource()
+        self.OLDEST_TIME = datetime.datetime(2015, 8, 1, 23, 59, 59, tzinfo=UTC)
+        RESOURCE["streamingBuffer"] = {"oldestEntryTime": _millis(self.OLDEST_TIME)}
+        klass = self._get_target_class()
+        table = klass.from_api_repr(RESOURCE)
+        self.assertIsNotNone(table.streaming_buffer)
+        self.assertIsNone(table.streaming_buffer.estimated_rows)
+        self.assertIsNone(table.streaming_buffer.estimated_bytes)
+        self.assertEqual(table.streaming_buffer.oldest_entry_time, self.OLDEST_TIME)
+        # Another partial construction
+        RESOURCE["streamingBuffer"] = {"estimatedRows": 1}
+        klass = self._get_target_class()
+        table = klass.from_api_repr(RESOURCE)
+        self.assertIsNotNone(table.streaming_buffer)
+        self.assertEqual(table.streaming_buffer.estimated_rows, 1)
+        self.assertIsNone(table.streaming_buffer.estimated_bytes)
+        self.assertIsNone(table.streaming_buffer.oldest_entry_time)
+
     def test_from_api_with_encryption(self):
         self._setUpConstants()
         RESOURCE = {
@@ -2215,6 +2238,38 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(list(df), ["name", "age"])  # verify the column names
         self.assertEqual(df.name.dtype.name, "object")
         self.assertEqual(df.age.dtype.name, "int64")
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_to_dataframe_warning_wo_pyarrow(self):
+        from google.cloud.bigquery.client import PyarrowMissingWarning
+        from google.cloud.bigquery.schema import SchemaField
+
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        row_iterator = self._make_one(_mock_client(), api_request, path, schema)
+
+        no_pyarrow_patch = mock.patch("google.cloud.bigquery.table.pyarrow", new=None)
+        catch_warnings = warnings.catch_warnings(record=True)
+
+        with no_pyarrow_patch, catch_warnings as warned:
+            df = row_iterator.to_dataframe()
+
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 2)
+        matches = [
+            warning for warning in warned if warning.category is PyarrowMissingWarning
+        ]
+        self.assertTrue(
+            matches, msg="A missing pyarrow deprecation warning was not raised."
+        )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(tqdm is None, "Requires `tqdm`")

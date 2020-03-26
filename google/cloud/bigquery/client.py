@@ -63,6 +63,7 @@ from google.cloud.bigquery.exceptions import PyarrowMissingWarning
 from google.cloud.bigquery import job
 from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference
+from google.cloud.bigquery.model import _model_arg_to_model_ref
 from google.cloud.bigquery.query import _QueryResults
 from google.cloud.bigquery.retry import DEFAULT_RETRY
 from google.cloud.bigquery.routine import Routine
@@ -2216,6 +2217,7 @@ class Client(ClientWithProject):
         job_config=None,
         retry=DEFAULT_RETRY,
         timeout=None,
+        source_type="Table",
     ):
         """Start a job to extract a table into Cloud Storage files.
 
@@ -2226,9 +2228,11 @@ class Client(ClientWithProject):
             source (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.model.Model, \
+                google.cloud.bigquery.model.ModelReference, \
                 src, \
             ]):
-                Table to be extracted.
+                Table or Model to be extracted.
             destination_uris (Union[str, Sequence[str]]):
                 URIs of Cloud Storage file(s) into which table data is to be
                 extracted; in format
@@ -2253,9 +2257,9 @@ class Client(ClientWithProject):
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
-        Args:
-            source (google.cloud.bigquery.table.TableReference): table to be extracted.
-
+            source_type (str):
+                (Optional) Type of source to be extracted.``Table`` or ``Model``.
+                Defaults to ``Table``.
         Returns:
             google.cloud.bigquery.job.ExtractJob: A new extract job instance.
 
@@ -2263,7 +2267,9 @@ class Client(ClientWithProject):
             TypeError:
                 If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.ExtractJobConfig`
                 class.
-        """
+            ValueError:
+                If ``source_type`` is not among ``Table``,``Model``.
+            """
         job_id = _make_job_id(job_id, job_id_prefix)
 
         if project is None:
@@ -2273,7 +2279,17 @@ class Client(ClientWithProject):
             location = self.location
 
         job_ref = job._JobReference(job_id, project=project, location=location)
-        source = _table_arg_to_table_ref(source, default_project=self.project)
+
+        if source_type.lower() == "table":
+            source = _table_arg_to_table_ref(source, default_project=self.project)
+        elif source_type.lower() == "model":
+            source = _model_arg_to_model_ref(source, default_project=self.project)
+        else:
+            raise ValueError(
+                "Cannot pass `{}` as a ``source_type``, Pass Table or Model".format(
+                    source_type
+                )
+            )
 
         if isinstance(destination_uris, six.string_types):
             destination_uris = [destination_uris]

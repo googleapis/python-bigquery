@@ -2075,15 +2075,12 @@ class ExtractJob(_AsyncJob):
 
         if isinstance(self.source, TableReference):
             source_ref["tableId"] = self.source.table_id
-            _helpers._set_sub_prop(
-                configuration, ["extract", "sourceTable"], source_ref
-            )
+            source = "sourceTable"
         else:
             source_ref["modelId"] = self.source.model_id
-            _helpers._set_sub_prop(
-                configuration, ["extract", "sourceModel"], source_ref
-            )
+            source = "sourceModel"
 
+        _helpers._set_sub_prop(configuration, ["extract", source], source_ref)
         _helpers._set_sub_prop(
             configuration, ["extract", "destinationUris"], self.destination_uris
         )

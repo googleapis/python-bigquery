@@ -2352,7 +2352,7 @@ class Client(ClientWithProject):
             source = _model_arg_to_model_ref(source, default_project=self.project)
         else:
             raise ValueError(
-                "Cannot pass `{}` as a ``source_type``, Pass Table or Model".format(
+                "Cannot pass `{}` as a ``source_type``, pass Table or Model".format(
                     source_type
                 )
             )

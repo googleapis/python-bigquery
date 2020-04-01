@@ -1365,6 +1365,8 @@ class Client(ClientWithProject):
                 job_config
             )
             source = _get_sub_prop(job_config, ["extract", "sourceTable"])
+            if not source:
+                source = _get_sub_prop(job_config, ["extract", "sourceModel"])
             destination_uris = _get_sub_prop(job_config, ["extract", "destinationUris"])
             return self.extract_table(
                 source, destination_uris, job_config=extract_job_config, retry=retry
@@ -2345,10 +2347,10 @@ class Client(ClientWithProject):
             location = self.location
 
         job_ref = job._JobReference(job_id, project=project, location=location)
-
-        if source_type.lower() == "table":
+        src = source_type.lower()
+        if src == "table":
             source = _table_arg_to_table_ref(source, default_project=self.project)
-        elif source_type.lower() == "model":
+        elif src == "model":
             source = _model_arg_to_model_ref(source, default_project=self.project)
         else:
             raise ValueError(

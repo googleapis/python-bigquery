@@ -1990,8 +1990,11 @@ class ExtractJob(_AsyncJob):
     Args:
         job_id (str): the job's ID.
 
-        source (google.cloud.bigquery.table.TableReference):
-            Table into which data is to be loaded.
+        source (Union[ \
+            google.cloud.bigquery.table.TableReference, \
+            google.cloud.bigquery.model.ModelReference \
+        ]):
+            Table or Model into which data is to be loaded.
 
         destination_uris (List[str]):
             URIs describing where the extracted data will be written in Cloud
@@ -2073,9 +2076,9 @@ class ExtractJob(_AsyncJob):
             "datasetId": self.source.dataset_id,
         }
 
+        source = "sourceTable"
         if isinstance(self.source, TableReference):
             source_ref["tableId"] = self.source.table_id
-            source = "sourceTable"
         else:
             source_ref["modelId"] = self.source.model_id
             source = "sourceModel"

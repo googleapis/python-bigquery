@@ -441,7 +441,7 @@ def _model_arg_to_model_ref(value, default_project=None):
     This function keeps ModelReference and other kinds of objects unchanged.
     """
     if isinstance(value, six.string_types):
-        value = ModelReference.from_string(value, default_project=default_project)
+        return ModelReference.from_string(value, default_project=default_project)
     if isinstance(value, Model):
-        value = value.reference
+        return value.reference
     return value

@@ -2884,6 +2884,21 @@ class TestClient(unittest.TestCase):
             configuration, "google.cloud.bigquery.client.Client.extract_table",
         )
 
+    def test_create_job_extract_config_for_model(self):
+        configuration = {
+            "extract": {
+                "sourceModel": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "modelId": "source_model",
+                },
+                "destinationUris": ["gs://test_bucket/dst_object*"],
+            }
+        }
+        self._create_job_helper(
+            configuration, "google.cloud.bigquery.client.Client.extract_table",
+        )
+
     def test_create_job_query_config(self):
         configuration = {
             "query": {"query": "query", "destinationTable": {"tableId": "table_id"}}

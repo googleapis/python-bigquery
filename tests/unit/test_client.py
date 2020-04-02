@@ -24,7 +24,6 @@ import operator
 import unittest
 import warnings
 
-import freezegun
 import mock
 import requests
 import six
@@ -2800,6 +2799,176 @@ class TestClient(unittest.TestCase):
 
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 
+    def _create_job_helper(self, job_config, client_method):
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        client._connection = make_connection()
+        rf1 = mock.Mock()
+        get_config_patch = mock.patch(
+            "google.cloud.bigquery.job._JobConfig.from_api_repr", return_value=rf1,
+        )
+        load_patch = mock.patch(client_method, autospec=True)
+
+        with load_patch as client_method, get_config_patch:
+            client.create_job(job_config=job_config)
+        client_method.assert_called_once()
+
+    def test_create_job_load_config(self):
+        configuration = {
+            "load": {
+                "destinationTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "source_table",
+                },
+                "sourceUris": ["gs://test_bucket/src_object*"],
+            }
+        }
+
+        self._create_job_helper(
+            configuration, "google.cloud.bigquery.client.Client.load_table_from_uri"
+        )
+
+    def test_create_job_copy_config(self):
+        configuration = {
+            "copy": {
+                "sourceTables": [
+                    {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "tableId": "source_table",
+                    }
+                ],
+                "destinationTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "destination_table",
+                },
+            }
+        }
+
+        self._create_job_helper(
+            configuration, "google.cloud.bigquery.client.Client.copy_table",
+        )
+
+    def test_create_job_copy_config_w_single_source(self):
+        configuration = {
+            "copy": {
+                "sourceTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "source_table",
+                },
+                "destinationTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "destination_table",
+                },
+            }
+        }
+
+        self._create_job_helper(
+            configuration, "google.cloud.bigquery.client.Client.copy_table",
+        )
+
+    def test_create_job_extract_config(self):
+        configuration = {
+            "extract": {
+                "sourceTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "source_table",
+                },
+                "destinationUris": ["gs://test_bucket/dst_object*"],
+            }
+        }
+        self._create_job_helper(
+            configuration, "google.cloud.bigquery.client.Client.extract_table",
+        )
+
+    def test_create_job_query_config(self):
+        configuration = {
+            "query": {"query": "query", "destinationTable": {"tableId": "table_id"}}
+        }
+        self._create_job_helper(
+            configuration, "google.cloud.bigquery.client.Client.query",
+        )
+
+    def test_create_job_query_config_w_rateLimitExceeded_error(self):
+        from google.cloud.exceptions import Forbidden
+        from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+        query = "select count(*) from persons"
+        configuration = {
+            "query": {
+                "query": query,
+                "useLegacySql": False,
+                "destinationTable": {"tableId": "table_id"},
+            }
+        }
+        resource = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
+            "configuration": {
+                "query": {
+                    "query": query,
+                    "useLegacySql": False,
+                    "destinationTable": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "tableId": "query_destination_table",
+                    },
+                }
+            },
+        }
+        data_without_destination = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
+            "configuration": {"query": {"query": query, "useLegacySql": False}},
+        }
+
+        creds = _make_credentials()
+        http = object()
+        retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
+            lambda exc: isinstance(exc, Forbidden)
+        )
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        api_request_patcher = mock.patch.object(
+            client._connection,
+            "api_request",
+            side_effect=[
+                Forbidden("", errors=[{"reason": "rateLimitExceeded"}]),
+                resource,
+            ],
+        )
+
+        with api_request_patcher as fake_api_request:
+            job = client.create_job(job_config=configuration, retry=retry)
+
+        self.assertEqual(job.destination.table_id, "query_destination_table")
+        self.assertEqual(len(fake_api_request.call_args_list), 2)  # was retried once
+        self.assertEqual(
+            fake_api_request.call_args_list[1],
+            mock.call(
+                method="POST",
+                path="/projects/PROJECT/jobs",
+                data=data_without_destination,
+                timeout=None,
+            ),
+        )
+
+    def test_create_job_w_invalid_job_config(self):
+        configuration = {"unknown": {}}
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        with self.assertRaises(TypeError) as exc:
+            client.create_job(job_config=configuration)
+
+        self.assertIn("Invalid job configuration", exc.exception.args[0])
+
     def test_job_from_resource_unknown_type(self):
         from google.cloud.bigquery.job import UnknownJob
 
@@ -5500,43 +5669,6 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(len(partition_list), 0)
 
-    def test_list_partitions_splitting_timout_between_requests(self):
-        from google.cloud.bigquery.table import Table
-
-        row_count = 2
-        meta_info = _make_list_partitons_meta_info(
-            self.PROJECT, self.DS_ID, self.TABLE_ID, row_count
-        )
-
-        data = {
-            "totalRows": str(row_count),
-            "rows": [{"f": [{"v": "20180101"}]}, {"f": [{"v": "20180102"}]}],
-        }
-        creds = _make_credentials()
-        http = object()
-        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        client._connection = make_connection(meta_info, data)
-        table = Table(self.TABLE_REF)
-
-        with freezegun.freeze_time("2019-01-01 00:00:00", tick=False) as frozen_time:
-
-            def delayed_get_table(*args, **kwargs):
-                frozen_time.tick(delta=1.4)
-                return orig_get_table(*args, **kwargs)
-
-            orig_get_table = client.get_table
-            client.get_table = mock.Mock(side_effect=delayed_get_table)
-
-            client.list_partitions(table, timeout=5.0)
-
-        client.get_table.assert_called_once()
-        _, kwargs = client.get_table.call_args
-        self.assertEqual(kwargs.get("timeout"), 5.0)
-
-        client._connection.api_request.assert_called()
-        _, kwargs = client._connection.api_request.call_args
-        self.assertAlmostEqual(kwargs.get("timeout"), 3.6, places=5)
-
     def test_list_rows(self):
         import datetime
         from google.cloud._helpers import UTC
@@ -5614,6 +5746,71 @@ class TestClient(unittest.TestCase):
 
         conn.api_request.assert_called_once_with(
             method="GET", path="/%s" % PATH, query_params={}, timeout=7.5
+        )
+
+    def test_list_rows_w_start_index_w_page_size(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.table import Table
+        from google.cloud.bigquery.table import Row
+
+        PATH = "projects/%s/datasets/%s/tables/%s/data" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+
+        page_1 = {
+            "totalRows": 4,
+            "pageToken": "some-page-token",
+            "rows": [
+                {"f": [{"v": "Phred Phlyntstone"}]},
+                {"f": [{"v": "Bharney Rhubble"}]},
+            ],
+        }
+        page_2 = {
+            "totalRows": 4,
+            "rows": [
+                {"f": [{"v": "Wylma Phlyntstone"}]},
+                {"f": [{"v": "Bhettye Rhubble"}]},
+            ],
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(page_1, page_2)
+        full_name = SchemaField("full_name", "STRING", mode="REQUIRED")
+        table = Table(self.TABLE_REF, schema=[full_name])
+        iterator = client.list_rows(table, max_results=4, page_size=2, start_index=1)
+        pages = iterator.pages
+        rows = list(six.next(pages))
+        extra_params = iterator.extra_params
+        f2i = {"full_name": 0}
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0], Row(("Phred Phlyntstone",), f2i))
+        self.assertEqual(rows[1], Row(("Bharney Rhubble",), f2i))
+
+        rows = list(six.next(pages))
+
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0], Row(("Wylma Phlyntstone",), f2i))
+        self.assertEqual(rows[1], Row(("Bhettye Rhubble",), f2i))
+        self.assertEqual(extra_params, {"startIndex": 1})
+
+        conn.api_request.assert_has_calls(
+            [
+                mock.call(
+                    method="GET",
+                    path="/%s" % PATH,
+                    query_params={"startIndex": 1, "maxResults": 2},
+                    timeout=None,
+                ),
+                mock.call(
+                    method="GET",
+                    path="/%s" % PATH,
+                    query_params={"pageToken": "some-page-token", "maxResults": 2},
+                    timeout=None,
+                ),
+            ]
         )
 
     def test_list_rows_empty_table(self):
@@ -5856,46 +6053,6 @@ class TestClient(unittest.TestCase):
             self.assertEqual(rows[0].name, "Phred Phlyntstone", msg=repr(table))
             self.assertEqual(rows[1].age, 31, msg=repr(table))
             self.assertIsNone(rows[2].age, msg=repr(table))
-
-    def test_list_rows_splitting_timout_between_requests(self):
-        from google.cloud.bigquery.schema import SchemaField
-        from google.cloud.bigquery.table import Table
-
-        response = {"totalRows": "0", "rows": []}
-        creds = _make_credentials()
-        http = object()
-        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        client._connection = make_connection(response, response)
-
-        table = Table(
-            self.TABLE_REF, schema=[SchemaField("field_x", "INTEGER", mode="NULLABLE")]
-        )
-
-        with freezegun.freeze_time("1970-01-01 00:00:00", tick=False) as frozen_time:
-
-            def delayed_get_table(*args, **kwargs):
-                frozen_time.tick(delta=1.4)
-                return table
-
-            client.get_table = mock.Mock(side_effect=delayed_get_table)
-
-            rows_iter = client.list_rows(
-                "{}.{}.{}".format(
-                    self.TABLE_REF.project,
-                    self.TABLE_REF.dataset_id,
-                    self.TABLE_REF.table_id,
-                ),
-                timeout=5.0,
-            )
-            six.next(rows_iter.pages)
-
-        client.get_table.assert_called_once()
-        _, kwargs = client.get_table.call_args
-        self.assertEqual(kwargs.get("timeout"), 5.0)
-
-        client._connection.api_request.assert_called_once()
-        _, kwargs = client._connection.api_request.call_args
-        self.assertAlmostEqual(kwargs.get("timeout"), 3.6)
 
     def test_list_rows_error(self):
         creds = _make_credentials()
@@ -6599,6 +6756,42 @@ class TestClientUpload(object):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(fastparquet is None, "Requires `fastparquet`")
+    def test_load_table_from_dataframe_no_pyarrow_warning(self):
+        from google.cloud.bigquery.client import PyarrowMissingWarning
+
+        client = self._make_client()
+
+        # Pick at least one column type that translates to Pandas dtype
+        # "object". A string column matches that.
+        records = [{"name": "Monty", "age": 100}, {"name": "Python", "age": 60}]
+        dataframe = pandas.DataFrame(records)
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        pyarrow_patch = mock.patch("google.cloud.bigquery.client.pyarrow", None)
+        pyarrow_patch_helpers = mock.patch(
+            "google.cloud.bigquery._pandas_helpers.pyarrow", None
+        )
+        catch_warnings = warnings.catch_warnings(record=True)
+
+        with get_table_patch, load_patch, pyarrow_patch, pyarrow_patch_helpers, catch_warnings as warned:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, location=self.LOCATION
+            )
+
+        matches = [
+            warning for warning in warned if warning.category is PyarrowMissingWarning
+        ]
+        assert matches, "A missing pyarrow deprecation warning was not raised."
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(fastparquet is None, "Requires `fastparquet`")
     def test_load_table_from_dataframe_no_schema_warning_wo_pyarrow(self):
         client = self._make_client()
 
@@ -6963,7 +7156,9 @@ class TestClientUpload(object):
         assert warned  # there should be at least one warning
         for warning in warned:
             assert "pyarrow" in str(warning)
-            assert warning.category in (DeprecationWarning, PendingDeprecationWarning)
+            assert issubclass(
+                warning.category, (DeprecationWarning, PendingDeprecationWarning)
+            )
 
         load_table_from_file.assert_called_once_with(
             client,

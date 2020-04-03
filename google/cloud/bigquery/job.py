@@ -1994,7 +1994,7 @@ class ExtractJob(_AsyncJob):
             google.cloud.bigquery.table.TableReference, \
             google.cloud.bigquery.model.ModelReference \
         ]):
-            Table or Model into which data is to be loaded.
+            Table or Model from which data is to be loaded.
 
         destination_uris (List[str]):
             URIs describing where the extracted data will be written in Cloud

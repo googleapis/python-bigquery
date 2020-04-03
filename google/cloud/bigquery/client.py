@@ -1365,11 +1365,17 @@ class Client(ClientWithProject):
                 job_config
             )
             source = _get_sub_prop(job_config, ["extract", "sourceTable"])
+            source_type = "Table"
             if not source:
                 source = _get_sub_prop(job_config, ["extract", "sourceModel"])
+                source_type = "Model"
             destination_uris = _get_sub_prop(job_config, ["extract", "destinationUris"])
             return self.extract_table(
-                source, destination_uris, job_config=extract_job_config, retry=retry
+                source,
+                destination_uris,
+                job_config=extract_job_config,
+                retry=retry,
+                source_type=source_type,
             )
         elif "query" in job_config:
             copy_config = copy.deepcopy(job_config)

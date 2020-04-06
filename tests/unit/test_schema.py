@@ -63,13 +63,33 @@ class TestSchemaField(unittest.TestCase):
         self.assertIs(field._fields[0], sub_field1)
         self.assertIs(field._fields[1], sub_field2)
 
+    def test_constructor_with_policy_tags(self):
+        from google.cloud.bigquery.schema import PolicyTagList
+        
+        policy = PolicyTagList(names=("foo", "bar"))
+        field = self._make_one("test", "STRING", mode="REQUIRED", description="Testing", policy_tags=policy)
+        self.assertEqual(field._name, "test")
+        self.assertEqual(field._field_type, "STRING")
+        self.assertEqual(field._mode, "REQUIRED")
+        self.assertEqual(field._description, "Testing")
+        self.assertEqual(field._fields, ())
+        self.assertEqual(field._policy_tags, policy)
+
     def test_to_api_repr(self):
-        field = self._make_one("foo", "INTEGER", "NULLABLE")
+        from google.cloud.bigquery.schema import PolicyTagList
+        
+        policy = PolicyTagList(names=("foo", "bar"))
         self.assertEqual(
-            field.to_api_repr(),
-            {"mode": "NULLABLE", "name": "foo", "type": "INTEGER", "description": None},
+            policy.to_api_repr(),
+            {"names": ("foo", "bar")} ,
         )
 
+        field = self._make_one("foo", "INTEGER", "NULLABLE", policy_tags=policy)
+        self.assertEqual(
+            field.to_api_repr(),
+            {"mode": "NULLABLE", "name": "foo", "type": "INTEGER", "description": None, "policyTags": {"names": ("foo","bar")}},
+        )
+        
     def test_to_api_repr_with_subfield(self):
         for record_type in ("RECORD", "STRUCT"):
             subfield = self._make_one("bar", "INTEGER", "NULLABLE")
@@ -408,7 +428,7 @@ class TestSchemaField(unittest.TestCase):
 
     def test___repr__(self):
         field1 = self._make_one("field1", "STRING")
-        expected = "SchemaField('field1', 'STRING', 'NULLABLE', None, ())"
+        expected = "SchemaField('field1', 'STRING', 'NULLABLE', None, (), None)"
         self.assertEqual(repr(field1), expected)
 
 

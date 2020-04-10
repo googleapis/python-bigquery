@@ -39,10 +39,9 @@
         Project to use for running the query. Defaults to the context
         :attr:`~google.cloud.bigquery.magics.Context.project`.
     * ``--use_bqstorage_api`` (optional, line argument):
-        Downloads the DataFrame using the BigQuery Storage API. To use this
-        option, install the ``google-cloud-bigquery-storage`` and ``fastavro``
-        packages, and `enable the BigQuery Storage API
-        <https://console.cloud.google.com/apis/library/bigquerystorage.googleapis.com>`_.
+        [Deprecated] Not used anymore, as BigQuery Storage API is used by default.
+    * ``--use_rest_api`` (optional, line argument):
+        Use the BigQuery REST API instead of the Storage API.
     * ``--use_legacy_sql`` (optional, line argument):
         Runs the query using Legacy SQL syntax. Defaults to Standard SQL if
         this argument not used.
@@ -142,6 +141,7 @@ import ast
 import functools
 import sys
 import time
+import warnings
 from concurrent import futures
 
 try:
@@ -174,7 +174,6 @@ class Context(object):
         self._credentials = None
         self._project = None
         self._connection = None
-        self._use_bqstorage_api = None
         self._default_query_job_config = bigquery.QueryJobConfig()
 
     @property
@@ -236,21 +235,6 @@ class Context(object):
     @project.setter
     def project(self, value):
         self._project = value
-
-    @property
-    def use_bqstorage_api(self):
-        """bool: [Beta] Set to True to use the BigQuery Storage API to
-        download query results
-
-        To use this option, install the ``google-cloud-bigquery-storage`` and
-        ``fastavro`` packages, and `enable the BigQuery Storage API
-        <https://console.cloud.google.com/apis/library/bigquerystorage.googleapis.com>`_.
-        """
-        return self._use_bqstorage_api
-
-    @use_bqstorage_api.setter
-    def use_bqstorage_api(self, value):
-        self._use_bqstorage_api = value
 
     @property
     def default_query_job_config(self):
@@ -426,11 +410,21 @@ def _create_dataset_if_necessary(client, dataset_id):
 @magic_arguments.argument(
     "--use_bqstorage_api",
     action="store_true",
+    default=None,
+    help=(
+        "[Deprecated] The BigQuery Storage API is already used by default to "
+        "download large query results, and this option has no effect. "
+        "If you want to switch to the classic REST API instead, use the "
+        "--use_rest_api option."
+    ),
+)
+@magic_arguments.argument(
+    "--use_rest_api",
+    action="store_true",
     default=False,
     help=(
-        "[Beta] Use the BigQuery Storage API to download large query results. "
-        "To use this option, install the google-cloud-bigquery-storage and "
-        "fastavro packages, and enable the BigQuery Storage API."
+        "Use the classic REST API instead of the BigQuery Storage API to "
+        "download query results."
     ),
 )
 @magic_arguments.argument(
@@ -473,6 +467,14 @@ def _cell_magic(line, query):
     """
     args = magic_arguments.parse_argstring(_cell_magic, line)
 
+    if args.use_bqstorage_api is not None:
+        warnings.warn(
+            "Deprecated option --use_bqstorage_api, the BigQuery "
+            "Storage API is already used by default.",
+            category=DeprecationWarning,
+        )
+    use_bqstorage_api = not args.use_rest_api
+
     params = []
     if args.params is not None:
         try:
@@ -494,9 +496,7 @@ def _cell_magic(line, query):
     )
     if context._connection:
         client._connection = context._connection
-    bqstorage_client = _make_bqstorage_client(
-        args.use_bqstorage_api or context.use_bqstorage_api, context.credentials
-    )
+    bqstorage_client = _make_bqstorage_client(use_bqstorage_api, context.credentials)
 
     close_transports = functools.partial(_close_transports, client, bqstorage_client)
 
@@ -598,8 +598,10 @@ def _make_bqstorage_client(use_bqstorage_api, credentials):
         from google.cloud import bigquery_storage_v1beta1
     except ImportError as err:
         customized_error = ImportError(
-            "Install the google-cloud-bigquery-storage and pyarrow packages "
-            "to use the BigQuery Storage API."
+            "The default BigQuery Storage API client cannot be used, install "
+            "the missing google-cloud-bigquery-storage and pyarrow packages "
+            "to use it. Alternatively, use the classic REST API by specifying "
+            "the --use_rest_api magic option."
         )
         six.raise_from(customized_error, err)
 

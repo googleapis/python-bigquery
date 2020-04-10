@@ -2605,7 +2605,11 @@ def test_bigquery_magic():
     assert isinstance(result, pandas.DataFrame)
     assert len(result) == 10  # verify row count
     assert list(result) == ["url", "view_count"]  # verify column names
-    assert conn_count_end == conn_count_start  # system resources are released
+
+    # NOTE: For some reason, the number of open sockets is sometimes one *less*
+    # than expected when running system tests on Kokoro, thus using the <= assertion.
+    # That's still fine, however, since the sockets are apparently not leaked.
+    assert conn_count_end <= conn_count_start  # system resources are released
 
 
 def _job_done(instance):

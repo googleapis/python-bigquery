@@ -15,6 +15,7 @@
 import copy
 import re
 from concurrent import futures
+import warnings
 
 import mock
 import pytest
@@ -386,11 +387,31 @@ def test_extension_load():
 
 @pytest.mark.usefixtures("ipython_interactive")
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_bigquery_magic_without_optional_arguments(missing_bq_storage):
+@pytest.mark.skipif(
+    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
+)
+def test_bigquery_magic_without_optional_arguments(monkeypatch):
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
-    magics.context.credentials = mock.create_autospec(
+    mock_credentials = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
+    )
+
+    # Set up the context with monkeypatch so that it's reset for subsequent
+    # tests.
+    monkeypatch.setattr(magics.context, "credentials", mock_credentials)
+
+    # Mock out the BigQuery Storage API.
+    bqstorage_mock = mock.create_autospec(
+        bigquery_storage_v1beta1.BigQueryStorageClient
+    )
+    bqstorage_instance_mock = mock.create_autospec(
+        bigquery_storage_v1beta1.BigQueryStorageClient, instance=True
+    )
+    bqstorage_instance_mock.transport = mock.Mock()
+    bqstorage_mock.return_value = bqstorage_instance_mock
+    bqstorage_client_patch = mock.patch(
+        "google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient", bqstorage_mock
     )
 
     sql = "SELECT 17 AS num"
@@ -403,11 +424,11 @@ def test_bigquery_magic_without_optional_arguments(missing_bq_storage):
     )
     query_job_mock.to_dataframe.return_value = result
 
-    # Shouldn't fail when BigQuery Storage client isn't installed.
-    with run_query_patch as run_query_mock, missing_bq_storage:
+    with run_query_patch as run_query_mock, bqstorage_client_patch:
         run_query_mock.return_value = query_job_mock
         return_value = ip.run_cell_magic("bigquery", "", sql)
 
+    assert bqstorage_mock.called  # BQ storage client was used
     assert isinstance(return_value, pandas.DataFrame)
     assert len(return_value) == len(result)  # verify row count
     assert list(return_value) == list(result)  # verify column names
@@ -542,7 +563,6 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     # Set up the context with monkeypatch so that it's reset for subsequent
     # tests.
     monkeypatch.setattr(magics.context, "credentials", mock_credentials)
-    monkeypatch.setattr(magics.context, "use_bqstorage_api", False)
 
     # Mock out the BigQuery Storage API.
     bqstorage_mock = mock.create_autospec(
@@ -566,67 +586,20 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
         google.cloud.bigquery.job.QueryJob, instance=True
     )
     query_job_mock.to_dataframe.return_value = result
-    with run_query_patch as run_query_mock, bqstorage_client_patch:
+    with run_query_patch as run_query_mock, bqstorage_client_patch, warnings.catch_warnings(
+        record=True
+    ) as warned:
         run_query_mock.return_value = query_job_mock
 
         return_value = ip.run_cell_magic("bigquery", "--use_bqstorage_api", sql)
 
-    assert len(bqstorage_mock.call_args_list) == 1
-    kwargs = bqstorage_mock.call_args_list[0].kwargs
-    assert kwargs.get("credentials") is mock_credentials
-    client_info = kwargs.get("client_info")
-    assert client_info is not None
-    assert client_info.user_agent == "ipython-" + IPython.__version__
+    # Deprecation warning should have been issued.
+    def warning_match(warning):
+        message = str(warning).lower()
+        return "deprecated" in message and "use_bqstorage_api" in message
 
-    query_job_mock.to_dataframe.assert_called_once_with(
-        bqstorage_client=bqstorage_instance_mock
-    )
-
-    assert isinstance(return_value, pandas.DataFrame)
-
-
-@pytest.mark.usefixtures("ipython_interactive")
-@pytest.mark.skipif(
-    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
-)
-def test_bigquery_magic_with_bqstorage_from_context(monkeypatch):
-    ip = IPython.get_ipython()
-    ip.extension_manager.load_extension("google.cloud.bigquery")
-    mock_credentials = mock.create_autospec(
-        google.auth.credentials.Credentials, instance=True
-    )
-
-    # Set up the context with monkeypatch so that it's reset for subsequent
-    # tests.
-    monkeypatch.setattr(magics.context, "credentials", mock_credentials)
-    monkeypatch.setattr(magics.context, "use_bqstorage_api", True)
-
-    # Mock out the BigQuery Storage API.
-    bqstorage_mock = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient
-    )
-    bqstorage_instance_mock = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient, instance=True
-    )
-    bqstorage_instance_mock.transport = mock.Mock()
-    bqstorage_mock.return_value = bqstorage_instance_mock
-    bqstorage_client_patch = mock.patch(
-        "google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient", bqstorage_mock
-    )
-
-    sql = "SELECT 17 AS num"
-    result = pandas.DataFrame([17], columns=["num"])
-    run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
-    )
-    query_job_mock = mock.create_autospec(
-        google.cloud.bigquery.job.QueryJob, instance=True
-    )
-    query_job_mock.to_dataframe.return_value = result
-    with run_query_patch as run_query_mock, bqstorage_client_patch:
-        run_query_mock.return_value = query_job_mock
-
-        return_value = ip.run_cell_magic("bigquery", "", sql)
+    expected_warnings = list(filter(warning_match, warned))
+    assert len(expected_warnings) == 1
 
     assert len(bqstorage_mock.call_args_list) == 1
     kwargs = bqstorage_mock.call_args_list[0].kwargs
@@ -646,7 +619,7 @@ def test_bigquery_magic_with_bqstorage_from_context(monkeypatch):
 @pytest.mark.skipif(
     bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
 )
-def test_bigquery_magic_without_bqstorage(monkeypatch):
+def test_bigquery_magic_with_rest_client_requested(monkeypatch):
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
     mock_credentials = mock.create_autospec(
@@ -677,7 +650,7 @@ def test_bigquery_magic_without_bqstorage(monkeypatch):
     with run_query_patch as run_query_mock, bqstorage_client_patch:
         run_query_mock.return_value = query_job_mock
 
-        return_value = ip.run_cell_magic("bigquery", "", sql)
+        return_value = ip.run_cell_magic("bigquery", "--use_rest_api", sql)
 
         bqstorage_mock.assert_not_called()
         query_job_mock.to_dataframe.assert_called_once_with(bqstorage_client=None)
@@ -895,7 +868,7 @@ def test_bigquery_magic_w_table_id_and_bqstorage_client():
     with default_patch, client_patch as client_mock, bqstorage_client_patch:
         client_mock().list_rows.return_value = row_iterator_mock
 
-        ip.run_cell_magic("bigquery", "--use_bqstorage_api --max_results=5", table_id)
+        ip.run_cell_magic("bigquery", "--max_results=5", table_id)
         row_iterator_mock.to_dataframe.assert_called_once_with(
             bqstorage_client=bqstorage_instance_mock
         )

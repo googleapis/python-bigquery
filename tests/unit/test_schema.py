@@ -144,17 +144,16 @@ class TestSchemaField(unittest.TestCase):
                 "fields": [{"mode": "nullable", "name": "bar", "type": "integer"}],
                 "name": "foo",
                 "type": "record",
-                "policyTags": ("one", "two"),
+                "policyTags": {"names": ("one", "two")},
             }
         )
         self.assertEqual(field.name, "foo")
         self.assertEqual(field.field_type, "RECORD")
-        self.assertEqual(field.description, "test_description")
+        self.assertEqual(field.policy_tags.names, ("one", "two"))
         self.assertEqual(len(field.fields), 1)
         self.assertEqual(field.fields[0].name, "bar")
         self.assertEqual(field.fields[0].field_type, "INTEGER")
         self.assertEqual(field.fields[0].mode, "NULLABLE")
-        self.assertEqual(field.policy_tags, ("one", "two"))
 
     def test_from_api_repr_defaults(self):
         field = self._get_target_class().from_api_repr(

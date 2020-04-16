@@ -700,3 +700,11 @@ class TestPolicyTags(unittest.TestCase):
         api_repr = {"names": ("foo")}
         policy_tags = klass.from_api_repr(api_repr)
         self.assertEqual(policy_tags.to_api_repr(), api_repr)
+
+    def test_setter(self):
+        policy_tags = self._make_one()
+        self.assertEqual(len(policy_tags.names), 0)
+        policy_tags.names = ("foo", "bar")
+        self.assertEqual(policy_tags.names, ("foo", "bar"))
+        policy_tags.names = None
+        self.assertEqual(policy_tags.names, ())

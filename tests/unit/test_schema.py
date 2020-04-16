@@ -138,6 +138,24 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].field_type, "INTEGER")
         self.assertEqual(field.fields[0].mode, "NULLABLE")
 
+    def test_from_api_repr_policy(self):
+        field = self._get_target_class().from_api_repr(
+            {
+                "fields": [{"mode": "nullable", "name": "bar", "type": "integer"}],
+                "name": "foo",
+                "type": "record",
+                "policyTags": ("one", "two"),
+            }
+        )
+        self.assertEqual(field.name, "foo")
+        self.assertEqual(field.field_type, "RECORD")
+        self.assertEqual(field.description, "test_description")
+        self.assertEqual(len(field.fields), 1)
+        self.assertEqual(field.fields[0].name, "bar")
+        self.assertEqual(field.fields[0].field_type, "INTEGER")
+        self.assertEqual(field.fields[0].mode, "NULLABLE")
+        self.assertEqual(field.policy_tags, ("one", "two"))
+
     def test_from_api_repr_defaults(self):
         field = self._get_target_class().from_api_repr(
             {"name": "foo", "type": "record"}
@@ -659,3 +677,27 @@ class Test_to_schema_fields(unittest.TestCase):
 
         result = self._call_fut(schema)
         self.assertEqual(result, expected_schema)
+
+
+class TestPolicyTags(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.schema import PolicyTagList
+
+        return PolicyTagList
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_constructor(self):
+        empty_policy_tags = self._make_one()
+        self.assertIsNotNone(empty_policy_tags.names)
+        self.assertEqual(len(empty_policy_tags.names), 0)
+        policy_tags = self._make_one(("foo", "bar"))
+        self.assertEqual(policy_tags.names, ("foo", "bar"))
+
+    def test_from_api_repr(self):
+        klass = self._get_target_class()
+        api_repr = {"names": ("foo")}
+        policy_tags = klass.from_api_repr(api_repr)
+        self.assertEqual(policy_tags.to_api_repr(), api_repr)

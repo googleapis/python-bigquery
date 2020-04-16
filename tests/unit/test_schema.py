@@ -65,9 +65,11 @@ class TestSchemaField(unittest.TestCase):
 
     def test_constructor_with_policy_tags(self):
         from google.cloud.bigquery.schema import PolicyTagList
-        
+
         policy = PolicyTagList(names=("foo", "bar"))
-        field = self._make_one("test", "STRING", mode="REQUIRED", description="Testing", policy_tags=policy)
+        field = self._make_one(
+            "test", "STRING", mode="REQUIRED", description="Testing", policy_tags=policy
+        )
         self.assertEqual(field._name, "test")
         self.assertEqual(field._field_type, "STRING")
         self.assertEqual(field._mode, "REQUIRED")
@@ -77,19 +79,24 @@ class TestSchemaField(unittest.TestCase):
 
     def test_to_api_repr(self):
         from google.cloud.bigquery.schema import PolicyTagList
-        
+
         policy = PolicyTagList(names=("foo", "bar"))
         self.assertEqual(
-            policy.to_api_repr(),
-            {"names": ("foo", "bar")} ,
+            policy.to_api_repr(), {"names": ("foo", "bar")},
         )
 
         field = self._make_one("foo", "INTEGER", "NULLABLE", policy_tags=policy)
         self.assertEqual(
             field.to_api_repr(),
-            {"mode": "NULLABLE", "name": "foo", "type": "INTEGER", "description": None, "policyTags": {"names": ("foo","bar")}},
+            {
+                "mode": "NULLABLE",
+                "name": "foo",
+                "type": "INTEGER",
+                "description": None,
+                "policyTags": {"names": ("foo", "bar")},
+            },
         )
-        
+
     def test_to_api_repr_with_subfield(self):
         for record_type in ("RECORD", "STRUCT"):
             subfield = self._make_one("bar", "INTEGER", "NULLABLE")

@@ -67,14 +67,21 @@ class SchemaField(object):
 
     """
 
-    def __init__(self, name, field_type, mode="NULLABLE", description=None, fields=(), policy_tags=None):
+    def __init__(
+        self,
+        name,
+        field_type,
+        mode="NULLABLE",
+        description=None,
+        fields=(),
+        policy_tags=None,
+    ):
         self._name = name
         self._field_type = field_type
         self._mode = mode
         self._description = description
         self._fields = tuple(fields)
         self._policy_tags = policy_tags
-
 
     @classmethod
     def from_api_repr(cls, api_repr):
@@ -271,7 +278,9 @@ def _parse_schema_resource(info):
         description = r_field.get("description")
         sub_fields = _parse_schema_resource(r_field)
         policy_tags = r_field.get("policyTags", None)
-        schema.append(SchemaField(name, field_type, mode, description, sub_fields, policy_tags))
+        schema.append(
+            SchemaField(name, field_type, mode, description, sub_fields, policy_tags)
+        )
     return schema
 
 
@@ -318,6 +327,7 @@ def _to_schema_fields(schema):
         field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
         for field in schema
     ]
+
 
 class PolicyTagList(object):
     """Define Policy Tags for a column.

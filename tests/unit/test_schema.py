@@ -709,7 +709,9 @@ class TestPolicyTags(unittest.TestCase):
 
     def test_setter(self):
         policy_tags = self._make_one()
-        self.assertEqual(len(policy_tags.names), 0)
+        self.assertEqual(policy_tags.names, ())
+        policy_tags.names = None
+        self.assertEqual(policy_tags.names, ())
         policy_tags.names = ("foo", "bar")
         self.assertEqual(policy_tags.names, ("foo", "bar"))
         policy_tags.names = None

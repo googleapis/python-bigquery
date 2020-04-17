@@ -701,6 +701,12 @@ class TestPolicyTags(unittest.TestCase):
         policy_tags = klass.from_api_repr(api_repr)
         self.assertEqual(policy_tags.to_api_repr(), api_repr)
 
+    def test_to_api_repr(self):
+        taglist = self._make_one(names=("foo", "bar"))
+        self.assertEqual(
+            taglist.to_api_repr(), {"names": ("foo", "bar")},
+        )
+
     def test_setter(self):
         policy_tags = self._make_one()
         self.assertEqual(len(policy_tags.names), 0)

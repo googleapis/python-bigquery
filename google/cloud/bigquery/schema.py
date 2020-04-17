@@ -355,7 +355,6 @@ class PolicyTagList(object):
         (Defaults to :data:`None`).
         """
         if value is not None:
-            prop = self._properties.setdefault("names", ())
             self._properties["names"] = value
         else:
             if "names" in self._properties:

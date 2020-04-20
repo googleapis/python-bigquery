@@ -14,6 +14,8 @@
 
 """Schemas for BigQuery tables / queries."""
 
+import copy
+
 from six.moves import collections_abc
 
 from google.cloud.bigquery_v2 import types
@@ -159,7 +161,7 @@ class SchemaField(object):
 
         Raises:
             ValueError:
-                if the value is not :class:`~google.cloud.bigquery.schema.PolicyTagList`
+                If the value is not :class:`~google.cloud.bigquery.schema.PolicyTagList`
                 or :data:`None`.
         """
         return self._policy_tags
@@ -277,7 +279,7 @@ def _parse_schema_resource(info):
         mode = r_field.get("mode", "NULLABLE")
         description = r_field.get("description")
         sub_fields = _parse_schema_resource(r_field)
-        policy_tags = r_field.get("policyTags", None)
+        policy_tags = r_field.get("policyTags")
         schema.append(
             SchemaField(name, field_type, mode, description, sub_fields, policy_tags)
         )
@@ -333,24 +335,23 @@ class PolicyTagList(object):
     """Define Policy Tags for a column.
 
     Args:
-        names (Union[List[str], None]): list of policy tags to associate with
+        names (Union[Tuple[str], None]): list of policy tags to associate with
             the column.
     """
 
     def __init__(self, names=None):
         self._properties = {}
-        if names is not None:
-            self.names = names
+        self.names = names
 
     @property
     def names(self):
-        """Union[List[str], None]: Policy tags associated with this definition.
+        """Tuple[str]: Policy tags associated with this definition.
         """
         return self._properties.get("names", ())
 
     @names.setter
     def names(self, value):
-        """Union[List[str], None]: Policy tags associated with this definition.
+        """Union[Tuple[str], None]: Policy tags associated with this definition.
 
         (Defaults to :data:`None`).
         """
@@ -380,7 +381,7 @@ class PolicyTagList(object):
                 The ``PolicyTagList`` object.
         """
         instance = cls()
-        instance._properties = api_repr
+        instance._properties = copy.deepcopy(api_repr)
         return instance
 
     def to_api_repr(self):

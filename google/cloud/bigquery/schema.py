@@ -335,7 +335,7 @@ class PolicyTagList(object):
     """Define Policy Tags for a column.
 
     Args:
-        names (Union[Tuple[str], None]): list of policy tags to associate with
+        names (Optional[Tuple[str]]): list of policy tags to associate with
             the column.
     """
 
@@ -351,7 +351,7 @@ class PolicyTagList(object):
 
     @names.setter
     def names(self, value):
-        """Union[Tuple[str], None]: Policy tags associated with this definition.
+        """Optional[Tuple[str]]: Policy tags associated with this definition.
 
         (Defaults to :data:`None`).
         """

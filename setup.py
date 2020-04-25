@@ -56,7 +56,7 @@ extras = {
         # llvmlite >= 0.32.0 cannot be installed on Python 3.5 and below
         # (building the wheel fails), thus needs to be restricted.
         # See: https://github.com/googleapis/python-bigquery/issues/78
-        "llvmlite <= 0.31.0",
+        "llvmlite<=0.32.0",
     ],
 }
 

@@ -1648,6 +1648,36 @@ class TestBigQuery(unittest.TestCase):
         ]
         self.assertEqual(fetched_data, expected_data)
 
+    @unittest.skipIf(
+        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    def test_dbapi_connection_does_not_leak_sockets(self):
+        current_process = psutil.Process()
+        conn_count_start = len(current_process.connections())
+
+        # Provide no explicit clients, so that the connection will create and own them.
+        connection = dbapi.connect()
+        cursor = connection.cursor()
+
+        # Pick a large enough LIMIT value to assure that the fallback to the
+        # default client is not needed due to the result set being too small
+        # (a known issue that causes problems when reding such result sets with
+        # BQ storage client).
+        cursor.execute(
+            """
+            SELECT id, `by`, time_ts
+            FROM `bigquery-public-data.hacker_news.comments`
+            ORDER BY `id` ASC
+            LIMIT 100000
+        """
+        )
+        rows = cursor.fetchall()
+        self.assertEqual(len(rows), 100000)
+
+        connection.close()
+        conn_count_end = len(current_process.connections())
+        self.assertEqual(conn_count_end, conn_count_start)
+
     def _load_table_for_dml(self, rows, dataset_id, table_id):
         from google.cloud._testing import _NamedTemporaryFile
         from google.cloud.bigquery.job import CreateDisposition

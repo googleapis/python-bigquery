@@ -51,6 +51,10 @@ class TestCursor(unittest.TestCase):
             num_dml_affected_rows=num_dml_affected_rows,
         )
         mock_client.list_rows.return_value = rows
+
+        # Assure that the REST client gets used, not the BQ Storage client.
+        mock_client._create_bqstorage_client.return_value = None
+
         return mock_client
 
     def _mock_bqstorage_client(self, rows=None, stream_count=0):
@@ -121,6 +125,31 @@ class TestCursor(unittest.TestCase):
         cursor = connection.cursor()
         # close() is a no-op, there is nothing to test.
         cursor.close()
+
+    def test_raises_error_if_closed(self):
+        from google.cloud.bigquery.dbapi import connect
+        from google.cloud.bigquery.dbapi.exceptions import ProgrammingError
+
+        connection = connect(self._mock_client())
+        cursor = connection.cursor()
+        cursor.close()
+
+        method_names = (
+            "close",
+            "execute",
+            "executemany",
+            "fetchall",
+            "fetchmany",
+            "fetchone",
+            "setinputsizes",
+            "setoutputsize",
+        )
+
+        for method in method_names:
+            with six.assertRaisesRegex(
+                self, ProgrammingError, r"Operating on a closed cursor\."
+            ):
+                getattr(cursor, method)()
 
     def test_fetchone_wo_execute_raises_error(self):
         from google.cloud.bigquery import dbapi

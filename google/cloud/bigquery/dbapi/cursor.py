@@ -51,6 +51,7 @@ Column = collections.namedtuple(
 )
 
 
+@_helpers.raise_on_closed("Operating on a closed cursor.")
 class Cursor(object):
     """DB-API Cursor to Google BigQuery.
 
@@ -73,9 +74,11 @@ class Cursor(object):
         self.arraysize = None
         self._query_data = None
         self._query_job = None
+        self._closed = False
 
     def close(self):
-        """No-op."""
+        """Mark the cursor as closed, preventing its further use."""
+        self._closed = True
 
     def _set_description(self, schema):
         """Set description from schema.
@@ -353,10 +356,10 @@ class Cursor(object):
         return list(self._query_data)
 
     def setinputsizes(self, sizes):
-        """No-op."""
+        """No-op, but for consistency raise an error if cursor is closed."""
 
     def setoutputsize(self, size, column=None):
-        """No-op."""
+        """No-op, but for consistency raise an error if cursor is closed."""
 
 
 def _format_operation_list(operation, parameters):

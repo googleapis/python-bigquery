@@ -39,7 +39,7 @@ dependencies = [
 ]
 extras = {
     "bqstorage": [
-        "google-cloud-bigquery-storage >= 0.6.0, <2.0.0dev",
+        "google-cloud-bigquery-storage >= 0.8.0, <2.0.0dev",
         "pyarrow>=0.16.0, < 2.0dev",
     ],
     "pandas": ["pandas>=0.17.1"],

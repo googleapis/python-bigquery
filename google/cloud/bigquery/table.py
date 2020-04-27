@@ -26,11 +26,6 @@ import warnings
 import six
 
 try:
-    from google.cloud import bigquery_storage_v1beta1
-except ImportError:  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
-
-try:
     import pandas
 except ImportError:  # pragma: NO COVER
     pandas = None
@@ -235,36 +230,20 @@ class TableReference(object):
         If the ``table_id`` contains a partition identifier (e.g.
         ``my_table$201812``) or a snapshot identifier (e.g.
         ``mytable@1234567890``), it is ignored. Use
-        :class:`google.cloud.bigquery_storage_v1beta1.types.TableReadOptions`
+        :class:`google.cloud.bigquery_storage_v1.types.ReadSession.TableReadOptions`
         to filter rows by partition. Use
-        :class:`google.cloud.bigquery_storage_v1beta1.types.TableModifiers`
+        :class:`google.cloud.bigquery_storage_v1.types.ReadSession.TableModifiers`
         to select a specific snapshot to read from.
 
         Returns:
-            google.cloud.bigquery_storage_v1beta1.types.TableReference:
-                A reference to this table in the BigQuery Storage API.
-
-        Raises:
-            ValueError:
-                If the :mod:`google.cloud.bigquery_storage_v1beta1` module
-                cannot be imported.
+            str: A reference to this table in the BigQuery Storage API.
         """
-        if bigquery_storage_v1beta1 is None:
-            raise ValueError(_NO_BQSTORAGE_ERROR)
+        table_id, _, _ = self._table_id.partition("@")
+        table_id, _, _ = table_id.partition("$")
 
-        table_ref = bigquery_storage_v1beta1.types.TableReference()
-        table_ref.project_id = self._project
-        table_ref.dataset_id = self._dataset_id
-        table_id = self._table_id
-
-        if "@" in table_id:
-            table_id = table_id.split("@")[0]
-
-        if "$" in table_id:
-            table_id = table_id.split("$")[0]
-
-        table_ref.table_id = table_id
-
+        table_ref = "projects/{}/datasets/{}/tables/{}".format(
+            self._project, self._dataset_id, table_id,
+        )
         return table_ref
 
     def _key(self):
@@ -874,8 +853,7 @@ class Table(object):
         """Construct a BigQuery Storage API representation of this table.
 
         Returns:
-            google.cloud.bigquery_storage_v1beta1.types.TableReference:
-                A reference to this table in the BigQuery Storage API.
+            str: A reference to this table in the BigQuery Storage API.
         """
         return self.reference.to_bqstorage()
 
@@ -1089,8 +1067,7 @@ class TableListItem(object):
         """Construct a BigQuery Storage API representation of this table.
 
         Returns:
-            google.cloud.bigquery_storage_v1beta1.types.TableReference:
-                A reference to this table in the BigQuery Storage API.
+            str: A reference to this table in the BigQuery Storage API.
         """
         return self.reference.to_bqstorage()
 
@@ -1492,7 +1469,7 @@ class RowIterator(HTTPIterator):
                 ``'tqdm_gui'``
                   Use the :func:`tqdm.tqdm_gui` function to display a
                   progress bar as a graphical dialog box.
-            bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
+            bqstorage_client (google.cloud.bigquery_storage_v1.BigQueryReadClient):
                 Optional. A BigQuery Storage API client. If supplied, use the
                 faster BigQuery Storage API to fetch rows from BigQuery. This
                 API is a billable API.
@@ -1576,7 +1553,7 @@ class RowIterator(HTTPIterator):
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
         Args:
-            bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
+            bqstorage_client (google.cloud.bigquery_storage_v1.BigQueryReadClient):
                 Optional. A BigQuery Storage API client. If supplied, use the
                 faster BigQuery Storage API to fetch rows from BigQuery.
 
@@ -1644,7 +1621,7 @@ class RowIterator(HTTPIterator):
         """Create a pandas DataFrame by loading all pages of a query.
 
         Args:
-            bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
+            bqstorage_client (google.cloud.bigquery_storage_v1.BigQueryReadClient):
                 Optional. A BigQuery Storage API client. If supplied, use the
                 faster BigQuery Storage API to fetch rows from BigQuery.
 
@@ -1702,7 +1679,7 @@ class RowIterator(HTTPIterator):
         Raises:
             ValueError:
                 If the :mod:`pandas` library cannot be imported, or the
-                :mod:`google.cloud.bigquery_storage_v1beta1` module is
+                :mod:`google.cloud.bigquery_storage_v1` module is
                 required but cannot be imported.
 
         """

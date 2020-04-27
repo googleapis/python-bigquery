@@ -400,11 +400,11 @@ class Client(ClientWithProject):
         warning and return ``None``.
 
         Returns:
-            Optional[google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient]:
+            Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]:
                 A BigQuery Storage API client.
         """
         try:
-            from google.cloud import bigquery_storage_v1beta1
+            from google.cloud import bigquery_storage_v1
         except ImportError:
             warnings.warn(
                 "Cannot create BigQuery Storage client, the dependency "
@@ -412,9 +412,7 @@ class Client(ClientWithProject):
             )
             return None
 
-        return bigquery_storage_v1beta1.BigQueryStorageClient(
-            credentials=self._credentials
-        )
+        return bigquery_storage_v1.BigQueryReadClient(credentials=self._credentials)
 
     def create_dataset(
         self, dataset, exists_ok=False, retry=DEFAULT_RETRY, timeout=None

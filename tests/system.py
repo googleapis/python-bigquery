@@ -33,9 +33,9 @@ import pytest
 import pytz
 
 try:
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud import bigquery_storage_v1
 except ImportError:  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
+    bigquery_storage_v1 = None
 
 try:
     import fastavro  # to parse BQ storage client results
@@ -1555,10 +1555,10 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(row_tuples, [(1, 2), (3, 4), (5, 6)])
 
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_dbapi_fetch_w_bqstorage_client_small_result_set(self):
-        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
         cursor = dbapi.connect(Config.CLIENT, bqstorage_client).cursor()
@@ -1599,11 +1599,11 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(fetched_data, expected_data)
 
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     @unittest.skipIf(fastavro is None, "Requires `fastavro`")
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
-        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
         cursor = dbapi.connect(Config.CLIENT, bqstorage_client).cursor()
@@ -1649,7 +1649,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(fetched_data, expected_data)
 
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_dbapi_connection_does_not_leak_sockets(self):
         current_process = psutil.Process()
@@ -2083,7 +2083,7 @@ class TestBigQuery(unittest.TestCase):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_query_results_to_dataframe_w_bqstorage(self):
         dest_dataset = self.temp_dataset(_make_dataset_id("bqstorage_to_dataframe_"))
@@ -2095,7 +2095,7 @@ class TestBigQuery(unittest.TestCase):
             LIMIT 10
         """
 
-        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
 
@@ -2381,7 +2381,7 @@ class TestBigQuery(unittest.TestCase):
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_nested_table_to_arrow(self):
         from google.cloud.bigquery.job import SourceFormat
@@ -2417,7 +2417,7 @@ class TestBigQuery(unittest.TestCase):
         job_config.schema = schema
         # Load a table using a local JSON file from memory.
         Config.CLIENT.load_table_from_file(body, table, job_config=job_config).result()
-        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
 
@@ -2573,13 +2573,13 @@ class TestBigQuery(unittest.TestCase):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_list_rows_max_results_w_bqstorage(self):
         table_ref = DatasetReference("bigquery-public-data", "utility_us").table(
             "country_code_iso"
         )
-        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
 

@@ -22,9 +22,9 @@ import warnings
 from six.moves import queue
 
 try:
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud import bigquery_storage_v1
 except ImportError:  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
+    bigquery_storage_v1 = None
 
 try:
     import pandas
@@ -577,8 +577,7 @@ def _bqstorage_page_to_dataframe(column_names, dtypes, page):
 def _download_table_bqstorage_stream(
     download_state, bqstorage_client, session, stream, worker_queue, page_to_item
 ):
-    position = bigquery_storage_v1beta1.types.StreamPosition(stream=stream)
-    rowstream = bqstorage_client.read_rows(position).rows(session)
+    rowstream = bqstorage_client.read_rows(stream.name).rows(session)
 
     for page in rowstream.pages:
         if download_state.done:
@@ -617,21 +616,21 @@ def _download_table_bqstorage(
     if "@" in table.table_id:
         raise ValueError("Reading from a specific snapshot is not currently supported.")
 
-    read_options = bigquery_storage_v1beta1.types.TableReadOptions()
+    requested_session = bigquery_storage_v1.types.ReadSession(
+        table=table.to_bqstorage(),
+        data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+    )
+
     if selected_fields is not None:
         for field in selected_fields:
-            read_options.selected_fields.append(field.name)
+            requested_session.read_options.selected_fields.append(field.name)
 
-    requested_streams = 0
-    if preserve_order:
-        requested_streams = 1
+    requested_streams = 1 if preserve_order else 0
 
     session = bqstorage_client.create_read_session(
-        table.to_bqstorage(),
-        "projects/{}".format(project_id),
-        format_=bigquery_storage_v1beta1.enums.DataFormat.ARROW,
-        read_options=read_options,
-        requested_streams=requested_streams,
+        parent="projects/{}".format(project_id),
+        read_session=requested_session,
+        max_stream_count=requested_streams,
     )
     _LOGGER.debug(
         "Started reading table '{}.{}.{}' with BQ Storage API session '{}'.".format(

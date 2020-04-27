@@ -51,9 +51,9 @@ from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import DatasetReference
 
 try:
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud import bigquery_storage_v1
 except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
+    bigquery_storage_v1 = None
 from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
 
@@ -652,19 +652,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_create_bqstorage_client(self):
-        mock_client = mock.create_autospec(
-            bigquery_storage_v1beta1.BigQueryStorageClient
-        )
+        mock_client = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
         mock_client_instance = object()
         mock_client.return_value = mock_client_instance
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
 
         with mock.patch(
-            "google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient", mock_client
+            "google.cloud.bigquery_storage_v1.BigQueryReadClient", mock_client
         ):
             bqstorage_client = client._create_bqstorage_client()
 
@@ -676,8 +674,8 @@ class TestClient(unittest.TestCase):
 
         def fail_bqstorage_import(name, globals, locals, fromlist, level):
             # NOTE: *very* simplified, assuming a straightforward absolute import
-            return "bigquery_storage_v1beta1" in name or (
-                fromlist is not None and "bigquery_storage_v1beta1" in fromlist
+            return "bigquery_storage_v1" in name or (
+                fromlist is not None and "bigquery_storage_v1" in fromlist
             )
 
         no_bqstorage = maybe_fail_import(predicate=fail_bqstorage_import)

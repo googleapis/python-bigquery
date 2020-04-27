@@ -37,9 +37,9 @@ from google.api_core import exceptions
 import google.auth.credentials
 
 try:
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud import bigquery_storage_v1
 except ImportError:  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
+    bigquery_storage_v1 = None
 from google.cloud import bigquery
 from google.cloud.bigquery import job
 from google.cloud.bigquery import table
@@ -75,8 +75,8 @@ def missing_bq_storage():
 
     def fail_if(name, globals, locals, fromlist, level):
         # NOTE: *very* simplified, assuming a straightforward absolute import
-        return "bigquery_storage_v1beta1" in name or (
-            fromlist is not None and "bigquery_storage_v1beta1" in fromlist
+        return "bigquery_storage_v1" in name or (
+            fromlist is not None and "bigquery_storage_v1" in fromlist
         )
 
     return maybe_fail_import(predicate=fail_if)
@@ -306,14 +306,14 @@ def test__make_bqstorage_client_false():
 
 
 @pytest.mark.skipif(
-    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
+    bigquery_storage_v1 is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 def test__make_bqstorage_client_true():
     credentials_mock = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
     got = magics._make_bqstorage_client(True, credentials_mock)
-    assert isinstance(got, bigquery_storage_v1beta1.BigQueryStorageClient)
+    assert isinstance(got, bigquery_storage_v1.BigQueryReadClient)
 
 
 def test__make_bqstorage_client_true_raises_import_error(missing_bq_storage):
@@ -330,7 +330,7 @@ def test__make_bqstorage_client_true_raises_import_error(missing_bq_storage):
 
 
 @pytest.mark.skipif(
-    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
+    bigquery_storage_v1 is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test__make_bqstorage_client_true_missing_gapic(missing_grpcio_lib):
@@ -388,7 +388,7 @@ def test_extension_load():
 @pytest.mark.usefixtures("ipython_interactive")
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(
-    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
+    bigquery_storage_v1 is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 def test_bigquery_magic_without_optional_arguments(monkeypatch):
     ip = IPython.get_ipython()
@@ -402,16 +402,14 @@ def test_bigquery_magic_without_optional_arguments(monkeypatch):
     monkeypatch.setattr(magics.context, "credentials", mock_credentials)
 
     # Mock out the BigQuery Storage API.
-    bqstorage_mock = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient
-    )
+    bqstorage_mock = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
     bqstorage_instance_mock = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient, instance=True
+        bigquery_storage_v1.BigQueryReadClient, instance=True
     )
     bqstorage_instance_mock.transport = mock.Mock()
     bqstorage_mock.return_value = bqstorage_instance_mock
     bqstorage_client_patch = mock.patch(
-        "google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient", bqstorage_mock
+        "google.cloud.bigquery_storage_v1.BigQueryReadClient", bqstorage_mock
     )
 
     sql = "SELECT 17 AS num"
@@ -551,7 +549,7 @@ def test_bigquery_magic_clears_display_in_verbose_mode():
 
 @pytest.mark.usefixtures("ipython_interactive")
 @pytest.mark.skipif(
-    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
+    bigquery_storage_v1 is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     ip = IPython.get_ipython()
@@ -565,16 +563,14 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     monkeypatch.setattr(magics.context, "credentials", mock_credentials)
 
     # Mock out the BigQuery Storage API.
-    bqstorage_mock = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient
-    )
+    bqstorage_mock = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
     bqstorage_instance_mock = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient, instance=True
+        bigquery_storage_v1.BigQueryReadClient, instance=True
     )
     bqstorage_instance_mock.transport = mock.Mock()
     bqstorage_mock.return_value = bqstorage_instance_mock
     bqstorage_client_patch = mock.patch(
-        "google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient", bqstorage_mock
+        "google.cloud.bigquery_storage_v1.BigQueryReadClient", bqstorage_mock
     )
 
     sql = "SELECT 17 AS num"
@@ -617,7 +613,7 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
 
 @pytest.mark.usefixtures("ipython_interactive")
 @pytest.mark.skipif(
-    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
+    bigquery_storage_v1 is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 def test_bigquery_magic_with_rest_client_requested(monkeypatch):
     ip = IPython.get_ipython()
@@ -631,11 +627,9 @@ def test_bigquery_magic_with_rest_client_requested(monkeypatch):
     monkeypatch.setattr(magics.context, "credentials", mock_credentials)
 
     # Mock out the BigQuery Storage API.
-    bqstorage_mock = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient
-    )
+    bqstorage_mock = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
     bqstorage_client_patch = mock.patch(
-        "google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient", bqstorage_mock
+        "google.cloud.bigquery_storage_v1.BigQueryReadClient", bqstorage_mock
     )
 
     sql = "SELECT 17 AS num"
@@ -828,7 +822,7 @@ def test_bigquery_magic_w_table_id_and_destination_var():
 
 @pytest.mark.usefixtures("ipython_interactive")
 @pytest.mark.skipif(
-    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
+    bigquery_storage_v1 is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_bigquery_magic_w_table_id_and_bqstorage_client():
@@ -851,16 +845,14 @@ def test_bigquery_magic_w_table_id_and_bqstorage_client():
         "google.cloud.bigquery.magics.bigquery.Client", autospec=True
     )
 
-    bqstorage_mock = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient
-    )
+    bqstorage_mock = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
     bqstorage_instance_mock = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient, instance=True
+        bigquery_storage_v1.BigQueryReadClient, instance=True
     )
     bqstorage_instance_mock.transport = mock.Mock()
     bqstorage_mock.return_value = bqstorage_instance_mock
     bqstorage_client_patch = mock.patch(
-        "google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient", bqstorage_mock
+        "google.cloud.bigquery_storage_v1.BigQueryReadClient", bqstorage_mock
     )
 
     table_id = "bigquery-public-data.samples.shakespeare"

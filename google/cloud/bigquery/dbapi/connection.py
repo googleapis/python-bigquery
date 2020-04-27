@@ -30,7 +30,7 @@ class Connection(object):
             A REST API client used to connect to BigQuery. If not passed, a
             client is created using default options inferred from the environment.
         bqstorage_client(\
-            Optional[google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient] \
+            Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient] \
         ):
             A client that uses the faster BigQuery Storage API to fetch rows from
             BigQuery. If not passed, it is created using the same credentials
@@ -106,7 +106,7 @@ def connect(client=None, bqstorage_client=None):
             A REST API client used to connect to BigQuery. If not passed, a
             client is created using default options inferred from the environment.
         bqstorage_client(\
-            Optional[google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient] \
+            Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient] \
         ):
             A client that uses the faster BigQuery Storage API to fetch rows from
             BigQuery. If not passed, it is created using the same credentials

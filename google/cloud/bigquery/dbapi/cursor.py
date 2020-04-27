@@ -259,7 +259,7 @@ class Cursor(object):
 
         Args:
             bqstorage_client(\
-                google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient \
+                google.cloud.bigquery_storage_v1.BigQueryReadClient \
             ):
                 A client tha know how to talk to the BigQuery Storage API.
 
@@ -267,26 +267,29 @@ class Cursor(object):
             Iterable[Mapping]:
                 A sequence of rows, represented as dictionaries.
         """
-        # NOTE: Given that BQ storage client instance is passed in, it means
-        # that bigquery_storage_v1beta1 library is available (no ImportError).
-        from google.cloud import bigquery_storage_v1beta1
+        # Hitting this code path with a BQ Storage client instance implies that
+        # bigquery_storage_v1 can indeed be imported here without errors.
+        from google.cloud import bigquery_storage_v1
 
         table_reference = self._query_job.destination
 
+        requested_session = bigquery_storage_v1.types.ReadSession(
+            table=table_reference.to_bqstorage(),
+            data_format=bigquery_storage_v1.enums.DataFormat.AVRO,
+        )
+
         read_session = bqstorage_client.create_read_session(
-            table_reference.to_bqstorage(),
-            "projects/{}".format(table_reference.project),
+            parent="projects/{}".format(table_reference.project),
+            read_session=requested_session,
             # a single stream only, as DB API is not well-suited for multithreading
-            requested_streams=1,
+            max_stream_count=1,
         )
 
         if not read_session.streams:
             return iter([])  # empty table, nothing to read
 
-        read_position = bigquery_storage_v1beta1.types.StreamPosition(
-            stream=read_session.streams[0],
-        )
-        read_rows_stream = bqstorage_client.read_rows(read_position)
+        stream_name = read_session.streams[0].name
+        read_rows_stream = bqstorage_client.read_rows(stream_name)
         rows_iterable = read_rows_stream.rows(read_session)
         return rows_iterable
 

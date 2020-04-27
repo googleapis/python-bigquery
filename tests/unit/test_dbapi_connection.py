@@ -19,9 +19,9 @@ import mock
 import six
 
 try:
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud import bigquery_storage_v1
 except ImportError:  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
+    bigquery_storage_v1 = None
 
 
 class TestConnection(unittest.TestCase):
@@ -41,9 +41,9 @@ class TestConnection(unittest.TestCase):
         return mock_client
 
     def _mock_bqstorage_client(self):
-        from google.cloud.bigquery_storage_v1beta1 import client
+        from google.cloud.bigquery_storage_v1 import client
 
-        mock_client = mock.create_autospec(client.BigQueryStorageClient)
+        mock_client = mock.create_autospec(client.BigQueryReadClient)
         mock_client.transport = mock.Mock(spec=["channel"])
         mock_client.transport.channel = mock.Mock(spec=["close"])
         return mock_client
@@ -61,7 +61,7 @@ class TestConnection(unittest.TestCase):
         self.assertIs(connection._bqstorage_client, mock_bqstorage_client)
 
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_ctor_w_bqstorage_client(self):
         from google.cloud.bigquery.dbapi import Connection
@@ -99,7 +99,7 @@ class TestConnection(unittest.TestCase):
         self.assertIs(connection._bqstorage_client, mock_bqstorage_client)
 
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_connect_w_both_clients(self):
         from google.cloud.bigquery.dbapi import connect

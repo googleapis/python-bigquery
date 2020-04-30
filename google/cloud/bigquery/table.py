@@ -26,6 +26,12 @@ import warnings
 import six
 
 try:
+    # Needed for the to_bqstorage() method.
+    from google.cloud import bigquery_storage_v1beta1
+except ImportError:  # pragma: NO COVER
+    bigquery_storage_v1beta1 = None
+
+try:
     import pandas
 except ImportError:  # pragma: NO COVER
     pandas = None
@@ -221,7 +227,7 @@ class TableReference(object):
             "tableId": self._table_id,
         }
 
-    def to_bqstorage(self):
+    def to_bqstorage(self, v1beta1=False):
         """Construct a BigQuery Storage API representation of this table.
 
         Install the ``google-cloud-bigquery-storage`` package to use this
@@ -235,15 +241,37 @@ class TableReference(object):
         :class:`google.cloud.bigquery_storage_v1.types.ReadSession.TableModifiers`
         to select a specific snapshot to read from.
 
+        Args:
+            v1beta1 (Optiona[bool]):
+                If :data:`True`, return representation compatible with BigQuery
+                Storage ``v1beta1`` version. Defaults to :data:`False`.
+
         Returns:
-            str: A reference to this table in the BigQuery Storage API.
+            Union[str, google.cloud.bigquery_storage_v1beta1.types.TableReference:]:
+                A reference to this table in the BigQuery Storage API.
+
+        Raises:
+            ValueError:
+                If ``v1beta1`` compatibility is requested, but the
+                :mod:`google.cloud.bigquery_storage_v1beta1` module	cannot be imported.
         """
+        if v1beta1 and bigquery_storage_v1beta1 is None:
+            raise ValueError(_NO_BQSTORAGE_ERROR)
+
         table_id, _, _ = self._table_id.partition("@")
         table_id, _, _ = table_id.partition("$")
 
-        table_ref = "projects/{}/datasets/{}/tables/{}".format(
-            self._project, self._dataset_id, table_id,
-        )
+        if v1beta1:
+            table_ref = bigquery_storage_v1beta1.types.TableReference(
+                project_id=self._project,
+                dataset_id=self._dataset_id,
+                table_id=table_id,
+            )
+        else:
+            table_ref = "projects/{}/datasets/{}/tables/{}".format(
+                self._project, self._dataset_id, table_id,
+            )
+
         return table_ref
 
     def _key(self):
@@ -849,13 +877,19 @@ class Table(object):
         """
         return copy.deepcopy(self._properties)
 
-    def to_bqstorage(self):
+    def to_bqstorage(self, v1beta1=False):
         """Construct a BigQuery Storage API representation of this table.
 
+        Args:
+            v1beta1 (Optiona[bool]):
+                If :data:`True`, return representation compatible with BigQuery
+                Storage ``v1beta1`` version. Defaults to :data:`False`.
+
         Returns:
-            str: A reference to this table in the BigQuery Storage API.
+            Union[str, google.cloud.bigquery_storage_v1beta1.types.TableReference:]:
+                A reference to this table in the BigQuery Storage API.
         """
-        return self.reference.to_bqstorage()
+        return self.reference.to_bqstorage(v1beta1=v1beta1)
 
     def _build_resource(self, filter_fields):
         """Generate a resource for ``update``."""
@@ -1063,13 +1097,19 @@ class TableListItem(object):
             {"tableReference": TableReference.from_string(full_table_id).to_api_repr()}
         )
 
-    def to_bqstorage(self):
+    def to_bqstorage(self, v1beta1=False):
         """Construct a BigQuery Storage API representation of this table.
 
+        Args:
+            v1beta1 (Optiona[bool]):
+                If :data:`True`, return representation compatible with BigQuery
+                Storage ``v1beta1`` version. Defaults to :data:`False`.
+
         Returns:
-            str: A reference to this table in the BigQuery Storage API.
+            Union[str, google.cloud.bigquery_storage_v1beta1.types.TableReference:]:
+                A reference to this table in the BigQuery Storage API.
         """
-        return self.reference.to_bqstorage()
+        return self.reference.to_bqstorage(v1beta1=v1beta1)
 
 
 def _row_from_mapping(mapping, schema):

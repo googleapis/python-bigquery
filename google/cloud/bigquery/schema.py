@@ -101,16 +101,14 @@ class SchemaField(object):
         mode = api_repr.get("mode", "NULLABLE")
         description = api_repr.get("description")
         fields = api_repr.get("fields", ())
-        policy_tags = api_repr.get("policyTags")
-        if policy_tags is not None:
-            policy_tags = PolicyTagList.from_api_repr(policy_tags)
+
         return cls(
             field_type=api_repr["type"].upper(),
             fields=[cls.from_api_repr(f) for f in fields],
             mode=mode.upper(),
             description=description,
             name=api_repr["name"],
-            policy_tags=policy_tags,
+            policy_tags=PolicyTagList.from_api_repr(api_repr.get("policyTags")),
         )
 
     @property
@@ -279,7 +277,7 @@ def _parse_schema_resource(info):
         mode = r_field.get("mode", "NULLABLE")
         description = r_field.get("description")
         sub_fields = _parse_schema_resource(r_field)
-        policy_tags = r_field.get("policyTags")
+        policy_tags = PolicyTagList.from_api_repr(r_field.get("policyTags"))
         schema.append(
             SchemaField(name, field_type, mode, description, sub_fields, policy_tags)
         )
@@ -356,10 +354,19 @@ class PolicyTagList(object):
         (Defaults to :data:`None`).
         """
         if value is not None:
-            self._properties["names"] = value
+            self._properties["names"] = tuple(value)
         else:
             if "names" in self._properties:
                 del self._properties["names"]
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     @classmethod
     def from_api_repr(cls, api_repr):
@@ -382,6 +389,9 @@ class PolicyTagList(object):
         """
         instance = cls()
         instance._properties = copy.deepcopy(api_repr)
+        # ensure the representation is immutable
+        if instance._properties is not None:
+            instance.names = instance.names
         return instance
 
     def to_api_repr(self):

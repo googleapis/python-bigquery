@@ -30,8 +30,10 @@ class Model(object):
           CUSTOM (int): Splits data with the user provided tags.
           SEQUENTIAL (int): Splits data sequentially.
           NO_SPLIT (int): Data split will be skipped.
-          AUTO_SPLIT (int): Splits data automatically: Uses NO\_SPLIT if the data size is small.
-          Otherwise uses RANDOM.
+          AUTO_SPLIT (int): Counts of all categories for the categorical feature. If there are
+          more than ten categories, we return top ten (by count) and return one
+          more CategoryCount with category "*OTHER*" and count as aggregate counts
+          of remaining categories.
         """
 
         DATA_SPLIT_METHOD_UNSPECIFIED = 0
@@ -92,7 +94,7 @@ class Model(object):
           LINEAR_REGRESSION (int): Linear regression model.
           LOGISTIC_REGRESSION (int): Logistic regression based classification model.
           KMEANS (int): K-means clustering model.
-          TENSORFLOW (int): [Beta] An imported TensorFlow model.
+          TENSORFLOW (int): [Beta] Information for all clusters.
         """
 
         MODEL_TYPE_UNSPECIFIED = 0
@@ -124,8 +126,9 @@ class Model(object):
             Attributes:
               KMEANS_INITIALIZATION_METHOD_UNSPECIFIED (int)
               RANDOM (int): Initializes the centroids randomly.
-              CUSTOM (int): Initializes the centroids using data specified in
-              kmeans\_initialization\_column.
+              CUSTOM (int): Wrapper message for ``int32``.
+
+              The JSON representation for ``Int32Value`` is JSON number.
             """
 
             KMEANS_INITIALIZATION_METHOD_UNSPECIFIED = 0
@@ -150,9 +153,22 @@ class StandardSqlDataType(object):
           DATETIME (int): Encoded as RFC 3339 full-date "T" partial-time: 1985-04-12T23:20:50.52
           GEOGRAPHY (int): Encoded as WKT
           NUMERIC (int): Encoded as a decimal string.
-          ARRAY (int): Encoded as a list with types matching Type.array\_type.
-          STRUCT (int): Encoded as a list with fields of type Type.struct\_type[i]. List is used
-          because a JSON object cannot have duplicate field names.
+          ARRAY (int): Selects a method to which this rule applies.
+
+          Refer to ``selector`` for syntax details.
+          STRUCT (int): The resource type of a child collection that the annotated field
+          references. This is useful for annotating the ``parent`` field that
+          doesn't have a fixed resource type.
+
+          Example:
+
+          ::
+
+              message ListLogEntriesRequest {
+                string parent = 1 [(google.api.resource_reference) = {
+                  child_type: "logging.googleapis.com/LogEntry"
+                };
+              }
         """
 
         TYPE_KIND_UNSPECIFIED = 0

@@ -16,16 +16,16 @@
 
 from __future__ import absolute_import
 
+import six
 import copy
 
 import google.cloud._helpers
-import six
 
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.routine import RoutineReference
 from google.cloud.bigquery.table import TableReference
+from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 
 def _get_table_reference(self, table_id):
@@ -175,9 +175,9 @@ class AccessEntry(object):
 
     def __repr__(self):
         return "<AccessEntry: role=%s, %s=%s>" % (
-            self.role,
-            self.entity_type,
-            self.entity_id,
+            self._role,
+            self._entity_type,
+            self._entity_id,
         )
 
     def _key(self):
@@ -201,9 +201,9 @@ class AccessEntry(object):
         Returns:
             Dict[str, object]: Access entry represented as an API resource
         """
-        resource = {self.entity_type: self.entity_id}
-        if self.role is not None:
-            resource["role"] = self.role
+        resource = {self._entity_type: self._entity_id}
+        if self._role is not None:
+            resource["role"] = self._role
         return resource
 
     @classmethod

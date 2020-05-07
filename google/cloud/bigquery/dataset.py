@@ -186,11 +186,7 @@ class AccessEntry(object):
         Returns:
             Tuple: The contents of this :class:`~google.cloud.bigquery.dataset.AccessEntry`.
         """
-        return (
-            self._role,
-            self._entity_type,
-            self._entity_id
-        )
+        return (self._role, self._entity_type, self._entity_id)
 
     def __hash__(self):
         return hash(self._key())

@@ -165,9 +165,7 @@ def test_create_table_nested_repeated_schema(client, to_delete):
 def test_create_table_cmek(client, to_delete):
     dataset_id = "create_table_cmek_{}".format(_millis())
     project = client.project
-
     dataset_ref = bigquery.dataset.DatasetReference(project, dataset_id)
-   
     dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)
@@ -599,7 +597,7 @@ def test_load_table_from_uri_autodetect(client, to_delete, capsys):
     """
     dataset_id = "load_table_from_uri_auto_{}".format(_millis())
     project = client.project
-    dataset_ref = bigquery.dataset.DatasetReference(project, dataset_id)  
+    dataset_ref = bigquery.dataset.DatasetReference(project, dataset_id)
     dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)

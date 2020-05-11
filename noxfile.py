@@ -32,7 +32,9 @@ def default(session):
     run the tests.
     """
     # Install all test dependencies, then install local packages in-place.
-    session.install("mock", "pytest", "google-cloud-testutils", "pytest-cov", "freezegun")
+    session.install(
+        "mock", "pytest", "google-cloud-testutils", "pytest-cov", "freezegun"
+    )
     session.install("grpcio")
 
     # fastparquet is not included in .[all] because, in general, it's redundant

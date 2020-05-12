@@ -126,7 +126,7 @@ retry_storage_errors = RetryErrors(
     (TooManyRequests, InternalServerError, ServiceUnavailable)
 )
 
-PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
+PANDAS_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
 PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 
 
@@ -747,7 +747,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(table.num_rows, 3)
 
     @unittest.skipIf(
-        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIMUM_VERSION,
         "Only `pandas version >=1.0.0` is supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
@@ -780,7 +780,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(table.num_rows, 4)
 
     @unittest.skipIf(
-        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIMUM_VERSION,
         "Only `pandas version >=1.0.0` is supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")

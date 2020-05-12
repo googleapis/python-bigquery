@@ -123,7 +123,8 @@ def test_create_client_default_credentials():
 
 def test_create_table_nested_repeated_schema(client, to_delete):
     dataset_id = "create_table_nested_repeated_{}".format(_millis())
-    dataset_ref = client.dataset(dataset_id)
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)
@@ -162,7 +163,9 @@ def test_create_table_nested_repeated_schema(client, to_delete):
 
 def test_create_table_cmek(client, to_delete):
     dataset_id = "create_table_cmek_{}".format(_millis())
-    dataset = bigquery.Dataset(client.dataset(dataset_id))
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
+    dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)
 
@@ -171,7 +174,7 @@ def test_create_table_cmek(client, to_delete):
     # client = bigquery.Client()
     # dataset_id = 'my_dataset'
 
-    table_ref = client.dataset(dataset_id).table("my_table")
+    table_ref = dataset.table("my_table")
     table = bigquery.Table(table_ref)
 
     # Set the encryption key to use for the table.
@@ -191,7 +194,8 @@ def test_create_table_cmek(client, to_delete):
 
 def test_create_partitioned_table(client, to_delete):
     dataset_id = "create_table_partitioned_{}".format(_millis())
-    dataset_ref = bigquery.Dataset(client.dataset(dataset_id))
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     dataset = client.create_dataset(dataset_ref)
     to_delete.append(dataset)
 
@@ -582,7 +586,8 @@ def test_manage_views(client, to_delete):
 
 def test_load_table_add_column(client, to_delete):
     dataset_id = "load_table_add_column_{}".format(_millis())
-    dataset_ref = client.dataset(dataset_id)
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     dataset = bigquery.Dataset(dataset_ref)
     dataset.location = "US"
     dataset = client.create_dataset(dataset)
@@ -648,7 +653,8 @@ def test_load_table_add_column(client, to_delete):
 
 def test_load_table_relax_column(client, to_delete):
     dataset_id = "load_table_relax_column_{}".format(_millis())
-    dataset_ref = client.dataset(dataset_id)
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     dataset = bigquery.Dataset(dataset_ref)
     dataset.location = "US"
     dataset = client.create_dataset(dataset)
@@ -736,7 +742,7 @@ def test_extract_table(client, to_delete):
     table_id = "shakespeare"
 
     destination_uri = "gs://{}/{}".format(bucket_name, "shakespeare.csv")
-    dataset_ref = client.dataset(dataset_id, project=project)
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_ref = dataset_ref.table(table_id)
 
     extract_job = client.extract_table(
@@ -763,6 +769,8 @@ def test_extract_table_json(client, to_delete):
     storage_client = storage.Client()
     bucket = retry_storage_errors(storage_client.create_bucket)(bucket_name)
     to_delete.append(bucket)
+    project = "bigquery-public-data"
+    dataset_id = "samples"
 
     # [START bigquery_extract_table_json]
     # from google.cloud import bigquery
@@ -770,7 +778,7 @@ def test_extract_table_json(client, to_delete):
     # bucket_name = 'my-bucket'
 
     destination_uri = "gs://{}/{}".format(bucket_name, "shakespeare.json")
-    dataset_ref = client.dataset("samples", project="bigquery-public-data")
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_ref = dataset_ref.table("shakespeare")
     job_config = bigquery.job.ExtractJobConfig()
     job_config.destination_format = bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
@@ -796,6 +804,8 @@ def test_extract_table_compressed(client, to_delete):
     storage_client = storage.Client()
     bucket = retry_storage_errors(storage_client.create_bucket)(bucket_name)
     to_delete.append(bucket)
+    project = "bigquery-public-data"
+    dataset_id = "samples"
 
     # [START bigquery_extract_table_compressed]
     # from google.cloud import bigquery
@@ -803,7 +813,7 @@ def test_extract_table_compressed(client, to_delete):
     # bucket_name = 'my-bucket'
 
     destination_uri = "gs://{}/{}".format(bucket_name, "shakespeare.csv.gz")
-    dataset_ref = client.dataset("samples", project="bigquery-public-data")
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_ref = dataset_ref.table("shakespeare")
     job_config = bigquery.job.ExtractJobConfig()
     job_config.compression = bigquery.Compression.GZIP
@@ -890,7 +900,9 @@ def test_manage_job(client):
 
 def test_query_external_gcs_permanent_table(client, to_delete):
     dataset_id = "query_external_gcs_{}".format(_millis())
-    dataset = bigquery.Dataset(client.dataset(dataset_id))
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
+    dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)
 
@@ -900,7 +912,7 @@ def test_query_external_gcs_permanent_table(client, to_delete):
     # dataset_id = 'my_dataset'
 
     # Configure the external data source
-    dataset_ref = client.dataset(dataset_id)
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_id = "us_states"
     schema = [
         bigquery.SchemaField("name", "STRING"),
@@ -933,7 +945,8 @@ def test_ddl_create_view(client, to_delete, capsys):
     project = client.project
     dataset_id = "ddl_view_{}".format(_millis())
     table_id = "new_view"
-    dataset = bigquery.Dataset(client.dataset(dataset_id))
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
+    dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)
 
@@ -1011,8 +1024,10 @@ def test_list_rows_as_dataframe(client):
     # [START bigquery_list_rows_dataframe]
     # from google.cloud import bigquery
     # client = bigquery.Client()
+    project = "bigquery-public-data"
+    dataset_id = "samples"
 
-    dataset_ref = client.dataset("samples", project="bigquery-public-data")
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_ref = dataset_ref.table("shakespeare")
     table = client.get_table(table_ref)
 

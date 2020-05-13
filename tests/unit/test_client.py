@@ -30,6 +30,7 @@ import six
 from six.moves import http_client
 import pytest
 import pytz
+import pkg_resources
 
 try:
     import fastparquet
@@ -56,6 +57,9 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     bigquery_storage_v1 = None
 from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
+
+PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
+PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 
 
 def _make_credentials():
@@ -2906,6 +2910,21 @@ class TestClient(unittest.TestCase):
             configuration, "google.cloud.bigquery.client.Client.extract_table",
         )
 
+    def test_create_job_extract_config_for_model(self):
+        configuration = {
+            "extract": {
+                "sourceModel": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "modelId": "source_model",
+                },
+                "destinationUris": ["gs://test_bucket/dst_object*"],
+            }
+        }
+        self._create_job_helper(
+            configuration, "google.cloud.bigquery.client.Client.extract_table",
+        )
+
     def test_create_job_query_config(self):
         configuration = {
             "query": {"query": "query", "destinationTable": {"tableId": "table_id"}}
@@ -4238,6 +4257,140 @@ class TestClient(unittest.TestCase):
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(job.source, source)
         self.assertEqual(list(job.destination_uris), [DESTINATION1, DESTINATION2])
+
+    def test_extract_table_for_source_type_model(self):
+        from google.cloud.bigquery.job import ExtractJob
+
+        JOB = "job_id"
+        SOURCE = "source_model"
+        DESTINATION = "gs://bucket_name/object_name"
+        RESOURCE = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": JOB},
+            "configuration": {
+                "extract": {
+                    "sourceModel": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "modelId": SOURCE,
+                    },
+                    "destinationUris": [DESTINATION],
+                }
+            },
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RESOURCE)
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        source = dataset.model(SOURCE)
+
+        job = client.extract_table(
+            source, DESTINATION, job_id=JOB, timeout=7.5, source_type="Model"
+        )
+
+        # Check that extract_table actually starts the job.
+        conn.api_request.assert_called_once_with(
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
+        )
+
+        # Check the job resource.
+        self.assertIsInstance(job, ExtractJob)
+        self.assertIs(job._client, client)
+        self.assertEqual(job.job_id, JOB)
+        self.assertEqual(job.source, source)
+        self.assertEqual(list(job.destination_uris), [DESTINATION])
+
+    def test_extract_table_for_source_type_model_w_string_model_id(self):
+        JOB = "job_id"
+        source_id = "source_model"
+        DESTINATION = "gs://bucket_name/object_name"
+        RESOURCE = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": JOB},
+            "configuration": {
+                "extract": {
+                    "sourceModel": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "modelId": source_id,
+                    },
+                    "destinationUris": [DESTINATION],
+                }
+            },
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RESOURCE)
+
+        client.extract_table(
+            # Test with string for model ID.
+            "{}.{}".format(self.DS_ID, source_id),
+            DESTINATION,
+            job_id=JOB,
+            timeout=7.5,
+            source_type="Model",
+        )
+
+        # Check that extract_table actually starts the job.
+        conn.api_request.assert_called_once_with(
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
+        )
+
+    def test_extract_table_for_source_type_model_w_model_object(self):
+        from google.cloud.bigquery.model import Model
+
+        JOB = "job_id"
+        DESTINATION = "gs://bucket_name/object_name"
+        model_id = "{}.{}.{}".format(self.PROJECT, self.DS_ID, self.MODEL_ID)
+        model = Model(model_id)
+        RESOURCE = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": JOB},
+            "configuration": {
+                "extract": {
+                    "sourceModel": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "modelId": self.MODEL_ID,
+                    },
+                    "destinationUris": [DESTINATION],
+                }
+            },
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RESOURCE)
+
+        client.extract_table(
+            # Test with Model class object.
+            model,
+            DESTINATION,
+            job_id=JOB,
+            timeout=7.5,
+            source_type="Model",
+        )
+
+        # Check that extract_table actually starts the job.
+        conn.api_request.assert_called_once_with(
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
+        )
+
+    def test_extract_table_for_invalid_source_type_model(self):
+        JOB = "job_id"
+        SOURCE = "source_model"
+        DESTINATION = "gs://bucket_name/object_name"
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        source = dataset.model(SOURCE)
+
+        with self.assertRaises(ValueError) as exc:
+            client.extract_table(
+                source, DESTINATION, job_id=JOB, timeout=7.5, source_type="foo"
+            )
+
+        self.assertIn("Cannot pass", exc.exception.args[0])
 
     def test_query_defaults(self):
         from google.cloud.bigquery.job import QueryJob
@@ -6845,6 +6998,98 @@ class TestClientUpload(object):
             and "please provide a schema" in str(warning)
         ]
         assert matches, "A missing schema deprecation warning was not raised."
+
+    @unittest.skipIf(
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        "Only `pandas version >=1.0.0` supported",
+    )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        dataframe = pandas.DataFrame({"x": [1, 2, None, 4]}, dtype="Int64")
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(schema=[SchemaField("x", "INT64", "NULLABLE")]),
+        )
+
+        with load_patch as load_table_from_file, get_table_patch:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, location=self.LOCATION
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert tuple(sent_config.schema) == (
+            SchemaField("x", "INT64", "NULLABLE", None),
+        )
+
+    @unittest.skipIf(
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        "Only `pandas version >=1.0.0` supported",
+    )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        dataframe = pandas.DataFrame({"x": [1, 2, None, 4]}, dtype="Int64")
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+
+        with load_patch as load_table_from_file, get_table_patch:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, location=self.LOCATION
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert tuple(sent_config.schema) == (
+            SchemaField("x", "INT64", "NULLABLE", None),
+        )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")

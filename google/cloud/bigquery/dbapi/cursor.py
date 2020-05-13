@@ -292,11 +292,12 @@ class Cursor(object):
                 "projects/{}".format(table_reference.project),
                 # a single stream only, as DB API is not well-suited for multithreading
                 requested_streams=1,
+                format_=bigquery_storage_v1beta1.enums.DataFormat.ARROW,
             )
         else:
             requested_session = bigquery_storage_v1.types.ReadSession(
                 table=table_reference.to_bqstorage(),
-                data_format=bigquery_storage_v1.enums.DataFormat.AVRO,
+                data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
             )
             read_session = bqstorage_client.create_read_session(
                 parent="projects/{}".format(table_reference.project),

@@ -1667,7 +1667,7 @@ class TestBigQuery(unittest.TestCase):
     @unittest.skipIf(
         bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
-    @unittest.skipIf(fastavro is None, "Requires `fastavro`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
         bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
@@ -1717,7 +1717,7 @@ class TestBigQuery(unittest.TestCase):
     @unittest.skipIf(
         bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
     )
-    @unittest.skipIf(fastavro is None, "Requires `fastavro`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_dbapi_fetch_w_bqstorage_client_v1beta1_large_result_set(self):
         bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
             credentials=Config.CLIENT._credentials

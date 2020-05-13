@@ -19,6 +19,11 @@ import warnings
 import mock
 import six
 
+try:
+    import pyarrow
+except ImportError:  # pragma: NO COVER
+    pyarrow = None
+
 from google.api_core import exceptions
 
 try:
@@ -27,6 +32,8 @@ try:
 except ImportError:  # pragma: NO COVER
     bigquery_storage_v1 = None
     bigquery_storage_v1beta1 = None
+
+from tests.unit.helpers import _to_pyarrow
 
 
 class TestCursor(unittest.TestCase):
@@ -261,6 +268,7 @@ class TestCursor(unittest.TestCase):
     @unittest.skipIf(
         bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_fetchall_w_bqstorage_client_fetch_success(self):
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table
@@ -271,8 +279,18 @@ class TestCursor(unittest.TestCase):
             table.Row([2.4, 2.1, 2.3, 2.2], {"bar": 3, "baz": 2, "foo": 1, "quux": 0}),
         ]
         bqstorage_streamed_rows = [
-            {"bar": 1.2, "foo": 1.1, "quux": 1.4, "baz": 1.3},
-            {"bar": 2.2, "foo": 2.1, "quux": 2.4, "baz": 2.3},
+            {
+                "bar": _to_pyarrow(1.2),
+                "foo": _to_pyarrow(1.1),
+                "quux": _to_pyarrow(1.4),
+                "baz": _to_pyarrow(1.3),
+            },
+            {
+                "bar": _to_pyarrow(2.2),
+                "foo": _to_pyarrow(2.1),
+                "quux": _to_pyarrow(2.4),
+                "baz": _to_pyarrow(2.3),
+            },
         ]
 
         mock_client = self._mock_client(rows=row_data)
@@ -304,6 +322,7 @@ class TestCursor(unittest.TestCase):
     @unittest.skipIf(
         bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
     )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_fetchall_w_bqstorage_client_v1beta1_fetch_success(self):
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table
@@ -314,8 +333,18 @@ class TestCursor(unittest.TestCase):
             table.Row([2.4, 2.1, 2.3, 2.2], {"bar": 3, "baz": 2, "foo": 1, "quux": 0}),
         ]
         bqstorage_streamed_rows = [
-            {"bar": 1.2, "foo": 1.1, "quux": 1.4, "baz": 1.3},
-            {"bar": 2.2, "foo": 2.1, "quux": 2.4, "baz": 2.3},
+            {
+                "bar": _to_pyarrow(1.2),
+                "foo": _to_pyarrow(1.1),
+                "quux": _to_pyarrow(1.4),
+                "baz": _to_pyarrow(1.3),
+            },
+            {
+                "bar": _to_pyarrow(2.2),
+                "foo": _to_pyarrow(2.1),
+                "quux": _to_pyarrow(2.4),
+                "baz": _to_pyarrow(2.3),
+            },
         ]
 
         mock_client = self._mock_client(rows=row_data)

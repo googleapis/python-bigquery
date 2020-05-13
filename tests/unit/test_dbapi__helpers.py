@@ -18,12 +18,18 @@ import math
 import operator as op
 import unittest
 
+try:
+    import pyarrow
+except ImportError:  # pragma: NO COVER
+    pyarrow = None
+
 import six
 
 import google.cloud._helpers
 from google.cloud.bigquery import table
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
+from tests.unit.helpers import _to_pyarrow
 
 
 class TestQueryParameters(unittest.TestCase):
@@ -197,10 +203,21 @@ class TestToBqTableRows(unittest.TestCase):
         result = _helpers.to_bq_table_rows(rows_iterable)
         self.assertEqual(list(result), [])
 
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_non_empty_iterable(self):
         rows_iterable = [
-            dict(one=1.1, four=1.4, two=1.2, three=1.3),
-            dict(one=2.1, four=2.4, two=2.2, three=2.3),
+            dict(
+                one=_to_pyarrow(1.1),
+                four=_to_pyarrow(1.4),
+                two=_to_pyarrow(1.2),
+                three=_to_pyarrow(1.3),
+            ),
+            dict(
+                one=_to_pyarrow(2.1),
+                four=_to_pyarrow(2.4),
+                two=_to_pyarrow(2.2),
+                three=_to_pyarrow(2.3),
+            ),
         ]
 
         result = _helpers.to_bq_table_rows(rows_iterable)

@@ -1674,9 +1674,9 @@ class TestBigQuery(unittest.TestCase):
         )
         cursor = dbapi.connect(Config.CLIENT, bqstorage_client).cursor()
 
-        # Pick a large enouhg LIMIT value to assure that the fallback to the
+        # Pick a large enough LIMIT value to assure that the fallback to the
         # default client is not needed due to the result set being too small
-        # (a known issue that causes problems when reding such result sets with
+        # (a known issue that causes problems when reading such result sets with
         # BQ storage client).
         cursor.execute(
             """

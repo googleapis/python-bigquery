@@ -279,7 +279,7 @@ class Cursor(object):
             bqstorage_client, bigquery_storage_v1beta1.BigQueryStorageClient
         )
 
-        # We want to preserve comaptibility with the v1beta1 BQ Storage clients,
+        # We want to preserve compatibility with the v1beta1 BQ Storage clients,
         # thus adjust the session creation if needed.
         if is_v1beta1_client:
             warnings.warn(

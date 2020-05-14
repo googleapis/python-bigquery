@@ -25,7 +25,6 @@ import os
 import time
 
 import pytest
-import six
 
 try:
     import fastparquet
@@ -124,7 +123,8 @@ def test_create_client_default_credentials():
 
 def test_create_table_nested_repeated_schema(client, to_delete):
     dataset_id = "create_table_nested_repeated_{}".format(_millis())
-    dataset_ref = client.dataset(dataset_id)
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)
@@ -163,7 +163,9 @@ def test_create_table_nested_repeated_schema(client, to_delete):
 
 def test_create_table_cmek(client, to_delete):
     dataset_id = "create_table_cmek_{}".format(_millis())
-    dataset = bigquery.Dataset(client.dataset(dataset_id))
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
+    dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)
 
@@ -172,7 +174,7 @@ def test_create_table_cmek(client, to_delete):
     # client = bigquery.Client()
     # dataset_id = 'my_dataset'
 
-    table_ref = client.dataset(dataset_id).table("my_table")
+    table_ref = dataset.table("my_table")
     table = bigquery.Table(table_ref)
 
     # Set the encryption key to use for the table.
@@ -192,7 +194,8 @@ def test_create_table_cmek(client, to_delete):
 
 def test_create_partitioned_table(client, to_delete):
     dataset_id = "create_table_partitioned_{}".format(_millis())
-    dataset_ref = bigquery.Dataset(client.dataset(dataset_id))
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     dataset = client.create_dataset(dataset_ref)
     to_delete.append(dataset)
 
@@ -581,172 +584,10 @@ def test_manage_views(client, to_delete):
     # [END bigquery_grant_view_access]
 
 
-def test_load_table_from_uri_autodetect(client, to_delete, capsys):
-    """Load table from a GCS URI using various formats and auto-detected schema
-    Each file format has its own tested load from URI sample. Because most of
-    the code is common for autodetect, append, and truncate, this sample
-    includes snippets for all supported formats but only calls a single load
-    job.
-    This code snippet is made up of shared code, then format-specific code,
-    followed by more shared code. Note that only the last format in the
-    format-specific code section will be tested in this test.
-    """
-    dataset_id = "load_table_from_uri_auto_{}".format(_millis())
-    dataset = bigquery.Dataset(client.dataset(dataset_id))
-    client.create_dataset(dataset)
-    to_delete.append(dataset)
-
-    # Shared code
-    # [START bigquery_load_table_gcs_csv_autodetect]
-    # [START bigquery_load_table_gcs_json_autodetect]
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-    # dataset_id = 'my_dataset'
-
-    dataset_ref = client.dataset(dataset_id)
-    job_config = bigquery.LoadJobConfig()
-    job_config.autodetect = True
-    # [END bigquery_load_table_gcs_csv_autodetect]
-    # [END bigquery_load_table_gcs_json_autodetect]
-
-    # Format-specific code
-    # [START bigquery_load_table_gcs_csv_autodetect]
-    job_config.skip_leading_rows = 1
-    # The source format defaults to CSV, so the line below is optional.
-    job_config.source_format = bigquery.SourceFormat.CSV
-    uri = "gs://cloud-samples-data/bigquery/us-states/us-states.csv"
-    # [END bigquery_load_table_gcs_csv_autodetect]
-    # unset csv-specific attribute
-    del job_config._properties["load"]["skipLeadingRows"]
-
-    # [START bigquery_load_table_gcs_json_autodetect]
-    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-    uri = "gs://cloud-samples-data/bigquery/us-states/us-states.json"
-    # [END bigquery_load_table_gcs_json_autodetect]
-
-    # Shared code
-    # [START bigquery_load_table_gcs_csv_autodetect]
-    # [START bigquery_load_table_gcs_json_autodetect]
-    load_job = client.load_table_from_uri(
-        uri, dataset_ref.table("us_states"), job_config=job_config
-    )  # API request
-    print("Starting job {}".format(load_job.job_id))
-
-    load_job.result()  # Waits for table load to complete.
-    print("Job finished.")
-
-    destination_table = client.get_table(dataset_ref.table("us_states"))
-    print("Loaded {} rows.".format(destination_table.num_rows))
-    # [END bigquery_load_table_gcs_csv_autodetect]
-    # [END bigquery_load_table_gcs_json_autodetect]
-
-    out, _ = capsys.readouterr()
-    assert "Loaded 50 rows." in out
-
-
-def test_load_table_from_uri_truncate(client, to_delete, capsys):
-    """Replaces table data with data from a GCS URI using various formats
-    Each file format has its own tested load from URI sample. Because most of
-    the code is common for autodetect, append, and truncate, this sample
-    includes snippets for all supported formats but only calls a single load
-    job.
-    This code snippet is made up of shared code, then format-specific code,
-    followed by more shared code. Note that only the last format in the
-    format-specific code section will be tested in this test.
-    """
-    dataset_id = "load_table_from_uri_trunc_{}".format(_millis())
-    dataset = bigquery.Dataset(client.dataset(dataset_id))
-    client.create_dataset(dataset)
-    to_delete.append(dataset)
-
-    job_config = bigquery.LoadJobConfig()
-    job_config.schema = [
-        bigquery.SchemaField("name", "STRING"),
-        bigquery.SchemaField("post_abbr", "STRING"),
-    ]
-    table_ref = dataset.table("us_states")
-    body = six.BytesIO(b"Washington,WA")
-    client.load_table_from_file(body, table_ref, job_config=job_config).result()
-    previous_rows = client.get_table(table_ref).num_rows
-    assert previous_rows > 0
-
-    # Shared code
-    # [START bigquery_load_table_gcs_avro_truncate]
-    # [START bigquery_load_table_gcs_csv_truncate]
-    # [START bigquery_load_table_gcs_json_truncate]
-    # [START bigquery_load_table_gcs_parquet_truncate]
-    # [START bigquery_load_table_gcs_orc_truncate]
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-    # table_ref = client.dataset('my_dataset').table('existing_table')
-
-    job_config = bigquery.LoadJobConfig()
-    job_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-    # [END bigquery_load_table_gcs_avro_truncate]
-    # [END bigquery_load_table_gcs_csv_truncate]
-    # [END bigquery_load_table_gcs_json_truncate]
-    # [END bigquery_load_table_gcs_parquet_truncate]
-    # [END bigquery_load_table_gcs_orc_truncate]
-
-    # Format-specific code
-    # [START bigquery_load_table_gcs_avro_truncate]
-    job_config.source_format = bigquery.SourceFormat.AVRO
-    uri = "gs://cloud-samples-data/bigquery/us-states/us-states.avro"
-    # [END bigquery_load_table_gcs_avro_truncate]
-
-    # [START bigquery_load_table_gcs_csv_truncate]
-    job_config.skip_leading_rows = 1
-    # The source format defaults to CSV, so the line below is optional.
-    job_config.source_format = bigquery.SourceFormat.CSV
-    uri = "gs://cloud-samples-data/bigquery/us-states/us-states.csv"
-    # [END bigquery_load_table_gcs_csv_truncate]
-    # unset csv-specific attribute
-    del job_config._properties["load"]["skipLeadingRows"]
-
-    # [START bigquery_load_table_gcs_json_truncate]
-    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-    uri = "gs://cloud-samples-data/bigquery/us-states/us-states.json"
-    # [END bigquery_load_table_gcs_json_truncate]
-
-    # [START bigquery_load_table_gcs_parquet_truncate]
-    job_config.source_format = bigquery.SourceFormat.PARQUET
-    uri = "gs://cloud-samples-data/bigquery/us-states/us-states.parquet"
-    # [END bigquery_load_table_gcs_parquet_truncate]
-
-    # [START bigquery_load_table_gcs_orc_truncate]
-    job_config.source_format = bigquery.SourceFormat.ORC
-    uri = "gs://cloud-samples-data/bigquery/us-states/us-states.orc"
-    # [END bigquery_load_table_gcs_orc_truncate]
-
-    # Shared code
-    # [START bigquery_load_table_gcs_avro_truncate]
-    # [START bigquery_load_table_gcs_csv_truncate]
-    # [START bigquery_load_table_gcs_json_truncate]
-    # [START bigquery_load_table_gcs_parquet_truncate]
-    # [START bigquery_load_table_gcs_orc_truncate]
-    load_job = client.load_table_from_uri(
-        uri, table_ref, job_config=job_config
-    )  # API request
-    print("Starting job {}".format(load_job.job_id))
-
-    load_job.result()  # Waits for table load to complete.
-    print("Job finished.")
-
-    destination_table = client.get_table(table_ref)
-    print("Loaded {} rows.".format(destination_table.num_rows))
-    # [END bigquery_load_table_gcs_avro_truncate]
-    # [END bigquery_load_table_gcs_csv_truncate]
-    # [END bigquery_load_table_gcs_json_truncate]
-    # [END bigquery_load_table_gcs_parquet_truncate]
-    # [END bigquery_load_table_gcs_orc_truncate]
-
-    out, _ = capsys.readouterr()
-    assert "Loaded 50 rows." in out
-
-
 def test_load_table_add_column(client, to_delete):
     dataset_id = "load_table_add_column_{}".format(_millis())
-    dataset_ref = client.dataset(dataset_id)
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     dataset = bigquery.Dataset(dataset_ref)
     dataset.location = "US"
     dataset = client.create_dataset(dataset)
@@ -812,7 +653,8 @@ def test_load_table_add_column(client, to_delete):
 
 def test_load_table_relax_column(client, to_delete):
     dataset_id = "load_table_relax_column_{}".format(_millis())
-    dataset_ref = client.dataset(dataset_id)
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     dataset = bigquery.Dataset(dataset_ref)
     dataset.location = "US"
     dataset = client.create_dataset(dataset)
@@ -900,7 +742,7 @@ def test_extract_table(client, to_delete):
     table_id = "shakespeare"
 
     destination_uri = "gs://{}/{}".format(bucket_name, "shakespeare.csv")
-    dataset_ref = client.dataset(dataset_id, project=project)
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_ref = dataset_ref.table(table_id)
 
     extract_job = client.extract_table(
@@ -927,6 +769,8 @@ def test_extract_table_json(client, to_delete):
     storage_client = storage.Client()
     bucket = retry_storage_errors(storage_client.create_bucket)(bucket_name)
     to_delete.append(bucket)
+    project = "bigquery-public-data"
+    dataset_id = "samples"
 
     # [START bigquery_extract_table_json]
     # from google.cloud import bigquery
@@ -934,7 +778,7 @@ def test_extract_table_json(client, to_delete):
     # bucket_name = 'my-bucket'
 
     destination_uri = "gs://{}/{}".format(bucket_name, "shakespeare.json")
-    dataset_ref = client.dataset("samples", project="bigquery-public-data")
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_ref = dataset_ref.table("shakespeare")
     job_config = bigquery.job.ExtractJobConfig()
     job_config.destination_format = bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
@@ -960,6 +804,8 @@ def test_extract_table_compressed(client, to_delete):
     storage_client = storage.Client()
     bucket = retry_storage_errors(storage_client.create_bucket)(bucket_name)
     to_delete.append(bucket)
+    project = "bigquery-public-data"
+    dataset_id = "samples"
 
     # [START bigquery_extract_table_compressed]
     # from google.cloud import bigquery
@@ -967,7 +813,7 @@ def test_extract_table_compressed(client, to_delete):
     # bucket_name = 'my-bucket'
 
     destination_uri = "gs://{}/{}".format(bucket_name, "shakespeare.csv.gz")
-    dataset_ref = client.dataset("samples", project="bigquery-public-data")
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_ref = dataset_ref.table("shakespeare")
     job_config = bigquery.job.ExtractJobConfig()
     job_config.compression = bigquery.Compression.GZIP
@@ -1054,7 +900,9 @@ def test_manage_job(client):
 
 def test_query_external_gcs_permanent_table(client, to_delete):
     dataset_id = "query_external_gcs_{}".format(_millis())
-    dataset = bigquery.Dataset(client.dataset(dataset_id))
+    project = client.project
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
+    dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)
 
@@ -1064,7 +912,7 @@ def test_query_external_gcs_permanent_table(client, to_delete):
     # dataset_id = 'my_dataset'
 
     # Configure the external data source
-    dataset_ref = client.dataset(dataset_id)
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_id = "us_states"
     schema = [
         bigquery.SchemaField("name", "STRING"),
@@ -1097,7 +945,8 @@ def test_ddl_create_view(client, to_delete, capsys):
     project = client.project
     dataset_id = "ddl_view_{}".format(_millis())
     table_id = "new_view"
-    dataset = bigquery.Dataset(client.dataset(dataset_id))
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
+    dataset = bigquery.Dataset(dataset_ref)
     client.create_dataset(dataset)
     to_delete.append(dataset)
 
@@ -1175,8 +1024,10 @@ def test_list_rows_as_dataframe(client):
     # [START bigquery_list_rows_dataframe]
     # from google.cloud import bigquery
     # client = bigquery.Client()
+    project = "bigquery-public-data"
+    dataset_id = "samples"
 
-    dataset_ref = client.dataset("samples", project="bigquery-public-data")
+    dataset_ref = bigquery.DatasetReference(project, dataset_id)
     table_ref = dataset_ref.table("shakespeare")
     table = client.get_table(table_ref)
 

@@ -341,11 +341,11 @@ class TestBigQuery(unittest.TestCase):
         dataset = self.temp_dataset(_make_dataset_id("create_table_with_policy"))
         table_id = "test_table"
         policy_1 = PolicyTagList(
-            names=(
+            names=[
                 "projects/{}/locations/us/taxonomies/1/policyTags/2".format(
                     Config.CLIENT.project
                 ),
-            )
+            ]
         )
         policy_2 = PolicyTagList(
             names=(

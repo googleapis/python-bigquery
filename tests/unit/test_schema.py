@@ -144,12 +144,12 @@ class TestSchemaField(unittest.TestCase):
                 "fields": [{"mode": "nullable", "name": "bar", "type": "integer"}],
                 "name": "foo",
                 "type": "record",
-                "policyTags": {"names": ("one", "two")},
+                "policyTags": {"names": ["one", "two"]},
             }
         )
         self.assertEqual(field.name, "foo")
         self.assertEqual(field.field_type, "RECORD")
-        self.assertEqual(field.policy_tags.names, ("one", "two"))
+        self.assertEqual(field.policy_tags.names, ["one", "two"])
         self.assertEqual(len(field.fields), 1)
         self.assertEqual(field.fields[0].name, "bar")
         self.assertEqual(field.fields[0].field_type, "INTEGER")
@@ -709,10 +709,10 @@ class TestPolicyTags(unittest.TestCase):
 
     def test_setter(self):
         policy_tags = self._make_one()
-        self.assertEqual(policy_tags.names, ())
+        self.assertEqual(policy_tags.names, [])
         policy_tags.names = None
-        self.assertEqual(policy_tags.names, ())
-        policy_tags.names = ("foo", "bar")
-        self.assertEqual(policy_tags.names, ("foo", "bar"))
+        self.assertEqual(policy_tags.names, [])
+        policy_tags.names = ["foo", "bar"]
+        self.assertEqual(policy_tags.names, ["foo", "bar"])
         policy_tags.names = None
-        self.assertEqual(policy_tags.names, ())
+        self.assertEqual(policy_tags.names, [])

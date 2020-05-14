@@ -333,8 +333,9 @@ class PolicyTagList(object):
     """Define Policy Tags for a column.
 
     Args:
-        names (Optional[Tuple[str]]): list of policy tags to associate with
-            the column.
+        names (Optional[List[str]]): list of policy tags to associate with
+            the column.  Policy tag identifiers are of the form
+            `projects/*/locations/*/taxonomies/*/policyTags/*`.
     """
 
     def __init__(self, names=None):
@@ -343,18 +344,18 @@ class PolicyTagList(object):
 
     @property
     def names(self):
-        """Tuple[str]: Policy tags associated with this definition.
+        """List[str]: Policy tags associated with this definition.
         """
-        return self._properties.get("names", ())
+        return self._properties.get("names", [])
 
     @names.setter
     def names(self, value):
-        """Optional[Tuple[str]]: Policy tags associated with this definition.
+        """Optional[List[str]]: Policy tags associated with this definition.
 
         (Defaults to :data:`None`).
         """
         if value is not None:
-            self._properties["names"] = tuple(value)
+            self._properties["names"] = value
         else:
             if "names" in self._properties:
                 del self._properties["names"]
@@ -387,11 +388,10 @@ class PolicyTagList(object):
             google.cloud.bigquery.schema.PolicyTagList:
                 The ``PolicyTagList`` object.
         """
+        if api_repr is None:
+            return None
         instance = cls()
         instance._properties = copy.deepcopy(api_repr)
-        # ensure the representation is immutable
-        if instance._properties is not None:
-            instance.names = instance.names
         return instance
 
     def to_api_repr(self):

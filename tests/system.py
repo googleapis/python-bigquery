@@ -352,11 +352,11 @@ class TestBigQuery(unittest.TestCase):
             ]
         )
         policy_2 = PolicyTagList(
-            names=(
+            names=[
                 "projects/{}/locations/us/taxonomies/3/policyTags/4".format(
                     Config.CLIENT.project
                 ),
-            )
+            ]
         )
 
         schema = [
@@ -387,8 +387,8 @@ class TestBigQuery(unittest.TestCase):
         )
 
         table.schema = new_schema
-        table2 = Config.CLIENT.update_table(table, ["schema",])
-        self.assertEqual(policy_2, table.schema[1].policy_tags)
+        table2 = Config.CLIENT.update_table(table, ["schema", ])
+        self.assertEqual(policy_2, table2.schema[1].policy_tags)
 
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning

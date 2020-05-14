@@ -692,19 +692,19 @@ class TestPolicyTags(unittest.TestCase):
         empty_policy_tags = self._make_one()
         self.assertIsNotNone(empty_policy_tags.names)
         self.assertEqual(len(empty_policy_tags.names), 0)
-        policy_tags = self._make_one(("foo", "bar"))
-        self.assertEqual(policy_tags.names, ("foo", "bar"))
+        policy_tags = self._make_one(["foo", "bar"])
+        self.assertEqual(policy_tags.names, ["foo", "bar"])
 
     def test_from_api_repr(self):
         klass = self._get_target_class()
-        api_repr = {"names": ("foo")}
+        api_repr = {"names": ["foo"]}
         policy_tags = klass.from_api_repr(api_repr)
         self.assertEqual(policy_tags.to_api_repr(), api_repr)
 
     def test_to_api_repr(self):
-        taglist = self._make_one(names=("foo", "bar"))
+        taglist = self._make_one(names=["foo", "bar"])
         self.assertEqual(
-            taglist.to_api_repr(), {"names": ("foo", "bar")},
+            taglist.to_api_repr(), {"names": ["foo", "bar"]},
         )
 
     def test_setter(self):
@@ -716,3 +716,14 @@ class TestPolicyTags(unittest.TestCase):
         self.assertEqual(policy_tags.names, ["foo", "bar"])
         policy_tags.names = None
         self.assertEqual(policy_tags.names, [])
+
+    def test___eq___wrong_type(self):
+        policy = self._make_one(names=["foo", ])
+        other = object()
+        self.assertNotEqual(policy, other)
+        self.assertEqual(policy, mock.ANY)
+
+    def test___eq___names_mismatch(self):
+        policy = self._make_one(names=["foo", "bar"])
+        other = self._make_one(names=["bar", "baz"])
+        self.assertNotEqual(policy, other)

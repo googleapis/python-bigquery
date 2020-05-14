@@ -360,14 +360,29 @@ class PolicyTagList(object):
             if "names" in self._properties:
                 del self._properties["names"]
 
+    def _key(self): 
+        """A tuple key that uniquely describes this PolicyTagList.
+
+        Used to compute this instance's hashcode and evaluate equality.
+
+        Returns:
+            Tuple: The contents of this :class:`~google.cloud.bigquery.schema.PolicyTagList`.
+        """
+        return tuple(sorted(self._properties.items()))
+
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__dict__ == other.__dict__
-        else:
-            return False
+        if not isinstance(other, PolicyTagList):
+            return NotImplemented
+        return self._key() == other._key()
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not self == other
+
+    def __hash__(self):
+        return hash(self._key())
+
+    def __repr__(self):
+        return "PolicyTagList{}".format(self._key())
 
     @classmethod
     def from_api_repr(cls, api_repr):

@@ -408,7 +408,5 @@ class PolicyTagList(object):
                 A dictionary representing the PolicyTagList object in
                 serialized form.
         """
-        answer = {}
-        if self.names is not None:
-            answer["names"] = [name for name in self.names]
+        answer = {"names": [name for name in self.names]}
         return answer

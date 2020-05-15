@@ -419,4 +419,4 @@ class PolicyTagList(object):
                 A dictionary representing the PolicyTagList object in
                 serialized form.
         """
-        return self._properties
+        return copy.deepcopy(self._properties)

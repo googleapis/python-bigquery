@@ -82,7 +82,7 @@ class TestSchemaField(unittest.TestCase):
 
         policy = PolicyTagList(names=("foo", "bar"))
         self.assertEqual(
-            policy.to_api_repr(), {"names": ("foo", "bar")},
+            policy.to_api_repr(), {"names": ["foo", "bar"]},
         )
 
         field = self._make_one("foo", "INTEGER", "NULLABLE", policy_tags=policy)
@@ -93,7 +93,7 @@ class TestSchemaField(unittest.TestCase):
                 "name": "foo",
                 "type": "INTEGER",
                 "description": None,
-                "policyTags": {"names": ("foo", "bar")},
+                "policyTags": {"names": ["foo", "bar"]},
             },
         )
 
@@ -149,7 +149,7 @@ class TestSchemaField(unittest.TestCase):
         )
         self.assertEqual(field.name, "foo")
         self.assertEqual(field.field_type, "RECORD")
-        self.assertEqual(field.policy_tags.names, ["one", "two"])
+        self.assertEqual(field.policy_tags.names, ("one", "two"))
         self.assertEqual(len(field.fields), 1)
         self.assertEqual(field.fields[0].name, "bar")
         self.assertEqual(field.fields[0].field_type, "INTEGER")
@@ -693,7 +693,7 @@ class TestPolicyTags(unittest.TestCase):
         self.assertIsNotNone(empty_policy_tags.names)
         self.assertEqual(len(empty_policy_tags.names), 0)
         policy_tags = self._make_one(["foo", "bar"])
-        self.assertEqual(policy_tags.names, ["foo", "bar"])
+        self.assertEqual(policy_tags.names, ("foo", "bar"))
 
     def test_from_api_repr(self):
         klass = self._get_target_class()
@@ -711,16 +711,10 @@ class TestPolicyTags(unittest.TestCase):
         self.assertEqual(
             taglist.to_api_repr(), {"names": ["foo", "bar"]},
         )
-
-    def test_setter(self):
-        policy_tags = self._make_one()
-        self.assertEqual(policy_tags.names, [])
-        policy_tags.names = None
-        self.assertEqual(policy_tags.names, [])
-        policy_tags.names = ["foo", "bar"]
-        self.assertEqual(policy_tags.names, ["foo", "bar"])
-        policy_tags.names = None
-        self.assertEqual(policy_tags.names, [])
+        taglist2 = self._make_one(names=("foo", "bar"))
+        self.assertEqual(
+            taglist2.to_api_repr(), {"names": ["foo", "bar"]},
+        )
 
     def test___eq___wrong_type(self):
         policy = self._make_one(names=["foo"])
@@ -732,3 +726,17 @@ class TestPolicyTags(unittest.TestCase):
         policy = self._make_one(names=["foo", "bar"])
         other = self._make_one(names=["bar", "baz"])
         self.assertNotEqual(policy, other)
+
+    def test___hash__set_equality(self):
+        policy1 = self._make_one(["foo", "bar"])
+        policy2 = self._make_one(["bar", "baz"])
+        set_one = {policy1, policy2}
+        set_two = {policy1, policy2}
+        self.assertEqual(set_one, set_two)
+
+    def test___hash__not_equals(self):
+        policy1 = self._make_one(["foo", "bar"])
+        policy2 = self._make_one(["bar", "baz"])
+        set_one = {policy1}
+        set_two = {policy2}
+        self.assertNotEqual(set_one, set_two)

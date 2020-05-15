@@ -14,8 +14,6 @@
 
 """Schemas for BigQuery tables / queries."""
 
-import copy
-
 from six.moves import collections_abc
 
 from google.cloud.bigquery_v2 import types
@@ -333,32 +331,21 @@ class PolicyTagList(object):
     """Define Policy Tags for a column.
 
     Args:
-        names (Optional[List[str]]): list of policy tags to associate with
+        names (
+            Optional[List[str]]): list of policy tags to associate with
             the column.  Policy tag identifiers are of the form
             `projects/*/locations/*/taxonomies/*/policyTags/*`.
     """
 
-    def __init__(self, names=None):
+    def __init__(self, names=()):
         self._properties = {}
-        self.names = names
+        self._properties["names"] = tuple(names)
 
     @property
     def names(self):
-        """List[str]: Policy tags associated with this definition.
+        """Tuple[str]: Policy tags associated with this definition.
         """
-        return self._properties.get("names", [])
-
-    @names.setter
-    def names(self, value):
-        """Optional[List[str]]: Policy tags associated with this definition.
-
-        (Defaults to :data:`None`).
-        """
-        if value is not None:
-            self._properties["names"] = value
-        else:
-            if "names" in self._properties:
-                del self._properties["names"]
+        return self._properties.get("names", ())
 
     def _key(self):
         """A tuple key that uniquely describes this PolicyTagList.
@@ -377,6 +364,9 @@ class PolicyTagList(object):
 
     def __ne__(self, other):
         return not self == other
+
+    def __hash__(self):
+        return hash(self._key())
 
     def __repr__(self):
         return "PolicyTagList{}".format(self._key())
@@ -402,9 +392,8 @@ class PolicyTagList(object):
         """
         if api_repr is None:
             return None
-        instance = cls()
-        instance._properties = copy.deepcopy(api_repr)
-        return instance
+        names = api_repr.get("names", ())
+        return cls(names=names)
 
     def to_api_repr(self):
         """Return a dictionary representing this object.
@@ -419,4 +408,7 @@ class PolicyTagList(object):
                 A dictionary representing the PolicyTagList object in
                 serialized form.
         """
-        return copy.deepcopy(self._properties)
+        answer = {}
+        if self.names is not None:
+            answer["names"] = [name for name in self.names]
+        return answer

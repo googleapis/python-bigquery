@@ -701,6 +701,11 @@ class TestPolicyTags(unittest.TestCase):
         policy_tags = klass.from_api_repr(api_repr)
         self.assertEqual(policy_tags.to_api_repr(), api_repr)
 
+        # Ensure the None case correctly returns None, rather
+        # than an empty instance.
+        policy_tags2 = klass.from_api_repr(None)
+        self.assertIsNone(policy_tags2)
+
     def test_to_api_repr(self):
         taglist = self._make_one(names=["foo", "bar"])
         self.assertEqual(

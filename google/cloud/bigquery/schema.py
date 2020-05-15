@@ -397,8 +397,8 @@ class PolicyTagList(object):
                 what is output by :meth:`to_api_repr`.
 
         Returns:
-            google.cloud.bigquery.schema.PolicyTagList:
-                The ``PolicyTagList`` object.
+            Optional[google.cloud.bigquery.schema.PolicyTagList]:
+                The ``PolicyTagList`` object or None.
         """
         if api_repr is None:
             return None

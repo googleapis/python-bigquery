@@ -387,7 +387,7 @@ class TestBigQuery(unittest.TestCase):
         )
 
         table.schema = new_schema
-        table2 = Config.CLIENT.update_table(table, ["schema", ])
+        table2 = Config.CLIENT.update_table(table, ["schema"])
         self.assertEqual(policy_2, table2.schema[1].policy_tags)
 
     def test_create_table_w_time_partitioning_w_clustering_fields(self):

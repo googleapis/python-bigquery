@@ -360,7 +360,7 @@ class PolicyTagList(object):
             if "names" in self._properties:
                 del self._properties["names"]
 
-    def _key(self): 
+    def _key(self):
         """A tuple key that uniquely describes this PolicyTagList.
 
         Used to compute this instance's hashcode and evaluate equality.
@@ -377,9 +377,6 @@ class PolicyTagList(object):
 
     def __ne__(self, other):
         return not self == other
-
-    def __hash__(self):
-        return hash(self._key())
 
     def __repr__(self):
         return "PolicyTagList{}".format(self._key())

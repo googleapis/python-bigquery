@@ -718,7 +718,7 @@ class TestPolicyTags(unittest.TestCase):
         self.assertEqual(policy_tags.names, [])
 
     def test___eq___wrong_type(self):
-        policy = self._make_one(names=["foo", ])
+        policy = self._make_one(names=["foo"])
         other = object()
         self.assertNotEqual(policy, other)
         self.assertEqual(policy, mock.ANY)

@@ -332,7 +332,7 @@ class PolicyTagList(object):
 
     Args:
         names (
-            Optional[List[str]]): list of policy tags to associate with
+            Optional[Tuple[str]]): list of policy tags to associate with
             the column.  Policy tag identifiers are of the form
             `projects/*/locations/*/taxonomies/*/policyTags/*`.
     """

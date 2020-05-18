@@ -2128,7 +2128,14 @@ class TimePartitioning(object):
         return self._properties
 
     def _key(self):
-        return tuple(sorted(self._properties.items()))
+        properties = self._properties.copy()
+        if "type" in properties.keys():
+            properties["type_"] = properties.pop("type")
+        if "requirePartitionFilter" in properties.keys():
+            properties["require_partition_filter"] = properties.pop("requirePartitionFilter")
+        if "expirationMs" in properties.keys():
+            properties["expiration_ms"] = properties.pop("expirationMs")
+        return tuple(sorted(properties.items()))
 
     def __eq__(self, other):
         if not isinstance(other, TimePartitioning):
@@ -2142,7 +2149,7 @@ class TimePartitioning(object):
         return hash(self._key())
 
     def __repr__(self):
-        key_vals = ["{}={}".format(key, val) for key, val in self._key()]
+        key_vals = ["{}={}".format(key, repr(val)) for key, val in self._key()]
         return "TimePartitioning({})".format(",".join(key_vals))
 
 

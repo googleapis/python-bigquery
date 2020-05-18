@@ -154,11 +154,6 @@ class SchemaField(object):
     def policy_tags(self):
         """Optional[google.cloud.bigquery.schema.PolicyTagList]: Policy tag list
         definition for this field.
-
-        Raises:
-            ValueError:
-                If the value is not :class:`~google.cloud.bigquery.schema.PolicyTagList`
-                or :data:`None`.
         """
         return self._policy_tags
 

@@ -2128,9 +2128,14 @@ class TimePartitioning(object):
         return self._properties
 
     def _key(self):
+        # because we are only "renaming" top level keys shallow copy is sufficient here.
         properties = self._properties.copy()
         if "type" in properties.keys():
-            properties["type_"] = properties.pop("type")
+            # calling repr for non built-in type objects.
+            properties["type_"] = repr(properties.pop("type"))
+        if "field" in properties.keys():
+            # calling repr for non built-in type objects.
+            properties["field"] = repr(properties["field"])
         if "requirePartitionFilter" in properties.keys():
             properties["require_partition_filter"] = properties.pop("requirePartitionFilter")
         if "expirationMs" in properties.keys():
@@ -2149,7 +2154,7 @@ class TimePartitioning(object):
         return hash(self._key())
 
     def __repr__(self):
-        key_vals = ["{}={}".format(key, repr(val)) for key, val in self._key()]
+        key_vals = ["{}={}".format(key, val) for key, val in self._key()]
         return "TimePartitioning({})".format(",".join(key_vals))
 
 

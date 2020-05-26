@@ -3752,7 +3752,7 @@ class TestTimePartitioning(unittest.TestCase):
         time_partitioning = self._make_one(
             type_=TimePartitioningType.DAY, field="name", expiration_ms=10000
         )
-        expected = "TimePartitioning(expiration_ms=10000,field=name,type_='DAY')"
+        expected = "TimePartitioning(expiration_ms=10000,field='name',type_='DAY')"
         self.assertEqual(repr(time_partitioning), expected)
 
     def test_set_expiration_w_none(self):

@@ -2137,7 +2137,9 @@ class TimePartitioning(object):
             # calling repr for non built-in type objects.
             properties["field"] = repr(properties["field"])
         if "requirePartitionFilter" in properties.keys():
-            properties["require_partition_filter"] = properties.pop("requirePartitionFilter")
+            properties["require_partition_filter"] = properties.pop(
+                "requirePartitionFilter"
+            )
         if "expirationMs" in properties.keys():
             properties["expiration_ms"] = properties.pop("expirationMs")
         return tuple(sorted(properties.items()))

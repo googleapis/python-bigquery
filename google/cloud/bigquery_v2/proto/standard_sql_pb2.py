@@ -21,6 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="google.cloud.bigquery.v2",
     syntax="proto3",
     serialized_options=b"\n\034com.google.cloud.bigquery.v2B\020StandardSqlProtoZ@google.golang.org/genproto/googleapis/cloud/bigquery/v2;bigquery",
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n1google/cloud/bigquery_v2/proto/standard_sql.proto\x12\x18google.cloud.bigquery.v2\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1cgoogle/api/annotations.proto"\xcb\x03\n\x13StandardSqlDataType\x12N\n\ttype_kind\x18\x01 \x01(\x0e\x32\x36.google.cloud.bigquery.v2.StandardSqlDataType.TypeKindB\x03\xe0\x41\x02\x12K\n\x12\x61rray_element_type\x18\x02 \x01(\x0b\x32-.google.cloud.bigquery.v2.StandardSqlDataTypeH\x00\x12\x46\n\x0bstruct_type\x18\x03 \x01(\x0b\x32/.google.cloud.bigquery.v2.StandardSqlStructTypeH\x00"\xc2\x01\n\x08TypeKind\x12\x19\n\x15TYPE_KIND_UNSPECIFIED\x10\x00\x12\t\n\x05INT64\x10\x02\x12\x08\n\x04\x42OOL\x10\x05\x12\x0b\n\x07\x46LOAT64\x10\x07\x12\n\n\x06STRING\x10\x08\x12\t\n\x05\x42YTES\x10\t\x12\r\n\tTIMESTAMP\x10\x13\x12\x08\n\x04\x44\x41TE\x10\n\x12\x08\n\x04TIME\x10\x14\x12\x0c\n\x08\x44\x41TETIME\x10\x15\x12\r\n\tGEOGRAPHY\x10\x16\x12\x0b\n\x07NUMERIC\x10\x17\x12\t\n\x05\x41RRAY\x10\x10\x12\n\n\x06STRUCT\x10\x11\x42\n\n\x08sub_type"g\n\x10StandardSqlField\x12\x11\n\x04name\x18\x01 \x01(\tB\x03\xe0\x41\x01\x12@\n\x04type\x18\x02 \x01(\x0b\x32-.google.cloud.bigquery.v2.StandardSqlDataTypeB\x03\xe0\x41\x01"S\n\x15StandardSqlStructType\x12:\n\x06\x66ields\x18\x01 \x03(\x0b\x32*.google.cloud.bigquery.v2.StandardSqlFieldBr\n\x1c\x63om.google.cloud.bigquery.v2B\x10StandardSqlProtoZ@google.golang.org/genproto/googleapis/cloud/bigquery/v2;bigqueryb\x06proto3',
     dependencies=[
         google_dot_api_dot_field__behavior__pb2.DESCRIPTOR,
@@ -34,6 +35,7 @@ _STANDARDSQLDATATYPE_TYPEKIND = _descriptor.EnumDescriptor(
     full_name="google.cloud.bigquery.v2.StandardSqlDataType.TypeKind",
     filename=None,
     file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
     values=[
         _descriptor.EnumValueDescriptor(
             name="TYPE_KIND_UNSPECIFIED",
@@ -41,45 +43,111 @@ _STANDARDSQLDATATYPE_TYPEKIND = _descriptor.EnumDescriptor(
             number=0,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="INT64", index=1, number=2, serialized_options=None, type=None
+            name="INT64",
+            index=1,
+            number=2,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="BOOL", index=2, number=5, serialized_options=None, type=None
+            name="BOOL",
+            index=2,
+            number=5,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="FLOAT64", index=3, number=7, serialized_options=None, type=None
+            name="FLOAT64",
+            index=3,
+            number=7,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="STRING", index=4, number=8, serialized_options=None, type=None
+            name="STRING",
+            index=4,
+            number=8,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="BYTES", index=5, number=9, serialized_options=None, type=None
+            name="BYTES",
+            index=5,
+            number=9,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="TIMESTAMP", index=6, number=19, serialized_options=None, type=None
+            name="TIMESTAMP",
+            index=6,
+            number=19,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="DATE", index=7, number=10, serialized_options=None, type=None
+            name="DATE",
+            index=7,
+            number=10,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="TIME", index=8, number=20, serialized_options=None, type=None
+            name="TIME",
+            index=8,
+            number=20,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="DATETIME", index=9, number=21, serialized_options=None, type=None
+            name="DATETIME",
+            index=9,
+            number=21,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="GEOGRAPHY", index=10, number=22, serialized_options=None, type=None
+            name="GEOGRAPHY",
+            index=10,
+            number=22,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="NUMERIC", index=11, number=23, serialized_options=None, type=None
+            name="NUMERIC",
+            index=11,
+            number=23,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="ARRAY", index=12, number=16, serialized_options=None, type=None
+            name="ARRAY",
+            index=12,
+            number=16,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="STRUCT", index=13, number=17, serialized_options=None, type=None
+            name="STRUCT",
+            index=13,
+            number=17,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     containing_type=None,
@@ -96,6 +164,7 @@ _STANDARDSQLDATATYPE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="type_kind",
@@ -114,6 +183,7 @@ _STANDARDSQLDATATYPE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="array_element_type",
@@ -132,6 +202,7 @@ _STANDARDSQLDATATYPE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="struct_type",
@@ -150,6 +221,7 @@ _STANDARDSQLDATATYPE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -165,6 +237,7 @@ _STANDARDSQLDATATYPE = _descriptor.Descriptor(
             full_name="google.cloud.bigquery.v2.StandardSqlDataType.sub_type",
             index=0,
             containing_type=None,
+            create_key=_descriptor._internal_create_key,
             fields=[],
         ),
     ],
@@ -179,6 +252,7 @@ _STANDARDSQLFIELD = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="name",
@@ -197,6 +271,7 @@ _STANDARDSQLFIELD = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\001",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="type",
@@ -215,6 +290,7 @@ _STANDARDSQLFIELD = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\001",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -236,6 +312,7 @@ _STANDARDSQLSTRUCTTYPE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="fields",
@@ -254,6 +331,7 @@ _STANDARDSQLSTRUCTTYPE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],

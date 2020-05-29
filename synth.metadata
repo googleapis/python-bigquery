@@ -1,26 +1,25 @@
 {
-  "updateTime": "2020-02-04T11:46:46.343511Z",
   "sources": [
     {
-      "generator": {
-        "name": "artman",
-        "version": "0.44.4",
-        "dockerImage": "googleapis/artman@sha256:19e945954fc960a4bdfee6cb34695898ab21a8cf0bac063ee39b91f00a1faec8"
+      "git": {
+        "name": ".",
+        "remote": "https://github.com/googleapis/python-bigquery.git",
+        "sha": "1e773f7a65a204f7e5fea465b98153720da82d44"
       }
     },
     {
       "git": {
         "name": "googleapis",
         "remote": "https://github.com/googleapis/googleapis.git",
-        "sha": "69d9945330a5721cd679f17331a78850e2618226",
-        "internalRef": "293080182"
+        "sha": "e0f9d9e1f9de890db765be46f45ca8490723e3eb",
+        "internalRef": "309824146"
       }
     },
     {
-      "template": {
-        "name": "python_split_library",
-        "origin": "synthtool.gcp",
-        "version": "2019.10.17"
+      "git": {
+        "name": "synthtool",
+        "remote": "https://github.com/googleapis/synthtool.git",
+        "sha": "4e1d2cb79b02d7496b1452f91c518630c207145e"
       }
     }
   ],
@@ -31,8 +30,7 @@
         "apiName": "bigquery",
         "apiVersion": "v2",
         "language": "python",
-        "generator": "gapic",
-        "config": "google/cloud/bigquery/artman_bigquery_v2.yaml"
+        "generator": "bazel"
       }
     }
   ]

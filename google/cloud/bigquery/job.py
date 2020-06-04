@@ -3160,7 +3160,12 @@ class QueryJob(_AsyncJob):
             raise
 
     def result(
-        self, page_size=None, max_results=None, retry=DEFAULT_RETRY, timeout=None
+        self,
+        start_index=None,
+        page_size=None,
+        max_results=None,
+        retry=DEFAULT_RETRY,
+        timeout=None,
     ):
         """Start the job and wait for it to complete and get the result.
 
@@ -3170,6 +3175,8 @@ class QueryJob(_AsyncJob):
                 request. Non-positive values are ignored.
             max_results (Optional[int]):
                 The maximum total number of rows from this request.
+            start_index (int):
+                (Optional) The zero-based index of the starting row to read.
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the call that retrieves rows.
             timeout (Optional[float]):
@@ -3230,6 +3237,7 @@ class QueryJob(_AsyncJob):
             dest_table,
             page_size=page_size,
             max_results=max_results,
+            start_index=start_index,
             retry=retry,
             timeout=timeout,
         )

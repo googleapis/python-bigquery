@@ -36,7 +36,15 @@ class TestCursor(unittest.TestCase):
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)
 
-    def _mock_client(self, rows=None, schema=None, num_dml_affected_rows=None):
+    def _mock_client(
+        self,
+        rows=None,
+        schema=None,
+        num_dml_affected_rows=None,
+        default_query_job_config=None,
+        dry_run_job=False,
+        total_bytes_processed=0,
+    ):
         from google.cloud.bigquery import client
 
         if rows is None:
@@ -49,8 +57,12 @@ class TestCursor(unittest.TestCase):
             total_rows=total_rows,
             schema=schema,
             num_dml_affected_rows=num_dml_affected_rows,
+            dry_run=dry_run_job,
+            total_bytes_processed=total_bytes_processed,
         )
         mock_client.list_rows.return_value = rows
+        mock_client._default_query_job_config = default_query_job_config
+
         return mock_client
 
     def _mock_bqstorage_client(self, rows=None, stream_count=0):
@@ -76,18 +88,31 @@ class TestCursor(unittest.TestCase):
 
         return mock_client
 
-    def _mock_job(self, total_rows=0, schema=None, num_dml_affected_rows=None):
+    def _mock_job(
+        self,
+        total_rows=0,
+        schema=None,
+        num_dml_affected_rows=None,
+        dry_run=False,
+        total_bytes_processed=0,
+    ):
         from google.cloud.bigquery import job
 
         mock_job = mock.create_autospec(job.QueryJob)
         mock_job.error_result = None
         mock_job.state = "DONE"
-        mock_job.result.return_value = mock_job
-        mock_job._query_results = self._mock_results(
-            total_rows=total_rows,
-            schema=schema,
-            num_dml_affected_rows=num_dml_affected_rows,
-        )
+        mock_job.dry_run = dry_run
+
+        if dry_run:
+            mock_job.result.side_effect = exceptions.NotFound
+            mock_job.total_bytes_processed = total_bytes_processed
+        else:
+            mock_job.result.return_value = mock_job
+            mock_job._query_results = self._mock_results(
+                total_rows=total_rows,
+                schema=schema,
+                num_dml_affected_rows=num_dml_affected_rows,
+            )
 
         if num_dml_affected_rows is None:
             mock_job.statement_type = None  # API sends back None for SELECT
@@ -373,7 +398,27 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(args[0], "SELECT 1;")
         self.assertEqual(kwargs["job_id"], "foo")
 
-    def test_execute_custom_job_config(self):
+    def test_execute_w_default_config(self):
+        from google.cloud.bigquery.dbapi import connect
+        from google.cloud.bigquery import job
+
+        default_config = job.QueryJobConfig(use_legacy_sql=False, flatten_results=True)
+        client = self._mock_client(
+            rows=[], num_dml_affected_rows=0, default_query_job_config=default_config
+        )
+        connection = connect(client)
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT 1;", job_id="foo")
+
+        _, kwargs = client.query.call_args
+        used_config = kwargs["job_config"]
+        expected_config = job.QueryJobConfig(
+            use_legacy_sql=False, flatten_results=True, query_parameters=[]
+        )
+        self.assertEqual(used_config._properties, expected_config._properties)
+
+    def test_execute_custom_job_config_wo_default_config(self):
         from google.cloud.bigquery.dbapi import connect
         from google.cloud.bigquery import job
 
@@ -386,6 +431,29 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(args[0], "SELECT 1;")
         self.assertEqual(kwargs["job_id"], "foo")
         self.assertEqual(kwargs["job_config"], config)
+
+    def test_execute_custom_job_config_w_default_config(self):
+        from google.cloud.bigquery.dbapi import connect
+        from google.cloud.bigquery import job
+
+        default_config = job.QueryJobConfig(use_legacy_sql=False, flatten_results=True)
+        client = self._mock_client(
+            rows=[], num_dml_affected_rows=0, default_query_job_config=default_config
+        )
+        connection = connect(client)
+        cursor = connection.cursor()
+        config = job.QueryJobConfig(use_legacy_sql=True)
+
+        cursor.execute("SELECT 1;", job_id="foo", job_config=config)
+
+        _, kwargs = client.query.call_args
+        used_config = kwargs["job_config"]
+        expected_config = job.QueryJobConfig(
+            use_legacy_sql=True,  # the config passed to execute() prevails
+            flatten_results=True,  # from the default
+            query_parameters=[],
+        )
+        self.assertEqual(used_config._properties, expected_config._properties)
 
     def test_execute_w_dml(self):
         from google.cloud.bigquery.dbapi import connect
@@ -442,6 +510,52 @@ class TestCursor(unittest.TestCase):
         row = cursor.fetchone()
         self.assertIsNone(row)
 
+    def test_execute_w_query_dry_run(self):
+        from google.cloud.bigquery.job import QueryJobConfig
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery import dbapi
+
+        connection = dbapi.connect(
+            self._mock_client(
+                rows=[("hello", "world", 1), ("howdy", "y'all", 2)],
+                schema=[
+                    SchemaField("a", "STRING", mode="NULLABLE"),
+                    SchemaField("b", "STRING", mode="REQUIRED"),
+                    SchemaField("c", "INTEGER", mode="NULLABLE"),
+                ],
+                dry_run_job=True,
+                total_bytes_processed=12345,
+            )
+        )
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "SELECT a, b, c FROM hello_world WHERE d > 3;",
+            job_config=QueryJobConfig(dry_run=True),
+        )
+
+        expected_description = (
+            dbapi.cursor.Column(
+                name="estimated_bytes",
+                type_code="INTEGER",
+                display_size=None,
+                internal_size=None,
+                precision=None,
+                scale=None,
+                null_ok=False,
+            ),
+        )
+        self.assertEqual(cursor.description, expected_description)
+        self.assertEqual(cursor.rowcount, 1)
+
+        rows = cursor.fetchall()
+
+        # We expect a single row with one column - the estimated numbe of bytes
+        # that will be processed by the query.
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(rows[0]), 1)
+        self.assertEqual(rows[0][0], 12345)
+
     def test_execute_raises_if_result_raises(self):
         import google.cloud.exceptions
 
@@ -451,8 +565,10 @@ class TestCursor(unittest.TestCase):
         from google.cloud.bigquery.dbapi import exceptions
 
         job = mock.create_autospec(job.QueryJob)
+        job.dry_run = None
         job.result.side_effect = google.cloud.exceptions.GoogleCloudError("")
         client = mock.create_autospec(client.Client)
+        client._default_query_job_config = None
         client.query.return_value = job
         connection = connect(client)
         cursor = connection.cursor()

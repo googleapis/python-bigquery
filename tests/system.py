@@ -1782,6 +1782,24 @@ class TestBigQuery(unittest.TestCase):
         ]
         self.assertEqual(fetched_data, expected_data)
 
+    def test_dbapi_dry_run_query(self):
+        from google.cloud.bigquery.job import QueryJobConfig
+
+        query = """
+            SELECT country_name
+            FROM `bigquery-public-data.utility_us.country_code_iso`
+            WHERE country_name LIKE 'U%'
+        """
+
+        Config.CURSOR.execute(query, job_config=QueryJobConfig(dry_run=True))
+        self.assertEqual(Config.CURSOR.rowcount, 1, "expected a single row")
+
+        rows = Config.CURSOR.fetchall()
+
+        row_tuples = [r.values() for r in rows]
+        expected = [(3473,)]
+        self.assertEqual(row_tuples, expected)
+
     def _load_table_for_dml(self, rows, dataset_id, table_id):
         from google.cloud._testing import _NamedTemporaryFile
         from google.cloud.bigquery.job import CreateDisposition

@@ -2391,7 +2391,7 @@ class Client(ClientWithProject):
         project=None,
         retry=DEFAULT_RETRY,
         timeout=None,
-    ):
+    ) -> "job.QueryJob":
         """Run a SQL query.
 
         See

@@ -249,12 +249,14 @@ class TestBigQuery(unittest.TestCase):
     def test_get_dataset(self):
         dataset_id = _make_dataset_id("get_dataset")
         client = Config.CLIENT
-        dataset_arg = Dataset(client.dataset(dataset_id))
+        project = client.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
+        dataset_arg = Dataset(dataset_ref)
         dataset_arg.friendly_name = "Friendly"
         dataset_arg.description = "Description"
         dataset = retry_403(client.create_dataset)(dataset_arg)
         self.to_delete.append(dataset)
-        dataset_ref = client.dataset(dataset_id)
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
 
         # Get with a reference.
         got = client.get_dataset(dataset_ref)
@@ -341,6 +343,57 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(_table_exists(table))
         self.assertEqual(table.table_id, table_id)
 
+    def test_create_table_with_policy(self):
+        from google.cloud.bigquery.schema import PolicyTagList
+
+        dataset = self.temp_dataset(_make_dataset_id("create_table_with_policy"))
+        table_id = "test_table"
+        policy_1 = PolicyTagList(
+            names=[
+                "projects/{}/locations/us/taxonomies/1/policyTags/2".format(
+                    Config.CLIENT.project
+                ),
+            ]
+        )
+        policy_2 = PolicyTagList(
+            names=[
+                "projects/{}/locations/us/taxonomies/3/policyTags/4".format(
+                    Config.CLIENT.project
+                ),
+            ]
+        )
+
+        schema = [
+            bigquery.SchemaField("full_name", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField(
+                "secret_int", "INTEGER", mode="REQUIRED", policy_tags=policy_1
+            ),
+        ]
+        table_arg = Table(dataset.table(table_id), schema=schema)
+        self.assertFalse(_table_exists(table_arg))
+
+        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+        self.assertEqual(policy_1, table.schema[1].policy_tags)
+
+        # Amend the schema to replace the policy tags
+        new_schema = table.schema[:]
+        old_field = table.schema[1]
+        new_schema[1] = bigquery.SchemaField(
+            name=old_field.name,
+            field_type=old_field.field_type,
+            mode=old_field.mode,
+            description=old_field.description,
+            fields=old_field.fields,
+            policy_tags=policy_2,
+        )
+
+        table.schema = new_schema
+        table2 = Config.CLIENT.update_table(table, ["schema"])
+        self.assertEqual(policy_2, table2.schema[1].policy_tags)
+
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning
         from google.cloud.bigquery.table import TimePartitioningType
@@ -367,7 +420,8 @@ class TestBigQuery(unittest.TestCase):
 
     def test_delete_dataset_with_string(self):
         dataset_id = _make_dataset_id("delete_table_true")
-        dataset_ref = Config.CLIENT.dataset(dataset_id)
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
         retry_403(Config.CLIENT.create_dataset)(Dataset(dataset_ref))
         self.assertTrue(_dataset_exists(dataset_ref))
         Config.CLIENT.delete_dataset(dataset_id)
@@ -375,9 +429,9 @@ class TestBigQuery(unittest.TestCase):
 
     def test_delete_dataset_delete_contents_true(self):
         dataset_id = _make_dataset_id("delete_table_true")
-        dataset = retry_403(Config.CLIENT.create_dataset)(
-            Dataset(Config.CLIENT.dataset(dataset_id))
-        )
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
+        dataset = retry_403(Config.CLIENT.create_dataset)(Dataset(dataset_ref))
 
         table_id = "test_table"
         table_arg = Table(dataset.table(table_id), schema=SCHEMA)
@@ -1314,7 +1368,9 @@ class TestBigQuery(unittest.TestCase):
         source_blob_name = "person_ages.csv"
         dataset_id = _make_dataset_id("load_gcs_then_extract")
         table_id = "test_table"
-        table_ref = Config.CLIENT.dataset(dataset_id).table(table_id)
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
+        table_ref = dataset_ref.table(table_id)
         table = Table(table_ref)
         self.to_delete.insert(0, table)
         bucket = self._create_bucket(bucket_name)
@@ -1497,8 +1553,10 @@ class TestBigQuery(unittest.TestCase):
         rows = list(Config.CLIENT.query("SELECT 1;").result())
         assert rows[0][0] == 1
 
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, "dset")
         bad_config = LoadJobConfig()
-        bad_config.destination = Config.CLIENT.dataset("dset").table("tbl")
+        bad_config.destination = dataset_ref.table("tbl")
         with self.assertRaises(Exception):
             Config.CLIENT.query(good_query, job_config=bad_config).result()
 
@@ -1520,6 +1578,18 @@ class TestBigQuery(unittest.TestCase):
         )
         iterator = query_job.result(page_size=page_size)
         self.assertEqual(next(iterator.pages).num_items, page_size)
+
+    def test_query_w_start_index(self):
+        start_index = 164652
+        query_job = Config.CLIENT.query(
+            "SELECT word FROM `bigquery-public-data.samples.shakespeare`;",
+            job_id_prefix="test_query_w_start_index_",
+        )
+        result1 = query_job.result(start_index=start_index)
+        total_rows = result1.total_rows
+
+        self.assertEqual(result1.extra_params["startIndex"], start_index)
+        self.assertEqual(len(list(result1)), total_rows - start_index)
 
     def test_query_statistics(self):
         """
@@ -2763,7 +2833,9 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(len(dataframe.index), 100)
 
     def temp_dataset(self, dataset_id, location=None):
-        dataset = Dataset(Config.CLIENT.dataset(dataset_id))
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
+        dataset = Dataset(dataset_ref)
         if location:
             dataset.location = location
         dataset = retry_403(Config.CLIENT.create_dataset)(dataset)

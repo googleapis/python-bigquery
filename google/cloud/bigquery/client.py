@@ -471,9 +471,20 @@ class Client(ClientWithProject):
                 retry, method="POST", path=path, data=data, timeout=timeout
             )
             return Dataset.from_api_repr(api_response)
-        except google.api_core.exceptions.Conflict:
+        except google.api_core.exceptions.Conflict as exc:
             if not exists_ok:
-                raise
+                if "already exists" in exc.message.lower():
+                    rebranded_error = google.api_core.exceptions.AlreadyExists(
+                        exc.message, exc.errors, exc.response
+                    )
+                    six.raise_from(rebranded_error, exc)
+                elif "aborted" in exc.message.lower():
+                    rebranded_error = google.api_core.exceptions.Aborted(
+                        exc.message, exc.errors, exc.response
+                    )
+                    six.raise_from(rebranded_error, exc)
+                else:
+                    raise
             return self.get_dataset(dataset.reference, retry=retry)
 
     def create_routine(
@@ -511,9 +522,20 @@ class Client(ClientWithProject):
                 retry, method="POST", path=path, data=resource, timeout=timeout
             )
             return Routine.from_api_repr(api_response)
-        except google.api_core.exceptions.Conflict:
+        except google.api_core.exceptions.Conflict as exc:
             if not exists_ok:
-                raise
+                if "already exists" in exc.message.lower():
+                    rebranded_error = google.api_core.exceptions.AlreadyExists(
+                        exc.message, exc.errors, exc.response
+                    )
+                    six.raise_from(rebranded_error, exc)
+                elif "aborted" in exc.message.lower():
+                    rebranded_error = google.api_core.exceptions.Aborted(
+                        exc.message, exc.errors, exc.response
+                    )
+                    six.raise_from(rebranded_error, exc)
+                else:
+                    raise
             return self.get_routine(routine.reference, retry=retry)
 
     def create_table(self, table, exists_ok=False, retry=DEFAULT_RETRY, timeout=None):
@@ -554,9 +576,20 @@ class Client(ClientWithProject):
                 retry, method="POST", path=path, data=data, timeout=timeout
             )
             return Table.from_api_repr(api_response)
-        except google.api_core.exceptions.Conflict:
+        except google.api_core.exceptions.Conflict as exc:
             if not exists_ok:
-                raise
+                if "already exists" in exc.message.lower():
+                    rebranded_error = google.api_core.exceptions.AlreadyExists(
+                        exc.message, exc.errors, exc.response
+                    )
+                    six.raise_from(rebranded_error, exc)
+                elif "aborted" in exc.message.lower():
+                    rebranded_error = google.api_core.exceptions.Aborted(
+                        exc.message, exc.errors, exc.response
+                    )
+                    six.raise_from(rebranded_error, exc)
+                else:
+                    raise
             return self.get_table(table.reference, retry=retry)
 
     def _call_api(self, retry, **kwargs):

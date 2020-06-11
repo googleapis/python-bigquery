@@ -1049,6 +1049,30 @@ class TestClient(unittest.TestCase):
         with pytest.raises(google.api_core.exceptions.AlreadyExists):
             client.create_dataset(self.DS_ID)
 
+    def test_create_dataset_aborted_w_exists_ok_false(self):
+        creds = _make_credentials()
+        client = self._make_one(
+            project=self.PROJECT, credentials=creds, location=self.LOCATION
+        )
+        client._connection = make_connection(
+            google.api_core.exceptions.Aborted("Transaction aborted")
+        )
+
+        with pytest.raises(google.api_core.exceptions.Aborted):
+            client.create_dataset(self.DS_ID)
+
+    def test_create_dataset_conflict_w_exists_ok_false(self):
+        creds = _make_credentials()
+        client = self._make_one(
+            project=self.PROJECT, credentials=creds, location=self.LOCATION
+        )
+        client._connection = make_connection(
+            google.api_core.exceptions.Conflict("Conflict raised")
+        )
+
+        with pytest.raises(google.api_core.exceptions.Conflict):
+            client.create_dataset(self.DS_ID)
+
     def test_create_dataset_alreadyexists_w_exists_ok_true(self):
         post_path = "/projects/{}/datasets".format(self.PROJECT)
         get_path = "/projects/{}/datasets/{}".format(self.PROJECT, self.DS_ID)
@@ -1128,12 +1152,68 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         conn = client._connection = make_connection(
+            google.api_core.exceptions.Conflict("Conflict raised")
+        )
+        full_routine_id = "test-routine-project.test_routines.minimal_routine"
+        routine = Routine(full_routine_id)
+
+        with pytest.raises(google.api_core.exceptions.Conflict):
+            client.create_routine(routine)
+
+        resource = {
+            "routineReference": {
+                "projectId": "test-routine-project",
+                "datasetId": "test_routines",
+                "routineId": "minimal_routine",
+            }
+        }
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path="/projects/test-routine-project/datasets/test_routines/routines",
+            data=resource,
+            timeout=None,
+        )
+
+    def test_create_routine_w_alreadyexists_w_exists_ok_false(self):
+        from google.cloud.bigquery.routine import Routine
+
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+        conn = client._connection = make_connection(
             google.api_core.exceptions.AlreadyExists("routine already exists")
         )
         full_routine_id = "test-routine-project.test_routines.minimal_routine"
         routine = Routine(full_routine_id)
 
         with pytest.raises(google.api_core.exceptions.AlreadyExists):
+            client.create_routine(routine)
+
+        resource = {
+            "routineReference": {
+                "projectId": "test-routine-project",
+                "datasetId": "test_routines",
+                "routineId": "minimal_routine",
+            }
+        }
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path="/projects/test-routine-project/datasets/test_routines/routines",
+            data=resource,
+            timeout=None,
+        )
+
+    def test_create_routine_w_aborted_w_exists_ok_false(self):
+        from google.cloud.bigquery.routine import Routine
+
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+        conn = client._connection = make_connection(
+            google.api_core.exceptions.Aborted("Transaction aborted")
+        )
+        full_routine_id = "test-routine-project.test_routines.minimal_routine"
+        routine = Routine(full_routine_id)
+
+        with pytest.raises(google.api_core.exceptions.Aborted):
             client.create_routine(routine)
 
         resource = {
@@ -1526,10 +1606,64 @@ class TestClient(unittest.TestCase):
             project=self.PROJECT, credentials=creds, location=self.LOCATION
         )
         conn = client._connection = make_connection(
-            google.api_core.exceptions.AlreadyExists("table already exists")
+            google.api_core.exceptions.AlreadyExists("Already Exists")
         )
 
         with pytest.raises(google.api_core.exceptions.AlreadyExists):
+            client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
+
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path=post_path,
+            data={
+                "tableReference": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": self.TABLE_ID,
+                },
+                "labels": {},
+            },
+            timeout=None,
+        )
+
+    def test_create_table_aborted_w_exists_ok_false(self):
+        post_path = "/projects/{}/datasets/{}/tables".format(self.PROJECT, self.DS_ID)
+        creds = _make_credentials()
+        client = self._make_one(
+            project=self.PROJECT, credentials=creds, location=self.LOCATION
+        )
+        conn = client._connection = make_connection(
+            google.api_core.exceptions.Aborted("Transaction Aborted")
+        )
+
+        with pytest.raises(google.api_core.exceptions.Aborted):
+            client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
+
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path=post_path,
+            data={
+                "tableReference": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": self.TABLE_ID,
+                },
+                "labels": {},
+            },
+            timeout=None,
+        )
+
+    def test_create_table_conflict_w_exists_ok_false(self):
+        post_path = "/projects/{}/datasets/{}/tables".format(self.PROJECT, self.DS_ID)
+        creds = _make_credentials()
+        client = self._make_one(
+            project=self.PROJECT, credentials=creds, location=self.LOCATION
+        )
+        conn = client._connection = make_connection(
+            google.api_core.exceptions.Conflict("can't complete the request")
+        )
+
+        with pytest.raises(google.api_core.exceptions.Conflict):
             client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
 
         conn.api_request.assert_called_once_with(

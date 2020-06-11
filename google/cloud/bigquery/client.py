@@ -56,6 +56,7 @@ from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery._helpers import _verify_job_config_type
 from google.cloud.bigquery._helpers import _del_sub_prop
+from google.cloud.bigquery._helpers import _raise_exception
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
@@ -472,19 +473,7 @@ class Client(ClientWithProject):
             )
             return Dataset.from_api_repr(api_response)
         except google.api_core.exceptions.Conflict as exc:
-            if not exists_ok:
-                if "already exists" in exc.message.lower():
-                    rebranded_error = google.api_core.exceptions.AlreadyExists(
-                        exc.message, exc.errors, exc.response
-                    )
-                    six.raise_from(rebranded_error, exc)
-                elif "aborted" in exc.message.lower():
-                    rebranded_error = google.api_core.exceptions.Aborted(
-                        exc.message, exc.errors, exc.response
-                    )
-                    six.raise_from(rebranded_error, exc)
-                else:
-                    raise
+            _raise_exception(exists_ok, exc)
             return self.get_dataset(dataset.reference, retry=retry)
 
     def create_routine(
@@ -523,19 +512,7 @@ class Client(ClientWithProject):
             )
             return Routine.from_api_repr(api_response)
         except google.api_core.exceptions.Conflict as exc:
-            if not exists_ok:
-                if "already exists" in exc.message.lower():
-                    rebranded_error = google.api_core.exceptions.AlreadyExists(
-                        exc.message, exc.errors, exc.response
-                    )
-                    six.raise_from(rebranded_error, exc)
-                elif "aborted" in exc.message.lower():
-                    rebranded_error = google.api_core.exceptions.Aborted(
-                        exc.message, exc.errors, exc.response
-                    )
-                    six.raise_from(rebranded_error, exc)
-                else:
-                    raise
+            _raise_exception(exists_ok, exc)
             return self.get_routine(routine.reference, retry=retry)
 
     def create_table(self, table, exists_ok=False, retry=DEFAULT_RETRY, timeout=None):
@@ -577,19 +554,7 @@ class Client(ClientWithProject):
             )
             return Table.from_api_repr(api_response)
         except google.api_core.exceptions.Conflict as exc:
-            if not exists_ok:
-                if "already exists" in exc.message.lower():
-                    rebranded_error = google.api_core.exceptions.AlreadyExists(
-                        exc.message, exc.errors, exc.response
-                    )
-                    six.raise_from(rebranded_error, exc)
-                elif "aborted" in exc.message.lower():
-                    rebranded_error = google.api_core.exceptions.Aborted(
-                        exc.message, exc.errors, exc.response
-                    )
-                    six.raise_from(rebranded_error, exc)
-                else:
-                    raise
+            _raise_exception(exists_ok, exc)
             return self.get_table(table.reference, retry=retry)
 
     def _call_api(self, retry, **kwargs):

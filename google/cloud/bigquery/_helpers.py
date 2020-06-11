@@ -19,6 +19,9 @@ import copy
 import datetime
 import decimal
 import re
+import six
+
+import google.api_core.exceptions
 
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
@@ -26,6 +29,7 @@ from google.cloud._helpers import _datetime_from_microseconds
 from google.cloud._helpers import _microseconds_from_datetime
 from google.cloud._helpers import _RFC3339_NO_FRACTION
 from google.cloud._helpers import _to_bytes
+
 
 _RFC3339_MICROS_NO_ZULU = "%Y-%m-%dT%H:%M:%S.%f"
 _TIMEONLY_WO_MICROS = "%H:%M:%S"
@@ -684,3 +688,32 @@ def _verify_job_config_type(job_config, expected_type, param_name="job_config"):
                 job_config=job_config,
             )
         )
+
+
+def _raise_exception(exists_ok, exc):
+    """Raise an exception.
+
+    Arguments:
+        exists_ok (bool):
+            Defaults to ``False``. If ``True``, ignore "already exists"
+            errors when creating the routine.
+
+        exc (google.api_core.exceptions.Conflict):
+            The exception object to use for raise an actual
+            exception type with all the information.
+    """
+    if "already exists" in exc.message.lower():
+        if not exists_ok:
+            rebranded_error = google.api_core.exceptions.AlreadyExists(
+                exc.message, exc.errors, exc.response
+            )
+            six.raise_from(rebranded_error, exc)
+        else:
+            return
+    if "aborted" in exc.message.lower():
+        rebranded_error = google.api_core.exceptions.Aborted(
+            exc.message, exc.errors, exc.response
+        )
+        six.raise_from(rebranded_error, exc)
+    else:
+        raise

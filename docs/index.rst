@@ -2,10 +2,10 @@
 
 .. note::
 
-   Because the bigquery client uses the third-party :mod:`requests` library
-   by default and the bigquery-storage client uses :mod:`grpcio` library,
+   Because the Bigquery client uses the third-party :mod:`requests` library
+   by default and the Bigquery-Storage client uses :mod:`grpcio` library,
    both are safe to share instances across threads.  In multiprocessing
-   scenarios, best practice is to create client instances *after*
+   scenarios, the best practice is to create client instances *after*
    :class:`multiprocessing.Pool` or :class:`multiprocessing.Process` invokes
    :func:`os.fork`.
 

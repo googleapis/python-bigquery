@@ -28,8 +28,6 @@ import logging
 import six
 
 from google.cloud.bigquery import job
-from google.cloud.bigquery import schema
-from google.cloud.bigquery import table
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
 import google.cloud.exceptions
@@ -188,11 +186,8 @@ class Cursor(object):
         )
 
         if self._query_job.dry_run:
-            schema_field = schema.SchemaField(
-                name="estimated_bytes", field_type="INTEGER", mode="REQUIRED",
-            )
-            self._set_description(schema=[schema_field])
-            self.rowcount = 1
+            self._set_description(schema=None)
+            self.rowcount = 0
             return
 
         # Wait for the query to finish.
@@ -228,9 +223,7 @@ class Cursor(object):
             )
 
         if self._query_job.dry_run:
-            estimated_bytes = self._query_job.total_bytes_processed
-            row = table.Row((estimated_bytes,), {"estimated_bytes": 0})
-            self._query_data = iter([row])
+            self._query_data = iter([])
             return
 
         is_dml = (
@@ -347,9 +340,7 @@ class Cursor(object):
         """Fetch a single row from the results of the last ``execute*()`` call.
 
         .. note::
-            If a dry run query was executed, a row with a single value is
-            returned representing the estimated number of bytes that would be
-            processed by the query.
+            If a dry run query was executed, no rows are returned.
 
         Returns:
             Tuple:
@@ -369,9 +360,7 @@ class Cursor(object):
         """Fetch multiple results from the last ``execute*()`` call.
 
         .. note::
-            If a dry run query was executed, a row with a single value is
-            returned representing the estimated number of bytes that would be
-            processed by the query.
+            If a dry run query was executed, no rows are returned.
 
         .. note::
             The size parameter is not used for the request/response size.
@@ -410,9 +399,7 @@ class Cursor(object):
         """Fetch all remaining results from the last ``execute*()`` call.
 
         .. note::
-            If a dry run query was executed, a row with a single value is
-            returned representing the estimated number of bytes that would be
-            processed by the query.
+            If a dry run query was executed, no rows are returned.
 
         Returns:
             List[Tuple]: A list of all the rows in the results.

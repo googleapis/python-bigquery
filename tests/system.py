@@ -1844,13 +1844,11 @@ class TestBigQuery(unittest.TestCase):
         """
 
         Config.CURSOR.execute(query, job_config=QueryJobConfig(dry_run=True))
-        self.assertEqual(Config.CURSOR.rowcount, 1, "expected a single row")
+        self.assertEqual(Config.CURSOR.rowcount, 0, "expected no rows")
 
         rows = Config.CURSOR.fetchall()
 
-        row_tuples = [r.values() for r in rows]
-        expected = [(3473,)]
-        self.assertEqual(row_tuples, expected)
+        self.assertEqual(list(rows), [])
 
     @unittest.skipIf(
         bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"

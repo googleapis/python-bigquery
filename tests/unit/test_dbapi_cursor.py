@@ -662,27 +662,10 @@ class TestCursor(unittest.TestCase):
             job_config=QueryJobConfig(dry_run=True),
         )
 
-        expected_description = (
-            dbapi.cursor.Column(
-                name="estimated_bytes",
-                type_code="INTEGER",
-                display_size=None,
-                internal_size=None,
-                precision=None,
-                scale=None,
-                null_ok=False,
-            ),
-        )
-        self.assertEqual(cursor.description, expected_description)
-        self.assertEqual(cursor.rowcount, 1)
-
+        self.assertEqual(cursor.rowcount, 0)
+        self.assertIsNone(cursor.description)
         rows = cursor.fetchall()
-
-        # We expect a single row with one column - the estimated numbe of bytes
-        # that will be processed by the query.
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(len(rows[0]), 1)
-        self.assertEqual(rows[0][0], 12345)
+        self.assertEqual(list(rows), [])
 
     def test_execute_raises_if_result_raises(self):
         import google.cloud.exceptions

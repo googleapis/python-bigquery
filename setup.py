@@ -36,6 +36,7 @@ dependencies = [
     "google-resumable-media >= 0.5.0, < 0.6dev",
     "protobuf >= 3.6.0",
     "six >=1.13.0,< 2.0.0dev",
+    "rsa <= 4.0",  # rsa 4.0 is the last release compatible with Python 2.7
 ]
 extras = {
     "bqstorage": [

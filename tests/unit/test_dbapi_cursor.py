@@ -638,6 +638,52 @@ class TestCursor(unittest.TestCase):
         row = cursor.fetchone()
         self.assertIsNone(row)
 
+    def test_execute_w_query_dry_run(self):
+        from google.cloud.bigquery.job import QueryJobConfig
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery import dbapi
+
+        connection = dbapi.connect(
+            self._mock_client(
+                rows=[("hello", "world", 1), ("howdy", "y'all", 2)],
+                schema=[
+                    SchemaField("a", "STRING", mode="NULLABLE"),
+                    SchemaField("b", "STRING", mode="REQUIRED"),
+                    SchemaField("c", "INTEGER", mode="NULLABLE"),
+                ],
+                dry_run_job=True,
+                total_bytes_processed=12345,
+            )
+        )
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "SELECT a, b, c FROM hello_world WHERE d > 3;",
+            job_config=QueryJobConfig(dry_run=True),
+        )
+
+        expected_description = (
+            dbapi.cursor.Column(
+                name="estimated_bytes",
+                type_code="INTEGER",
+                display_size=None,
+                internal_size=None,
+                precision=None,
+                scale=None,
+                null_ok=False,
+            ),
+        )
+        self.assertEqual(cursor.description, expected_description)
+        self.assertEqual(cursor.rowcount, 1)
+
+        rows = cursor.fetchall()
+
+        # We expect a single row with one column - the estimated numbe of bytes
+        # that will be processed by the query.
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(rows[0]), 1)
+        self.assertEqual(rows[0][0], 12345)
+
     def test_execute_raises_if_result_raises(self):
         import google.cloud.exceptions
 
@@ -647,8 +693,10 @@ class TestCursor(unittest.TestCase):
         from google.cloud.bigquery.dbapi import exceptions
 
         job = mock.create_autospec(job.QueryJob)
+        job.dry_run = None
         job.result.side_effect = google.cloud.exceptions.GoogleCloudError("")
         client = mock.create_autospec(client.Client)
+        client._default_query_job_config = None
         client.query.return_value = job
         connection = connect(client)
         cursor = connection.cursor()

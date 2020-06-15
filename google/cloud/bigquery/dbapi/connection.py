@@ -36,7 +36,7 @@ class Connection(object):
             BigQuery. If not passed, it is created using the same credentials
             as ``client`` (provided that BigQuery Storage dependencies are installed).
 
-            If both clients are availalbe, ``bqstorage_client`` is used for
+            If both clients are available, ``bqstorage_client`` is used for
             fetching query results.
     """
 
@@ -106,7 +106,7 @@ def connect(client=None, bqstorage_client=None):
             BigQuery. If not passed, it is created using the same credentials
             as ``client`` (provided that BigQuery Storage dependencies are installed).
 
-            If both clients are availalbe, ``bqstorage_client`` is used for
+            If both clients are available, ``bqstorage_client`` is used for
             fetching query results.
 
     Returns:

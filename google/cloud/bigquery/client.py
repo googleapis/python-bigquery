@@ -46,6 +46,7 @@ from google.resumable_media.requests import ResumableUpload
 
 import google.api_core.client_options
 import google.api_core.exceptions
+from google.api_core.iam import Policy
 from google.api_core import page_iterator
 import google.cloud._helpers
 from google.cloud import exceptions
@@ -596,6 +597,30 @@ class Client(ClientWithProject):
             retry, method="GET", path=dataset_ref.path, timeout=timeout
         )
         return Dataset.from_api_repr(api_response)
+
+    def get_iam_policy(
+        self, table, requested_policy_version=1, retry=DEFAULT_RETRY, timeout=None,
+    ):
+        if not isinstance(table, (Table, TableReference)):
+            raise TypeError("table must be a Table or TableReference")
+
+        if requested_policy_version != 1:
+            raise ValueError("only IAM policy version 1 is supported")
+
+        options = {}
+        body = {}
+        options["requestedPolicyVersion"] = requested_policy_version
+        body["options"] = options
+
+        path = "%s:getIamPolicy" % (table.path)
+
+        response = self._call_api(
+            retry, method="POST", path=path, data=body, timeout=timeout,
+        )
+
+        iam_policy = Policy.from_api_repr(response)
+
+        return iam_policy
 
     def get_model(self, model_ref, retry=DEFAULT_RETRY, timeout=None):
         """[Beta] Fetch the model referenced by ``model_ref``.

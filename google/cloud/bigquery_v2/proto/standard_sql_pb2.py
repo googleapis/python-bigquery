@@ -301,14 +301,12 @@ StandardSqlDataType = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _STANDARDSQLDATATYPE,
         "__module__": "google.cloud.bigquery_v2.proto.standard_sql_pb2",
-        "__doc__": """The type of a variable, e.g., a function argument.
-  Examples: INT64: {type_kind=``INT64``} ARRAY: {type_kind=``ARRAY``,
+        "__doc__": """The type of a variable, e.g., a function argument. Examples: INT64:
+  {type_kind=``INT64``} ARRAY: {type_kind=``ARRAY``,
   array_element_type=``STRING``} STRUCT<x STRING, y ARRAY>:
   {type_kind=``STRUCT``, struct_type={fields=[ {name=``x``,
   type={type_kind=``STRING``}}, {name=``y``, type={type_kind=``ARRAY``,
   array_element_type=``DATE``}} ]}}
-  
-  
   Attributes:
       type_kind:
           Required. The top level type of this field. Can be any
@@ -330,8 +328,6 @@ StandardSqlField = _reflection.GeneratedProtocolMessageType(
         "DESCRIPTOR": _STANDARDSQLFIELD,
         "__module__": "google.cloud.bigquery_v2.proto.standard_sql_pb2",
         "__doc__": """A field or a column.
-  
-  
   Attributes:
       name:
           Optional. The name of this field. Can be absent for struct

@@ -118,6 +118,7 @@ ModelReference = _reflection.GeneratedProtocolMessageType(
         "DESCRIPTOR": _MODELREFERENCE,
         "__module__": "google.cloud.bigquery_v2.proto.model_reference_pb2",
         "__doc__": """Id path of a model.
+  
   Attributes:
       project_id:
           Required. The ID of the project containing this model.

@@ -3541,6 +3541,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                 "__doc__": """Evaluation metrics for regression and explicit feedback type matrix
     factorization models.
+    
     Attributes:
         mean_absolute_error:
             Mean absolute error.
@@ -3568,6 +3569,7 @@ Model = _reflection.GeneratedProtocolMessageType(
     then an unweighted average is taken of those values. When micro-
     averaged, the metric is calculated globally by counting the total
     number of correctly predicted rows.
+    
     Attributes:
         precision:
             Precision is the fraction of actual positive predictions that
@@ -3609,6 +3611,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                         "DESCRIPTOR": _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX,
                         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                         "__doc__": """Confusion matrix for binary classification models.
+      
       Attributes:
           positive_class_threshold:
               Threshold value used when computing each of the following
@@ -3638,6 +3641,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                 "DESCRIPTOR": _MODEL_BINARYCLASSIFICATIONMETRICS,
                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                 "__doc__": """Evaluation metrics for binary classification/classifier models.
+    
     Attributes:
         aggregate_classification_metrics:
             Aggregate classification metrics.
@@ -3666,6 +3670,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                                 "DESCRIPTOR": _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX_ENTRY,
                                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                                 "__doc__": """A single entry in the confusion matrix.
+        
         Attributes:
             predicted_label:
                 The predicted label. For confidence_threshold > 0, we will
@@ -3684,6 +3689,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                                 "DESCRIPTOR": _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX_ROW,
                                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                                 "__doc__": """A single row in the confusion matrix.
+        
         Attributes:
             actual_label:
                 The original label of this row.
@@ -3696,6 +3702,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                         "DESCRIPTOR": _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX,
                         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                         "__doc__": """Confusion matrix for multi-class classification models.
+      
       Attributes:
           confidence_threshold:
               Confidence threshold used when computing the entries of the
@@ -3709,6 +3716,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                 "DESCRIPTOR": _MODEL_MULTICLASSCLASSIFICATIONMETRICS,
                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                 "__doc__": """Evaluation metrics for multi-class classification/classifier models.
+    
     Attributes:
         aggregate_classification_metrics:
             Aggregate classification metrics.
@@ -3741,6 +3749,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                                                 "DESCRIPTOR": _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE_CATEGORICALVALUE_CATEGORYCOUNT,
                                                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                                                 "__doc__": """Represents the count of a single category within the cluster.
+            
             Attributes:
                 category:
                     The name of category.
@@ -3754,6 +3763,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                                         "DESCRIPTOR": _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE_CATEGORICALVALUE,
                                         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                                         "__doc__": """Representative value of a categorical feature.
+          
           Attributes:
               category_counts:
                   Counts of all categories for the categorical feature. If there
@@ -3767,6 +3777,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                                 "DESCRIPTOR": _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE,
                                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                                 "__doc__": """Representative value of a single feature within the cluster.
+        
         Attributes:
             feature_column:
                 The feature column name.
@@ -3782,6 +3793,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                         "DESCRIPTOR": _MODEL_CLUSTERINGMETRICS_CLUSTER,
                         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                         "__doc__": """Message containing the information about one cluster.
+      
       Attributes:
           centroid_id:
               Centroid id.
@@ -3797,6 +3809,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                 "DESCRIPTOR": _MODEL_CLUSTERINGMETRICS,
                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                 "__doc__": """Evaluation metrics for clustering models.
+    
     Attributes:
         davies_bouldin_index:
             Davies-Bouldin index.
@@ -3818,6 +3831,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                 "__doc__": """Evaluation metrics of a model. These are either computed on all
     training data or just the eval data based on whether eval data was
     used during training. These are not present for imported models.
+    
     Attributes:
         regression_metrics:
             Populated for regression models and explicit feedback type
@@ -3936,6 +3950,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                                 "DESCRIPTOR": _MODEL_TRAININGRUN_ITERATIONRESULT_CLUSTERINFO,
                                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                                 "__doc__": """Information about a single cluster for clustering model.
+        
         Attributes:
             centroid_id:
                 Centroid id.
@@ -3952,6 +3967,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                         "DESCRIPTOR": _MODEL_TRAININGRUN_ITERATIONRESULT,
                         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                         "__doc__": """Information about a single iteration of the training run.
+      
       Attributes:
           index:
               Index of the iteration, 0 based.
@@ -3972,6 +3988,7 @@ Model = _reflection.GeneratedProtocolMessageType(
                 "DESCRIPTOR": _MODEL_TRAININGRUN,
                 "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
                 "__doc__": """Information about a single training query run for the model.
+    
     Attributes:
         training_options:
             Options that were used for this training run, includes user

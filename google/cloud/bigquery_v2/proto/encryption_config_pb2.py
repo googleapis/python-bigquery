@@ -22,6 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="google.cloud.bigquery.v2",
     syntax="proto3",
     serialized_options=b"\n\034com.google.cloud.bigquery.v2B\025EncryptionConfigProtoZ@google.golang.org/genproto/googleapis/cloud/bigquery/v2;bigquery",
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n6google/cloud/bigquery_v2/proto/encryption_config.proto\x12\x18google.cloud.bigquery.v2\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x1cgoogle/api/annotations.proto"R\n\x17\x45ncryptionConfiguration\x12\x37\n\x0ckms_key_name\x18\x01 \x01(\x0b\x32\x1c.google.protobuf.StringValueB\x03\xe0\x41\x01\x42w\n\x1c\x63om.google.cloud.bigquery.v2B\x15\x45ncryptionConfigProtoZ@google.golang.org/genproto/googleapis/cloud/bigquery/v2;bigqueryb\x06proto3',
     dependencies=[
         google_dot_api_dot_field__behavior__pb2.DESCRIPTOR,
@@ -37,6 +38,7 @@ _ENCRYPTIONCONFIGURATION = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="kms_key_name",
@@ -55,6 +57,7 @@ _ENCRYPTIONCONFIGURATION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\001",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],

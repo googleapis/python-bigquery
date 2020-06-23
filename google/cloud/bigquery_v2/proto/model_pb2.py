@@ -34,6 +34,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="google.cloud.bigquery.v2",
     syntax="proto3",
     serialized_options=b"\n\034com.google.cloud.bigquery.v2B\nModelProtoZ@google.golang.org/genproto/googleapis/cloud/bigquery/v2;bigquery",
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n*google/cloud/bigquery_v2/proto/model.proto\x12\x18google.cloud.bigquery.v2\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x36google/cloud/bigquery_v2/proto/encryption_config.proto\x1a\x34google/cloud/bigquery_v2/proto/model_reference.proto\x1a\x31google/cloud/bigquery_v2/proto/standard_sql.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x1cgoogle/api/annotations.proto"\x9b\x35\n\x05Model\x12\x11\n\x04\x65tag\x18\x01 \x01(\tB\x03\xe0\x41\x03\x12\x46\n\x0fmodel_reference\x18\x02 \x01(\x0b\x32(.google.cloud.bigquery.v2.ModelReferenceB\x03\xe0\x41\x02\x12\x1a\n\rcreation_time\x18\x05 \x01(\x03\x42\x03\xe0\x41\x03\x12\x1f\n\x12last_modified_time\x18\x06 \x01(\x03\x42\x03\xe0\x41\x03\x12\x18\n\x0b\x64\x65scription\x18\x0c \x01(\tB\x03\xe0\x41\x01\x12\x1a\n\rfriendly_name\x18\x0e \x01(\tB\x03\xe0\x41\x01\x12;\n\x06labels\x18\x0f \x03(\x0b\x32+.google.cloud.bigquery.v2.Model.LabelsEntry\x12\x1c\n\x0f\x65xpiration_time\x18\x10 \x01(\x03\x42\x03\xe0\x41\x01\x12\x15\n\x08location\x18\r \x01(\tB\x03\xe0\x41\x03\x12S\n\x18\x65ncryption_configuration\x18\x11 \x01(\x0b\x32\x31.google.cloud.bigquery.v2.EncryptionConfiguration\x12\x42\n\nmodel_type\x18\x07 \x01(\x0e\x32).google.cloud.bigquery.v2.Model.ModelTypeB\x03\xe0\x41\x03\x12G\n\rtraining_runs\x18\t \x03(\x0b\x32+.google.cloud.bigquery.v2.Model.TrainingRunB\x03\xe0\x41\x03\x12H\n\x0f\x66\x65\x61ture_columns\x18\n \x03(\x0b\x32*.google.cloud.bigquery.v2.StandardSqlFieldB\x03\xe0\x41\x03\x12\x46\n\rlabel_columns\x18\x0b \x03(\x0b\x32*.google.cloud.bigquery.v2.StandardSqlFieldB\x03\xe0\x41\x03\x1aq\n\x0bKmeansEnums"b\n\x1aKmeansInitializationMethod\x12,\n(KMEANS_INITIALIZATION_METHOD_UNSPECIFIED\x10\x00\x12\n\n\x06RANDOM\x10\x01\x12\n\n\x06\x43USTOM\x10\x02\x1a\xb4\x02\n\x11RegressionMetrics\x12\x39\n\x13mean_absolute_error\x18\x01 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12\x38\n\x12mean_squared_error\x18\x02 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12<\n\x16mean_squared_log_error\x18\x03 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12;\n\x15median_absolute_error\x18\x04 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12/\n\tr_squared\x18\x05 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x1a\xef\x02\n\x1e\x41ggregateClassificationMetrics\x12/\n\tprecision\x18\x01 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12,\n\x06recall\x18\x02 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12.\n\x08\x61\x63\x63uracy\x18\x03 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12/\n\tthreshold\x18\x04 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12.\n\x08\x66\x31_score\x18\x05 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12.\n\x08log_loss\x18\x06 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12-\n\x07roc_auc\x18\x07 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x1a\x9f\x06\n\x1b\x42inaryClassificationMetrics\x12h\n aggregate_classification_metrics\x18\x01 \x01(\x0b\x32>.google.cloud.bigquery.v2.Model.AggregateClassificationMetrics\x12w\n\x1c\x62inary_confusion_matrix_list\x18\x02 \x03(\x0b\x32Q.google.cloud.bigquery.v2.Model.BinaryClassificationMetrics.BinaryConfusionMatrix\x12\x16\n\x0epositive_label\x18\x03 \x01(\t\x12\x16\n\x0enegative_label\x18\x04 \x01(\t\x1a\xec\x03\n\x15\x42inaryConfusionMatrix\x12>\n\x18positive_class_threshold\x18\x01 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12\x33\n\x0etrue_positives\x18\x02 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x12\x34\n\x0f\x66\x61lse_positives\x18\x03 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x12\x33\n\x0etrue_negatives\x18\x04 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x12\x34\n\x0f\x66\x61lse_negatives\x18\x05 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x12/\n\tprecision\x18\x06 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12,\n\x06recall\x18\x07 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12.\n\x08\x66\x31_score\x18\x08 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12.\n\x08\x61\x63\x63uracy\x18\t \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x1a\x87\x05\n\x1fMultiClassClassificationMetrics\x12h\n aggregate_classification_metrics\x18\x01 \x01(\x0b\x32>.google.cloud.bigquery.v2.Model.AggregateClassificationMetrics\x12n\n\x15\x63onfusion_matrix_list\x18\x02 \x03(\x0b\x32O.google.cloud.bigquery.v2.Model.MultiClassClassificationMetrics.ConfusionMatrix\x1a\x89\x03\n\x0f\x43onfusionMatrix\x12:\n\x14\x63onfidence_threshold\x18\x01 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12\x61\n\x04rows\x18\x02 \x03(\x0b\x32S.google.cloud.bigquery.v2.Model.MultiClassClassificationMetrics.ConfusionMatrix.Row\x1aQ\n\x05\x45ntry\x12\x17\n\x0fpredicted_label\x18\x01 \x01(\t\x12/\n\nitem_count\x18\x02 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x1a\x83\x01\n\x03Row\x12\x14\n\x0c\x61\x63tual_label\x18\x01 \x01(\t\x12\x66\n\x07\x65ntries\x18\x02 \x03(\x0b\x32U.google.cloud.bigquery.v2.Model.MultiClassClassificationMetrics.ConfusionMatrix.Entry\x1a\xcb\x06\n\x11\x43lusteringMetrics\x12:\n\x14\x64\x61vies_bouldin_index\x18\x01 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12;\n\x15mean_squared_distance\x18\x02 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12K\n\x08\x63lusters\x18\x03 \x03(\x0b\x32\x39.google.cloud.bigquery.v2.Model.ClusteringMetrics.Cluster\x1a\xef\x04\n\x07\x43luster\x12\x13\n\x0b\x63\x65ntroid_id\x18\x01 \x01(\x03\x12^\n\x0e\x66\x65\x61ture_values\x18\x02 \x03(\x0b\x32\x46.google.cloud.bigquery.v2.Model.ClusteringMetrics.Cluster.FeatureValue\x12*\n\x05\x63ount\x18\x03 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x1a\xc2\x03\n\x0c\x46\x65\x61tureValue\x12\x16\n\x0e\x66\x65\x61ture_column\x18\x01 \x01(\t\x12\x37\n\x0fnumerical_value\x18\x02 \x01(\x0b\x32\x1c.google.protobuf.DoubleValueH\x00\x12t\n\x11\x63\x61tegorical_value\x18\x03 \x01(\x0b\x32W.google.cloud.bigquery.v2.Model.ClusteringMetrics.Cluster.FeatureValue.CategoricalValueH\x00\x1a\xe1\x01\n\x10\x43\x61tegoricalValue\x12~\n\x0f\x63\x61tegory_counts\x18\x01 \x03(\x0b\x32\x65.google.cloud.bigquery.v2.Model.ClusteringMetrics.Cluster.FeatureValue.CategoricalValue.CategoryCount\x1aM\n\rCategoryCount\x12\x10\n\x08\x63\x61tegory\x18\x01 \x01(\t\x12*\n\x05\x63ount\x18\x02 \x01(\x0b\x32\x1b.google.protobuf.Int64ValueB\x07\n\x05value\x1a\x95\x03\n\x11\x45valuationMetrics\x12O\n\x12regression_metrics\x18\x01 \x01(\x0b\x32\x31.google.cloud.bigquery.v2.Model.RegressionMetricsH\x00\x12\x64\n\x1d\x62inary_classification_metrics\x18\x02 \x01(\x0b\x32;.google.cloud.bigquery.v2.Model.BinaryClassificationMetricsH\x00\x12m\n"multi_class_classification_metrics\x18\x03 \x01(\x0b\x32?.google.cloud.bigquery.v2.Model.MultiClassClassificationMetricsH\x00\x12O\n\x12\x63lustering_metrics\x18\x04 \x01(\x0b\x32\x31.google.cloud.bigquery.v2.Model.ClusteringMetricsH\x00\x42\t\n\x07metrics\x1a\xab\x0f\n\x0bTrainingRun\x12U\n\x10training_options\x18\x01 \x01(\x0b\x32;.google.cloud.bigquery.v2.Model.TrainingRun.TrainingOptions\x12.\n\nstart_time\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12L\n\x07results\x18\x06 \x03(\x0b\x32;.google.cloud.bigquery.v2.Model.TrainingRun.IterationResult\x12M\n\x12\x65valuation_metrics\x18\x07 \x01(\x0b\x32\x31.google.cloud.bigquery.v2.Model.EvaluationMetrics\x1a\x9d\t\n\x0fTrainingOptions\x12\x16\n\x0emax_iterations\x18\x01 \x01(\x03\x12;\n\tloss_type\x18\x02 \x01(\x0e\x32(.google.cloud.bigquery.v2.Model.LossType\x12\x12\n\nlearn_rate\x18\x03 \x01(\x01\x12\x37\n\x11l1_regularization\x18\x04 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12\x37\n\x11l2_regularization\x18\x05 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12;\n\x15min_relative_progress\x18\x06 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12.\n\nwarm_start\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.BoolValue\x12.\n\nearly_stop\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.BoolValue\x12\x1b\n\x13input_label_columns\x18\t \x03(\t\x12J\n\x11\x64\x61ta_split_method\x18\n \x01(\x0e\x32/.google.cloud.bigquery.v2.Model.DataSplitMethod\x12 \n\x18\x64\x61ta_split_eval_fraction\x18\x0b \x01(\x01\x12\x19\n\x11\x64\x61ta_split_column\x18\x0c \x01(\t\x12N\n\x13learn_rate_strategy\x18\r \x01(\x0e\x32\x31.google.cloud.bigquery.v2.Model.LearnRateStrategy\x12\x1a\n\x12initial_learn_rate\x18\x10 \x01(\x01\x12o\n\x13label_class_weights\x18\x11 \x03(\x0b\x32R.google.cloud.bigquery.v2.Model.TrainingRun.TrainingOptions.LabelClassWeightsEntry\x12\x43\n\rdistance_type\x18\x14 \x01(\x0e\x32,.google.cloud.bigquery.v2.Model.DistanceType\x12\x14\n\x0cnum_clusters\x18\x15 \x01(\x03\x12\x11\n\tmodel_uri\x18\x16 \x01(\t\x12S\n\x15optimization_strategy\x18\x17 \x01(\x0e\x32\x34.google.cloud.bigquery.v2.Model.OptimizationStrategy\x12l\n\x1ckmeans_initialization_method\x18! \x01(\x0e\x32\x46.google.cloud.bigquery.v2.Model.KmeansEnums.KmeansInitializationMethod\x12$\n\x1ckmeans_initialization_column\x18" \x01(\t\x1a\x38\n\x16LabelClassWeightsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x01:\x02\x38\x01\x1a\xd7\x03\n\x0fIterationResult\x12*\n\x05index\x18\x01 \x01(\x0b\x32\x1b.google.protobuf.Int32Value\x12\x30\n\x0b\x64uration_ms\x18\x04 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x12\x33\n\rtraining_loss\x18\x05 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12/\n\teval_loss\x18\x06 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12\x12\n\nlearn_rate\x18\x07 \x01(\x01\x12^\n\rcluster_infos\x18\x08 \x03(\x0b\x32G.google.cloud.bigquery.v2.Model.TrainingRun.IterationResult.ClusterInfo\x1a\x8b\x01\n\x0b\x43lusterInfo\x12\x13\n\x0b\x63\x65ntroid_id\x18\x01 \x01(\x03\x12\x34\n\x0e\x63luster_radius\x18\x02 \x01(\x0b\x32\x1c.google.protobuf.DoubleValue\x12\x31\n\x0c\x63luster_size\x18\x03 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01"s\n\tModelType\x12\x1a\n\x16MODEL_TYPE_UNSPECIFIED\x10\x00\x12\x15\n\x11LINEAR_REGRESSION\x10\x01\x12\x17\n\x13LOGISTIC_REGRESSION\x10\x02\x12\n\n\x06KMEANS\x10\x03\x12\x0e\n\nTENSORFLOW\x10\x06"O\n\x08LossType\x12\x19\n\x15LOSS_TYPE_UNSPECIFIED\x10\x00\x12\x15\n\x11MEAN_SQUARED_LOSS\x10\x01\x12\x11\n\rMEAN_LOG_LOSS\x10\x02"H\n\x0c\x44istanceType\x12\x1d\n\x19\x44ISTANCE_TYPE_UNSPECIFIED\x10\x00\x12\r\n\tEUCLIDEAN\x10\x01\x12\n\n\x06\x43OSINE\x10\x02"z\n\x0f\x44\x61taSplitMethod\x12!\n\x1d\x44\x41TA_SPLIT_METHOD_UNSPECIFIED\x10\x00\x12\n\n\x06RANDOM\x10\x01\x12\n\n\x06\x43USTOM\x10\x02\x12\x0e\n\nSEQUENTIAL\x10\x03\x12\x0c\n\x08NO_SPLIT\x10\x04\x12\x0e\n\nAUTO_SPLIT\x10\x05"W\n\x11LearnRateStrategy\x12#\n\x1fLEARN_RATE_STRATEGY_UNSPECIFIED\x10\x00\x12\x0f\n\x0bLINE_SEARCH\x10\x01\x12\x0c\n\x08\x43ONSTANT\x10\x02"n\n\x14OptimizationStrategy\x12%\n!OPTIMIZATION_STRATEGY_UNSPECIFIED\x10\x00\x12\x1a\n\x16\x42\x41TCH_GRADIENT_DESCENT\x10\x01\x12\x13\n\x0fNORMAL_EQUATION\x10\x02"Z\n\x0fGetModelRequest\x12\x17\n\nproject_id\x18\x01 \x01(\tB\x03\xe0\x41\x02\x12\x17\n\ndataset_id\x18\x02 \x01(\tB\x03\xe0\x41\x02\x12\x15\n\x08model_id\x18\x03 \x01(\tB\x03\xe0\x41\x02"\x91\x01\n\x11PatchModelRequest\x12\x17\n\nproject_id\x18\x01 \x01(\tB\x03\xe0\x41\x02\x12\x17\n\ndataset_id\x18\x02 \x01(\tB\x03\xe0\x41\x02\x12\x15\n\x08model_id\x18\x03 \x01(\tB\x03\xe0\x41\x02\x12\x33\n\x05model\x18\x04 \x01(\x0b\x32\x1f.google.cloud.bigquery.v2.ModelB\x03\xe0\x41\x02"]\n\x12\x44\x65leteModelRequest\x12\x17\n\nproject_id\x18\x01 \x01(\tB\x03\xe0\x41\x02\x12\x17\n\ndataset_id\x18\x02 \x01(\tB\x03\xe0\x41\x02\x12\x15\n\x08model_id\x18\x03 \x01(\tB\x03\xe0\x41\x02"\x8c\x01\n\x11ListModelsRequest\x12\x17\n\nproject_id\x18\x01 \x01(\tB\x03\xe0\x41\x02\x12\x17\n\ndataset_id\x18\x02 \x01(\tB\x03\xe0\x41\x02\x12\x31\n\x0bmax_results\x18\x03 \x01(\x0b\x32\x1c.google.protobuf.UInt32Value\x12\x12\n\npage_token\x18\x04 \x01(\t"^\n\x12ListModelsResponse\x12/\n\x06models\x18\x01 \x03(\x0b\x32\x1f.google.cloud.bigquery.v2.Model\x12\x17\n\x0fnext_page_token\x18\x02 \x01(\t2\xfa\x05\n\x0cModelService\x12y\n\x08GetModel\x12).google.cloud.bigquery.v2.GetModelRequest\x1a\x1f.google.cloud.bigquery.v2.Model"!\xda\x41\x1eproject_id,dataset_id,model_id\x12\x8d\x01\n\nListModels\x12+.google.cloud.bigquery.v2.ListModelsRequest\x1a,.google.cloud.bigquery.v2.ListModelsResponse"$\xda\x41!project_id,dataset_id,max_results\x12\x83\x01\n\nPatchModel\x12+.google.cloud.bigquery.v2.PatchModelRequest\x1a\x1f.google.cloud.bigquery.v2.Model"\'\xda\x41$project_id,dataset_id,model_id,model\x12v\n\x0b\x44\x65leteModel\x12,.google.cloud.bigquery.v2.DeleteModelRequest\x1a\x16.google.protobuf.Empty"!\xda\x41\x1eproject_id,dataset_id,model_id\x1a\xe0\x01\xca\x41\x17\x62igquery.googleapis.com\xd2\x41\xc2\x01https://www.googleapis.com/auth/bigquery,https://www.googleapis.com/auth/bigquery.readonly,https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/cloud-platform.read-onlyBl\n\x1c\x63om.google.cloud.bigquery.v2B\nModelProtoZ@google.golang.org/genproto/googleapis/cloud/bigquery/v2;bigqueryb\x06proto3',
     dependencies=[
         google_dot_api_dot_client__pb2.DESCRIPTOR,
@@ -54,6 +55,7 @@ _MODEL_KMEANSENUMS_KMEANSINITIALIZATIONMETHOD = _descriptor.EnumDescriptor(
     full_name="google.cloud.bigquery.v2.Model.KmeansEnums.KmeansInitializationMethod",
     filename=None,
     file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
     values=[
         _descriptor.EnumValueDescriptor(
             name="KMEANS_INITIALIZATION_METHOD_UNSPECIFIED",
@@ -61,12 +63,23 @@ _MODEL_KMEANSENUMS_KMEANSINITIALIZATIONMETHOD = _descriptor.EnumDescriptor(
             number=0,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="RANDOM", index=1, number=1, serialized_options=None, type=None
+            name="RANDOM",
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="CUSTOM", index=2, number=2, serialized_options=None, type=None
+            name="CUSTOM",
+            index=2,
+            number=2,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     containing_type=None,
@@ -81,6 +94,7 @@ _MODEL_MODELTYPE = _descriptor.EnumDescriptor(
     full_name="google.cloud.bigquery.v2.Model.ModelType",
     filename=None,
     file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
     values=[
         _descriptor.EnumValueDescriptor(
             name="MODEL_TYPE_UNSPECIFIED",
@@ -88,6 +102,7 @@ _MODEL_MODELTYPE = _descriptor.EnumDescriptor(
             number=0,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
             name="LINEAR_REGRESSION",
@@ -95,6 +110,7 @@ _MODEL_MODELTYPE = _descriptor.EnumDescriptor(
             number=1,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
             name="LOGISTIC_REGRESSION",
@@ -102,12 +118,23 @@ _MODEL_MODELTYPE = _descriptor.EnumDescriptor(
             number=2,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="KMEANS", index=3, number=3, serialized_options=None, type=None
+            name="KMEANS",
+            index=3,
+            number=3,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="TENSORFLOW", index=4, number=6, serialized_options=None, type=None
+            name="TENSORFLOW",
+            index=4,
+            number=6,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     containing_type=None,
@@ -122,6 +149,7 @@ _MODEL_LOSSTYPE = _descriptor.EnumDescriptor(
     full_name="google.cloud.bigquery.v2.Model.LossType",
     filename=None,
     file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
     values=[
         _descriptor.EnumValueDescriptor(
             name="LOSS_TYPE_UNSPECIFIED",
@@ -129,6 +157,7 @@ _MODEL_LOSSTYPE = _descriptor.EnumDescriptor(
             number=0,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
             name="MEAN_SQUARED_LOSS",
@@ -136,9 +165,15 @@ _MODEL_LOSSTYPE = _descriptor.EnumDescriptor(
             number=1,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="MEAN_LOG_LOSS", index=2, number=2, serialized_options=None, type=None
+            name="MEAN_LOG_LOSS",
+            index=2,
+            number=2,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     containing_type=None,
@@ -153,6 +188,7 @@ _MODEL_DISTANCETYPE = _descriptor.EnumDescriptor(
     full_name="google.cloud.bigquery.v2.Model.DistanceType",
     filename=None,
     file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
     values=[
         _descriptor.EnumValueDescriptor(
             name="DISTANCE_TYPE_UNSPECIFIED",
@@ -160,12 +196,23 @@ _MODEL_DISTANCETYPE = _descriptor.EnumDescriptor(
             number=0,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="EUCLIDEAN", index=1, number=1, serialized_options=None, type=None
+            name="EUCLIDEAN",
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="COSINE", index=2, number=2, serialized_options=None, type=None
+            name="COSINE",
+            index=2,
+            number=2,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     containing_type=None,
@@ -180,6 +227,7 @@ _MODEL_DATASPLITMETHOD = _descriptor.EnumDescriptor(
     full_name="google.cloud.bigquery.v2.Model.DataSplitMethod",
     filename=None,
     file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
     values=[
         _descriptor.EnumValueDescriptor(
             name="DATA_SPLIT_METHOD_UNSPECIFIED",
@@ -187,21 +235,47 @@ _MODEL_DATASPLITMETHOD = _descriptor.EnumDescriptor(
             number=0,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="RANDOM", index=1, number=1, serialized_options=None, type=None
+            name="RANDOM",
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="CUSTOM", index=2, number=2, serialized_options=None, type=None
+            name="CUSTOM",
+            index=2,
+            number=2,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="SEQUENTIAL", index=3, number=3, serialized_options=None, type=None
+            name="SEQUENTIAL",
+            index=3,
+            number=3,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="NO_SPLIT", index=4, number=4, serialized_options=None, type=None
+            name="NO_SPLIT",
+            index=4,
+            number=4,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="AUTO_SPLIT", index=5, number=5, serialized_options=None, type=None
+            name="AUTO_SPLIT",
+            index=5,
+            number=5,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     containing_type=None,
@@ -216,6 +290,7 @@ _MODEL_LEARNRATESTRATEGY = _descriptor.EnumDescriptor(
     full_name="google.cloud.bigquery.v2.Model.LearnRateStrategy",
     filename=None,
     file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
     values=[
         _descriptor.EnumValueDescriptor(
             name="LEARN_RATE_STRATEGY_UNSPECIFIED",
@@ -223,12 +298,23 @@ _MODEL_LEARNRATESTRATEGY = _descriptor.EnumDescriptor(
             number=0,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="LINE_SEARCH", index=1, number=1, serialized_options=None, type=None
+            name="LINE_SEARCH",
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="CONSTANT", index=2, number=2, serialized_options=None, type=None
+            name="CONSTANT",
+            index=2,
+            number=2,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     containing_type=None,
@@ -243,6 +329,7 @@ _MODEL_OPTIMIZATIONSTRATEGY = _descriptor.EnumDescriptor(
     full_name="google.cloud.bigquery.v2.Model.OptimizationStrategy",
     filename=None,
     file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
     values=[
         _descriptor.EnumValueDescriptor(
             name="OPTIMIZATION_STRATEGY_UNSPECIFIED",
@@ -250,6 +337,7 @@ _MODEL_OPTIMIZATIONSTRATEGY = _descriptor.EnumDescriptor(
             number=0,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
             name="BATCH_GRADIENT_DESCENT",
@@ -257,6 +345,7 @@ _MODEL_OPTIMIZATIONSTRATEGY = _descriptor.EnumDescriptor(
             number=1,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
             name="NORMAL_EQUATION",
@@ -264,6 +353,7 @@ _MODEL_OPTIMIZATIONSTRATEGY = _descriptor.EnumDescriptor(
             number=2,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     containing_type=None,
@@ -280,6 +370,7 @@ _MODEL_KMEANSENUMS = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[],
     extensions=[],
     nested_types=[],
@@ -299,6 +390,7 @@ _MODEL_REGRESSIONMETRICS = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="mean_absolute_error",
@@ -317,6 +409,7 @@ _MODEL_REGRESSIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="mean_squared_error",
@@ -335,6 +428,7 @@ _MODEL_REGRESSIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="mean_squared_log_error",
@@ -353,6 +447,7 @@ _MODEL_REGRESSIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="median_absolute_error",
@@ -371,6 +466,7 @@ _MODEL_REGRESSIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="r_squared",
@@ -389,6 +485,7 @@ _MODEL_REGRESSIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -409,6 +506,7 @@ _MODEL_AGGREGATECLASSIFICATIONMETRICS = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="precision",
@@ -427,6 +525,7 @@ _MODEL_AGGREGATECLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="recall",
@@ -445,6 +544,7 @@ _MODEL_AGGREGATECLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="accuracy",
@@ -463,6 +563,7 @@ _MODEL_AGGREGATECLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="threshold",
@@ -481,6 +582,7 @@ _MODEL_AGGREGATECLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="f1_score",
@@ -499,6 +601,7 @@ _MODEL_AGGREGATECLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="log_loss",
@@ -517,6 +620,7 @@ _MODEL_AGGREGATECLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="roc_auc",
@@ -535,6 +639,7 @@ _MODEL_AGGREGATECLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -555,6 +660,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="positive_class_threshold",
@@ -573,6 +679,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="true_positives",
@@ -591,6 +698,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="false_positives",
@@ -609,6 +717,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="true_negatives",
@@ -627,6 +736,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="false_negatives",
@@ -645,6 +755,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="precision",
@@ -663,6 +774,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="recall",
@@ -681,6 +793,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="f1_score",
@@ -699,6 +812,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="accuracy",
@@ -717,6 +831,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS_BINARYCONFUSIONMATRIX = _descriptor.Descripto
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -737,6 +852,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="aggregate_classification_metrics",
@@ -755,6 +871,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="binary_confusion_matrix_list",
@@ -773,6 +890,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="positive_label",
@@ -791,6 +909,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="negative_label",
@@ -809,6 +928,7 @@ _MODEL_BINARYCLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -829,6 +949,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX_ENTRY = _descriptor.Descr
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="predicted_label",
@@ -847,6 +968,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX_ENTRY = _descriptor.Descr
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="item_count",
@@ -865,6 +987,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX_ENTRY = _descriptor.Descr
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -885,6 +1008,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX_ROW = _descriptor.Descrip
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="actual_label",
@@ -903,6 +1027,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX_ROW = _descriptor.Descrip
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="entries",
@@ -921,6 +1046,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX_ROW = _descriptor.Descrip
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -941,6 +1067,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="confidence_threshold",
@@ -959,6 +1086,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="rows",
@@ -977,6 +1105,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS_CONFUSIONMATRIX = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1000,6 +1129,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="aggregate_classification_metrics",
@@ -1018,6 +1148,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="confusion_matrix_list",
@@ -1036,6 +1167,7 @@ _MODEL_MULTICLASSCLASSIFICATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1056,6 +1188,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE_CATEGORICALVALUE_CATEGORYCOUNT = _
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="category",
@@ -1074,6 +1207,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE_CATEGORICALVALUE_CATEGORYCOUNT = _
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="count",
@@ -1092,6 +1226,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE_CATEGORICALVALUE_CATEGORYCOUNT = _
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1112,6 +1247,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE_CATEGORICALVALUE = _descriptor.Des
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="category_counts",
@@ -1130,6 +1266,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE_CATEGORICALVALUE = _descriptor.Des
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1152,6 +1289,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="feature_column",
@@ -1170,6 +1308,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="numerical_value",
@@ -1188,6 +1327,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="categorical_value",
@@ -1206,6 +1346,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1221,6 +1362,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER_FEATUREVALUE = _descriptor.Descriptor(
             full_name="google.cloud.bigquery.v2.Model.ClusteringMetrics.Cluster.FeatureValue.value",
             index=0,
             containing_type=None,
+            create_key=_descriptor._internal_create_key,
             fields=[],
         ),
     ],
@@ -1234,6 +1376,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="centroid_id",
@@ -1252,6 +1395,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="feature_values",
@@ -1270,6 +1414,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="count",
@@ -1288,6 +1433,7 @@ _MODEL_CLUSTERINGMETRICS_CLUSTER = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1308,6 +1454,7 @@ _MODEL_CLUSTERINGMETRICS = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="davies_bouldin_index",
@@ -1326,6 +1473,7 @@ _MODEL_CLUSTERINGMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="mean_squared_distance",
@@ -1344,6 +1492,7 @@ _MODEL_CLUSTERINGMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="clusters",
@@ -1362,6 +1511,7 @@ _MODEL_CLUSTERINGMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1382,6 +1532,7 @@ _MODEL_EVALUATIONMETRICS = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="regression_metrics",
@@ -1400,6 +1551,7 @@ _MODEL_EVALUATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="binary_classification_metrics",
@@ -1418,6 +1570,7 @@ _MODEL_EVALUATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="multi_class_classification_metrics",
@@ -1436,6 +1589,7 @@ _MODEL_EVALUATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="clustering_metrics",
@@ -1454,6 +1608,7 @@ _MODEL_EVALUATIONMETRICS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1469,6 +1624,7 @@ _MODEL_EVALUATIONMETRICS = _descriptor.Descriptor(
             full_name="google.cloud.bigquery.v2.Model.EvaluationMetrics.metrics",
             index=0,
             containing_type=None,
+            create_key=_descriptor._internal_create_key,
             fields=[],
         ),
     ],
@@ -1482,6 +1638,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS_LABELCLASSWEIGHTSENTRY = _descriptor.Descript
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="key",
@@ -1500,6 +1657,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS_LABELCLASSWEIGHTSENTRY = _descriptor.Descript
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="value",
@@ -1518,6 +1676,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS_LABELCLASSWEIGHTSENTRY = _descriptor.Descript
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1538,6 +1697,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="max_iterations",
@@ -1556,6 +1716,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="loss_type",
@@ -1574,6 +1735,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="learn_rate",
@@ -1592,6 +1754,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="l1_regularization",
@@ -1610,6 +1773,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="l2_regularization",
@@ -1628,6 +1792,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="min_relative_progress",
@@ -1646,6 +1811,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="warm_start",
@@ -1664,6 +1830,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="early_stop",
@@ -1682,6 +1849,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="input_label_columns",
@@ -1700,6 +1868,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="data_split_method",
@@ -1718,6 +1887,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="data_split_eval_fraction",
@@ -1736,6 +1906,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="data_split_column",
@@ -1754,6 +1925,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="learn_rate_strategy",
@@ -1772,6 +1944,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="initial_learn_rate",
@@ -1790,6 +1963,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="label_class_weights",
@@ -1808,6 +1982,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="distance_type",
@@ -1826,6 +2001,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="num_clusters",
@@ -1844,6 +2020,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="model_uri",
@@ -1862,6 +2039,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="optimization_strategy",
@@ -1880,6 +2058,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="kmeans_initialization_method",
@@ -1898,6 +2077,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="kmeans_initialization_column",
@@ -1916,6 +2096,7 @@ _MODEL_TRAININGRUN_TRAININGOPTIONS = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -1936,6 +2117,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT_CLUSTERINFO = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="centroid_id",
@@ -1954,6 +2136,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT_CLUSTERINFO = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="cluster_radius",
@@ -1972,6 +2155,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT_CLUSTERINFO = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="cluster_size",
@@ -1990,6 +2174,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT_CLUSTERINFO = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -2010,6 +2195,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="index",
@@ -2028,6 +2214,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="duration_ms",
@@ -2046,6 +2233,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="training_loss",
@@ -2064,6 +2252,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="eval_loss",
@@ -2082,6 +2271,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="learn_rate",
@@ -2100,6 +2290,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="cluster_infos",
@@ -2118,6 +2309,7 @@ _MODEL_TRAININGRUN_ITERATIONRESULT = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -2138,6 +2330,7 @@ _MODEL_TRAININGRUN = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="training_options",
@@ -2156,6 +2349,7 @@ _MODEL_TRAININGRUN = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="start_time",
@@ -2174,6 +2368,7 @@ _MODEL_TRAININGRUN = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="results",
@@ -2192,6 +2387,7 @@ _MODEL_TRAININGRUN = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="evaluation_metrics",
@@ -2210,6 +2406,7 @@ _MODEL_TRAININGRUN = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -2233,6 +2430,7 @@ _MODEL_LABELSENTRY = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="key",
@@ -2251,6 +2449,7 @@ _MODEL_LABELSENTRY = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="value",
@@ -2269,6 +2468,7 @@ _MODEL_LABELSENTRY = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -2289,6 +2489,7 @@ _MODEL = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="etag",
@@ -2307,6 +2508,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\003",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="model_reference",
@@ -2325,6 +2527,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="creation_time",
@@ -2343,6 +2546,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\003",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="last_modified_time",
@@ -2361,6 +2565,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\003",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="description",
@@ -2379,6 +2584,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\001",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="friendly_name",
@@ -2397,6 +2603,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\001",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="labels",
@@ -2415,6 +2622,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="expiration_time",
@@ -2433,6 +2641,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\001",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="location",
@@ -2451,6 +2660,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\003",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="encryption_configuration",
@@ -2469,6 +2679,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="model_type",
@@ -2487,6 +2698,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\003",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="training_runs",
@@ -2505,6 +2717,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\003",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="feature_columns",
@@ -2523,6 +2736,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\003",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="label_columns",
@@ -2541,6 +2755,7 @@ _MODEL = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\003",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -2579,6 +2794,7 @@ _GETMODELREQUEST = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="project_id",
@@ -2597,6 +2813,7 @@ _GETMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="dataset_id",
@@ -2615,6 +2832,7 @@ _GETMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="model_id",
@@ -2633,6 +2851,7 @@ _GETMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -2654,6 +2873,7 @@ _PATCHMODELREQUEST = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="project_id",
@@ -2672,6 +2892,7 @@ _PATCHMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="dataset_id",
@@ -2690,6 +2911,7 @@ _PATCHMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="model_id",
@@ -2708,6 +2930,7 @@ _PATCHMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="model",
@@ -2726,6 +2949,7 @@ _PATCHMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -2747,6 +2971,7 @@ _DELETEMODELREQUEST = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="project_id",
@@ -2765,6 +2990,7 @@ _DELETEMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="dataset_id",
@@ -2783,6 +3009,7 @@ _DELETEMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="model_id",
@@ -2801,6 +3028,7 @@ _DELETEMODELREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -2822,6 +3050,7 @@ _LISTMODELSREQUEST = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="project_id",
@@ -2840,6 +3069,7 @@ _LISTMODELSREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="dataset_id",
@@ -2858,6 +3088,7 @@ _LISTMODELSREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=b"\340A\002",
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="max_results",
@@ -2876,6 +3107,7 @@ _LISTMODELSREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="page_token",
@@ -2894,6 +3126,7 @@ _LISTMODELSREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -2915,6 +3148,7 @@ _LISTMODELSRESPONSE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="models",
@@ -2933,6 +3167,7 @@ _LISTMODELSRESPONSE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="next_page_token",
@@ -2951,6 +3186,7 @@ _LISTMODELSRESPONSE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -3992,6 +4228,7 @@ _MODELSERVICE = _descriptor.ServiceDescriptor(
     file=DESCRIPTOR,
     index=0,
     serialized_options=b"\312A\027bigquery.googleapis.com\322A\302\001https://www.googleapis.com/auth/bigquery,https://www.googleapis.com/auth/bigquery.readonly,https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/cloud-platform.read-only",
+    create_key=_descriptor._internal_create_key,
     serialized_start=7804,
     serialized_end=8566,
     methods=[
@@ -4003,6 +4240,7 @@ _MODELSERVICE = _descriptor.ServiceDescriptor(
             input_type=_GETMODELREQUEST,
             output_type=_MODEL,
             serialized_options=b"\332A\036project_id,dataset_id,model_id",
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.MethodDescriptor(
             name="ListModels",
@@ -4012,6 +4250,7 @@ _MODELSERVICE = _descriptor.ServiceDescriptor(
             input_type=_LISTMODELSREQUEST,
             output_type=_LISTMODELSRESPONSE,
             serialized_options=b"\332A!project_id,dataset_id,max_results",
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.MethodDescriptor(
             name="PatchModel",
@@ -4021,6 +4260,7 @@ _MODELSERVICE = _descriptor.ServiceDescriptor(
             input_type=_PATCHMODELREQUEST,
             output_type=_MODEL,
             serialized_options=b"\332A$project_id,dataset_id,model_id,model",
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.MethodDescriptor(
             name="DeleteModel",
@@ -4030,6 +4270,7 @@ _MODELSERVICE = _descriptor.ServiceDescriptor(
             input_type=_DELETEMODELREQUEST,
             output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
             serialized_options=b"\332A\036project_id,dataset_id,model_id",
+            create_key=_descriptor._internal_create_key,
         ),
     ],
 )

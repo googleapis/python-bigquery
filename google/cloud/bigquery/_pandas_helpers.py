@@ -18,6 +18,7 @@ import concurrent.futures
 import functools
 import logging
 import warnings
+import six
 
 from six.moves import queue
 
@@ -286,13 +287,14 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     """
     if bq_schema:
         bq_schema = schema._to_schema_fields(bq_schema)
-        for field in bq_schema:
-            if field.field_type in schema._STRUCT_TYPES:
-                raise ValueError(
-                    "Uploading dataframes with struct (record) column types "
-                    "is not supported. See: "
-                    "https://github.com/googleapis/google-cloud-python/issues/8191"
-                )
+        if six.PY2:
+            for field in bq_schema:
+                if field.field_type in schema._STRUCT_TYPES:
+                    raise ValueError(
+                        "Uploading dataframes with struct (record) column types "
+                        "is not supported. See: "
+                        "https://github.com/googleapis/google-cloud-python/issues/8191"
+                    )
         bq_schema_index = {field.name: field for field in bq_schema}
         bq_schema_unused = set(bq_schema_index.keys())
     else:

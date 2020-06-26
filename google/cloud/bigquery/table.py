@@ -1633,6 +1633,7 @@ class RowIterator(HTTPIterator):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
+        date_as_object=True,
     ):
         """Create a pandas DataFrame by loading all pages of a query.
 
@@ -1683,6 +1684,12 @@ class RowIterator(HTTPIterator):
 
                 ..versionadded:: 1.24.0
 
+            date_as_object (bool):
+                Optional. If ``True`` (default), cast dates to objects.
+                If False, convert to datetime64[ns] dtype.
+
+                ..versionadded:: 1.26.0
+
         Returns:
             pandas.DataFrame:
                 A :class:`~pandas.DataFrame` populated with row data and column
@@ -1722,7 +1729,7 @@ class RowIterator(HTTPIterator):
                 bqstorage_client=bqstorage_client,
                 create_bqstorage_client=create_bqstorage_client,
             )
-            df = record_batch.to_pandas()
+            df = record_batch.to_pandas(date_as_object=date_as_object)
             for column in dtypes:
                 df[column] = pandas.Series(df[column], dtype=dtypes[column])
             return df
@@ -1799,6 +1806,7 @@ class _EmptyRowIterator(object):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
+        date_as_object=True,
     ):
         """Create an empty dataframe.
 

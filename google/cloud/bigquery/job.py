@@ -3320,6 +3320,7 @@ class QueryJob(_AsyncJob):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
+        date_as_object=True,
     ):
         """Return a pandas DataFrame from a QueryJob
 
@@ -3360,6 +3361,12 @@ class QueryJob(_AsyncJob):
 
                 ..versionadded:: 1.24.0
 
+            date_as_object (bool):
+                Optional. If ``True`` (default), cast dates to objects.
+                If False, convert to datetime64[ns] dtype.
+
+                ..versionadded:: 1.26.0
+
         Returns:
             A :class:`~pandas.DataFrame` populated with row data and column
             headers from the query results. The column headers are derived
@@ -3373,6 +3380,7 @@ class QueryJob(_AsyncJob):
             dtypes=dtypes,
             progress_bar_type=progress_bar_type,
             create_bqstorage_client=create_bqstorage_client,
+            date_as_object=date_as_object,
         )
 
     def __iter__(self):

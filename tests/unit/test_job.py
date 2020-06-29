@@ -5541,6 +5541,7 @@ class TestQueryJob(unittest.TestCase, _Base):
         self.assertEqual(df.complete.dtype.name, "bool")
         self.assertEqual(df.date.dtype.name, "object")
 
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_column_date_dtypes(self):
         begun_resource = self._make_resource()
@@ -5562,7 +5563,6 @@ class TestQueryJob(unittest.TestCase, _Base):
         )
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
-
         df = job.to_dataframe(date_as_object=False, create_bqstorage_client=False)
 
         self.assertIsInstance(df, pandas.DataFrame)

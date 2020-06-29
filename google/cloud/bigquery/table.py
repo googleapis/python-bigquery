@@ -1674,9 +1674,9 @@ class RowIterator(HTTPIterator):
                   progress bar as a graphical dialog box.
 
                 ..versionadded:: 1.11.0
-            create_bqstorage_client (bool):
-                Optional. If ``True`` (default), create a BigQuery Storage API
-                client using the default API settings. The BigQuery Storage API
+            create_bqstorage_client Optional[bool]:
+                If ``True`` (default), create a BigQuery Storage API client
+                using the default API settings. The BigQuery Storage API
                 is a faster way to fetch rows from BigQuery. See the
                 ``bqstorage_client`` parameter for more information.
 
@@ -1684,9 +1684,9 @@ class RowIterator(HTTPIterator):
 
                 ..versionadded:: 1.24.0
 
-            date_as_object (bool):
-                Optional. If ``True`` (default), cast dates to objects.
-                If False, convert to datetime64[ns] dtype.
+            date_as_object Optional[bool]:
+                If ``True`` (default), cast dates to objects. If ``False``, convert
+                to datetime64[ns] dtype.
 
                 ..versionadded:: 1.26.0
 
@@ -1815,6 +1815,7 @@ class _EmptyRowIterator(object):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
+            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.

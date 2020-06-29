@@ -3351,7 +3351,7 @@ class QueryJob(_AsyncJob):
                 for details.
 
                 ..versionadded:: 1.11.0
-            create_bqstorage_client Optional[bool]:
+            create_bqstorage_client (Optional[bool]):
                 If ``True`` (default), create a BigQuery Storage APIclient
                 using the default API settings. The BigQuery Storage API
                 is a faster way to fetch rows from BigQuery. See the
@@ -3361,7 +3361,7 @@ class QueryJob(_AsyncJob):
 
                 ..versionadded:: 1.24.0
 
-            date_as_object Optional[bool]:
+            date_as_object (Optional[bool]):
                 If ``True`` (default), cast dates to objects. If ``False``, convert
                 to datetime64[ns] dtype.
 
@@ -3437,7 +3437,7 @@ class QueryPlanEntry(object):
             resource(Dict[str: object]):
                 ExplainQueryStage representation returned from API.
 
-        Returns:
+        Returns:bigquery_issue_11
             google.cloud.bigquery.QueryPlanEntry:
                 Query plan entry parsed from ``resource``.
         """

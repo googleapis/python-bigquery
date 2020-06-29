@@ -1674,7 +1674,7 @@ class RowIterator(HTTPIterator):
                   progress bar as a graphical dialog box.
 
                 ..versionadded:: 1.11.0
-            create_bqstorage_client Optional[bool]:
+            create_bqstorage_client (Optional[bool]):
                 If ``True`` (default), create a BigQuery Storage API client
                 using the default API settings. The BigQuery Storage API
                 is a faster way to fetch rows from BigQuery. See the
@@ -1684,7 +1684,7 @@ class RowIterator(HTTPIterator):
 
                 ..versionadded:: 1.24.0
 
-            date_as_object Optional[bool]:
+            date_as_object (Optional[bool]):
                 If ``True`` (default), cast dates to objects. If ``False``, convert
                 to datetime64[ns] dtype.
 

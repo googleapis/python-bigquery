@@ -3437,7 +3437,7 @@ class QueryPlanEntry(object):
             resource(Dict[str: object]):
                 ExplainQueryStage representation returned from API.
 
-        Returns:bigquery_issue_11
+        Returns:
             google.cloud.bigquery.QueryPlanEntry:
                 Query plan entry parsed from ``resource``.
         """

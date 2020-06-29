@@ -3352,7 +3352,7 @@ class QueryJob(_AsyncJob):
 
                 ..versionadded:: 1.11.0
             create_bqstorage_client (Optional[bool]):
-                If ``True`` (default), create a BigQuery Storage APIclient
+                If ``True`` (default), create a BigQuery Storage API client
                 using the default API settings. The BigQuery Storage API
                 is a faster way to fetch rows from BigQuery. See the
                 ``bqstorage_client`` parameter for more information.

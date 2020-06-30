@@ -38,7 +38,7 @@ dependencies = [
     "six >=1.13.0,< 2.0.0dev",
     # rsa >= 4.1 is not compatible with Python 2
     # https://github.com/sybrenstuvel/python-rsa/issues/152
-    'rsa <4.1; python_version < "3"',
+    'rsa<4.7; python_version < "3"',
     'rsa >=3.1.4, <5; python_version >= "3"',
 ]
 extras = {

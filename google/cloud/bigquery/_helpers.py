@@ -419,8 +419,22 @@ def _record_field_to_json(fields, row_value):
     Returns:
         Mapping[str, Any]: A JSON-serializable dictionary.
     """
-    record = {}
     isdict = isinstance(row_value, dict)
+
+    # If row is passed as a tuple, make the length sanity check to avoid either
+    # uninformative index errors a few lines below or silently omitting some of
+    # the values from the result (we cannot know exactly which fields are missing
+    # or redundant, since we don't have their names).
+    if not isdict and len(row_value) != len(fields):
+        msg = "The number of row fields ({}) does not match schema length ({}).".format(
+            len(row_value), len(fields)
+        )
+        raise ValueError(msg)
+
+    record = {}
+
+    if isdict:
+        processed_fields = set()
 
     for subindex, subfield in enumerate(fields):
         subname = subfield.name
@@ -429,6 +443,19 @@ def _record_field_to_json(fields, row_value):
         # None values are unconditionally omitted
         if subvalue is not None:
             record[subname] = _field_to_json(subfield, subvalue)
+
+        if isdict:
+            processed_fields.add(subname)
+
+    # Unknown fields should not be silently dropped.
+    if isdict:
+        not_processed = set(row_value.keys()) - processed_fields
+        if not_processed:
+            raise ValueError(
+                "Unknown field(s) not present in schema: {}".format(
+                    ", ".join(not_processed)
+                )
+            )
 
     return record
 

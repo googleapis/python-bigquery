@@ -228,7 +228,7 @@ class Model(object):
 
     @property
     def friendly_name(self):
-        """Optional[Union[str, None]]: Title of the table (defaults to :data:`None`).
+        """Optional[str]: Title of the table (defaults to :data:`None`).
 
         Raises:
             ValueError: For invalid value types.

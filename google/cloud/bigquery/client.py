@@ -705,7 +705,7 @@ class Client(ClientWithProject):
                 The dataset to update.
             fields (Sequence[str]):
                 The properties of ``dataset`` to change (e.g. "friendly_name").
-            retry (optional[google.api_core.retry.Retry]):
+            retry (Optional[google.api_core.retry.Retry]):
                 How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport

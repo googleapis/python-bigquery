@@ -1042,7 +1042,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def clustering_fields(self):
-        """Optional[Union[List[str], None]]: Fields defining clustering for the table
+        """Optional[List[str]]: Fields defining clustering for the table
 
         (Defaults to :data:`None`).
 
@@ -1059,7 +1059,7 @@ class LoadJobConfig(_JobConfig):
 
     @clustering_fields.setter
     def clustering_fields(self, value):
-        """[Union[List[str], None]]: Fields defining clustering for the table
+        """Optional[List[str]]: Fields defining clustering for the table
 
         (Defaults to :data:`None`).
         """
@@ -1109,7 +1109,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def destination_table_description(self):
-        """Optional[Union[str, None]]: Name given to destination table.
+        """Optional[str]: Name given to destination table.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#DestinationTableProperties.FIELDS.description
@@ -1128,7 +1128,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def destination_table_friendly_name(self):
-        """Optional[Union[str, None]]: Name given to destination table.
+        """Optional[str]: Name given to destination table.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#DestinationTableProperties.FIELDS.friendly_name

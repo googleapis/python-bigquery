@@ -3,16 +3,16 @@
     {
       "git": {
         "name": ".",
-        "remote": "git@github.com:googleapis/python-bigquery",
-        "sha": "0946a5c460b0d675f6dbe4f053a7801edba36443"
+        "remote": "https://github.com/googleapis/python-bigquery.git",
+        "sha": "dbaf3bdc35656fdfef2d4380befdcc2392c1ca83"
       }
     },
     {
       "git": {
         "name": "googleapis",
         "remote": "https://github.com/googleapis/googleapis.git",
-        "sha": "e6ab0a55f2195169feded73dd684574dd4bd9dfa",
-        "internalRef": "319180144"
+        "sha": "db69b46790b55a82ab7cfa473d031da787bc7591",
+        "internalRef": "320411362"
       }
     },
     {

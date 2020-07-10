@@ -1894,9 +1894,20 @@ class PartitionRange(object):
     def _key(self):
         return tuple(sorted(self._properties.items()))
 
+    def __eq__(self, other):
+        if not isinstance(other, PartitionRange):
+            return NotImplemented
+        return self._key() == other._key()
+
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         key_vals = ["{}={}".format(key, val) for key, val in self._key()]
         return "PartitionRange({})".format(", ".join(key_vals))
+
+    def __hash__(self):
+        return hash(self._key())
 
 
 class RangePartitioning(object):
@@ -1964,9 +1975,20 @@ class RangePartitioning(object):
     def _key(self):
         return (("field", self.field), ("range_", self.range_))
 
+    def __eq__(self, other):
+        if not isinstance(other, RangePartitioning):
+            return NotImplemented
+        return self._key() == other._key()
+
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         key_vals = ["{}={}".format(key, repr(val)) for key, val in self._key()]
         return "RangePartitioning({})".format(", ".join(key_vals))
+
+    def __hash__(self):
+        return hash(self._key())
 
 
 class TimePartitioningType(object):

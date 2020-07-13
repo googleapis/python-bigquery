@@ -3550,19 +3550,10 @@ class TestPartitionRange(unittest.TestCase):
         self.assertNotEqual(object_under_test, object())
         self.assertEqual(object_under_test, mock.ANY)
 
-    def test___hash__set_equality(self):
+    def test_unhashable_object(self):
         object_under_test1 = self._make_one(start=1, end=10, interval=2)
-        object_under_test2 = self._make_one(start=1, end=10, interval=3)
-        set_one = {object_under_test1, object_under_test2}
-        set_two = {object_under_test1, object_under_test2}
-        self.assertEqual(set_one, set_two)
 
-    def test___hash__not_equals(self):
-        object_under_test1 = self._make_one(start=1, end=10, interval=2)
-        object_under_test2 = self._make_one(start=1, end=10, interval=3)
-        set_one = {object_under_test1}
-        set_two = {object_under_test2}
-        self.assertNotEqual(set_one, set_two)
+        self.assertIsNone(object_under_test1.__hash__)
 
     def test_repr(self):
         object_under_test = self._make_one(start=1, end=10, interval=2)
@@ -3655,31 +3646,13 @@ class TestRangePartitioning(unittest.TestCase):
         self.assertNotEqual(object_under_test, object())
         self.assertEqual(object_under_test, mock.ANY)
 
-    def test___hash__set_equality(self):
+    def test_unhashable_object(self):
         from google.cloud.bigquery.table import PartitionRange
 
         object_under_test1 = self._make_one(
             range_=PartitionRange(start=1, end=10, interval=2), field="integer_col"
         )
-        object_under_test2 = self._make_one(
-            range_=PartitionRange(start=1, end=10, interval=2), field="float_col"
-        )
-        set_one = {object_under_test1, object_under_test2}
-        set_two = {object_under_test1, object_under_test2}
-        self.assertEqual(set_one, set_two)
-
-    def test___hash__not_equals(self):
-        from google.cloud.bigquery.table import PartitionRange
-
-        object_under_test1 = self._make_one(
-            range_=PartitionRange(start=1, end=10, interval=2), field="integer_col"
-        )
-        object_under_test2 = self._make_one(
-            range_=PartitionRange(start=1, end=10, interval=2), field="float_col"
-        )
-        set_one = {object_under_test1}
-        set_two = {object_under_test2}
-        self.assertNotEqual(set_one, set_two)
+        self.assertIsNone(object_under_test1.__hash__)
 
     def test_repr(self):
         from google.cloud.bigquery.table import PartitionRange

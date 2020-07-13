@@ -1903,8 +1903,7 @@ class PartitionRange(object):
         key_vals = ["{}={}".format(key, val) for key, val in self._key()]
         return "PartitionRange({})".format(", ".join(key_vals))
 
-    def __hash__(self):
-        return hash(self._key())
+    __hash__ = None
 
 
 class RangePartitioning(object):
@@ -1984,8 +1983,7 @@ class RangePartitioning(object):
         key_vals = ["{}={}".format(key, repr(val)) for key, val in self._key()]
         return "RangePartitioning({})".format(", ".join(key_vals))
 
-    def __hash__(self):
-        return hash(self._key())
+    __hash__ = None
 
 
 class TimePartitioningType(object):

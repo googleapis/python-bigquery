@@ -1844,20 +1844,23 @@ class TestClient(unittest.TestCase):
             {"role": BIGQUERY_DATA_OWNER_ROLE, "members": [EDITOR1, EDITOR2]},
             {"role": BIGQUERY_DATA_VIEWER_ROLE, "members": [VIEWER1, VIEWER2]},
         ]
+        MASK = "bindings,etag"
         RETURNED = {"etag": ETAG, "version": VERSION, "bindings": BINDINGS}
 
         policy = Policy()
         for binding in BINDINGS:
             policy[binding["role"]] = binding["members"]
 
-        BODY = {"policy": policy.to_api_repr()}
+        BODY = {"policy": policy.to_api_repr(), "updateMask": MASK}
 
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
         conn = client._connection = make_connection(RETURNED)
 
-        returned_policy = client.set_iam_policy(self.TABLE_REF, policy, timeout=7.5)
+        returned_policy = client.set_iam_policy(
+            self.TABLE_REF, policy, updateMask=MASK, timeout=7.5
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST", path=PATH, data=BODY, timeout=7.5
@@ -1865,6 +1868,19 @@ class TestClient(unittest.TestCase):
         self.assertEqual(returned_policy.etag, ETAG)
         self.assertEqual(returned_policy.version, VERSION)
         self.assertEqual(dict(returned_policy), dict(policy))
+
+    def test_set_iam_policy_invalid_policy(self):
+        from google.api_core.iam import Policy
+
+        policy = Policy()
+        invalid_policy_repr = policy.to_api_repr()
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        with self.assertRaises(TypeError):
+            client.set_iam_policy(self.TABLE_REF, invalid_policy_repr)
 
     def test_update_dataset_w_invalid_field(self):
         from google.cloud.bigquery.dataset import Dataset

@@ -3553,7 +3553,8 @@ class TestPartitionRange(unittest.TestCase):
     def test_unhashable_object(self):
         object_under_test1 = self._make_one(start=1, end=10, interval=2)
 
-        self.assertIsNone(object_under_test1.__hash__)
+        with six.assertRaisesRegex(self, TypeError, r".*unhashable type.*"):
+            hash(object_under_test1)
 
     def test_repr(self):
         object_under_test = self._make_one(start=1, end=10, interval=2)
@@ -3652,7 +3653,8 @@ class TestRangePartitioning(unittest.TestCase):
         object_under_test1 = self._make_one(
             range_=PartitionRange(start=1, end=10, interval=2), field="integer_col"
         )
-        self.assertIsNone(object_under_test1.__hash__)
+        with six.assertRaisesRegex(self, TypeError, r".*unhashable type.*"):
+            hash(object_under_test1)
 
     def test_repr(self):
         from google.cloud.bigquery.table import PartitionRange

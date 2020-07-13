@@ -618,9 +618,31 @@ class Client(ClientWithProject):
             retry, method="POST", path=path, data=body, timeout=timeout,
         )
 
-        iam_policy = Policy.from_api_repr(response)
+        return Policy.from_api_repr(response)
 
-        return iam_policy
+    def set_iam_policy(
+        self, table, policy, updateMask=None, retry=DEFAULT_RETRY, timeout=None,
+    ):
+        if not isinstance(table, (Table, TableReference)):
+            raise TypeError("table must be a Table or TableReference")
+
+        if not isinstance(policy, (Policy)):
+            raise TypeError("policy must be a Policy")
+
+        body = {}
+
+        if updateMask is not None:
+            body["updateMask"] = updateMask
+
+        body["policy"] = policy.to_api_repr()
+
+        path = "%s:setIamPolicy" % (table.path)
+
+        response = self._call_api(
+            retry, method="POST", path=path, data=body, timeout=timeout,
+        )
+
+        return Policy.from_api_repr(response)
 
     def get_model(self, model_ref, retry=DEFAULT_RETRY, timeout=None):
         """[Beta] Fetch the model referenced by ``model_ref``.

@@ -2535,7 +2535,9 @@ class Client(ClientWithProject):
             ]):
                 The destination table for the row data, or a reference to it.
             dataframe (pandas.DataFrame):
-                A :class:`~pandas.DataFrame` containing the data to load.
+                A :class:`~pandas.DataFrame` containing the data to load. Any
+                ``NaN`` values present in the dataframe are omitted from the
+                streaming API request(s).
             selected_fields (Sequence[google.cloud.bigquery.schema.SchemaField]):
                 The fields to return. Required if ``table`` is a
                 :class:`~google.cloud.bigquery.table.TableReference`.

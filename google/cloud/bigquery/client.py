@@ -2559,10 +2559,7 @@ class Client(ClientWithProject):
         insert_results = []
 
         chunk_count = int(math.ceil(len(dataframe) / chunk_size))
-        rows_iter = (
-            dict(six.moves.zip(dataframe.columns, row))
-            for row in dataframe.itertuples(index=False, name=None)
-        )
+        rows_iter = _pandas_helpers.dataframe_to_json_generator(dataframe)
 
         for _ in range(chunk_count):
             rows_chunk = itertools.islice(rows_iter, chunk_size)

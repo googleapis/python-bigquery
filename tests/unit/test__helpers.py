@@ -916,11 +916,16 @@ class Test_record_field_to_json(unittest.TestCase):
             _make_field("INT64", name="one", mode="NULLABLE"),
             _make_field("STRING", name="two", mode="NULLABLE"),
         ]
-        original = {"whoami": datetime.date(2020, 7, 20), "one": 111, "two": "222"}
+        original = {
+            "whoami": datetime.date(2020, 7, 20),
+            "one": 111,
+            "two": "222",
+            "void": None,
+        }
 
         converted = self._call_fut(fields, original)
 
-        # Unknown fields should be included, but converted as strings.
+        # Unknown fields should be included (if not None), but converted as strings.
         self.assertEqual(
             converted, {"whoami": "2020-07-20", "one": "111", "two": "222"},
         )

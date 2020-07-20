@@ -19,6 +19,7 @@ import copy
 import datetime
 import decimal
 import re
+import six
 
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
@@ -447,15 +448,16 @@ def _record_field_to_json(fields, row_value):
         if isdict:
             processed_fields.add(subname)
 
-    # Unknown fields should not be silently dropped.
+    # Unknown fields should not be silently dropped, include them. Since there
+    # is no schema information available for them, include them as strings
+    # to make them JSON-serializable.
     if isdict:
         not_processed = set(row_value.keys()) - processed_fields
-        if not_processed:
-            raise ValueError(
-                "Unknown field(s) not present in schema: {}".format(
-                    ", ".join(not_processed)
-                )
-            )
+
+        for field_name in not_processed:
+            value = row_value[field_name]
+            if value is not None:
+                record[field_name] = six.text_type(value)
 
     return record
 

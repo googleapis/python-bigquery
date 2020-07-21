@@ -19,6 +19,7 @@ import functools
 import logging
 import warnings
 
+import six
 from six.moves import queue
 
 try:
@@ -472,10 +473,9 @@ def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SN
             columns in the DataFrame.
         filepath (str):
             Path to write Parquet file to.
-        parquet_compression (str):
-            (optional) The compression codec to use by the the
-            ``pyarrow.parquet.write_table`` serializing method. Defaults to
-            "SNAPPY".
+        parquet_compression (Optional[str]):
+            The compression codec to use by the the ``pyarrow.parquet.write_table``
+            serializing method. Defaults to "SNAPPY".
             https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
     """
     if pyarrow is None:
@@ -781,3 +781,14 @@ def download_dataframe_bqstorage(
         selected_fields=selected_fields,
         page_to_item=page_to_item,
     )
+
+
+def dataframe_to_json_generator(dataframe):
+    for row in dataframe.itertuples(index=False, name=None):
+        output = {}
+        for column, value in six.moves.zip(dataframe.columns, row):
+            # Omit NaN values.
+            if value != value:
+                continue
+            output[column] = value
+        yield output

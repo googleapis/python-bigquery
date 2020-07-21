@@ -60,7 +60,9 @@ s.replace("google/cloud/bigquery_v2/proto/*.py", "[“”]", '``')
 # Add templated files
 # ----------------------------------------------------------------------------
 templated_files = common.py_library(cov_level=100, samples=True)
-s.move(templated_files, excludes=["noxfile.py"])
+
+# BigQuery has a custom multiprocessing note
+s.move(templated_files, excludes=["noxfile.py", "docs/multiprocessing.rst"])
 
 # ----------------------------------------------------------------------------
 # Samples templates

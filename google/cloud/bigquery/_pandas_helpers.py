@@ -20,7 +20,6 @@ import logging
 import warnings
 import six
 
-import six
 from six.moves import queue
 
 try:

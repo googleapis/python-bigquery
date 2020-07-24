@@ -1413,10 +1413,10 @@ class TestBigQuery(unittest.TestCase):
 
         dataset = self.temp_dataset(_make_dataset_id("create_table"))
         table_id = "test_table"
-        table_arg = Table(dataset.table(table_id), schema=SCHEMA)
-        self.assertFalse(_table_exists(table_arg))
+        table_ref = Table(dataset.table(table_id))
+        self.assertFalse(_table_exists(table_ref))
 
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = retry_403(Config.CLIENT.create_table)(table_ref)
         self.to_delete.insert(0, table)
 
         self.assertTrue(_table_exists(table))
@@ -1433,8 +1433,28 @@ class TestBigQuery(unittest.TestCase):
 
         policy.bindings.append(BINDING)
         returned_policy = Config.CLIENT.set_iam_policy(table, policy)
-
         self.assertEqual(returned_policy.bindings, policy.bindings)
+
+    def test_test_iam_permissions(self):
+        dataset = self.temp_dataset(_make_dataset_id("create_table"))
+        table_id = "test_table"
+        table_ref = Table(dataset.table(table_id))
+        self.assertFalse(_table_exists(table_ref))
+
+        table = retry_403(Config.CLIENT.create_table)(table_ref)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+
+        # Test some default permissions.
+        permissions = [
+            "bigquery.tables.get",
+            "bigquery.tables.getData",
+            "bigquery.tables.update",
+        ]
+
+        response = Config.CLIENT.test_iam_permissions(table, [permissions])
+        self.assertCountEqual(response["permissions"], permissions)
 
     def test_job_cancel(self):
         DATASET_ID = _make_dataset_id("job_cancel")

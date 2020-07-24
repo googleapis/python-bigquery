@@ -1924,6 +1924,28 @@ class TestClient(unittest.TestCase):
         with self.assertRaises(TypeError):
             client.set_iam_policy(table_resource_string, policy)
 
+    def test_test_iam_permissions(self):
+        PATH = "/projects/%s/datasets/%s/tables/%s:testIamPermissions" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+
+        PERMISSIONS = ["bigquery.tables.get", "bigquery.tables.update"]
+        BODY = {"permissions": PERMISSIONS}
+        RETURNED = {"permissions": PERMISSIONS}
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RETURNED)
+
+        client.test_iam_permissions(self.TABLE_REF, PERMISSIONS, timeout=7.5)
+
+        conn.api_request.assert_called_once_with(
+            method="POST", path=PATH, data=BODY, timeout=7.5
+        )
+
     def test_update_dataset_w_invalid_field(self):
         from google.cloud.bigquery.dataset import Dataset
 

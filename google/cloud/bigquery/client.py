@@ -640,6 +640,24 @@ class Client(ClientWithProject):
 
         return Policy.from_api_repr(response)
 
+    def test_iam_permissions(
+        self, table, permissions, retry=DEFAULT_RETRY, timeout=None,
+    ):
+        if not isinstance(table, (Table, TableReference)):
+            raise TypeError("table must be a Table or TableReference")
+
+        body = {}
+
+        body["permissions"] = permissions
+
+        path = "%s:testIamPermissions" % (table.path)
+
+        response = self._call_api(
+            retry, method="POST", path=path, data=body, timeout=timeout,
+        )
+
+        return response
+
     def get_model(self, model_ref, retry=DEFAULT_RETRY, timeout=None):
         """[Beta] Fetch the model referenced by ``model_ref``.
 

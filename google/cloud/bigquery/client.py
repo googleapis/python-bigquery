@@ -442,6 +442,10 @@ class Client(ClientWithProject):
             google.cloud.bigquery.dataset.Dataset:
                 A new ``Dataset`` returned from the API.
 
+        Raises:
+            google.cloud.exceptions.Conflict:
+                If the dataset already exists.
+
         Example:
 
             >>> from google.cloud import bigquery
@@ -497,6 +501,10 @@ class Client(ClientWithProject):
         Returns:
             google.cloud.bigquery.routine.Routine:
                 A new ``Routine`` returned from the service.
+
+        Raises:
+            google.cloud.exceptions.Conflict:
+                If the routine already exists.
         """
         reference = routine.reference
         path = "/projects/{}/datasets/{}/routines".format(
@@ -541,6 +549,10 @@ class Client(ClientWithProject):
         Returns:
             google.cloud.bigquery.table.Table:
                 A new ``Table`` returned from the service.
+
+        Raises:
+            google.cloud.exceptions.Conflict:
+                If the table already exists.
         """
         table = _table_arg_to_table(table, default_project=self.project)
 
@@ -2600,7 +2612,9 @@ class Client(ClientWithProject):
             ]):
                 The destination table for the row data, or a reference to it.
             dataframe (pandas.DataFrame):
-                A :class:`~pandas.DataFrame` containing the data to load.
+                A :class:`~pandas.DataFrame` containing the data to load. Any
+                ``NaN`` values present in the dataframe are omitted from the
+                streaming API request(s).
             selected_fields (Sequence[google.cloud.bigquery.schema.SchemaField]):
                 The fields to return. Required if ``table`` is a
                 :class:`~google.cloud.bigquery.table.TableReference`.
@@ -2624,10 +2638,7 @@ class Client(ClientWithProject):
         insert_results = []
 
         chunk_count = int(math.ceil(len(dataframe) / chunk_size))
-        rows_iter = (
-            dict(six.moves.zip(dataframe.columns, row))
-            for row in dataframe.itertuples(index=False, name=None)
-        )
+        rows_iter = _pandas_helpers.dataframe_to_json_generator(dataframe)
 
         for _ in range(chunk_count):
             rows_chunk = itertools.islice(rows_iter, chunk_size)

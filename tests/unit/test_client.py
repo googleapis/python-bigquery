@@ -1946,6 +1946,22 @@ class TestClient(unittest.TestCase):
             method="POST", path=PATH, data=BODY, timeout=7.5
         )
 
+    def test_test_iam_permissions_w_invalid_table(self):
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        table_resource_string = "projects/%s/datasets/%s/tables/%s" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+
+        PERMISSIONS = ["bigquery.tables.get", "bigquery.tables.update"]
+
+        with self.assertRaises(TypeError):
+            client.test_iam_permissions(table_resource_string, PERMISSIONS)
+
     def test_update_dataset_w_invalid_field(self):
         from google.cloud.bigquery.dataset import Dataset
 

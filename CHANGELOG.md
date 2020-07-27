@@ -17,7 +17,7 @@
 
 ### Dependencies
 
-* Updatred version constraints on grmp dependency in anticipation of 1.0.0 release
+* Updated version constraints on grmp dependency in anticipation of 1.0.0 release
   ([#189](https://github.com/googleapis/python-bigquery/pull/189))
 
 ## [1.26.0](https://www.github.com/googleapis/python-bigquery/compare/v1.25.0...v1.26.0) (2020-07-20)

@@ -4,12 +4,28 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [1.26.1](https://www.github.com/googleapis/python-bigquery/compare/v1.26.0...v1.26.1) (2020-07-25)
+
+### Documentation
+
+* Migrated code samples from
+  https://github.com/GoogleCloudPlatform/python-docs-samples
+
+### Bug Fixes
+
+* RowIterator.to_arrow() error when BQ Storage client cannot be created ([#181](https://www.github.com/googleapis/python-bigquery/issues/181)) ([7afa3d7](https://www.github.com/googleapis/python-bigquery/commit/7afa3d70f8564dcdacda2b9acbbd7207b50b186e))
+
+### Dependencies
+
+* Updated version constraints on grmp dependency in anticipation of 1.0.0 release
+  ([#189](https://github.com/googleapis/python-bigquery/pull/189))
+
 ## [1.26.0](https://www.github.com/googleapis/python-bigquery/compare/v1.25.0...v1.26.0) (2020-07-20)
 
 
 ### Features
 
-* use BigQuery Storage client by default ([#55](https://www.github.com/googleapis/python-bigquery/issues/55)) ([e75ff82](https://www.github.com/googleapis/python-bigquery/commit/e75ff8297c65981545b097f75a17cf9e78ac6772)), closes [#91](https://www.github.com/googleapis/python-bigquery/issues/91)
+* use BigQuery Storage client by default (if dependencies available) ([#55](https://www.github.com/googleapis/python-bigquery/issues/55)) ([e75ff82](https://www.github.com/googleapis/python-bigquery/commit/e75ff8297c65981545b097f75a17cf9e78ac6772)), closes [#91](https://www.github.com/googleapis/python-bigquery/issues/91)
 * **bigquery:** add __eq__ method for class PartitionRange and RangePartitioning ([#162](https://www.github.com/googleapis/python-bigquery/issues/162)) ([0d2a88d](https://www.github.com/googleapis/python-bigquery/commit/0d2a88d8072154cfc9152afd6d26a60ddcdfbc73))
 * **bigquery:** expose date_as_object parameter to users ([#150](https://www.github.com/googleapis/python-bigquery/issues/150)) ([a2d5ce9](https://www.github.com/googleapis/python-bigquery/commit/a2d5ce9e97992318d7dc85c51c053cab74e25a11))
 * **bigquery:** expose date_as_object parameter to users ([#150](https://www.github.com/googleapis/python-bigquery/issues/150)) ([cbd831e](https://www.github.com/googleapis/python-bigquery/commit/cbd831e08024a67148723afd49e1db085e0a862c))
@@ -466,7 +482,7 @@
 
 ### New Features
 
-- Add options to ignore errors when creating/deleting datasets/tables. ([#7491](https://github.com/googleapis/google-cloud-python/pull/7491))
+- Add `exists_ok` and `not_found_ok` options to ignore errors when creating/deleting datasets/tables. ([#7491](https://github.com/googleapis/google-cloud-python/pull/7491))
 - Accept a string in Table and Dataset constructors. ([#7483](https://github.com/googleapis/google-cloud-python/pull/7483))
 
 ### Documentation

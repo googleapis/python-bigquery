@@ -299,7 +299,7 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         )
     )
     assert pyarrow.types.is_struct(actual)
-    assert actual.num_children == len(fields)
+    assert actual.num_fields == len(fields)
     assert actual.equals(expected)
 
 
@@ -344,7 +344,7 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
     )
     assert pyarrow.types.is_list(actual)
     assert pyarrow.types.is_struct(actual.value_type)
-    assert actual.value_type.num_children == len(fields)
+    assert actual.value_type.num_fields == len(fields)
     assert actual.value_type.equals(expected_value_type)
 
 
@@ -542,8 +542,11 @@ def test_bq_to_arrow_schema_w_unknown_type(module_under_test):
         # instead.
         schema.SchemaField("field3", "UNKNOWN_TYPE"),
     )
-    actual = module_under_test.bq_to_arrow_schema(fields)
+    with warnings.catch_warnings(record=True) as warned:
+        actual = module_under_test.bq_to_arrow_schema(fields)
     assert actual is None
+    warning = warned[0]
+    assert "field3" in str(warning)
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

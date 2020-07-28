@@ -1454,7 +1454,7 @@ class TestBigQuery(unittest.TestCase):
         ]
 
         response = Config.CLIENT.test_iam_permissions(table, [permissions])
-        self.assertCountEqual(response["permissions"], permissions)
+        self.assertEqual(set(response["permissions"]), set(permissions))
 
     def test_job_cancel(self):
         DATASET_ID = _make_dataset_id("job_cancel")

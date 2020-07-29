@@ -1754,10 +1754,8 @@ class TestClient(unittest.TestCase):
         from google.cloud.bigquery.iam import BIGQUERY_DATA_VIEWER_ROLE
         from google.api_core.iam import Policy
 
-        PATH = "/projects/%s/datasets/%s/tables/%s:getIamPolicy" % (
-            self.PROJECT,
-            self.DS_ID,
-            self.TABLE_ID,
+        PATH = "/projects/{}/datasets/{}/tables/{}:getIamPolicy".format(
+            self.PROJECT, self.DS_ID, self.TABLE_ID,
         )
         BODY = {"options": {"requestedPolicyVersion": 1}}
         ETAG = "CARDI"
@@ -1803,10 +1801,8 @@ class TestClient(unittest.TestCase):
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
 
-        table_resource_string = "projects/%s/datasets/%s/tables/%s" % (
-            self.PROJECT,
-            self.DS_ID,
-            self.TABLE_ID,
+        table_resource_string = "projects/{}/datasets/{}/tables/{}".format(
+            self.PROJECT, self.DS_ID, self.TABLE_ID,
         )
 
         with self.assertRaises(TypeError):

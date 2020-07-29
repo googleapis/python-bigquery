@@ -1408,7 +1408,7 @@ class TestBigQuery(unittest.TestCase):
         got_rows = self._fetch_single_page(dest_table)
         self.assertTrue(len(got_rows) > 0)
 
-    def test_iam_policy(self):
+    def test_get_set_iam_policy(self):
         from google.cloud.bigquery.iam import BIGQUERY_DATA_VIEWER_ROLE
 
         dataset = self.temp_dataset(_make_dataset_id("create_table"))

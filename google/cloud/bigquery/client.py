@@ -615,12 +615,9 @@ class Client(ClientWithProject):
         if requested_policy_version != 1:
             raise ValueError("only IAM policy version 1 is supported")
 
-        options = {}
-        body = {}
-        options["requestedPolicyVersion"] = requested_policy_version
-        body["options"] = options
+        body = {"options": {"requestedPolicyVersion": 1}}
 
-        path = "%s:getIamPolicy" % (table.path)
+        path = "{}:getIamPolicy".format(table.path)
 
         response = self._call_api(
             retry, method="POST", path=path, data=body, timeout=timeout,
@@ -637,14 +634,12 @@ class Client(ClientWithProject):
         if not isinstance(policy, (Policy)):
             raise TypeError("policy must be a Policy")
 
-        body = {}
+        body = {"policy": policy.to_api_repr()}
 
         if updateMask is not None:
             body["updateMask"] = updateMask
 
-        body["policy"] = policy.to_api_repr()
-
-        path = "%s:setIamPolicy" % (table.path)
+        path = "{}:setIamPolicy".format(table.path)
 
         response = self._call_api(
             retry, method="POST", path=path, data=body, timeout=timeout,
@@ -658,11 +653,9 @@ class Client(ClientWithProject):
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
 
-        body = {}
+        body = {"permissions": permissions}
 
-        body["permissions"] = permissions
-
-        path = "%s:testIamPermissions" % (table.path)
+        path = "{}:testIamPermissions".format(table.path)
 
         response = self._call_api(
             retry, method="POST", path=path, data=body, timeout=timeout,

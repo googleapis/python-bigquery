@@ -60,7 +60,7 @@ extras = {
         # (building the wheel fails), thus needs to be restricted.
         # See: https://github.com/googleapis/python-bigquery/issues/78
         "llvmlite <= 0.33.0;python_version>='3.6'",
-        "llvmlite <= 0.31.0;python_version<'3.6'",
+        "llvmlite<=0.33.0;python_version<'3.6'",
     ],
 }
 

@@ -22,7 +22,7 @@ import setuptools
 
 name = "google-cloud-bigquery"
 description = "Google BigQuery API client library"
-version = "1.24.0"
+version = "1.26.1"
 # Should be one of:
 # 'Development Status :: 3 - Alpha'
 # 'Development Status :: 4 - Beta'
@@ -30,16 +30,14 @@ version = "1.24.0"
 release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
     'enum34; python_version < "3.4"',
-    "google-auth >= 1.9.0, < 2.0dev",
-    "google-api-core >= 1.15.0, < 2.0dev",
+    "google-api-core >= 1.21.0, < 2.0dev",
     "google-cloud-core >= 1.1.0, < 2.0dev",
-    "google-resumable-media >= 0.5.0, < 0.6dev",
-    "protobuf >= 3.6.0",
+    "google-resumable-media >= 0.5.0, < 2.0dev",
     "six >=1.13.0,< 2.0.0dev",
 ]
 extras = {
     "bqstorage": [
-        "google-cloud-bigquery-storage >= 0.6.0, <2.0.0dev",
+        "google-cloud-bigquery-storage >= 1.0.0, <2.0.0dev",
         # Due to an issue in pip's dependency resolver, the `grpc` extra is not
         # installed, even though `google-cloud-bigquery-storage` specifies it
         # as `google-api-core[grpc]`. We thus need to explicitly specify it here.
@@ -61,7 +59,8 @@ extras = {
         # llvmlite >= 0.32.0 cannot be installed on Python 3.5 and below
         # (building the wheel fails), thus needs to be restricted.
         # See: https://github.com/googleapis/python-bigquery/issues/78
-        "llvmlite <= 0.31.0",
+        "llvmlite <= 0.33.0;python_version>='3.6'",
+        "llvmlite <= 0.31.0;python_version<'3.6'",
     ],
 }
 

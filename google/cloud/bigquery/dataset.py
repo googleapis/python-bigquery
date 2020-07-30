@@ -84,7 +84,7 @@ class AccessEntry(object):
 
     See https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets.
 
-    Attributes:
+    Args:
         role (str):
             Role granted to the entity. The following string values are
             supported: `'READER'`, `'WRITER'`, `'OWNER'`. It may also be
@@ -295,9 +295,9 @@ class DatasetReference(object):
                 A dataset ID in standard SQL format. If ``default_project``
                 is not specified, this must include both the project ID and
                 the dataset ID, separated by ``.``.
-            default_project (str):
-                Optional. The project ID to use when ``dataset_id`` does not
-                include a project ID.
+            default_project (Optional[str]):
+                The project ID to use when ``dataset_id`` does not include a
+                project ID.
 
         Returns:
             DatasetReference:

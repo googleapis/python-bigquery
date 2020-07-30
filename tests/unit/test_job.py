@@ -34,9 +34,9 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 try:
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud import bigquery_storage_v1
 except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
+    bigquery_storage_v1 = None
 try:
     from tqdm import tqdm
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -5344,7 +5344,7 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 
-        tbl = job.to_arrow()
+        tbl = job.to_arrow(create_bqstorage_client=False)
 
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 2)
@@ -5412,7 +5412,7 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 
-        df = job.to_dataframe()
+        df = job.to_dataframe(create_bqstorage_client=False)
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 4)  # verify the number of rows
@@ -5437,7 +5437,7 @@ class TestQueryJob(unittest.TestCase, _Base):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_to_dataframe_bqstorage(self):
         query_resource = {
@@ -5455,10 +5455,8 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(self.PROJECT, connection=connection)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
-        bqstorage_client = mock.create_autospec(
-            bigquery_storage_v1beta1.BigQueryStorageClient
-        )
-        session = bigquery_storage_v1beta1.types.ReadSession()
+        bqstorage_client = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
+        session = bigquery_storage_v1.types.ReadSession()
         session.avro_schema.schema = json.dumps(
             {
                 "type": "record",
@@ -5473,13 +5471,17 @@ class TestQueryJob(unittest.TestCase, _Base):
 
         job.to_dataframe(bqstorage_client=bqstorage_client)
 
+        destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
+            **resource["configuration"]["query"]["destinationTable"]
+        )
+        expected_session = bigquery_storage_v1.types.ReadSession(
+            table=destination_table,
+            data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+        )
         bqstorage_client.create_read_session.assert_called_once_with(
-            mock.ANY,
-            "projects/{}".format(self.PROJECT),
-            format_=bigquery_storage_v1beta1.enums.DataFormat.ARROW,
-            read_options=mock.ANY,
-            # Use default number of streams for best performance.
-            requested_streams=0,
+            parent="projects/{}".format(self.PROJECT),
+            read_session=expected_session,
+            max_stream_count=0,  # Use default number of streams for best performance.
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
@@ -5502,7 +5504,15 @@ class TestQueryJob(unittest.TestCase, _Base):
             },
         }
         row_data = [
-            ["1.4338368E9", "420", "1.1", "1.77", "Cash", "true", "1999-12-01"],
+            [
+                "1.4338368E9",
+                "420",
+                "1.1",
+                "1.77",
+                "Cto_dataframeash",
+                "true",
+                "1999-12-01",
+            ],
             ["1.3878117E9", "2580", "17.7", "28.5", "Cash", "false", "1953-06-14"],
             ["1.3855653E9", "2280", "4.4", "7.1", "Credit", "true", "1981-11-04"],
         ]
@@ -5516,7 +5526,7 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 
-        df = job.to_dataframe(dtypes={"km": "float16"})
+        df = job.to_dataframe(dtypes={"km": "float16"}, create_bqstorage_client=False)
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 3)  # verify the number of rows
@@ -5529,6 +5539,69 @@ class TestQueryJob(unittest.TestCase, _Base):
         self.assertEqual(df.km.dtype.name, "float16")
         self.assertEqual(df.payment_type.dtype.name, "object")
         self.assertEqual(df.complete.dtype.name, "bool")
+        self.assertEqual(df.date.dtype.name, "object")
+
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_to_dataframe_column_date_dtypes(self):
+        begun_resource = self._make_resource()
+        query_resource = {
+            "jobComplete": True,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "totalRows": "1",
+            "schema": {"fields": [{"name": "date", "type": "DATE"}]},
+        }
+        row_data = [
+            ["1999-12-01"],
+        ]
+        rows = [{"f": [{"v": field} for field in row]} for row in row_data]
+        query_resource["rows"] = rows
+        done_resource = copy.deepcopy(begun_resource)
+        done_resource["status"] = {"state": "DONE"}
+        connection = _make_connection(
+            begun_resource, query_resource, done_resource, query_resource
+        )
+        client = _make_client(project=self.PROJECT, connection=connection)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+        df = job.to_dataframe(date_as_object=False, create_bqstorage_client=False)
+
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 1)  # verify the number of rows
+        exp_columns = [field["name"] for field in query_resource["schema"]["fields"]]
+        self.assertEqual(list(df), exp_columns)  # verify the column names
+
+        self.assertEqual(df.date.dtype.name, "datetime64[ns]")
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_to_dataframe_column_date_dtypes_wo_pyarrow(self):
+        begun_resource = self._make_resource()
+        query_resource = {
+            "jobComplete": True,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "totalRows": "1",
+            "schema": {"fields": [{"name": "date", "type": "DATE"}]},
+        }
+        row_data = [
+            ["1999-12-01"],
+        ]
+        rows = [{"f": [{"v": field} for field in row]} for row in row_data]
+        query_resource["rows"] = rows
+        done_resource = copy.deepcopy(begun_resource)
+        done_resource["status"] = {"state": "DONE"}
+        connection = _make_connection(
+            begun_resource, query_resource, done_resource, query_resource
+        )
+        client = _make_client(project=self.PROJECT, connection=connection)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+
+        with mock.patch("google.cloud.bigquery.table.pyarrow", None):
+            df = job.to_dataframe(date_as_object=False, create_bqstorage_client=False)
+
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 1)  # verify the number of rows
+        exp_columns = [field["name"] for field in query_resource["schema"]["fields"]]
+        self.assertEqual(list(df), exp_columns)  # verify the column names
+
         self.assertEqual(df.date.dtype.name, "object")
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
@@ -5556,10 +5629,10 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 
-        job.to_dataframe(progress_bar_type=None)
+        job.to_dataframe(progress_bar_type=None, create_bqstorage_client=False)
         tqdm_mock.assert_not_called()
 
-        job.to_dataframe(progress_bar_type="tqdm")
+        job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
         tqdm_mock.assert_called()
 
     def test_iter(self):
@@ -5949,7 +6022,7 @@ def test__contains_order_by(query, expected):
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(
-    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
+    bigquery_storage_v1 is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 @pytest.mark.parametrize(
     "query",
@@ -5985,10 +6058,8 @@ def test_to_dataframe_bqstorage_preserve_order(query):
     connection = _make_connection(get_query_results_resource, job_resource)
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(job_resource, client)
-    bqstorage_client = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient
-    )
-    session = bigquery_storage_v1beta1.types.ReadSession()
+    bqstorage_client = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
+    session = bigquery_storage_v1.types.ReadSession()
     session.avro_schema.schema = json.dumps(
         {
             "type": "record",
@@ -6003,11 +6074,14 @@ def test_to_dataframe_bqstorage_preserve_order(query):
 
     job.to_dataframe(bqstorage_client=bqstorage_client)
 
+    destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
+        **job_resource["configuration"]["query"]["destinationTable"]
+    )
+    expected_session = bigquery_storage_v1.types.ReadSession(
+        table=destination_table, data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+    )
     bqstorage_client.create_read_session.assert_called_once_with(
-        mock.ANY,
-        "projects/test-project",
-        format_=bigquery_storage_v1beta1.enums.DataFormat.ARROW,
-        read_options=mock.ANY,
-        # Use a single stream to preserve row order.
-        requested_streams=1,
+        parent="projects/test-project",
+        read_session=expected_session,
+        max_stream_count=1,  # Use a single stream to preserve row order.
     )

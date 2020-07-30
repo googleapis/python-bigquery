@@ -19,12 +19,13 @@ import functools
 import logging
 import warnings
 
+import six
 from six.moves import queue
 
 try:
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud import bigquery_storage_v1
 except ImportError:  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
+    bigquery_storage_v1 = None
 
 try:
     import pandas
@@ -472,10 +473,9 @@ def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SN
             columns in the DataFrame.
         filepath (str):
             Path to write Parquet file to.
-        parquet_compression (str):
-            (optional) The compression codec to use by the the
-            ``pyarrow.parquet.write_table`` serializing method. Defaults to
-            "SNAPPY".
+        parquet_compression (Optional[str]):
+            The compression codec to use by the the ``pyarrow.parquet.write_table``
+            serializing method. Defaults to "SNAPPY".
             https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
     """
     if pyarrow is None:
@@ -577,8 +577,19 @@ def _bqstorage_page_to_dataframe(column_names, dtypes, page):
 def _download_table_bqstorage_stream(
     download_state, bqstorage_client, session, stream, worker_queue, page_to_item
 ):
-    position = bigquery_storage_v1beta1.types.StreamPosition(stream=stream)
-    rowstream = bqstorage_client.read_rows(position).rows(session)
+    # Passing a BQ Storage client in implies that the BigQuery Storage library
+    # is available and can be imported.
+    from google.cloud import bigquery_storage_v1beta1
+
+    # We want to preserve comaptibility with the v1beta1 BQ Storage clients,
+    # thus adjust constructing the rowstream if needed.
+    # The assumption is that the caller provides a BQ Storage `session` that is
+    # compatible with the version of the BQ Storage client passed in.
+    if isinstance(bqstorage_client, bigquery_storage_v1beta1.BigQueryStorageClient):
+        position = bigquery_storage_v1beta1.types.StreamPosition(stream=stream)
+        rowstream = bqstorage_client.read_rows(position).rows(session)
+    else:
+        rowstream = bqstorage_client.read_rows(stream.name).rows(session)
 
     for page in rowstream.pages:
         if download_state.done:
@@ -610,6 +621,12 @@ def _download_table_bqstorage(
     page_to_item=None,
 ):
     """Use (faster, but billable) BQ Storage API to construct DataFrame."""
+
+    # Passing a BQ Storage client in implies that the BigQuery Storage library
+    # is available and can be imported.
+    from google.cloud import bigquery_storage_v1
+    from google.cloud import bigquery_storage_v1beta1
+
     if "$" in table.table_id:
         raise ValueError(
             "Reading from a specific partition is not currently supported."
@@ -617,22 +634,44 @@ def _download_table_bqstorage(
     if "@" in table.table_id:
         raise ValueError("Reading from a specific snapshot is not currently supported.")
 
-    read_options = bigquery_storage_v1beta1.types.TableReadOptions()
-    if selected_fields is not None:
-        for field in selected_fields:
-            read_options.selected_fields.append(field.name)
+    requested_streams = 1 if preserve_order else 0
 
-    requested_streams = 0
-    if preserve_order:
-        requested_streams = 1
+    # We want to preserve comaptibility with the v1beta1 BQ Storage clients,
+    # thus adjust the session creation if needed.
+    if isinstance(bqstorage_client, bigquery_storage_v1beta1.BigQueryStorageClient):
+        warnings.warn(
+            "Support for BigQuery Storage v1beta1 clients is deprecated, please "
+            "consider upgrading the client to BigQuery Storage v1 stable version.",
+            category=DeprecationWarning,
+        )
+        read_options = bigquery_storage_v1beta1.types.TableReadOptions()
 
-    session = bqstorage_client.create_read_session(
-        table.to_bqstorage(),
-        "projects/{}".format(project_id),
-        format_=bigquery_storage_v1beta1.enums.DataFormat.ARROW,
-        read_options=read_options,
-        requested_streams=requested_streams,
-    )
+        if selected_fields is not None:
+            for field in selected_fields:
+                read_options.selected_fields.append(field.name)
+
+        session = bqstorage_client.create_read_session(
+            table.to_bqstorage(v1beta1=True),
+            "projects/{}".format(project_id),
+            format_=bigquery_storage_v1beta1.enums.DataFormat.ARROW,
+            read_options=read_options,
+            requested_streams=requested_streams,
+        )
+    else:
+        requested_session = bigquery_storage_v1.types.ReadSession(
+            table=table.to_bqstorage(),
+            data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+        )
+        if selected_fields is not None:
+            for field in selected_fields:
+                requested_session.read_options.selected_fields.append(field.name)
+
+        session = bqstorage_client.create_read_session(
+            parent="projects/{}".format(project_id),
+            read_session=requested_session,
+            max_stream_count=requested_streams,
+        )
+
     _LOGGER.debug(
         "Started reading table '{}.{}.{}' with BQ Storage API session '{}'.".format(
             table.project, table.dataset_id, table.table_id, session.name
@@ -742,3 +781,14 @@ def download_dataframe_bqstorage(
         selected_fields=selected_fields,
         page_to_item=page_to_item,
     )
+
+
+def dataframe_to_json_generator(dataframe):
+    for row in dataframe.itertuples(index=False, name=None):
+        output = {}
+        for column, value in six.moves.zip(dataframe.columns, row):
+            # Omit NaN values.
+            if value != value:
+                continue
+            output[column] = value
+        yield output

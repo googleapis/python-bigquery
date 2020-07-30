@@ -34,9 +34,9 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 try:
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud import bigquery_storage_v1
 except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
+    bigquery_storage_v1 = None
 try:
     from tqdm import tqdm
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -993,24 +993,6 @@ class Test_AsyncJob(unittest.TestCase):
 
         begin.assert_not_called()
         result.assert_called_once_with(timeout=timeout)
-
-    @mock.patch("google.api_core.future.polling.PollingFuture.result")
-    def test_result_splitting_timout_between_requests(self, result):
-        client = _make_client(project=self.PROJECT)
-        job = self._make_one(self.JOB_ID, client)
-        begin = job._begin = mock.Mock()
-        retry = mock.Mock()
-
-        with freezegun.freeze_time("1970-01-01 00:00:00", tick=False) as frozen_time:
-
-            def delayed_begin(*args, **kwargs):
-                frozen_time.tick(delta=0.3)
-
-            begin.side_effect = delayed_begin
-            job.result(retry=retry, timeout=1.0)
-
-        begin.assert_called_once_with(retry=retry, timeout=1.0)
-        result.assert_called_once_with(timeout=0.7)
 
     def test_cancelled_wo_error_result(self):
         client = _make_client(project=self.PROJECT)
@@ -3194,10 +3176,16 @@ class TestExtractJob(unittest.TestCase, _Base):
 
         self.assertEqual(job.destination_uris, config["destinationUris"])
 
-        table_ref = config["sourceTable"]
-        self.assertEqual(job.source.project, table_ref["projectId"])
-        self.assertEqual(job.source.dataset_id, table_ref["datasetId"])
-        self.assertEqual(job.source.table_id, table_ref["tableId"])
+        if "sourceTable" in config:
+            table_ref = config["sourceTable"]
+            self.assertEqual(job.source.project, table_ref["projectId"])
+            self.assertEqual(job.source.dataset_id, table_ref["datasetId"])
+            self.assertEqual(job.source.table_id, table_ref["tableId"])
+        else:
+            model_ref = config["sourceModel"]
+            self.assertEqual(job.source.project, model_ref["projectId"])
+            self.assertEqual(job.source.dataset_id, model_ref["datasetId"])
+            self.assertEqual(job.source.model_id, model_ref["modelId"])
 
         if "compression" in config:
             self.assertEqual(job.compression, config["compression"])
@@ -3289,6 +3277,28 @@ class TestExtractJob(unittest.TestCase, _Base):
                         "projectId": self.PROJECT,
                         "datasetId": self.DS_ID,
                         "tableId": self.SOURCE_TABLE,
+                    },
+                    "destinationUris": [self.DESTINATION_URI],
+                }
+            },
+        }
+        klass = self._get_target_class()
+        job = klass.from_api_repr(RESOURCE, client=client)
+        self.assertIs(job._client, client)
+        self._verifyResourceProperties(job, RESOURCE)
+
+    def test_from_api_repr_for_model(self):
+        self._setUpConstants()
+        client = _make_client(project=self.PROJECT)
+        RESOURCE = {
+            "id": self.JOB_ID,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "configuration": {
+                "extract": {
+                    "sourceModel": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "modelId": "model_id",
                     },
                     "destinationUris": [self.DESTINATION_URI],
                 }
@@ -4011,33 +4021,6 @@ class TestQueryJob(unittest.TestCase, _Base):
         call_args = fake_reload.call_args
         self.assertEqual(call_args.kwargs.get("timeout"), 42)
 
-    def test_done_w_timeout_and_shorter_internal_api_timeout(self):
-        from google.cloud.bigquery.job import _TIMEOUT_BUFFER_SECS
-        from google.cloud.bigquery.job import _SERVER_TIMEOUT_MARGIN_SECS
-
-        client = _make_client(project=self.PROJECT)
-        resource = self._make_resource(ended=False)
-        job = self._get_target_class().from_api_repr(resource, client)
-        job._done_timeout = 8.8
-
-        with mock.patch.object(
-            client, "_get_query_results"
-        ) as fake_get_results, mock.patch.object(job, "reload") as fake_reload:
-            job.done(timeout=42)
-
-        # The expected timeout used is the job's own done_timeout minus a
-        # fixed amount (bigquery.job._TIMEOUT_BUFFER_SECS) increased by the
-        # safety margin on top of server-side processing timeout - that's
-        # because that final number is smaller than the given timeout (42 seconds).
-        expected_timeout = 8.8 - _TIMEOUT_BUFFER_SECS + _SERVER_TIMEOUT_MARGIN_SECS
-
-        fake_get_results.assert_called_once()
-        call_args = fake_get_results.call_args
-        self.assertAlmostEqual(call_args.kwargs.get("timeout"), expected_timeout)
-
-        call_args = fake_reload.call_args
-        self.assertAlmostEqual(call_args.kwargs.get("timeout"), expected_timeout)
-
     def test_done_w_timeout_and_longer_internal_api_timeout(self):
         client = _make_client(project=self.PROJECT)
         resource = self._make_resource(ended=False)
@@ -4623,49 +4606,6 @@ class TestQueryJob(unittest.TestCase, _Base):
         self.assertEqual(query_request[1]["query_params"]["timeoutMs"], 900)
         self.assertEqual(reload_request[1]["method"], "GET")
 
-    @mock.patch("google.api_core.future.polling.PollingFuture.result")
-    def test_result_splitting_timout_between_requests(self, polling_result):
-        begun_resource = self._make_resource()
-        query_resource = {
-            "jobComplete": True,
-            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
-            "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
-            "totalRows": "5",
-        }
-        done_resource = copy.deepcopy(begun_resource)
-        done_resource["status"] = {"state": "DONE"}
-
-        connection = _make_connection(begun_resource, query_resource, done_resource)
-        client = _make_client(project=self.PROJECT, connection=connection)
-        job = self._make_one(self.JOB_ID, self.QUERY, client)
-
-        client.list_rows = mock.Mock()
-
-        with freezegun.freeze_time("1970-01-01 00:00:00", tick=False) as frozen_time:
-
-            def delayed_result(*args, **kwargs):
-                frozen_time.tick(delta=0.8)
-
-            polling_result.side_effect = delayed_result
-
-            def delayed_get_results(*args, **kwargs):
-                frozen_time.tick(delta=0.5)
-                return orig_get_results(*args, **kwargs)
-
-            orig_get_results = client._get_query_results
-            client._get_query_results = mock.Mock(side_effect=delayed_get_results)
-            job.result(timeout=2.0)
-
-        polling_result.assert_called_once_with(timeout=2.0)
-
-        client._get_query_results.assert_called_once()
-        _, kwargs = client._get_query_results.call_args
-        self.assertAlmostEqual(kwargs.get("timeout"), 1.2)
-
-        client.list_rows.assert_called_once()
-        _, kwargs = client.list_rows.call_args
-        self.assertAlmostEqual(kwargs.get("timeout"), 0.7)
-
     def test_result_w_page_size(self):
         # Arrange
         query_results_resource = {
@@ -4724,6 +4664,46 @@ class TestQueryJob(unittest.TestCase, _Base):
                     timeout=None,
                 ),
             ]
+        )
+
+    def test_result_with_start_index(self):
+        from google.cloud.bigquery.table import RowIterator
+
+        query_resource = {
+            "jobComplete": True,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
+            "totalRows": "5",
+        }
+        tabledata_resource = {
+            "totalRows": "5",
+            "pageToken": None,
+            "rows": [
+                {"f": [{"v": "abc"}]},
+                {"f": [{"v": "def"}]},
+                {"f": [{"v": "ghi"}]},
+                {"f": [{"v": "jkl"}]},
+            ],
+        }
+        connection = _make_connection(query_resource, tabledata_resource)
+        client = _make_client(self.PROJECT, connection=connection)
+        resource = self._make_resource(ended=True)
+        job = self._get_target_class().from_api_repr(resource, client)
+
+        start_index = 1
+
+        result = job.result(start_index=start_index)
+
+        self.assertIsInstance(result, RowIterator)
+        self.assertEqual(result.total_rows, 5)
+
+        rows = list(result)
+
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(len(connection.api_request.call_args_list), 2)
+        tabledata_list_request = connection.api_request.call_args_list[1]
+        self.assertEqual(
+            tabledata_list_request[1]["query_params"]["startIndex"], start_index
         )
 
     def test_result_error(self):
@@ -5364,7 +5344,7 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 
-        tbl = job.to_arrow()
+        tbl = job.to_arrow(create_bqstorage_client=False)
 
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 2)
@@ -5432,7 +5412,7 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 
-        df = job.to_dataframe()
+        df = job.to_dataframe(create_bqstorage_client=False)
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 4)  # verify the number of rows
@@ -5457,7 +5437,7 @@ class TestQueryJob(unittest.TestCase, _Base):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_to_dataframe_bqstorage(self):
         query_resource = {
@@ -5475,10 +5455,8 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(self.PROJECT, connection=connection)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
-        bqstorage_client = mock.create_autospec(
-            bigquery_storage_v1beta1.BigQueryStorageClient
-        )
-        session = bigquery_storage_v1beta1.types.ReadSession()
+        bqstorage_client = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
+        session = bigquery_storage_v1.types.ReadSession()
         session.avro_schema.schema = json.dumps(
             {
                 "type": "record",
@@ -5493,13 +5471,17 @@ class TestQueryJob(unittest.TestCase, _Base):
 
         job.to_dataframe(bqstorage_client=bqstorage_client)
 
+        destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
+            **resource["configuration"]["query"]["destinationTable"]
+        )
+        expected_session = bigquery_storage_v1.types.ReadSession(
+            table=destination_table,
+            data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+        )
         bqstorage_client.create_read_session.assert_called_once_with(
-            mock.ANY,
-            "projects/{}".format(self.PROJECT),
-            format_=bigquery_storage_v1beta1.enums.DataFormat.ARROW,
-            read_options=mock.ANY,
-            # Use default number of streams for best performance.
-            requested_streams=0,
+            parent="projects/{}".format(self.PROJECT),
+            read_session=expected_session,
+            max_stream_count=0,  # Use default number of streams for best performance.
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
@@ -5522,7 +5504,15 @@ class TestQueryJob(unittest.TestCase, _Base):
             },
         }
         row_data = [
-            ["1.4338368E9", "420", "1.1", "1.77", "Cash", "true", "1999-12-01"],
+            [
+                "1.4338368E9",
+                "420",
+                "1.1",
+                "1.77",
+                "Cto_dataframeash",
+                "true",
+                "1999-12-01",
+            ],
             ["1.3878117E9", "2580", "17.7", "28.5", "Cash", "false", "1953-06-14"],
             ["1.3855653E9", "2280", "4.4", "7.1", "Credit", "true", "1981-11-04"],
         ]
@@ -5536,7 +5526,7 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 
-        df = job.to_dataframe(dtypes={"km": "float16"})
+        df = job.to_dataframe(dtypes={"km": "float16"}, create_bqstorage_client=False)
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 3)  # verify the number of rows
@@ -5549,6 +5539,69 @@ class TestQueryJob(unittest.TestCase, _Base):
         self.assertEqual(df.km.dtype.name, "float16")
         self.assertEqual(df.payment_type.dtype.name, "object")
         self.assertEqual(df.complete.dtype.name, "bool")
+        self.assertEqual(df.date.dtype.name, "object")
+
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_to_dataframe_column_date_dtypes(self):
+        begun_resource = self._make_resource()
+        query_resource = {
+            "jobComplete": True,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "totalRows": "1",
+            "schema": {"fields": [{"name": "date", "type": "DATE"}]},
+        }
+        row_data = [
+            ["1999-12-01"],
+        ]
+        rows = [{"f": [{"v": field} for field in row]} for row in row_data]
+        query_resource["rows"] = rows
+        done_resource = copy.deepcopy(begun_resource)
+        done_resource["status"] = {"state": "DONE"}
+        connection = _make_connection(
+            begun_resource, query_resource, done_resource, query_resource
+        )
+        client = _make_client(project=self.PROJECT, connection=connection)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+        df = job.to_dataframe(date_as_object=False, create_bqstorage_client=False)
+
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 1)  # verify the number of rows
+        exp_columns = [field["name"] for field in query_resource["schema"]["fields"]]
+        self.assertEqual(list(df), exp_columns)  # verify the column names
+
+        self.assertEqual(df.date.dtype.name, "datetime64[ns]")
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_to_dataframe_column_date_dtypes_wo_pyarrow(self):
+        begun_resource = self._make_resource()
+        query_resource = {
+            "jobComplete": True,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "totalRows": "1",
+            "schema": {"fields": [{"name": "date", "type": "DATE"}]},
+        }
+        row_data = [
+            ["1999-12-01"],
+        ]
+        rows = [{"f": [{"v": field} for field in row]} for row in row_data]
+        query_resource["rows"] = rows
+        done_resource = copy.deepcopy(begun_resource)
+        done_resource["status"] = {"state": "DONE"}
+        connection = _make_connection(
+            begun_resource, query_resource, done_resource, query_resource
+        )
+        client = _make_client(project=self.PROJECT, connection=connection)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+
+        with mock.patch("google.cloud.bigquery.table.pyarrow", None):
+            df = job.to_dataframe(date_as_object=False, create_bqstorage_client=False)
+
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 1)  # verify the number of rows
+        exp_columns = [field["name"] for field in query_resource["schema"]["fields"]]
+        self.assertEqual(list(df), exp_columns)  # verify the column names
+
         self.assertEqual(df.date.dtype.name, "object")
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
@@ -5576,10 +5629,10 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 
-        job.to_dataframe(progress_bar_type=None)
+        job.to_dataframe(progress_bar_type=None, create_bqstorage_client=False)
         tqdm_mock.assert_not_called()
 
-        job.to_dataframe(progress_bar_type="tqdm")
+        job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
         tqdm_mock.assert_called()
 
     def test_iter(self):
@@ -5969,7 +6022,7 @@ def test__contains_order_by(query, expected):
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(
-    bigquery_storage_v1beta1 is None, reason="Requires `google-cloud-bigquery-storage`"
+    bigquery_storage_v1 is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 @pytest.mark.parametrize(
     "query",
@@ -6005,10 +6058,8 @@ def test_to_dataframe_bqstorage_preserve_order(query):
     connection = _make_connection(get_query_results_resource, job_resource)
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(job_resource, client)
-    bqstorage_client = mock.create_autospec(
-        bigquery_storage_v1beta1.BigQueryStorageClient
-    )
-    session = bigquery_storage_v1beta1.types.ReadSession()
+    bqstorage_client = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
+    session = bigquery_storage_v1.types.ReadSession()
     session.avro_schema.schema = json.dumps(
         {
             "type": "record",
@@ -6023,11 +6074,14 @@ def test_to_dataframe_bqstorage_preserve_order(query):
 
     job.to_dataframe(bqstorage_client=bqstorage_client)
 
+    destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
+        **job_resource["configuration"]["query"]["destinationTable"]
+    )
+    expected_session = bigquery_storage_v1.types.ReadSession(
+        table=destination_table, data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+    )
     bqstorage_client.create_read_session.assert_called_once_with(
-        mock.ANY,
-        "projects/test-project",
-        format_=bigquery_storage_v1beta1.enums.DataFormat.ARROW,
-        read_options=mock.ANY,
-        # Use a single stream to preserve row order.
-        requested_streams=1,
+        parent="projects/test-project",
+        read_session=expected_session,
+        max_stream_count=1,  # Use a single stream to preserve row order.
     )

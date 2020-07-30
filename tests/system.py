@@ -31,11 +31,20 @@ import six
 import psutil
 import pytest
 import pytz
+import pkg_resources
 
 try:
+    from google.cloud import bigquery_storage_v1
     from google.cloud import bigquery_storage_v1beta1
 except ImportError:  # pragma: NO COVER
+    bigquery_storage_v1 = None
     bigquery_storage_v1beta1 = None
+
+try:
+    import fastavro  # to parse BQ storage client results
+except ImportError:  # pragma: NO COVER
+    fastavro = None
+
 try:
     import pandas
 except ImportError:  # pragma: NO COVER
@@ -62,6 +71,7 @@ from google.api_core.exceptions import NotFound
 from google.api_core.exceptions import InternalServerError
 from google.api_core.exceptions import ServiceUnavailable
 from google.api_core.exceptions import TooManyRequests
+from google.api_core.iam import Policy
 from google.cloud import bigquery
 from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import Dataset
@@ -118,6 +128,9 @@ SAMPLES_BUCKET = os.environ.get("GCLOUD_TEST_SAMPLES_BUCKET", "cloud-samples-dat
 retry_storage_errors = RetryErrors(
     (TooManyRequests, InternalServerError, ServiceUnavailable)
 )
+
+PANDAS_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
+PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 
 
 def _has_rows(result):
@@ -237,12 +250,14 @@ class TestBigQuery(unittest.TestCase):
     def test_get_dataset(self):
         dataset_id = _make_dataset_id("get_dataset")
         client = Config.CLIENT
-        dataset_arg = Dataset(client.dataset(dataset_id))
+        project = client.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
+        dataset_arg = Dataset(dataset_ref)
         dataset_arg.friendly_name = "Friendly"
         dataset_arg.description = "Description"
         dataset = retry_403(client.create_dataset)(dataset_arg)
         self.to_delete.append(dataset)
-        dataset_ref = client.dataset(dataset_id)
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
 
         # Get with a reference.
         got = client.get_dataset(dataset_ref)
@@ -329,6 +344,57 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(_table_exists(table))
         self.assertEqual(table.table_id, table_id)
 
+    def test_create_table_with_policy(self):
+        from google.cloud.bigquery.schema import PolicyTagList
+
+        dataset = self.temp_dataset(_make_dataset_id("create_table_with_policy"))
+        table_id = "test_table"
+        policy_1 = PolicyTagList(
+            names=[
+                "projects/{}/locations/us/taxonomies/1/policyTags/2".format(
+                    Config.CLIENT.project
+                ),
+            ]
+        )
+        policy_2 = PolicyTagList(
+            names=[
+                "projects/{}/locations/us/taxonomies/3/policyTags/4".format(
+                    Config.CLIENT.project
+                ),
+            ]
+        )
+
+        schema = [
+            bigquery.SchemaField("full_name", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField(
+                "secret_int", "INTEGER", mode="REQUIRED", policy_tags=policy_1
+            ),
+        ]
+        table_arg = Table(dataset.table(table_id), schema=schema)
+        self.assertFalse(_table_exists(table_arg))
+
+        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+        self.assertEqual(policy_1, table.schema[1].policy_tags)
+
+        # Amend the schema to replace the policy tags
+        new_schema = table.schema[:]
+        old_field = table.schema[1]
+        new_schema[1] = bigquery.SchemaField(
+            name=old_field.name,
+            field_type=old_field.field_type,
+            mode=old_field.mode,
+            description=old_field.description,
+            fields=old_field.fields,
+            policy_tags=policy_2,
+        )
+
+        table.schema = new_schema
+        table2 = Config.CLIENT.update_table(table, ["schema"])
+        self.assertEqual(policy_2, table2.schema[1].policy_tags)
+
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning
         from google.cloud.bigquery.table import TimePartitioningType
@@ -355,7 +421,8 @@ class TestBigQuery(unittest.TestCase):
 
     def test_delete_dataset_with_string(self):
         dataset_id = _make_dataset_id("delete_table_true")
-        dataset_ref = Config.CLIENT.dataset(dataset_id)
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
         retry_403(Config.CLIENT.create_dataset)(Dataset(dataset_ref))
         self.assertTrue(_dataset_exists(dataset_ref))
         Config.CLIENT.delete_dataset(dataset_id)
@@ -363,9 +430,9 @@ class TestBigQuery(unittest.TestCase):
 
     def test_delete_dataset_delete_contents_true(self):
         dataset_id = _make_dataset_id("delete_table_true")
-        dataset = retry_403(Config.CLIENT.create_dataset)(
-            Dataset(Config.CLIENT.dataset(dataset_id))
-        )
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
+        dataset = retry_403(Config.CLIENT.create_dataset)(Dataset(dataset_ref))
 
         table_id = "test_table"
         table_arg = Table(dataset.table(table_id), schema=SCHEMA)
@@ -736,6 +803,66 @@ class TestBigQuery(unittest.TestCase):
         )
         self.assertEqual(table.num_rows, 3)
 
+    @unittest.skipIf(
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIMUM_VERSION,
+        "Only `pandas version >=1.0.0` is supported",
+    )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
+        """Test that a DataFrame containing column with None-type values and int64 datatype
+        can be uploaded if a BigQuery schema is specified.
+
+        https://github.com/googleapis/python-bigquery/issues/22
+        """
+
+        dataset_id = _make_dataset_id("bq_load_test")
+        self.temp_dataset(dataset_id)
+        table_id = "{}.{}.load_table_from_dataframe_w_nullable_int64_datatype".format(
+            Config.CLIENT.project, dataset_id
+        )
+        table_schema = (bigquery.SchemaField("x", "INTEGER", mode="NULLABLE"),)
+        table = retry_403(Config.CLIENT.create_table)(
+            Table(table_id, schema=table_schema)
+        )
+        self.to_delete.insert(0, table)
+
+        df_data = collections.OrderedDict(
+            [("x", pandas.Series([1, 2, None, 4], dtype="Int64"))]
+        )
+        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
+        load_job = Config.CLIENT.load_table_from_dataframe(dataframe, table_id)
+        load_job.result()
+        table = Config.CLIENT.get_table(table_id)
+        self.assertEqual(tuple(table.schema), (bigquery.SchemaField("x", "INTEGER"),))
+        self.assertEqual(table.num_rows, 4)
+
+    @unittest.skipIf(
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIMUM_VERSION,
+        "Only `pandas version >=1.0.0` is supported",
+    )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
+        """Test that a DataFrame containing column with None-type values and int64 datatype
+        can be uploaded without specifying a schema.
+
+        https://github.com/googleapis/python-bigquery/issues/22
+        """
+
+        dataset_id = _make_dataset_id("bq_load_test")
+        self.temp_dataset(dataset_id)
+        table_id = "{}.{}.load_table_from_dataframe_w_nullable_int64_datatype".format(
+            Config.CLIENT.project, dataset_id
+        )
+        df_data = collections.OrderedDict(
+            [("x", pandas.Series([1, 2, None, 4], dtype="Int64"))]
+        )
+        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
+        load_job = Config.CLIENT.load_table_from_dataframe(dataframe, table_id)
+        load_job.result()
+        table = Config.CLIENT.get_table(table_id)
+        self.assertEqual(tuple(table.schema), (bigquery.SchemaField("x", "INTEGER"),))
+        self.assertEqual(table.num_rows, 4)
+
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nulls(self):
@@ -852,11 +979,16 @@ class TestBigQuery(unittest.TestCase):
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_explicit_schema(self):
         # Schema with all scalar types.
+        # TODO: Uploading DATETIME columns currently fails, thus that field type
+        #       is temporarily  removed from the test.
+        # See:
+        #       https://github.com/googleapis/python-bigquery/issues/61
+        #       https://issuetracker.google.com/issues/151765076
         scalars_schema = (
             bigquery.SchemaField("bool_col", "BOOLEAN"),
             bigquery.SchemaField("bytes_col", "BYTES"),
             bigquery.SchemaField("date_col", "DATE"),
-            bigquery.SchemaField("dt_col", "DATETIME"),
+            # bigquery.SchemaField("dt_col", "DATETIME"),
             bigquery.SchemaField("float_col", "FLOAT"),
             bigquery.SchemaField("geo_col", "GEOGRAPHY"),
             bigquery.SchemaField("int_col", "INTEGER"),
@@ -882,14 +1014,14 @@ class TestBigQuery(unittest.TestCase):
                     "date_col",
                     [datetime.date(1, 1, 1), None, datetime.date(9999, 12, 31)],
                 ),
-                (
-                    "dt_col",
-                    [
-                        datetime.datetime(1, 1, 1, 0, 0, 0),
-                        None,
-                        datetime.datetime(9999, 12, 31, 23, 59, 59, 999999),
-                    ],
-                ),
+                # (
+                #     "dt_col",
+                #     [
+                #         datetime.datetime(1, 1, 1, 0, 0, 0),
+                #         None,
+                #         datetime.datetime(9999, 12, 31, 23, 59, 59, 999999),
+                #     ],
+                # ),
                 ("float_col", [float("-inf"), float("nan"), float("inf")]),
                 (
                     "geo_col",
@@ -1237,7 +1369,9 @@ class TestBigQuery(unittest.TestCase):
         source_blob_name = "person_ages.csv"
         dataset_id = _make_dataset_id("load_gcs_then_extract")
         table_id = "test_table"
-        table_ref = Config.CLIENT.dataset(dataset_id).table(table_id)
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
+        table_ref = dataset_ref.table(table_id)
         table = Table(table_ref)
         self.to_delete.insert(0, table)
         bucket = self._create_bucket(bucket_name)
@@ -1273,6 +1407,54 @@ class TestBigQuery(unittest.TestCase):
         # Just check that we got some rows.
         got_rows = self._fetch_single_page(dest_table)
         self.assertTrue(len(got_rows) > 0)
+
+    def test_get_set_iam_policy(self):
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_VIEWER_ROLE
+
+        dataset = self.temp_dataset(_make_dataset_id("create_table"))
+        table_id = "test_table"
+        table_ref = Table(dataset.table(table_id))
+        self.assertFalse(_table_exists(table_ref))
+
+        table = retry_403(Config.CLIENT.create_table)(table_ref)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+
+        member = "serviceAccount:{}".format(Config.CLIENT.get_service_account_email())
+        BINDING = {
+            "role": BIGQUERY_DATA_VIEWER_ROLE,
+            "members": {member},
+        }
+
+        policy = Config.CLIENT.get_iam_policy(table)
+        self.assertIsInstance(policy, Policy)
+        self.assertEqual(policy.bindings, [])
+
+        policy.bindings.append(BINDING)
+        returned_policy = Config.CLIENT.set_iam_policy(table, policy)
+        self.assertEqual(returned_policy.bindings, policy.bindings)
+
+    def test_test_iam_permissions(self):
+        dataset = self.temp_dataset(_make_dataset_id("create_table"))
+        table_id = "test_table"
+        table_ref = Table(dataset.table(table_id))
+        self.assertFalse(_table_exists(table_ref))
+
+        table = retry_403(Config.CLIENT.create_table)(table_ref)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+
+        # Test some default permissions.
+        permissions = [
+            "bigquery.tables.get",
+            "bigquery.tables.getData",
+            "bigquery.tables.update",
+        ]
+
+        response = Config.CLIENT.test_iam_permissions(table, [permissions])
+        self.assertEqual(set(response["permissions"]), set(permissions))
 
     def test_job_cancel(self):
         DATASET_ID = _make_dataset_id("job_cancel")
@@ -1420,8 +1602,10 @@ class TestBigQuery(unittest.TestCase):
         rows = list(Config.CLIENT.query("SELECT 1;").result())
         assert rows[0][0] == 1
 
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, "dset")
         bad_config = LoadJobConfig()
-        bad_config.destination = Config.CLIENT.dataset("dset").table("tbl")
+        bad_config.destination = dataset_ref.table("tbl")
         with self.assertRaises(Exception):
             Config.CLIENT.query(good_query, job_config=bad_config).result()
 
@@ -1443,6 +1627,18 @@ class TestBigQuery(unittest.TestCase):
         )
         iterator = query_job.result(page_size=page_size)
         self.assertEqual(next(iterator.pages).num_items, page_size)
+
+    def test_query_w_start_index(self):
+        start_index = 164652
+        query_job = Config.CLIENT.query(
+            "SELECT word FROM `bigquery-public-data.samples.shakespeare`;",
+            job_id_prefix="test_query_w_start_index_",
+        )
+        result1 = query_job.result(start_index=start_index)
+        total_rows = result1.total_rows
+
+        self.assertEqual(result1.extra_params["startIndex"], start_index)
+        self.assertEqual(len(list(result1)), total_rows - start_index)
 
     def test_query_statistics(self):
         """
@@ -1542,6 +1738,140 @@ class TestBigQuery(unittest.TestCase):
             rows = Config.CURSOR.fetchall()
             row_tuples = [r.values() for r in rows]
             self.assertEqual(row_tuples, [(1, 2), (3, 4), (5, 6)])
+
+    @unittest.skipIf(
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
+        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
+            credentials=Config.CLIENT._credentials
+        )
+        cursor = dbapi.connect(Config.CLIENT, bqstorage_client).cursor()
+
+        cursor.execute(
+            """
+            SELECT id, `by`, time_ts
+            FROM `bigquery-public-data.hacker_news.comments`
+            ORDER BY `id` ASC
+            LIMIT 100000
+        """
+        )
+
+        result_rows = [cursor.fetchone(), cursor.fetchone(), cursor.fetchone()]
+
+        field_name = operator.itemgetter(0)
+        fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
+
+        # Since DB API is not thread safe, only a single result stream should be
+        # requested by the BQ storage client, meaning that results should arrive
+        # in the sorted order.
+        expected_data = [
+            [
+                ("by", "sama"),
+                ("id", 15),
+                ("time_ts", datetime.datetime(2006, 10, 9, 19, 51, 1, tzinfo=UTC)),
+            ],
+            [
+                ("by", "pg"),
+                ("id", 17),
+                ("time_ts", datetime.datetime(2006, 10, 9, 19, 52, 45, tzinfo=UTC)),
+            ],
+            [
+                ("by", "pg"),
+                ("id", 22),
+                ("time_ts", datetime.datetime(2006, 10, 10, 2, 18, 22, tzinfo=UTC)),
+            ],
+        ]
+        self.assertEqual(fetched_data, expected_data)
+
+    @unittest.skipIf(
+        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_dbapi_fetch_w_bqstorage_client_v1beta1_large_result_set(self):
+        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+            credentials=Config.CLIENT._credentials
+        )
+        cursor = dbapi.connect(Config.CLIENT, bqstorage_client).cursor()
+
+        cursor.execute(
+            """
+            SELECT id, `by`, time_ts
+            FROM `bigquery-public-data.hacker_news.comments`
+            ORDER BY `id` ASC
+            LIMIT 100000
+        """
+        )
+
+        result_rows = [cursor.fetchone(), cursor.fetchone(), cursor.fetchone()]
+
+        field_name = operator.itemgetter(0)
+        fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
+
+        # Since DB API is not thread safe, only a single result stream should be
+        # requested by the BQ storage client, meaning that results should arrive
+        # in the sorted order.
+        expected_data = [
+            [
+                ("by", "sama"),
+                ("id", 15),
+                ("time_ts", datetime.datetime(2006, 10, 9, 19, 51, 1, tzinfo=UTC)),
+            ],
+            [
+                ("by", "pg"),
+                ("id", 17),
+                ("time_ts", datetime.datetime(2006, 10, 9, 19, 52, 45, tzinfo=UTC)),
+            ],
+            [
+                ("by", "pg"),
+                ("id", 22),
+                ("time_ts", datetime.datetime(2006, 10, 10, 2, 18, 22, tzinfo=UTC)),
+            ],
+        ]
+        self.assertEqual(fetched_data, expected_data)
+
+    def test_dbapi_dry_run_query(self):
+        from google.cloud.bigquery.job import QueryJobConfig
+
+        query = """
+            SELECT country_name
+            FROM `bigquery-public-data.utility_us.country_code_iso`
+            WHERE country_name LIKE 'U%'
+        """
+
+        Config.CURSOR.execute(query, job_config=QueryJobConfig(dry_run=True))
+        self.assertEqual(Config.CURSOR.rowcount, 0, "expected no rows")
+
+        rows = Config.CURSOR.fetchall()
+
+        self.assertEqual(list(rows), [])
+
+    @unittest.skipIf(
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    def test_dbapi_connection_does_not_leak_sockets(self):
+        current_process = psutil.Process()
+        conn_count_start = len(current_process.connections())
+
+        # Provide no explicit clients, so that the connection will create and own them.
+        connection = dbapi.connect()
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, `by`, time_ts
+            FROM `bigquery-public-data.hacker_news.comments`
+            ORDER BY `id` ASC
+            LIMIT 100000
+        """
+        )
+        rows = cursor.fetchall()
+        self.assertEqual(len(rows), 100000)
+
+        connection.close()
+        conn_count_end = len(current_process.connections())
+        self.assertEqual(conn_count_end, conn_count_start)
 
     def _load_table_for_dml(self, rows, dataset_id, table_id):
         from google.cloud._testing import _NamedTemporaryFile
@@ -1948,12 +2278,42 @@ class TestBigQuery(unittest.TestCase):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_query_results_to_dataframe_w_bqstorage(self):
-        dest_dataset = self.temp_dataset(_make_dataset_id("bqstorage_to_dataframe_"))
-        dest_ref = dest_dataset.table("query_results")
+        query = """
+            SELECT id, author, time_ts, dead
+            FROM `bigquery-public-data.hacker_news.comments`
+            LIMIT 10
+        """
 
+        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
+            credentials=Config.CLIENT._credentials
+        )
+
+        df = Config.CLIENT.query(query).result().to_dataframe(bqstorage_client)
+
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 10)  # verify the number of rows
+        column_names = ["id", "author", "time_ts", "dead"]
+        self.assertEqual(list(df), column_names)
+        exp_datatypes = {
+            "id": int,
+            "author": six.text_type,
+            "time_ts": pandas.Timestamp,
+            "dead": bool,
+        }
+        for index, row in df.iterrows():
+            for col in column_names:
+                # all the schema fields are nullable, so None is acceptable
+                if not row[col] is None:
+                    self.assertIsInstance(row[col], exp_datatypes[col])
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(
+        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    def test_query_results_to_dataframe_w_bqstorage_v1beta1(self):
         query = """
             SELECT id, author, time_ts, dead
             FROM `bigquery-public-data.hacker_news.comments`
@@ -1964,41 +2324,23 @@ class TestBigQuery(unittest.TestCase):
             credentials=Config.CLIENT._credentials
         )
 
-        job_configs = (
-            # There is a known issue reading small anonymous query result
-            # tables with the BQ Storage API. Writing to a destination
-            # table works around this issue.
-            bigquery.QueryJobConfig(
-                destination=dest_ref, write_disposition="WRITE_TRUNCATE"
-            ),
-            # Check that the client is able to work around the issue with
-            # reading small anonymous query result tables by falling back to
-            # the tabledata.list API.
-            None,
-        )
+        df = Config.CLIENT.query(query).result().to_dataframe(bqstorage_client)
 
-        for job_config in job_configs:
-            df = (
-                Config.CLIENT.query(query, job_config=job_config)
-                .result()
-                .to_dataframe(bqstorage_client)
-            )
-
-            self.assertIsInstance(df, pandas.DataFrame)
-            self.assertEqual(len(df), 10)  # verify the number of rows
-            column_names = ["id", "author", "time_ts", "dead"]
-            self.assertEqual(list(df), column_names)
-            exp_datatypes = {
-                "id": int,
-                "author": six.text_type,
-                "time_ts": pandas.Timestamp,
-                "dead": bool,
-            }
-            for index, row in df.iterrows():
-                for col in column_names:
-                    # all the schema fields are nullable, so None is acceptable
-                    if not row[col] is None:
-                        self.assertIsInstance(row[col], exp_datatypes[col])
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 10)  # verify the number of rows
+        column_names = ["id", "author", "time_ts", "dead"]
+        self.assertEqual(list(df), column_names)
+        exp_datatypes = {
+            "id": int,
+            "author": six.text_type,
+            "time_ts": pandas.Timestamp,
+            "dead": bool,
+        }
+        for index, row in df.iterrows():
+            for col in column_names:
+                # all the schema fields are nullable, so None is acceptable
+                if not row[col] is None:
+                    self.assertIsInstance(row[col], exp_datatypes[col])
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_insert_rows_from_dataframe(self):
@@ -2042,6 +2384,14 @@ class TestBigQuery(unittest.TestCase):
                     "string_col": "another string",
                     "int_col": 50,
                 },
+                {
+                    "float_col": 6.66,
+                    "bool_col": True,
+                    # Include a NaN value, because pandas often uses NaN as a
+                    # NULL value indicator.
+                    "string_col": float("NaN"),
+                    "int_col": 60,
+                },
             ]
         )
 
@@ -2051,14 +2401,28 @@ class TestBigQuery(unittest.TestCase):
         table = retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
 
-        Config.CLIENT.insert_rows_from_dataframe(table, dataframe, chunk_size=3)
+        chunk_errors = Config.CLIENT.insert_rows_from_dataframe(
+            table, dataframe, chunk_size=3
+        )
+        for errors in chunk_errors:
+            assert not errors
 
-        retry = RetryResult(_has_rows, max_tries=8)
-        rows = retry(self._fetch_single_page)(table)
+        # Use query to fetch rows instead of listing directly from the table so
+        # that we get values from the streaming buffer.
+        rows = list(
+            Config.CLIENT.query(
+                "SELECT * FROM `{}.{}.{}`".format(
+                    table.project, table.dataset_id, table.table_id
+                )
+            )
+        )
 
         sorted_rows = sorted(rows, key=operator.attrgetter("int_col"))
         row_tuples = [r.values() for r in sorted_rows]
-        expected = [tuple(data_row) for data_row in dataframe.itertuples(index=False)]
+        expected = [
+            tuple(None if col != col else col for col in data_row)
+            for data_row in dataframe.itertuples(index=False)
+        ]
 
         assert len(row_tuples) == len(expected)
 
@@ -2246,7 +2610,7 @@ class TestBigQuery(unittest.TestCase):
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_nested_table_to_arrow(self):
         from google.cloud.bigquery.job import SourceFormat
@@ -2282,7 +2646,7 @@ class TestBigQuery(unittest.TestCase):
         job_config.schema = schema
         # Load a table using a local JSON file from memory.
         Config.CLIENT.load_table_from_file(body, table, job_config=job_config).result()
-        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
 
@@ -2438,13 +2802,13 @@ class TestBigQuery(unittest.TestCase):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_list_rows_max_results_w_bqstorage(self):
         table_ref = DatasetReference("bigquery-public-data", "utility_us").table(
             "country_code_iso"
         )
-        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
 
@@ -2458,7 +2822,9 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(len(dataframe.index), 100)
 
     def temp_dataset(self, dataset_id, location=None):
-        dataset = Dataset(Config.CLIENT.dataset(dataset_id))
+        project = Config.CLIENT.project
+        dataset_ref = bigquery.DatasetReference(project, dataset_id)
+        dataset = Dataset(dataset_ref)
         if location:
             dataset.location = location
         dataset = retry_403(Config.CLIENT.create_dataset)(dataset)
@@ -2500,7 +2866,11 @@ def test_bigquery_magic():
     assert isinstance(result, pandas.DataFrame)
     assert len(result) == 10  # verify row count
     assert list(result) == ["url", "view_count"]  # verify column names
-    assert conn_count_end == conn_count_start  # system resources are released
+
+    # NOTE: For some reason, the number of open sockets is sometimes one *less*
+    # than expected when running system tests on Kokoro, thus using the <= assertion.
+    # That's still fine, however, since the sockets are apparently not leaked.
+    assert conn_count_end <= conn_count_start  # system resources are released
 
 
 def _job_done(instance):

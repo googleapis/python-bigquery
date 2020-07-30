@@ -26,7 +26,6 @@ import six
 from six.moves import http_client
 
 import google.api_core.future.polling
-from google.auth.transport.requests import TimeoutGuard
 from google.cloud import exceptions
 from google.cloud.exceptions import NotFound
 from google.cloud.bigquery.dataset import Dataset
@@ -55,7 +54,6 @@ from google.cloud.bigquery.table import TimePartitioning
 _DONE_STATE = "DONE"
 _STOPPED_REASON = "stopped"
 _TIMEOUT_BUFFER_SECS = 0.1
-_SERVER_TIMEOUT_MARGIN_SECS = 1.0
 _CONTAINS_ORDER_BY = re.compile(r"ORDER\s+BY", re.IGNORECASE)
 
 _ERROR_REASON_TO_EXCEPTION = {
@@ -269,7 +267,7 @@ class SchemaUpdateOption(object):
 class _JobReference(object):
     """A reference to a job.
 
-    Arguments:
+    Args:
         job_id (str): ID of the job to run.
         project (str): ID of the project where the job runs.
         location (str): Location of where the job runs.
@@ -313,7 +311,7 @@ class _JobReference(object):
 class _AsyncJob(google.api_core.future.polling.PollingFuture):
     """Base class for asynchronous jobs.
 
-    Arguments:
+    Args:
         job_id (Union[str, _JobReference]):
             Job's ID in the project associated with the client or a
             fully-qualified job reference.
@@ -652,7 +650,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
                 the client to use.  If not passed, falls back to the
                 ``client`` stored on the current dataset.
 
-            retry (google.api_core.retry.Retry): (Optional) How to retry the RPC.
+            retry (Optional[google.api_core.retry.Retry]): How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
@@ -690,7 +688,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
                 the client to use.  If not passed, falls back to the
                 ``client`` stored on the current dataset.
 
-            retry (google.api_core.retry.Retry): (Optional) How to retry the RPC.
+            retry (Optional[google.api_core.retry.Retry]): How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
@@ -774,7 +772,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         """Refresh the job and checks if it is complete.
 
         Args:
-            retry (google.api_core.retry.Retry): (Optional) How to retry the RPC.
+            retry (Optional[google.api_core.retry.Retry]): How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
@@ -792,12 +790,12 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         """Start the job and wait for it to complete and get the result.
 
         Args:
-            retry (google.api_core.retry.Retry): (Optional) How to retry the RPC.
+            retry (Optional[google.api_core.retry.Retry]): How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
-                If multiple requests are made under the hood, ``timeout`` is
-                interpreted as the approximate total time of **all** requests.
+                If multiple requests are made under the hood, ``timeout``
+                applies to each individual request.
 
         Returns:
             _AsyncJob: This instance.
@@ -809,11 +807,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
                 if the job did not complete in the given timeout.
         """
         if self.state is None:
-            with TimeoutGuard(
-                timeout, timeout_error_type=concurrent.futures.TimeoutError
-            ) as guard:
-                self._begin(retry=retry, timeout=timeout)
-            timeout = guard.remaining_timeout
+            self._begin(retry=retry, timeout=timeout)
         # TODO: modify PollingFuture so it can pass a retry argument to done().
         return super(_AsyncJob, self).result(timeout=timeout)
 
@@ -883,8 +877,8 @@ class _JobConfig(object):
             key (str):
                 Key for the value to get in the
                 ``self._properties[self._job_type]`` dictionary.
-            default (object):
-                (Optional) Default value to return if the key is not found.
+            default (Optional[object]):
+                Default value to return if the key is not found.
                 Defaults to :data:`None`.
 
         Returns:
@@ -1009,9 +1003,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def allow_jagged_rows(self):
-        """bool: Allow missing trailing optional columns (CSV only).
+        """Optional[bool]: Allow missing trailing optional columns (CSV only).
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.allow_jagged_rows
         """
         return self._get_sub_prop("allowJaggedRows")
@@ -1022,9 +1016,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def allow_quoted_newlines(self):
-        """bool: Allow quoted data containing newline characters (CSV only).
+        """Optional[bool]: Allow quoted data containing newline characters (CSV only).
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.allow_quoted_newlines
         """
         return self._get_sub_prop("allowQuotedNewlines")
@@ -1035,9 +1029,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def autodetect(self):
-        """bool: Automatically infer the schema from a sample of the data.
+        """Optional[bool]: Automatically infer the schema from a sample of the data.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.autodetect
         """
         return self._get_sub_prop("autodetect")
@@ -1048,7 +1042,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def clustering_fields(self):
-        """Union[List[str], None]: Fields defining clustering for the table
+        """Optional[List[str]]: Fields defining clustering for the table
 
         (Defaults to :data:`None`).
 
@@ -1065,7 +1059,7 @@ class LoadJobConfig(_JobConfig):
 
     @clustering_fields.setter
     def clustering_fields(self, value):
-        """Union[List[str], None]: Fields defining clustering for the table
+        """Optional[List[str]]: Fields defining clustering for the table
 
         (Defaults to :data:`None`).
         """
@@ -1076,10 +1070,10 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def create_disposition(self):
-        """google.cloud.bigquery.job.CreateDisposition: Specifies behavior
+        """Optional[google.cloud.bigquery.job.CreateDisposition]: Specifies behavior
         for creating tables.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.create_disposition
         """
         return self._get_sub_prop("createDisposition")
@@ -1090,13 +1084,13 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def destination_encryption_configuration(self):
-        """google.cloud.bigquery.encryption_configuration.EncryptionConfiguration: Custom
+        """Optional[google.cloud.bigquery.encryption_configuration.EncryptionConfiguration]: Custom
         encryption configuration for the destination table.
 
         Custom encryption configuration (e.g., Cloud KMS keys) or :data:`None`
         if using default encryption.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.destination_encryption_configuration
         """
         prop = self._get_sub_prop("destinationEncryptionConfiguration")
@@ -1115,7 +1109,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def destination_table_description(self):
-        """Union[str, None] name given to destination table.
+        """Optional[str]: Name given to destination table.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#DestinationTableProperties.FIELDS.description
@@ -1134,7 +1128,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def destination_table_friendly_name(self):
-        """Union[str, None] name given to destination table.
+        """Optional[str]: Name given to destination table.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#DestinationTableProperties.FIELDS.friendly_name
@@ -1153,10 +1147,10 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def encoding(self):
-        """google.cloud.bigquery.job.Encoding: The character encoding of the
+        """Optional[google.cloud.bigquery.job.Encoding]: The character encoding of the
         data.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.encoding
         """
         return self._get_sub_prop("encoding")
@@ -1167,9 +1161,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def field_delimiter(self):
-        """str: The separator for fields in a CSV file.
+        """Optional[str]: The separator for fields in a CSV file.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.field_delimiter
         """
         return self._get_sub_prop("fieldDelimiter")
@@ -1187,7 +1181,7 @@ class LoadJobConfig(_JobConfig):
             **Experimental**. This feature is experimental and might change or
             have limited support.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.hive_partitioning_options
         """
         prop = self._get_sub_prop("hivePartitioningOptions")
@@ -1207,9 +1201,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def ignore_unknown_values(self):
-        """bool: Ignore extra values not represented in the table schema.
+        """Optional[bool]: Ignore extra values not represented in the table schema.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.ignore_unknown_values
         """
         return self._get_sub_prop("ignoreUnknownValues")
@@ -1220,9 +1214,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def max_bad_records(self):
-        """int: Number of invalid rows to ignore.
+        """Optional[int]: Number of invalid rows to ignore.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.max_bad_records
         """
         return _helpers._int_or_none(self._get_sub_prop("maxBadRecords"))
@@ -1233,9 +1227,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def null_marker(self):
-        """str: Represents a null value (CSV only).
+        """Optional[str]: Represents a null value (CSV only).
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.null_marker
         """
         return self._get_sub_prop("nullMarker")
@@ -1246,9 +1240,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def quote_character(self):
-        """str: Character used to quote data sections (CSV only).
+        """Optional[str]: Character used to quote data sections (CSV only).
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.quote
         """
         return self._get_sub_prop("quote")
@@ -1293,12 +1287,12 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def schema(self):
-        """Sequence[Union[ \
+        """Optional[Sequence[Union[ \
             :class:`~google.cloud.bigquery.schema.SchemaField`, \
             Mapping[str, Any] \
-        ]]: Schema of the destination table.
+        ]]]: Schema of the destination table.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.schema
         """
         schema = _helpers._get_sub_prop(self._properties, ["load", "schema", "fields"])
@@ -1322,7 +1316,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def schema_update_options(self):
-        """List[google.cloud.bigquery.job.SchemaUpdateOption]: Specifies
+        """Optional[List[google.cloud.bigquery.job.SchemaUpdateOption]]: Specifies
         updates to the destination table schema to allow as a side effect of
         the load job.
         """
@@ -1334,9 +1328,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def skip_leading_rows(self):
-        """int: Number of rows to skip when reading data (CSV only).
+        """Optional[int]: Number of rows to skip when reading data (CSV only).
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.skip_leading_rows
         """
         return _helpers._int_or_none(self._get_sub_prop("skipLeadingRows"))
@@ -1347,9 +1341,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def source_format(self):
-        """google.cloud.bigquery.job.SourceFormat: File format of the data.
+        """Optional[google.cloud.bigquery.job.SourceFormat]: File format of the data.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.source_format
         """
         return self._get_sub_prop("sourceFormat")
@@ -1360,7 +1354,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def time_partitioning(self):
-        """google.cloud.bigquery.table.TimePartitioning: Specifies time-based
+        """Optional[google.cloud.bigquery.table.TimePartitioning]: Specifies time-based
         partitioning for the destination table.
 
         Only specify at most one of
@@ -1383,7 +1377,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def use_avro_logical_types(self):
-        """bool: For loads of Avro data, governs whether Avro logical types are
+        """Optional[bool]: For loads of Avro data, governs whether Avro logical types are
         converted to their corresponding BigQuery types (e.g. TIMESTAMP) rather than
         raw types (e.g. INTEGER).
         """
@@ -1395,10 +1389,10 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def write_disposition(self):
-        """google.cloud.bigquery.job.WriteDisposition: Action that occurs if
+        """Optional[google.cloud.bigquery.job.WriteDisposition]: Action that occurs if
         the destination table already exists.
 
-        See
+        See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.write_disposition
         """
         return self._get_sub_prop("writeDisposition")
@@ -1798,8 +1792,8 @@ class CopyJob(_AsyncJob):
             A client which holds credentials and project configuration
             for the dataset (which requires a project).
 
-        job_config (google.cloud.bigquery.job.CopyJobConfig):
-            (Optional) Extra configuration options for the copy job.
+        job_config (Optional[google.cloud.bigquery.job.CopyJobConfig]):
+            Extra configuration options for the copy job.
     """
 
     _JOB_TYPE = "copy"
@@ -1996,8 +1990,11 @@ class ExtractJob(_AsyncJob):
     Args:
         job_id (str): the job's ID.
 
-        source (google.cloud.bigquery.table.TableReference):
-            Table into which data is to be loaded.
+        source (Union[ \
+            google.cloud.bigquery.table.TableReference, \
+            google.cloud.bigquery.model.ModelReference \
+        ]):
+            Table or Model from which data is to be loaded or extracted.
 
         destination_uris (List[str]):
             URIs describing where the extracted data will be written in Cloud
@@ -2006,8 +2003,8 @@ class ExtractJob(_AsyncJob):
         client (google.cloud.bigquery.client.Client):
             A client which holds credentials and project configuration.
 
-        job_config (google.cloud.bigquery.job.ExtractJobConfig):
-            (Optional) Extra configuration options for the extract job.
+        job_config (Optional[google.cloud.bigquery.job.ExtractJobConfig]):
+            Extra configuration options for the extract job.
     """
 
     _JOB_TYPE = "extract"
@@ -2073,14 +2070,20 @@ class ExtractJob(_AsyncJob):
     def to_api_repr(self):
         """Generate a resource for :meth:`_begin`."""
 
+        configuration = self._configuration.to_api_repr()
         source_ref = {
             "projectId": self.source.project,
             "datasetId": self.source.dataset_id,
-            "tableId": self.source.table_id,
         }
 
-        configuration = self._configuration.to_api_repr()
-        _helpers._set_sub_prop(configuration, ["extract", "sourceTable"], source_ref)
+        source = "sourceTable"
+        if isinstance(self.source, TableReference):
+            source_ref["tableId"] = self.source.table_id
+        else:
+            source_ref["modelId"] = self.source.model_id
+            source = "sourceModel"
+
+        _helpers._set_sub_prop(configuration, ["extract", source], source_ref)
         _helpers._set_sub_prop(
             configuration, ["extract", "destinationUris"], self.destination_uris
         )
@@ -2118,10 +2121,20 @@ class ExtractJob(_AsyncJob):
         source_config = _helpers._get_sub_prop(
             config_resource, ["extract", "sourceTable"]
         )
-        dataset = DatasetReference(
-            source_config["projectId"], source_config["datasetId"]
-        )
-        source = dataset.table(source_config["tableId"])
+        if source_config:
+            dataset = DatasetReference(
+                source_config["projectId"], source_config["datasetId"]
+            )
+            source = dataset.table(source_config["tableId"])
+        else:
+            source_config = _helpers._get_sub_prop(
+                config_resource, ["extract", "sourceModel"]
+            )
+            dataset = DatasetReference(
+                source_config["projectId"], source_config["datasetId"]
+            )
+            source = dataset.model(source_config["modelId"])
+
         destination_uris = _helpers._get_sub_prop(
             config_resource, ["extract", "destinationUris"]
         )
@@ -2580,8 +2593,8 @@ class QueryJob(_AsyncJob):
             A client which holds credentials and project configuration
             for the dataset (which requires a project).
 
-        job_config (google.cloud.bigquery.job.QueryJobConfig):
-            (Optional) Extra configuration options for the query job.
+        job_config (Optional[google.cloud.bigquery.job.QueryJobConfig]):
+            Extra configuration options for the query job.
     """
 
     _JOB_TYPE = "query"
@@ -2602,6 +2615,7 @@ class QueryJob(_AsyncJob):
         self._configuration = job_config
         self._query_results = None
         self._done_timeout = None
+        self._transport_timeout = None
 
     @property
     def allow_large_results(self):
@@ -3059,19 +3073,9 @@ class QueryJob(_AsyncJob):
             self._done_timeout = max(0, self._done_timeout)
             timeout_ms = int(api_timeout * 1000)
 
-        # If the server-side processing timeout (timeout_ms) is specified and
-        # would be picked as the total request timeout, we want to add a small
-        # margin to it - we don't want to timeout the connection just as the
-        # server-side processing might have completed, but instead slightly
-        # after the server-side deadline.
-        # However, if `timeout` is specified, and is shorter than the adjusted
-        # server timeout, the former prevails.
-        if timeout_ms is not None and timeout_ms > 0:
-            server_timeout_with_margin = timeout_ms / 1000 + _SERVER_TIMEOUT_MARGIN_SECS
-            if timeout is not None:
-                timeout = min(server_timeout_with_margin, timeout)
-            else:
-                timeout = server_timeout_with_margin
+        # If an explicit timeout is not given, fall back to the transport timeout
+        # stored in _blocking_poll() in the process of polling for job completion.
+        transport_timeout = timeout if timeout is not None else self._transport_timeout
 
         # Do not refresh if the state is already done, as the job will not
         # change once complete.
@@ -3082,19 +3086,20 @@ class QueryJob(_AsyncJob):
                 project=self.project,
                 timeout_ms=timeout_ms,
                 location=self.location,
-                timeout=timeout,
+                timeout=transport_timeout,
             )
 
             # Only reload the job once we know the query is complete.
             # This will ensure that fields such as the destination table are
             # correctly populated.
             if self._query_results.complete:
-                self.reload(retry=retry, timeout=timeout)
+                self.reload(retry=retry, timeout=transport_timeout)
 
         return self.state == _DONE_STATE
 
     def _blocking_poll(self, timeout=None):
         self._done_timeout = timeout
+        self._transport_timeout = timeout
         super(QueryJob, self)._blocking_poll(timeout=timeout)
 
     @staticmethod
@@ -3111,7 +3116,7 @@ class QueryJob(_AsyncJob):
         template = "\n\n(job ID: {job_id})\n\n{header}\n\n{ruler}\n{body}\n{ruler}"
 
         lines = query.splitlines()
-        max_line_len = max(len(l) for l in lines)
+        max_line_len = max(len(line) for line in lines)
 
         header = "-----Query Job SQL Follows-----"
         header = "{:^{total_width}}".format(header, total_width=max_line_len + 5)
@@ -3155,7 +3160,12 @@ class QueryJob(_AsyncJob):
             raise
 
     def result(
-        self, page_size=None, max_results=None, retry=DEFAULT_RETRY, timeout=None
+        self,
+        page_size=None,
+        max_results=None,
+        retry=DEFAULT_RETRY,
+        timeout=None,
+        start_index=None,
     ):
         """Start the job and wait for it to complete and get the result.
 
@@ -3170,8 +3180,10 @@ class QueryJob(_AsyncJob):
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
-                If multiple requests are made under the hood, ``timeout`` is
-                interpreted as the approximate total time of **all** requests.
+                If multiple requests are made under the hood, ``timeout``
+                applies to each individual request.
+            start_index (Optional[int]):
+                The zero-based index of the starting row to read.
 
         Returns:
             google.cloud.bigquery.table.RowIterator:
@@ -3182,6 +3194,9 @@ class QueryJob(_AsyncJob):
                 set** (this is distinct from the total number of rows in the
                 current page: ``iterator.page.num_items``).
 
+                If the query is a special query that produces no results, e.g.
+                a DDL query, an ``_EmptyRowIterator`` instance is returned.
+
         Raises:
             google.cloud.exceptions.GoogleCloudError:
                 If the job failed.
@@ -3189,27 +3204,17 @@ class QueryJob(_AsyncJob):
                 If the job did not complete in the given timeout.
         """
         try:
-            guard = TimeoutGuard(
-                timeout, timeout_error_type=concurrent.futures.TimeoutError
-            )
-            with guard:
-                super(QueryJob, self).result(retry=retry, timeout=timeout)
-            timeout = guard.remaining_timeout
+            super(QueryJob, self).result(retry=retry, timeout=timeout)
 
             # Return an iterator instead of returning the job.
             if not self._query_results:
-                guard = TimeoutGuard(
-                    timeout, timeout_error_type=concurrent.futures.TimeoutError
+                self._query_results = self._client._get_query_results(
+                    self.job_id,
+                    retry,
+                    project=self.project,
+                    location=self.location,
+                    timeout=timeout,
                 )
-                with guard:
-                    self._query_results = self._client._get_query_results(
-                        self.job_id,
-                        retry,
-                        project=self.project,
-                        location=self.location,
-                        timeout=timeout,
-                    )
-                timeout = guard.remaining_timeout
         except exceptions.GoogleCloudError as exc:
             exc.message += self._format_for_exception(self.query, self.job_id)
             exc.query_job = self
@@ -3232,6 +3237,7 @@ class QueryJob(_AsyncJob):
             dest_table,
             page_size=page_size,
             max_results=max_results,
+            start_index=start_index,
             retry=retry,
             timeout=timeout,
         )
@@ -3244,7 +3250,7 @@ class QueryJob(_AsyncJob):
         self,
         progress_bar_type=None,
         bqstorage_client=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
     ):
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
@@ -3268,22 +3274,21 @@ class QueryJob(_AsyncJob):
                 ``'tqdm_gui'``
                   Use the :func:`tqdm.tqdm_gui` function to display a
                   progress bar as a graphical dialog box.
-            bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
-                **Beta Feature** Optional. A BigQuery Storage API client. If
-                supplied, use the faster BigQuery Storage API to fetch rows
-                from BigQuery. This API is a billable API.
+            bqstorage_client (Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]):
+                A BigQuery Storage API client. If supplied, use the faster
+                BigQuery Storage API to fetch rows from BigQuery. This API
+                is a billable API.
 
                 This method requires the ``pyarrow`` and
                 ``google-cloud-bigquery-storage`` libraries.
 
                 Reading from a specific partition or snapshot is not
                 currently supported by this method.
-            create_bqstorage_client (bool):
-                **Beta Feature** Optional. If ``True``, create a BigQuery
-                Storage API client using the default API settings. The
-                BigQuery Storage API is a faster way to fetch rows from
-                BigQuery. See the ``bqstorage_client`` parameter for more
-                information.
+            create_bqstorage_client (Optional[bool]):
+                If ``True`` (default), create a BigQuery Storage API client
+                using the default API settings. The BigQuery Storage API
+                is a faster way to fetch rows from BigQuery. See the
+                ``bqstorage_client`` parameter for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
@@ -3314,15 +3319,16 @@ class QueryJob(_AsyncJob):
         bqstorage_client=None,
         dtypes=None,
         progress_bar_type=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
+        date_as_object=True,
     ):
         """Return a pandas DataFrame from a QueryJob
 
         Args:
-            bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
-                **Alpha Feature** Optional. A BigQuery Storage API client. If
-                supplied, use the faster BigQuery Storage API to fetch rows
-                from BigQuery. This API is a billable API.
+            bqstorage_client (Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]):
+                A BigQuery Storage API client. If supplied, use the faster
+                BigQuery Storage API to fetch rows from BigQuery. This
+                API is a billable API.
 
                 This method requires the ``fastavro`` and
                 ``google-cloud-bigquery-storage`` libraries.
@@ -3330,14 +3336,11 @@ class QueryJob(_AsyncJob):
                 Reading from a specific partition or snapshot is not
                 currently supported by this method.
 
-                **Caution**: There is a known issue reading small anonymous
-                query result tables with the BQ Storage API. Write your query
-                results to a destination table to work around this issue.
-            dtypes (Map[str, Union[str, pandas.Series.dtype]]):
-                Optional. A dictionary of column names pandas ``dtype``s. The
-                provided ``dtype`` is used when constructing the series for
-                the column specified. Otherwise, the default pandas behavior
-                is used.
+            dtypes (Optional[Map[str, Union[str, pandas.Series.dtype]]]):
+                A dictionary of column names pandas ``dtype``s. The provided
+                ``dtype`` is used when constructing the series for the column
+                specified. Otherwise, the default pandas behavior is used.
+
             progress_bar_type (Optional[str]):
                 If set, use the `tqdm <https://tqdm.github.io/>`_ library to
                 display a progress bar while the data downloads. Install the
@@ -3348,16 +3351,21 @@ class QueryJob(_AsyncJob):
                 for details.
 
                 ..versionadded:: 1.11.0
-            create_bqstorage_client (bool):
-                **Beta Feature** Optional. If ``True``, create a BigQuery
-                Storage API client using the default API settings. The
-                BigQuery Storage API is a faster way to fetch rows from
-                BigQuery. See the ``bqstorage_client`` parameter for more
-                information.
+            create_bqstorage_client (Optional[bool]):
+                If ``True`` (default), create a BigQuery Storage API client
+                using the default API settings. The BigQuery Storage API
+                is a faster way to fetch rows from BigQuery. See the
+                ``bqstorage_client`` parameter for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
                 ..versionadded:: 1.24.0
+
+            date_as_object (Optional[bool]):
+                If ``True`` (default), cast dates to objects. If ``False``, convert
+                to datetime64[ns] dtype.
+
+                ..versionadded:: 1.26.0
 
         Returns:
             A :class:`~pandas.DataFrame` populated with row data and column
@@ -3372,6 +3380,7 @@ class QueryJob(_AsyncJob):
             dtypes=dtypes,
             progress_bar_type=progress_bar_type,
             create_bqstorage_client=create_bqstorage_client,
+            date_as_object=date_as_object,
         )
 
     def __iter__(self):

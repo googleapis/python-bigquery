@@ -14,21 +14,18 @@
 
 """This script is used to synthesize generated parts of this library."""
 
-import os
-
 import synthtool as s
 from synthtool import gcp
+from synthtool.languages import python
 
-gapic = gcp.GAPICGenerator()
+gapic = gcp.GAPICBazel()
 common = gcp.CommonTemplates()
 version = 'v2'
 
 library = gapic.py_library(
-    'bigquery',
-    version,
-    config_path='/google/cloud/bigquery/'
-                'artman_bigquery_v2.yaml',
-    artman_output_name='bigquery-v2',
+    service='bigquery',
+    version=version,
+    bazel_target=f"//google/cloud/bigquery/{version}:bigquery-{version}-py",
     include_protos=True,
 )
 
@@ -62,9 +59,22 @@ s.replace("google/cloud/bigquery_v2/proto/*.py", "[“”]", '``')
 # ----------------------------------------------------------------------------
 # Add templated files
 # ----------------------------------------------------------------------------
-templated_files = common.py_library(cov_level=100)
-# we do not want to override the custom noxfile with the generated one
-os.remove(os.path.join(templated_files, "noxfile.py"))
-s.move(templated_files)
+templated_files = common.py_library(cov_level=100, samples=True)
+
+# BigQuery has a custom multiprocessing note
+s.move(templated_files, excludes=["noxfile.py", "docs/multiprocessing.rst"])
+
+# ----------------------------------------------------------------------------
+# Samples templates
+# ----------------------------------------------------------------------------
+
+python.py_samples()
+
+
+s.replace(
+    "docs/conf.py",
+    r'\{"members": True\}',
+    '{"members": True, "inherited-members": True}'
+)
 
 s.shell.run(["nox", "-s", "blacken"], hide_output=False)

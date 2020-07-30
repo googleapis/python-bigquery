@@ -15,11 +15,15 @@
 """Cursor for the Google BigQuery DB-API."""
 
 import collections
+import copy
+import warnings
 
 try:
     from collections import abc as collections_abc
 except ImportError:  # Python 2.7
     import collections as collections_abc
+
+import logging
 
 import six
 
@@ -27,6 +31,9 @@ from google.cloud.bigquery import job
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
 import google.cloud.exceptions
+
+
+_LOGGER = logging.getLogger(__name__)
 
 # Per PEP 249: A 7-item sequence containing information describing one result
 # column. The first two items (name and type_code) are mandatory, the other
@@ -46,6 +53,7 @@ Column = collections.namedtuple(
 )
 
 
+@_helpers.raise_on_closed("Operating on a closed cursor.")
 class Cursor(object):
     """DB-API Cursor to Google BigQuery.
 
@@ -68,9 +76,11 @@ class Cursor(object):
         self.arraysize = None
         self._query_data = None
         self._query_job = None
+        self._closed = False
 
     def close(self):
-        """No-op."""
+        """Mark the cursor as closed, preventing its further use."""
+        self._closed = True
 
     def _set_description(self, schema):
         """Set description from schema.
@@ -84,18 +94,16 @@ class Cursor(object):
             return
 
         self.description = tuple(
-            [
-                Column(
-                    name=field.name,
-                    type_code=field.field_type,
-                    display_size=None,
-                    internal_size=None,
-                    precision=None,
-                    scale=None,
-                    null_ok=field.is_nullable,
-                )
-                for field in schema
-            ]
+            Column(
+                name=field.name,
+                type_code=field.field_type,
+                display_size=None,
+                internal_size=None,
+                precision=None,
+                scale=None,
+                null_ok=field.is_nullable,
+            )
+            for field in schema
         )
 
     def _set_rowcount(self, query_results):
@@ -164,11 +172,23 @@ class Cursor(object):
         formatted_operation = _format_operation(operation, parameters=parameters)
         query_parameters = _helpers.to_query_parameters(parameters)
 
-        config = job_config or job.QueryJobConfig(use_legacy_sql=False)
+        if client._default_query_job_config:
+            if job_config:
+                config = job_config._fill_from_default(client._default_query_job_config)
+            else:
+                config = copy.deepcopy(client._default_query_job_config)
+        else:
+            config = job_config or job.QueryJobConfig(use_legacy_sql=False)
+
         config.query_parameters = query_parameters
         self._query_job = client.query(
             formatted_operation, job_config=config, job_id=job_id
         )
+
+        if self._query_job.dry_run:
+            self._set_description(schema=None)
+            self.rowcount = 0
+            return
 
         # Wait for the query to finish.
         try:
@@ -202,6 +222,10 @@ class Cursor(object):
                 "No query results: execute() must be called before fetch."
             )
 
+        if self._query_job.dry_run:
+            self._query_data = iter([])
+            return
+
         is_dml = (
             self._query_job.statement_type
             and self._query_job.statement_type.upper() != "SELECT"
@@ -212,6 +236,13 @@ class Cursor(object):
 
         if self._query_data is None:
             client = self.connection._client
+            bqstorage_client = self.connection._bqstorage_client
+
+            if bqstorage_client is not None:
+                rows_iterable = self._bqstorage_fetch(bqstorage_client)
+                self._query_data = _helpers.to_bq_table_rows(rows_iterable)
+                return
+
             rows_iter = client.list_rows(
                 self._query_job.destination,
                 selected_fields=self._query_job._query_results.schema,
@@ -219,8 +250,80 @@ class Cursor(object):
             )
             self._query_data = iter(rows_iter)
 
+    def _bqstorage_fetch(self, bqstorage_client):
+        """Start fetching data with the BigQuery Storage API.
+
+        The method assumes that the data about the relevant query job already
+        exists internally.
+
+        Args:
+            bqstorage_client(\
+                google.cloud.bigquery_storage_v1.BigQueryReadClient \
+            ):
+                A client tha know how to talk to the BigQuery Storage API.
+
+        Returns:
+            Iterable[Mapping]:
+                A sequence of rows, represented as dictionaries.
+        """
+        # Hitting this code path with a BQ Storage client instance implies that
+        # bigquery_storage_v1* can indeed be imported here without errors.
+        from google.cloud import bigquery_storage_v1
+        from google.cloud import bigquery_storage_v1beta1
+
+        table_reference = self._query_job.destination
+
+        is_v1beta1_client = isinstance(
+            bqstorage_client, bigquery_storage_v1beta1.BigQueryStorageClient
+        )
+
+        # We want to preserve compatibility with the v1beta1 BQ Storage clients,
+        # thus adjust the session creation if needed.
+        if is_v1beta1_client:
+            warnings.warn(
+                "Support for BigQuery Storage v1beta1 clients is deprecated, please "
+                "consider upgrading the client to BigQuery Storage v1 stable version.",
+                category=DeprecationWarning,
+            )
+            read_session = bqstorage_client.create_read_session(
+                table_reference.to_bqstorage(v1beta1=True),
+                "projects/{}".format(table_reference.project),
+                # a single stream only, as DB API is not well-suited for multithreading
+                requested_streams=1,
+                format_=bigquery_storage_v1beta1.enums.DataFormat.ARROW,
+            )
+        else:
+            requested_session = bigquery_storage_v1.types.ReadSession(
+                table=table_reference.to_bqstorage(),
+                data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+            )
+            read_session = bqstorage_client.create_read_session(
+                parent="projects/{}".format(table_reference.project),
+                read_session=requested_session,
+                # a single stream only, as DB API is not well-suited for multithreading
+                max_stream_count=1,
+            )
+
+        if not read_session.streams:
+            return iter([])  # empty table, nothing to read
+
+        if is_v1beta1_client:
+            read_position = bigquery_storage_v1beta1.types.StreamPosition(
+                stream=read_session.streams[0],
+            )
+            read_rows_stream = bqstorage_client.read_rows(read_position)
+        else:
+            stream_name = read_session.streams[0].name
+            read_rows_stream = bqstorage_client.read_rows(stream_name)
+
+        rows_iterable = read_rows_stream.rows(read_session)
+        return rows_iterable
+
     def fetchone(self):
         """Fetch a single row from the results of the last ``execute*()`` call.
+
+        .. note::
+            If a dry run query was executed, no rows are returned.
 
         Returns:
             Tuple:
@@ -238,6 +341,9 @@ class Cursor(object):
 
     def fetchmany(self, size=None):
         """Fetch multiple results from the last ``execute*()`` call.
+
+        .. note::
+            If a dry run query was executed, no rows are returned.
 
         .. note::
             The size parameter is not used for the request/response size.
@@ -275,6 +381,9 @@ class Cursor(object):
     def fetchall(self):
         """Fetch all remaining results from the last ``execute*()`` call.
 
+        .. note::
+            If a dry run query was executed, no rows are returned.
+
         Returns:
             List[Tuple]: A list of all the rows in the results.
 
@@ -285,10 +394,10 @@ class Cursor(object):
         return list(self._query_data)
 
     def setinputsizes(self, sizes):
-        """No-op."""
+        """No-op, but for consistency raise an error if cursor is closed."""
 
     def setoutputsize(self, size, column=None):
-        """No-op."""
+        """No-op, but for consistency raise an error if cursor is closed."""
 
 
 def _format_operation_list(operation, parameters):

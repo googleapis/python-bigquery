@@ -26,6 +26,7 @@ import warnings
 import six
 
 try:
+    # Needed for the to_bqstorage() method.
     from google.cloud import bigquery_storage_v1beta1
 except ImportError:  # pragma: NO COVER
     bigquery_storage_v1beta1 = None
@@ -54,6 +55,7 @@ from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
+from google.cloud.bigquery.exceptions import PyarrowMissingWarning
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
@@ -164,8 +166,8 @@ class TableReference(object):
                 A table ID in standard SQL format. If ``default_project``
                 is not specified, this must included a project ID, dataset
                 ID, and table ID, each separated by ``.``.
-            default_project (str):
-                Optional. The project ID to use when ``table_id`` does not
+            default_project (Optional[str]):
+                The project ID to use when ``table_id`` does not
                 include a project ID.
 
         Returns:
@@ -225,7 +227,7 @@ class TableReference(object):
             "tableId": self._table_id,
         }
 
-    def to_bqstorage(self):
+    def to_bqstorage(self, v1beta1=False):
         """Construct a BigQuery Storage API representation of this table.
 
         Install the ``google-cloud-bigquery-storage`` package to use this
@@ -234,35 +236,41 @@ class TableReference(object):
         If the ``table_id`` contains a partition identifier (e.g.
         ``my_table$201812``) or a snapshot identifier (e.g.
         ``mytable@1234567890``), it is ignored. Use
-        :class:`google.cloud.bigquery_storage_v1beta1.types.TableReadOptions`
+        :class:`google.cloud.bigquery_storage_v1.types.ReadSession.TableReadOptions`
         to filter rows by partition. Use
-        :class:`google.cloud.bigquery_storage_v1beta1.types.TableModifiers`
+        :class:`google.cloud.bigquery_storage_v1.types.ReadSession.TableModifiers`
         to select a specific snapshot to read from.
 
+        Args:
+            v1beta1 (Optiona[bool]):
+                If :data:`True`, return representation compatible with BigQuery
+                Storage ``v1beta1`` version. Defaults to :data:`False`.
+
         Returns:
-            google.cloud.bigquery_storage_v1beta1.types.TableReference:
+            Union[str, google.cloud.bigquery_storage_v1beta1.types.TableReference:]:
                 A reference to this table in the BigQuery Storage API.
 
         Raises:
             ValueError:
-                If the :mod:`google.cloud.bigquery_storage_v1beta1` module
-                cannot be imported.
+                If ``v1beta1`` compatibility is requested, but the
+                :mod:`google.cloud.bigquery_storage_v1beta1` module	cannot be imported.
         """
-        if bigquery_storage_v1beta1 is None:
+        if v1beta1 and bigquery_storage_v1beta1 is None:
             raise ValueError(_NO_BQSTORAGE_ERROR)
 
-        table_ref = bigquery_storage_v1beta1.types.TableReference()
-        table_ref.project_id = self._project
-        table_ref.dataset_id = self._dataset_id
-        table_id = self._table_id
+        table_id, _, _ = self._table_id.partition("@")
+        table_id, _, _ = table_id.partition("$")
 
-        if "@" in table_id:
-            table_id = table_id.split("@")[0]
-
-        if "$" in table_id:
-            table_id = table_id.split("$")[0]
-
-        table_ref.table_id = table_id
+        if v1beta1:
+            table_ref = bigquery_storage_v1beta1.types.TableReference(
+                project_id=self._project,
+                dataset_id=self._dataset_id,
+                table_id=table_id,
+            )
+        else:
+            table_ref = "projects/{}/datasets/{}/tables/{}".format(
+                self._project, self._dataset_id, table_id,
+            )
 
         return table_ref
 
@@ -582,8 +590,6 @@ class Table(object):
         """Union[str, None]: Time partitioning of the table if it is
         partitioned (Defaults to :data:`None`).
 
-        The only partitioning type that is currently supported is
-        :attr:`~google.cloud.bigquery.table.TimePartitioningType.DAY`.
         """
         warnings.warn(
             "This method will be deprecated in future versions. Please use "
@@ -869,14 +875,19 @@ class Table(object):
         """
         return copy.deepcopy(self._properties)
 
-    def to_bqstorage(self):
+    def to_bqstorage(self, v1beta1=False):
         """Construct a BigQuery Storage API representation of this table.
 
+        Args:
+            v1beta1 (Optiona[bool]):
+                If :data:`True`, return representation compatible with BigQuery
+                Storage ``v1beta1`` version. Defaults to :data:`False`.
+
         Returns:
-            google.cloud.bigquery_storage_v1beta1.types.TableReference:
+            Union[str, google.cloud.bigquery_storage_v1beta1.types.TableReference:]:
                 A reference to this table in the BigQuery Storage API.
         """
-        return self.reference.to_bqstorage()
+        return self.reference.to_bqstorage(v1beta1=v1beta1)
 
     def _build_resource(self, filter_fields):
         """Generate a resource for ``update``."""
@@ -1084,14 +1095,19 @@ class TableListItem(object):
             {"tableReference": TableReference.from_string(full_table_id).to_api_repr()}
         )
 
-    def to_bqstorage(self):
+    def to_bqstorage(self, v1beta1=False):
         """Construct a BigQuery Storage API representation of this table.
 
+        Args:
+            v1beta1 (Optiona[bool]):
+                If :data:`True`, return representation compatible with BigQuery
+                Storage ``v1beta1`` version. Defaults to :data:`False`.
+
         Returns:
-            google.cloud.bigquery_storage_v1beta1.types.TableReference:
+            Union[str, google.cloud.bigquery_storage_v1beta1.types.TableReference:]:
                 A reference to this table in the BigQuery Storage API.
         """
-        return self.reference.to_bqstorage()
+        return self.reference.to_bqstorage(v1beta1=v1beta1)
 
 
 def _row_from_mapping(mapping, schema):
@@ -1139,12 +1155,17 @@ class StreamingBuffer(object):
     """
 
     def __init__(self, resource):
-        self.estimated_bytes = int(resource["estimatedBytes"])
-        self.estimated_rows = int(resource["estimatedRows"])
-        # time is in milliseconds since the epoch.
-        self.oldest_entry_time = google.cloud._helpers._datetime_from_microseconds(
-            1000.0 * int(resource["oldestEntryTime"])
-        )
+        self.estimated_bytes = None
+        if "estimatedBytes" in resource:
+            self.estimated_bytes = int(resource["estimatedBytes"])
+        self.estimated_rows = None
+        if "estimatedRows" in resource:
+            self.estimated_rows = int(resource["estimatedRows"])
+        self.oldest_entry_time = None
+        if "oldestEntryTime" in resource:
+            self.oldest_entry_time = google.cloud._helpers._datetime_from_microseconds(
+                1000.0 * int(resource["oldestEntryTime"])
+            )
 
 
 class Row(object):
@@ -1301,20 +1322,20 @@ class RowIterator(HTTPIterator):
             :meth:`~google.cloud.bigquery.schema.SchemaField.from_api_repr`.
         page_token (str): A token identifying a page in a result set to start
             fetching results from.
-        max_results (int, optional): The maximum number of results to fetch.
-        page_size (int, optional): The maximum number of rows in each page
+        max_results (Optional[int]): The maximum number of results to fetch.
+        page_size (Optional[int]): The maximum number of rows in each page
             of results from this request. Non-positive values are ignored.
             Defaults to a sensible value set by the API.
-        extra_params (Dict[str, object]):
+        extra_params (Optional[Dict[str, object]]):
             Extra query string parameters for the API call.
-        table (Union[ \
+        table (Optional[Union[ \
             google.cloud.bigquery.table.Table, \
             google.cloud.bigquery.table.TableReference, \
-        ]):
-            Optional. The table which these rows belong to, or a reference to
-            it. Used to call the BigQuery Storage API to fetch rows.
-        selected_fields (Sequence[google.cloud.bigquery.schema.SchemaField]):
-            Optional. A subset of columns to select from this table.
+        ]]):
+            The table which these rows belong to, or a reference to it. Used to
+            call the BigQuery Storage API to fetch rows.
+        selected_fields (Optional[Sequence[google.cloud.bigquery.schema.SchemaField]]):
+            A subset of columns to select from this table.
 
     """
 
@@ -1362,6 +1383,8 @@ class RowIterator(HTTPIterator):
         """
         params = self._get_query_params()
         if self._page_size is not None:
+            if self.page_number and "startIndex" in params:
+                del params["startIndex"]
             params["maxResults"] = self._page_size
         return self.api_request(
             method=self._HTTP_METHOD, path=self.path, query_params=params
@@ -1408,30 +1431,10 @@ class RowIterator(HTTPIterator):
         self, bqstorage_download, tabledata_list_download, bqstorage_client=None
     ):
         if bqstorage_client is not None:
-            try:
-                # Iterate over the stream so that read errors are raised (and
-                # the method can then fallback to tabledata.list).
-                for item in bqstorage_download():
-                    yield item
-                return
-            except google.api_core.exceptions.Forbidden:
-                # Don't hide errors such as insufficient permissions to create
-                # a read session, or the API is not enabled. Both of those are
-                # clearly problems if the developer has explicitly asked for
-                # BigQuery Storage API support.
-                raise
-            except google.api_core.exceptions.GoogleAPICallError:
-                # There is a known issue with reading from small anonymous
-                # query results tables, so some errors are expected. Rather
-                # than throw those errors, try reading the DataFrame again, but
-                # with the tabledata.list API.
-                pass
+            for item in bqstorage_download():
+                yield item
+            return
 
-        _LOGGER.debug(
-            "Started reading table '{}.{}.{}' with tabledata.list.".format(
-                self._table.project, self._table.dataset_id, self._table.table_id
-            )
-        )
         for item in tabledata_list_download():
             yield item
 
@@ -1460,7 +1463,7 @@ class RowIterator(HTTPIterator):
         self,
         progress_bar_type=None,
         bqstorage_client=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
     ):
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
@@ -1484,22 +1487,21 @@ class RowIterator(HTTPIterator):
                 ``'tqdm_gui'``
                   Use the :func:`tqdm.tqdm_gui` function to display a
                   progress bar as a graphical dialog box.
-            bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
-                **Beta Feature** Optional. A BigQuery Storage API client. If
-                supplied, use the faster BigQuery Storage API to fetch rows
-                from BigQuery. This API is a billable API.
+            bqstorage_client (Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]):
+                A BigQuery Storage API client. If supplied, use the faster BigQuery
+                Storage API to fetch rows from BigQuery. This API is a billable API.
 
                 This method requires the ``pyarrow`` and
                 ``google-cloud-bigquery-storage`` libraries.
 
-                Reading from a specific partition or snapshot is not
-                currently supported by this method.
-            create_bqstorage_client (bool):
-                **Beta Feature** Optional. If ``True``, create a BigQuery
-                Storage API client using the default API settings. The
-                BigQuery Storage API is a faster way to fetch rows from
-                BigQuery. See the ``bqstorage_client`` parameter for more
-                information.
+                This method only  exposes a subset of the capabilities of the
+                BigQuery Storage API.  For full access to all features
+                (projections, filters, snapshots) use the Storage API directly.
+            create_bqstorage_client (Optional[bool]):
+                If ``True`` (default), create a BigQuery Storage API client using
+                the default API settings. The BigQuery Storage API is a faster way
+                to fetch rows from BigQuery. See the ``bqstorage_client`` parameter
+                for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
@@ -1532,8 +1534,8 @@ class RowIterator(HTTPIterator):
 
         owns_bqstorage_client = False
         if not bqstorage_client and create_bqstorage_client:
-            owns_bqstorage_client = True
             bqstorage_client = self.client._create_bqstorage_client()
+            owns_bqstorage_client = bqstorage_client is not None
 
         try:
             progress_bar = self._get_progress_bar(progress_bar_type)
@@ -1569,26 +1571,21 @@ class RowIterator(HTTPIterator):
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
         Args:
-            bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
-                **Beta Feature** Optional. A BigQuery Storage API client. If
-                supplied, use the faster BigQuery Storage API to fetch rows
-                from BigQuery.
+            bqstorage_client (Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]):
+                A BigQuery Storage API client. If supplied, use the faster
+                BigQuery Storage API to fetch rows from BigQuery.
 
                 This method requires the ``pyarrow`` and
                 ``google-cloud-bigquery-storage`` libraries.
 
-                Reading from a specific partition or snapshot is not
-                currently supported by this method.
+                This method only exposes a subset of the capabilities of the
+                BigQuery Storage API. For full access to all features
+                (projections, filters, snapshots) use the Storage API directly.
 
-                **Caution**: There is a known issue reading small anonymous
-                query result tables with the BQ Storage API. When a problem
-                is encountered reading a table, the tabledata.list method
-                from the BigQuery API is used, instead.
-            dtypes (Map[str, Union[str, pandas.Series.dtype]]):
-                Optional. A dictionary of column names pandas ``dtype``s. The
-                provided ``dtype`` is used when constructing the series for
-                the column specified. Otherwise, the default pandas behavior
-                is used.
+            dtypes (Optional[Map[str, Union[str, pandas.Series.dtype]]]):
+                A dictionary of column names pandas ``dtype``s. The provided
+                ``dtype`` is used when constructing the series for the column
+                specified. Otherwise, the default pandas behavior is used.
 
         Returns:
             pandas.DataFrame:
@@ -1633,31 +1630,27 @@ class RowIterator(HTTPIterator):
         bqstorage_client=None,
         dtypes=None,
         progress_bar_type=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
+        date_as_object=True,
     ):
         """Create a pandas DataFrame by loading all pages of a query.
 
         Args:
-            bqstorage_client (google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient):
-                **Beta Feature** Optional. A BigQuery Storage API client. If
-                supplied, use the faster BigQuery Storage API to fetch rows
-                from BigQuery.
+            bqstorage_client (Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]):
+                A BigQuery Storage API client. If supplied, use the faster
+                BigQuery Storage API to fetch rows from BigQuery.
 
                 This method requires the ``pyarrow`` and
                 ``google-cloud-bigquery-storage`` libraries.
 
-                Reading from a specific partition or snapshot is not
-                currently supported by this method.
+                This method only exposes a subset of the capabilities of the
+                BigQuery Storage API. For full access to all features
+                (projections, filters, snapshots) use the Storage API directly.
 
-                **Caution**: There is a known issue reading small anonymous
-                query result tables with the BQ Storage API. When a problem
-                is encountered reading a table, the tabledata.list method
-                from the BigQuery API is used, instead.
-            dtypes (Map[str, Union[str, pandas.Series.dtype]]):
-                Optional. A dictionary of column names pandas ``dtype``s. The
-                provided ``dtype`` is used when constructing the series for
-                the column specified. Otherwise, the default pandas behavior
-                is used.
+            dtypes (Optional[Map[str, Union[str, pandas.Series.dtype]]]):
+                A dictionary of column names pandas ``dtype``s. The provided
+                ``dtype`` is used when constructing the series for the column
+                specified. Otherwise, the default pandas behavior is used.
             progress_bar_type (Optional[str]):
                 If set, use the `tqdm <https://tqdm.github.io/>`_ library to
                 display a progress bar while the data downloads. Install the
@@ -1678,16 +1671,21 @@ class RowIterator(HTTPIterator):
                   progress bar as a graphical dialog box.
 
                 ..versionadded:: 1.11.0
-            create_bqstorage_client (bool):
-                **Beta Feature** Optional. If ``True``, create a BigQuery
-                Storage API client using the default API settings. The
-                BigQuery Storage API is a faster way to fetch rows from
-                BigQuery. See the ``bqstorage_client`` parameter for more
-                information.
+            create_bqstorage_client (Optional[bool]):
+                If ``True`` (default), create a BigQuery Storage API client
+                using the default API settings. The BigQuery Storage API
+                is a faster way to fetch rows from BigQuery. See the
+                ``bqstorage_client`` parameter for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
                 ..versionadded:: 1.24.0
+
+            date_as_object (Optional[bool]):
+                If ``True`` (default), cast dates to objects. If ``False``, convert
+                to datetime64[ns] dtype.
+
+                ..versionadded:: 1.26.0
 
         Returns:
             pandas.DataFrame:
@@ -1698,7 +1696,7 @@ class RowIterator(HTTPIterator):
         Raises:
             ValueError:
                 If the :mod:`pandas` library cannot be imported, or the
-                :mod:`google.cloud.bigquery_storage_v1beta1` module is
+                :mod:`google.cloud.bigquery_storage_v1` module is
                 required but cannot be imported.
 
         """
@@ -1728,10 +1726,18 @@ class RowIterator(HTTPIterator):
                 bqstorage_client=bqstorage_client,
                 create_bqstorage_client=create_bqstorage_client,
             )
-            df = record_batch.to_pandas()
+            df = record_batch.to_pandas(date_as_object=date_as_object)
             for column in dtypes:
                 df[column] = pandas.Series(df[column], dtype=dtypes[column])
             return df
+        else:
+            warnings.warn(
+                "Converting to a dataframe without pyarrow installed is "
+                "often slower and will become unsupported in the future. "
+                "Please install the pyarrow package.",
+                PyarrowMissingWarning,
+                stacklevel=2,
+            )
 
         # The bqstorage_client is only used if pyarrow is available, so the
         # rest of this method only needs to account for tabledata.list.
@@ -1775,12 +1781,12 @@ class _EmptyRowIterator(object):
         self,
         progress_bar_type=None,
         bqstorage_client=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
     ):
         """[Beta] Create an empty class:`pyarrow.Table`.
 
         Args:
-            progress_bar_type (Optional[str]): Ignored. Added for compatibility with RowIterator.
+            progress_bar_type (str): Ignored. Added for compatibility with RowIterator.
             bqstorage_client (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
 
@@ -1796,7 +1802,8 @@ class _EmptyRowIterator(object):
         bqstorage_client=None,
         dtypes=None,
         progress_bar_type=None,
-        create_bqstorage_client=False,
+        create_bqstorage_client=True,
+        date_as_object=True,
     ):
         """Create an empty dataframe.
 
@@ -1805,6 +1812,7 @@ class _EmptyRowIterator(object):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
+            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -1883,9 +1891,19 @@ class PartitionRange(object):
     def _key(self):
         return tuple(sorted(self._properties.items()))
 
+    def __eq__(self, other):
+        if not isinstance(other, PartitionRange):
+            return NotImplemented
+        return self._key() == other._key()
+
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         key_vals = ["{}={}".format(key, val) for key, val in self._key()]
         return "PartitionRange({})".format(", ".join(key_vals))
+
+    __hash__ = None
 
 
 class RangePartitioning(object):
@@ -1953,9 +1971,19 @@ class RangePartitioning(object):
     def _key(self):
         return (("field", self.field), ("range_", self.range_))
 
+    def __eq__(self, other):
+        if not isinstance(other, RangePartitioning):
+            return NotImplemented
+        return self._key() == other._key()
+
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         key_vals = ["{}={}".format(key, repr(val)) for key, val in self._key()]
         return "RangePartitioning({})".format(", ".join(key_vals))
+
+    __hash__ = None
 
 
 class TimePartitioningType(object):
@@ -1964,24 +1992,27 @@ class TimePartitioningType(object):
     DAY = "DAY"
     """str: Generates one partition per day."""
 
+    HOUR = "HOUR"
+    """str: Generates one partition per hour."""
+
 
 class TimePartitioning(object):
     """Configures time-based partitioning for a table.
 
     Args:
-        type_ (google.cloud.bigquery.table.TimePartitioningType, optional):
+        type_ (Optional[google.cloud.bigquery.table.TimePartitioningType]):
             Specifies the type of time partitioning to perform. Defaults to
             :attr:`~google.cloud.bigquery.table.TimePartitioningType.DAY`,
             which is the only currently supported type.
-        field (str, optional):
+        field (Optional[str]):
             If set, the table is partitioned by this field. If not set, the
             table is partitioned by pseudo column ``_PARTITIONTIME``. The field
             must be a top-level ``TIMESTAMP`` or ``DATE`` field. Its mode must
             be ``NULLABLE`` or ``REQUIRED``.
-        expiration_ms(int, optional):
+        expiration_ms(Optional[int]):
             Number of milliseconds for which to keep the storage for a
             partition.
-        require_partition_filter (bool, optional):
+        require_partition_filter (Optional[bool]):
             DEPRECATED: Use
             :attr:`~google.cloud.bigquery.table.Table.require_partition_filter`,
             instead.

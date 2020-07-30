@@ -26,32 +26,31 @@
 
     Parameters:
 
-    * ``<destination_var>`` (optional, line argument):
+    * ``<destination_var>`` (Optional[line argument]):
         variable to store the query results. The results are not displayed if
         this parameter is used. If an error occurs during the query execution,
         the corresponding ``QueryJob`` instance (if available) is stored in
         the variable instead.
-    * ``--destination_table`` (optional, line argument):
+    * ``--destination_table`` (Optional[line argument]):
         A dataset and table to store the query results. If table does not exists,
         it will be created. If table already exists, its data will be overwritten.
         Variable should be in a format <dataset_id>.<table_id>.
-    * ``--project <project>`` (optional, line argument):
+    * ``--project <project>`` (Optional[line argument]):
         Project to use for running the query. Defaults to the context
         :attr:`~google.cloud.bigquery.magics.Context.project`.
-    * ``--use_bqstorage_api`` (optional, line argument):
-        Downloads the DataFrame using the BigQuery Storage API. To use this
-        option, install the ``google-cloud-bigquery-storage`` and ``fastavro``
-        packages, and `enable the BigQuery Storage API
-        <https://console.cloud.google.com/apis/library/bigquerystorage.googleapis.com>`_.
-    * ``--use_legacy_sql`` (optional, line argument):
+    * ``--use_bqstorage_api`` (Optional[line argument]):
+        [Deprecated] Not used anymore, as BigQuery Storage API is used by default.
+    * ``--use_rest_api`` (Optional[line argument]):
+        Use the BigQuery REST API instead of the Storage API.
+    * ``--use_legacy_sql`` (Optional[line argument]):
         Runs the query using Legacy SQL syntax. Defaults to Standard SQL if
         this argument not used.
-    * ``--verbose`` (optional, line argument):
+    * ``--verbose`` (Optional[line argument]):
         If this flag is used, information including the query job ID and the
         amount of time for the query to complete will not be cleared after the
         query is finished. By default, this information will be displayed but
         will be cleared after the query is finished.
-    * ``--params <params>`` (optional, line argument):
+    * ``--params <params>`` (Optional[line argument]):
         If present, the argument following the ``--params`` flag must be
         either:
 
@@ -65,8 +64,18 @@
           serializable. The variable reference is indicated by a ``$`` before
           the variable name (ex. ``$my_dict_var``). See ``In[6]`` and ``In[7]``
           in the Examples section below.
+
+        .. note::
+
+            Due to the way IPython argument parser works, negative numbers in
+            dictionaries are incorrectly "recognized" as additional arguments,
+            resulting in an error ("unrecognized arguments"). To get around this,
+            pass such dictionary as a JSON string variable.
+
     * ``<query>`` (required, cell argument):
-        SQL query to run.
+        SQL query to run. If the query does not contain any whitespace (aside
+        from leading and trailing whitespace), it is assumed to represent a
+        fully-qualified table ID, and the latter's data will be fetched.
 
     Returns:
         A :class:`pandas.DataFrame` with the query results.
@@ -140,6 +149,7 @@ import ast
 import functools
 import sys
 import time
+import warnings
 from concurrent import futures
 
 try:
@@ -172,7 +182,6 @@ class Context(object):
         self._credentials = None
         self._project = None
         self._connection = None
-        self._use_bqstorage_api = None
         self._default_query_job_config = bigquery.QueryJobConfig()
 
     @property
@@ -236,21 +245,6 @@ class Context(object):
         self._project = value
 
     @property
-    def use_bqstorage_api(self):
-        """bool: [Beta] Set to True to use the BigQuery Storage API to
-        download query results
-
-        To use this option, install the ``google-cloud-bigquery-storage`` and
-        ``fastavro`` packages, and `enable the BigQuery Storage API
-        <https://console.cloud.google.com/apis/library/bigquerystorage.googleapis.com>`_.
-        """
-        return self._use_bqstorage_api
-
-    @use_bqstorage_api.setter
-    def use_bqstorage_api(self, value):
-        self._use_bqstorage_api = value
-
-    @property
     def default_query_job_config(self):
         """google.cloud.bigquery.job.QueryJobConfig: Default job
         configuration for queries.
@@ -310,7 +304,7 @@ def _run_query(client, query, job_config=None):
         query (str):
             SQL query to be executed. Defaults to the standard SQL dialect.
             Use the ``job_config`` parameter to change dialects.
-        job_config (google.cloud.bigquery.job.QueryJobConfig, optional):
+        job_config (Optional[google.cloud.bigquery.job.QueryJobConfig]):
             Extra configuration options for the job.
 
     Returns:
@@ -424,11 +418,21 @@ def _create_dataset_if_necessary(client, dataset_id):
 @magic_arguments.argument(
     "--use_bqstorage_api",
     action="store_true",
+    default=None,
+    help=(
+        "[Deprecated] The BigQuery Storage API is already used by default to "
+        "download large query results, and this option has no effect. "
+        "If you want to switch to the classic REST API instead, use the "
+        "--use_rest_api option."
+    ),
+)
+@magic_arguments.argument(
+    "--use_rest_api",
+    action="store_true",
     default=False,
     help=(
-        "[Beta] Use the BigQuery Storage API to download large query results. "
-        "To use this option, install the google-cloud-bigquery-storage and "
-        "fastavro packages, and enable the BigQuery Storage API."
+        "Use the classic REST API instead of the BigQuery Storage API to "
+        "download query results."
     ),
 )
 @magic_arguments.argument(
@@ -471,6 +475,14 @@ def _cell_magic(line, query):
     """
     args = magic_arguments.parse_argstring(_cell_magic, line)
 
+    if args.use_bqstorage_api is not None:
+        warnings.warn(
+            "Deprecated option --use_bqstorage_api, the BigQuery "
+            "Storage API is already used by default.",
+            category=DeprecationWarning,
+        )
+    use_bqstorage_api = not args.use_rest_api
+
     params = []
     if args.params is not None:
         try:
@@ -492,9 +504,7 @@ def _cell_magic(line, query):
     )
     if context._connection:
         client._connection = context._connection
-    bqstorage_client = _make_bqstorage_client(
-        args.use_bqstorage_api or context.use_bqstorage_api, context.credentials
-    )
+    bqstorage_client = _make_bqstorage_client(use_bqstorage_api, context.credentials)
 
     close_transports = functools.partial(_close_transports, client, bqstorage_client)
 
@@ -505,6 +515,11 @@ def _cell_magic(line, query):
             max_results = None
 
         query = query.strip()
+
+        if not query:
+            error = ValueError("Query is missing.")
+            _handle_error(error, args.destination_var)
+            return
 
         # Any query that does not contain whitespace (aside from leading and trailing whitespace)
         # is assumed to be a table id
@@ -588,11 +603,13 @@ def _make_bqstorage_client(use_bqstorage_api, credentials):
         return None
 
     try:
-        from google.cloud import bigquery_storage_v1beta1
+        from google.cloud import bigquery_storage_v1
     except ImportError as err:
         customized_error = ImportError(
-            "Install the google-cloud-bigquery-storage and pyarrow packages "
-            "to use the BigQuery Storage API."
+            "The default BigQuery Storage API client cannot be used, install "
+            "the missing google-cloud-bigquery-storage and pyarrow packages "
+            "to use it. Alternatively, use the classic REST API by specifying "
+            "the --use_rest_api magic option."
         )
         six.raise_from(customized_error, err)
 
@@ -604,7 +621,7 @@ def _make_bqstorage_client(use_bqstorage_api, credentials):
         )
         six.raise_from(customized_error, err)
 
-    return bigquery_storage_v1beta1.BigQueryStorageClient(
+    return bigquery_storage_v1.BigQueryReadClient(
         credentials=credentials,
         client_info=gapic_client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
     )
@@ -619,7 +636,7 @@ def _close_transports(client, bqstorage_client):
     Args:
         client (:class:`~google.cloud.bigquery.client.Client`):
         bqstorage_client
-            (Optional[:class:`~google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient`]):
+            (Optional[:class:`~google.cloud.bigquery_storage_v1.BigQueryReadClient`]):
             A client for the BigQuery Storage API.
 
     """

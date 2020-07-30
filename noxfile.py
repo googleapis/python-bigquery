@@ -32,26 +32,15 @@ def default(session):
     run the tests.
     """
     # Install all test dependencies, then install local packages in-place.
-    session.install("mock", "pytest", "pytest-cov", "freezegun")
+    session.install(
+        "mock", "pytest", "google-cloud-testutils", "pytest-cov", "freezegun"
+    )
     session.install("grpcio")
-    session.install("-e", "test_utils")
-
-    coverage_fail_under = "--cov-fail-under=97"
 
     # fastparquet is not included in .[all] because, in general, it's redundant
     # with pyarrow. We still want to run some unit tests with fastparquet
     # serialization, though.
-    dev_install = ".[all,fastparquet]"
-
-    # There is no pyarrow or fastparquet wheel for Python 3.8.
-    if session.python == "3.8":
-        # Since many tests are skipped due to missing dependencies, test
-        # coverage is much lower in Python 3.8. Remove once we can test with
-        # pyarrow.
-        coverage_fail_under = "--cov-fail-under=92"
-        dev_install = ".[pandas,tqdm]"
-
-    session.install("-e", dev_install)
+    session.install("-e", ".[all,fastparquet]")
 
     # IPython does not support Python 2 after version 5.x
     if session.python == "2.7":
@@ -68,9 +57,9 @@ def default(session):
         "--cov-append",
         "--cov-config=.coveragerc",
         "--cov-report=",
-        coverage_fail_under,
+        "--cov-fail-under=0",
         os.path.join("tests", "unit"),
-        *session.posargs
+        *session.posargs,
     )
 
 
@@ -80,7 +69,7 @@ def unit(session):
     default(session)
 
 
-@nox.session(python=["2.7", "3.7"])
+@nox.session(python=["2.7", "3.8"])
 def system(session):
     """Run the system test suite."""
 
@@ -92,9 +81,9 @@ def system(session):
     session.install("--pre", "grpcio")
 
     # Install all test dependencies, then install local packages in place.
-    session.install("mock", "pytest", "psutil")
+    session.install("mock", "pytest", "psutil", "google-cloud-testutils")
     session.install("google-cloud-storage")
-    session.install("-e", "test_utils")
+    session.install("fastavro")
     session.install("-e", ".[all]")
 
     # IPython does not support Python 2 after version 5.x
@@ -109,7 +98,7 @@ def system(session):
     )
 
 
-@nox.session(python=["2.7", "3.7"])
+@nox.session(python=["2.7", "3.8"])
 def snippets(session):
     """Run the snippets test suite."""
 
@@ -118,18 +107,19 @@ def snippets(session):
         session.skip("Credentials must be set via environment variable.")
 
     # Install all test dependencies, then install local packages in place.
-    session.install("mock", "pytest")
+    session.install("mock", "pytest", "google-cloud-testutils")
     session.install("google-cloud-storage")
     session.install("grpcio")
-    session.install("-e", "test_utils")
     session.install("-e", ".[all]")
 
     # Run py.test against the snippets tests.
+    # Skip tests in samples/snippets, as those are run in a different session
+    # using the nox config from that directory.
     session.run("py.test", os.path.join("docs", "snippets.py"), *session.posargs)
-    session.run("py.test", "samples", *session.posargs)
+    session.run("py.test", "samples", "--ignore=samples/snippets", *session.posargs)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def cover(session):
     """Run the final coverage report.
 
@@ -141,7 +131,7 @@ def cover(session):
     session.run("coverage", "erase")
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def lint(session):
     """Run linters.
 
@@ -158,7 +148,7 @@ def lint(session):
     session.run("black", "--check", *BLACK_PATHS)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
@@ -179,7 +169,7 @@ def blacken(session):
     session.run("black", *BLACK_PATHS)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def docs(session):
     """Build the docs."""
 

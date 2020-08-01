@@ -74,7 +74,7 @@ def system(session):
     """Run the system test suite."""
 
     # Check the value of `RUN_SYSTEM_TESTS` env var. It defaults to true.
-    if os.environ.get("RUN_SYSTEM_TESTS", "true") == 'false':
+    if os.environ.get("RUN_SYSTEM_TESTS", "true") == "false":
         session.skip("RUN_SYSTEM_TESTS is set to false, skipping")
 
     # Sanity check: Only run system tests if the environment variable is set.
@@ -194,6 +194,7 @@ def docs(session):
         os.path.join("docs", ""),
         os.path.join("docs", "_build", "html", ""),
     )
+
 
 @nox.session(python="3.8")
 def docfx(session):

@@ -43,7 +43,7 @@ except ImportError:  # pragma: NO COVER
 from google.cloud import bigquery
 from google.cloud.bigquery import job
 from google.cloud.bigquery import table
-from google.cloud.bigquery import magics
+from google.cloud.bigquery.ipython_magics import magics
 from tests.unit.helpers import make_connection
 from test_utils.imports import maybe_fail_import
 
@@ -256,7 +256,7 @@ def test__run_query():
     ]
 
     client_patch = mock.patch(
-        "google.cloud.bigquery.magics.bigquery.Client", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics.bigquery.Client", autospec=True
     )
     with client_patch as client_mock, io.capture_output() as captured:
         client_mock().query(sql).result.side_effect = responses
@@ -284,7 +284,7 @@ def test__run_query_dry_run_without_errors_is_silent():
     sql = "SELECT 17"
 
     client_patch = mock.patch(
-        "google.cloud.bigquery.magics.bigquery.Client", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics.bigquery.Client", autospec=True
     )
 
     job_config = job.QueryJobConfig()
@@ -350,7 +350,7 @@ def test__create_dataset_if_necessary_exists():
     dataset_reference = bigquery.dataset.DatasetReference(project, dataset_id)
     dataset = bigquery.Dataset(dataset_reference)
     client_patch = mock.patch(
-        "google.cloud.bigquery.magics.bigquery.Client", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics.bigquery.Client", autospec=True
     )
     with client_patch as client_mock:
         client = client_mock()
@@ -364,7 +364,7 @@ def test__create_dataset_if_necessary_not_exist():
     project = "project_id"
     dataset_id = "dataset_id"
     client_patch = mock.patch(
-        "google.cloud.bigquery.magics.bigquery.Client", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics.bigquery.Client", autospec=True
     )
     with client_patch as client_mock:
         client = client_mock()
@@ -382,7 +382,7 @@ def test_extension_load():
 
     # verify that the magic is registered and has the correct source
     magic = ip.magics_manager.magics["cell"].get("bigquery")
-    assert magic.__module__ == "google.cloud.bigquery.magics"
+    assert magic.__module__ == "google.cloud.bigquery.ipython_magics.magics"
 
 
 @pytest.mark.usefixtures("ipython_interactive")
@@ -415,7 +415,7 @@ def test_bigquery_magic_without_optional_arguments(monkeypatch):
     sql = "SELECT 17 AS num"
     result = pandas.DataFrame([17], columns=["num"])
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
@@ -445,7 +445,7 @@ def test_bigquery_magic_default_connection_user_agent():
         "google.auth.default", return_value=(credentials_mock, "general-project")
     )
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     conn_patch = mock.patch("google.cloud.bigquery.client.Connection", autospec=True)
 
@@ -466,7 +466,7 @@ def test_bigquery_magic_with_legacy_sql():
     )
 
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     with run_query_patch as run_query_mock:
         ip.run_cell_magic("bigquery", "--use_legacy_sql", "SELECT 17 AS num")
@@ -489,7 +489,7 @@ def test_bigquery_magic_with_result_saved_to_variable():
     assert "df" not in ip.user_ns
 
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
@@ -516,10 +516,11 @@ def test_bigquery_magic_does_not_clear_display_in_verbose_mode():
     )
 
     clear_patch = mock.patch(
-        "google.cloud.bigquery.magics.display.clear_output", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics.display.clear_output",
+        autospec=True,
     )
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     with clear_patch as clear_mock, run_query_patch:
         ip.run_cell_magic("bigquery", "--verbose", "SELECT 17 as num")
@@ -536,10 +537,11 @@ def test_bigquery_magic_clears_display_in_verbose_mode():
     )
 
     clear_patch = mock.patch(
-        "google.cloud.bigquery.magics.display.clear_output", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics.display.clear_output",
+        autospec=True,
     )
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     with clear_patch as clear_mock, run_query_patch:
         ip.run_cell_magic("bigquery", "", "SELECT 17 as num")
@@ -576,7 +578,7 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     sql = "SELECT 17 AS num"
     result = pandas.DataFrame([17], columns=["num"])
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
@@ -635,7 +637,7 @@ def test_bigquery_magic_with_rest_client_requested(monkeypatch):
     sql = "SELECT 17 AS num"
     result = pandas.DataFrame([17], columns=["num"])
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
@@ -719,7 +721,7 @@ def test_bigquery_magic_w_max_results_query_job_results_fails():
         "google.cloud.bigquery.client.Client.query", autospec=True
     )
     close_transports_patch = mock.patch(
-        "google.cloud.bigquery.magics._close_transports", autospec=True,
+        "google.cloud.bigquery.ipython_magics.magics._close_transports", autospec=True,
     )
 
     sql = "SELECT 17 AS num"
@@ -751,7 +753,7 @@ def test_bigquery_magic_w_table_id_invalid():
     )
 
     list_rows_patch = mock.patch(
-        "google.cloud.bigquery.magics.bigquery.Client.list_rows",
+        "google.cloud.bigquery.ipython_magics.magics.bigquery.Client.list_rows",
         autospec=True,
         side_effect=exceptions.BadRequest("Not a valid table ID"),
     )
@@ -809,7 +811,7 @@ def test_bigquery_magic_w_table_id_and_destination_var():
     )
 
     client_patch = mock.patch(
-        "google.cloud.bigquery.magics.bigquery.Client", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics.bigquery.Client", autospec=True
     )
 
     table_id = "bigquery-public-data.samples.shakespeare"
@@ -849,7 +851,7 @@ def test_bigquery_magic_w_table_id_and_bqstorage_client():
     )
 
     client_patch = mock.patch(
-        "google.cloud.bigquery.magics.bigquery.Client", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics.bigquery.Client", autospec=True
     )
 
     bqstorage_mock = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
@@ -882,7 +884,7 @@ def test_bigquery_magic_dryrun_option_sets_job_config():
     )
 
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
 
     sql = "SELECT 17 AS num"
@@ -905,7 +907,7 @@ def test_bigquery_magic_dryrun_option_returns_query_job():
         google.cloud.bigquery.job.QueryJob, instance=True
     )
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
 
     sql = "SELECT 17 AS num"
@@ -927,7 +929,7 @@ def test_bigquery_magic_dryrun_option_variable_error_message():
     )
 
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query",
+        "google.cloud.bigquery.ipython_magics.magics._run_query",
         autospec=True,
         side_effect=exceptions.BadRequest("Syntax error in SQL query"),
     )
@@ -954,7 +956,7 @@ def test_bigquery_magic_dryrun_option_saves_query_job_to_variable():
         google.cloud.bigquery.job.QueryJob, instance=True
     )
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
 
     sql = "SELECT 17 AS num"
@@ -1151,7 +1153,7 @@ def test_bigquery_magic_with_project():
         "google.auth.default", return_value=(credentials_mock, "general-project")
     )
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     with run_query_patch as run_query_mock, default_patch:
         ip.run_cell_magic("bigquery", "--project=specific-project", "SELECT 17 as num")
@@ -1176,7 +1178,7 @@ def test_bigquery_magic_with_string_params():
     assert "params_string_df" not in ip.user_ns
 
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
@@ -1209,7 +1211,7 @@ def test_bigquery_magic_with_dict_params():
     assert "params_dict_df" not in ip.user_ns
 
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
@@ -1259,7 +1261,7 @@ def test_bigquery_magic_omits_tracebacks_from_error_message():
     )
 
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query",
+        "google.cloud.bigquery.ipython_magics.magics._run_query",
         autospec=True,
         side_effect=exceptions.BadRequest("Syntax error in SQL query"),
     )
@@ -1287,7 +1289,7 @@ def test_bigquery_magic_w_destination_table_invalid_format():
     )
 
     client_patch = mock.patch(
-        "google.cloud.bigquery.magics.bigquery.Client", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics.bigquery.Client", autospec=True
     )
 
     with client_patch, default_patch, pytest.raises(ValueError) as exc_context:
@@ -1310,11 +1312,12 @@ def test_bigquery_magic_w_destination_table():
     )
 
     create_dataset_if_necessary_patch = mock.patch(
-        "google.cloud.bigquery.magics._create_dataset_if_necessary", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._create_dataset_if_necessary",
+        autospec=True,
     )
 
     run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics._run_query", autospec=True
+        "google.cloud.bigquery.ipython_magics.magics._run_query", autospec=True
     )
 
     with create_dataset_if_necessary_patch, run_query_patch as run_query_mock:
@@ -1341,12 +1344,12 @@ def test_bigquery_magic_create_dataset_fails():
     )
 
     create_dataset_if_necessary_patch = mock.patch(
-        "google.cloud.bigquery.magics._create_dataset_if_necessary",
+        "google.cloud.bigquery.ipython_magics.magics._create_dataset_if_necessary",
         autospec=True,
         side_effect=OSError,
     )
     close_transports_patch = mock.patch(
-        "google.cloud.bigquery.magics._close_transports", autospec=True,
+        "google.cloud.bigquery.ipython_magics.magics._close_transports", autospec=True,
     )
 
     with pytest.raises(

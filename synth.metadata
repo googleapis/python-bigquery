@@ -3,8 +3,8 @@
     {
       "git": {
         "name": ".",
-        "remote": "git@github.com:googleapis/python-bigquery.git",
-        "sha": "8360487582f245d20893acbe8cbf92d0fc4cd9d9"
+        "remote": "git@github.com:tmatsuo/python-bigquery.git",
+        "sha": "5ed817523a85a6f332951e10c0bf7dbb86d7e1cf"
       }
     },
     {

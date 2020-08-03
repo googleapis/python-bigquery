@@ -21,6 +21,7 @@ import shlex
 sys.path.insert(0, os.path.abspath(".."))
 
 # For plugins that can not read conf.py.
+# See also: https://github.com/docascode/sphinx-docfx-yaml/issues/85
 sys.path.insert(0, os.path.abspath("."))
 
 __version__ = ""

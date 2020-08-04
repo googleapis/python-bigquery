@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import datetime
+import os
 import uuid
 
 import google.auth
@@ -21,6 +22,7 @@ import pytest
 
 from google.cloud import bigquery
 from google.cloud import bigquery_v2
+from google.cloud import kms_v1
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -164,4 +166,43 @@ def model_id(client, dataset_id):
 
 @pytest.fixture
 def kms_key_name():
-    return "projects/cloud-samples-tests/locations/us/keyRings/test/cryptoKeys/test"
+    client = kms_v1.KeyManagementServiceClient()
+
+    location_name = f"projects/{os.environ.get('GOOGLE_CLOUD_PROJECT')}/locations/us"
+    key_ring_id = f"bigquery-test-{uuid.uuid4()}"
+
+    key_ring = client.create_key_ring(
+        request={"parent": location_name, "key_ring_id": key_ring_id, "key_ring": {}}
+    )
+
+    key_id = "{}".format(uuid.uuid4())
+    key = client.create_crypto_key(
+        request={
+            "parent": key_ring.name,
+            "crypto_key_id": key_id,
+            "crypto_key": {
+                "purpose": kms_v1.CryptoKey.CryptoKeyPurpose.ENCRYPT_DECRYPT,
+                "version_template": {
+                    "algorithm": kms_v1.CryptoKeyVersion.CryptoKeyVersionAlgorithm.GOOGLE_SYMMETRIC_ENCRYPTION,
+                    "protection_level": kms_v1.ProtectionLevel.HSM,
+                },
+                "labels": {"foo": "bar", "zip": "zap"},
+            },
+        }
+    )
+
+    yield key.name
+
+    for key in client.list_crypto_keys(request={"parent": key_ring.name}):
+        if key.rotation_period or key.next_rotation_time:
+            updated_key = {"name": key.name}
+            update_mask = {"paths": ["rotation_period", "next_rotation_time"]}
+            client.update_crypto_key(
+                request={"crypto_key": updated_key, "update_mask": update_mask}
+            )
+
+    f = "state != DESTROYED AND state != DESTROY_SCHEDULED"
+    for version in client.list_crypto_key_versions(
+        request={"parent": key.name, "filter": f}
+    ):
+        client.destroy_crypto_key_version(request={"name": version.name})

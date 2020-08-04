@@ -97,28 +97,6 @@ def system(session):
         "py.test", "--quiet", os.path.join("tests", "system.py"), *session.posargs
     )
 
-
-@nox.session(python=["2.7", "3.8"])
-def snippets(session):
-    """Run the snippets test suite."""
-
-    # Sanity check: Only run snippets tests if the environment variable is set.
-    if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):
-        session.skip("Credentials must be set via environment variable.")
-
-    # Install all test dependencies, then install local packages in place.
-    session.install("mock", "pytest", "google-cloud-testutils")
-    session.install("google-cloud-storage")
-    session.install("grpcio")
-    session.install("-e", ".[all]")
-
-    # Run py.test against the snippets tests.
-    # Skip tests in samples/snippets, as those are run in a different session
-    # using the nox config from that directory.
-    session.run("py.test", os.path.join("docs", "snippets.py"), *session.posargs)
-    session.run("py.test", "samples", "--ignore=samples/snippets", *session.posargs)
-
-
 @nox.session(python="3.8")
 def cover(session):
     """Run the final coverage report.

@@ -50,7 +50,7 @@ from google.cloud.bigquery.table import _table_arg_to_table_ref
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TimePartitioning
-from opentelemetry_tracing import SpanCreator
+from google.cloud.bigquery.opentelemetry_tracing import SpanCreator
 
 
 _DONE_STATE = "DONE"

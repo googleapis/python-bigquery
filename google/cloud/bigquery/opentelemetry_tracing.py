@@ -48,9 +48,6 @@ class SpanCreator:
 
     @contextmanager
     def create(self, name, attributes=None, parent_context=None):
-
-        print('yerr')
-
         if not self.opentelemetry_enbled:
             yield None
             return

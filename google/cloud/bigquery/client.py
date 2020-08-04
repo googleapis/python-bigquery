@@ -33,7 +33,7 @@ import os
 import tempfile
 import uuid
 import warnings
-from opentelemetry_tracing import SpanCreator
+from google.cloud.bigquery.opentelemetry_tracing import SpanCreator
 
 try:
     import pyarrow
@@ -2667,11 +2667,10 @@ class Client(ClientWithProject):
                     google.cloud.bigquery.job.QueryJobConfig,
                 )
                 job_config = copy.deepcopy(self._default_query_job_config)
-        x = SpanCreator
-        with x.create():
-            job_ref = job._JobReference(job_id, project=project, location=location)
-            query_job = job.QueryJob(job_ref, query, client=self, job_config=job_config)
-            query_job._begin(retry=retry, timeout=timeout)
+
+        job_ref = job._JobReference(job_id, project=project, location=location)
+        query_job = job.QueryJob(job_ref, query, client=self, job_config=job_config)
+        query_job._begin(retry=retry, timeout=timeout)
 
         return query_job
 

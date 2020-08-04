@@ -102,3 +102,51 @@ Perform a query
 
     for row in rows:
         print(row.name)
+
+Instrumenting With OpenTelemetry
+--------------------------------
+
+This application uses OpenTelmetry to output tracing data from
+api calls to BigQuery. To enable OpenTelemetry tracing in
+the BigQuery client the following PyPi packages need to be installed:
+
+.. code-block:: console
+
+    pip install opentelemetry-api
+
+.. code-block:: console
+
+    pip install opentelemetry-sdk
+
+.. code-block:: console
+
+    pip install opentelemetry-instrumentaion
+
+.. code-block:: console
+
+    pip install opentelemetry-exporter-cloud_trace
+
+After installation, OpenTelemetry can now be used in the BigQuery
+client and in BigQuery jobs. First however an exporter must be
+specified for where the trace data will be outputted to. An example of this
+can be found here:
+
+.. code-block:: python
+
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleExportSpanProcessor
+    from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
+    trace.set_tracer_provider(TracerProvider())
+    trace.get_tracer_provider().add_span_processor(
+        SimpleExportSpanProcessor(CloudTraceSpanExporter())
+    )
+
+In this example all tracing data will be published to the Google
+Cloud trace console. For more information on OpenTelemetry, please consult the `OpenTelemetry documentation`_.
+
+.. _OpenTelemetry documentation: https://opentelemetry-python.readthedocs.io
+
+
+
+

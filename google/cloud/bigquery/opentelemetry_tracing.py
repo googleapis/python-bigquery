@@ -47,7 +47,7 @@ class SpanCreator:
         self.opentelemetry_enbled = HAS_OPENTELEMETRY
 
     @contextmanager
-    def create(self, name, attributes=None, parent_context=None):
+    def create(self, name, attributes=None):
         if not self.opentelemetry_enbled:
             yield None
             return
@@ -62,7 +62,7 @@ class SpanCreator:
             default_attributes.update(attributes)
 
         # yield new span value
-        with tracer.start_as_current_span(name=name, attributes=attributes, parent=parent_context) as span:
+        with tracer.start_as_current_span(name=name, attributes=default_attributes) as span:
             try:
                 yield span
             except GoogleAPICallError as error:

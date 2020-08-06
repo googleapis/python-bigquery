@@ -221,7 +221,8 @@ class TestClient(unittest.TestCase):
         from concurrent.futures import TimeoutError
         from google.cloud.bigquery.retry import DEFAULT_RETRY
 
-        client = self._make_one(project=self.PROJECT)
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
 
         api_request_patcher = mock.patch.object(
             client._connection, "api_request", side_effect=[TimeoutError, "result"],
@@ -674,7 +675,8 @@ class TestClient(unittest.TestCase):
         mock_client.assert_called_once_with(credentials=creds)
 
     def test_create_bqstorage_client_missing_dependency(self):
-        client = self._make_one(project=self.PROJECT)
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
 
         def fail_bqstorage_import(name, globals, locals, fromlist, level):
             # NOTE: *very* simplified, assuming a straightforward absolute import
@@ -7371,19 +7373,22 @@ class TestClientUpload(object):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_struct_fields_error(self):
+    def test_load_table_from_dataframe_struct_fields(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
 
         client = self._make_client()
 
-        records = [{"float_column": 3.14, "struct_column": [{"foo": 1}, {"bar": -1}]}]
-        dataframe = pandas.DataFrame(data=records)
+        records = [(3.14, {"foo": 1, "bar": 1})]
+        dataframe = pandas.DataFrame(
+            data=records, columns=["float_column", "struct_column"]
+        )
 
         schema = [
             SchemaField("float_column", "FLOAT"),
             SchemaField(
-                "agg_col",
+                "struct_column",
                 "RECORD",
                 fields=[SchemaField("foo", "INTEGER"), SchemaField("bar", "INTEGER")],
             ),
@@ -7394,14 +7399,49 @@ class TestClientUpload(object):
             "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
         )
 
-        with pytest.raises(ValueError) as exc_info, load_patch:
-            client.load_table_from_dataframe(
-                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+        if six.PY2:
+            with pytest.raises(ValueError) as exc_info, load_patch:
+                client.load_table_from_dataframe(
+                    dataframe,
+                    self.TABLE_REF,
+                    job_config=job_config,
+                    location=self.LOCATION,
+                )
+
+            err_msg = str(exc_info.value)
+            assert "struct" in err_msg
+            assert "not support" in err_msg
+
+        else:
+            get_table_patch = mock.patch(
+                "google.cloud.bigquery.client.Client.get_table",
+                autospec=True,
+                side_effect=google.api_core.exceptions.NotFound("Table not found"),
+            )
+            with load_patch as load_table_from_file, get_table_patch:
+                client.load_table_from_dataframe(
+                    dataframe,
+                    self.TABLE_REF,
+                    job_config=job_config,
+                    location=self.LOCATION,
+                )
+
+            load_table_from_file.assert_called_once_with(
+                client,
+                mock.ANY,
+                self.TABLE_REF,
+                num_retries=_DEFAULT_NUM_RETRIES,
+                rewind=True,
+                job_id=mock.ANY,
+                job_id_prefix=None,
+                location=self.LOCATION,
+                project=None,
+                job_config=mock.ANY,
             )
 
-        err_msg = str(exc_info.value)
-        assert "struct" in err_msg
-        assert "not support" in err_msg
+            sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+            assert sent_config.source_format == job.SourceFormat.PARQUET
+            assert sent_config.schema == schema
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
@@ -7680,16 +7720,23 @@ class TestClientUpload(object):
         )
 
         with load_patch, get_table_patch, pyarrow_patch, to_parquet_patch as to_parquet_spy:
-            client.load_table_from_dataframe(
-                dataframe,
-                self.TABLE_REF,
-                location=self.LOCATION,
-                parquet_compression="gzip",
-            )
+            with warnings.catch_warnings(record=True) as warned:
+                client.load_table_from_dataframe(
+                    dataframe,
+                    self.TABLE_REF,
+                    location=self.LOCATION,
+                    parquet_compression="gzip",
+                )
 
         call_args = to_parquet_spy.call_args
         assert call_args is not None
         assert call_args.kwargs.get("compression") == "gzip"
+
+        assert len(warned) == 2
+        warning = warned[0]
+        assert "Loading dataframe data without pyarrow" in str(warning)
+        warning = warned[1]
+        assert "Please install the pyarrow package" in str(warning)
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")

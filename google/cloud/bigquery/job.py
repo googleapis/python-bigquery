@@ -638,7 +638,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         # job has an ID.
         attributes = {'path': path}
         span_creator = SpanCreator()
-        with span_creator.create('BigQuery.job.begin', attributes):
+        with span_creator.create(name='BigQuery.job.begin', attributes=attributes, job_ref=self):
             api_response = client._call_api(
                 retry, method="POST", path=path, data=self.to_api_repr(), timeout=timeout
             )
@@ -672,8 +672,8 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         try:
             span_creator = SpanCreator()
             attributes = extra_params
-            attributes['path'] = self.path
-            with span_creator.create('BigQuery.job.exists', attributes):
+            #attributes['path'] = self.path
+            with span_creator.create(name='BigQuery.job.exists', attributes=attributes, job_ref=self):
                 client._call_api(
                     retry,
                     method="GET",
@@ -709,8 +709,8 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             extra_params["location"] = self.location
         span_creator = SpanCreator()
         attributes = extra_params
-        attributes['path'] = self.path
-        with span_creator.create('BigQuery.job.reload', attributes):
+        #attributes['path'] = self.path
+        with span_creator.create(name='BigQuery.job.reload', attributes=attributes, job_ref=self):
             api_response = client._call_api(
                 retry,
                 method="GET",
@@ -747,8 +747,8 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         path = "{}/cancel".format(self.path)
         span_creator = SpanCreator()
         attributes = extra_params
-        attributes['path'] = path
-        with span_creator.create('BigQuery.job.cancel', attributes):
+        #attributes['path'] = path
+        with span_creator.create(name='BigQuery.job.cancel', attributes=attributes, job_ref=self):
             api_response = client._call_api(
                 retry,
                 method="POST",

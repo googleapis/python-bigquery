@@ -20,6 +20,9 @@ from google.cloud.bigquery.ipython_magics.line_arg_parser.exceptions import (
 from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Lexer
 from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import TokenType
 from google.cloud.bigquery.ipython_magics.line_arg_parser.parser import Parser
+from google.cloud.bigquery.ipython_magics.line_arg_parser.visitors import (
+    QueryParamsExtractor,
+)
 
 
 __all__ = (
@@ -27,6 +30,7 @@ __all__ = (
     "Lexer",
     "Parser",
     "ParseError",
+    "QueryParamsExtractor",
     "QueryParamsParseError",
     "TokenType",
 )

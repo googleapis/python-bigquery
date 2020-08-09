@@ -40,7 +40,7 @@ def default(session):
         "freezegun",
         "opentelemetry-api",
         "opentelemetry-sdk",
-        "opentelemetry-instrumentation"
+        "opentelemetry-instrumentation",
     )
     session.install("grpcio")
 

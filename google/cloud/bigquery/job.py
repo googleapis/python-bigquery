@@ -636,11 +636,17 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         # jobs.insert is idempotent because we ensure that every new
         # job has an ID.
-        attributes = {'path': path}
+        attributes = {"path": path}
         span_creator = SpanCreator()
-        with span_creator.create(name='BigQuery.job.begin', attributes=attributes, job_ref=self):
+        with span_creator.create(
+            name="BigQuery.job.begin", attributes=attributes, job_ref=self
+        ):
             api_response = client._call_api(
-                retry, method="POST", path=path, data=self.to_api_repr(), timeout=timeout
+                retry,
+                method="POST",
+                path=path,
+                data=self.to_api_repr(),
+                timeout=timeout,
             )
         self._set_properties(api_response)
 
@@ -671,8 +677,10 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         try:
             span_creator = SpanCreator()
-            attributes = {'path': self.path}
-            with span_creator.create(name='BigQuery.job.exists', attributes=attributes, job_ref=self):
+            attributes = {"path": self.path}
+            with span_creator.create(
+                name="BigQuery.job.exists", attributes=attributes, job_ref=self
+            ):
                 client._call_api(
                     retry,
                     method="GET",
@@ -707,8 +715,10 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         if self.location:
             extra_params["location"] = self.location
         span_creator = SpanCreator()
-        attributes = {'path': self.path}
-        with span_creator.create(name='BigQuery.job.reload', attributes=attributes, job_ref=self):
+        attributes = {"path": self.path}
+        with span_creator.create(
+            name="BigQuery.job.reload", attributes=attributes, job_ref=self
+        ):
             api_response = client._call_api(
                 retry,
                 method="GET",
@@ -744,8 +754,10 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         path = "{}/cancel".format(self.path)
         span_creator = SpanCreator()
-        attributes = {'path': path}
-        with span_creator.create(name='BigQuery.job.cancel', attributes=attributes, job_ref=self):
+        attributes = {"path": path}
+        with span_creator.create(
+            name="BigQuery.job.cancel", attributes=attributes, job_ref=self
+        ):
             api_response = client._call_api(
                 retry,
                 method="POST",

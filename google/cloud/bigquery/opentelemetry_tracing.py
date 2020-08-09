@@ -14,7 +14,6 @@
 
 import logging
 from contextlib import contextmanager
-import pdb
 from google.api_core.exceptions import GoogleAPICallError
 
 Logger = logging.getLogger(__name__)
@@ -27,10 +26,10 @@ try:
 
 except ImportError:
     Logger.info(
-        'This service instrumented using opentelemetry.'
-        'Opentelemetry could not be imported please'
-        'add opentelemetry-api and opentelemetry-instrumentation'
-        'packages in order to get Big Query Tracing data'
+        "This service instrumented using opentelemetry."
+        "Opentelemetry could not be imported please"
+        "add opentelemetry-api and opentelemetry-instrumentation"
+        "packages in order to get Big Query Tracing data"
     )
 
     HAS_OPENTELEMETRY = False
@@ -41,7 +40,7 @@ class SpanCreator:
         # Constructs a span creator with all default attributes
         self.opentelemetry_enbled = HAS_OPENTELEMETRY
         self.attributes = {
-            'db.system': 'bigquery',
+            "db.system": "bigquery",
         }
 
     @contextmanager
@@ -61,7 +60,9 @@ class SpanCreator:
         if attributes:
             self.attributes.update(attributes)
         # yield new span value
-        with tracer.start_as_current_span(name=name, attributes=self.attributes) as span:
+        with tracer.start_as_current_span(
+            name=name, attributes=self.attributes
+        ) as span:
             try:
                 yield span
             except GoogleAPICallError as error:
@@ -70,19 +71,18 @@ class SpanCreator:
                 raise
 
     def set_client_attributes(self, client):
-        self.attributes['db.name'] = client.project
-        self.attributes['location'] = client.location
+        self.attributes["db.name"] = client.project
+        self.attributes["location"] = client.location
 
     def set_job_attributes(self, job_ref):
-        self.attributes['db.name'] = job_ref.project
-        self.attributes['location'] = job_ref.location
-        self.attributes['num_child_jobs'] = str(job_ref.num_child_jobs)
-        self.attributes['job_id'] = job_ref.job_id
-        self.attributes['parent_job_id'] = job_ref.parent_job_id
-        # self.attributes['job_type'] = job_ref.job_type
-        self.attributes['timeCreated'] = job_ref.created
-        self.attributes['timeStarted'] = job_ref.started
-        self.attributes['timeEnded'] = job_ref.ended
-        self.attributes['errors'] = job_ref.errors
-        self.attributes['errorResult'] = job_ref.error_result
-        self.attributes['state'] = job_ref.state
+        self.attributes["db.name"] = job_ref.project
+        self.attributes["location"] = job_ref.location
+        self.attributes["num_child_jobs"] = str(job_ref.num_child_jobs)
+        self.attributes["job_id"] = job_ref.job_id
+        self.attributes["parent_job_id"] = job_ref.parent_job_id
+        self.attributes["timeCreated"] = job_ref.created
+        self.attributes["timeStarted"] = job_ref.started
+        self.attributes["timeEnded"] = job_ref.ended
+        self.attributes["errors"] = job_ref.errors
+        self.attributes["errorResult"] = job_ref.error_result
+        self.attributes["state"] = job_ref.state

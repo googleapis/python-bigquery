@@ -671,8 +671,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         try:
             span_creator = SpanCreator()
-            attributes = extra_params
-            #attributes['path'] = self.path
+            attributes = {'path': self.path}
             with span_creator.create(name='BigQuery.job.exists', attributes=attributes, job_ref=self):
                 client._call_api(
                     retry,
@@ -708,8 +707,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         if self.location:
             extra_params["location"] = self.location
         span_creator = SpanCreator()
-        attributes = extra_params
-        #attributes['path'] = self.path
+        attributes = {'path': self.path}
         with span_creator.create(name='BigQuery.job.reload', attributes=attributes, job_ref=self):
             api_response = client._call_api(
                 retry,
@@ -746,8 +744,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         path = "{}/cancel".format(self.path)
         span_creator = SpanCreator()
-        attributes = extra_params
-        #attributes['path'] = path
+        attributes = {'path': path}
         with span_creator.create(name='BigQuery.job.cancel', attributes=attributes, job_ref=self):
             api_response = client._call_api(
                 retry,

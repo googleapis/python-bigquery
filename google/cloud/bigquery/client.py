@@ -1675,9 +1675,9 @@ class Client(ClientWithProject):
         span_creator = SpanCreator()
 
         attributes = {"path": path,
-                   "job_id": job_id,
-                    "location": location
-                    }
+                      "job_id": job_id,
+                      "location": location
+                      }
 
         with span_creator.create(name='BigQuery.CancelJob', attributes=attributes, client=self):
             resource = self._call_api(
@@ -2870,7 +2870,7 @@ class Client(ClientWithProject):
         span_creator = SpanCreator()
         attributes = {"path": path}
         with span_creator.create(name='BigQuery.insertRowsJson', attributes=attributes, client=self):
-                response = self._call_api(
+            response = self._call_api(
                 retry,
                 method="POST",
                 path=path,

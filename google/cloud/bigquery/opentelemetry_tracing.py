@@ -14,18 +14,12 @@
 
 import logging
 from contextlib import contextmanager
-
-from google.api_core.exceptions import GoogleAPICallError
 import pdb
+from google.api_core.exceptions import GoogleAPICallError
 
 Logger = logging.getLogger(__name__)
-
 try:
     from opentelemetry import trace
-    from opentelemetry import propagators
-    from opentelemetry.trace import SpanContext
-    from opentelemetry.trace import get_current_span
-    from opentelemetry.trace import set_span_in_context
     from opentelemetry.trace.status import Status
     from opentelemetry.instrumentation.utils import http_status_to_canonical_code
 
@@ -44,14 +38,11 @@ except ImportError:
 
 class SpanCreator:
     def __init__(self):
-        '''
-        Constructs a span creator with all default attributes
-        '''
+        # Constructs a span creator with all default attributes
         self.opentelemetry_enbled = HAS_OPENTELEMETRY
         self.attributes = {
             'db.system': 'bigquery',
         }
-
 
     @contextmanager
     def create(self, name, attributes=None, client=None, job_ref=None):
@@ -69,7 +60,6 @@ class SpanCreator:
 
         if attributes:
             self.attributes.update(attributes)
-
         # yield new span value
         with tracer.start_as_current_span(name=name, attributes=self.attributes) as span:
             try:
@@ -89,14 +79,10 @@ class SpanCreator:
         self.attributes['num_child_jobs'] = str(job_ref.num_child_jobs)
         self.attributes['job_id'] = job_ref.job_id
         self.attributes['parent_job_id'] = job_ref.parent_job_id
-        #self.attributes['job_type'] = job_ref.job_type
+        # self.attributes['job_type'] = job_ref.job_type
         self.attributes['timeCreated'] = job_ref.created
         self.attributes['timeStarted'] = job_ref.started
         self.attributes['timeEnded'] = job_ref.ended
         self.attributes['errors'] = job_ref.errors
         self.attributes['errorResult'] = job_ref.error_result
         self.attributes['state'] = job_ref.state
-
-
-
-

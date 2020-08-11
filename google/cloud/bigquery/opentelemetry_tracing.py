@@ -26,63 +26,62 @@ try:
 
 except ImportError:
     Logger.info(
-        "This service instrumented using opentelemetry."
-        "Opentelemetry could not be imported please"
+        "This service is instrumented using opentelemetry."
+        "Opentelemetry could not be imported, please"
         "add opentelemetry-api and opentelemetry-instrumentation"
-        "packages in order to get Big Query Tracing data"
+        "packages, in order to get Big Query Tracing data"
     )
 
     HAS_OPENTELEMETRY = False
 
 
-class SpanCreator:
-    def __init__(self):
-        # Constructs a span creator with all default attributes
-        self.opentelemetry_enbled = HAS_OPENTELEMETRY
-        self.attributes = {
-            "db.system": "bigquery",
-        }
+@contextmanager
+def create_span(name, attributes=None, client=None, job_ref=None):
+    if not HAS_OPENTELEMETRY:
+        yield None
+        return
 
-    @contextmanager
-    def create(self, name, attributes=None, client=None, job_ref=None):
-        if not self.opentelemetry_enbled:
-            yield None
-            return
+    default_attributes = {
+        "db.system": "BigQuery",
+    }
 
-        tracer = trace.get_tracer(__name__)
+    tracer = trace.get_tracer(__name__)
 
-        if client:
-            self.set_client_attributes(client)
+    if client:
+        client_attributes = _set_client_attributes(client)
+        default_attributes.update(client_attributes)
+    elif job_ref:
+        job_attributes = _set_job_attributes(job_ref)
+        default_attributes.update(job_attributes)
 
-        elif job_ref:
-            self.set_job_attributes(job_ref)
+    if attributes:
+        default_attributes.update(attributes)
 
-        if attributes:
-            self.attributes.update(attributes)
-        # yield new span value
-        with tracer.start_as_current_span(
-            name=name, attributes=self.attributes
-        ) as span:
-            try:
-                yield span
-            except GoogleAPICallError as error:
-                if error.code is not None:
-                    span.set_status(Status(http_status_to_canonical_code(error.code)))
-                raise
+    # yield new span value
+    with tracer.start_as_current_span(name=name, attributes=default_attributes) as span:
+        try:
+            yield span
+        except GoogleAPICallError as error:
+            if error.code is not None:
+                span.set_status(Status(http_status_to_canonical_code(error.code)))
+            raise
 
-    def set_client_attributes(self, client):
-        self.attributes["db.name"] = client.project
-        self.attributes["location"] = client.location
 
-    def set_job_attributes(self, job_ref):
-        self.attributes["db.name"] = job_ref.project
-        self.attributes["location"] = job_ref.location
-        self.attributes["num_child_jobs"] = str(job_ref.num_child_jobs)
-        self.attributes["job_id"] = job_ref.job_id
-        self.attributes["parent_job_id"] = job_ref.parent_job_id
-        self.attributes["timeCreated"] = job_ref.created
-        self.attributes["timeStarted"] = job_ref.started
-        self.attributes["timeEnded"] = job_ref.ended
-        self.attributes["errors"] = job_ref.errors
-        self.attributes["errorResult"] = job_ref.error_result
-        self.attributes["state"] = job_ref.state
+def _set_client_attributes(client):
+    return {"db.name": client.project, "location": client.location}
+
+
+def _set_job_attributes(job_ref):
+    return {
+        "db.name": job_ref.project,
+        "location": job_ref.location,
+        "num_child_jobs": str(job_ref.num_child_jobs),
+        "job_id": job_ref.job_id,
+        "parent_job_id": job_ref.parent_job_id,
+        "timeCreated": job_ref.created,
+        "timeStarted": job_ref.started,
+        "timeEnded": job_ref.ended,
+        "errors": job_ref.errors,
+        "errorResult": job_ref.error_result,
+        "state": job_ref.state,
+    }

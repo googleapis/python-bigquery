@@ -50,7 +50,7 @@ from google.cloud.bigquery.table import _table_arg_to_table_ref
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TimePartitioning
-from google.cloud.bigquery.opentelemetry_tracing import SpanCreator
+from google.cloud.bigquery.opentelemetry_tracing import create_span
 
 
 _DONE_STATE = "DONE"
@@ -636,10 +636,9 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         # jobs.insert is idempotent because we ensure that every new
         # job has an ID.
-        attributes = {"path": path}
-        span_creator = SpanCreator()
-        with span_creator.create(
-            name="BigQuery.job.begin", attributes=attributes, job_ref=self
+        span_attributes = {"path": path}
+        with create_span(
+            name="BigQuery.job.begin", attributes=span_attributes, job_ref=self
         ):
             api_response = client._call_api(
                 retry,
@@ -676,10 +675,9 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             extra_params["location"] = self.location
 
         try:
-            span_creator = SpanCreator()
-            attributes = {"path": self.path}
-            with span_creator.create(
-                name="BigQuery.job.exists", attributes=attributes, job_ref=self
+            span_attributes = {"path": self.path}
+            with create_span(
+                name="BigQuery.job.exists", attributes=span_attributes, job_ref=self
             ):
                 client._call_api(
                     retry,
@@ -714,10 +712,9 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         extra_params = {}
         if self.location:
             extra_params["location"] = self.location
-        span_creator = SpanCreator()
-        attributes = {"path": self.path}
-        with span_creator.create(
-            name="BigQuery.job.reload", attributes=attributes, job_ref=self
+        span_attributes = {"path": self.path}
+        with create_span(
+            name="BigQuery.job.reload", attributes=span_attributes, job_ref=self
         ):
             api_response = client._call_api(
                 retry,
@@ -753,10 +750,9 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             extra_params["location"] = self.location
 
         path = "{}/cancel".format(self.path)
-        span_creator = SpanCreator()
-        attributes = {"path": path}
-        with span_creator.create(
-            name="BigQuery.job.cancel", attributes=attributes, job_ref=self
+        span_attributes = {"path": path}
+        with create_span(
+            name="BigQuery.job.cancel", attributes=span_attributes, job_ref=self
         ):
             api_response = client._call_api(
                 retry,

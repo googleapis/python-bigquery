@@ -29,17 +29,17 @@ def test_opentelemetry_not_installed(setup):
     temp_module = sys.modules["opentelemetry"]
     sys.modules["opentelemetry"] = None
     reload(opentelemetry_tracing)
-    span_creator = opentelemetry_tracing.SpanCreator()
-    with span_creator.create("No-op for opentelemetry") as span:
+    with opentelemetry_tracing.create_span("No-op for opentelemetry") as span:
         assert span is None
     sys.modules["opentelemetry"] = temp_module
     reload(opentelemetry_tracing)
 
 
 def test_opentelemetry_success(setup):
-    span_creator = opentelemetry_tracing.SpanCreator()
-    expected_attributes = {"foo": "bar", "db.system": "bigquery"}
-    with span_creator.create(TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES,) as span:
+    expected_attributes = {"foo": "bar", "db.system": "BigQuery"}
+    with opentelemetry_tracing.create_span(
+        TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES,
+    ) as span:
         if span is None:
             span_list = setup.get_finished_spans()
             print(span_list)
@@ -56,14 +56,13 @@ def test_default_client_attributes(setup):
         project="test_project", credentials=mock_credentials, location="test_location"
     )
 
-    span_creator = opentelemetry_tracing.SpanCreator()
     expected_attributes = {
         "foo": "bar",
-        "db.system": "bigquery",
+        "db.system": "BigQuery",
         "db.name": "test_project",
         "location": "test_location",
     }
-    with span_creator.create(
+    with opentelemetry_tracing.create_span(
         TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, client=test_client
     ) as span:
         if span is None:
@@ -88,10 +87,8 @@ def test_default_job_attributes(setup):
     )
     test_job = job._AsyncJob(job_id=test_job_reference, client=test_client)
 
-    span_creator = opentelemetry_tracing.SpanCreator()
-    # TODO add assertions for attributes being equal
     expected_attributes = {
-        "db.system": "bigquery",
+        "db.system": "BigQuery",
         "db.name": "test_project_id",
         "location": "test_location",
         "num_child_jobs": "0",
@@ -99,7 +96,7 @@ def test_default_job_attributes(setup):
         "foo": "bar",
     }
 
-    with span_creator.create(
+    with opentelemetry_tracing.create_span(
         TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, job_ref=test_job
     ) as span:
         if span is None:

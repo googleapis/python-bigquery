@@ -106,28 +106,19 @@ Perform a query
 Instrumenting With OpenTelemetry
 --------------------------------
 
-This application uses OpenTelmetry to output tracing data from
-api calls to BigQuery. To enable OpenTelemetry tracing in
-the BigQuery client the following PyPi packages need to be installed:
+This application uses `OpenTelemetry`_
+to output tracing data from
+API calls to BigQuery. To enable OpenTelemetry tracing in
+the BigQuery client the following PyPI packages need to be installed:
+
+.. _OpenTelemetry: https://opentelemetry.io
 
 .. code-block:: console
 
-    pip install opentelemetry-api
+    pip install google-cloud-bigquery[opentelemetry]
 
-.. code-block:: console
-
-    pip install opentelemetry-sdk
-
-.. code-block:: console
-
-    pip install opentelemetry-instrumentaion
-
-.. code-block:: console
-
-    pip install opentelemetry-exporter-cloud_trace
-
-After installation, OpenTelemetry can now be used in the BigQuery
-client and in BigQuery jobs. First however an exporter must be
+After installation, OpenTelemetry can be used in the BigQuery
+client and in BigQuery jobs. First, however, an exporter must be
 specified for where the trace data will be outputted to. An example of this
 can be found here:
 
@@ -135,11 +126,11 @@ can be found here:
 
     from opentelemetry import trace
     from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import SimpleExportSpanProcessor
+    from opentelemetry.sdk.trace.export import BatchExportSpanProcessor
     from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
     trace.set_tracer_provider(TracerProvider())
     trace.get_tracer_provider().add_span_processor(
-        SimpleExportSpanProcessor(CloudTraceSpanExporter())
+        BatchExportSpanProcessor(CloudTraceSpanExporter())
     )
 
 In this example all tracing data will be published to the Google

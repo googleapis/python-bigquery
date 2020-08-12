@@ -42,7 +42,6 @@ def test_opentelemetry_success(setup):
     ) as span:
         if span is None:
             span_list = setup.get_finished_spans()
-            print(span_list)
             assert len(span_list) == 1
         assert span.name == TEST_SPAN_NAME
         assert span.attributes == expected_attributes
@@ -67,7 +66,6 @@ def test_default_client_attributes(setup):
     ) as span:
         if span is None:
             span_list = setup.get_finished_spans()
-            print(span_list)
             assert len(span_list) == 1
         assert span.name == TEST_SPAN_NAME
         assert span.attributes == expected_attributes
@@ -101,7 +99,6 @@ def test_default_job_attributes(setup):
     ) as span:
         if span is None:
             span_list = setup.get_finished_spans()
-            print(span_list[0])
             assert len(span_list) == 1
         assert span.name == TEST_SPAN_NAME
         assert span.attributes == expected_attributes

@@ -61,10 +61,10 @@ extras = {
         "llvmlite <= 0.31.0;python_version<'3.6'",
     ],
     "opentelemetry": [
-        "opentelemetry-api",
-        "opentelemetry-sdk",
-        "opentelemetry-instrumentaion",
-        "opentelemetry-exporter-cloud-trace",
+        "opentelemetry-api == 0.9b0",
+        "opentelemetry-sdk == 0.9b0",
+        "opentelemetry-instrumentation == 0.9b0 ",
+        "opentelemetry-exporter-cloud-trace == 0.110",
     ],
 }
 

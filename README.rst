@@ -134,10 +134,10 @@ can be found here:
     )
 
 In this example all tracing data will be published to the Google
-Cloud trace console. For more information on OpenTelemetry, please consult the `OpenTelemetry documentation`_.
+`Cloud Trace`_ console. For more information on OpenTelemetry, please consult the `OpenTelemetry documentation`_.
 
 .. _OpenTelemetry documentation: https://opentelemetry-python.readthedocs.io
-
+.. _Cloud Trace: https://cloud.google.com/trace
 
 
 

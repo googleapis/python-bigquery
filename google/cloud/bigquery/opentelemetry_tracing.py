@@ -35,32 +35,59 @@ except ImportError:
     HAS_OPENTELEMETRY = False
 
 
+__default_attributes = {
+    "db.system": "BigQuery",
+}
+
+
 @contextmanager
 def create_span(name, attributes=None, client=None, job_ref=None):
+    """Creates a ContextManager for a Span to be exported to the configured exporter. If no configuration
+        exists yields None.
+
+            Args:
+                name (str): Name that will be set for the span being created
+                attributes(Optional[dict]):
+                    Additional attributes that pertain to
+                    the specific API call (i.e. not a default attribute)
+                client (Optional[google.cloud.bigquery.client.Client]):
+                    Pass in a Client object to extract any attributes that may be
+                    relevant to it and add them to the created spans.
+                job_ref(Optional[google.cloud.bigquery.job._AsyncJob])
+                    Pass in a _AsyncJob object to extract any attributes that may be
+                    relevant to it and add them to the created spans.
+
+            Yields:
+                opentelemetry.trace.Span: Yields the newly created Span.
+
+            Raises:
+                google.api_core.exceptions.GoogleAPICallError:
+                    Raised if a span could not be yielded or issue with call to
+                    OpenTelemetry.
+            """
     if not HAS_OPENTELEMETRY:
         yield None
         return
-
-    default_attributes = {
-        "db.system": "BigQuery",
-    }
 
     tracer = trace.get_tracer(__name__)
 
     if client:
         client_attributes = _set_client_attributes(client)
-        default_attributes.update(client_attributes)
+        __default_attributes.update(client_attributes)
     elif job_ref:
         job_attributes = _set_job_attributes(job_ref)
-        default_attributes.update(job_attributes)
+        __default_attributes.update(job_attributes)
 
     if attributes:
-        default_attributes.update(attributes)
+        __default_attributes.update(attributes)
 
     # yield new span value
-    with tracer.start_as_current_span(name=name, attributes=default_attributes) as span:
+    with tracer.start_as_current_span(
+        name=name, attributes=__default_attributes
+    ) as span:
         try:
             yield span
+            span.set_status(Status(http_status_to_canonical_code(200)))
         except GoogleAPICallError as error:
             if error.code is not None:
                 span.set_status(Status(http_status_to_canonical_code(error.code)))

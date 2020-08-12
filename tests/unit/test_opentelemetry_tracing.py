@@ -12,7 +12,7 @@ from opentelemetry.sdk.trace.export import SimpleExportSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 TEST_SPAN_NAME = "bar"
-TEST_SPAN_ATTRIBUTES = {"foo": "bar"}
+TEST_SPAN_ATTRIBUTES = {"foo": "baz"}
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def test_opentelemetry_not_installed(setup):
 
 
 def test_opentelemetry_success(setup):
-    expected_attributes = {"foo": "bar", "db.system": "BigQuery"}
+    expected_attributes = {"foo": "baz", "db.system": "BigQuery"}
     with opentelemetry_tracing.create_span(
         TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES,
     ) as span:
@@ -56,7 +56,7 @@ def test_default_client_attributes(setup):
     )
 
     expected_attributes = {
-        "foo": "bar",
+        "foo": "baz",
         "db.system": "BigQuery",
         "db.name": "test_project",
         "location": "test_location",
@@ -91,7 +91,7 @@ def test_default_job_attributes(setup):
         "location": "test_location",
         "num_child_jobs": "0",
         "job_id": "test_job_id",
-        "foo": "bar",
+        "foo": "baz",
     }
 
     with opentelemetry_tracing.create_span(

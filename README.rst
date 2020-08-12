@@ -106,8 +106,7 @@ Perform a query
 Instrumenting With OpenTelemetry
 --------------------------------
 
-This application uses `OpenTelemetry`_
-to output tracing data from
+This application uses `OpenTelemetry`_ to output tracing data from
 API calls to BigQuery. To enable OpenTelemetry tracing in
 the BigQuery client the following PyPI packages need to be installed:
 

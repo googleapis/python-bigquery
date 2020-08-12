@@ -35,7 +35,7 @@ except ImportError:
     HAS_OPENTELEMETRY = False
 
 
-__default_attributes = {
+_default_attributes = {
     "db.system": "BigQuery",
 }
 
@@ -73,17 +73,17 @@ def create_span(name, attributes=None, client=None, job_ref=None):
 
     if client:
         client_attributes = _set_client_attributes(client)
-        __default_attributes.update(client_attributes)
+        _default_attributes.update(client_attributes)
     elif job_ref:
         job_attributes = _set_job_attributes(job_ref)
-        __default_attributes.update(job_attributes)
+        _default_attributes.update(job_attributes)
 
     if attributes:
-        __default_attributes.update(attributes)
+        _default_attributes.update(attributes)
 
     # yield new span value
     with tracer.start_as_current_span(
-        name=name, attributes=__default_attributes
+        name=name, attributes=_default_attributes
     ) as span:
         try:
             yield span

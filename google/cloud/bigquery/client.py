@@ -288,7 +288,7 @@ class Client(ClientWithProject):
         path = "/projects"
         span_attributes = {"path": path}
         with create_span(
-            name="BigQuery.list_projects", attributes=span_attributes, client=self
+            name="BigQuery.listProjects", attributes=span_attributes, client=self
         ):
             api_request = functools.partial(self._call_api, retry, timeout=timeout)
         return page_iterator.HTTPIterator(
@@ -358,7 +358,7 @@ class Client(ClientWithProject):
         span_attributes = {"path": path, "page_token": page_token}
 
         with create_span(
-            name="BigQuery.list_datasets", attributes=span_attributes, client=self
+            name="BigQuery.listDatasets", attributes=span_attributes, client=self
         ):
             api_request = functools.partial(self._call_api, retry, timeout=timeout)
         return page_iterator.HTTPIterator(
@@ -635,7 +635,7 @@ class Client(ClientWithProject):
         path = dataset_ref.path
         span_attributes = {"path": path}
         with create_span(
-            name="BigQuery.createTable", attributes=span_attributes, client=self
+            name="BigQuery.getDataset", attributes=span_attributes, client=self
         ):
             api_response = self._call_api(
                 retry, method="GET", path=path, timeout=timeout
@@ -700,7 +700,7 @@ class Client(ClientWithProject):
         path = "{}:testIamPermissions".format(table.path)
         span_attributes = {"path": path, "body": body}
         with create_span(
-            name="BigQuery.testIamPermissions", attributes=span_attributes, client=self
+            name="BigQuery.testIAMPermissions", attributes=span_attributes, client=self
         ):
             response = self._call_api(
                 retry, method="POST", path=path, data=body, timeout=timeout,

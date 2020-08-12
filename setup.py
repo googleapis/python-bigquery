@@ -64,7 +64,7 @@ extras = {
         "opentelemetry-api == 0.9b0",
         "opentelemetry-sdk == 0.9b0",
         "opentelemetry-instrumentation == 0.9b0 ",
-        "opentelemetry-exporter-cloud-trace == 0.110",
+        "opentelemetry-exporter-cloud-trace == 0.9b0",
     ],
 }
 

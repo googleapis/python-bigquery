@@ -39,9 +39,31 @@ _default_attributes = {
     "db.system": "BigQuery",
 }
 
+tracer = trace.get_tracer(__name__)
+
+
 
 @contextmanager
 def create_span(name, attributes=None, client=None, job_ref=None):
+    # yield new span value
+    if not HAS_OPENTELEMETRY:
+        yield None
+        return
+
+    final_attributes = _get_final_span_attributes(attributes, client, job_ref)
+    with tracer.start_as_current_span(
+            name=name, attributes=final_attributes
+    ) as span:
+        try:
+            yield span
+            span.set_status(Status(http_status_to_canonical_code(200)))
+        except GoogleAPICallError as error:
+            if error.code is not None:
+                span.set_status(Status(http_status_to_canonical_code(error.code)))
+            raise
+
+
+def _get_final_span_attributes(attributes=None, client=None, job_ref=None):
     """Creates a ContextManager for a Span to be exported to the configured exporter. If no configuration
         exists yields None.
 
@@ -65,11 +87,7 @@ def create_span(name, attributes=None, client=None, job_ref=None):
                     Raised if a span could not be yielded or issue with call to
                     OpenTelemetry.
             """
-    if not HAS_OPENTELEMETRY:
-        yield None
-        return
 
-    tracer = trace.get_tracer(__name__)
 
     if client:
         client_attributes = _set_client_attributes(client)
@@ -81,17 +99,7 @@ def create_span(name, attributes=None, client=None, job_ref=None):
     if attributes:
         _default_attributes.update(attributes)
 
-    # yield new span value
-    with tracer.start_as_current_span(
-        name=name, attributes=_default_attributes
-    ) as span:
-        try:
-            yield span
-            span.set_status(Status(http_status_to_canonical_code(200)))
-        except GoogleAPICallError as error:
-            if error.code is not None:
-                span.set_status(Status(http_status_to_canonical_code(error.code)))
-            raise
+    return _default_attributes
 
 
 def _set_client_attributes(client):
@@ -112,3 +120,6 @@ def _set_job_attributes(job_ref):
         "errorResult": job_ref.error_result,
         "state": job_ref.state,
     }
+
+
+

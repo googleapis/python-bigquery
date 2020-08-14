@@ -679,7 +679,7 @@ class Client(ClientWithProject):
             body["updateMask"] = updateMask
 
         path = "{}:setIamPolicy".format(table.path)
-        span_attributes = {"path": path, "body": body}
+        span_attributes = {"path": path}
         with create_span(
             name="BigQuery.setIAMPolicy", attributes=span_attributes, client=self
         ):

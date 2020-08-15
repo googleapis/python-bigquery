@@ -50,7 +50,7 @@ extras = {
     'pyarrow: platform_system != "Windows" or python_version >= "3.5"': [
         "pyarrow>=1.0.0, <2.0dev; python_version>='3.4'",
         # Pyarrow >= 0.17.0 is not compatible with Python 2 anymore.
-        "pyarrow < 0.17.0; python_version < '3.0'",
+        "pyarrow<2.0.0; python_version < '3.0'",
     ],
     "tqdm": ["tqdm >= 4.0.0, <5.0.0dev"],
     "fastparquet": [

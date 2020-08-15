@@ -290,9 +290,10 @@ class Client(ClientWithProject):
 
         def api_request(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listProjects", attributes=span_attributes, client=self
+                name="BigQuery.listProjects", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
+
         return page_iterator.HTTPIterator(
             client=self,
             api_request=api_request,
@@ -361,9 +362,10 @@ class Client(ClientWithProject):
 
         def api_request(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listDatasets", attributes=span_attributes, client=self
+                name="BigQuery.listDatasets", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
+
         return page_iterator.HTTPIterator(
             client=self,
             api_request=api_request,
@@ -1088,9 +1090,10 @@ class Client(ClientWithProject):
 
         def api_request(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listModels", attributes=span_attributes, client=self
+                name="BigQuery.listModels", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
+
         result = page_iterator.HTTPIterator(
             client=self,
             api_request=api_request,
@@ -1164,9 +1167,10 @@ class Client(ClientWithProject):
 
         def api_requests(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listRoutines", attributes=span_attributes, client=self
+                name="BigQuery.listRoutines", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
+
         result = page_iterator.HTTPIterator(
             client=self,
             api_request=api_requests,
@@ -1240,7 +1244,7 @@ class Client(ClientWithProject):
 
         def api_requests(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listTables", attributes=span_attributes, client=self
+                name="BigQuery.listTables", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
 
@@ -1818,9 +1822,10 @@ class Client(ClientWithProject):
 
         def api_request(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listJobs", attributes=span_attributes, client=self
+                name="BigQuery.listJobs", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
+
         return page_iterator.HTTPIterator(
             client=self,
             api_request=api_request,

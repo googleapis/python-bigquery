@@ -42,7 +42,6 @@ _default_attributes = {
 tracer = trace.get_tracer(__name__)
 
 
-
 @contextmanager
 def create_span(name, attributes=None, client=None, job_ref=None):
     # yield new span value
@@ -88,7 +87,6 @@ def _get_final_span_attributes(attributes=None, client=None, job_ref=None):
                     OpenTelemetry.
             """
 
-
     if client:
         client_attributes = _set_client_attributes(client)
         _default_attributes.update(client_attributes)
@@ -120,6 +118,3 @@ def _set_job_attributes(job_ref):
         "errorResult": job_ref.error_result,
         "state": job_ref.state,
     }
-
-
-

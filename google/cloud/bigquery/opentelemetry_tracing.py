@@ -40,7 +40,6 @@ _default_attributes = {
 }
 
 
-
 @contextmanager
 def create_span(name, attributes=None, client=None, job_ref=None):
     # yield new span value

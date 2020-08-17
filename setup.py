@@ -31,7 +31,7 @@ release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
     'enum34; python_version < "3.4"',
     "google-api-core >= 1.21.0, < 2.0dev",
-    "google-cloud-core >= 1.1.0, < 2.0dev",
+    "google-cloud-core >= 1.4.1, < 2.0dev",
     "google-resumable-media >= 0.5.0, < 2.0dev",
     "six >=1.13.0,< 2.0.0dev",
 ]
@@ -48,7 +48,9 @@ extras = {
     "pandas": ["pandas>=0.17.1"],
     # Exclude PyArrow dependency from Windows Python 2.7.
     'pyarrow: platform_system != "Windows" or python_version >= "3.5"': [
-        "pyarrow>=0.17.0"
+        "pyarrow>=1.0.0, <2.0dev; python_version>='3.4'",
+        # Pyarrow >= 0.17.0 is not compatible with Python 2 anymore.
+        "pyarrow < 0.17.0; python_version < '3.0'",
     ],
     "tqdm": ["tqdm >= 4.0.0, <5.0.0dev"],
     "fastparquet": [

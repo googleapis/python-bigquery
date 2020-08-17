@@ -43,6 +43,7 @@ except ImportError:  # pragma: NO COVER
 from google.cloud import bigquery
 from google.cloud.bigquery import job
 from google.cloud.bigquery import table
+from google.cloud.bigquery.ipython_magics import line_arg_parser as lap
 from google.cloud.bigquery.ipython_magics import magics
 from tests.unit.helpers import make_connection
 from test_utils.imports import maybe_fail_import
@@ -1244,7 +1245,7 @@ def test_bigquery_magic_with_improperly_formatted_params():
 
     sql = "SELECT @num AS num"
 
-    with pytest.raises(SyntaxError):
+    with pytest.raises(lap.exceptions.QueryParamsParseError):
         ip.run_cell_magic("bigquery", "--params {17}", sql)
 
 

@@ -33,7 +33,7 @@ def default(session):
     """
     # Install all test dependencies, then install local packages in-place.
     session.install(
-        "mock", "pytest", "google-cloud-testutils", "pytest-cov", "freezegun",
+        "mock", "pytest", "google-cloud-testutils", "pytest-cov", "freezegun"
     )
     session.install("grpcio")
 

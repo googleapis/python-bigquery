@@ -39,7 +39,6 @@ _default_attributes = {
     "db.system": "BigQuery",
 }
 
-tracer = trace.get_tracer(__name__)
 
 
 @contextmanager
@@ -48,6 +47,7 @@ def create_span(name, attributes=None, client=None, job_ref=None):
     if not HAS_OPENTELEMETRY:
         yield None
         return
+    tracer = trace.get_tracer(__name__)
 
     final_attributes = _get_final_span_attributes(attributes, client, job_ref)
     with tracer.start_as_current_span(name=name, attributes=final_attributes) as span:

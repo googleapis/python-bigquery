@@ -22,7 +22,7 @@ import setuptools
 
 name = "google-cloud-bigquery"
 description = "Google BigQuery API client library"
-version = "1.26.1"
+version = "1.27.1"
 # Should be one of:
 # 'Development Status :: 3 - Alpha'
 # 'Development Status :: 4 - Beta'
@@ -47,8 +47,11 @@ extras = {
     ],
     "pandas": ["pandas>=0.17.1"],
     # Exclude PyArrow dependency from Windows Python 2.7.
-    'pyarrow: platform_system != "Windows" or python_version >= "3.5"': [
-        "pyarrow>=1.0.0, <2.0dev; python_version>='3.4'",
+    'pyarrow: platform_system == "Windows"': [
+        "pyarrow>=1.0.0, <2.0dev; python_version>='3.5'",
+    ],
+    'pyarrow: platform_system != "Windows"': [
+        "pyarrow>=1.0.0, <2.0dev; python_version>='3.5'",
         # Pyarrow >= 0.17.0 is not compatible with Python 2 anymore.
         "pyarrow < 0.17.0; python_version < '3.0'",
     ],
@@ -59,8 +62,8 @@ extras = {
         # llvmlite >= 0.32.0 cannot be installed on Python 3.5 and below
         # (building the wheel fails), thus needs to be restricted.
         # See: https://github.com/googleapis/python-bigquery/issues/78
-        "llvmlite <= 0.33.0;python_version>='3.6'",
-        "llvmlite <= 0.31.0;python_version<'3.6'",
+        "llvmlite<=0.34.0;python_version>='3.6'",
+        "llvmlite<=0.31.0;python_version<'3.6'",
     ],
 }
 

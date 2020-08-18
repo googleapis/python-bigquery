@@ -258,6 +258,7 @@ class TestClient(unittest.TestCase):
                     timeout_ms=500,
                     timeout=42,
                 )
+
             final_attributes.assert_called_once_with(
                 {"path": path}, client, None
             )  # pragma: NO COVER
@@ -324,6 +325,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             service_account_email = client.get_service_account_email(timeout=7.5)
+
         final_attributes.assert_called_once_with({"path": path}, client, None)
         conn.api_request.assert_called_once_with(method="GET", path=path, timeout=7.5)
         self.assertEqual(service_account_email, email)
@@ -341,6 +343,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             service_account_email = client.get_service_account_email(project=project)
+
         final_attributes.assert_called_once_with({"path": path}, client, None)
         conn.api_request.assert_called_once_with(method="GET", path=path, timeout=None)
         self.assertEqual(service_account_email, email)
@@ -372,6 +375,7 @@ class TestClient(unittest.TestCase):
                 service_account_email = client.get_service_account_email(
                     retry=retry, timeout=7.5
                 )
+
         final_attributes.assert_called_once_with({"path": api_path}, client, None)
         self.assertEqual(
             service_account_email, "bq-123@bigquery-encryption.iam.gserviceaccount.com"
@@ -646,6 +650,7 @@ class TestClient(unittest.TestCase):
                 "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
             ) as final_attributes:
                 client.get_dataset(dataset_ref)
+
             final_attributes.assert_called_once_with(  # pragma: NO COVER
                 {"path": "/%s" % path}, client, None
             )
@@ -657,6 +662,7 @@ class TestClient(unittest.TestCase):
                 "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
             ) as final_attributes:
                 client.get_dataset(dataset_ref)
+
             final_attributes.assert_called_once_with(  # pragma: NO COVER
                 {"path": "/%s" % path}, client, None
             )
@@ -700,6 +706,7 @@ class TestClient(unittest.TestCase):
                 # Test with a string for dataset ID.
                 dataset_ref.dataset_id
             )
+
         final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
@@ -831,6 +838,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             after = client.create_dataset(before)
+
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
 
         self.assertEqual(after.dataset_id, self.DS_ID)
@@ -975,6 +983,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             after = client.create_dataset(before)
+
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
 
         self.assertEqual(after.dataset_id, self.DS_ID)
@@ -1156,6 +1165,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             dataset = client.create_dataset(self.DS_ID, exists_ok=True)
+
         final_attributes.assert_called_with({"path": get_path}, client, None)
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
@@ -1205,9 +1215,7 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             actual_routine = client.create_routine(routine, timeout=7.5)
 
-        final_attributes.assert_called_once_with(
-            {"path": path}, client, None
-        )
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="POST", path=path, data=resource, timeout=7.5,
@@ -1345,6 +1353,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             got = client.create_table(table)
+
         final_attributes.assert_called_once_with(
             {"path": "/%s" % path, "dataset_id": table.dataset_id}, client, None
         )
@@ -1739,6 +1748,7 @@ class TestClient(unittest.TestCase):
             got = client.create_table(
                 "{}.{}".format(self.DS_ID, self.TABLE_ID), exists_ok=True
             )
+
         final_attributes.assert_called_with({"path": get_path}, client, None)
 
         self.assertEqual(got.project, self.PROJECT)
@@ -1985,9 +1995,7 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             policy = client.get_iam_policy(self.TABLE_REF, timeout=7.5)
 
-        final_attributes.assert_called_once_with(
-            {"path": PATH}, client, None
-        )
+        final_attributes.assert_called_once_with({"path": PATH}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="POST", path=PATH, data=BODY, timeout=7.5
@@ -2062,6 +2070,7 @@ class TestClient(unittest.TestCase):
             returned_policy = client.set_iam_policy(
                 self.TABLE_REF, policy, updateMask=MASK, timeout=7.5
             )
+
         final_attributes.assert_called_once_with({"path": PATH}, client, None)
 
         conn.api_request.assert_called_once_with(
@@ -2164,9 +2173,7 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             client.test_iam_permissions(self.TABLE_REF, PERMISSIONS, timeout=7.5)
 
-        final_attributes.assert_called_once_with(
-            {"path": PATH}, client, None
-        )
+        final_attributes.assert_called_once_with({"path": PATH}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="POST", path=PATH, data=BODY, timeout=7.5
@@ -2240,6 +2247,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             ds2 = client.update_dataset(ds, fields=fields, timeout=7.5,)
+
         final_attributes.assert_called_once_with(
             {"path": "/" + PATH, "fields": json.dumps(fields)}, client, None
         )
@@ -2345,6 +2353,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             updated_model = client.update_model(model, fields, timeout=7.5)
+
         final_attributes.assert_called_once_with(
             {"path": "/" + path, "fields": json.dumps(fields)}, client, None
         )
@@ -2417,6 +2426,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             actual_routine = client.update_routine(routine, fields, timeout=7.5,)
+
         final_attributes.assert_called_once_with(
             {"path": routine.path, "fields": json.dumps(fields)}, client, None
         )
@@ -2503,6 +2513,7 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             updated_table = client.update_table(table, fields, timeout=7.5)
         span_path = "/%s" % path
+
         final_attributes.assert_called_once_with(
             {"path": span_path, "fields": json.dumps(fields)}, client, None
         )
@@ -2542,6 +2553,7 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             client.update_table(table, [])
+
         final_attributes.assert_called_once_with(
             {"path": "/" + path, "fields": json.dumps([])}, client, None
         )
@@ -2571,7 +2583,9 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, ["newAlphaProperty"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": json.dumps(["newAlphaProperty"])}, client, None
+            {"path": "/%s" % path, "fields": json.dumps(["newAlphaProperty"])},
+            client,
+            None,
         )
 
         conn.api_request.assert_called_once_with(
@@ -2606,7 +2620,9 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, ["view_use_legacy_sql"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": json.dumps(["view_use_legacy_sql"])}, client, None
+            {"path": "/%s" % path, "fields": json.dumps(["view_use_legacy_sql"])},
+            client,
+            None,
         )
 
         conn.api_request.assert_called_once_with(
@@ -2676,7 +2692,9 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, updated_properties)
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": json.dumps(updated_properties)}, client, None
+            {"path": "/%s" % path, "fields": json.dumps(updated_properties)},
+            client,
+            None,
         )
 
         self.assertEqual(updated_table.schema, table.schema)
@@ -2731,6 +2749,7 @@ class TestClient(unittest.TestCase):
                     self.TABLE_REF.table_id,
                 )
             )
+
         final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         table.schema = None
@@ -2779,7 +2798,10 @@ class TestClient(unittest.TestCase):
             table2 = client.update_table(table, ["description", "friendly_name"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": json.dumps(["description", "friendly_name"])},
+            {
+                "path": "/%s" % path,
+                "fields": json.dumps(["description", "friendly_name"]),
+            },
             client,
             None,
         )
@@ -3268,6 +3290,7 @@ class TestClient(unittest.TestCase):
             client.delete_model(
                 "{}.{}".format(self.DS_ID, self.MODEL_ID), not_found_ok=True
             )
+
         final_attributes.assert_called_once_with(
             {"path": path, "not_found_okay": True}, client, None
         )
@@ -3346,6 +3369,7 @@ class TestClient(unittest.TestCase):
             client.delete_routine(
                 "routines-project.test_routines.test_routine", not_found_ok=True
             )
+
         final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(

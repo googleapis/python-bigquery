@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC All rights reserved.
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ try:
 
 except ImportError:
     Logger.info(
-        "This service is instrumented using opentelemetry."
-        "Opentelemetry could not be imported, please"
+        "This service is instrumented using OpenTelemetry."
+        "Opentelemetry could not be imported; please"
         "add opentelemetry-api and opentelemetry-instrumentation"
-        "packages, in order to get Big Query Tracing data"
+        "packages in order to get Big Query Tracing data."
     )
 
     HAS_OPENTELEMETRY = False
@@ -46,13 +46,13 @@ def create_span(name, attributes=None, client=None, job_ref=None):
 
             Args:
                 name (str): Name that will be set for the span being created
-                attributes(Optional[dict]):
+                attributes (Optional[dict]):
                     Additional attributes that pertain to
                     the specific API call (i.e. not a default attribute)
                 client (Optional[google.cloud.bigquery.client.Client]):
                     Pass in a Client object to extract any attributes that may be
                     relevant to it and add them to the created spans.
-                job_ref(Optional[google.cloud.bigquery.job._AsyncJob])
+                job_ref (Optional[google.cloud.bigquery.job._AsyncJob])
                     Pass in a _AsyncJob object to extract any attributes that may be
                     relevant to it and add them to the created spans.
 
@@ -85,7 +85,7 @@ def _get_final_span_attributes(attributes=None, client=None, job_ref=None):
     if client:
         client_attributes = _set_client_attributes(client)
         _default_attributes.update(client_attributes)
-    elif job_ref:
+    if job_ref:
         job_attributes = _set_job_attributes(job_ref)
         _default_attributes.update(job_attributes)
 

@@ -258,7 +258,9 @@ class TestClient(unittest.TestCase):
                     timeout_ms=500,
                     timeout=42,
                 )
-            final_attributes.assert_called_once_with({"path": path}, client, None)
+            final_attributes.assert_called_once_with(
+                {"path": path}, client, None
+            )  # pragma: NO COVER
 
         conn.api_request.assert_called_once_with(
             method="GET",
@@ -673,7 +675,7 @@ class TestClient(unittest.TestCase):
                 "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
             ) as final_attributes:
                 client.get_dataset(dataset_ref)
-            final_attributes.assert_called_once_with(
+            final_attributes.assert_called_once_with(  # pragma: NO COVER
                 {"path": "/%s" % path}, client, None
             )
 
@@ -684,7 +686,7 @@ class TestClient(unittest.TestCase):
                 "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
             ) as final_attributes:
                 client.get_dataset(dataset_ref)
-            final_attributes.assert_called_once_with(
+            final_attributes.assert_called_once_with(  # pragma: NO COVER
                 {"path": "/%s" % path}, client, None
             )
 
@@ -698,7 +700,9 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.get_dataset(dataset_ref)
 
-            final_attributes.assert_called_once_with({"path": path}, client, None)
+            final_attributes.assert_called_once_with(
+                {"path": path}, client, None
+            )  # pragma: NO COVER
 
         # Retryable reason, but retry is disabled.
         client._connection = make_connection(
@@ -710,7 +714,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.get_dataset(dataset_ref, retry=None)
 
-            final_attributes.assert_called_once_with(
+            final_attributes.assert_called_once_with(  # pragma: NO COVER
                 {"path": "/%s" % path}, client, None
             )
 
@@ -1157,7 +1161,9 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.create_dataset(self.DS_ID)
 
-            final_attributes.assert_called_once_with({"path": "path"}, client, None)
+            final_attributes.assert_called_once_with(
+                {"path": "path"}, client, None
+            )  # pragma: NO COVER
 
     def test_create_dataset_alreadyexists_w_exists_ok_true(self):
         post_path = "/projects/{}/datasets".format(self.PROJECT)
@@ -1257,7 +1263,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.create_routine(routine)
 
-            final_attributes.assert_called_once_with(
+            final_attributes.assert_called_once_with(  # pragma: NO COVER
                 {"path": path, "exists_okay": False}, client, None
             )
 
@@ -1721,7 +1727,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
 
-            final_attributes.assert_called_with(
+            final_attributes.assert_called_with(  # pragma: NO COVER
                 {"path": post_path, "dataset_id": self.TABLE_REF.dataset_id},
                 client,
                 None,
@@ -2137,7 +2143,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.set_iam_policy(self.TABLE_REF, invalid_policy_repr)
 
-            final_attributes.assert_called_once_with(
+            final_attributes.assert_called_once_with(  # pragma: NO COVER
                 {"path": "{}:setIamPolicy".format(self.TABLE_REF.path)}, client, None
             )
 
@@ -2162,7 +2168,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.set_iam_policy(table_resource_string, policy)
 
-            final_attributes.assert_called_once_with(
+            final_attributes.assert_called_once_with(  # pragma: NO COVER
                 {"path": table_resource_string}, client, None
             )
 
@@ -3246,7 +3252,9 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.delete_dataset(self.DS_ID)
 
-            final_attributes.assert_called_once_with({"path": path}, client, None)
+            final_attributes.assert_called_once_with(
+                {"path": path}, client, None
+            )  # pragma: NO COVER
 
         conn.api_request.assert_called_with(
             method="DELETE", path=path, query_params={}, timeout=None
@@ -3397,7 +3405,9 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.delete_routine("routines-project.test_routines.test_routine")
 
-            final_attributes.assert_called_once_with({"path": path}, client, None)
+            final_attributes.assert_called_once_with(
+                {"path": path}, client, None
+            )  # pragma: NO COVER
 
         conn.api_request.assert_called_with(
             method="DELETE", path=path, timeout=None,
@@ -3483,7 +3493,9 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.delete_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
 
-            final_attributes.assert_called_once_with({"path": path}, client, None)
+            final_attributes.assert_called_once_with(
+                {"path": path}, client, None
+            )  # pragma: NO COVER
 
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 

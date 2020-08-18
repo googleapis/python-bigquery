@@ -3,14 +3,16 @@ import pytest
 
 import mock
 
-from google.cloud.bigquery import opentelemetry_tracing, client
+from google.cloud.bigquery import opentelemetry_tracing
 
 try:
     import opentelemetry
     from opentelemetry import trace
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import SimpleExportSpanProcessor
-    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+        InMemorySpanExporter,
+    )
 except ImportError:
     opentelemetry = None
 
@@ -47,7 +49,7 @@ def test_opentelemetry_success(setup):
     expected_attributes = {"foo": "baz", "db.system": "BigQuery"}
 
     with opentelemetry_tracing.create_span(
-            TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, client=None, job_ref=None
+        TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, client=None, job_ref=None
     ) as span:
         assert span is not None
         assert span.name == TEST_SPAN_NAME
@@ -63,11 +65,11 @@ def test_default_client_attributes(setup):
         "db.name": "test_project",
         "location": "test_location",
     }
-    with mock.patch('google.cloud.bigquery.client.Client') as test_client:
-        test_client.project = 'test_project'
-        test_client.location = 'test_location'
+    with mock.patch("google.cloud.bigquery.client.Client") as test_client:
+        test_client.project = "test_project"
+        test_client.location = "test_location"
         with opentelemetry_tracing.create_span(
-                TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, client=test_client
+            TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, client=test_client
         ) as span:
             assert span is not None
             assert span.name == TEST_SPAN_NAME
@@ -85,17 +87,15 @@ def test_default_job_attributes(setup):
         "job_id": "test_job_id",
         "foo": "baz",
     }
-    with mock.patch('google.cloud.bigquery.job._AsyncJob') as test_job_ref:
-        test_job_ref.job_id = 'test_job_id'
-        test_job_ref.location = 'test_location'
-        test_job_ref.project = 'test_project_id'
-        test_job_ref.num_child_jobs = '0'
+    with mock.patch("google.cloud.bigquery.job._AsyncJob") as test_job_ref:
+        test_job_ref.job_id = "test_job_id"
+        test_job_ref.location = "test_location"
+        test_job_ref.project = "test_project_id"
+        test_job_ref.num_child_jobs = "0"
 
         with opentelemetry_tracing.create_span(
-                TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, job_ref=test_job_ref
+            TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, job_ref=test_job_ref
         ) as span:
             assert span is not None
             assert span.name == TEST_SPAN_NAME
             assert span.attributes == expected_attributes
-
-

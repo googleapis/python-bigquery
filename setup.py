@@ -43,28 +43,21 @@ extras = {
         # as `google-api-core[grpc]`. We thus need to explicitly specify it here.
         # See: https://github.com/googleapis/python-bigquery/issues/83
         "grpcio >= 1.8.2, < 2.0dev",
-        "pyarrow>=0.16.0, < 2.0dev",
+        "pyarrow >=0.16.0, < 2.0dev",
     ],
-    "pandas": ["pandas>=0.17.1"],
+    "pandas": ["pandas >= 0.17.1"],
+    "pyarrow: python_version >= '3.5'": ["pyarrow >= 1.0.0, < 2.0dev"],
     # Exclude PyArrow dependency from Windows Python 2.7.
-    'pyarrow: platform_system == "Windows"': [
-        "pyarrow>=1.0.0, <2.0dev; python_version>='3.5'",
+    "pyarrow: platform_system != 'Windows' and python_version < '3.0'": [
+        "pyarrow < 0.17.0",
     ],
-    'pyarrow: platform_system != "Windows"': [
-        "pyarrow>=1.0.0, <2.0dev; python_version>='3.5'",
-        # Pyarrow >= 0.17.0 is not compatible with Python 2 anymore.
-        "pyarrow < 0.17.0; python_version < '3.0'",
-    ],
-    "tqdm": ["tqdm >= 4.0.0, <5.0.0dev"],
-    "fastparquet": [
-        "fastparquet",
-        "python-snappy",
-        # llvmlite >= 0.32.0 cannot be installed on Python 3.5 and below
-        # (building the wheel fails), thus needs to be restricted.
-        # See: https://github.com/googleapis/python-bigquery/issues/78
-        "llvmlite<=0.34.0;python_version>='3.6'",
-        "llvmlite<=0.31.0;python_version<'3.6'",
-    ],
+    "tqdm": ["tqdm >= 4.0.0, < 5.0.0dev"],
+    "fastparquet": ["fastparquet", "python-snappy"],
+    "fastparquet: python_version >= '3.6'": ["llvmlite<=0.34.0"],
+    # llvmlite >= 0.32.0 cannot be installed on Python 3.5 and below
+    # (building the wheel fails), thus needs to be restricted.
+    # See: https://github.com/googleapis/python-bigquery/issues/78
+    "fastparquet: python_version < '3.6'": ["llvmlite<=0.31.0"],
 }
 
 all_extras = []

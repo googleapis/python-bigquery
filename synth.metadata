@@ -3,16 +3,30 @@
     {
       "git": {
         "name": ".",
-        "remote": "git@github.com:tmatsuo/python-bigquery.git",
-        "sha": "5ed817523a85a6f332951e10c0bf7dbb86d7e1cf"
+        "remote": "https://github.com/googleapis/python-bigquery.git",
+        "sha": "06a581545040f961a21e92fbe9db640a47829ea2"
       }
     },
     {
       "git": {
         "name": "googleapis",
         "remote": "https://github.com/googleapis/googleapis.git",
-        "sha": "868615a5c1c1059c636bb3d82a555edb1d5a251e",
-        "internalRef": "324294521"
+        "sha": "0dc0a6c0f1a9f979bc0690f0caa5fbafa3000c2c",
+        "internalRef": "327026955"
+      }
+    },
+    {
+      "git": {
+        "name": "synthtool",
+        "remote": "https://github.com/googleapis/synthtool.git",
+        "sha": "c3caf0704f25a0c365f1c315e804a30b87c62a75"
+      }
+    },
+    {
+      "git": {
+        "name": "synthtool",
+        "remote": "https://github.com/googleapis/synthtool.git",
+        "sha": "c3caf0704f25a0c365f1c315e804a30b87c62a75"
       }
     }
   ],

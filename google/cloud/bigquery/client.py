@@ -80,6 +80,7 @@ from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
 
+
 _DEFAULT_CHUNKSIZE = 1048576  # 1024 * 1024 B = 1 MB
 _MAX_MULTIPART_SIZE = 5 * 1024 * 1024
 _DEFAULT_NUM_RETRIES = 6
@@ -352,11 +353,11 @@ class Client(ClientWithProject):
             # TODO: consider supporting a dict of label -> value for filter,
             # and converting it into a string here.
             extra_params["filter"] = filter
-
+        path = "/projects/%s/datasets" % (project,)
         return page_iterator.HTTPIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),
-            path="/projects/%s/datasets" % (project,),
+            path=path,
             item_to_value=_item_to_dataset,
             items_key="datasets",
             page_token=page_token,
@@ -619,7 +620,6 @@ class Client(ClientWithProject):
             google.cloud.bigquery.dataset.Dataset:
                 A ``Dataset`` instance.
         """
-
         if isinstance(dataset_ref, str):
             dataset_ref = DatasetReference.from_string(
                 dataset_ref, default_project=self.project
@@ -758,7 +758,6 @@ class Client(ClientWithProject):
             google.cloud.bigquery.routine.Routine:
                 A ``Routine`` instance.
         """
-
         if isinstance(routine_ref, str):
             routine_ref = RoutineReference.from_string(
                 routine_ref, default_project=self.project
@@ -1068,10 +1067,11 @@ class Client(ClientWithProject):
         if not isinstance(dataset, (Dataset, DatasetReference)):
             raise TypeError("dataset must be a Dataset, DatasetReference, or string")
 
+        path = "%s/models" % dataset.path
         result = page_iterator.HTTPIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),
-            path="%s/models" % dataset.path,
+            path=path,
             item_to_value=_item_to_model,
             items_key="models",
             page_token=page_token,
@@ -1132,10 +1132,11 @@ class Client(ClientWithProject):
         if not isinstance(dataset, (Dataset, DatasetReference)):
             raise TypeError("dataset must be a Dataset, DatasetReference, or string")
 
+        path = "{}/routines".format(dataset.path)
         result = page_iterator.HTTPIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),
-            path="{}/routines".format(dataset.path),
+            path=path,
             item_to_value=_item_to_routine,
             items_key="routines",
             page_token=page_token,
@@ -1196,10 +1197,11 @@ class Client(ClientWithProject):
         if not isinstance(dataset, (Dataset, DatasetReference)):
             raise TypeError("dataset must be a Dataset, DatasetReference, or string")
 
+        path = "%s/tables" % dataset.path
         result = page_iterator.HTTPIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),
-            path="%s/tables" % dataset.path,
+            path=path,
             item_to_value=_item_to_table,
             items_key="tables",
             page_token=page_token,
@@ -1763,10 +1765,11 @@ class Client(ClientWithProject):
         if project is None:
             project = self.project
 
+        path = "/projects/%s/jobs" % (project,)
         return page_iterator.HTTPIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),
-            path="/projects/%s/jobs" % (project,),
+            path=path,
             item_to_value=_item_to_job,
             items_key="jobs",
             page_token=page_token,

@@ -1937,6 +1937,7 @@ class TestClient(unittest.TestCase):
             client_info=user_agent_override,
             _http=http,
         )
+
         client.get_table(self.TABLE_REF)
 
         expected_user_agent = user_agent_override.to_user_agent()
@@ -2791,7 +2792,7 @@ class TestClient(unittest.TestCase):
             table2 = client.update_table(table, ["description", "friendly_name"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": ["description", "friendly_name"],},
+            {"path": "/%s" % path, "fields": ["description", "friendly_name"]},
             client,
             None,
         )
@@ -2911,6 +2912,7 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         conn = client._connection = make_connection({})
+
         iterator = client.list_routines("test-routines.test_routines", timeout=7.5)
         page = six.next(iterator.pages)
         routines = list(page)

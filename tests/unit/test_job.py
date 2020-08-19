@@ -2207,7 +2207,6 @@ class TestLoadJob(unittest.TestCase, _Base):
         client._connection = connection
 
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client)
-
         job.result()
 
         self.assertEqual(len(connection.api_request.call_args_list), 2)

@@ -35,7 +35,7 @@ except ImportError:
 
     HAS_OPENTELEMETRY = False
 
-_default_attributes = frozendict({"db.system": "BigQuery",})
+_default_attributes = frozendict({"db.system": "BigQuery"})
 
 
 @contextmanager

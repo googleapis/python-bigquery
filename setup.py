@@ -22,7 +22,7 @@ import setuptools
 
 name = "google-cloud-bigquery"
 description = "Google BigQuery API client library"
-version = "1.27.1"
+version = "1.27.2"
 # Should be one of:
 # 'Development Status :: 3 - Alpha'
 # 'Development Status :: 4 - Beta'
@@ -47,13 +47,10 @@ extras = {
     ],
     "pandas": ["pandas>=0.17.1"],
     # Exclude PyArrow dependency from Windows Python 2.7.
-    'pyarrow: platform_system == "Windows"': [
-        "pyarrow>=1.0.0, <2.0dev; python_version>='3.5'",
-    ],
-    'pyarrow: platform_system != "Windows"': [
-        "pyarrow>=1.0.0, <2.0dev; python_version>='3.5'",
+    "pyarrow": [
+        "pyarrow >= 1.0.0, < 2.0dev; python_version >= '3.5'",
         # Pyarrow >= 0.17.0 is not compatible with Python 2 anymore.
-        "pyarrow < 0.17.0; python_version < '3.0'",
+        "pyarrow < 0.17.0; python_version < '3.0' and platform_system != 'Windows'",
     ],
     "tqdm": ["tqdm >= 4.0.0, <5.0.0dev"],
     "fastparquet": [

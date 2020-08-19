@@ -14,6 +14,7 @@
 
 import logging
 from contextlib import contextmanager
+from frozendict import frozendict
 from google.api_core.exceptions import GoogleAPICallError
 
 Logger = logging.getLogger(__name__)
@@ -34,9 +35,7 @@ except ImportError:
 
     HAS_OPENTELEMETRY = False
 
-_default_attributes = {
-    "db.system": "BigQuery",
-}
+_default_attributes = frozendict({"db.system": "BigQuery",})
 
 
 @contextmanager
@@ -82,17 +81,18 @@ def create_span(name, attributes=None, client=None, job_ref=None):
 
 
 def _get_final_span_attributes(attributes=None, client=None, job_ref=None):
+    final_attributes = {}
+    final_attributes.update(_default_attributes.copy())
     if client:
         client_attributes = _set_client_attributes(client)
-        _default_attributes.update(client_attributes)
+        final_attributes.update(client_attributes)
     if job_ref:
         job_attributes = _set_job_attributes(job_ref)
-        _default_attributes.update(job_attributes)
+        final_attributes.update(job_attributes)
 
     if attributes:
-        _default_attributes.update(attributes)
-
-    return _default_attributes
+        final_attributes.update(attributes)
+    return final_attributes
 
 
 def _set_client_attributes(client):

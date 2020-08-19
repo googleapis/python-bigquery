@@ -1937,7 +1937,6 @@ class TestClient(unittest.TestCase):
             client_info=user_agent_override,
             _http=http,
         )
-        
         client.get_table(self.TABLE_REF)
 
         expected_user_agent = user_agent_override.to_user_agent()

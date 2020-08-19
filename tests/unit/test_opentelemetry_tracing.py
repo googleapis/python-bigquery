@@ -112,3 +112,50 @@ def test_default_job_attributes(setup):
             assert span is not None
             assert span.name == TEST_SPAN_NAME
             assert span.attributes == expected_attributes
+
+
+@pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
+def test_default_no_data_leakage(setup):
+    from google.cloud.bigquery import job
+    import google.auth.credentials
+    from google.cloud.bigquery import client
+
+    mock_credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+    test_client = client.Client(
+        project="test_project", credentials=mock_credentials, location="test_location"
+    )
+
+    expected_attributes = {
+        "foo": "baz",
+        "db.system": "BigQuery",
+        "db.name": "test_project",
+        "location": "test_location",
+    }
+    with opentelemetry_tracing.create_span(
+        TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, client=test_client
+    ) as span:
+        assert span.name == TEST_SPAN_NAME
+        assert span.attributes == expected_attributes
+
+    test_job_reference = job._JobReference(
+        job_id="test_job_id", project="test_project_id", location="test_location"
+    )
+    test_client = client.Client(
+        project="test_project", credentials=mock_credentials, location="test_location"
+    )
+    test_job = job._AsyncJob(job_id=test_job_reference, client=test_client)
+
+    expected_attributes = {
+        "db.system": "BigQuery",
+        "db.name": "test_project_id",
+        "location": "test_location",
+        "num_child_jobs": "0",
+        "job_id": "test_job_id",
+        "foo": "baz",
+    }
+
+    with opentelemetry_tracing.create_span(
+        TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, job_ref=test_job
+    ) as span:
+        assert span.name == TEST_SPAN_NAME
+        assert span.attributes == expected_attributes

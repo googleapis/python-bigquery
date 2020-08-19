@@ -15,6 +15,7 @@
 import logging
 from contextlib import contextmanager
 from frozendict import frozendict
+import json
 from google.api_core.exceptions import GoogleAPICallError
 
 Logger = logging.getLogger(__name__)
@@ -100,16 +101,28 @@ def _set_client_attributes(client):
 
 
 def _set_job_attributes(job_ref):
-    return {
+    job_attributes = {
         "db.name": job_ref.project,
         "location": job_ref.location,
-        "num_child_jobs": str(job_ref.num_child_jobs),
+        "num_child_jobs": job_ref.num_child_jobs,
         "job_id": job_ref.job_id,
         "parent_job_id": job_ref.parent_job_id,
-        "timeCreated": job_ref.created,
-        "timeStarted": job_ref.started,
-        "timeEnded": job_ref.ended,
-        "errors": job_ref.errors,
-        "errorResult": job_ref.error_result,
         "state": job_ref.state,
     }
+    if job_ref.errors is not None:
+        job_attributes["errors"] = json.dumps(job_ref.errors)
+
+    if job_ref.error_result is not None:
+        job_attributes["errorResult"] = json.dumps(job_ref.error_result)
+
+    date_time_format = "%d-%b-%Y (%H:%M:%S.%f)"
+    if job_ref.created is not None:
+        job_attributes["timeCreated"] = job_ref.created.strftime(date_time_format)
+
+    if job_ref.started is not None:
+        job_attributes["timeStarted"] = job_ref.started.strftime(date_time_format)
+
+    if job_ref.ended is not None:
+        job_attributes["timeEnded"] = job_ref.ended.strftime(date_time_format)
+
+    return job_attributes

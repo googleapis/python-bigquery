@@ -15,9 +15,9 @@
 
 import sys
 import pytest
-
+import datetime
 import mock
-
+import json
 from google.cloud.bigquery import opentelemetry_tracing
 
 try:
@@ -92,6 +92,22 @@ def test_default_client_attributes(setup):
 
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
 def test_default_job_attributes(setup):
+    import google.cloud._helpers
+
+    time_created = datetime.datetime(
+        2010, 5, 19, 16, 0, 0, tzinfo=google.cloud._helpers.UTC
+    )
+    started_time = datetime.datetime(
+        2011, 10, 1, 16, 0, 0, tzinfo=google.cloud._helpers.UTC
+    )
+    ended_time = datetime.datetime(
+        2011, 10, 2, 16, 0, 0, tzinfo=google.cloud._helpers.UTC
+    )
+    errors = [{"error": "some_error"}]
+    error_result = [
+        {"errorResult1": "some_error_result1", "errorResult2": "some_error_result2"}
+    ]
+
     expected_attributes = {
         "db.system": "BigQuery",
         "db.name": "test_project_id",
@@ -99,12 +115,26 @@ def test_default_job_attributes(setup):
         "num_child_jobs": "0",
         "job_id": "test_job_id",
         "foo": "baz",
+        "parent_job_id": "parent_job_id",
+        "timeCreated": time_created.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
+        "timeStarted": started_time.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
+        "timeEnded": ended_time.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
+        "errors": json.dumps(errors),
+        "errorResult": json.dumps(error_result),
+        "state": "some_job_state",
     }
     with mock.patch("google.cloud.bigquery.job._AsyncJob") as test_job_ref:
         test_job_ref.job_id = "test_job_id"
         test_job_ref.location = "test_location"
         test_job_ref.project = "test_project_id"
         test_job_ref.num_child_jobs = "0"
+        test_job_ref.parent_job_id = "parent_job_id"
+        test_job_ref.created = time_created
+        test_job_ref.started = started_time
+        test_job_ref.ended = ended_time
+        test_job_ref.errors = errors
+        test_job_ref.error_result = error_result
+        test_job_ref.state = "some_job_state"
 
         with opentelemetry_tracing.create_span(
             TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, job_ref=test_job_ref
@@ -149,7 +179,7 @@ def test_default_no_data_leakage(setup):
         "db.system": "BigQuery",
         "db.name": "test_project_id",
         "location": "test_location",
-        "num_child_jobs": "0",
+        "num_child_jobs": 0,
         "job_id": "test_job_id",
         "foo": "baz",
     }

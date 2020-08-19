@@ -416,6 +416,7 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         client = self._make_one(PROJECT_1, creds)
         conn = client._connection = make_connection(DATA)
+
         iterator = client.list_projects()
         page = six.next(iterator.pages)
         projects = list(page)
@@ -445,7 +446,6 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(DATA)
 
         iterator = client.list_projects(timeout=7.5)
-
         six.next(iterator.pages)
 
         conn.api_request.assert_called_once_with(
@@ -507,8 +507,8 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         client = self._make_one(self.PROJECT, creds)
         conn = client._connection = make_connection(DATA)
-        iterator = client.list_datasets()
 
+        iterator = client.list_datasets()
         page = six.next(iterator.pages)
         datasets = list(page)
         token = iterator.next_page_token
@@ -550,7 +550,6 @@ class TestClient(unittest.TestCase):
         iterator = client.list_datasets(
             include_all=True, filter=FILTER, max_results=3, page_token=TOKEN
         )
-
         page = six.next(iterator.pages)
         datasets = list(page)
         token = iterator.next_page_token
@@ -1938,6 +1937,7 @@ class TestClient(unittest.TestCase):
             client_info=user_agent_override,
             _http=http,
         )
+        
         client.get_table(self.TABLE_REF)
 
         expected_user_agent = user_agent_override.to_user_agent()
@@ -2249,7 +2249,7 @@ class TestClient(unittest.TestCase):
             ds2 = client.update_dataset(ds, fields=fields, timeout=7.5,)
 
         final_attributes.assert_called_once_with(
-            {"path": "/" + PATH, "fields": json.dumps(fields)}, client, None
+            {"path": "/" + PATH, "fields": fields}, client, None
         )
 
         conn.api_request.assert_called_once_with(
@@ -2299,7 +2299,7 @@ class TestClient(unittest.TestCase):
             dataset = client.update_dataset(dataset, ["newAlphaProperty"])
 
         final_attributes.assert_called_once_with(
-            {"path": path, "fields": json.dumps(["newAlphaProperty"])}, client, None
+            {"path": path, "fields": ["newAlphaProperty"]}, client, None
         )
 
         conn.api_request.assert_called_once_with(
@@ -2355,7 +2355,7 @@ class TestClient(unittest.TestCase):
             updated_model = client.update_model(model, fields, timeout=7.5)
 
         final_attributes.assert_called_once_with(
-            {"path": "/" + path, "fields": json.dumps(fields)}, client, None
+            {"path": "/" + path, "fields": fields}, client, None
         )
 
         sent = {
@@ -2428,7 +2428,7 @@ class TestClient(unittest.TestCase):
             actual_routine = client.update_routine(routine, fields, timeout=7.5,)
 
         final_attributes.assert_called_once_with(
-            {"path": routine.path, "fields": json.dumps(fields)}, client, None
+            {"path": routine.path, "fields": fields}, client, None
         )
 
         # TODO: routineReference isn't needed when the Routines API supports
@@ -2454,7 +2454,7 @@ class TestClient(unittest.TestCase):
             client.update_routine(routine, [])
 
         final_attributes.assert_called_once_with(
-            {"path": routine.path, "fields": json.dumps([])}, client, None
+            {"path": routine.path, "fields": []}, client, None
         )
 
         req = conn.api_request.call_args
@@ -2515,7 +2515,7 @@ class TestClient(unittest.TestCase):
         span_path = "/%s" % path
 
         final_attributes.assert_called_once_with(
-            {"path": span_path, "fields": json.dumps(fields)}, client, None
+            {"path": span_path, "fields": fields}, client, None
         )
 
         sent = {
@@ -2555,7 +2555,7 @@ class TestClient(unittest.TestCase):
             client.update_table(table, [])
 
         final_attributes.assert_called_once_with(
-            {"path": "/" + path, "fields": json.dumps([])}, client, None
+            {"path": "/" + path, "fields": []}, client, None
         )
 
         req = conn.api_request.call_args
@@ -2583,9 +2583,7 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, ["newAlphaProperty"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": json.dumps(["newAlphaProperty"])},
-            client,
-            None,
+            {"path": "/%s" % path, "fields": ["newAlphaProperty"]}, client, None,
         )
 
         conn.api_request.assert_called_once_with(
@@ -2620,9 +2618,7 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, ["view_use_legacy_sql"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": json.dumps(["view_use_legacy_sql"])},
-            client,
-            None,
+            {"path": "/%s" % path, "fields": ["view_use_legacy_sql"]}, client, None,
         )
 
         conn.api_request.assert_called_once_with(
@@ -2692,9 +2688,7 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, updated_properties)
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": json.dumps(updated_properties)},
-            client,
-            None,
+            {"path": "/%s" % path, "fields": updated_properties}, client, None,
         )
 
         self.assertEqual(updated_table.schema, table.schema)
@@ -2760,7 +2754,7 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, ["schema"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": json.dumps(["schema"])}, client, None
+            {"path": "/%s" % path, "fields": ["schema"]}, client, None
         )
 
         self.assertEqual(len(conn.api_request.call_args_list), 2)
@@ -2798,10 +2792,7 @@ class TestClient(unittest.TestCase):
             table2 = client.update_table(table, ["description", "friendly_name"])
 
         final_attributes.assert_called_once_with(
-            {
-                "path": "/%s" % path,
-                "fields": json.dumps(["description", "friendly_name"]),
-            },
+            {"path": "/%s" % path, "fields": ["description", "friendly_name"],},
             client,
             None,
         )
@@ -2815,7 +2806,7 @@ class TestClient(unittest.TestCase):
             table3 = client.update_table(table2, ["description"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": json.dumps(["description"])}, client, None
+            {"path": "/%s" % path, "fields": ["description"]}, client, None
         )
 
         self.assertEqual(len(conn.api_request.call_args_list), 2)
@@ -2831,10 +2822,9 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         conn = client._connection = make_connection({})
+
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
-
         iterator = client.list_tables(dataset, timeout=7.5)
-
         self.assertIs(iterator.dataset, dataset)
         page = six.next(iterator.pages)
         tables = list(page)
@@ -2853,9 +2843,7 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection({})
 
         dataset_id = "{}.{}".format(self.PROJECT, self.DS_ID)
-
         iterator = client.list_models(dataset_id, timeout=7.5)
-
         page = six.next(iterator.pages)
         models = list(page)
         token = iterator.next_page_token
@@ -2899,7 +2887,6 @@ class TestClient(unittest.TestCase):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
 
         iterator = client.list_models(dataset)
-
         self.assertIs(iterator.dataset, dataset)
         page = six.next(iterator.pages)
         models = list(page)
@@ -2925,9 +2912,7 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         conn = client._connection = make_connection({})
-        path = "/projects/test-routines/datasets/test_routines/routines"
         iterator = client.list_routines("test-routines.test_routines", timeout=7.5)
-
         page = six.next(iterator.pages)
         routines = list(page)
         token = iterator.next_page_token
@@ -2935,7 +2920,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(routines, [])
         self.assertIsNone(token)
         conn.api_request.assert_called_once_with(
-            method="GET", path=path, query_params={}, timeout=7.5,
+            method="GET",
+            path="/projects/test-routines/datasets/test_routines/routines",
+            query_params={},
+            timeout=7.5,
         )
 
     def test_list_routines_defaults(self):
@@ -2971,8 +2959,8 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=project_id, credentials=creds)
         conn = client._connection = make_connection(resource)
         dataset = DatasetReference(client.project, dataset_id)
-        iterator = client.list_routines(dataset)
 
+        iterator = client.list_routines(dataset)
         self.assertIs(iterator.dataset, dataset)
         page = six.next(iterator.pages)
         routines = list(page)
@@ -3035,8 +3023,8 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds)
         conn = client._connection = make_connection(DATA)
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
-        iterator = client.list_tables(dataset)
 
+        iterator = client.list_tables(dataset)
         self.assertIs(iterator.dataset, dataset)
         page = six.next(iterator.pages)
         tables = list(page)
@@ -3089,13 +3077,13 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds)
         conn = client._connection = make_connection(DATA)
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
+
         iterator = client.list_tables(
             # Test with string for dataset ID.
             self.DS_ID,
             max_results=3,
             page_token=TOKEN,
         )
-
         self.assertEqual(iterator.dataset, dataset)
         page = six.next(iterator.pages)
         tables = list(page)

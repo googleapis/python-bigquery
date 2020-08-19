@@ -73,7 +73,6 @@ def test_opentelemetry_success(setup):
 
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
 def test_default_client_attributes(setup):
-
     expected_attributes = {
         "foo": "baz",
         "db.system": "BigQuery",
@@ -93,7 +92,6 @@ def test_default_client_attributes(setup):
 
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
 def test_default_job_attributes(setup):
-
     expected_attributes = {
         "db.system": "BigQuery",
         "db.name": "test_project_id",

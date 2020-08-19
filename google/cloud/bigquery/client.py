@@ -842,7 +842,7 @@ class Client(ClientWithProject):
         else:
             headers = None
         path = dataset.path
-        span_attributes = {"path": path, "fields": json.dumps(fields)}
+        span_attributes = {"path": path, "fields": fields}
 
         with create_span(
             name="BigQuery.updateDataset", attributes=span_attributes, client=self
@@ -891,7 +891,7 @@ class Client(ClientWithProject):
         else:
             headers = None
         path = model.path
-        span_attributes = {"path": path, "fields": json.dumps(fields)}
+        span_attributes = {"path": path, "fields": fields}
 
         with create_span(
             name="BigQuery.updateModel", attributes=span_attributes, client=self
@@ -951,7 +951,7 @@ class Client(ClientWithProject):
         partial["routineReference"] = routine.reference.to_api_repr()
 
         path = routine.path
-        span_attributes = {"path": path, "fields": json.dumps(fields)}
+        span_attributes = {"path": path, "fields": fields}
 
         with create_span(
             name="BigQuery.updateRoutine", attributes=span_attributes, client=self
@@ -1001,7 +1001,7 @@ class Client(ClientWithProject):
             headers = None
 
         path = table.path
-        span_attributes = {"path": path, "fields": json.dumps(fields)}
+        span_attributes = {"path": path, "fields": fields}
 
         with create_span(
             name="BigQuery.updateTable", attributes=span_attributes, client=self

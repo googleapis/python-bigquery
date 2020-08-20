@@ -1311,7 +1311,7 @@ class Client(ClientWithProject):
 
         path = model.path
         try:
-            span_attributes = {"not_found_okay": not_found_ok, "path": path}
+            span_attributes = {"path": path}
             with create_span(
                 name="BigQuery.deleteModel", attributes=span_attributes, client=self
             ):

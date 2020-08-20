@@ -41,6 +41,16 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     pandas = None
 try:
+    import opentelemetry
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleExportSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+        InMemorySpanExporter,
+    )
+except (ImportError, AttributeError):
+    opentelemetry = None
+try:
     import pyarrow
 except (ImportError, AttributeError):  # pragma: NO COVER
     pyarrow = None
@@ -651,9 +661,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.get_dataset(dataset_ref)
 
-            final_attributes.assert_called_once_with(  # pragma: NO COVER
-                {"path": "/%s" % path}, client, None
-            )
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         # Zero-length errors field.
         client._connection = make_connection(ServerError(""), resource)
@@ -663,9 +671,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.get_dataset(dataset_ref)
 
-            final_attributes.assert_called_once_with(  # pragma: NO COVER
-                {"path": "/%s" % path}, client, None
-            )
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         # Non-retryable reason.
         client._connection = make_connection(
@@ -691,9 +697,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.get_dataset(dataset_ref, retry=None)
 
-            final_attributes.assert_called_once_with(  # pragma: NO COVER
-                {"path": "/%s" % path}, client, None
-            )
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         # Retryable reason, default retry: success.
         client._connection = make_connection(
@@ -1235,9 +1239,43 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.create_routine(routine)
 
-            final_attributes.assert_called_once_with(  # pragma: NO COVER
-                {"path": path, "exists_okay": False}, client, None
-            )
+        final_attributes.assert_called_once_with({"path": path}, client, None)
+
+        resource = {
+            "routineReference": {
+                "projectId": "test-routine-project",
+                "datasetId": "test_routines",
+                "routineId": "minimal_routine",
+            }
+        }
+        conn.api_request.assert_called_once_with(
+            method="POST", path=path, data=resource, timeout=None,
+        )
+
+    @unittest.skipIf(opentelemetry is None, "Requires `opentelemetry`")
+    def test_span_status_is_set(self):
+        from google.cloud.bigquery.routine import Routine
+
+        tracer_provider = TracerProvider()
+        memory_exporter = InMemorySpanExporter()
+        span_processor = SimpleExportSpanProcessor(memory_exporter)
+        tracer_provider.add_span_processor(span_processor)
+        trace.set_tracer_provider(tracer_provider)
+
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+        conn = client._connection = make_connection(
+            google.api_core.exceptions.AlreadyExists("routine already exists")
+        )
+        path = "/projects/test-routine-project/datasets/test_routines/routines"
+        full_routine_id = "test-routine-project.test_routines.minimal_routine"
+        routine = Routine(full_routine_id)
+
+        with pytest.raises(google.api_core.exceptions.AlreadyExists):
+            client.create_routine(routine)
+
+        span_list = memory_exporter.get_finished_spans()
+        self.assertTrue(span_list[0].status is not None)
 
         resource = {
             "routineReference": {
@@ -1701,11 +1739,9 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
 
-            final_attributes.assert_called_with(  # pragma: NO COVER
-                {"path": post_path, "dataset_id": self.TABLE_REF.dataset_id},
-                client,
-                None,
-            )
+        final_attributes.assert_called_with(
+            {"path": post_path, "dataset_id": self.TABLE_REF.dataset_id}, client, None,
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -2113,14 +2149,7 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
 
         with self.assertRaises(TypeError):
-            with mock.patch(
-                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-            ) as final_attributes:
-                client.set_iam_policy(self.TABLE_REF, invalid_policy_repr)
-
-            final_attributes.assert_called_once_with(  # pragma: NO COVER
-                {"path": "{}:setIamPolicy".format(self.TABLE_REF.path)}, client, None
-            )
+            client.set_iam_policy(self.TABLE_REF, invalid_policy_repr)
 
     def test_set_iam_policy_w_invalid_table(self):
         from google.api_core.iam import Policy
@@ -2138,14 +2167,7 @@ class TestClient(unittest.TestCase):
         )
 
         with self.assertRaises(TypeError):
-            with mock.patch(
-                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-            ) as final_attributes:
-                client.set_iam_policy(table_resource_string, policy)
-
-            final_attributes.assert_called_once_with(  # pragma: NO COVER
-                {"path": table_resource_string}, client, None
-            )
+            client.set_iam_policy(table_resource_string, policy)
 
     def test_test_iam_permissions(self):
         PATH = "/projects/%s/datasets/%s/tables/%s:testIamPermissions" % (
@@ -3229,7 +3251,7 @@ class TestClient(unittest.TestCase):
                 client.delete_model(arg, timeout=7.5)
 
             final_attributes.assert_called_once_with(
-                {"path": "/%s" % path, "not_found_okay": False}, client, None
+                {"path": "/%s" % path}, client, None
             )
             conn.api_request.assert_called_with(
                 method="DELETE", path="/%s" % path, timeout=7.5
@@ -3274,9 +3296,7 @@ class TestClient(unittest.TestCase):
                 "{}.{}".format(self.DS_ID, self.MODEL_ID), not_found_ok=True
             )
 
-        final_attributes.assert_called_once_with(
-            {"path": path, "not_found_okay": True}, client, None
-        )
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 

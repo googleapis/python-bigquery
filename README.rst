@@ -118,8 +118,8 @@ the BigQuery client the following PyPI packages need to be installed:
 
 After installation, OpenTelemetry can be used in the BigQuery
 client and in BigQuery jobs. First, however, an exporter must be
-specified for where the trace data will be outputted to. An example of this
-can be found here:
+specified for where the trace data will be outputted to. An
+example of this can be found here:
 
 .. code-block:: python
 

@@ -16,7 +16,7 @@ import logging
 from contextlib import contextmanager
 from google.api_core.exceptions import GoogleAPICallError
 
-Logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 try:
     from opentelemetry import trace
     from opentelemetry.instrumentation.utils import http_status_to_canonical_code
@@ -25,7 +25,7 @@ try:
     HAS_OPENTELEMETRY = True
 
 except ImportError:
-    Logger.info(
+    logger.info(
         "This service is instrumented using OpenTelemetry."
         "OpenTelemetry could not be imported; please"
         "add opentelemetry-api and opentelemetry-instrumentation"

@@ -434,9 +434,7 @@ class TestBigQuery(unittest.TestCase):
         dataset_id = _make_dataset_id("delete_table_true_with_content")
         project = Config.CLIENT.project
         dataset_ref = bigquery.DatasetReference(project, dataset_id)
-        dataset = retry_403(Config.CLIENT.create_dataset)(
-            Dataset(dataset_ref), exists_ok=True
-        )
+        dataset = retry_403(Config.CLIENT.create_dataset)(Dataset(dataset_ref))
 
         table_id = "test_table"
         table_arg = Table(dataset.table(table_id), schema=SCHEMA)

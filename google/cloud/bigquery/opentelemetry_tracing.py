@@ -14,15 +14,13 @@
 
 import logging
 from contextlib import contextmanager
-from frozendict import frozendict
-import json
 from google.api_core.exceptions import GoogleAPICallError
 
 Logger = logging.getLogger(__name__)
 try:
     from opentelemetry import trace
-    from opentelemetry.trace.status import Status
     from opentelemetry.instrumentation.utils import http_status_to_canonical_code
+    from opentelemetry.trace.status import Status
 
     HAS_OPENTELEMETRY = True
 
@@ -36,7 +34,9 @@ except ImportError:
 
     HAS_OPENTELEMETRY = False
 
-_default_attributes = frozendict({"db.system": "BigQuery"})
+_default_attributes = {
+    "db.system": "BigQuery"
+}  # static, default values assigned to all spans
 
 
 @contextmanager
@@ -74,7 +74,6 @@ def create_span(name, attributes=None, client=None, job_ref=None):
     with tracer.start_as_current_span(name=name, attributes=final_attributes) as span:
         try:
             yield span
-            span.set_status(Status(http_status_to_canonical_code(200)))
         except GoogleAPICallError as error:
             if error.code is not None:
                 span.set_status(Status(http_status_to_canonical_code(error.code)))
@@ -109,11 +108,12 @@ def _set_job_attributes(job_ref):
         "parent_job_id": job_ref.parent_job_id,
         "state": job_ref.state,
     }
-    if job_ref.errors is not None:
-        job_attributes["errors"] = json.dumps(job_ref.errors)
 
     if job_ref.error_result is not None:
-        job_attributes["errorResult"] = json.dumps(job_ref.error_result)
+        job_attributes["hasErrors"] = True
+
+    else:
+        job_attributes["hasErrors"] = False
 
     date_time_format = "%d-%b-%Y (%H:%M:%S.%f)"
     if job_ref.created is not None:

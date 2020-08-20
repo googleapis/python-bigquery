@@ -33,7 +33,6 @@ import os
 import tempfile
 import uuid
 import warnings
-from google.cloud.bigquery.opentelemetry_tracing import create_span
 
 try:
     import pyarrow
@@ -64,6 +63,7 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.exceptions import PyarrowMissingWarning
+from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference

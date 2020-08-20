@@ -34,6 +34,7 @@ from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.external_config import HivePartitioningOptions
+from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.query import _query_param_from_api_repr
 from google.cloud.bigquery.query import ArrayQueryParameter
@@ -50,7 +51,6 @@ from google.cloud.bigquery.table import _table_arg_to_table_ref
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TimePartitioning
-from google.cloud.bigquery.opentelemetry_tracing import create_span
 
 
 _DONE_STATE = "DONE"

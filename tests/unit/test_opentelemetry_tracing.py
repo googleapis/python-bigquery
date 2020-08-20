@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import sys
-import pytest
 import datetime
 import mock
-import json
+import pytest
+import sys
+import unittest
+
 from google.cloud.bigquery import opentelemetry_tracing
+from six.moves import reload_module
 
 try:
     import opentelemetry
@@ -31,7 +32,6 @@ try:
 except ImportError:
     opentelemetry = None
 
-from six.moves import reload_module
 
 TEST_SPAN_NAME = "bar"
 TEST_SPAN_ATTRIBUTES = {"foo": "baz"}
@@ -103,7 +103,6 @@ def test_default_job_attributes(setup):
     ended_time = datetime.datetime(
         2011, 10, 2, 16, 0, 0, tzinfo=google.cloud._helpers.UTC
     )
-    errors = [{"error": "some_error"}]
     error_result = [
         {"errorResult1": "some_error_result1", "errorResult2": "some_error_result2"}
     ]
@@ -119,8 +118,7 @@ def test_default_job_attributes(setup):
         "timeCreated": time_created.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
         "timeStarted": started_time.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
         "timeEnded": ended_time.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
-        "errors": json.dumps(errors),
-        "errorResult": json.dumps(error_result),
+        "hasErrors": True,
         "state": "some_job_state",
     }
     with mock.patch("google.cloud.bigquery.job._AsyncJob") as test_job_ref:
@@ -132,7 +130,6 @@ def test_default_job_attributes(setup):
         test_job_ref.created = time_created
         test_job_ref.started = started_time
         test_job_ref.ended = ended_time
-        test_job_ref.errors = errors
         test_job_ref.error_result = error_result
         test_job_ref.state = "some_job_state"
 
@@ -146,9 +143,9 @@ def test_default_job_attributes(setup):
 
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
 def test_default_no_data_leakage(setup):
-    from google.cloud.bigquery import job
     import google.auth.credentials
     from google.cloud.bigquery import client
+    from google.cloud.bigquery import job
 
     mock_credentials = mock.Mock(spec=google.auth.credentials.Credentials)
     test_client = client.Client(
@@ -182,6 +179,7 @@ def test_default_no_data_leakage(setup):
         "num_child_jobs": 0,
         "job_id": "test_job_id",
         "foo": "baz",
+        "hasErrors": False,
     }
 
     with opentelemetry_tracing.create_span(
@@ -189,3 +187,29 @@ def test_default_no_data_leakage(setup):
     ) as span:
         assert span.name == TEST_SPAN_NAME
         assert span.attributes == expected_attributes
+
+
+@pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
+def test_span_creation_error(setup):
+    import google.auth.credentials
+    from google.cloud.bigquery import client
+    from google.api_core.exceptions import GoogleAPICallError, InvalidArgument
+
+    mock_credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+    test_client = client.Client(
+        project="test_project", credentials=mock_credentials, location="test_location"
+    )
+
+    expected_attributes = {
+        "foo": "baz",
+        "db.system": "BigQuery",
+        "db.name": "test_project",
+        "location": "test_location",
+    }
+    with unittest.TestCase().assertRaises(GoogleAPICallError):
+        with opentelemetry_tracing.create_span(
+            TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, client=test_client
+        ) as span:
+            assert span.name == TEST_SPAN_NAME
+            assert span.attributes == expected_attributes
+            raise InvalidArgument("test_error")

@@ -62,7 +62,6 @@ extras = {
         "llvmlite<=0.34.0;python_version>='3.6'",
         "llvmlite<=0.31.0;python_version<'3.6'",
     ],
-    "frozendict": ["frozendict>=1.2"],
 }
 
 all_extras = []

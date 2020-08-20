@@ -1135,14 +1135,7 @@ class TestClient(unittest.TestCase):
         )
 
         with pytest.raises(google.api_core.exceptions.AlreadyExists):
-            with mock.patch(
-                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-            ) as final_attributes:
-                client.create_dataset(self.DS_ID)
-
-            final_attributes.assert_called_once_with(
-                {"path": "path"}, client, None
-            )  # pragma: NO COVER
+            client.create_dataset(self.DS_ID)
 
     def test_create_dataset_alreadyexists_w_exists_ok_true(self):
         post_path = "/projects/{}/datasets".format(self.PROJECT)
@@ -1281,7 +1274,7 @@ class TestClient(unittest.TestCase):
             actual_routine = client.create_routine(routine, exists_ok=True)
 
         final_attributes.assert_called_with(
-            {"path": path + "/minimal_routine"}, client, None
+            {"path": "%s/minimal_routine" % path}, client, None
         )
 
         self.assertEqual(actual_routine.project, "test-routine-project")
@@ -2249,7 +2242,7 @@ class TestClient(unittest.TestCase):
             ds2 = client.update_dataset(ds, fields=fields, timeout=7.5,)
 
         final_attributes.assert_called_once_with(
-            {"path": "/" + PATH, "fields": fields}, client, None
+            {"path": "/%s" % PATH, "fields": fields}, client, None
         )
 
         conn.api_request.assert_called_once_with(
@@ -2355,7 +2348,7 @@ class TestClient(unittest.TestCase):
             updated_model = client.update_model(model, fields, timeout=7.5)
 
         final_attributes.assert_called_once_with(
-            {"path": "/" + path, "fields": fields}, client, None
+            {"path": "/%s" % path, "fields": fields}, client, None
         )
 
         sent = {
@@ -2555,7 +2548,7 @@ class TestClient(unittest.TestCase):
             client.update_table(table, [])
 
         final_attributes.assert_called_once_with(
-            {"path": "/" + path, "fields": []}, client, None
+            {"path": "/%s" % path, "fields": []}, client, None
         )
 
         req = conn.api_request.call_args

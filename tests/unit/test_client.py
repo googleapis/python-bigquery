@@ -89,6 +89,7 @@ def _make_list_partitons_meta_info(project, dataset_id, table_id, num_rows=0):
 
 
 class TestClient(unittest.TestCase):
+
     PROJECT = "PROJECT"
     DS_ID = "DATASET_ID"
     TABLE_ID = "TABLE_ID"

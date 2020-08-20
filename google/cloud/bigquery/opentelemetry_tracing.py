@@ -41,8 +41,8 @@ _default_attributes = {
 
 @contextmanager
 def create_span(name, attributes=None, client=None, job_ref=None):
-    """Creates a ContextManager for a Span to be exported to the configured exporter. If no configuration
-        exists yields None.
+    """Creates a ContextManager for a Span to be exported to the configured exporter.
+        If no configuration exists yields None.
 
             Args:
                 name (str): Name that will be set for the span being created
@@ -89,7 +89,6 @@ def _get_final_span_attributes(attributes=None, client=None, job_ref=None):
     if job_ref:
         job_attributes = _set_job_attributes(job_ref)
         final_attributes.update(job_attributes)
-
     if attributes:
         final_attributes.update(attributes)
     return final_attributes
@@ -109,20 +108,15 @@ def _set_job_attributes(job_ref):
         "state": job_ref.state,
     }
 
-    if job_ref.error_result is not None:
-        job_attributes["hasErrors"] = True
+    job_attributes["hasErrors"] = job_ref.error_result is not None
 
-    else:
-        job_attributes["hasErrors"] = False
-
-    date_time_format = "%d-%b-%Y (%H:%M:%S.%f)"
     if job_ref.created is not None:
-        job_attributes["timeCreated"] = job_ref.created.strftime(date_time_format)
+        job_attributes["timeCreated"] = job_ref.created.isoformat()
 
     if job_ref.started is not None:
-        job_attributes["timeStarted"] = job_ref.started.strftime(date_time_format)
+        job_attributes["timeStarted"] = job_ref.started.isoformat()
 
     if job_ref.ended is not None:
-        job_attributes["timeEnded"] = job_ref.ended.strftime(date_time_format)
+        job_attributes["timeEnded"] = job_ref.ended.isoformat()
 
     return job_attributes

@@ -115,9 +115,9 @@ def test_default_job_attributes(setup):
         "job_id": "test_job_id",
         "foo": "baz",
         "parent_job_id": "parent_job_id",
-        "timeCreated": time_created.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
-        "timeStarted": started_time.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
-        "timeEnded": ended_time.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
+        "timeCreated": time_created.isoformat(),
+        "timeStarted": started_time.isoformat(),
+        "timeEnded": ended_time.isoformat(),
         "hasErrors": True,
         "state": "some_job_state",
     }

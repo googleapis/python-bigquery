@@ -289,7 +289,6 @@ class Client(ClientWithProject):
                 Iterator of :class:`~google.cloud.bigquery.client.Project`
                 accessible to the current client.
         """
-
         return page_iterator.HTTPIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),

@@ -72,10 +72,15 @@ extras = {
 all_extras = []
 
 for extra in extras:
-    if extra == "fastparquet" or extra == "opentelemetry":
-        # Skip fastparquet from "all" because it is redundant with pyarrow and
-        # creates a dependency on pre-release versions of numpy. See:
-        # https://github.com/googleapis/google-cloud-python/issues/8549
+    if extra in (
+            # Skip fastparquet from "all" because it is redundant with pyarrow and
+            # creates a dependency on pre-release versions of numpy. See:
+            # https://github.com/googleapis/google-cloud-python/issues/8549
+            "fastparquet",
+
+            # Skip opentelemetry because the library is not compatible with Python 2.
+            "opentelemetry",
+    ):
         continue
     all_extras.extend(extras[extra])
 

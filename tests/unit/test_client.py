@@ -270,9 +270,7 @@ class TestClient(unittest.TestCase):
                     timeout=42,
                 )
 
-            final_attributes.assert_called_once_with(
-                {"path": path}, client, None
-            )  # pragma: NO COVER
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="GET",
@@ -683,9 +681,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.get_dataset(dataset_ref)
 
-            final_attributes.assert_called_once_with(
-                {"path": path}, client, None
-            )  # pragma: NO COVER
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         # Retryable reason, but retry is disabled.
         client._connection = make_connection(
@@ -3197,9 +3193,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.delete_dataset(self.DS_ID)
 
-            final_attributes.assert_called_once_with(
-                {"path": path}, client, None
-            )  # pragma: NO COVER
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(
             method="DELETE", path=path, query_params={}, timeout=None
@@ -3349,9 +3343,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.delete_routine("routines-project.test_routines.test_routine")
 
-            final_attributes.assert_called_once_with(
-                {"path": path}, client, None
-            )  # pragma: NO COVER
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(
             method="DELETE", path=path, timeout=None,
@@ -3438,9 +3430,7 @@ class TestClient(unittest.TestCase):
             ) as final_attributes:
                 client.delete_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
 
-            final_attributes.assert_called_once_with(
-                {"path": path}, client, None
-            )  # pragma: NO COVER
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 

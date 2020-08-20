@@ -51,11 +51,8 @@ def default(session):
     # opentelemetry was not added to [all] because opentelemetry does not support Python 2.
     # Exporter does not need to be in nox thus it has been added to README documentation
     if session.python != "2.7":
-        session.install(
-            "opentelemetry-api==0.9b0",
-            "opentelemetry-sdk==0.9b0",
-            "opentelemetry-instrumentation==0.9b0 ",
-        )
+        session.install("-e", ".[opentelemetry]")
+
     # Run py.test against the unit tests.
     session.run(
         "py.test",

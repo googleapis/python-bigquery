@@ -1451,7 +1451,7 @@ class Client(ClientWithProject):
         # This call is typically made in a polling loop that checks whether the
         # job is complete (from QueryJob.done(), called ultimately from
         # QueryJob.result()). So we don't need to poll here.
-        span_attributes = {"path": path, "job_id": job_id, "location": location}
+        span_attributes = {"path": path}
 
         with create_span(
             name="BigQuery.getQueryResults", attributes=span_attributes, client=self

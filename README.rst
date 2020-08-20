@@ -114,7 +114,7 @@ the BigQuery client the following PyPI packages need to be installed:
 
 .. code-block:: console
 
-    pip install opentelemetry-api opentelemetry-sdk opentelemetry-instrumentation opentelemetry-exporter-google-cloud
+    pip install google-cloud-bigquery[opentelemetry] opentelemetry-exporter-google-cloud
 
 After installation, OpenTelemetry can be used in the BigQuery
 client and in BigQuery jobs. First, however, an exporter must be

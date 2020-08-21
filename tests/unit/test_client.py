@@ -425,8 +425,12 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         client = self._make_one(PROJECT_1, creds)
         conn = client._connection = make_connection(DATA)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            iterator = client.list_projects()
 
-        iterator = client.list_projects()
+        final_attributes.assert_called_once_with({"path": '/projects'}, client, None)
         page = six.next(iterator.pages)
         projects = list(page)
         token = iterator.next_page_token

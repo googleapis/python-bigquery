@@ -13,13 +13,9 @@
 # limitations under the License.
 
 import datetime
-import mock
-import pytest
 import sys
-import unittest
 
-from google.cloud.bigquery import opentelemetry_tracing
-from six.moves import reload_module
+import mock
 
 try:
     import opentelemetry
@@ -31,7 +27,10 @@ try:
     )
 except ImportError:
     opentelemetry = None
+import pytest
+from six.moves import reload_module
 
+from google.cloud.bigquery import opentelemetry_tracing
 
 TEST_SPAN_NAME = "bar"
 TEST_SPAN_ATTRIBUTES = {"foo": "baz"}
@@ -40,6 +39,7 @@ TEST_SPAN_ATTRIBUTES = {"foo": "baz"}
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
 @pytest.fixture
 def setup():
+    reload_module(opentelemetry_tracing)
     tracer_provider = TracerProvider()
     memory_exporter = InMemorySpanExporter()
     span_processor = SimpleExportSpanProcessor(memory_exporter)
@@ -49,14 +49,11 @@ def setup():
 
 
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
-def test_opentelemetry_not_installed(setup):
-    temp_module = sys.modules["opentelemetry"]
-    sys.modules["opentelemetry"] = None
+def test_opentelemetry_not_installed(setup, monkeypatch):
+    monkeypatch.setitem(sys.modules, "opentelemetry", None)
     reload_module(opentelemetry_tracing)
     with opentelemetry_tracing.create_span("No-op for opentelemetry") as span:
         assert span is None
-    sys.modules["opentelemetry"] = temp_module
-    reload_module(opentelemetry_tracing)
 
 
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
@@ -206,7 +203,7 @@ def test_span_creation_error(setup):
         "db.name": "test_project",
         "location": "test_location",
     }
-    with unittest.TestCase().assertRaises(GoogleAPICallError):
+    with pytest.raises(GoogleAPICallError):
         with opentelemetry_tracing.create_span(
             TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, client=test_client
         ) as span:

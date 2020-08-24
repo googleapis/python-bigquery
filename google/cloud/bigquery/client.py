@@ -289,11 +289,11 @@ class Client(ClientWithProject):
                 Iterator of :class:`~google.cloud.bigquery.client.Project`
                 accessible to the current client.
         """
-        span_attributes = {"path": '/projects'}
+        span_attributes = {"path": "/projects"}
 
         def api_request(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listProjects", attributes=span_attributes, client=self
+                name="BigQuery.listProjects", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
 
@@ -366,7 +366,7 @@ class Client(ClientWithProject):
 
         def api_request(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listDatasets", attributes=span_attributes, client=self
+                name="BigQuery.listDatasets", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
 
@@ -1162,7 +1162,7 @@ class Client(ClientWithProject):
 
         def api_request(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listRoutines", attributes=span_attributes, client=self
+                name="BigQuery.listRoutines", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
 
@@ -1235,7 +1235,7 @@ class Client(ClientWithProject):
 
         def api_request(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listTables", attributes=span_attributes, client=self
+                name="BigQuery.listTables", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
 
@@ -1812,7 +1812,7 @@ class Client(ClientWithProject):
 
         def api_request(*args, **kwargs):
             with create_span(
-                    name="BigQuery.listJobs", attributes=span_attributes, client=self
+                name="BigQuery.listJobs", attributes=span_attributes, client=self
             ):
                 return self._call_api(retry, *args, timeout=timeout, **kwargs)
 

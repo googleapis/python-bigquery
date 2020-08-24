@@ -432,7 +432,7 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             page = six.next(iterator.pages)
 
-        final_attributes.assert_called_once_with({"path": '/projects'}, client, None)
+        final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
         projects = list(page)
         token = iterator.next_page_token
 
@@ -466,7 +466,7 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             six.next(iterator.pages)
 
-        final_attributes.assert_called_once_with({"path": '/projects'}, client, None)
+        final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="GET", path="/projects", query_params={}, timeout=7.5
@@ -486,7 +486,7 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             page = six.next(iterator.pages)
 
-        final_attributes.assert_called_once_with({"path": '/projects'}, client, None)
+        final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
         projects = list(page)
         token = iterator.next_page_token
 
@@ -565,7 +565,9 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             list(client.list_datasets(project="other-project", timeout=7.5))
 
-        final_attributes.assert_called_once_with({"path": "/projects/other-project/datasets"}, client, None)
+        final_attributes.assert_called_once_with(
+            {"path": "/projects/other-project/datasets"}, client, None
+        )
 
         conn.api_request.assert_called_once_with(
             method="GET",
@@ -2978,7 +2980,11 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             page = six.next(iterator.pages)
 
-        final_attributes.assert_called_once_with({"path": "/projects/test-routines/datasets/test_routines/routines"}, client, None)
+        final_attributes.assert_called_once_with(
+            {"path": "/projects/test-routines/datasets/test_routines/routines"},
+            client,
+            None,
+        )
         routines = list(page)
         token = iterator.next_page_token
 
@@ -3031,6 +3037,8 @@ class TestClient(unittest.TestCase):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
         routines = list(page)
         actual_token = iterator.next_page_token
 
@@ -3159,7 +3167,7 @@ class TestClient(unittest.TestCase):
         )
         self.assertEqual(iterator.dataset, dataset)
         with mock.patch(
-                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             page = six.next(iterator.pages)
 
@@ -4037,7 +4045,7 @@ class TestClient(unittest.TestCase):
 
         iterator = client.list_jobs()
         with mock.patch(
-                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             page = six.next(iterator.pages)
 
@@ -4071,7 +4079,7 @@ class TestClient(unittest.TestCase):
             max_results=1000, page_token=TOKEN, all_users=True, state_filter="done"
         )
         with mock.patch(
-                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             page = six.next(iterator.pages)
 

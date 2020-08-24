@@ -203,7 +203,7 @@ class Lexer(object):
         while state != LexerState.STATE_END:
             token_generator = self._get_state_token_generator(state, offset)
 
-            for maybe_token in token_generator:
+            for maybe_token in token_generator:  # pragma: NO COVER
                 if isinstance(maybe_token, StateTransition):
                     state = maybe_token.new_state
                     offset = maybe_token.total_offset
@@ -240,7 +240,7 @@ class Lexer(object):
         Yields:
             The next ``Token`` or ``StateTransition`` instance.
         """
-        for match in iter(scanner.match, None):
+        for match in iter(scanner.match, None):  # pragma: NO COVER
             token_type = match.lastgroup
 
             if token_type.startswith("GOTO_STATE"):

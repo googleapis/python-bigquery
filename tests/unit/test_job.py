@@ -621,15 +621,17 @@ class Test_AsyncJob(unittest.TestCase):
         call_api = job._client._call_api = mock.Mock()
         call_api.return_value = resource
         path = "/projects/{}/jobs".format(self.PROJECT)
-        with mock.patch(
-            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-        ) as final_attributes:
-            job._begin()
-
-        final_attributes.assert_called_with({"path": path}, None, job)
+        job._begin()
 
         call_api.assert_called_once_with(
-            DEFAULT_RETRY, method="POST", path=path, data=resource, timeout=None,
+            DEFAULT_RETRY,
+            name="BigQuery.job.begin",
+            span_attributes={"path": path},
+            job_ref=job,
+            method="POST",
+            path=path,
+            data=resource,
+            timeout=None,
         )
         self.assertEqual(job._properties, resource)
 
@@ -653,15 +655,17 @@ class Test_AsyncJob(unittest.TestCase):
         call_api.return_value = resource
         retry = DEFAULT_RETRY.with_deadline(1)
         path = "/projects/{}/jobs".format(self.PROJECT)
-        with mock.patch(
-            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-        ) as final_attributes:
-            job._begin(client=client, retry=retry, timeout=7.5)
-
-        final_attributes.assert_called_with({"path": path}, None, job)
+        job._begin(client=client, retry=retry, timeout=7.5)
 
         call_api.assert_called_once_with(
-            retry, method="POST", path=path, data=resource, timeout=7.5,
+            retry,
+            name="BigQuery.job.begin",
+            span_attributes={"path": path},
+            job_ref=job,
+            method="POST",
+            path=path,
+            data=resource,
+            timeout=7.5,
         )
         self.assertEqual(job._properties, resource)
 
@@ -673,20 +677,15 @@ class Test_AsyncJob(unittest.TestCase):
         job._properties["jobReference"]["location"] = self.LOCATION
         call_api = job._client._call_api = mock.Mock()
         call_api.side_effect = NotFound("testing")
-
-        with mock.patch(
-            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-        ) as final_attributes:
-            self.assertFalse(job.exists())
-
-        final_attributes.assert_called_with(
-            {"path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)},
-            None,
-            job,
-        )
+        self.assertFalse(job.exists())
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
+            name="BigQuery.job.exists",
+            span_attributes={
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+            },
+            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={"fields": "id", "location": self.LOCATION},
@@ -710,19 +709,15 @@ class Test_AsyncJob(unittest.TestCase):
         call_api = client._call_api = mock.Mock()
         call_api.return_value = resource
         retry = DEFAULT_RETRY.with_deadline(1)
-        with mock.patch(
-            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-        ) as final_attributes:
-            self.assertTrue(job.exists(client=client, retry=retry))
-
-        final_attributes.assert_called_with(
-            {"path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)},
-            None,
-            job,
-        )
+        self.assertTrue(job.exists(client=client, retry=retry))
 
         call_api.assert_called_once_with(
             retry,
+            name="BigQuery.job.exists",
+            span_attributes={
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+            },
+            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={"fields": "id"},
@@ -735,15 +730,13 @@ class Test_AsyncJob(unittest.TestCase):
         PATH = "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
         job = self._set_properties_job()
         call_api = job._client._call_api = mock.Mock()
-        with mock.patch(
-            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-        ) as final_attributes:
-            job.exists(timeout=7.5)
-
-        final_attributes.assert_called_with({"path": PATH}, None, job)
+        job.exists(timeout=7.5)
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
+            name="BigQuery.job.exists",
+            span_attributes={"path": PATH},
+            job_ref=job,
             method="GET",
             path=PATH,
             query_params={"fields": "id"},
@@ -765,19 +758,15 @@ class Test_AsyncJob(unittest.TestCase):
         job._properties["jobReference"]["location"] = self.LOCATION
         call_api = job._client._call_api = mock.Mock()
         call_api.return_value = resource
-        with mock.patch(
-            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-        ) as final_attributes:
-            job.reload()
-
-        final_attributes.assert_called_with(
-            {"path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)},
-            None,
-            job,
-        )
+        job.reload()
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
+            name="BigQuery.job.reload",
+            span_attributes={
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+            },
+            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={"location": self.LOCATION},
@@ -802,19 +791,15 @@ class Test_AsyncJob(unittest.TestCase):
         call_api = client._call_api = mock.Mock()
         call_api.return_value = resource
         retry = DEFAULT_RETRY.with_deadline(1)
-        with mock.patch(
-            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
-        ) as final_attributes:
-            job.reload(client=client, retry=retry, timeout=4.2)
-
-        final_attributes.assert_called_with(
-            {"path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)},
-            None,
-            job,
-        )
+        job.reload(client=client, retry=retry, timeout=4.2)
 
         call_api.assert_called_once_with(
             retry,
+            name="BigQuery.job.reload",
+            span_attributes={
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+            },
+            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={},
@@ -903,7 +888,9 @@ class Test_AsyncJob(unittest.TestCase):
         job = self._set_properties_job()
 
         api_request_patcher = mock.patch.object(
-            job._client._connection, "api_request", side_effect=[ValueError, response],
+            job._client._connection,
+            "api_request",
+            side_effect=[ValueError, response],
         )
         retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
             lambda exc: isinstance(exc, ValueError)
@@ -924,7 +911,10 @@ class Test_AsyncJob(unittest.TestCase):
             [
                 mock.call(method="POST", path=api_path, query_params={}, timeout=7.5),
                 mock.call(
-                    method="POST", path=api_path, query_params={}, timeout=7.5,
+                    method="POST",
+                    path=api_path,
+                    query_params={},
+                    timeout=7.5,
                 ),  # was retried once
             ],
         )
@@ -2744,7 +2734,10 @@ class TestLoadJob(unittest.TestCase, _Base):
         final_attributes.assert_called_with({"path": PATH}, None, job)
 
         conn.api_request.assert_called_once_with(
-            method="POST", path=PATH, query_params={}, timeout=None,
+            method="POST",
+            path=PATH,
+            query_params={},
+            timeout=None,
         )
         self._verifyResourceProperties(job, RESOURCE)
 
@@ -2766,7 +2759,10 @@ class TestLoadJob(unittest.TestCase, _Base):
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
-            method="POST", path=PATH, query_params={}, timeout=None,
+            method="POST",
+            path=PATH,
+            query_params={},
+            timeout=None,
         )
         self._verifyResourceProperties(job, RESOURCE)
 
@@ -3191,7 +3187,10 @@ class TestCopyJob(unittest.TestCase, _Base):
         final_attributes.assert_called_with({"path": PATH}, None, job)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path=PATH, query_params={"fields": "id"}, timeout=None,
+            method="GET",
+            path=PATH,
+            query_params={"fields": "id"},
+            timeout=None,
         )
 
     def test_exists_hit_w_alternate_client(self):
@@ -3606,7 +3605,10 @@ class TestExtractJob(unittest.TestCase, _Base):
         final_attributes.assert_called_with({"path": PATH}, None, job)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path=PATH, query_params={"fields": "id"}, timeout=None,
+            method="GET",
+            path=PATH,
+            query_params={"fields": "id"},
+            timeout=None,
         )
 
     def test_exists_hit_w_alternate_client(self):
@@ -5720,8 +5722,10 @@ class TestQueryJob(unittest.TestCase, _Base):
 
         job.to_dataframe(bqstorage_client=bqstorage_client)
 
-        destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
-            **resource["configuration"]["query"]["destinationTable"]
+        destination_table = (
+            "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
+                **resource["configuration"]["query"]["destinationTable"]
+            )
         )
         expected_session = bigquery_storage_v1.types.ReadSession(
             table=destination_table,
@@ -6330,11 +6334,14 @@ def test_to_dataframe_bqstorage_preserve_order(query):
 
     job.to_dataframe(bqstorage_client=bqstorage_client)
 
-    destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
-        **job_resource["configuration"]["query"]["destinationTable"]
+    destination_table = (
+        "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
+            **job_resource["configuration"]["query"]["destinationTable"]
+        )
     )
     expected_session = bigquery_storage_v1.types.ReadSession(
-        table=destination_table, data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+        table=destination_table,
+        data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
     )
     bqstorage_client.create_read_session.assert_called_once_with(
         parent="projects/test-project",

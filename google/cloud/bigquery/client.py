@@ -250,7 +250,7 @@ class Client(ClientWithProject):
         span_attributes = {"path": path}
         api_response = self._call_api(
             retry,
-            name="BigQuery.getServiceAccountEmail",
+            span_name="BigQuery.getServiceAccountEmail",
             span_attributes=span_attributes,
             method="GET",
             path=path,
@@ -294,7 +294,7 @@ class Client(ClientWithProject):
         def api_request(*args, **kwargs):
             return self._call_api(
                 retry,
-                name="BigQuery.listProjects",
+                span_name="BigQuery.listProjects",
                 span_attributes=span_attributes,
                 *args,
                 timeout=timeout,
@@ -372,7 +372,7 @@ class Client(ClientWithProject):
 
             return self._call_api(
                 retry,
-                name="BigQuery.listDatasets",
+                span_name="BigQuery.listDatasets",
                 span_attributes=span_attributes,
                 *args,
                 timeout=timeout,
@@ -509,7 +509,7 @@ class Client(ClientWithProject):
 
             api_response = self._call_api(
                 retry,
-                name="BigQuery.createDataset",
+                span_name="BigQuery.createDataset",
                 span_attributes=span_attributes,
                 method="POST",
                 path=path,
@@ -560,7 +560,7 @@ class Client(ClientWithProject):
             span_attributes = {"path": path}
             api_response = self._call_api(
                 retry,
-                name="BigQuery.createRoutine",
+                span_name="BigQuery.createRoutine",
                 span_attributes=span_attributes,
                 method="POST",
                 path=path,
@@ -614,7 +614,7 @@ class Client(ClientWithProject):
             span_attributes = {"path": path, "dataset_id": dataset_id}
             api_response = self._call_api(
                 retry,
-                name="BigQuery.createTable",
+                span_name="BigQuery.createTable",
                 span_attributes=span_attributes,
                 method="POST",
                 path=path,
@@ -630,7 +630,7 @@ class Client(ClientWithProject):
     def _call_api(
         self,
         retry,
-        name=None,
+        span_name=None,
         span_attributes=None,
         job_ref=None,
         **kwargs
@@ -639,9 +639,9 @@ class Client(ClientWithProject):
         call = functools.partial(self._connection.api_request, **kwargs)
         if retry:
             call = retry(call)
-        if name is not None:
+        if span_name is not None:
             with create_span(
-                name=name, attributes=span_attributes, client=self, job_ref=job_ref
+                name=span_name, attributes=span_attributes, client=self, job_ref=job_ref
             ):
                 return call()
         return call()
@@ -676,7 +676,7 @@ class Client(ClientWithProject):
         span_attributes = {"path": path}
         api_response = self._call_api(
             retry,
-            name="BigQuery.getDataset",
+            span_name="BigQuery.getDataset",
             span_attributes=span_attributes,
             method="GET",
             path=path,
@@ -703,7 +703,7 @@ class Client(ClientWithProject):
         span_attributes = {"path": path}
         response = self._call_api(
             retry,
-            name="BigQuery.getIamPolicy",
+            span_name="BigQuery.getIamPolicy",
             span_attributes=span_attributes,
             method="POST",
             path=path,
@@ -737,7 +737,7 @@ class Client(ClientWithProject):
 
         response = self._call_api(
             retry,
-            name="BigQuery.setIamPolicy",
+            span_name="BigQuery.setIamPolicy",
             span_attributes=span_attributes,
             method="POST",
             path=path,
@@ -763,7 +763,7 @@ class Client(ClientWithProject):
         span_attributes = {"path": path}
         response = self._call_api(
             retry,
-            name="BigQuery.testIamPermissions",
+            span_name="BigQuery.testIamPermissions",
             span_attributes=span_attributes,
             method="POST",
             path=path,
@@ -803,7 +803,7 @@ class Client(ClientWithProject):
 
         api_response = self._call_api(
             retry,
-            name="BigQuery.getModel",
+            span_name="BigQuery.getModel",
             span_attributes=span_attributes,
             method="GET",
             path=path,
@@ -842,7 +842,7 @@ class Client(ClientWithProject):
         span_attributes = {"path": path}
         api_response = self._call_api(
             retry,
-            name="BigQuery.getRoutine",
+            span_name="BigQuery.getRoutine",
             span_attributes=span_attributes,
             method="GET",
             path=path,
@@ -878,7 +878,7 @@ class Client(ClientWithProject):
         span_attributes = {"path": path}
         api_response = self._call_api(
             retry,
-            name="BigQuery.getTable",
+            span_name="BigQuery.getTable",
             span_attributes=span_attributes,
             method="GET",
             path=path,
@@ -925,7 +925,7 @@ class Client(ClientWithProject):
 
         api_response = self._call_api(
             retry,
-            name="BigQuery.updateDataset",
+            span_name="BigQuery.updateDataset",
             span_attributes=span_attributes,
             method="PATCH",
             path=path,
@@ -973,7 +973,7 @@ class Client(ClientWithProject):
 
         api_response = self._call_api(
             retry,
-            name="BigQuery.updateModel",
+            span_name="BigQuery.updateModel",
             span_attributes=span_attributes,
             method="PATCH",
             path=path,
@@ -1032,7 +1032,7 @@ class Client(ClientWithProject):
 
         api_response = self._call_api(
             retry,
-            name="BigQuery.updateRoutine",
+            span_name="BigQuery.updateRoutine",
             span_attributes=span_attributes,
             method="PUT",
             path=path,
@@ -1081,7 +1081,7 @@ class Client(ClientWithProject):
 
         api_response = self._call_api(
             retry,
-            name="BigQuery.updateTable",
+            span_name="BigQuery.updateTable",
             span_attributes=span_attributes,
             method="PATCH",
             path=path,
@@ -1149,7 +1149,7 @@ class Client(ClientWithProject):
         def api_request(*args, **kwargs):
             return self._call_api(
                 retry,
-                name="BigQuery.listModels",
+                span_name="BigQuery.listModels",
                 span_attributes=span_attributes,
                 *args,
                 timeout=timeout,
@@ -1227,7 +1227,7 @@ class Client(ClientWithProject):
         def api_request(*args, **kwargs):
             return self._call_api(
                 retry,
-                name="BigQuery.listRoutines",
+                span_name="BigQuery.listRoutines",
                 span_attributes=span_attributes,
                 *args,
                 timeout=timeout,
@@ -1304,7 +1304,7 @@ class Client(ClientWithProject):
         def api_request(*args, **kwargs):
             return self._call_api(
                 retry,
-                name="BigQuery.listTables",
+                span_name="BigQuery.listTables",
                 span_attributes=span_attributes,
                 *args,
                 timeout=timeout,
@@ -1378,7 +1378,7 @@ class Client(ClientWithProject):
         try:
             self._call_api(
                 retry,
-                name="BigQuery.deleteDataset",
+                span_name="BigQuery.deleteDataset",
                 span_attributes=span_attributes,
                 method="DELETE",
                 path=path,
@@ -1427,7 +1427,7 @@ class Client(ClientWithProject):
             span_attributes = {"path": path}
             self._call_api(
                 retry,
-                name="BigQuery.deleteModel",
+                span_name="BigQuery.deleteModel",
                 span_attributes=span_attributes,
                 method="DELETE",
                 path=path,
@@ -1477,7 +1477,7 @@ class Client(ClientWithProject):
             span_attributes = {"path": path}
             self._call_api(
                 retry,
-                name="BigQuery.deleteRoutine",
+                span_name="BigQuery.deleteRoutine",
                 span_attributes=span_attributes,
                 method="DELETE",
                 path=path,
@@ -1523,7 +1523,7 @@ class Client(ClientWithProject):
             span_attributes = {"path": path}
             self._call_api(
                 retry,
-                name="BigQuery.deleteTable",
+                span_name="BigQuery.deleteTable",
                 span_attributes=span_attributes,
                 method="DELETE",
                 path=path,
@@ -1579,7 +1579,7 @@ class Client(ClientWithProject):
         span_attributes = {"path": path}
         resource = self._call_api(
             retry,
-            name="BigQuery.getQueryResults",
+            span_name="BigQuery.getQueryResults",
             span_attributes=span_attributes,
             method="GET",
             path=path,
@@ -1733,7 +1733,7 @@ class Client(ClientWithProject):
 
         resource = self._call_api(
             retry,
-            name="BigQuery.getJob",
+            span_name="BigQuery.getJob",
             span_attributes=span_attributes,
             method="GET",
             path=path,
@@ -1790,7 +1790,7 @@ class Client(ClientWithProject):
 
         resource = self._call_api(
             retry,
-            name="BigQuery.cancelJob",
+            span_name="BigQuery.cancelJob",
             span_attributes=span_attributes,
             method="POST",
             path=path,
@@ -1892,7 +1892,7 @@ class Client(ClientWithProject):
         def api_request(*args, **kwargs):
             return self._call_api(
                 retry,
-                name="BigQuery.listJobs",
+                span_name="BigQuery.listJobs",
                 span_attributes=span_attributes,
                 *args,
                 timeout=timeout,
@@ -2989,7 +2989,7 @@ class Client(ClientWithProject):
         span_attributes = {"path": path}
         response = self._call_api(
             retry,
-            name="BigQuery.insertRowsJson",
+            span_name="BigQuery.insertRowsJson",
             span_attributes=span_attributes,
             method="POST",
             path=path,

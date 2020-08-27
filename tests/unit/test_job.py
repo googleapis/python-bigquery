@@ -625,7 +625,7 @@ class Test_AsyncJob(unittest.TestCase):
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
-            name="BigQuery.job.begin",
+            span_name="BigQuery.job.begin",
             span_attributes={"path": path},
             job_ref=job,
             method="POST",
@@ -659,7 +659,7 @@ class Test_AsyncJob(unittest.TestCase):
 
         call_api.assert_called_once_with(
             retry,
-            name="BigQuery.job.begin",
+            span_name="BigQuery.job.begin",
             span_attributes={"path": path},
             job_ref=job,
             method="POST",
@@ -681,7 +681,7 @@ class Test_AsyncJob(unittest.TestCase):
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
-            name="BigQuery.job.exists",
+            span_name="BigQuery.job.exists",
             span_attributes={
                 "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
             },
@@ -713,7 +713,7 @@ class Test_AsyncJob(unittest.TestCase):
 
         call_api.assert_called_once_with(
             retry,
-            name="BigQuery.job.exists",
+            span_name="BigQuery.job.exists",
             span_attributes={
                 "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
             },
@@ -734,7 +734,7 @@ class Test_AsyncJob(unittest.TestCase):
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
-            name="BigQuery.job.exists",
+            span_name="BigQuery.job.exists",
             span_attributes={"path": PATH},
             job_ref=job,
             method="GET",
@@ -762,7 +762,7 @@ class Test_AsyncJob(unittest.TestCase):
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
-            name="BigQuery.job.reload",
+            span_name="BigQuery.job.reload",
             span_attributes={
                 "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
             },
@@ -795,7 +795,7 @@ class Test_AsyncJob(unittest.TestCase):
 
         call_api.assert_called_once_with(
             retry,
-            name="BigQuery.job.reload",
+            span_name="BigQuery.job.reload",
             span_attributes={
                 "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
             },

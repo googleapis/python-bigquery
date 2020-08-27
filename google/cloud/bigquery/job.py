@@ -637,7 +637,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         span_attributes = {"path": path}
         api_response = client._call_api(
             retry,
-            name="BigQuery.job.begin",
+            span_name="BigQuery.job.begin",
             span_attributes=span_attributes,
             job_ref=self,
             method="POST",
@@ -677,7 +677,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
             client._call_api(
                 retry,
-                name="BigQuery.job.exists",
+                span_name="BigQuery.job.exists",
                 span_attributes=span_attributes,
                 job_ref=self,
                 method="GET",
@@ -715,7 +715,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         api_response = client._call_api(
             retry,
-            name="BigQuery.job.reload",
+            span_name="BigQuery.job.reload",
             span_attributes=span_attributes,
             job_ref=self,
             method="GET",
@@ -754,7 +754,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         api_response = client._call_api(
             retry,
-            name="BigQuery.job.cancel",
+            span_name="BigQuery.job.cancel",
             span_attributes=span_attributes,
             job_ref=self,
             method="POST",

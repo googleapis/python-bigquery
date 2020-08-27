@@ -252,7 +252,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.getServiceAccountEmail",
             span_attributes=span_attributes,
-            client=self,
             method="GET",
             path=path,
             timeout=timeout,
@@ -297,7 +296,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.listProjects",
                 span_attributes=span_attributes,
-                client=self,
                 *args,
                 timeout=timeout,
                 **kwargs
@@ -376,7 +374,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.listDatasets",
                 span_attributes=span_attributes,
-                client=self,
                 *args,
                 timeout=timeout,
                 **kwargs
@@ -514,7 +511,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.createDataset",
                 span_attributes=span_attributes,
-                client=self,
                 method="POST",
                 path=path,
                 data=data,
@@ -566,7 +562,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.createRoutine",
                 span_attributes=span_attributes,
-                client=self,
                 method="POST",
                 path=path,
                 data=resource,
@@ -621,7 +616,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.createTable",
                 span_attributes=span_attributes,
-                client=self,
                 method="POST",
                 path=path,
                 data=data,
@@ -638,16 +632,18 @@ class Client(ClientWithProject):
         retry,
         name=None,
         span_attributes=None,
-        client=None,
         job_ref=None,
         **kwargs
     ):
-        with create_span(
-            name=name, attributes=span_attributes, client=client, job_ref=job_ref
-        ):
-            call = functools.partial(self._connection.api_request, **kwargs)
+
+        call = functools.partial(self._connection.api_request, **kwargs)
         if retry:
             call = retry(call)
+        if name is not None:
+            with create_span(
+                name=name, attributes=span_attributes, client=self, job_ref=job_ref
+            ):
+                return call()
         return call()
 
     def get_dataset(self, dataset_ref, retry=DEFAULT_RETRY, timeout=None):
@@ -682,7 +678,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.getDataset",
             span_attributes=span_attributes,
-            client=self,
             method="GET",
             path=path,
             timeout=timeout,
@@ -710,7 +705,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.getIamPolicy",
             span_attributes=span_attributes,
-            client=self,
             method="POST",
             path=path,
             data=body,
@@ -745,7 +739,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.setIamPolicy",
             span_attributes=span_attributes,
-            client=self,
             method="POST",
             path=path,
             data=body,
@@ -772,7 +765,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.testIamPermissions",
             span_attributes=span_attributes,
-            client=self,
             method="POST",
             path=path,
             data=body,
@@ -813,7 +805,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.getModel",
             span_attributes=span_attributes,
-            client=self,
             method="GET",
             path=path,
             timeout=timeout,
@@ -853,7 +844,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.getRoutine",
             span_attributes=span_attributes,
-            client=self,
             method="GET",
             path=path,
             timeout=timeout,
@@ -890,7 +880,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.getTable",
             span_attributes=span_attributes,
-            client=self,
             method="GET",
             path=path,
             timeout=timeout,
@@ -938,7 +927,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.updateDataset",
             span_attributes=span_attributes,
-            client=self,
             method="PATCH",
             path=path,
             data=partial,
@@ -987,7 +975,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.updateModel",
             span_attributes=span_attributes,
-            client=self,
             method="PATCH",
             path=path,
             data=partial,
@@ -1047,7 +1034,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.updateRoutine",
             span_attributes=span_attributes,
-            client=self,
             method="PUT",
             path=path,
             data=partial,
@@ -1097,7 +1083,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.updateTable",
             span_attributes=span_attributes,
-            client=self,
             method="PATCH",
             path=path,
             data=partial,
@@ -1166,7 +1151,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.listModels",
                 span_attributes=span_attributes,
-                client=self,
                 *args,
                 timeout=timeout,
                 **kwargs
@@ -1245,7 +1229,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.listRoutines",
                 span_attributes=span_attributes,
-                client=self,
                 *args,
                 timeout=timeout,
                 **kwargs
@@ -1323,7 +1306,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.listTables",
                 span_attributes=span_attributes,
-                client=self,
                 *args,
                 timeout=timeout,
                 **kwargs
@@ -1398,7 +1380,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.deleteDataset",
                 span_attributes=span_attributes,
-                client=self,
                 method="DELETE",
                 path=path,
                 query_params=params,
@@ -1448,7 +1429,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.deleteModel",
                 span_attributes=span_attributes,
-                client=self,
                 method="DELETE",
                 path=path,
                 timeout=timeout,
@@ -1499,7 +1479,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.deleteRoutine",
                 span_attributes=span_attributes,
-                client=self,
                 method="DELETE",
                 path=path,
                 timeout=timeout,
@@ -1546,7 +1525,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.deleteTable",
                 span_attributes=span_attributes,
-                client=self,
                 method="DELETE",
                 path=path,
                 timeout=timeout,
@@ -1603,7 +1581,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.getQueryResults",
             span_attributes=span_attributes,
-            client=self,
             method="GET",
             path=path,
             query_params=extra_params,
@@ -1758,7 +1735,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.getJob",
             span_attributes=span_attributes,
-            client=self,
             method="GET",
             path=path,
             query_params=extra_params,
@@ -1816,7 +1792,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.cancelJob",
             span_attributes=span_attributes,
-            client=self,
             method="POST",
             path=path,
             query_params=extra_params,
@@ -1919,7 +1894,6 @@ class Client(ClientWithProject):
                 retry,
                 name="BigQuery.listJobs",
                 span_attributes=span_attributes,
-                client=self,
                 *args,
                 timeout=timeout,
                 **kwargs
@@ -3017,7 +2991,6 @@ class Client(ClientWithProject):
             retry,
             name="BigQuery.insertRowsJson",
             span_attributes=span_attributes,
-            client=self,
             method="POST",
             path=path,
             data=data,

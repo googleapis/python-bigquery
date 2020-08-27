@@ -250,7 +250,7 @@ class TestClient(unittest.TestCase):
             [mock.call(foo="bar"), mock.call(foo="bar")],  # was retried once
         )
 
-    def test__call_api_span_creator_called(self):
+    def test__call_api_span_creator_not_called(self):
         from concurrent.futures import TimeoutError
         from google.cloud.bigquery.retry import DEFAULT_RETRY
 
@@ -272,7 +272,7 @@ class TestClient(unittest.TestCase):
 
             final_attributes.assert_not_called()
 
-    def test__call_api_span_creator_not_called(self):
+    def test__call_api_span_creator_called(self):
         from concurrent.futures import TimeoutError
         from google.cloud.bigquery.retry import DEFAULT_RETRY
 

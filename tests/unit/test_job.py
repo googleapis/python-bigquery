@@ -884,9 +884,7 @@ class Test_AsyncJob(unittest.TestCase):
         job = self._set_properties_job()
 
         api_request_patcher = mock.patch.object(
-            job._client._connection,
-            "api_request",
-            side_effect=[ValueError, response],
+            job._client._connection, "api_request", side_effect=[ValueError, response],
         )
         retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
             lambda exc: isinstance(exc, ValueError)
@@ -907,10 +905,7 @@ class Test_AsyncJob(unittest.TestCase):
             [
                 mock.call(method="POST", path=api_path, query_params={}, timeout=7.5),
                 mock.call(
-                    method="POST",
-                    path=api_path,
-                    query_params={},
-                    timeout=7.5,
+                    method="POST", path=api_path, query_params={}, timeout=7.5,
                 ),  # was retried once
             ],
         )
@@ -2730,10 +2725,7 @@ class TestLoadJob(unittest.TestCase, _Base):
         final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path=PATH,
-            query_params={},
-            timeout=None,
+            method="POST", path=PATH, query_params={}, timeout=None,
         )
         self._verifyResourceProperties(job, RESOURCE)
 
@@ -2755,10 +2747,7 @@ class TestLoadJob(unittest.TestCase, _Base):
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
-            method="POST",
-            path=PATH,
-            query_params={},
-            timeout=None,
+            method="POST", path=PATH, query_params={}, timeout=None,
         )
         self._verifyResourceProperties(job, RESOURCE)
 
@@ -3183,10 +3172,7 @@ class TestCopyJob(unittest.TestCase, _Base):
         final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
-            method="GET",
-            path=PATH,
-            query_params={"fields": "id"},
-            timeout=None,
+            method="GET", path=PATH, query_params={"fields": "id"}, timeout=None,
         )
 
     def test_exists_hit_w_alternate_client(self):
@@ -3601,10 +3587,7 @@ class TestExtractJob(unittest.TestCase, _Base):
         final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
-            method="GET",
-            path=PATH,
-            query_params={"fields": "id"},
-            timeout=None,
+            method="GET", path=PATH, query_params={"fields": "id"}, timeout=None,
         )
 
     def test_exists_hit_w_alternate_client(self):
@@ -5718,10 +5701,8 @@ class TestQueryJob(unittest.TestCase, _Base):
 
         job.to_dataframe(bqstorage_client=bqstorage_client)
 
-        destination_table = (
-            "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
-                **resource["configuration"]["query"]["destinationTable"]
-            )
+        destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
+            **resource["configuration"]["query"]["destinationTable"]
         )
         expected_session = bigquery_storage_v1.types.ReadSession(
             table=destination_table,
@@ -6330,14 +6311,11 @@ def test_to_dataframe_bqstorage_preserve_order(query):
 
     job.to_dataframe(bqstorage_client=bqstorage_client)
 
-    destination_table = (
-        "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
-            **job_resource["configuration"]["query"]["destinationTable"]
-        )
+    destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
+        **job_resource["configuration"]["query"]["destinationTable"]
     )
     expected_session = bigquery_storage_v1.types.ReadSession(
-        table=destination_table,
-        data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+        table=destination_table, data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
     )
     bqstorage_client.create_read_session.assert_called_once_with(
         parent="projects/test-project",

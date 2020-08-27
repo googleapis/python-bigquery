@@ -628,12 +628,7 @@ class Client(ClientWithProject):
             return self.get_table(table.reference, retry=retry)
 
     def _call_api(
-        self,
-        retry,
-        span_name=None,
-        span_attributes=None,
-        job_ref=None,
-        **kwargs
+        self, retry, span_name=None, span_attributes=None, job_ref=None, **kwargs
     ):
 
         call = functools.partial(self._connection.api_request, **kwargs)
@@ -685,11 +680,7 @@ class Client(ClientWithProject):
         return Dataset.from_api_repr(api_response)
 
     def get_iam_policy(
-        self,
-        table,
-        requested_policy_version=1,
-        retry=DEFAULT_RETRY,
-        timeout=None,
+        self, table, requested_policy_version=1, retry=DEFAULT_RETRY, timeout=None,
     ):
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
@@ -714,12 +705,7 @@ class Client(ClientWithProject):
         return Policy.from_api_repr(response)
 
     def set_iam_policy(
-        self,
-        table,
-        policy,
-        updateMask=None,
-        retry=DEFAULT_RETRY,
-        timeout=None,
+        self, table, policy, updateMask=None, retry=DEFAULT_RETRY, timeout=None,
     ):
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
@@ -748,11 +734,7 @@ class Client(ClientWithProject):
         return Policy.from_api_repr(response)
 
     def test_iam_permissions(
-        self,
-        table,
-        permissions,
-        retry=DEFAULT_RETRY,
-        timeout=None,
+        self, table, permissions, retry=DEFAULT_RETRY, timeout=None,
     ):
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
@@ -1659,8 +1641,8 @@ class Client(ClientWithProject):
                 sources, destination, job_config=copy_job_config, retry=retry
             )
         elif "extract" in job_config:
-            extract_job_config = (
-                google.cloud.bigquery.job.ExtractJobConfig.from_api_repr(job_config)
+            extract_job_config = google.cloud.bigquery.job.ExtractJobConfig.from_api_repr(
+                job_config
             )
             source = _get_sub_prop(job_config, ["extract", "sourceTable"])
             source_type = "Table"

@@ -21,7 +21,10 @@ client = bigquery.Client()
 
 # TODO(developer): Set table_id to the ID of the model to fetch.
 table_id = "your-project.your_dataset.your_table"
-#Explicitly define the schema. (Optional)
+# The client converts Python objects to JSON-serialization, but this requires a schema.
+# A schema can be fetched by calling `client.get_table`. If inserting many rows, it is
+# suggested that you cache the schema. The backend API for `client.insert_rows` supports
+# a much higher QPS than the backend API for `client.get_table`.
 schema = [
     bigquery.SchemaField("col_1", "STRING"),
     bigquery.SchemaField("col_2", "INTEGER"),

@@ -46,5 +46,3 @@ def table_insert_rows(table_id):
         client.insert_rows(table_id, selected_fields=schema, rows_to_insert)
         print("New rows have been added.")
     # [END bigquery_table_insert_rows]
-    
-    

@@ -23,12 +23,28 @@ def table_insert_rows(table_id):
     client = bigquery.Client()
 
     # TODO(developer): Set table_id to the ID of the model to fetch.
-    # table_id = "your-project.your_dataset.your_table"
+    table_id = "your-project.your_dataset.your_table"
 
-    table = client.get_table(table_id)  # Make an API request.
+    # The client converts Python objects to JSON-serialization, but this requires a schema.
+    # A schema can be fetched by calling `client.get_table` as shown below.
+    # schema = client.get_table(table_id).schema
+    
+    # If inserting many rows, it is suggested that you cache the schema.
+    # The backend API for `client.insert_rows` supports a much higher QPS
+    # than the backend API for `client.get_table`.
+
+    schema = [
+        bigquery.SchemaField("col_1", "STRING"),
+        bigquery.SchemaField("col_2", "INTEGER"),
+        ]
+
+    # Populate data for entry
     rows_to_insert = [(u"Phred Phlyntstone", 32), (u"Wylma Phlyntstone", 29)]
 
-    errors = client.insert_rows(table, rows_to_insert)  # Make an API request.
-    if errors == []:
+    try:
+        # Stream data to BQ
+        client.insert_rows(table_id, selected_fields=schema, rows_to_insert)
         print("New rows have been added.")
     # [END bigquery_table_insert_rows]
+    
+    

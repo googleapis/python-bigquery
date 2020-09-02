@@ -79,6 +79,22 @@ def test_destination_var_unexpected_input(parser_class):
         parser.destination_var()
 
 
+def test_option_value_unexpected_input(parser_class):
+    from google.cloud.bigquery.ipython_magics.line_arg_parser import ParseError
+    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+
+    # A simple iterable of Tokens is sufficient.
+    fake_lexer = [
+        Token(TokenType.UNKNOWN, lexeme="@!#", pos=8),
+        Token(TokenType.OPTION_SPEC, lexeme="--foo", pos=13),
+    ]
+    parser = parser_class(fake_lexer)
+
+    with pytest.raises(ParseError, match=r"Unknown input.*position 8.*@!#.*"):
+        parser.option_value()
+
+
 def test_dict_items_empty_dict(parser_class):
     from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
     from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token

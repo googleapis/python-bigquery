@@ -25,7 +25,7 @@ StateTransition = namedtuple("StateTransition", ("new_state", "total_offset"))
 
 
 # Token definition order is important, thus an OrderedDict is needed with tightly
-# controlled member definitions (i.e. passed as a sequnce, and *not* via kwargs).
+# controlled member definitions (i.e. passed as a sequence, and *not* via kwargs).
 token_types = OrderedDict(
     [
         (

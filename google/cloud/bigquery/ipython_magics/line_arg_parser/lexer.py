@@ -49,7 +49,7 @@ token_types = OrderedDict(
                 [
                     (
                         "GOTO_STATE_3",
-                        r"(?P<GOTO_STATE_3>(?=--params(?:\s|=|$)))",  # the --params option
+                        r"(?P<GOTO_STATE_3>(?=--params(?:\s|=|--|$)))",  # the --params option
                     ),
                     ("OPTION_SPEC", r"(?P<OPTION_SPEC>--\w+)"),
                     ("OPTION_EQ", r"(?P<OPTION_EQ>=)"),
@@ -68,7 +68,7 @@ token_types = OrderedDict(
                             r'"(?:[^"\\]|\.)*"',  # single and double quoted strings
                         ),
                     ),
-                    ("PARAMS_OPT_SPEC", r"(?P<PARAMS_OPT_SPEC>--params)"),
+                    ("PARAMS_OPT_SPEC", r"(?P<PARAMS_OPT_SPEC>--params(?=\s|=|--|$))"),
                     ("PARAMS_OPT_EQ", r"(?P<PARAMS_OPT_EQ>=)"),
                     (
                         "GOTO_STATE_2",

@@ -1361,8 +1361,7 @@ def test_bigquery_magic_with_option_value_incorrect():
 
     sql = "SELECT @foo AS foo"
 
-    exc_pattern = r".*[Uu]nrecognized input.*option values correct\?.*"
-    with pytest.raises(ValueError, match=exc_pattern):
+    with pytest.raises(ValueError, match=r".*invalid literal.*\[PLENTY!\].*"):
         cell_magic_args = "params_dict_df --max_results [PLENTY!]"
         ip.run_cell_magic("bigquery", cell_magic_args, sql)
 
@@ -1500,6 +1499,24 @@ def test_bigquery_magic_with_improperly_formatted_params():
 
     with pytest.raises(SyntaxError):
         ip.run_cell_magic("bigquery", "--params {17}", sql)
+
+
+@pytest.mark.usefixtures("ipython_interactive")
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_bigquery_magic_with_invalid_multiple_option_values():
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    magics.context.credentials = mock.create_autospec(
+        google.auth.credentials.Credentials, instance=True
+    )
+
+    sql = "SELECT @foo AS foo"
+
+    exc_pattern = r".*[Uu]nrecognized input.*option values correct\?.*567.*"
+
+    with pytest.raises(ValueError, match=exc_pattern):
+        cell_magic_args = "params_dict_df --max_results 10 567"
+        ip.run_cell_magic("bigquery", cell_magic_args, sql)
 
 
 @pytest.mark.usefixtures("ipython_interactive")

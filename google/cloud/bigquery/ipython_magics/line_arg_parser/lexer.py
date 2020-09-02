@@ -53,9 +53,7 @@ token_types = OrderedDict(
                     ),
                     ("OPTION_SPEC", r"(?P<OPTION_SPEC>--\w+)"),
                     ("OPTION_EQ", r"(?P<OPTION_EQ>=)"),
-                    # NOTE: Currently the only valid value for a non "--params" option is
-                    # either a project/table name or an integer (e.g. max_results).
-                    ("OPT_VAL", r"(?P<OPT_VAL>(?:\w|\.|-(?!-))+)"),
+                    ("OPT_VAL", r"(?P<OPT_VAL>\S+?(?=\s|--|$))"),
                 ]
             ),
         ),

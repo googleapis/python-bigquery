@@ -23,18 +23,43 @@ import enum
 Token = namedtuple("Token", ("type_", "lexeme", "pos"))
 StateTransition = namedtuple("StateTransition", ("new_state", "total_offset"))
 
-
-# Token definition order is important, thus an OrderedDict is needed with tightly
+# Pattern matching is done with regexes, and the order in which the token patterns are
+# defined is important.
+#
+# Suppose we had the following token definitions:
+#  * INT - a token matching integers,
+#  * FLOAT - a token matching floating point numbers,
+#  * DOT - a token matching a single literal dot character, i.e. "."
+#
+# The FLOAT token would have to be defined first, since we would want the input "1.23"
+# to be tokenized as a single FLOAT token, and *not* three tokens (INT, DOT, INT).
+#
+# Sometimes, however, different tokens match too similar patterns, and it is not
+# possible to define them in order that would avoid any ambiguity. One such case are
+# the OPT_VAL and PY_NUMBER tokens, as both can match an integer literal, say "42".
+#
+# In order to avoid the dilemmas, the lexer implements a concept of STATES. States are
+# used to split token definitions into subgroups, and in each lexer state only a single
+# subgroup is used for tokenizing the input. Lexer states can therefore be though of as
+# token namespaces.
+#
+# For example, while parsing the value of the "--params" option, we do not want to
+# "recognize" it as a single OPT_VAL token, but instead want to parse it as a Python
+# dictionary and verify its syntactial correctness. On the other hand, while parsing
+# the value of an option other than "--params", we do not really care about its
+# structure, and thus do not want to use any of the "Python tokens" for pattern matching.
+#
+# Since token definition order is important, an OrderedDict is needed with tightly
 # controlled member definitions (i.e. passed as a sequence, and *not* via kwargs).
 token_types = OrderedDict(
     [
         (
-            "state_1",
+            "state_parse_pos_args",
             OrderedDict(
                 [
                     (
-                        "GOTO_STATE_2",
-                        r"(?P<GOTO_STATE_2>(?=--))",  # double dash - starting the options list
+                        "GOTO_PARSE_NON_PARAMS_OPTIONS",
+                        r"(?P<GOTO_PARSE_NON_PARAMS_OPTIONS>(?=--))",  # double dash - starting the options list
                     ),
                     (
                         "DEST_VAR",
@@ -44,12 +69,12 @@ token_types = OrderedDict(
             ),
         ),
         (
-            "state_2",
+            "state_parse_non_params_options",
             OrderedDict(
                 [
                     (
-                        "GOTO_STATE_3",
-                        r"(?P<GOTO_STATE_3>(?=--params(?:\s|=|--|$)))",  # the --params option
+                        "GOTO_PARSE_PARAMS_OPTION",
+                        r"(?P<GOTO_PARSE_PARAMS_OPTION>(?=--params(?:\s|=|--|$)))",  # the --params option
                     ),
                     ("OPTION_SPEC", r"(?P<OPTION_SPEC>--\w+)"),
                     ("OPTION_EQ", r"(?P<OPTION_EQ>=)"),
@@ -58,7 +83,7 @@ token_types = OrderedDict(
             ),
         ),
         (
-            "state_3",
+            "state_parse_params_option",
             OrderedDict(
                 [
                     (
@@ -71,8 +96,8 @@ token_types = OrderedDict(
                     ("PARAMS_OPT_SPEC", r"(?P<PARAMS_OPT_SPEC>--params(?=\s|=|--|$))"),
                     ("PARAMS_OPT_EQ", r"(?P<PARAMS_OPT_EQ>=)"),
                     (
-                        "GOTO_STATE_2",
-                        r"(?P<GOTO_STATE_2>(?=--\w+))",  # found another option spec
+                        "GOTO_PARSE_NON_PARAMS_OPTIONS",
+                        r"(?P<GOTO_PARSE_NON_PARAMS_OPTIONS>(?=--\w+))",  # found another option spec
                     ),
                     ("PY_BOOL", r"(?P<PY_BOOL>True|False)"),
                     ("DOLLAR_PY_ID", r"(?P<DOLLAR_PY_ID>\$[^\d\W]\w*)"),
@@ -146,15 +171,15 @@ TokenType = AutoStrEnum(
     [
         (name, name)
         for name in itertools.chain.from_iterable(token_types.values())
-        if not name.startswith("GOTO_STATE")
+        if not name.startswith("GOTO_")
     ],
 )
 
 
 class LexerState(AutoStrEnum):
-    STATE_1 = ()  # parsing positional arguments
-    STATE_2 = ()  # parsing options other than "--params"
-    STATE_3 = ()  # parsing the "--params" option
+    PARSE_POS_ARGS = ()  # parsing positional arguments
+    PARSE_NON_PARAMS_OPTIONS = ()  # parsing options other than "--params"
+    PARSE_PARAMS_OPTION = ()  # parsing the "--params" option
     STATE_END = ()
 
 
@@ -162,24 +187,27 @@ class Lexer(object):
     """Lexical analyzer for tokenizing the cell magic input line."""
 
     _GRAND_PATTERNS = {
-        LexerState.STATE_1: re.compile(
+        LexerState.PARSE_POS_ARGS: re.compile(
             "|".join(
                 itertools.chain(
-                    token_types["state_1"].values(), token_types["common"].values(),
+                    token_types["state_parse_pos_args"].values(),
+                    token_types["common"].values(),
                 )
             )
         ),
-        LexerState.STATE_2: re.compile(
+        LexerState.PARSE_NON_PARAMS_OPTIONS: re.compile(
             "|".join(
                 itertools.chain(
-                    token_types["state_2"].values(), token_types["common"].values(),
+                    token_types["state_parse_non_params_options"].values(),
+                    token_types["common"].values(),
                 )
             )
         ),
-        LexerState.STATE_3: re.compile(
+        LexerState.PARSE_PARAMS_OPTION: re.compile(
             "|".join(
                 itertools.chain(
-                    token_types["state_3"].values(), token_types["common"].values(),
+                    token_types["state_parse_params_option"].values(),
+                    token_types["common"].values(),
                 )
             )
         ),
@@ -195,7 +223,7 @@ class Lexer(object):
         # should be made.
         # Since we don't have "nested" states, we don't really need a stack and
         # this simple mechanism is sufficient.
-        state = LexerState.STATE_1
+        state = LexerState.PARSE_POS_ARGS
         offset = 0  # the number of characters processed so far
 
         while state != LexerState.STATE_END:
@@ -241,7 +269,7 @@ class Lexer(object):
         for match in iter(scanner.match, None):  # pragma: NO COVER
             token_type = match.lastgroup
 
-            if token_type.startswith("GOTO_STATE"):
+            if token_type.startswith("GOTO_"):
                 yield StateTransition(
                     new_state=getattr(LexerState, token_type[5:]),  # w/o "GOTO_" prefix
                     total_offset=match.start(),

@@ -1,5 +1,5 @@
 IPython Magics for BigQuery
 ===========================
 
-.. automodule:: google.cloud.bigquery.ipython_magics.magics
+.. automodule:: google.cloud.bigquery.magics.magics
     :members:

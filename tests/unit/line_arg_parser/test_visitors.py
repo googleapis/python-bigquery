@@ -17,15 +17,13 @@ import pytest
 
 @pytest.fixture
 def base_visitor():
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.visitors import (
-        NodeVisitor,
-    )
+    from google.cloud.bigquery.magics.line_arg_parser.visitors import NodeVisitor
 
     return NodeVisitor()
 
 
 def test_unknown_node(base_visitor):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.parser import ParseNode
+    from google.cloud.bigquery.magics.line_arg_parser.parser import ParseNode
 
     class UnknownNode(ParseNode):
         pass

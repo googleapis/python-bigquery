@@ -17,14 +17,14 @@ import pytest
 
 @pytest.fixture(scope="session")
 def parser_class():
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.parser import Parser
+    from google.cloud.bigquery.magics.line_arg_parser.parser import Parser
 
     return Parser
 
 
 def test_consume_expected_eol(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [Token(TokenType.EOL, lexeme="", pos=0)]
@@ -34,9 +34,9 @@ def test_consume_expected_eol(parser_class):
 
 
 def test_consume_unexpected_eol(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import ParseError
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import ParseError
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [Token(TokenType.EOL, lexeme="", pos=0)]
@@ -47,9 +47,9 @@ def test_consume_unexpected_eol(parser_class):
 
 
 def test_input_line_unexpected_input(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import ParseError
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import ParseError
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [
@@ -64,9 +64,9 @@ def test_input_line_unexpected_input(parser_class):
 
 
 def test_destination_var_unexpected_input(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import ParseError
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import ParseError
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [
@@ -80,9 +80,9 @@ def test_destination_var_unexpected_input(parser_class):
 
 
 def test_option_value_unexpected_input(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import ParseError
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import ParseError
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [
@@ -96,8 +96,8 @@ def test_option_value_unexpected_input(parser_class):
 
 
 def test_dict_items_empty_dict(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [Token(TokenType.RCURL, lexeme="}", pos=22)]
@@ -109,8 +109,8 @@ def test_dict_items_empty_dict(parser_class):
 
 
 def test_dict_items_trailing_comma(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [
@@ -131,9 +131,9 @@ def test_dict_items_trailing_comma(parser_class):
 
 
 def test_dict_item_unknown_input(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import ParseError
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import ParseError
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [Token(TokenType.UNKNOWN, lexeme="#/%", pos=35)]
@@ -144,10 +144,10 @@ def test_dict_item_unknown_input(parser_class):
 
 
 def test_pyvalue_list_containing_dict(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.parser import PyDict
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.parser import PyList
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser.parser import PyDict
+    from google.cloud.bigquery.magics.line_arg_parser.parser import PyList
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [
@@ -178,9 +178,9 @@ def test_pyvalue_list_containing_dict(parser_class):
 
 
 def test_pyvalue_invalid_token(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import ParseError
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import ParseError
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [Token(TokenType.OPTION_SPEC, lexeme="--verbose", pos=75)]
@@ -192,8 +192,8 @@ def test_pyvalue_invalid_token(parser_class):
 
 
 def test_collection_items_empty(parser_class):
-    from google.cloud.bigquery.ipython_magics.line_arg_parser import TokenType
-    from google.cloud.bigquery.ipython_magics.line_arg_parser.lexer import Token
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
 
     # A simple iterable of Tokens is sufficient.
     fake_lexer = [Token(TokenType.RPAREN, lexeme=")", pos=30)]

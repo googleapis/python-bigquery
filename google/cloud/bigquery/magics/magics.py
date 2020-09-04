@@ -160,7 +160,7 @@ import google.auth
 from google.cloud import bigquery
 import google.cloud.bigquery.dataset
 from google.cloud.bigquery.dbapi import _helpers
-from google.cloud.bigquery.ipython_magics import line_arg_parser as lap
+from google.cloud.bigquery.magics import line_arg_parser as lap
 
 
 IPYTHON_USER_AGENT = "ipython-{}".format(IPython.__version__)

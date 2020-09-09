@@ -254,7 +254,7 @@ class Lexer(object):
             The next ``Token`` or ``StateTransition`` instance.
         """
         pattern = self._GRAND_PATTERNS[state]
-        scanner = pattern.finditer(self._text, pos=current_offset)
+        scanner = pattern.finditer(self._text, current_offset)
 
         for match in scanner:
             token_type = match.lastgroup

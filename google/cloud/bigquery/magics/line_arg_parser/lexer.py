@@ -227,9 +227,9 @@ class Lexer(object):
         offset = 0  # the number of characters processed so far
 
         while state != LexerState.STATE_END:
-            token_generator = self._get_state_token_generator(state, offset)
+            token_stream = self._find_state_tokens(state, offset)
 
-            for maybe_token in token_generator:  # pragma: NO COVER
+            for maybe_token in token_stream:  # pragma: NO COVER
                 if isinstance(maybe_token, StateTransition):
                     state = maybe_token.new_state
                     offset = maybe_token.total_offset
@@ -242,31 +242,21 @@ class Lexer(object):
                     state = LexerState.STATE_END
                     break
 
-    def _get_state_token_generator(self, state, current_offset):
-        """Return token generator for the current state starting at ``current_offset``.
+    def _find_state_tokens(self, state, current_offset):
+        """Scan the input for current state's tokens starting at ``current_offset``.
 
         Args:
             state (LexerState): The current lexer state.
             current_offset (int): The offset in the input text, i.e. the number
                 of characters already scanned so far.
 
-        Returns:
-            A generator yielding ``Token`` and ``StateTransition`` instances.
-        """
-        pattern = self._GRAND_PATTERNS[state]
-        scanner = pattern.scanner(self._text, current_offset)
-        return self._scan_for_tokens(scanner)
-
-    def _scan_for_tokens(self, scanner):
-        """Yield tokens produced by the scanner or state transition objects.
-
-        Args:
-            scanner (SRE_Scanner): The text tokenizer.
-
         Yields:
             The next ``Token`` or ``StateTransition`` instance.
         """
-        for match in iter(scanner.match, None):  # pragma: NO COVER
+        pattern = self._GRAND_PATTERNS[state]
+        scanner = pattern.finditer(self._text, pos=current_offset)
+
+        for match in scanner:
             token_type = match.lastgroup
 
             if token_type.startswith("GOTO_"):

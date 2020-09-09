@@ -164,7 +164,7 @@ class Parser(object):
                 ``ParseError``.
 
         Raises:
-            ParseError: If the current token does not match the expceted type.
+            ParseError: If the current token does not match the expected type.
         """
         if self._current_token.type_ == expected_type:
             if expected_type != TokenType.EOL:

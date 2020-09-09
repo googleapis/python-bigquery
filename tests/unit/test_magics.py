@@ -1343,7 +1343,7 @@ def test_bigquery_magic_with_dict_params_duplicate():
 
     with pytest.raises(ValueError, match=r"Duplicate --params option\."):
         cell_magic_args = (
-            "params_dict_df --params {'foo': 1} " "--verbose " "--params {'bar': 2} "
+            "params_dict_df --params {'foo': 1} --verbose --params {'bar': 2} "
         )
         ip.run_cell_magic("bigquery", cell_magic_args, sql)
 

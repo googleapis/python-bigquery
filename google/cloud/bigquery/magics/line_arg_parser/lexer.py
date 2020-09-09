@@ -256,7 +256,7 @@ class Lexer(object):
         pattern = self._GRAND_PATTERNS[state]
         scanner = pattern.finditer(self._text, current_offset)
 
-        for match in scanner:
+        for match in scanner:  # pragma: NO COVER
             token_type = match.lastgroup
 
             if token_type.startswith("GOTO_"):

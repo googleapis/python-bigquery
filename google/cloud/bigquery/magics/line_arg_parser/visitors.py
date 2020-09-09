@@ -12,6 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""This module contains classes that traverse AST and convert it to something else.
+
+If the parser successfully accepts a valid input (the bigquery cell magic arguments),
+the result is an Abstract Syntax Tree (AST) that represents the input as a tree
+with notes containing various useful metadata.
+
+Node visitors can process such tree and convert it to something else that can
+be used for further processing, for example:
+
+ * An optimized version of the tree with redundancy removed/simplified (not used here).
+ * The same tree, but with semantic errors checked, because an otherwise syntactically
+   valid input might still contain errors (not used here, semantic errors are detected
+   elsewhere).
+ * A form that can be directly handed to the code that operates on the input. The
+   ``QueryParamsExtractor`` class, for instance, splits the input arguments into
+   the "--params <...>" part and everything else.
+   The "everything else" part can be then parsed by the default Jupyter argument parser,
+   while the --params option is processed separately by the Python evaluator.
+
+More info on the visitor design pattern:
+https://en.wikipedia.org/wiki/Visitor_pattern
+
+"""
+
 from __future__ import print_function
 
 

@@ -4677,6 +4677,8 @@ class TestQueryJob(unittest.TestCase, _Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "2",
+            "pageToken": "next-page",
+            "rows": [{"f": [{"v": "abc"}]}],
         }
         job_resource = self._make_resource(started=True)
         job_resource_done = self._make_resource(started=True, ended=True)
@@ -4685,15 +4687,17 @@ class TestQueryJob(unittest.TestCase, _Base):
             "datasetId": "dest_dataset",
             "tableId": "dest_table",
         }
-        tabledata_resource = {
-            # Explicitly set totalRows to be different from the initial
-            # response to test update during iteration.
-            "totalRows": "1",
-            "pageToken": None,
-            "rows": [{"f": [{"v": "abc"}]}],
+        query_resource_page_2 = {
+            # Explicitly set totalRows to be different from the query response.
+            # to test update during iteration.
+            "totalRows": "3",
+            "rows": [{"f": [{"v": "def"}]}, {"f": [{"v": "xyz"}]}],
         }
         conn = _make_connection(
-            query_resource, query_resource_done, job_resource_done, tabledata_resource
+            query_resource,
+            query_resource_done,
+            job_resource_done,
+            query_resource_page_2,
         )
         client = _make_client(self.PROJECT, connection=conn)
         job = self._get_target_class().from_api_repr(job_resource, client)
@@ -4702,17 +4706,24 @@ class TestQueryJob(unittest.TestCase, _Base):
 
         self.assertIsInstance(result, RowIterator)
         self.assertEqual(result.total_rows, 2)
-        rows = list(result)
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0].col1, "abc")
-        # Test that the total_rows property has changed during iteration, based
-        # on the response from tabledata.list.
-        self.assertEqual(result.total_rows, 1)
 
+        rows = list(result)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0].col1, "abc")
+        self.assertEqual(rows[1].col1, "def")
+        self.assertEqual(rows[2].col1, "xyz")
+        # Test that the total_rows property has changed during iteration, based
+        # on the response from getQueryResults
+        self.assertEqual(result.total_rows, 3)
+
+        query_results_path = f"/projects/{self.PROJECT}/queries/{self.JOB_ID}"
         query_results_call = mock.call(
+            method="GET", path=query_results_path, query_params={}, timeout=None,
+        )
+        query_results_page_2_call = mock.call(
             method="GET",
-            path=f"/projects/{self.PROJECT}/queries/{self.JOB_ID}",
-            query_params={"maxResults": 0},
+            path=query_results_path,
+            query_params={"pageToken": "next-page"},
             timeout=None,
         )
         reload_call = mock.call(
@@ -4721,14 +4732,13 @@ class TestQueryJob(unittest.TestCase, _Base):
             query_params={},
             timeout=None,
         )
-        tabledata_call = mock.call(
-            method="GET",
-            path="/projects/dest-project/datasets/dest_dataset/tables/dest_table/data",
-            query_params={},
-            timeout=None,
-        )
         conn.api_request.assert_has_calls(
-            [query_results_call, query_results_call, reload_call, tabledata_call]
+            [
+                query_results_call,
+                query_results_call,
+                reload_call,
+                query_results_page_2_call,
+            ]
         )
 
     def test_result_with_done_job_calls_get_query_results(self):
@@ -4737,6 +4747,7 @@ class TestQueryJob(unittest.TestCase, _Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "1",
+            "rows": [{"f": [{"v": "abc"}]}],
         }
         job_resource = self._make_resource(started=True, ended=True)
         job_resource["configuration"]["query"]["destinationTable"] = {
@@ -4744,12 +4755,7 @@ class TestQueryJob(unittest.TestCase, _Base):
             "datasetId": "dest_dataset",
             "tableId": "dest_table",
         }
-        tabledata_resource = {
-            "totalRows": "1",
-            "pageToken": None,
-            "rows": [{"f": [{"v": "abc"}]}],
-        }
-        conn = _make_connection(query_resource_done, tabledata_resource)
+        conn = _make_connection(query_resource_done)
         client = _make_client(self.PROJECT, connection=conn)
         job = self._get_target_class().from_api_repr(job_resource, client)
 
@@ -4762,16 +4768,10 @@ class TestQueryJob(unittest.TestCase, _Base):
         query_results_call = mock.call(
             method="GET",
             path=f"/projects/{self.PROJECT}/queries/{self.JOB_ID}",
-            query_params={"maxResults": 0},
-            timeout=None,
-        )
-        tabledata_call = mock.call(
-            method="GET",
-            path="/projects/dest-project/datasets/dest_dataset/tables/dest_table/data",
             query_params={},
             timeout=None,
         )
-        conn.api_request.assert_has_calls([query_results_call, tabledata_call])
+        conn.api_request.assert_has_calls([query_results_call])
 
     def test_result_with_max_results(self):
         from google.cloud.bigquery.table import RowIterator
@@ -4781,9 +4781,6 @@ class TestQueryJob(unittest.TestCase, _Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "5",
-        }
-        tabledata_resource = {
-            "totalRows": "5",
             "pageToken": None,
             "rows": [
                 {"f": [{"v": "abc"}]},
@@ -4791,7 +4788,7 @@ class TestQueryJob(unittest.TestCase, _Base):
                 {"f": [{"v": "ghi"}]},
             ],
         }
-        connection = _make_connection(query_resource, tabledata_resource)
+        connection = _make_connection(query_resource)
         client = _make_client(self.PROJECT, connection=connection)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
@@ -4806,10 +4803,10 @@ class TestQueryJob(unittest.TestCase, _Base):
         rows = list(result)
 
         self.assertEqual(len(rows), 3)
-        self.assertEqual(len(connection.api_request.call_args_list), 2)
-        tabledata_list_request = connection.api_request.call_args_list[1]
+        self.assertEqual(len(connection.api_request.call_args_list), 1)
+        get_query_results_request = connection.api_request.call_args_list[0]
         self.assertEqual(
-            tabledata_list_request[1]["query_params"]["maxResults"], max_results
+            get_query_results_request[1]["query_params"]["maxResults"], max_results
         )
 
     def test_result_w_empty_schema(self):
@@ -4898,16 +4895,6 @@ class TestQueryJob(unittest.TestCase, _Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "4",
-        }
-        job_resource = self._make_resource(started=True, ended=True)
-        q_config = job_resource["configuration"]["query"]
-        q_config["destinationTable"] = {
-            "projectId": self.PROJECT,
-            "datasetId": self.DS_ID,
-            "tableId": self.TABLE_ID,
-        }
-        tabledata_resource = {
-            "totalRows": 4,
             "pageToken": "some-page-token",
             "rows": [
                 {"f": [{"v": "row1"}]},
@@ -4915,10 +4902,17 @@ class TestQueryJob(unittest.TestCase, _Base):
                 {"f": [{"v": "row3"}]},
             ],
         }
-        tabledata_resource_page_2 = {"totalRows": 4, "rows": [{"f": [{"v": "row4"}]}]}
-        conn = _make_connection(
-            query_results_resource, tabledata_resource, tabledata_resource_page_2
-        )
+        query_results_resource_page_2 = query_results_resource.copy()
+        query_results_resource_page_2["pageToken"] = None
+        query_results_resource_page_2["rows"] = [{"f": [{"v": "row4"}]}]
+        job_resource = self._make_resource(started=True, ended=True)
+        q_config = job_resource["configuration"]["query"]
+        q_config["destinationTable"] = {
+            "projectId": self.PROJECT,
+            "datasetId": self.DS_ID,
+            "tableId": self.TABLE_ID,
+        }
+        conn = _make_connection(query_results_resource, query_results_resource_page_2)
         client = _make_client(self.PROJECT, connection=conn)
         job = self._get_target_class().from_api_repr(job_resource, client)
 
@@ -4929,22 +4923,18 @@ class TestQueryJob(unittest.TestCase, _Base):
         actual_rows = list(result)
         self.assertEqual(len(actual_rows), 4)
 
-        tabledata_path = "/projects/%s/datasets/%s/tables/%s/data" % (
-            self.PROJECT,
-            self.DS_ID,
-            self.TABLE_ID,
-        )
+        query_results_path = f"/projects/{self.PROJECT}/queries/{self.JOB_ID}"
         conn.api_request.assert_has_calls(
             [
                 mock.call(
                     method="GET",
-                    path=tabledata_path,
+                    path=query_results_path,
                     query_params={"maxResults": 3},
                     timeout=None,
                 ),
                 mock.call(
                     method="GET",
-                    path=tabledata_path,
+                    path=query_results_path,
                     query_params={"pageToken": "some-page-token", "maxResults": 3},
                     timeout=None,
                 ),
@@ -4959,9 +4949,6 @@ class TestQueryJob(unittest.TestCase, _Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "5",
-        }
-        tabledata_resource = {
-            "totalRows": "5",
             "pageToken": None,
             "rows": [
                 {"f": [{"v": "abc"}]},
@@ -4970,7 +4957,7 @@ class TestQueryJob(unittest.TestCase, _Base):
                 {"f": [{"v": "jkl"}]},
             ],
         }
-        connection = _make_connection(query_resource, tabledata_resource)
+        connection = _make_connection(query_resource)
         client = _make_client(self.PROJECT, connection=connection)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
@@ -4985,11 +4972,123 @@ class TestQueryJob(unittest.TestCase, _Base):
         rows = list(result)
 
         self.assertEqual(len(rows), 4)
-        self.assertEqual(len(connection.api_request.call_args_list), 2)
-        tabledata_list_request = connection.api_request.call_args_list[1]
+        self.assertEqual(len(connection.api_request.call_args_list), 1)
+        get_query_results_request = connection.api_request.call_args_list[0]
         self.assertEqual(
-            tabledata_list_request[1]["query_params"]["startIndex"], start_index
+            get_query_results_request[1]["query_params"]["startIndex"], start_index
         )
+
+    def test_result_twice_calls_get_query_results(self):
+        query_results_resource = {
+            "jobComplete": True,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
+            "totalRows": "4",
+            "pageToken": "some-page-token",
+            "rows": [
+                {"f": [{"v": "row1"}]},
+                {"f": [{"v": "row2"}]},
+                {"f": [{"v": "row3"}]},
+            ],
+        }
+        query_results_resource_page_2 = query_results_resource.copy()
+        query_results_resource_page_2["pageToken"] = None
+        query_results_resource_page_2["rows"] = [{"f": [{"v": "row4"}]}]
+        job_resource = self._make_resource(started=True, ended=True)
+        q_config = job_resource["configuration"]["query"]
+        q_config["destinationTable"] = {
+            "projectId": self.PROJECT,
+            "datasetId": self.DS_ID,
+            "tableId": self.TABLE_ID,
+        }
+        conn = _make_connection(query_results_resource, query_results_resource_page_2)
+        client = _make_client(self.PROJECT, connection=conn)
+        job = self._get_target_class().from_api_repr(job_resource, client)
+
+        # Test 1: no arguments
+        result = job.result()
+        actual_rows = list(result)
+
+        self.assertEqual(len(actual_rows), 4)
+        query_results_path = f"/projects/{self.PROJECT}/queries/{self.JOB_ID}"
+        conn.api_request.assert_has_calls(
+            [
+                mock.call(
+                    method="GET",
+                    path=query_results_path,
+                    query_params={},
+                    timeout=None,
+                ),
+                mock.call(
+                    method="GET",
+                    path=query_results_path,
+                    query_params={"pageToken": "some-page-token"},
+                    timeout=None,
+                ),
+            ]
+        )
+
+        # Test 1b: same arguments uses cache
+        conn.api_request.reset_mock()
+        result = job.result()
+        conn.api_request.assert_not_called()
+
+        # Test 2: page_size invalidates cache
+        conn.api_request.reset_mock()
+        result = job.result(page_size=3)
+
+        conn.api_request.assert_has_calls(
+            [
+                mock.call(
+                    method="GET",
+                    path=query_results_path,
+                    query_params={"maxResults": 3},
+                    timeout=None,
+                )
+            ]
+        )
+
+        conn.api_request.reset_mock()
+        result = job.result(page_size=3)
+        conn.api_request.assert_not_called()
+
+        # Test 3: max_results invalidates cache
+        conn.api_request.reset_mock()
+        result = job.result(max_results=4)
+
+        conn.api_request.assert_has_calls(
+            [
+                mock.call(
+                    method="GET",
+                    path=query_results_path,
+                    query_params={"maxResults": 4},
+                    timeout=None,
+                )
+            ]
+        )
+
+        conn.api_request.reset_mock()
+        result = job.result(max_results=4)
+        conn.api_request.assert_not_called()
+
+        # Test 4: start_index invalidates cache
+        conn.api_request.reset_mock()
+        result = job.result(start_index=2)
+
+        conn.api_request.assert_has_calls(
+            [
+                mock.call(
+                    method="GET",
+                    path=query_results_path,
+                    query_params={"startIndex": 2},
+                    timeout=None,
+                )
+            ]
+        )
+
+        conn.api_request.reset_mock()
+        result = job.result(start_index=2)
+        conn.api_request.assert_not_called()
 
     def test_result_error(self):
         from google.cloud import exceptions
@@ -5659,8 +5758,6 @@ class TestQueryJob(unittest.TestCase, _Base):
                     },
                 ]
             },
-        }
-        tabledata_resource = {
             "rows": [
                 {
                     "f": [
@@ -5668,18 +5765,23 @@ class TestQueryJob(unittest.TestCase, _Base):
                         {"v": {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}]}},
                     ]
                 },
-                {
-                    "f": [
-                        {"v": {"f": [{"v": "Bhettye Rhubble"}, {"v": "27"}]}},
-                        {"v": {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]}},
-                    ]
-                },
-            ]
+            ],
+            "pageToken": "next-page",
         }
+        query_resource_page_2 = query_resource.copy()
+        query_resource_page_2["pageToken"] = None
+        query_resource_page_2["rows"] = [
+            {
+                "f": [
+                    {"v": {"f": [{"v": "Bhettye Rhubble"}, {"v": "27"}]}},
+                    {"v": {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]}},
+                ]
+            },
+        ]
         done_resource = copy.deepcopy(begun_resource)
         done_resource["status"] = {"state": "DONE"}
         connection = _make_connection(
-            begun_resource, query_resource, done_resource, tabledata_resource
+            begun_resource, query_resource, done_resource, query_resource_page_2
         )
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
@@ -5735,20 +5837,16 @@ class TestQueryJob(unittest.TestCase, _Base):
                     {"name": "age", "type": "INTEGER", "mode": "NULLABLE"},
                 ]
             },
-        }
-        tabledata_resource = {
             "rows": [
                 {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
                 {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
                 {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}]},
                 {"f": [{"v": "Bhettye Rhubble"}, {"v": "27"}]},
-            ]
+            ],
         }
         done_resource = copy.deepcopy(begun_resource)
         done_resource["status"] = {"state": "DONE"}
-        connection = _make_connection(
-            begun_resource, query_resource, done_resource, tabledata_resource
-        )
+        connection = _make_connection(begun_resource, query_resource, done_resource)
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 

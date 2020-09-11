@@ -2648,7 +2648,9 @@ class QueryJob(_AsyncJob):
                 self._properties, ["configuration", "query", "query"], query
             )
 
+        self._thread_local = threading.local()
         self._query_results = None
+        self._get_query_results_kwargs = {}
         self._done_timeout = None
         self._transport_timeout = None
 
@@ -3121,14 +3123,16 @@ class QueryJob(_AsyncJob):
         # stored in _blocking_poll() in the process of polling for job completion.
         transport_timeout = timeout if timeout is not None else self._transport_timeout
 
-        self._query_results = self._client._get_query_results(
-            self.job_id,
-            retry,
-            project=self.project,
-            timeout_ms=timeout_ms,
-            location=self.location,
-            timeout=transport_timeout,
-        )
+        if not self._query_results or not self._query_results.complete:
+            self._query_results = self._client._get_query_results(
+                self.job_id,
+                retry,
+                project=self.project,
+                location=self.location,
+                timeout_ms=timeout_ms,
+                timeout=transport_timeout,
+                **self._get_query_results_kwargs
+            )
 
         # Only reload the job once we know the query is complete.
         # This will ensure that fields such as the destination table are
@@ -3244,6 +3248,18 @@ class QueryJob(_AsyncJob):
             concurrent.futures.TimeoutError:
                 If the job did not complete in the given timeout.
         """
+        # Save arguments which are relevant for result and reset any cached
+        # _query_results so that the first page of results is fetched correctly
+        # in the done() method. The done() method is called by the super-class.
+        if page_size is None:
+            max_results_kwarg = max_results
+        elif max_results is None:
+            max_results_kwarg = page_size
+        else:
+            max_results_kwarg = min(page_size, max_results)
+        self._get_query_results_kwargs["max_results"] = max_results_kwarg
+        self._get_query_results_kwargs["start_index"] = start_index
+
         try:
             super(QueryJob, self).result(retry=retry, timeout=timeout)
         except exceptions.GoogleCloudError as exc:
@@ -3255,7 +3271,7 @@ class QueryJob(_AsyncJob):
 
         # If the query job is complete but there are no query results, this was
         # special job, such as a DDL query. Return an empty result set to
-        # indicate success and avoid calling tabledata.list on a table which
+        # indicate success and avoid reading from a destination table which
         # can't be read (such as a view table).
         if self._query_results.total_rows is None:
             return _EmptyRowIterator()
@@ -3264,11 +3280,14 @@ class QueryJob(_AsyncJob):
         dest_table_ref = self.destination
         dest_table = Table(dest_table_ref, schema=schema)
         dest_table._properties["numRows"] = self._query_results.total_rows
-        rows = self._client.list_rows(
+
+        # Return an iterator instead of returning the job. Omit start_index
+        # because it's only needed for the first call to getQueryResults.
+        rows = self._client._list_rows_from_query_results(
+            self._query_results,
             dest_table,
             page_size=page_size,
             max_results=max_results,
-            start_index=start_index,
             retry=retry,
             timeout=timeout,
         )

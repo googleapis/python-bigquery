@@ -1306,7 +1306,8 @@ class RowIterator(HTTPIterator):
             call the BigQuery Storage API to fetch rows.
         selected_fields (Optional[Sequence[google.cloud.bigquery.schema.SchemaField]]):
             A subset of columns to select from this table.
-
+        first_page_response (Optional[dict]):
+            API response for the first page of results. These are returned when the first page is requested. API calls
     """
 
     def __init__(
@@ -1321,6 +1322,7 @@ class RowIterator(HTTPIterator):
         extra_params=None,
         table=None,
         selected_fields=None,
+        first_page_response=None,
     ):
         super(RowIterator, self).__init__(
             client,
@@ -1343,6 +1345,7 @@ class RowIterator(HTTPIterator):
         self._selected_fields = selected_fields
         self._table = table
         self._total_rows = getattr(table, "num_rows", None)
+        self._first_page_response = first_page_response
 
     def _get_next_page_response(self):
         """Requests the next page from the path provided.
@@ -1351,6 +1354,11 @@ class RowIterator(HTTPIterator):
             Dict[str, object]:
                 The parsed JSON response of the next page's contents.
         """
+        if self._first_page_response:
+            response = self._first_page_response
+            self._first_page_response = None
+            return response
+
         params = self._get_query_params()
         if self._page_size is not None:
             if self.page_number and "startIndex" in params:
@@ -1398,14 +1406,14 @@ class RowIterator(HTTPIterator):
         return None
 
     def _to_page_iterable(
-        self, bqstorage_download, tabledata_list_download, bqstorage_client=None
+        self, bqstorage_download, row_iterator_download, bqstorage_client=None
     ):
         if bqstorage_client is not None:
             for item in bqstorage_download():
                 yield item
             return
 
-        for item in tabledata_list_download():
+        for item in row_iterator_download():
             yield item
 
     def _to_arrow_iterable(self, bqstorage_client=None):
@@ -1418,12 +1426,12 @@ class RowIterator(HTTPIterator):
             preserve_order=self._preserve_order,
             selected_fields=self._selected_fields,
         )
-        tabledata_list_download = functools.partial(
-            _pandas_helpers.download_arrow_tabledata_list, iter(self.pages), self.schema
+        row_iterator_download = functools.partial(
+            _pandas_helpers.download_arrow_row_iterator, iter(self.pages), self.schema
         )
         return self._to_page_iterable(
             bqstorage_download,
-            tabledata_list_download,
+            row_iterator_download,
             bqstorage_client=bqstorage_client,
         )
 
@@ -1581,15 +1589,15 @@ class RowIterator(HTTPIterator):
             preserve_order=self._preserve_order,
             selected_fields=self._selected_fields,
         )
-        tabledata_list_download = functools.partial(
-            _pandas_helpers.download_dataframe_tabledata_list,
+        row_iterator_download = functools.partial(
+            _pandas_helpers.download_dataframe_row_iterator,
             iter(self.pages),
             self.schema,
             dtypes,
         )
         return self._to_page_iterable(
             bqstorage_download,
-            tabledata_list_download,
+            row_iterator_download,
             bqstorage_client=bqstorage_client,
         )
 
@@ -2167,7 +2175,7 @@ def _item_to_row(iterator, resource):
     )
 
 
-def _tabledata_list_page_columns(schema, response):
+def _row_iterator_page_columns(schema, response):
     """Make a generator of all the columns in a page from tabledata.list.
 
     This enables creating a :class:`pandas.DataFrame` and other
@@ -2197,7 +2205,7 @@ def _rows_page_start(iterator, page, response):
     """
     # Make a (lazy) copy of the page in column-oriented format for use in data
     # science packages.
-    page._columns = _tabledata_list_page_columns(iterator._schema, response)
+    page._columns = _row_iterator_page_columns(iterator._schema, response)
 
     total_rows = response.get("totalRows")
     if total_rows is not None:

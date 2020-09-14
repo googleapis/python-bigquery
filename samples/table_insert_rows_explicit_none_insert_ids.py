@@ -21,7 +21,7 @@ def table_insert_rows_explicit_none_insert_ids(table_id):
     # Construct a BigQuery client object.
     client = bigquery.Client()
 
-    # TODO(developer): Set table_id to the ID of the model to fetch.
+    # TODO(developer): Set table_id to the ID of table to append to.
     # table_id = "your-project.your_dataset.your_table"
 
     rows_to_insert = [

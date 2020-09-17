@@ -2174,7 +2174,15 @@ class Client(ClientWithProject):
         else:
             job_config = job.LoadJobConfig()
 
-        job_config.source_format = job.SourceFormat.PARQUET
+        if job_config.source_format:
+            if job_config.source_format is not job.SourceFormat.PARQUET:
+                raise ValueError(
+                    "Cannot pass `{}` as a ``source_format``, currently PARQUET is supported".format(
+                        job_config.source_format
+                    )
+                )
+        else:
+            job_config.source_format = job.SourceFormat.PARQUET
 
         if location is None:
             location = self.location

@@ -7667,7 +7667,7 @@ class TestClientUpload(object):
                 dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
             )
 
-        assert "Cannot pass" in str(exc.value)
+        assert "Got unexpected source_format:" in str(exc.value)
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")

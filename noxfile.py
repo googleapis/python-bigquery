@@ -51,7 +51,7 @@ def default(session):
 
     if session.python == "2.7":
         # The [all] extra is not installable on Python 2.7.
-        session.install("-e", ".[pandas]", "-c", constraints_path)
+        session.install("-e", ".[pandas,pyarrow]", "-c", constraints_path)
     elif session.python == "3.5":
         session.install("-e", ".[all]", "-c", constraints_path)
     else:

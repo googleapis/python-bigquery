@@ -34,11 +34,9 @@ import pytz
 import pkg_resources
 
 try:
-    from google.cloud import bigquery_storage_v1
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud.bigquery import storage
 except ImportError:  # pragma: NO COVER
-    bigquery_storage_v1 = None
-    bigquery_storage_v1beta1 = None
+    storage = None
 
 try:
     import fastavro  # to parse BQ storage client results
@@ -1792,58 +1790,10 @@ class TestBigQuery(unittest.TestCase):
             row_tuples = [r.values() for r in rows]
             self.assertEqual(row_tuples, [(1, 2), (3, 4), (5, 6)])
 
-    @unittest.skipIf(
-        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
-    )
+    @unittest.skipIf(storage is None, "Requires `google-cloud-bigquery-storage`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
-        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
-            credentials=Config.CLIENT._credentials
-        )
-        cursor = dbapi.connect(Config.CLIENT, bqstorage_client).cursor()
-
-        cursor.execute(
-            """
-            SELECT id, `by`, time_ts
-            FROM `bigquery-public-data.hacker_news.comments`
-            ORDER BY `id` ASC
-            LIMIT 100000
-        """
-        )
-
-        result_rows = [cursor.fetchone(), cursor.fetchone(), cursor.fetchone()]
-
-        field_name = operator.itemgetter(0)
-        fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
-
-        # Since DB API is not thread safe, only a single result stream should be
-        # requested by the BQ storage client, meaning that results should arrive
-        # in the sorted order.
-        expected_data = [
-            [
-                ("by", "sama"),
-                ("id", 15),
-                ("time_ts", datetime.datetime(2006, 10, 9, 19, 51, 1, tzinfo=UTC)),
-            ],
-            [
-                ("by", "pg"),
-                ("id", 17),
-                ("time_ts", datetime.datetime(2006, 10, 9, 19, 52, 45, tzinfo=UTC)),
-            ],
-            [
-                ("by", "pg"),
-                ("id", 22),
-                ("time_ts", datetime.datetime(2006, 10, 10, 2, 18, 22, tzinfo=UTC)),
-            ],
-        ]
-        self.assertEqual(fetched_data, expected_data)
-
-    @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_dbapi_fetch_w_bqstorage_client_v1beta1_large_result_set(self):
-        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+        bqstorage_client = storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
         cursor = dbapi.connect(Config.CLIENT, bqstorage_client).cursor()
@@ -1900,9 +1850,7 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertEqual(list(rows), [])
 
-    @unittest.skipIf(
-        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
-    )
+    @unittest.skipIf(storage is None, "Requires `google-cloud-bigquery-storage`")
     def test_dbapi_connection_does_not_leak_sockets(self):
         current_process = psutil.Process()
         conn_count_start = len(current_process.connections())
@@ -2330,9 +2278,7 @@ class TestBigQuery(unittest.TestCase):
                     self.assertIsInstance(row[col], exp_datatypes[col])
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(
-        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
-    )
+    @unittest.skipIf(storage is None, "Requires `google-cloud-bigquery-storage`")
     def test_query_results_to_dataframe_w_bqstorage(self):
         query = """
             SELECT id, author, time_ts, dead
@@ -2340,40 +2286,7 @@ class TestBigQuery(unittest.TestCase):
             LIMIT 10
         """
 
-        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
-            credentials=Config.CLIENT._credentials
-        )
-
-        df = Config.CLIENT.query(query).result().to_dataframe(bqstorage_client)
-
-        self.assertIsInstance(df, pandas.DataFrame)
-        self.assertEqual(len(df), 10)  # verify the number of rows
-        column_names = ["id", "author", "time_ts", "dead"]
-        self.assertEqual(list(df), column_names)
-        exp_datatypes = {
-            "id": int,
-            "author": six.text_type,
-            "time_ts": pandas.Timestamp,
-            "dead": bool,
-        }
-        for index, row in df.iterrows():
-            for col in column_names:
-                # all the schema fields are nullable, so None is acceptable
-                if not row[col] is None:
-                    self.assertIsInstance(row[col], exp_datatypes[col])
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    def test_query_results_to_dataframe_w_bqstorage_v1beta1(self):
-        query = """
-            SELECT id, author, time_ts, dead
-            FROM `bigquery-public-data.hacker_news.comments`
-            LIMIT 10
-        """
-
-        bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient(
+        bqstorage_client = storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
 
@@ -2662,9 +2575,7 @@ class TestBigQuery(unittest.TestCase):
         return Config.CLIENT.query(query).result().to_dataframe()
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    @unittest.skipIf(
-        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
-    )
+    @unittest.skipIf(storage is None, "Requires `google-cloud-bigquery-storage`")
     def test_nested_table_to_arrow(self):
         from google.cloud.bigquery.job import SourceFormat
         from google.cloud.bigquery.job import WriteDisposition
@@ -2699,7 +2610,7 @@ class TestBigQuery(unittest.TestCase):
         job_config.schema = schema
         # Load a table using a local JSON file from memory.
         Config.CLIENT.load_table_from_file(body, table, job_config=job_config).result()
-        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
+        bqstorage_client = storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
 
@@ -2854,14 +2765,12 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(page.num_items, num_last_page)
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(
-        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
-    )
+    @unittest.skipIf(storage is None, "Requires `google-cloud-bigquery-storage`")
     def test_list_rows_max_results_w_bqstorage(self):
         table_ref = DatasetReference("bigquery-public-data", "utility_us").table(
             "country_code_iso"
         )
-        bqstorage_client = bigquery_storage_v1.BigQueryReadClient(
+        bqstorage_client = storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
 

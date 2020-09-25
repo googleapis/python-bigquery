@@ -676,4 +676,6 @@ def _close_transports(client, bqstorage_client):
     """
     client.close()
     if bqstorage_client is not None:
-        bqstorage_client.transport.channel.close()
+        # import pudb; pu.db
+        # bqstorage_client.transport.channel.close()
+        bqstorage_client._transport.grpc_channel.close()

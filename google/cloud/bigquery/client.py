@@ -17,11 +17,7 @@
 from __future__ import absolute_import
 from __future__ import division
 
-try:
-    from collections import abc as collections_abc
-except ImportError:  # Python 2.7
-    import collections as collections_abc
-
+from collections import abc as collections_abc
 import copy
 import functools
 import gzip

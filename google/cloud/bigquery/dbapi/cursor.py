@@ -15,13 +15,8 @@
 """Cursor for the Google BigQuery DB-API."""
 
 import collections
+from collections import abc as collections_abc
 import copy
-
-try:
-    from collections import abc as collections_abc
-except ImportError:  # Python 2.7
-    import collections as collections_abc
-
 import logging
 
 import six

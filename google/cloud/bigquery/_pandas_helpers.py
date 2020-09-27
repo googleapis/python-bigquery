@@ -23,11 +23,6 @@ import six
 from six.moves import queue
 
 try:
-    from google.cloud import bigquery_storage_v1
-except ImportError:  # pragma: NO COVER
-    bigquery_storage_v1 = None
-
-try:
     import pandas
 except ImportError:  # pragma: NO COVER
     pandas = None
@@ -613,7 +608,7 @@ def _download_table_bqstorage(
 
     # Passing a BQ Storage client in implies that the BigQuery Storage library
     # is available and can be imported.
-    from google.cloud.bigquery import storage
+    from google.cloud import bigquery_storage
 
     if "$" in table.table_id:
         raise ValueError(
@@ -624,8 +619,8 @@ def _download_table_bqstorage(
 
     requested_streams = 1 if preserve_order else 0
 
-    requested_session = storage.types.ReadSession(
-        table=table.to_bqstorage(), data_format=storage.types.DataFormat.ARROW
+    requested_session = bigquery_storage.types.ReadSession(
+        table=table.to_bqstorage(), data_format=bigquery_storage.types.DataFormat.ARROW
     )
     if selected_fields is not None:
         for field in selected_fields:

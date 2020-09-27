@@ -267,13 +267,13 @@ class Cursor(object):
         """
         # Hitting this code path with a BQ Storage client instance implies that
         # bigquery.storage can indeed be imported here without errors.
-        from google.cloud.bigquery import storage
+        from google.cloud import bigquery_storage
 
         table_reference = self._query_job.destination
 
-        requested_session = storage.types.ReadSession(
+        requested_session = bigquery_storage.types.ReadSession(
             table=table_reference.to_bqstorage(),
-            data_format=storage.types.DataFormat.ARROW,
+            data_format=bigquery_storage.types.DataFormat.ARROW,
         )
         read_session = bqstorage_client.create_read_session(
             parent="projects/{}".format(table_reference.project),

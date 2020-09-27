@@ -22,7 +22,7 @@ import setuptools
 
 name = "google-cloud-bigquery"
 description = "Google BigQuery API client library"
-version = "1.28.0"
+version = "2.0.0"
 # Should be one of:
 # 'Development Status :: 3 - Alpha'
 # 'Development Status :: 4 - Beta'
@@ -37,7 +37,7 @@ dependencies = [
 ]
 extras = {
     "bqstorage": [
-        "google-cloud-bigquery-storage >= 1.0.0, <2.0.0dev",
+        "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
         # Due to an issue in pip's dependency resolver, the `grpc` extra is not
         # installed, even though `google-cloud-bigquery-storage` specifies it
         # as `google-api-core[grpc]`. We thus need to explicitly specify it here.
@@ -118,10 +118,7 @@ setuptools.setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
@@ -133,7 +130,7 @@ setuptools.setup(
     namespace_packages=namespaces,
     install_requires=dependencies,
     extras_require=extras,
-    python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
+    python_requires=">=3.6",
     include_package_data=True,
     zip_safe=False,
 )

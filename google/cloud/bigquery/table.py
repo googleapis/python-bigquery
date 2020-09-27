@@ -1521,7 +1521,7 @@ class RowIterator(HTTPIterator):
                 progress_bar.close()
         finally:
             if owns_bqstorage_client:
-                bqstorage_client.transport.channel.close()
+                bqstorage_client._transport.grpc_channel.close()
 
         if record_batches:
             return pyarrow.Table.from_batches(record_batches)

@@ -41,8 +41,8 @@ class TestConnection(unittest.TestCase):
         return mock_client
 
     def _mock_bqstorage_client(self):
-        if bigquery_storage is None:
-            return None
+        # Assumption: bigquery_storage exists. It's the test's responisbility to
+        # not use this helper or skip itself if bqstroage is not installed.
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client._transport = mock.Mock(spec=["channel"])
         mock_client._transport.grpc_channel = mock.Mock(spec=["close"])
@@ -52,13 +52,12 @@ class TestConnection(unittest.TestCase):
         from google.cloud.bigquery.dbapi import Connection
 
         mock_client = self._mock_client()
-        mock_bqstorage_client = self._mock_bqstorage_client()
-        mock_client._create_bqstorage_client.return_value = mock_bqstorage_client
+        mock_client._create_bqstorage_client.return_value = None
 
         connection = self._make_one(client=mock_client)
         self.assertIsInstance(connection, Connection)
         self.assertIs(connection._client, mock_client)
-        self.assertIs(connection._bqstorage_client, mock_bqstorage_client)
+        self.assertIs(connection._bqstorage_client, None)
 
     @unittest.skipIf(
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
@@ -85,6 +84,9 @@ class TestConnection(unittest.TestCase):
         self.assertIsNotNone(connection._client)
         self.assertIsNotNone(connection._bqstorage_client)
 
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_connect_w_client(self):
         from google.cloud.bigquery.dbapi import connect
         from google.cloud.bigquery.dbapi import Connection

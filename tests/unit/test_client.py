@@ -48,7 +48,7 @@ try:
     from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
         InMemorySpanExporter,
     )
-except (ImportError, AttributeError):
+except (ImportError, AttributeError):  # pragma: NO COVER
     opentelemetry = None
 try:
     import pyarrow

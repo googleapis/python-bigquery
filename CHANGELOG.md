@@ -13,7 +13,7 @@
 
 - Transition the library to microgenerator. ([#278](https://github.com/googleapis/python-bigquery/pull/278))
   This is a **breaking change** that **drops support for Python 2.7 and 3.5** and brings a few other changes.
-  See [migration guide](https://googleapis.dev/python/bigquerystorage/latest/UPGRADING.html) for more info.
+  See [migration guide](https://googleapis.dev/python/bigquery/latest/UPGRADING.html) for more info.
 
 
 

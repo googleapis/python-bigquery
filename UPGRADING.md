@@ -35,3 +35,25 @@ The 2.0.0 release requires Python 3.6+.
 The 2.0.0 release requires BigQuery Storage `>= 2.0.0`, which dropped support
 for `v1beta1` and `v1beta2` versions of the BigQuery Storage API. If you want to
 use a BigQuery Storage client, it must be the one supporting the `v1` API version.
+
+
+## Changed GAPIC Enums Path
+
+> **WARNING**: Breaking change
+
+Generated GAPIC enum types have been moved under `types`. Import paths need to be
+adjusted.
+
+**Before:**
+```py
+from google.cloud.bigquery_v2.gapic import enums
+
+distance_type = enums.Model.DistanceType.COSINE
+```
+
+**After:**
+```py
+from google.cloud.bigquery_v2 import types
+
+distance_type = types.Model.DistanceType.COSINE
+```

@@ -4,14 +4,14 @@
       "git": {
         "name": ".",
         "remote": "git@github.com:plamut/python-bigquery.git",
-        "sha": "78837bec753fe3005d860ded4cdc5035ad33e105"
+        "sha": "eb3354caea308aeb4640de4dc07c98f3de633d6c"
       }
     },
     {
       "git": {
         "name": "synthtool",
         "remote": "https://github.com/googleapis/synthtool.git",
-        "sha": "da29da32b3a988457b49ae290112b74f14b713cc"
+        "sha": "e6168630be3e31eede633ba2c6f1cd64248dec1c"
       }
     }
   ],

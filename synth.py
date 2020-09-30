@@ -75,6 +75,14 @@ s.replace(
     ),
 )
 
+# Adjust Model docstring so that Sphinx does not think that "predicted_" is
+# a reference to something, issuing a false warning.
+s.replace(
+    "google/cloud/bigquery_v2/types/model.py",
+    r'will have a "predicted_"',
+    "will have a `predicted_`",
+)
+
 s.replace(
     "docs/conf.py",
     r'\{"members": True\}',

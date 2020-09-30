@@ -95,7 +95,7 @@ class Model(proto.Message):
             used to train this model.
         label_columns (Sequence[~.standard_sql.StandardSqlField]):
             Output only. Label columns that were used to train this
-            model. The output of the model will have a "predicted_"
+            model. The output of the model will have a `predicted_`
             prefix to these columns.
     """
 

@@ -151,13 +151,13 @@ class Model(object):
 
     @property
     def model_type(self):
-        """google.cloud.bigquery_v2.gapic.enums.Model.ModelType: Type of the
+        """google.cloud.bigquery_v2.types.Model.ModelType: Type of the
         model resource.
 
         Read-only.
 
         The value is one of elements of the
-        :class:`~google.cloud.bigquery_v2.gapic.enums.Model.ModelType`
+        :class:`~google.cloud.bigquery_v2.types.Model.ModelType`
         enumeration.
         """
         return self._proto.model_type

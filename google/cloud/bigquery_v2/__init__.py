@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from .services.model_service import ModelServiceClient
+
 from .types.encryption_config import EncryptionConfiguration
 from .types.model import DeleteModelRequest
 from .types.model import GetModelRequest
@@ -41,5 +41,4 @@ __all__ = (
     "StandardSqlDataType",
     "StandardSqlField",
     "StandardSqlStructType",
-    "ModelServiceClient",
 )

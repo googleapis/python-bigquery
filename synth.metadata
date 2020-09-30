@@ -4,7 +4,7 @@
       "git": {
         "name": ".",
         "remote": "git@github.com:plamut/python-bigquery.git",
-        "sha": "27fd9a439a03192fccf1078f0c8ada843df5ae2e"
+        "sha": "e31d97a24dd0ff187563808bb74e29fb4da8d341"
       }
     },
     {

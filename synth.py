@@ -38,6 +38,10 @@ s.move(
         "setup.py",
         library / f"google/cloud/bigquery/__init__.py",
         library / f"google/cloud/bigquery/py.typed",
+        # There are no public API endpoints for the generated ModelServiceClient,
+        # thus there's no point in generating it and its tests.
+        library / f"google/cloud/bigquery_{version}/services/**",
+        library / f"tests/unit/gapic/bigquery_{version}/**",
     ],
 )
 
@@ -63,16 +67,17 @@ s.move(
 
 # python.py_samples()  # TODO: why doesn't this work here with Bazel?
 
-# One of the generated tests fails because of an extra newline in string
-# representation (a non-essential reason), let's skip it for the time being.
+# Do not expose ModelServiceClient, as there is no public API endpoint for the
+# models service.
 s.replace(
-    "tests/unit/gapic/bigquery_v2/test_model_service.py",
-    r"def test_list_models_flattened\(\):",
-    (
-        '@pytest.mark.skip('
-        'reason="This test currently fails because of an extra newline in repr()")'
-        '\n\g<0>'
-    ),
+    "google/cloud/bigquery_v2/__init__.py",
+    r"from \.services\.model_service import ModelServiceClient",
+    "",
+)
+s.replace(
+    "google/cloud/bigquery_v2/__init__.py",
+    r"""["']ModelServiceClient["'],""",
+    "",
 )
 
 # Adjust Model docstring so that Sphinx does not think that "predicted_" is

@@ -261,7 +261,7 @@ class Cursor(object):
                 A sequence of rows, represented as dictionaries.
         """
         # Hitting this code path with a BQ Storage client instance implies that
-        # bigquery.storage can indeed be imported here without errors.
+        # bigquery_storage can indeed be imported here without errors.
         from google.cloud import bigquery_storage
 
         table_reference = self._query_job.destination

@@ -2488,7 +2488,7 @@ class TestBigQuery(unittest.TestCase):
         routine_name = "test_routine"
         dataset = self.temp_dataset(_make_dataset_id("create_routine"))
         float64_type = bigquery_v2.types.StandardSqlDataType(
-            type_kind=bigquery_v2.enums.StandardSqlDataType.TypeKind.FLOAT64
+            type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.FLOAT64
         )
         routine = bigquery.Routine(
             dataset.routine(routine_name),
@@ -2503,7 +2503,7 @@ class TestBigQuery(unittest.TestCase):
             bigquery.RoutineArgument(
                 name="arr",
                 data_type=bigquery_v2.types.StandardSqlDataType(
-                    type_kind=bigquery_v2.enums.StandardSqlDataType.TypeKind.ARRAY,
+                    type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.ARRAY,
                     array_element_type=float64_type,
                 ),
             )

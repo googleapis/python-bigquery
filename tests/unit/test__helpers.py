@@ -834,6 +834,12 @@ class Test_single_field_to_json(unittest.TestCase):
         converted = self._call_fut(field, original)
         self.assertEqual(converted, str(original))
 
+    def test_w_scalar_ignores_mode(self):
+        field = _make_field("STRING", mode="REPEATED")
+        original = "hello world"
+        converted = self._call_fut(field, original)
+        self.assertEqual(converted, original)
+
 
 class Test_repeated_field_to_json(unittest.TestCase):
     def _call_fut(self, field, value):

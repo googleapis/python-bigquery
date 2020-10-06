@@ -16,10 +16,7 @@ from .. import create_table_clustered
 
 
 def test_create_table_clustered(capsys, random_table_id):
-    table = create_table_clustered.create_table_clustered(
-        random_table_id
-    )
+    table = create_table_clustered.create_table_clustered(random_table_id)
     out, _ = capsys.readouterr()
     assert "Created clustered table {}".format(random_table_id) in out
     assert table.clustering_fields == ["city", "zipcode"]
-

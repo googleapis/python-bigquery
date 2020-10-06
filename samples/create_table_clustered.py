@@ -34,6 +34,9 @@ def create_table_clustered(table_id):
     table.clustering_fields = ["city", "zipcode"]
     table = client.create_table(table)  # Make an API request.
     print(
-        "Created clustered table {}.{}.{}".format(table.project, table.dataset_id, table.table_id)
+        "Created clustered table {}.{}.{}".format(
+            table.project, table.dataset_id, table.table_id
+        )
     )
     # [END bigquery_create_table_clustered]
+    return table

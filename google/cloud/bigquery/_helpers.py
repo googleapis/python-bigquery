@@ -460,7 +460,7 @@ def _record_field_to_json(fields, row_value):
 def _single_field_to_json(field, row_value):
     """Convert a single field into JSON-serializable values.
 
-    Ignores mode so that this can function for ARRAY / REPEATING fiels
+    Ignores mode so that this can function for ARRAY / REPEATING fields
     without requiring a deepcopy of the field. See:
     https://github.com/googleapis/python-bigquery/issues/6
 

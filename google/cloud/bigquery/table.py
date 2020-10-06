@@ -21,15 +21,10 @@ import datetime
 import functools
 import logging
 import operator
+import pytz
 import warnings
 
 import six
-
-try:
-    # Needed for the to_bqstorage() method.
-    from google.cloud import bigquery_storage_v1beta1
-except ImportError:  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
 
 try:
     import pandas
@@ -227,7 +222,7 @@ class TableReference(object):
             "tableId": self._table_id,
         }
 
-    def to_bqstorage(self, v1beta1=False):
+    def to_bqstorage(self):
         """Construct a BigQuery Storage API representation of this table.
 
         Install the ``google-cloud-bigquery-storage`` package to use this
@@ -236,41 +231,21 @@ class TableReference(object):
         If the ``table_id`` contains a partition identifier (e.g.
         ``my_table$201812``) or a snapshot identifier (e.g.
         ``mytable@1234567890``), it is ignored. Use
-        :class:`google.cloud.bigquery_storage_v1.types.ReadSession.TableReadOptions`
+        :class:`google.cloud.bigquery_storage.types.ReadSession.TableReadOptions`
         to filter rows by partition. Use
-        :class:`google.cloud.bigquery_storage_v1.types.ReadSession.TableModifiers`
+        :class:`google.cloud.bigquery_storage.types.ReadSession.TableModifiers`
         to select a specific snapshot to read from.
 
-        Args:
-            v1beta1 (Optiona[bool]):
-                If :data:`True`, return representation compatible with BigQuery
-                Storage ``v1beta1`` version. Defaults to :data:`False`.
-
         Returns:
-            Union[str, google.cloud.bigquery_storage_v1beta1.types.TableReference:]:
-                A reference to this table in the BigQuery Storage API.
-
-        Raises:
-            ValueError:
-                If ``v1beta1`` compatibility is requested, but the
-                :mod:`google.cloud.bigquery_storage_v1beta1` module	cannot be imported.
+            str: A reference to this table in the BigQuery Storage API.
         """
-        if v1beta1 and bigquery_storage_v1beta1 is None:
-            raise ValueError(_NO_BQSTORAGE_ERROR)
 
         table_id, _, _ = self._table_id.partition("@")
         table_id, _, _ = table_id.partition("$")
 
-        if v1beta1:
-            table_ref = bigquery_storage_v1beta1.types.TableReference(
-                project_id=self._project,
-                dataset_id=self._dataset_id,
-                table_id=table_id,
-            )
-        else:
-            table_ref = "projects/{}/datasets/{}/tables/{}".format(
-                self._project, self._dataset_id, table_id,
-            )
+        table_ref = "projects/{}/datasets/{}/tables/{}".format(
+            self._project, self._dataset_id, table_id,
+        )
 
         return table_ref
 
@@ -875,19 +850,13 @@ class Table(object):
         """
         return copy.deepcopy(self._properties)
 
-    def to_bqstorage(self, v1beta1=False):
+    def to_bqstorage(self):
         """Construct a BigQuery Storage API representation of this table.
 
-        Args:
-            v1beta1 (Optiona[bool]):
-                If :data:`True`, return representation compatible with BigQuery
-                Storage ``v1beta1`` version. Defaults to :data:`False`.
-
         Returns:
-            Union[str, google.cloud.bigquery_storage_v1beta1.types.TableReference:]:
-                A reference to this table in the BigQuery Storage API.
+            str: A reference to this table in the BigQuery Storage API.
         """
-        return self.reference.to_bqstorage(v1beta1=v1beta1)
+        return self.reference.to_bqstorage()
 
     def _build_resource(self, filter_fields):
         """Generate a resource for ``update``."""
@@ -1095,19 +1064,13 @@ class TableListItem(object):
             {"tableReference": TableReference.from_string(full_table_id).to_api_repr()}
         )
 
-    def to_bqstorage(self, v1beta1=False):
+    def to_bqstorage(self):
         """Construct a BigQuery Storage API representation of this table.
 
-        Args:
-            v1beta1 (Optiona[bool]):
-                If :data:`True`, return representation compatible with BigQuery
-                Storage ``v1beta1`` version. Defaults to :data:`False`.
-
         Returns:
-            Union[str, google.cloud.bigquery_storage_v1beta1.types.TableReference:]:
-                A reference to this table in the BigQuery Storage API.
+            str: A reference to this table in the BigQuery Storage API.
         """
-        return self.reference.to_bqstorage(v1beta1=v1beta1)
+        return self.reference.to_bqstorage()
 
 
 def _row_from_mapping(mapping, schema):
@@ -1558,7 +1521,7 @@ class RowIterator(HTTPIterator):
                 progress_bar.close()
         finally:
             if owns_bqstorage_client:
-                bqstorage_client.transport.channel.close()
+                bqstorage_client._transport.grpc_channel.close()
 
         if record_batches:
             return pyarrow.Table.from_batches(record_batches)
@@ -1726,7 +1689,29 @@ class RowIterator(HTTPIterator):
                 bqstorage_client=bqstorage_client,
                 create_bqstorage_client=create_bqstorage_client,
             )
-            df = record_batch.to_pandas(date_as_object=date_as_object)
+
+            # When converting timestamp values to nanosecond precision, the result
+            # can be out of pyarrow bounds. To avoid the error when converting to
+            # Pandas, we set the timestamp_as_object parameter to True, if necessary.
+            types_to_check = {
+                pyarrow.timestamp("us"),
+                pyarrow.timestamp("us", tz=pytz.UTC),
+            }
+
+            for column in record_batch:
+                if column.type in types_to_check:
+                    try:
+                        column.cast("timestamp[ns]")
+                    except pyarrow.lib.ArrowInvalid:
+                        timestamp_as_object = True
+                        break
+            else:
+                timestamp_as_object = False
+
+            extra_kwargs = {"timestamp_as_object": timestamp_as_object}
+
+            df = record_batch.to_pandas(date_as_object=date_as_object, **extra_kwargs)
+
             for column in dtypes:
                 df[column] = pandas.Series(df[column], dtype=dtypes[column])
             return df
@@ -1995,6 +1980,12 @@ class TimePartitioningType(object):
     HOUR = "HOUR"
     """str: Generates one partition per hour."""
 
+    MONTH = "MONTH"
+    """str: Generates one partition per month."""
+
+    YEAR = "YEAR"
+    """str: Generates one partition per year."""
+
 
 class TimePartitioning(object):
     """Configures time-based partitioning for a table.
@@ -2002,13 +1993,24 @@ class TimePartitioning(object):
     Args:
         type_ (Optional[google.cloud.bigquery.table.TimePartitioningType]):
             Specifies the type of time partitioning to perform. Defaults to
-            :attr:`~google.cloud.bigquery.table.TimePartitioningType.DAY`,
-            which is the only currently supported type.
+            :attr:`~google.cloud.bigquery.table.TimePartitioningType.DAY`.
+
+            Supported values are:
+
+            * :attr:`~google.cloud.bigquery.table.TimePartitioningType.HOUR`
+            * :attr:`~google.cloud.bigquery.table.TimePartitioningType.DAY`
+            * :attr:`~google.cloud.bigquery.table.TimePartitioningType.MONTH`
+            * :attr:`~google.cloud.bigquery.table.TimePartitioningType.YEAR`
+
         field (Optional[str]):
             If set, the table is partitioned by this field. If not set, the
             table is partitioned by pseudo column ``_PARTITIONTIME``. The field
-            must be a top-level ``TIMESTAMP`` or ``DATE`` field. Its mode must
-            be ``NULLABLE`` or ``REQUIRED``.
+            must be a top-level ``TIMESTAMP``, ``DATETIME``, or ``DATE``
+            field. Its mode must be ``NULLABLE`` or ``REQUIRED``.
+
+            See the `time-unit column-partitioned tables guide
+            <https://cloud.google.com/bigquery/docs/creating-column-partitions>`_
+            in the BigQuery documentation.
         expiration_ms(Optional[int]):
             Number of milliseconds for which to keep the storage for a
             partition.

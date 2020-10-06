@@ -14,13 +14,16 @@
 
 from __future__ import absolute_import
 
+import pathlib
 import os
 import shutil
 
 import nox
 
 
+BLACK_VERSION = "black==19.10b0"
 BLACK_PATHS = ("docs", "google", "samples", "tests", "noxfile.py", "setup.py")
+CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 
 def default(session):
@@ -31,22 +34,27 @@ def default(session):
     Python corresponding to the ``nox`` binary the ``PATH`` can
     run the tests.
     """
+    constraints_path = str(
+        CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
+    )
+
     # Install all test dependencies, then install local packages in-place.
     session.install(
-        "mock", "pytest", "google-cloud-testutils", "pytest-cov", "freezegun"
+        "mock",
+        "pytest",
+        "google-cloud-testutils",
+        "pytest-cov",
+        "freezegun",
+        "-c",
+        constraints_path,
     )
-    session.install("grpcio")
 
-    # fastparquet is not included in .[all] because, in general, it's redundant
-    # with pyarrow. We still want to run some unit tests with fastparquet
-    # serialization, though.
-    session.install("-e", ".[all,fastparquet]")
+    # fastparquet is not included in .[all] because, in general, it's
+    # redundant with pyarrow. We still want to run some unit tests with
+    # fastparquet serialization, though.
+    session.install("-e", ".[all,fastparquet]", "-c", constraints_path)
 
-    # IPython does not support Python 2 after version 5.x
-    if session.python == "2.7":
-        session.install("ipython==5.5")
-    else:
-        session.install("ipython")
+    session.install("ipython", "-c", constraints_path)
 
     # Run py.test against the unit tests.
     session.run(
@@ -63,15 +71,19 @@ def default(session):
     )
 
 
-@nox.session(python=["2.7", "3.5", "3.6", "3.7", "3.8"])
+@nox.session(python=["3.6", "3.7", "3.8"])
 def unit(session):
     """Run the unit test suite."""
     default(session)
 
 
-@nox.session(python=["2.7", "3.8"])
+@nox.session(python=["3.8"])
 def system(session):
     """Run the system test suite."""
+
+    constraints_path = str(
+        CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
+    )
 
     # Check the value of `RUN_SYSTEM_TESTS` env var. It defaults to true.
     if os.environ.get("RUN_SYSTEM_TESTS", "true") == "false":
@@ -82,19 +94,16 @@ def system(session):
         session.skip("Credentials must be set via environment variable.")
 
     # Use pre-release gRPC for system tests.
-    session.install("--pre", "grpcio")
+    session.install("--pre", "grpcio", "-c", constraints_path)
 
     # Install all test dependencies, then install local packages in place.
-    session.install("mock", "pytest", "psutil", "google-cloud-testutils")
-    session.install("google-cloud-storage")
-    session.install("fastavro")
-    session.install("-e", ".[all]")
+    session.install(
+        "mock", "pytest", "psutil", "google-cloud-testutils", "-c", constraints_path
+    )
+    session.install("google-cloud-storage", "-c", constraints_path)
 
-    # IPython does not support Python 2 after version 5.x
-    if session.python == "2.7":
-        session.install("ipython==5.5")
-    else:
-        session.install("ipython")
+    session.install("-e", ".[all]", "-c", constraints_path)
+    session.install("ipython", "-c", constraints_path)
 
     # Run py.test against the system tests.
     session.run(
@@ -102,19 +111,24 @@ def system(session):
     )
 
 
-@nox.session(python=["2.7", "3.8"])
+@nox.session(python=["3.8"])
 def snippets(session):
     """Run the snippets test suite."""
+
+    constraints_path = str(
+        CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
+    )
 
     # Sanity check: Only run snippets tests if the environment variable is set.
     if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):
         session.skip("Credentials must be set via environment variable.")
 
     # Install all test dependencies, then install local packages in place.
-    session.install("mock", "pytest", "google-cloud-testutils")
-    session.install("google-cloud-storage")
-    session.install("grpcio")
-    session.install("-e", ".[all]")
+    session.install("mock", "pytest", "google-cloud-testutils", "-c", constraints_path)
+    session.install("google-cloud-storage", "-c", constraints_path)
+    session.install("grpcio", "-c", constraints_path)
+
+    session.install("-e", ".[all]", "-c", constraints_path)
 
     # Run py.test against the snippets tests.
     # Skip tests in samples/snippets, as those are run in a different session
@@ -143,7 +157,7 @@ def lint(session):
     serious code quality issues.
     """
 
-    session.install("black", "flake8")
+    session.install("flake8", BLACK_VERSION)
     session.install("-e", ".")
     session.run("flake8", os.path.join("google", "cloud", "bigquery"))
     session.run("flake8", "tests")
@@ -169,7 +183,7 @@ def blacken(session):
     That run uses an image that doesn't have 3.6 installed. Before updating this
     check the state of the `gcp_ubuntu_config` we use for that Kokoro run.
     """
-    session.install("black")
+    session.install(BLACK_VERSION)
     session.run("black", *BLACK_PATHS)
 
 

@@ -634,8 +634,16 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         # jobs.insert is idempotent because we ensure that every new
         # job has an ID.
+        span_attributes = {"path": path}
         api_response = client._call_api(
-            retry, method="POST", path=path, data=self.to_api_repr(), timeout=timeout
+            retry,
+            span_name="BigQuery.job.begin",
+            span_attributes=span_attributes,
+            job_ref=self,
+            method="POST",
+            path=path,
+            data=self.to_api_repr(),
+            timeout=timeout,
         )
         self._set_properties(api_response)
 
@@ -665,8 +673,13 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             extra_params["location"] = self.location
 
         try:
+            span_attributes = {"path": self.path}
+
             client._call_api(
                 retry,
+                span_name="BigQuery.job.exists",
+                span_attributes=span_attributes,
+                job_ref=self,
                 method="GET",
                 path=self.path,
                 query_params=extra_params,
@@ -698,9 +711,13 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         extra_params = {}
         if self.location:
             extra_params["location"] = self.location
+        span_attributes = {"path": self.path}
 
         api_response = client._call_api(
             retry,
+            span_name="BigQuery.job.reload",
+            span_attributes=span_attributes,
+            job_ref=self,
             method="GET",
             path=self.path,
             query_params=extra_params,
@@ -732,10 +749,16 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         if self.location:
             extra_params["location"] = self.location
 
+        path = "{}/cancel".format(self.path)
+        span_attributes = {"path": path}
+
         api_response = client._call_api(
             retry,
+            span_name="BigQuery.job.cancel",
+            span_attributes=span_attributes,
+            job_ref=self,
             method="POST",
-            path="{}/cancel".format(self.path),
+            path=path,
             query_params=extra_params,
             timeout=timeout,
         )

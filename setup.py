@@ -22,7 +22,11 @@ import setuptools
 
 name = "google-cloud-bigquery"
 description = "Google BigQuery API client library"
-version = "2.0.0"
+
+version = {}
+with open("google/cloud/bigquery/version.py") as fp:
+    exec(fp.read(), version)
+version = version["__version__"]
 # Should be one of:
 # 'Development Status :: 3 - Alpha'
 # 'Development Status :: 4 - Beta'

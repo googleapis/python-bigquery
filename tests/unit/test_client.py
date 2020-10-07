@@ -3577,21 +3577,29 @@ class TestClient(unittest.TestCase):
 
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 
-    def _create_job_helper(self, job_config, client_method):
+    def _create_job_helper(self, job_config):
+        from google.cloud.bigquery._helpers import _del_sub_prop
+
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
 
-        client._connection = make_connection()
-        rf1 = mock.Mock()
-        get_config_patch = mock.patch(
-            "google.cloud.bigquery.job._JobConfig.from_api_repr", return_value=rf1,
-        )
-        load_patch = mock.patch(client_method, autospec=True)
+        RESOURCE = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
+            "configuration": job_config,
+        }
+        conn = client._connection = make_connection(RESOURCE)
+        client.create_job(job_config=job_config)
 
-        with load_patch as client_method, get_config_patch:
-            client.create_job(job_config=job_config)
-        client_method.assert_called_once()
+        if "query" in job_config:
+            _del_sub_prop(job_config, ["query", "destinationTable"])
+
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path="/projects/%s/jobs" % self.PROJECT,
+            data=RESOURCE,
+            timeout=None,
+        )
 
     def test_create_job_load_config(self):
         configuration = {
@@ -3605,9 +3613,7 @@ class TestClient(unittest.TestCase):
             }
         }
 
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.load_table_from_uri"
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_copy_config(self):
         configuration = {
@@ -3627,9 +3633,7 @@ class TestClient(unittest.TestCase):
             }
         }
 
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.copy_table",
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_extract_config(self):
         configuration = {
@@ -3642,9 +3646,7 @@ class TestClient(unittest.TestCase):
                 "destinationUris": ["gs://test_bucket/dst_object*"],
             }
         }
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.extract_table",
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_extract_config_for_model(self):
         configuration = {
@@ -3657,17 +3659,17 @@ class TestClient(unittest.TestCase):
                 "destinationUris": ["gs://test_bucket/dst_object*"],
             }
         }
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.extract_table",
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_query_config(self):
         configuration = {
-            "query": {"query": "query", "destinationTable": {"tableId": "table_id"}}
+            "query": {
+                "query": "query",
+                "destinationTable": {"tableId": "table_id"},
+                "useLegacySql": False,
+            }
         }
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.query",
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_query_config_w_rateLimitExceeded_error(self):
         from google.cloud.exceptions import Forbidden

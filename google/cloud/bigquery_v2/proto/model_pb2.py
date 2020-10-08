@@ -3768,7 +3768,7 @@ Model = _reflection.GeneratedProtocolMessageType(
               category_counts:
                   Counts of all categories for the categorical feature. If there
                   are more than ten categories, we return top ten (by count) and
-                  return one more CategoryCount with category “*OTHER*” and
+                  return one more CategoryCount with category ``*OTHER*`` and
                   count as aggregate counts of remaining categories.
           """,
                                         # @@protoc_insertion_point(class_scope:google.cloud.bigquery.v2.Model.ClusteringMetrics.Cluster.FeatureValue.CategoricalValue)
@@ -3865,7 +3865,9 @@ Model = _reflection.GeneratedProtocolMessageType(
                         ),
                         "DESCRIPTOR": _MODEL_TRAININGRUN_TRAININGOPTIONS,
                         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
-                        "__doc__": """Attributes:
+                        "__doc__": """Protocol buffer.
+
+  Attributes:
           max_iterations:
               The maximum number of iterations in training. Used only for
               iterative training algorithms.
@@ -4014,7 +4016,9 @@ Model = _reflection.GeneratedProtocolMessageType(
         ),
         "DESCRIPTOR": _MODEL,
         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
-        "__doc__": """Attributes:
+        "__doc__": """Protocol buffer.
+
+  Attributes:
       etag:
           Output only. A hash of this resource.
       model_reference:
@@ -4061,7 +4065,7 @@ Model = _reflection.GeneratedProtocolMessageType(
           this model.
       label_columns:
           Output only. Label columns that were used to train this model.
-          The output of the model will have a “predicted\_” prefix to
+          The output of the model will have a ``predicted\_`` prefix to
           these columns.
   """,
         # @@protoc_insertion_point(class_scope:google.cloud.bigquery.v2.Model)
@@ -4098,7 +4102,9 @@ GetModelRequest = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _GETMODELREQUEST,
         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
-        "__doc__": """Attributes:
+        "__doc__": """Protocol buffer.
+
+  Attributes:
       project_id:
           Required. Project ID of the requested model.
       dataset_id:
@@ -4117,7 +4123,9 @@ PatchModelRequest = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _PATCHMODELREQUEST,
         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
-        "__doc__": """Attributes:
+        "__doc__": """Protocol buffer.
+
+  Attributes:
       project_id:
           Required. Project ID of the model to patch.
       dataset_id:
@@ -4140,7 +4148,9 @@ DeleteModelRequest = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _DELETEMODELREQUEST,
         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
-        "__doc__": """Attributes:
+        "__doc__": """Protocol buffer.
+
+  Attributes:
       project_id:
           Required. Project ID of the model to delete.
       dataset_id:
@@ -4159,7 +4169,9 @@ ListModelsRequest = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _LISTMODELSREQUEST,
         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
-        "__doc__": """Attributes:
+        "__doc__": """Protocol buffer.
+
+  Attributes:
       project_id:
           Required. Project ID of the models to list.
       dataset_id:
@@ -4183,7 +4195,9 @@ ListModelsResponse = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _LISTMODELSRESPONSE,
         "__module__": "google.cloud.bigquery_v2.proto.model_pb2",
-        "__doc__": """Attributes:
+        "__doc__": """Protocol buffer.
+
+  Attributes:
       models:
           Models in the requested dataset. Only the following fields are
           populated: model_reference, model_type, creation_time,

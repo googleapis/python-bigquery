@@ -84,9 +84,7 @@ EncryptionConfiguration = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _ENCRYPTIONCONFIGURATION,
         "__module__": "google.cloud.bigquery_v2.proto.encryption_config_pb2",
-        "__doc__": """Encryption configuration.
-
-  Attributes:
+        "__doc__": """Attributes:
       kms_key_name:
           Optional. Describes the Cloud KMS encryption key that will be
           used to protect destination BigQuery table. The BigQuery

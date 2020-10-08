@@ -14,11 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    import pkg_resources
 
-    pkg_resources.declare_namespace(__name__)
-except ImportError:
-    import pkgutil
+from __future__ import absolute_import
 
-    __path__ = pkgutil.extend_path(__path__, __name__)
+from google.cloud.bigquery_v2 import ModelServiceClient
+from google.cloud.bigquery_v2 import enums
+from google.cloud.bigquery_v2 import types
+
+
+__all__ = (
+    "enums",
+    "types",
+    "ModelServiceClient",
+)

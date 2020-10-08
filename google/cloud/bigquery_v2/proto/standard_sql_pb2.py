@@ -380,20 +380,20 @@ StandardSqlDataType = _reflection.GeneratedProtocolMessageType(
         "DESCRIPTOR": _STANDARDSQLDATATYPE,
         "__module__": "google.cloud.bigquery_v2.proto.standard_sql_pb2",
         "__doc__": """The type of a variable, e.g., a function argument. Examples: INT64:
-  {type_kind=``INT64``} ARRAY: {type_kind=``ARRAY``,
-  array_element_type=``STRING``} STRUCT<x STRING, y ARRAY>:
-  {type_kind=``STRUCT``, struct_type={fields=[ {name=``x``,
-  type={type_kind=``STRING``}}, {name=``y``, type={type_kind=``ARRAY``,
-  array_element_type=``DATE``}} ]}}
+  {type_kind=“INT64”} ARRAY: {type_kind=“ARRAY”,
+  array_element_type=“STRING”} STRUCT<x STRING, y ARRAY>:
+  {type_kind=“STRUCT”, struct_type={fields=[ {name=“x”,
+  type={type_kind=“STRING”}}, {name=“y”, type={type_kind=“ARRAY”,
+  array_element_type=“DATE”}} ]}}
   
   Attributes:
       type_kind:
           Required. The top level type of this field. Can be any
-          standard SQL data type (e.g., ``INT64``, ``DATE``, ``ARRAY``).
+          standard SQL data type (e.g., “INT64”, “DATE”, “ARRAY”).
       array_element_type:
-          The type of the array’s elements, if type_kind = ``ARRAY``.
+          The type of the array’s elements, if type_kind = “ARRAY”.
       struct_type:
-          The fields of this struct, in order, if type_kind = ``STRUCT``.
+          The fields of this struct, in order, if type_kind = “STRUCT”.
   """,
         # @@protoc_insertion_point(class_scope:google.cloud.bigquery.v2.StandardSqlDataType)
     },
@@ -416,7 +416,7 @@ StandardSqlField = _reflection.GeneratedProtocolMessageType(
           Optional. The type of this parameter. Absent if not explicitly
           specified (e.g., CREATE FUNCTION statement can omit the return
           type; in this case the output parameter does not have this
-          ``type`` field).
+          “type” field).
   """,
         # @@protoc_insertion_point(class_scope:google.cloud.bigquery.v2.StandardSqlField)
     },

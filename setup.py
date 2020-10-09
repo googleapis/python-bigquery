@@ -53,7 +53,6 @@ extras = {
         "pyarrow >= 1.0.0, < 2.0dev",
     ],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
-    "fastparquet": ["fastparquet", "python-snappy", "llvmlite>=0.34.0"],
     "opentelemetry": [
         "opentelemetry-api==0.9b0",
         "opentelemetry-sdk==0.9b0",
@@ -64,13 +63,6 @@ extras = {
 all_extras = []
 
 for extra in extras:
-    if extra in (
-        # Skip fastparquet from "all" because it is redundant with pyarrow and
-        # creates a dependency on pre-release versions of numpy. See:
-        # https://github.com/googleapis/google-cloud-python/issues/8549
-        "fastparquet",
-    ):
-        continue
     all_extras.extend(extras[extra])
 
 extras["all"] = all_extras

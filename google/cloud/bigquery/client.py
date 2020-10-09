@@ -2152,8 +2152,7 @@ class Client(ClientWithProject):
         Raises:
             ImportError:
                 If a usable parquet engine cannot be found. This method
-                requires :mod:`pyarrow` or :mod:`fastparquet` to be
-                installed.
+                requires :mod:`pyarrow` to be installed.
             TypeError:
                 If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
                 class.

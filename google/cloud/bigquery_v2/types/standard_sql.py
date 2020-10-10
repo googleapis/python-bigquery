@@ -79,7 +79,7 @@ class StandardSqlField(proto.Message):
         name (str):
             Optional. The name of this field. Can be
             absent for struct fields.
-        type (~.standard_sql.StandardSqlDataType):
+        type_ (~.standard_sql.StandardSqlDataType):
             Optional. The type of this parameter. Absent
             if not explicitly specified (e.g., CREATE
             FUNCTION statement can omit the return type; in
@@ -89,7 +89,7 @@ class StandardSqlField(proto.Message):
 
     name = proto.Field(proto.STRING, number=1)
 
-    type = proto.Field(proto.MESSAGE, number=2, message=StandardSqlDataType,)
+    type_ = proto.Field(proto.MESSAGE, number=2, message=StandardSqlDataType,)
 
 
 class StandardSqlStructType(proto.Message):

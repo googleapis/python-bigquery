@@ -47,8 +47,8 @@ extras = {
         "grpcio >= 1.32.0, < 2.0dev",
         "pyarrow >= 1.0.0, < 2.0dev",
     ],
-    "pandas": ["pandas>=0.23.0"],
-    "pyarrow": [
+    "pandas": [
+        "pandas>=0.23.0",
         # pyarrow 1.0.0 is required for the use of timestamp_as_object keyword.
         "pyarrow >= 1.0.0, < 2.0dev",
     ],

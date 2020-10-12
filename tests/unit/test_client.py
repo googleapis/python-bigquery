@@ -3635,6 +3635,24 @@ class TestClient(unittest.TestCase):
 
         self._create_job_helper(configuration)
 
+    def test_create_job_copy_config_w_single_source(self):
+        configuration = {
+            "copy": {
+                "sourceTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "source_table",
+                },
+                "destinationTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "destination_table",
+                },
+            }
+        }
+
+        self._create_job_helper(configuration)
+
     def test_create_job_extract_config(self):
         configuration = {
             "extract": {

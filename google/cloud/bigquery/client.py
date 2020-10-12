@@ -1629,6 +1629,8 @@ class Client(ClientWithProject):
             destination = TableReference.from_api_repr(destination)
             sources = []
             source_configs = _get_sub_prop(job_config, ["copy", "sourceTables"])
+            if source_configs is None:
+                source_configs = [_get_sub_prop(job_config, ["copy", "sourceTable"])]
             for source_config in source_configs:
                 table_ref = TableReference.from_api_repr(source_config)
                 sources.append(table_ref)

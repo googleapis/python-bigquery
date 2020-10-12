@@ -1860,7 +1860,6 @@ class CopyJob(_AsyncJob):
 
     def to_api_repr(self):
         """Generate a resource for :meth:`_begin`."""
-
         source_refs = [
             {
                 "projectId": table.project,
@@ -1871,7 +1870,15 @@ class CopyJob(_AsyncJob):
         ]
 
         configuration = self._configuration.to_api_repr()
-        _helpers._set_sub_prop(configuration, ["copy", "sourceTables"], source_refs)
+        source_table = _helpers._get_sub_prop(
+            self._configuration._properties, ["copy", "sourceTable"]
+        )
+        if source_table:
+            _helpers._set_sub_prop(
+                configuration, ["copy", "sourceTable"], source_refs[0]
+            )
+        else:
+            _helpers._set_sub_prop(configuration, ["copy", "sourceTables"], source_refs)
         _helpers._set_sub_prop(
             configuration,
             ["copy", "destinationTable"],

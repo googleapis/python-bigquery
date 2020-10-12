@@ -4,6 +4,18 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [2.1.1](https://www.github.com/googleapis/python-bigquery/compare/v2.1.0...v2.1.1) (2020-10-12)
+
+
+### Bug Fixes
+
+* use version.py instead of pkg_resources.get_distribution ([#307](https://www.github.com/googleapis/python-bigquery/issues/307)) ([b8f502b](https://www.github.com/googleapis/python-bigquery/commit/b8f502b14f21d1815697e4d57cf1225dfb4a7c5e))
+
+
+### Documentation
+
+* update snippets samples to support version 2.0 ([#309](https://www.github.com/googleapis/python-bigquery/issues/309)) ([61634be](https://www.github.com/googleapis/python-bigquery/commit/61634be9bf9e3df7589fc1bfdbda87288859bb13))
+
 ## [2.1.0](https://www.github.com/googleapis/python-bigquery/compare/v2.0.0...v2.1.0) (2020-10-08)
 
 

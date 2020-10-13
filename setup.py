@@ -22,7 +22,7 @@ import setuptools
 
 name = "google-cloud-bigquery"
 description = "Google BigQuery API client library"
-version = "2.1.0"
+
 # Should be one of:
 # 'Development Status :: 3 - Alpha'
 # 'Development Status :: 4 - Beta'
@@ -47,13 +47,12 @@ extras = {
         "grpcio >= 1.32.0, < 2.0dev",
         "pyarrow >= 1.0.0, < 2.0dev",
     ],
-    "pandas": ["pandas>=0.23.0"],
-    "pyarrow": [
+    "pandas": [
+        "pandas>=0.23.0",
         # pyarrow 1.0.0 is required for the use of timestamp_as_object keyword.
         "pyarrow >= 1.0.0, < 2.0dev",
     ],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
-    "fastparquet": ["fastparquet", "python-snappy", "llvmlite>=0.34.0"],
     "opentelemetry": [
         "opentelemetry-api==0.9b0",
         "opentelemetry-sdk==0.9b0",
@@ -64,13 +63,6 @@ extras = {
 all_extras = []
 
 for extra in extras:
-    if extra in (
-        # Skip fastparquet from "all" because it is redundant with pyarrow and
-        # creates a dependency on pre-release versions of numpy. See:
-        # https://github.com/googleapis/google-cloud-python/issues/8549
-        "fastparquet",
-    ):
-        continue
     all_extras.extend(extras[extra])
 
 extras["all"] = all_extras
@@ -82,6 +74,11 @@ package_root = os.path.abspath(os.path.dirname(__file__))
 readme_filename = os.path.join(package_root, "README.rst")
 with io.open(readme_filename, encoding="utf-8") as readme_file:
     readme = readme_file.read()
+
+version = {}
+with open(os.path.join(package_root, "google/cloud/bigquery/version.py")) as fp:
+    exec(fp.read(), version)
+version = version["__version__"]
 
 # Only include packages under the 'google' namespace. Do not include tests,
 # benchmarks, etc.

@@ -28,9 +28,9 @@ The main concepts with this API are:
 """
 
 
-from pkg_resources import get_distribution
+from google.cloud.bigquery import version as bigquery_version
 
-__version__ = get_distribution("google-cloud-bigquery").version
+__version__ = bigquery_version.__version__
 
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery.dataset import AccessEntry
@@ -38,7 +38,6 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import StandardSqlDataTypes
-from google.cloud.bigquery.exceptions import PyarrowMissingWarning
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.external_config import BigtableOptions
 from google.cloud.bigquery.external_config import BigtableColumnFamily
@@ -143,8 +142,6 @@ __all__ = [
     "WriteDisposition",
     # EncryptionConfiguration
     "EncryptionConfiguration",
-    # Errors and warnings
-    "PyarrowMissingWarning",
 ]
 
 

@@ -3578,7 +3578,7 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 
     def _create_job_helper(self, job_config):
-        from google.cloud.bigquery._helpers import _del_sub_prop
+        from google.cloud.bigquery import _helpers
 
         creds = _make_credentials()
         http = object()
@@ -3591,8 +3591,13 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(RESOURCE)
         client.create_job(job_config=job_config)
 
+        if "copy" in job_config:
+            if "sourceTable" in job_config["copy"]:
+                source = _helpers._get_sub_prop(job_config, ["copy", "sourceTable"])
+                _helpers._del_sub_prop(job_config, ["copy", "sourceTable"])
+                _helpers._set_sub_prop(job_config, ["copy", "sourceTables"], [source])
         if "query" in job_config:
-            _del_sub_prop(job_config, ["query", "destinationTable"])
+            _helpers._del_sub_prop(job_config, ["query", "destinationTable"])
 
         conn.api_request.assert_called_once_with(
             method="POST",

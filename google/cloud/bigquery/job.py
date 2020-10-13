@@ -1874,11 +1874,9 @@ class CopyJob(_AsyncJob):
             self._configuration._properties, ["copy", "sourceTable"]
         )
         if source_table:
-            _helpers._set_sub_prop(
-                configuration, ["copy", "sourceTable"], source_refs[0]
-            )
-        else:
-            _helpers._set_sub_prop(configuration, ["copy", "sourceTables"], source_refs)
+            _helpers._del_sub_prop(configuration, ["copy", "sourceTable"])
+
+        _helpers._set_sub_prop(configuration, ["copy", "sourceTables"], source_refs)
         _helpers._set_sub_prop(
             configuration,
             ["copy", "destinationTable"],

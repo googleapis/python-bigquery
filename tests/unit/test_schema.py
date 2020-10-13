@@ -220,7 +220,7 @@ class TestSchemaField(unittest.TestCase):
             field = self._make_one("some_field", legacy_type)
             standard_field = field.to_standard_sql()
             self.assertEqual(standard_field.name, "some_field")
-            self.assertEqual(standard_field.type.type_kind, standard_type)
+            self.assertEqual(standard_field.type_.type_kind, standard_type)
 
     def test_to_standard_sql_struct_type(self):
         from google.cloud.bigquery_v2 import types
@@ -258,28 +258,28 @@ class TestSchemaField(unittest.TestCase):
 
         # level 2 fields
         sub_sub_field_date = types.StandardSqlField(
-            name="date_field", type=sql_type(type_kind=sql_type.TypeKind.DATE)
+            name="date_field", type_=sql_type(type_kind=sql_type.TypeKind.DATE)
         )
         sub_sub_field_time = types.StandardSqlField(
-            name="time_field", type=sql_type(type_kind=sql_type.TypeKind.TIME)
+            name="time_field", type_=sql_type(type_kind=sql_type.TypeKind.TIME)
         )
 
         # level 1 fields
         sub_field_struct = types.StandardSqlField(
-            name="last_used", type=sql_type(type_kind=sql_type.TypeKind.STRUCT)
+            name="last_used", type_=sql_type(type_kind=sql_type.TypeKind.STRUCT)
         )
-        sub_field_struct.type.struct_type.fields.extend(
+        sub_field_struct.type_.struct_type.fields.extend(
             [sub_sub_field_date, sub_sub_field_time]
         )
         sub_field_bytes = types.StandardSqlField(
-            name="image_content", type=sql_type(type_kind=sql_type.TypeKind.BYTES)
+            name="image_content", type_=sql_type(type_kind=sql_type.TypeKind.BYTES)
         )
 
         # level 0 (top level)
         expected_result = types.StandardSqlField(
-            name="image_usage", type=sql_type(type_kind=sql_type.TypeKind.STRUCT)
+            name="image_usage", type_=sql_type(type_kind=sql_type.TypeKind.STRUCT)
         )
-        expected_result.type.struct_type.fields.extend(
+        expected_result.type_.struct_type.fields.extend(
             [sub_field_bytes, sub_field_struct]
         )
 
@@ -307,7 +307,7 @@ class TestSchemaField(unittest.TestCase):
         expected_sql_type = sql_type(type_kind=sql_type.TypeKind.ARRAY)
         expected_sql_type.array_element_type.type_kind = sql_type.TypeKind.INT64
         expected_result = types.StandardSqlField(
-            name="valid_numbers", type=expected_sql_type
+            name="valid_numbers", type_=expected_sql_type
         )
 
         # construct "repeated" SchemaField object and convert to standard SQL
@@ -323,22 +323,22 @@ class TestSchemaField(unittest.TestCase):
 
         # define person STRUCT
         name_field = types.StandardSqlField(
-            name="name", type=sql_type(type_kind=sql_type.TypeKind.STRING)
+            name="name", type_=sql_type(type_kind=sql_type.TypeKind.STRING)
         )
         age_field = types.StandardSqlField(
-            name="age", type=sql_type(type_kind=sql_type.TypeKind.INT64)
+            name="age", type_=sql_type(type_kind=sql_type.TypeKind.INT64)
         )
         person_struct = types.StandardSqlField(
-            name="person_info", type=sql_type(type_kind=sql_type.TypeKind.STRUCT)
+            name="person_info", type_=sql_type(type_kind=sql_type.TypeKind.STRUCT)
         )
-        person_struct.type.struct_type.fields.extend([name_field, age_field])
+        person_struct.type_.struct_type.fields.extend([name_field, age_field])
 
         # define expected result - an ARRAY of person structs
         expected_sql_type = sql_type(
-            type_kind=sql_type.TypeKind.ARRAY, array_element_type=person_struct.type
+            type_kind=sql_type.TypeKind.ARRAY, array_element_type=person_struct.type_
         )
         expected_result = types.StandardSqlField(
-            name="known_people", type=expected_sql_type
+            name="known_people", type_=expected_sql_type
         )
 
         # construct legacy repeated SchemaField object
@@ -359,7 +359,7 @@ class TestSchemaField(unittest.TestCase):
 
         self.assertEqual(standard_field.name, "weird_field")
         self.assertEqual(
-            standard_field.type.type_kind, sql_type.TypeKind.TYPE_KIND_UNSPECIFIED
+            standard_field.type_.type_kind, sql_type.TypeKind.TYPE_KIND_UNSPECIFIED
         )
 
     def test___eq___wrong_type(self):

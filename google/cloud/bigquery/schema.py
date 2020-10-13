@@ -241,7 +241,7 @@ class SchemaField(object):
                 field.to_standard_sql() for field in self.fields
             )
 
-        return types.StandardSqlField(name=self.name, type=sql_type)
+        return types.StandardSqlField(name=self.name, type_=sql_type)
 
     def __eq__(self, other):
         if not isinstance(other, SchemaField):

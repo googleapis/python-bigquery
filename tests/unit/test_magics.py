@@ -1181,6 +1181,47 @@ def test_bigquery_magic_with_project():
 
 
 @pytest.mark.usefixtures("ipython_interactive")
+def test_bigquery_magic_with_api_endpoint(ipython_ns_cleanup):
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    magics.context._connection = None
+
+    run_query_patch = mock.patch(
+        "google.cloud.bigquery.magics.magics._run_query", autospec=True
+    )
+    with run_query_patch as run_query_mock:
+        ip.run_cell_magic(
+            "bigquery", "--api_endpoint=https://api.endpoint.com", "SELECT 17 as num"
+        )
+
+    connection_used = run_query_mock.call_args_list[0][0][0]._connection
+    assert connection_used.API_BASE_URL == "https://api.endpoint.com"
+    # context client options should not change
+    assert magics.context.client_options.api_endpoint is None
+
+
+@pytest.mark.usefixtures("ipython_interactive")
+def test_bigquery_magic_with_api_endpoint_context_dict():
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    magics.context._connection = None
+    magics.context.client_options = {}
+
+    run_query_patch = mock.patch(
+        "google.cloud.bigquery.magics.magics._run_query", autospec=True
+    )
+    with run_query_patch as run_query_mock:
+        ip.run_cell_magic(
+            "bigquery", "--api_endpoint=https://api.endpoint.com", "SELECT 17 as num"
+        )
+
+    connection_used = run_query_mock.call_args_list[0][0][0]._connection
+    assert connection_used.API_BASE_URL == "https://api.endpoint.com"
+    # context client options should not change
+    assert magics.context.client_options == {}
+
+
+@pytest.mark.usefixtures("ipython_interactive")
 def test_bigquery_magic_with_multiple_options():
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")

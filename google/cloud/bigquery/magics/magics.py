@@ -180,7 +180,8 @@ class Context(object):
         self._project = None
         self._connection = None
         self._default_query_job_config = bigquery.QueryJobConfig()
-        self._client_options = client_options.ClientOptions()
+        self._bigquery_client_options = client_options.ClientOptions()
+        self._storage_client_options = client_options.ClientOptions()
 
     @property
     def credentials(self):
@@ -243,14 +244,14 @@ class Context(object):
         self._project = value
 
     @property
-    def client_options(self):
+    def bigquery_client_options(self):
         """google.api_core.client_options.ClientOptions: client options to be
         used through IPython magics.
 
         Note::
             The client options do not need to be explicitly defined if no
             special network connections are required. Normally you would be
-            using the https://www.googleapis.com/ end point.
+            using the https://bigquery.googleapis.com/ end point.
 
         Example:
             Manually setting the endpoint:
@@ -258,13 +259,37 @@ class Context(object):
             >>> from google.cloud.bigquery import magics
             >>> client_options = {}
             >>> client_options['api_endpoint'] = "https://some.special.url"
-            >>> magics.context.client_options = client_options
+            >>> magics.context.bigquery_client_options = client_options
         """
-        return self._client_options
+        return self._bigquery_client_options
 
-    @client_options.setter
-    def client_options(self, value):
-        self._client_options = value
+    @bigquery_client_options.setter
+    def bigquery_client_options(self, value):
+        self._bigquery_client_options = value
+
+    @property
+    def storage_client_options(self):
+        """google.api_core.client_options.ClientOptions: client options to be
+        used through IPython magics for the storage client.
+
+        Note::
+            The client options do not need to be explicitly defined if no
+            special network connections are required. Normally you would be
+            using the https://bigquerystorage.googleapis.com/ end point.
+
+        Example:
+            Manually setting the endpoint:
+
+            >>> from google.cloud.bigquery import magics
+            >>> client_options = {}
+            >>> client_options['api_endpoint'] = "https://some.special.url"
+            >>> magics.context.storage_client_options = client_options
+        """
+        return self._storage_client_options
+
+    @storage_client_options.setter
+    def storage_client_options(self, value):
+        self._storage_client_options = value
 
     @property
     def default_query_job_config(self):
@@ -438,12 +463,21 @@ def _create_dataset_if_necessary(client, dataset_id):
     ),
 )
 @magic_arguments.argument(
-    "--api_endpoint",
+    "--bigquery_api_endpoint",
     type=str,
     default=None,
     help=(
-        "The desired API endpoint, e.g., compute.googlepis.com. Defaults to this "
-        "option's value in the context client options."
+        "The desired API endpoint, e.g., bigquery.googlepis.com. Defaults to this "
+        "option's value in the context bigquery_client_options."
+    ),
+)
+@magic_arguments.argument(
+    "--storage_api_endpoint",
+    type=str,
+    default=None,
+    help=(
+        "The desired API endpoint, e.g., bigquery.googlepis.com. Defaults to this "
+        "option's value in the context storage_client_options."
     ),
 )
 @magic_arguments.argument(
@@ -548,23 +582,33 @@ def _cell_magic(line, query):
 
     project = args.project or context.project
 
-    client_options = copy.deepcopy(context.client_options)
-    if args.api_endpoint:
-        if isinstance(client_options, dict):
-            client_options["api_endpoint"] = args.api_endpoint
+    bigquery_client_options = copy.deepcopy(context.bigquery_client_options)
+    if args.bigquery_api_endpoint:
+        if isinstance(bigquery_client_options, dict):
+            bigquery_client_options["api_endpoint"] = args.bigquery_api_endpoint
         else:
-            client_options.api_endpoint = args.api_endpoint
+            bigquery_client_options.api_endpoint = args.bigquery_api_endpoint
 
     client = bigquery.Client(
         project=project,
         credentials=context.credentials,
         default_query_job_config=context.default_query_job_config,
         client_info=client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
-        client_options=client_options,
+        client_options=bigquery_client_options,
     )
     if context._connection:
         client._connection = context._connection
-    bqstorage_client = _make_bqstorage_client(use_bqstorage_api, context.credentials)
+
+    storage_client_options = copy.deepcopy(context.storage_client_options)
+    if args.storage_api_endpoint:
+        if isinstance(storage_client_options, dict):
+            storage_client_options["api_endpoint"] = args.storage_api_endpoint
+        else:
+            storage_client_options.api_endpoint = args.storage_api_endpoint
+
+    bqstorage_client = _make_bqstorage_client(
+        use_bqstorage_api, context.credentials, storage_client_options,
+    )
 
     close_transports = functools.partial(_close_transports, client, bqstorage_client)
 
@@ -677,7 +721,7 @@ def _split_args_line(line):
     return params_option_value, rest_of_args
 
 
-def _make_bqstorage_client(use_bqstorage_api, credentials):
+def _make_bqstorage_client(use_bqstorage_api, credentials, client_options):
     if not use_bqstorage_api:
         return None
 
@@ -703,6 +747,7 @@ def _make_bqstorage_client(use_bqstorage_api, credentials):
     return bigquery_storage.BigQueryReadClient(
         credentials=credentials,
         client_info=gapic_client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
+        client_options=client_options,
     )
 
 

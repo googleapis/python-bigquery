@@ -181,7 +181,7 @@ class Context(object):
         self._connection = None
         self._default_query_job_config = bigquery.QueryJobConfig()
         self._bigquery_client_options = client_options.ClientOptions()
-        self._storage_client_options = client_options.ClientOptions()
+        self._bqstorage_client_options = client_options.ClientOptions()
 
     @property
     def credentials(self):
@@ -268,7 +268,7 @@ class Context(object):
         self._bigquery_client_options = value
 
     @property
-    def storage_client_options(self):
+    def bqstorage_client_options(self):
         """google.api_core.client_options.ClientOptions: client options to be
         used through IPython magics for the storage client.
 
@@ -283,13 +283,13 @@ class Context(object):
             >>> from google.cloud.bigquery import magics
             >>> client_options = {}
             >>> client_options['api_endpoint'] = "https://some.special.url"
-            >>> magics.context.storage_client_options = client_options
+            >>> magics.context.bqstorage_client_options = client_options
         """
-        return self._storage_client_options
+        return self._bqstorage_client_options
 
-    @storage_client_options.setter
-    def storage_client_options(self, value):
-        self._storage_client_options = value
+    @bqstorage_client_options.setter
+    def bqstorage_client_options(self, value):
+        self._bqstorage_client_options = value
 
     @property
     def default_query_job_config(self):
@@ -472,12 +472,12 @@ def _create_dataset_if_necessary(client, dataset_id):
     ),
 )
 @magic_arguments.argument(
-    "--storage_api_endpoint",
+    "--bqstorage_api_endpoint",
     type=str,
     default=None,
     help=(
-        "The desired API endpoint, e.g., bigquery.googlepis.com. Defaults to this "
-        "option's value in the context storage_client_options."
+        "The desired API endpoint, e.g., bigquerystorage.googlepis.com. Defaults to "
+        "this option's value in the context bqstorage_client_options."
     ),
 )
 @magic_arguments.argument(
@@ -599,15 +599,15 @@ def _cell_magic(line, query):
     if context._connection:
         client._connection = context._connection
 
-    storage_client_options = copy.deepcopy(context.storage_client_options)
-    if args.storage_api_endpoint:
-        if isinstance(storage_client_options, dict):
-            storage_client_options["api_endpoint"] = args.storage_api_endpoint
+    bqstorage_client_options = copy.deepcopy(context.bqstorage_client_options)
+    if args.bqstorage_api_endpoint:
+        if isinstance(bqstorage_client_options, dict):
+            bqstorage_client_options["api_endpoint"] = args.bqstorage_api_endpoint
         else:
-            storage_client_options.api_endpoint = args.storage_api_endpoint
+            bqstorage_client_options.api_endpoint = args.bqstorage_api_endpoint
 
     bqstorage_client = _make_bqstorage_client(
-        use_bqstorage_api, context.credentials, storage_client_options,
+        use_bqstorage_api, context.credentials, bqstorage_client_options,
     )
 
     close_transports = functools.partial(_close_transports, client, bqstorage_client)

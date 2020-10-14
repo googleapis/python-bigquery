@@ -1226,7 +1226,7 @@ def test_bigquery_magic_with_bigquery_api_endpoint_context_dict():
 
 
 @pytest.mark.usefixtures("ipython_interactive")
-def test_bigquery_magic_with_storage_api_endpoint(ipython_ns_cleanup):
+def test_bigquery_magic_with_bqstorage_api_endpoint(ipython_ns_cleanup):
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
     magics.context._connection = None
@@ -1237,22 +1237,22 @@ def test_bigquery_magic_with_storage_api_endpoint(ipython_ns_cleanup):
     with run_query_patch as run_query_mock:
         ip.run_cell_magic(
             "bigquery",
-            "--storage_api_endpoint=https://storage_api.endpoint.com",
+            "--bqstorage_api_endpoint=https://bqstorage_api.endpoint.com",
             "SELECT 17 as num",
         )
 
     client_used = run_query_mock.mock_calls[1][2]["bqstorage_client"]
-    assert client_used._transport._host == "https://storage_api.endpoint.com"
+    assert client_used._transport._host == "https://bqstorage_api.endpoint.com"
     # context client options should not change
-    assert magics.context.storage_client_options.api_endpoint is None
+    assert magics.context.bqstorage_client_options.api_endpoint is None
 
 
 @pytest.mark.usefixtures("ipython_interactive")
-def test_bigquery_magic_with_storage_api_endpoint_context_dict():
+def test_bigquery_magic_with_bqstorage_api_endpoint_context_dict():
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
     magics.context._connection = None
-    magics.context.storage_client_options = {}
+    magics.context.bqstorage_client_options = {}
 
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
@@ -1260,14 +1260,14 @@ def test_bigquery_magic_with_storage_api_endpoint_context_dict():
     with run_query_patch as run_query_mock:
         ip.run_cell_magic(
             "bigquery",
-            "--storage_api_endpoint=https://storage_api.endpoint.com",
+            "--bqstorage_api_endpoint=https://bqstorage_api.endpoint.com",
             "SELECT 17 as num",
         )
 
     client_used = run_query_mock.mock_calls[1][2]["bqstorage_client"]
-    assert client_used._transport._host == "https://storage_api.endpoint.com"
+    assert client_used._transport._host == "https://bqstorage_api.endpoint.com"
     # context client options should not change
-    assert magics.context.storage_client_options == {}
+    assert magics.context.bqstorage_client_options == {}
 
 
 @pytest.mark.usefixtures("ipython_interactive")

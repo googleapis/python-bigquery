@@ -1059,8 +1059,8 @@ class LoadJobConfig(_JobConfig):
 
         .. note::
 
-           As of 2018-06-29, clustering fields cannot be set on a table
-           which does not also have time partioning defined.
+           BigQuery supports clustering for both partitioned and
+           non-partitioned tables.
         """
         prop = self._get_sub_prop("clustering")
         if prop is not None:
@@ -2561,8 +2561,8 @@ class QueryJobConfig(_JobConfig):
 
         .. note::
 
-           As of 2018-06-29, clustering fields cannot be set on a table
-           which does not also have time partioning defined.
+           BigQuery supports clustering for both partitioned and
+           non-partitioned tables.
         """
         prop = self._get_sub_prop("clustering")
         if prop is not None:

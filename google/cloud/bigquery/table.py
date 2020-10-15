@@ -625,8 +625,8 @@ class Table(object):
 
         .. note::
 
-           As of 2018-06-29, clustering fields cannot be set on a table
-           which does not also have time partioning defined.
+           BigQuery supports clustering for both partitioned and
+           non-partitioned tables.
         """
         prop = self._properties.get("clustering")
         if prop is not None:
@@ -1030,8 +1030,8 @@ class TableListItem(object):
 
         .. note::
 
-           As of 2018-06-29, clustering fields cannot be set on a table
-           which does not also have time partioning defined.
+           BigQuery supports clustering for both partitioned and
+           non-partitioned tables.
         """
         prop = self._properties.get("clustering")
         if prop is not None:
@@ -2114,7 +2114,20 @@ class TimePartitioning(object):
         return self._properties
 
     def _key(self):
-        return tuple(sorted(self._properties.items()))
+        # because we are only "renaming" top level keys shallow copy is sufficient here.
+        properties = self._properties.copy()
+        # calling repr for non built-in type objects.
+        properties["type_"] = repr(properties.pop("type"))
+        if "field" in properties:
+            # calling repr for non built-in type objects.
+            properties["field"] = repr(properties["field"])
+        if "requirePartitionFilter" in properties:
+            properties["require_partition_filter"] = properties.pop(
+                "requirePartitionFilter"
+            )
+        if "expirationMs" in properties:
+            properties["expiration_ms"] = properties.pop("expirationMs")
+        return tuple(sorted(properties.items()))
 
     def __eq__(self, other):
         if not isinstance(other, TimePartitioning):

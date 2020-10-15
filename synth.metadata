@@ -4,7 +4,7 @@
       "git": {
         "name": ".",
         "remote": "https://github.com/googleapis/python-bigquery.git",
-        "sha": "31644d380b35a76a9147801a4b6b0271c246fd0c"
+        "sha": "5178b55682f5e264bfc082cde26acb1fdc953a18"
       }
     },
     {
@@ -112,7 +112,6 @@
     "samples/AUTHORING_GUIDE.md",
     "samples/CONTRIBUTING.md",
     "scripts/decrypt-secrets.sh",
-    "scripts/fixup_bigquery_v2_keywords.py",
     "scripts/readme-gen/readme_gen.py",
     "scripts/readme-gen/templates/README.tmpl.rst",
     "scripts/readme-gen/templates/auth.tmpl.rst",

@@ -58,7 +58,6 @@ from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery.exceptions import PyarrowMissingWarning
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.model import Model
@@ -2135,29 +2134,31 @@ class Client(ClientWithProject):
                  [Beta] The compression method to use if intermittently
                  serializing ``dataframe`` to a parquet file.
 
-                 If ``pyarrow`` and job config schema are used, the argument
-                 is directly passed as the ``compression`` argument to the
-                 underlying ``pyarrow.parquet.write_table()`` method (the
-                 default value "snappy" gets converted to uppercase).
+                 The argument is directly passed as the ``compression``
+                 argument to the underlying ``pyarrow.parquet.write_table()``
+                 method (the default value "snappy" gets converted to uppercase).
                  https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
 
-                 If either ``pyarrow`` or job config schema are missing, the
-                 argument is directly passed as the ``compression`` argument
-                 to the underlying ``DataFrame.to_parquet()`` method.
+                 If the job config schema is missing, the argument is directly
+                 passed as the ``compression`` argument to the underlying
+                 ``DataFrame.to_parquet()`` method.
                  https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
 
         Returns:
             google.cloud.bigquery.job.LoadJob: A new load job.
 
         Raises:
-            ImportError:
+            ValueError:
                 If a usable parquet engine cannot be found. This method
-                requires :mod:`pyarrow` or :mod:`fastparquet` to be
-                installed.
+                requires :mod:`pyarrow` to be installed.
             TypeError:
                 If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
                 class.
         """
+        if pyarrow is None:
+            # pyarrow is now the only supported  parquet engine.
+            raise ValueError("This method requires pyarrow to be installed")
+
         job_id = _make_job_id(job_id, job_id_prefix)
 
         if job_config:
@@ -2222,7 +2223,7 @@ class Client(ClientWithProject):
         os.close(tmpfd)
 
         try:
-            if pyarrow and job_config.schema:
+            if job_config.schema:
                 if parquet_compression == "snappy":  # adjust the default value
                     parquet_compression = parquet_compression.upper()
 
@@ -2233,32 +2234,16 @@ class Client(ClientWithProject):
                     parquet_compression=parquet_compression,
                 )
             else:
-                if not pyarrow:
-                    warnings.warn(
-                        "Loading dataframe data without pyarrow installed is "
-                        "deprecated and will become unsupported in the future. "
-                        "Please install the pyarrow package.",
-                        PyarrowMissingWarning,
-                        stacklevel=2,
-                    )
-
-                if job_config.schema:
-                    warnings.warn(
-                        "job_config.schema is set, but not used to assist in "
-                        "identifying correct types for data serialization. "
-                        "Please install the pyarrow package.",
-                        PendingDeprecationWarning,
-                        stacklevel=2,
-                    )
-
                 dataframe.to_parquet(tmppath, compression=parquet_compression)
 
             with open(tmppath, "rb") as parquet_file:
+                file_size = os.path.getsize(tmppath)
                 return self.load_table_from_file(
                     parquet_file,
                     destination,
                     num_retries=num_retries,
                     rewind=True,
+                    size=file_size,
                     job_id=job_id,
                     job_id_prefix=job_id_prefix,
                     location=location,
@@ -2360,11 +2345,12 @@ class Client(ClientWithProject):
         destination = _table_arg_to_table_ref(destination, default_project=self.project)
 
         data_str = u"\n".join(json.dumps(item) for item in json_rows)
-        data_file = io.BytesIO(data_str.encode())
-
+        encoded_str = data_str.encode()
+        data_file = io.BytesIO(encoded_str)
         return self.load_table_from_file(
             data_file,
             destination,
+            size=len(encoded_str),
             num_retries=num_retries,
             job_id=job_id,
             job_id_prefix=job_id_prefix,

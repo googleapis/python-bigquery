@@ -3587,11 +3587,11 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(RESOURCE)
         client.create_job(job_config=job_config)
 
-        if "copy" in job_config:
-            if "sourceTable" in job_config["copy"]:
-                source = _helpers._get_sub_prop(job_config, ["copy", "sourceTable"])
-                _helpers._del_sub_prop(job_config, ["copy", "sourceTable"])
-                _helpers._set_sub_prop(job_config, ["copy", "sourceTables"], [source])
+        # if "copy" in job_config:
+        #     if "sourceTable" in job_config["copy"]:
+        #         source = _helpers._get_sub_prop(job_config, ["copy", "sourceTable"])
+        #         _helpers._del_sub_prop(job_config, ["copy", "sourceTable"])
+        #         _helpers._set_sub_prop(job_config, ["copy", "sourceTables"], [source])
         if "query" in job_config:
             _helpers._del_sub_prop(job_config, ["query", "destinationTable"])
 
@@ -4271,7 +4271,7 @@ class TestClient(unittest.TestCase):
         self.assertIs(job._client, client)
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(list(job.source_uris), [SOURCE_URI])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
 
         conn = client._connection = make_connection(RESOURCE)
 
@@ -4280,7 +4280,7 @@ class TestClient(unittest.TestCase):
         self.assertIs(job._client, client)
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(list(job.source_uris), [SOURCE_URI])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
 
     def test_load_table_from_uri_w_explicit_project(self):
         job_id = "this-is-a-job-id"
@@ -4581,16 +4581,67 @@ class TestClient(unittest.TestCase):
         self.assertIs(job._client, client)
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(list(job.sources), [source])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
 
-        conn = client._connection = make_connection(RESOURCE)
-        source2 = dataset.table(SOURCE + "2")
-        job = client.copy_table([source, source2], destination, job_id=JOB)
+    def test_copy_table_w_multiple_sources(self):
+        from google.cloud.bigquery.job import CopyJob
+        from google.cloud.bigquery.table import TableReference
+
+        job_id = "job_name"
+        source_id = "my-project.my_dataset.source_table"
+        source_id2 = "my-project.my_dataset.source_table2"
+        destination_id = "my-other-project.another_dataset.destination_table"
+        expected_resource = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": job_id},
+            "configuration": {
+                "copy": {
+                    "sourceTables": [
+                        {
+                            "projectId": "my-project",
+                            "datasetId": "my_dataset",
+                            "tableId": "source_table",
+                        },
+                        {
+                            "projectId": "my-project",
+                            "datasetId": "my_dataset",
+                            "tableId": "source_table2",
+                        },
+                    ],
+                    "destinationTable": {
+                        "projectId": "my-other-project",
+                        "datasetId": "another_dataset",
+                        "tableId": "destination_table",
+                    },
+                }
+            },
+        }
+        returned_resource = expected_resource.copy()
+        returned_resource["statistics"] = {}
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(returned_resource)
+
+        job = client.copy_table([source_id, source_id2], destination_id, job_id=job_id)
+
+        # Check that copy_table actually starts the job.
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path="/projects/%s/jobs" % self.PROJECT,
+            data=expected_resource,
+            timeout=None,
+        )
         self.assertIsInstance(job, CopyJob)
         self.assertIs(job._client, client)
-        self.assertEqual(job.job_id, JOB)
-        self.assertEqual(list(job.sources), [source, source2])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.job_id, job_id)
+        self.assertEqual(
+            list(sorted(job.sources, key=lambda tbl: tbl.table_id)),
+            [
+                TableReference.from_string(source_id),
+                TableReference.from_string(source_id2),
+            ],
+        )
+        self.assertEqual(job.destination, TableReference.from_string(destination_id))
 
     def test_copy_table_w_explicit_project(self):
         job_id = "this-is-a-job-id"
@@ -7487,6 +7538,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=None,
@@ -7530,6 +7582,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -7582,6 +7635,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -7636,6 +7690,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -7728,6 +7783,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -7787,6 +7843,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -7832,6 +7889,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=None,
@@ -7872,6 +7930,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -7918,6 +7977,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -7978,6 +8038,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -8051,6 +8112,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -8144,6 +8206,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -8256,6 +8319,7 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
@@ -8307,6 +8371,7 @@ class TestClientUpload(object):
             client,
             mock.ANY,
             self.TABLE_REF,
+            size=mock.ANY,
             num_retries=_DEFAULT_NUM_RETRIES,
             job_id=mock.ANY,
             job_id_prefix=None,
@@ -8358,6 +8423,7 @@ class TestClientUpload(object):
             client,
             mock.ANY,
             self.TABLE_REF,
+            size=mock.ANY,
             num_retries=_DEFAULT_NUM_RETRIES,
             job_id=mock.ANY,
             job_id_prefix=None,

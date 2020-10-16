@@ -17,11 +17,7 @@
 from __future__ import absolute_import
 from __future__ import division
 
-try:
-    from collections import abc as collections_abc
-except ImportError:  # Python 2.7
-    import collections as collections_abc
-
+from collections import abc as collections_abc
 import copy
 import functools
 import gzip
@@ -62,7 +58,7 @@ from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery.exceptions import PyarrowMissingWarning
+from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference
@@ -177,7 +173,10 @@ class Client(ClientWithProject):
         client_options=None,
     ):
         super(Client, self).__init__(
-            project=project, credentials=credentials, _http=_http
+            project=project,
+            credentials=credentials,
+            client_options=client_options,
+            _http=_http,
         )
 
         kw_args = {"client_info": client_info}
@@ -243,8 +242,15 @@ class Client(ClientWithProject):
         if project is None:
             project = self.project
         path = "/projects/%s/serviceAccount" % (project,)
-
-        api_response = self._call_api(retry, method="GET", path=path, timeout=timeout)
+        span_attributes = {"path": path}
+        api_response = self._call_api(
+            retry,
+            span_name="BigQuery.getServiceAccountEmail",
+            span_attributes=span_attributes,
+            method="GET",
+            path=path,
+            timeout=timeout,
+        )
         return api_response["email"]
 
     def list_projects(
@@ -278,9 +284,21 @@ class Client(ClientWithProject):
                 Iterator of :class:`~google.cloud.bigquery.client.Project`
                 accessible to the current client.
         """
+        span_attributes = {"path": "/projects"}
+
+        def api_request(*args, **kwargs):
+            return self._call_api(
+                retry,
+                span_name="BigQuery.listProjects",
+                span_attributes=span_attributes,
+                *args,
+                timeout=timeout,
+                **kwargs
+            )
+
         return page_iterator.HTTPIterator(
             client=self,
-            api_request=functools.partial(self._call_api, retry, timeout=timeout),
+            api_request=api_request,
             path="/projects",
             item_to_value=_item_to_project,
             items_key="projects",
@@ -342,9 +360,23 @@ class Client(ClientWithProject):
             # and converting it into a string here.
             extra_params["filter"] = filter
         path = "/projects/%s/datasets" % (project,)
+
+        span_attributes = {"path": path}
+
+        def api_request(*args, **kwargs):
+
+            return self._call_api(
+                retry,
+                span_name="BigQuery.listDatasets",
+                span_attributes=span_attributes,
+                *args,
+                timeout=timeout,
+                **kwargs
+            )
+
         return page_iterator.HTTPIterator(
             client=self,
-            api_request=functools.partial(self._call_api, retry, timeout=timeout),
+            api_request=api_request,
             path=path,
             item_to_value=_item_to_dataset,
             items_key="datasets",
@@ -398,11 +430,11 @@ class Client(ClientWithProject):
         warning and return ``None``.
 
         Returns:
-            Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]:
+            Optional[google.cloud.bigquery_storage.BigQueryReadClient]:
                 A BigQuery Storage API client.
         """
         try:
-            from google.cloud import bigquery_storage_v1
+            from google.cloud import bigquery_storage
         except ImportError:
             warnings.warn(
                 "Cannot create BigQuery Storage client, the dependency "
@@ -410,7 +442,7 @@ class Client(ClientWithProject):
             )
             return None
 
-        return bigquery_storage_v1.BigQueryReadClient(credentials=self._credentials)
+        return bigquery_storage.BigQueryReadClient(credentials=self._credentials)
 
     def create_dataset(
         self, dataset, exists_ok=False, retry=DEFAULT_RETRY, timeout=None
@@ -468,8 +500,16 @@ class Client(ClientWithProject):
             data["location"] = self.location
 
         try:
+            span_attributes = {"path": path}
+
             api_response = self._call_api(
-                retry, method="POST", path=path, data=data, timeout=timeout
+                retry,
+                span_name="BigQuery.createDataset",
+                span_attributes=span_attributes,
+                method="POST",
+                path=path,
+                data=data,
+                timeout=timeout,
             )
             return Dataset.from_api_repr(api_response)
         except google.api_core.exceptions.Conflict:
@@ -512,8 +552,15 @@ class Client(ClientWithProject):
         )
         resource = routine.to_api_repr()
         try:
+            span_attributes = {"path": path}
             api_response = self._call_api(
-                retry, method="POST", path=path, data=resource, timeout=timeout
+                retry,
+                span_name="BigQuery.createRoutine",
+                span_attributes=span_attributes,
+                method="POST",
+                path=path,
+                data=resource,
+                timeout=timeout,
             )
             return Routine.from_api_repr(api_response)
         except google.api_core.exceptions.Conflict:
@@ -555,12 +602,19 @@ class Client(ClientWithProject):
                 If the table already exists.
         """
         table = _table_arg_to_table(table, default_project=self.project)
-
-        path = "/projects/%s/datasets/%s/tables" % (table.project, table.dataset_id)
+        dataset_id = table.dataset_id
+        path = "/projects/%s/datasets/%s/tables" % (table.project, dataset_id)
         data = table.to_api_repr()
         try:
+            span_attributes = {"path": path, "dataset_id": dataset_id}
             api_response = self._call_api(
-                retry, method="POST", path=path, data=data, timeout=timeout
+                retry,
+                span_name="BigQuery.createTable",
+                span_attributes=span_attributes,
+                method="POST",
+                path=path,
+                data=data,
+                timeout=timeout,
             )
             return Table.from_api_repr(api_response)
         except google.api_core.exceptions.Conflict:
@@ -568,10 +622,18 @@ class Client(ClientWithProject):
                 raise
             return self.get_table(table.reference, retry=retry)
 
-    def _call_api(self, retry, **kwargs):
+    def _call_api(
+        self, retry, span_name=None, span_attributes=None, job_ref=None, **kwargs
+    ):
+
         call = functools.partial(self._connection.api_request, **kwargs)
         if retry:
             call = retry(call)
+        if span_name is not None:
+            with create_span(
+                name=span_name, attributes=span_attributes, client=self, job_ref=job_ref
+            ):
+                return call()
         return call()
 
     def get_dataset(self, dataset_ref, retry=DEFAULT_RETRY, timeout=None):
@@ -600,9 +662,15 @@ class Client(ClientWithProject):
             dataset_ref = DatasetReference.from_string(
                 dataset_ref, default_project=self.project
             )
-
+        path = dataset_ref.path
+        span_attributes = {"path": path}
         api_response = self._call_api(
-            retry, method="GET", path=dataset_ref.path, timeout=timeout
+            retry,
+            span_name="BigQuery.getDataset",
+            span_attributes=span_attributes,
+            method="GET",
+            path=path,
+            timeout=timeout,
         )
         return Dataset.from_api_repr(api_response)
 
@@ -618,9 +686,15 @@ class Client(ClientWithProject):
         body = {"options": {"requestedPolicyVersion": 1}}
 
         path = "{}:getIamPolicy".format(table.path)
-
+        span_attributes = {"path": path}
         response = self._call_api(
-            retry, method="POST", path=path, data=body, timeout=timeout,
+            retry,
+            span_name="BigQuery.getIamPolicy",
+            span_attributes=span_attributes,
+            method="POST",
+            path=path,
+            data=body,
+            timeout=timeout,
         )
 
         return Policy.from_api_repr(response)
@@ -640,9 +714,16 @@ class Client(ClientWithProject):
             body["updateMask"] = updateMask
 
         path = "{}:setIamPolicy".format(table.path)
+        span_attributes = {"path": path}
 
         response = self._call_api(
-            retry, method="POST", path=path, data=body, timeout=timeout,
+            retry,
+            span_name="BigQuery.setIamPolicy",
+            span_attributes=span_attributes,
+            method="POST",
+            path=path,
+            data=body,
+            timeout=timeout,
         )
 
         return Policy.from_api_repr(response)
@@ -656,9 +737,15 @@ class Client(ClientWithProject):
         body = {"permissions": permissions}
 
         path = "{}:testIamPermissions".format(table.path)
-
+        span_attributes = {"path": path}
         response = self._call_api(
-            retry, method="POST", path=path, data=body, timeout=timeout,
+            retry,
+            span_name="BigQuery.testIamPermissions",
+            span_attributes=span_attributes,
+            method="POST",
+            path=path,
+            data=body,
+            timeout=timeout,
         )
 
         return response
@@ -688,9 +775,16 @@ class Client(ClientWithProject):
             model_ref = ModelReference.from_string(
                 model_ref, default_project=self.project
             )
+        path = model_ref.path
+        span_attributes = {"path": path}
 
         api_response = self._call_api(
-            retry, method="GET", path=model_ref.path, timeout=timeout
+            retry,
+            span_name="BigQuery.getModel",
+            span_attributes=span_attributes,
+            method="GET",
+            path=path,
+            timeout=timeout,
         )
         return Model.from_api_repr(api_response)
 
@@ -721,9 +815,15 @@ class Client(ClientWithProject):
             routine_ref = RoutineReference.from_string(
                 routine_ref, default_project=self.project
             )
-
+        path = routine_ref.path
+        span_attributes = {"path": path}
         api_response = self._call_api(
-            retry, method="GET", path=routine_ref.path, timeout=timeout
+            retry,
+            span_name="BigQuery.getRoutine",
+            span_attributes=span_attributes,
+            method="GET",
+            path=path,
+            timeout=timeout,
         )
         return Routine.from_api_repr(api_response)
 
@@ -751,8 +851,15 @@ class Client(ClientWithProject):
                 A ``Table`` instance.
         """
         table_ref = _table_arg_to_table_ref(table, default_project=self.project)
+        path = table_ref.path
+        span_attributes = {"path": path}
         api_response = self._call_api(
-            retry, method="GET", path=table_ref.path, timeout=timeout
+            retry,
+            span_name="BigQuery.getTable",
+            span_attributes=span_attributes,
+            method="GET",
+            path=path,
+            timeout=timeout,
         )
         return Table.from_api_repr(api_response)
 
@@ -790,10 +897,15 @@ class Client(ClientWithProject):
             headers = {"If-Match": dataset.etag}
         else:
             headers = None
+        path = dataset.path
+        span_attributes = {"path": path, "fields": fields}
+
         api_response = self._call_api(
             retry,
+            span_name="BigQuery.updateDataset",
+            span_attributes=span_attributes,
             method="PATCH",
-            path=dataset.path,
+            path=path,
             data=partial,
             headers=headers,
             timeout=timeout,
@@ -833,10 +945,15 @@ class Client(ClientWithProject):
             headers = {"If-Match": model.etag}
         else:
             headers = None
+        path = model.path
+        span_attributes = {"path": path, "fields": fields}
+
         api_response = self._call_api(
             retry,
+            span_name="BigQuery.updateModel",
+            span_attributes=span_attributes,
             method="PATCH",
-            path=model.path,
+            path=path,
             data=partial,
             headers=headers,
             timeout=timeout,
@@ -887,10 +1004,15 @@ class Client(ClientWithProject):
         # TODO: remove when routines update supports partial requests.
         partial["routineReference"] = routine.reference.to_api_repr()
 
+        path = routine.path
+        span_attributes = {"path": path, "fields": fields}
+
         api_response = self._call_api(
             retry,
+            span_name="BigQuery.updateRoutine",
+            span_attributes=span_attributes,
             method="PUT",
-            path=routine.path,
+            path=path,
             data=partial,
             headers=headers,
             timeout=timeout,
@@ -930,10 +1052,16 @@ class Client(ClientWithProject):
             headers = {"If-Match": table.etag}
         else:
             headers = None
+
+        path = table.path
+        span_attributes = {"path": path, "fields": fields}
+
         api_response = self._call_api(
             retry,
+            span_name="BigQuery.updateTable",
+            span_attributes=span_attributes,
             method="PATCH",
-            path=table.path,
+            path=path,
             data=partial,
             headers=headers,
             timeout=timeout,
@@ -993,9 +1121,21 @@ class Client(ClientWithProject):
             raise TypeError("dataset must be a Dataset, DatasetReference, or string")
 
         path = "%s/models" % dataset.path
+        span_attributes = {"path": path}
+
+        def api_request(*args, **kwargs):
+            return self._call_api(
+                retry,
+                span_name="BigQuery.listModels",
+                span_attributes=span_attributes,
+                *args,
+                timeout=timeout,
+                **kwargs
+            )
+
         result = page_iterator.HTTPIterator(
             client=self,
-            api_request=functools.partial(self._call_api, retry, timeout=timeout),
+            api_request=api_request,
             path=path,
             item_to_value=_item_to_model,
             items_key="models",
@@ -1058,9 +1198,22 @@ class Client(ClientWithProject):
             raise TypeError("dataset must be a Dataset, DatasetReference, or string")
 
         path = "{}/routines".format(dataset.path)
+
+        span_attributes = {"path": path}
+
+        def api_request(*args, **kwargs):
+            return self._call_api(
+                retry,
+                span_name="BigQuery.listRoutines",
+                span_attributes=span_attributes,
+                *args,
+                timeout=timeout,
+                **kwargs
+            )
+
         result = page_iterator.HTTPIterator(
             client=self,
-            api_request=functools.partial(self._call_api, retry, timeout=timeout),
+            api_request=api_request,
             path=path,
             item_to_value=_item_to_routine,
             items_key="routines",
@@ -1123,9 +1276,21 @@ class Client(ClientWithProject):
             raise TypeError("dataset must be a Dataset, DatasetReference, or string")
 
         path = "%s/tables" % dataset.path
+        span_attributes = {"path": path}
+
+        def api_request(*args, **kwargs):
+            return self._call_api(
+                retry,
+                span_name="BigQuery.listTables",
+                span_attributes=span_attributes,
+                *args,
+                timeout=timeout,
+                **kwargs
+            )
+
         result = page_iterator.HTTPIterator(
             client=self,
-            api_request=functools.partial(self._call_api, retry, timeout=timeout),
+            api_request=api_request,
             path=path,
             item_to_value=_item_to_table,
             items_key="tables",
@@ -1180,14 +1345,20 @@ class Client(ClientWithProject):
             raise TypeError("dataset must be a Dataset or a DatasetReference")
 
         params = {}
+        path = dataset.path
         if delete_contents:
             params["deleteContents"] = "true"
+            span_attributes = {"path": path, "deleteContents": delete_contents}
+        else:
+            span_attributes = {"path": path}
 
         try:
             self._call_api(
                 retry,
+                span_name="BigQuery.deleteDataset",
+                span_attributes=span_attributes,
                 method="DELETE",
-                path=dataset.path,
+                path=path,
                 query_params=params,
                 timeout=timeout,
             )
@@ -1228,8 +1399,17 @@ class Client(ClientWithProject):
         if not isinstance(model, (Model, ModelReference)):
             raise TypeError("model must be a Model or a ModelReference")
 
+        path = model.path
         try:
-            self._call_api(retry, method="DELETE", path=model.path, timeout=timeout)
+            span_attributes = {"path": path}
+            self._call_api(
+                retry,
+                span_name="BigQuery.deleteModel",
+                span_attributes=span_attributes,
+                method="DELETE",
+                path=path,
+                timeout=timeout,
+            )
         except google.api_core.exceptions.NotFound:
             if not not_found_ok:
                 raise
@@ -1265,12 +1445,21 @@ class Client(ClientWithProject):
             routine = RoutineReference.from_string(
                 routine, default_project=self.project
             )
+        path = routine.path
 
         if not isinstance(routine, (Routine, RoutineReference)):
             raise TypeError("routine must be a Routine or a RoutineReference")
 
         try:
-            self._call_api(retry, method="DELETE", path=routine.path, timeout=timeout)
+            span_attributes = {"path": path}
+            self._call_api(
+                retry,
+                span_name="BigQuery.deleteRoutine",
+                span_attributes=span_attributes,
+                method="DELETE",
+                path=path,
+                timeout=timeout,
+            )
         except google.api_core.exceptions.NotFound:
             if not not_found_ok:
                 raise
@@ -1307,7 +1496,16 @@ class Client(ClientWithProject):
             raise TypeError("Unable to get TableReference for table '{}'".format(table))
 
         try:
-            self._call_api(retry, method="DELETE", path=table.path, timeout=timeout)
+            path = table.path
+            span_attributes = {"path": path}
+            self._call_api(
+                retry,
+                span_name="BigQuery.deleteTable",
+                span_attributes=span_attributes,
+                method="DELETE",
+                path=path,
+                timeout=timeout,
+            )
         except google.api_core.exceptions.NotFound:
             if not not_found_ok:
                 raise
@@ -1355,8 +1553,15 @@ class Client(ClientWithProject):
         # This call is typically made in a polling loop that checks whether the
         # job is complete (from QueryJob.done(), called ultimately from
         # QueryJob.result()). So we don't need to poll here.
+        span_attributes = {"path": path}
         resource = self._call_api(
-            retry, method="GET", path=path, query_params=extra_params, timeout=timeout
+            retry,
+            span_name="BigQuery.getQueryResults",
+            span_attributes=span_attributes,
+            method="GET",
+            path=path,
+            query_params=extra_params,
+            timeout=timeout,
         )
         return _QueryResults.from_api_repr(resource)
 
@@ -1501,8 +1706,16 @@ class Client(ClientWithProject):
 
         path = "/projects/{}/jobs/{}".format(project, job_id)
 
+        span_attributes = {"path": path, "job_id": job_id, "location": location}
+
         resource = self._call_api(
-            retry, method="GET", path=path, query_params=extra_params, timeout=timeout
+            retry,
+            span_name="BigQuery.getJob",
+            span_attributes=span_attributes,
+            method="GET",
+            path=path,
+            query_params=extra_params,
+            timeout=timeout,
         )
 
         return self.job_from_resource(resource)
@@ -1550,8 +1763,16 @@ class Client(ClientWithProject):
 
         path = "/projects/{}/jobs/{}/cancel".format(project, job_id)
 
+        span_attributes = {"path": path, "job_id": job_id, "location": location}
+
         resource = self._call_api(
-            retry, method="POST", path=path, query_params=extra_params, timeout=timeout
+            retry,
+            span_name="BigQuery.cancelJob",
+            span_attributes=span_attributes,
+            method="POST",
+            path=path,
+            query_params=extra_params,
+            timeout=timeout,
         )
 
         return self.job_from_resource(resource["job"])
@@ -1642,9 +1863,22 @@ class Client(ClientWithProject):
             project = self.project
 
         path = "/projects/%s/jobs" % (project,)
+
+        span_attributes = {"path": path}
+
+        def api_request(*args, **kwargs):
+            return self._call_api(
+                retry,
+                span_name="BigQuery.listJobs",
+                span_attributes=span_attributes,
+                *args,
+                timeout=timeout,
+                **kwargs
+            )
+
         return page_iterator.HTTPIterator(
             client=self,
-            api_request=functools.partial(self._call_api, retry, timeout=timeout),
+            api_request=api_request,
             path=path,
             item_to_value=_item_to_job,
             items_key="jobs",
@@ -1900,29 +2134,31 @@ class Client(ClientWithProject):
                  [Beta] The compression method to use if intermittently
                  serializing ``dataframe`` to a parquet file.
 
-                 If ``pyarrow`` and job config schema are used, the argument
-                 is directly passed as the ``compression`` argument to the
-                 underlying ``pyarrow.parquet.write_table()`` method (the
-                 default value "snappy" gets converted to uppercase).
+                 The argument is directly passed as the ``compression``
+                 argument to the underlying ``pyarrow.parquet.write_table()``
+                 method (the default value "snappy" gets converted to uppercase).
                  https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
 
-                 If either ``pyarrow`` or job config schema are missing, the
-                 argument is directly passed as the ``compression`` argument
-                 to the underlying ``DataFrame.to_parquet()`` method.
+                 If the job config schema is missing, the argument is directly
+                 passed as the ``compression`` argument to the underlying
+                 ``DataFrame.to_parquet()`` method.
                  https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
 
         Returns:
             google.cloud.bigquery.job.LoadJob: A new load job.
 
         Raises:
-            ImportError:
+            ValueError:
                 If a usable parquet engine cannot be found. This method
-                requires :mod:`pyarrow` or :mod:`fastparquet` to be
-                installed.
+                requires :mod:`pyarrow` to be installed.
             TypeError:
                 If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
                 class.
         """
+        if pyarrow is None:
+            # pyarrow is now the only supported  parquet engine.
+            raise ValueError("This method requires pyarrow to be installed")
+
         job_id = _make_job_id(job_id, job_id_prefix)
 
         if job_config:
@@ -1935,7 +2171,15 @@ class Client(ClientWithProject):
         else:
             job_config = job.LoadJobConfig()
 
-        job_config.source_format = job.SourceFormat.PARQUET
+        if job_config.source_format:
+            if job_config.source_format != job.SourceFormat.PARQUET:
+                raise ValueError(
+                    "Got unexpected source_format: '{}'. Currently, only PARQUET is supported".format(
+                        job_config.source_format
+                    )
+                )
+        else:
+            job_config.source_format = job.SourceFormat.PARQUET
 
         if location is None:
             location = self.location
@@ -1979,7 +2223,7 @@ class Client(ClientWithProject):
         os.close(tmpfd)
 
         try:
-            if pyarrow and job_config.schema:
+            if job_config.schema:
                 if parquet_compression == "snappy":  # adjust the default value
                     parquet_compression = parquet_compression.upper()
 
@@ -1990,32 +2234,16 @@ class Client(ClientWithProject):
                     parquet_compression=parquet_compression,
                 )
             else:
-                if not pyarrow:
-                    warnings.warn(
-                        "Loading dataframe data without pyarrow installed is "
-                        "deprecated and will become unsupported in the future. "
-                        "Please install the pyarrow package.",
-                        PyarrowMissingWarning,
-                        stacklevel=2,
-                    )
-
-                if job_config.schema:
-                    warnings.warn(
-                        "job_config.schema is set, but not used to assist in "
-                        "identifying correct types for data serialization. "
-                        "Please install the pyarrow package.",
-                        PendingDeprecationWarning,
-                        stacklevel=2,
-                    )
-
                 dataframe.to_parquet(tmppath, compression=parquet_compression)
 
             with open(tmppath, "rb") as parquet_file:
+                file_size = os.path.getsize(tmppath)
                 return self.load_table_from_file(
                     parquet_file,
                     destination,
                     num_retries=num_retries,
                     rewind=True,
+                    size=file_size,
                     job_id=job_id,
                     job_id_prefix=job_id_prefix,
                     location=location,
@@ -2117,11 +2345,12 @@ class Client(ClientWithProject):
         destination = _table_arg_to_table_ref(destination, default_project=self.project)
 
         data_str = u"\n".join(json.dumps(item) for item in json_rows)
-        data_file = io.BytesIO(data_str.encode())
-
+        encoded_str = data_str.encode()
+        data_file = io.BytesIO(encoded_str)
         return self.load_table_from_file(
             data_file,
             destination,
+            size=len(encoded_str),
             num_retries=num_retries,
             job_id=job_id,
             job_id_prefix=job_id_prefix,
@@ -2727,11 +2956,15 @@ class Client(ClientWithProject):
         if template_suffix is not None:
             data["templateSuffix"] = template_suffix
 
+        path = "%s/insertAll" % table.path
         # We can always retry, because every row has an insert ID.
+        span_attributes = {"path": path}
         response = self._call_api(
             retry,
+            span_name="BigQuery.insertRowsJson",
+            span_attributes=span_attributes,
             method="POST",
-            path="%s/insertAll" % table.path,
+            path=path,
             data=data,
             timeout=timeout,
         )
@@ -2891,10 +3124,10 @@ class Client(ClientWithProject):
 
     def _schema_from_json_file_object(self, file_obj):
         """Helper function for schema_from_json that takes a
-       file object that describes a table schema.
+        file object that describes a table schema.
 
-       Returns:
-            List of schema field objects.
+        Returns:
+             List of schema field objects.
         """
         json_data = json.load(file_obj)
         return [SchemaField.from_api_repr(field) for field in json_data]

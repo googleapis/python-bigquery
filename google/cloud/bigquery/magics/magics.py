@@ -65,13 +65,6 @@
           the variable name (ex. ``$my_dict_var``). See ``In[6]`` and ``In[7]``
           in the Examples section below.
 
-        .. note::
-
-            Due to the way IPython argument parser works, negative numbers in
-            dictionaries are incorrectly "recognized" as additional arguments,
-            resulting in an error ("unrecognized arguments"). To get around this,
-            pass such dictionary as a JSON string variable.
-
     * ``<query>`` (required, cell argument):
         SQL query to run. If the query does not contain any whitespace (aside
         from leading and trailing whitespace), it is assumed to represent a
@@ -146,6 +139,7 @@ from __future__ import print_function
 
 import re
 import ast
+import copy
 import functools
 import sys
 import time
@@ -159,13 +153,16 @@ try:
 except ImportError:  # pragma: NO COVER
     raise ImportError("This module can only be loaded in IPython.")
 
+import six
+
 from google.api_core import client_info
+from google.api_core import client_options
 from google.api_core.exceptions import NotFound
 import google.auth
 from google.cloud import bigquery
 import google.cloud.bigquery.dataset
 from google.cloud.bigquery.dbapi import _helpers
-import six
+from google.cloud.bigquery.magics import line_arg_parser as lap
 
 
 IPYTHON_USER_AGENT = "ipython-{}".format(IPython.__version__)
@@ -183,11 +180,13 @@ class Context(object):
         self._project = None
         self._connection = None
         self._default_query_job_config = bigquery.QueryJobConfig()
+        self._bigquery_client_options = client_options.ClientOptions()
+        self._bqstorage_client_options = client_options.ClientOptions()
 
     @property
     def credentials(self):
         """google.auth.credentials.Credentials: Credentials to use for queries
-        performed through IPython magics
+        performed through IPython magics.
 
         Note:
             These credentials do not need to be explicitly defined if you are
@@ -222,7 +221,7 @@ class Context(object):
     @property
     def project(self):
         """str: Default project to use for queries performed through IPython
-        magics
+        magics.
 
         Note:
             The project does not need to be explicitly defined if you have an
@@ -243,6 +242,54 @@ class Context(object):
     @project.setter
     def project(self, value):
         self._project = value
+
+    @property
+    def bigquery_client_options(self):
+        """google.api_core.client_options.ClientOptions: client options to be
+        used through IPython magics.
+
+        Note::
+            The client options do not need to be explicitly defined if no
+            special network connections are required. Normally you would be
+            using the https://bigquery.googleapis.com/ end point.
+
+        Example:
+            Manually setting the endpoint:
+
+            >>> from google.cloud.bigquery import magics
+            >>> client_options = {}
+            >>> client_options['api_endpoint'] = "https://some.special.url"
+            >>> magics.context.bigquery_client_options = client_options
+        """
+        return self._bigquery_client_options
+
+    @bigquery_client_options.setter
+    def bigquery_client_options(self, value):
+        self._bigquery_client_options = value
+
+    @property
+    def bqstorage_client_options(self):
+        """google.api_core.client_options.ClientOptions: client options to be
+        used through IPython magics for the storage client.
+
+        Note::
+            The client options do not need to be explicitly defined if no
+            special network connections are required. Normally you would be
+            using the https://bigquerystorage.googleapis.com/ end point.
+
+        Example:
+            Manually setting the endpoint:
+
+            >>> from google.cloud.bigquery import magics
+            >>> client_options = {}
+            >>> client_options['api_endpoint'] = "https://some.special.url"
+            >>> magics.context.bqstorage_client_options = client_options
+        """
+        return self._bqstorage_client_options
+
+    @bqstorage_client_options.setter
+    def bqstorage_client_options(self, value):
+        self._bqstorage_client_options = value
 
     @property
     def default_query_job_config(self):
@@ -416,6 +463,24 @@ def _create_dataset_if_necessary(client, dataset_id):
     ),
 )
 @magic_arguments.argument(
+    "--bigquery_api_endpoint",
+    type=str,
+    default=None,
+    help=(
+        "The desired API endpoint, e.g., bigquery.googlepis.com. Defaults to this "
+        "option's value in the context bigquery_client_options."
+    ),
+)
+@magic_arguments.argument(
+    "--bqstorage_api_endpoint",
+    type=str,
+    default=None,
+    help=(
+        "The desired API endpoint, e.g., bigquerystorage.googlepis.com. Defaults to "
+        "this option's value in the context bqstorage_client_options."
+    ),
+)
+@magic_arguments.argument(
     "--use_bqstorage_api",
     action="store_true",
     default=None,
@@ -473,7 +538,27 @@ def _cell_magic(line, query):
     Returns:
         pandas.DataFrame: the query results.
     """
-    args = magic_arguments.parse_argstring(_cell_magic, line)
+    # The built-in parser does not recognize Python structures such as dicts, thus
+    # we extract the "--params" option and inteprpret it separately.
+    try:
+        params_option_value, rest_of_args = _split_args_line(line)
+    except lap.exceptions.QueryParamsParseError as exc:
+        rebranded_error = SyntaxError(
+            "--params is not a correctly formatted JSON string or a JSON "
+            "serializable dictionary"
+        )
+        six.raise_from(rebranded_error, exc)
+    except lap.exceptions.DuplicateQueryParamsError as exc:
+        rebranded_error = ValueError("Duplicate --params option.")
+        six.raise_from(rebranded_error, exc)
+    except lap.exceptions.ParseError as exc:
+        rebranded_error = ValueError(
+            "Unrecognized input, are option values correct? "
+            "Error details: {}".format(exc.args[0])
+        )
+        six.raise_from(rebranded_error, exc)
+
+    args = magic_arguments.parse_argstring(_cell_magic, rest_of_args)
 
     if args.use_bqstorage_api is not None:
         warnings.warn(
@@ -484,27 +569,46 @@ def _cell_magic(line, query):
     use_bqstorage_api = not args.use_rest_api
 
     params = []
-    if args.params is not None:
-        try:
-            params = _helpers.to_query_parameters(
-                ast.literal_eval("".join(args.params))
+    if params_option_value:
+        # A non-existing params variable is not expanded and ends up in the input
+        # in its raw form, e.g. "$query_params".
+        if params_option_value.startswith("$"):
+            msg = 'Parameter expansion failed, undefined variable "{}".'.format(
+                params_option_value[1:]
             )
-        except Exception:
-            raise SyntaxError(
-                "--params is not a correctly formatted JSON string or a JSON "
-                "serializable dictionary"
-            )
+            raise NameError(msg)
+
+        params = _helpers.to_query_parameters(ast.literal_eval(params_option_value))
 
     project = args.project or context.project
+
+    bigquery_client_options = copy.deepcopy(context.bigquery_client_options)
+    if args.bigquery_api_endpoint:
+        if isinstance(bigquery_client_options, dict):
+            bigquery_client_options["api_endpoint"] = args.bigquery_api_endpoint
+        else:
+            bigquery_client_options.api_endpoint = args.bigquery_api_endpoint
+
     client = bigquery.Client(
         project=project,
         credentials=context.credentials,
         default_query_job_config=context.default_query_job_config,
         client_info=client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
+        client_options=bigquery_client_options,
     )
     if context._connection:
         client._connection = context._connection
-    bqstorage_client = _make_bqstorage_client(use_bqstorage_api, context.credentials)
+
+    bqstorage_client_options = copy.deepcopy(context.bqstorage_client_options)
+    if args.bqstorage_api_endpoint:
+        if isinstance(bqstorage_client_options, dict):
+            bqstorage_client_options["api_endpoint"] = args.bqstorage_api_endpoint
+        else:
+            bqstorage_client_options.api_endpoint = args.bqstorage_api_endpoint
+
+    bqstorage_client = _make_bqstorage_client(
+        use_bqstorage_api, context.credentials, bqstorage_client_options,
+    )
 
     close_transports = functools.partial(_close_transports, client, bqstorage_client)
 
@@ -598,12 +702,31 @@ def _cell_magic(line, query):
         close_transports()
 
 
-def _make_bqstorage_client(use_bqstorage_api, credentials):
+def _split_args_line(line):
+    """Split out the --params option value from the input line arguments.
+
+    Args:
+        line (str): The line arguments passed to the cell magic.
+
+    Returns:
+        Tuple[str, str]
+    """
+    lexer = lap.Lexer(line)
+    scanner = lap.Parser(lexer)
+    tree = scanner.input_line()
+
+    extractor = lap.QueryParamsExtractor()
+    params_option_value, rest_of_args = extractor.visit(tree)
+
+    return params_option_value, rest_of_args
+
+
+def _make_bqstorage_client(use_bqstorage_api, credentials, client_options):
     if not use_bqstorage_api:
         return None
 
     try:
-        from google.cloud import bigquery_storage_v1
+        from google.cloud import bigquery_storage
     except ImportError as err:
         customized_error = ImportError(
             "The default BigQuery Storage API client cannot be used, install "
@@ -621,9 +744,10 @@ def _make_bqstorage_client(use_bqstorage_api, credentials):
         )
         six.raise_from(customized_error, err)
 
-    return bigquery_storage_v1.BigQueryReadClient(
+    return bigquery_storage.BigQueryReadClient(
         credentials=credentials,
         client_info=gapic_client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
+        client_options=client_options,
     )
 
 
@@ -636,10 +760,10 @@ def _close_transports(client, bqstorage_client):
     Args:
         client (:class:`~google.cloud.bigquery.client.Client`):
         bqstorage_client
-            (Optional[:class:`~google.cloud.bigquery_storage_v1.BigQueryReadClient`]):
+            (Optional[:class:`~google.cloud.bigquery_storage.BigQueryReadClient`]):
             A client for the BigQuery Storage API.
 
     """
     client.close()
     if bqstorage_client is not None:
-        bqstorage_client.transport.channel.close()
+        bqstorage_client._transport.grpc_channel.close()

@@ -35,9 +35,9 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 try:
-    from google.cloud import bigquery_storage_v1
+    from google.cloud import bigquery_storage
 except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage_v1 = None
+    bigquery_storage = None
 try:
     from tqdm import tqdm
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -455,28 +455,9 @@ class Test_AsyncJob(unittest.TestCase):
         status["state"] = state
         self.assertEqual(job.state, state)
 
-    def test__scrub_local_properties(self):
-        before = {"foo": "bar"}
-        resource = before.copy()
-        client = _make_client(project=self.PROJECT)
-        job = self._make_one(self.JOB_ID, client)
-        job._scrub_local_properties(resource)  # no raise
-        self.assertEqual(resource, before)
-
-    def test__copy_configuration_properties(self):
-        before = {"foo": "bar"}
-        resource = before.copy()
-        client = _make_client(project=self.PROJECT)
-        job = self._make_one(self.JOB_ID, client)
-        with self.assertRaises(NotImplementedError):
-            job._copy_configuration_properties(resource)
-        self.assertEqual(resource, before)
-
     def _set_properties_job(self):
         client = _make_client(project=self.PROJECT)
         job = self._make_one(self.JOB_ID, client)
-        job._scrub_local_properties = mock.Mock()
-        job._copy_configuration_properties = mock.Mock()
         job._set_future_result = mock.Mock()
         job._properties = {
             "jobReference": job._properties["jobReference"],
@@ -493,9 +474,6 @@ class Test_AsyncJob(unittest.TestCase):
 
         self.assertEqual(job._properties, resource)
 
-        job._scrub_local_properties.assert_called_once_with(resource)
-        job._copy_configuration_properties.assert_called_once_with(config)
-
     def test__set_properties_w_creation_time(self):
         now, millis = self._datetime_and_millis()
         config = {"test": True}
@@ -508,9 +486,6 @@ class Test_AsyncJob(unittest.TestCase):
         cleaned = copy.deepcopy(resource)
         cleaned["statistics"]["creationTime"] = float(millis)
         self.assertEqual(job._properties, cleaned)
-
-        job._scrub_local_properties.assert_called_once_with(resource)
-        job._copy_configuration_properties.assert_called_once_with(config)
 
     def test__set_properties_w_start_time(self):
         now, millis = self._datetime_and_millis()
@@ -525,9 +500,6 @@ class Test_AsyncJob(unittest.TestCase):
         cleaned["statistics"]["startTime"] = float(millis)
         self.assertEqual(job._properties, cleaned)
 
-        job._scrub_local_properties.assert_called_once_with(resource)
-        job._copy_configuration_properties.assert_called_once_with(config)
-
     def test__set_properties_w_end_time(self):
         now, millis = self._datetime_and_millis()
         config = {"test": True}
@@ -541,38 +513,35 @@ class Test_AsyncJob(unittest.TestCase):
         cleaned["statistics"]["endTime"] = float(millis)
         self.assertEqual(job._properties, cleaned)
 
-        job._scrub_local_properties.assert_called_once_with(resource)
-        job._copy_configuration_properties.assert_called_once_with(config)
-
-    def test__get_resource_config_missing_job_ref(self):
+    def test__check_resource_config_missing_job_ref(self):
         resource = {}
         klass = self._make_derived_class()
 
         with self.assertRaises(KeyError):
-            klass._get_resource_config(resource)
+            klass._check_resource_config(resource)
 
-    def test__get_resource_config_missing_job_id(self):
+    def test__check_resource_config_missing_job_id(self):
         resource = {"jobReference": {}}
         klass = self._make_derived_class()
 
         with self.assertRaises(KeyError):
-            klass._get_resource_config(resource)
+            klass._check_resource_config(resource)
 
-    def test__get_resource_config_missing_configuration(self):
+    def test__check_resource_config_missing_configuration(self):
         resource = {"jobReference": {"jobId": self.JOB_ID}}
         klass = self._make_derived_class()
 
         with self.assertRaises(KeyError):
-            klass._get_resource_config(resource)
+            klass._check_resource_config(resource)
 
-    def test__get_resource_config_missing_config_type(self):
+    def test__check_resource_config_missing_config_type(self):
         resource = {"jobReference": {"jobId": self.JOB_ID}, "configuration": {}}
         klass = self._make_derived_class()
 
         with self.assertRaises(KeyError):
-            klass._get_resource_config(resource)
+            klass._check_resource_config(resource)
 
-    def test__get_resource_config_ok(self):
+    def test__check_resource_config_ok(self):
         derived_config = {"foo": "bar"}
         resource = {
             "jobReference": {"jobId": self.JOB_ID},
@@ -580,10 +549,8 @@ class Test_AsyncJob(unittest.TestCase):
         }
         klass = self._make_derived_class()
 
-        job_id, config = klass._get_resource_config(resource)
-
-        self.assertEqual(job_id, self.JOB_ID)
-        self.assertEqual(config, {"derived": derived_config})
+        # Should not throw.
+        klass._check_resource_config(resource)
 
     def test__build_resource(self):
         client = _make_client(project=self.PROJECT)
@@ -620,13 +587,16 @@ class Test_AsyncJob(unittest.TestCase):
         builder.return_value = resource
         call_api = job._client._call_api = mock.Mock()
         call_api.return_value = resource
-
+        path = "/projects/{}/jobs".format(self.PROJECT)
         job._begin()
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
+            span_name="BigQuery.job.begin",
+            span_attributes={"path": path},
+            job_ref=job,
             method="POST",
-            path="/projects/{}/jobs".format(self.PROJECT),
+            path=path,
             data=resource,
             timeout=None,
         )
@@ -651,13 +621,16 @@ class Test_AsyncJob(unittest.TestCase):
         call_api = client._call_api = mock.Mock()
         call_api.return_value = resource
         retry = DEFAULT_RETRY.with_deadline(1)
-
+        path = "/projects/{}/jobs".format(self.PROJECT)
         job._begin(client=client, retry=retry, timeout=7.5)
 
         call_api.assert_called_once_with(
             retry,
+            span_name="BigQuery.job.begin",
+            span_attributes={"path": path},
+            job_ref=job,
             method="POST",
-            path="/projects/{}/jobs".format(self.PROJECT),
+            path=path,
             data=resource,
             timeout=7.5,
         )
@@ -671,11 +644,15 @@ class Test_AsyncJob(unittest.TestCase):
         job._properties["jobReference"]["location"] = self.LOCATION
         call_api = job._client._call_api = mock.Mock()
         call_api.side_effect = NotFound("testing")
-
         self.assertFalse(job.exists())
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
+            span_name="BigQuery.job.exists",
+            span_attributes={
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+            },
+            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={"fields": "id", "location": self.LOCATION},
@@ -699,11 +676,15 @@ class Test_AsyncJob(unittest.TestCase):
         call_api = client._call_api = mock.Mock()
         call_api.return_value = resource
         retry = DEFAULT_RETRY.with_deadline(1)
-
         self.assertTrue(job.exists(client=client, retry=retry))
 
         call_api.assert_called_once_with(
             retry,
+            span_name="BigQuery.job.exists",
+            span_attributes={
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+            },
+            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={"fields": "id"},
@@ -716,11 +697,13 @@ class Test_AsyncJob(unittest.TestCase):
         PATH = "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
         job = self._set_properties_job()
         call_api = job._client._call_api = mock.Mock()
-
         job.exists(timeout=7.5)
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
+            span_name="BigQuery.job.exists",
+            span_attributes={"path": PATH},
+            job_ref=job,
             method="GET",
             path=PATH,
             query_params={"fields": "id"},
@@ -742,11 +725,15 @@ class Test_AsyncJob(unittest.TestCase):
         job._properties["jobReference"]["location"] = self.LOCATION
         call_api = job._client._call_api = mock.Mock()
         call_api.return_value = resource
-
         job.reload()
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
+            span_name="BigQuery.job.reload",
+            span_attributes={
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+            },
+            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={"location": self.LOCATION},
@@ -771,11 +758,15 @@ class Test_AsyncJob(unittest.TestCase):
         call_api = client._call_api = mock.Mock()
         call_api.return_value = resource
         retry = DEFAULT_RETRY.with_deadline(1)
-
         job.reload(client=client, retry=retry, timeout=4.2)
 
         call_api.assert_called_once_with(
             retry,
+            span_name="BigQuery.job.reload",
+            span_attributes={
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+            },
+            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={},
@@ -796,8 +787,12 @@ class Test_AsyncJob(unittest.TestCase):
         job = self._set_properties_job()
         job._properties["jobReference"]["location"] = self.LOCATION
         connection = job._client._connection = _make_connection(response)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertTrue(job.cancel())
 
-        self.assertTrue(job.cancel())
+        final_attributes.assert_called()
 
         connection.api_request.assert_called_once_with(
             method="POST",
@@ -821,8 +816,16 @@ class Test_AsyncJob(unittest.TestCase):
         job = self._set_properties_job()
         client = _make_client(project=other_project)
         connection = client._connection = _make_connection(response)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertTrue(job.cancel(client=client, timeout=7.5))
 
-        self.assertTrue(job.cancel(client=client, timeout=7.5))
+        final_attributes.assert_called_with(
+            {"path": "/projects/{}/jobs/{}/cancel".format(self.PROJECT, self.JOB_ID)},
+            client,
+            job,
+        )
 
         connection.api_request.assert_called_once_with(
             method="POST",
@@ -855,7 +858,12 @@ class Test_AsyncJob(unittest.TestCase):
         )
 
         with api_request_patcher as fake_api_request:
-            result = job.cancel(retry=retry, timeout=7.5)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                result = job.cancel(retry=retry, timeout=7.5)
+
+            final_attributes.assert_called()
 
         self.assertTrue(result)
         self.assertEqual(job._properties, resource)
@@ -2052,7 +2060,7 @@ class TestLoadJob(unittest.TestCase, _Base):
     def test_ctor(self):
         client = _make_client(project=self.PROJECT)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client)
-        self.assertIs(job.destination, self.TABLE_REF)
+        self.assertEqual(job.destination, self.TABLE_REF)
         self.assertEqual(list(job.source_uris), [self.SOURCE1])
         self.assertIs(job._client, client)
         self.assertEqual(job.job_type, self.JOB_TYPE)
@@ -2343,12 +2351,17 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn = _make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client)
+        path = "/projects/{}/jobs".format(self.PROJECT)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
 
-        job._begin()
+        final_attributes.assert_called_with({"path": path}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="POST",
-            path="/projects/{}/jobs".format(self.PROJECT),
+            path=path,
             data={
                 "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
                 "configuration": {
@@ -2384,7 +2397,12 @@ class TestLoadJob(unittest.TestCase, _Base):
         job = self._make_one(
             self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client, config
         )
-        job._begin()
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
+
+        final_attributes.assert_called_with({"path": path}, client, job)
 
         sent = {
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
@@ -2478,8 +2496,12 @@ class TestLoadJob(unittest.TestCase, _Base):
         config.use_avro_logical_types = True
         config.write_disposition = WriteDisposition.WRITE_TRUNCATE
         config.schema_update_options = [SchemaUpdateOption.ALLOW_FIELD_ADDITION]
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin(client=client2)
 
-        job._begin(client=client2)
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         self.assertEqual(len(conn2.api_request.call_args_list), 1)
@@ -2504,8 +2526,13 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn = _make_connection(resource)
         client = _make_client(project=self.PROJECT, connection=conn)
         load_job = self._make_one(job_ref, [self.SOURCE1], self.TABLE_REF, client)
-
-        load_job._begin()
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            load_job._begin()
+        final_attributes.assert_called_with(
+            {"path": "/projects/alternative-project/jobs"}, client, load_job
+        )
 
         conn.api_request.assert_called_once()
         _, request = conn.api_request.call_args
@@ -2522,8 +2549,16 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn = _make_connection()
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertFalse(job.exists())
 
-        self.assertFalse(job.exists())
+        final_attributes.assert_called_with(
+            {"path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)},
+            client,
+            job,
+        )
 
         conn.api_request.assert_called_once_with(
             method="GET", path=PATH, query_params={"fields": "id"}, timeout=None
@@ -2536,8 +2571,16 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn2 = _make_connection({})
         client2 = _make_client(project=self.PROJECT, connection=conn2)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client1)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertTrue(job.exists(client=client2))
 
-        self.assertTrue(job.exists(client=client2))
+        final_attributes.assert_called_with(
+            {"path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)},
+            client2,
+            job,
+        )
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -2551,8 +2594,14 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn = _make_connection()
         client = _make_client(project=self.PROJECT, connection=conn)
         load_job = self._make_one(job_ref, [self.SOURCE1], self.TABLE_REF, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertFalse(load_job.exists())
 
-        self.assertFalse(load_job.exists())
+        final_attributes.assert_called_with(
+            {"path": "/projects/other-project/jobs/my-job-id"}, client, load_job
+        )
 
         conn.api_request.assert_called_once_with(
             method="GET",
@@ -2567,8 +2616,12 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn = _make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.reload()
 
-        job.reload()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="GET", path=PATH, query_params={}, timeout=None
@@ -2583,8 +2636,12 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn2 = _make_connection(RESOURCE)
         client2 = _make_client(project=self.PROJECT, connection=conn2)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client1)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.reload(client=client2)
 
-        job.reload(client=client2)
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -2602,8 +2659,16 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn = _make_connection(resource)
         client = _make_client(project=self.PROJECT, connection=conn)
         load_job = self._make_one(job_ref, [self.SOURCE1], self.TABLE_REF, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            load_job.reload()
 
-        load_job.reload()
+        final_attributes.assert_called_with(
+            {"path": "/projects/alternative-project/jobs/{}".format(self.JOB_ID)},
+            client,
+            load_job,
+        )
 
         conn.api_request.assert_called_once_with(
             method="GET",
@@ -2619,8 +2684,12 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn = _make_connection(RESPONSE)
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.cancel()
 
-        job.cancel()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="POST", path=PATH, query_params={}, timeout=None,
@@ -2636,8 +2705,12 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn2 = _make_connection(RESPONSE)
         client2 = _make_client(project=self.PROJECT, connection=conn2)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client1)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.cancel(client=client2)
 
-        job.cancel(client=client2)
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -2655,9 +2728,20 @@ class TestLoadJob(unittest.TestCase, _Base):
         conn = _make_connection({"job": resource})
         client = _make_client(project=self.PROJECT, connection=conn)
         load_job = self._make_one(job_ref, [self.SOURCE1], self.TABLE_REF, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            load_job.cancel()
 
-        load_job.cancel()
-
+        final_attributes.assert_called_with(
+            {
+                "path": "/projects/alternative-project/jobs/{}/cancel".format(
+                    self.JOB_ID
+                )
+            },
+            client,
+            load_job,
+        )
         conn.api_request.assert_called_once_with(
             method="POST",
             path="/projects/alternative-project/jobs/{}/cancel".format(self.JOB_ID),
@@ -2790,7 +2874,7 @@ class TestCopyJob(unittest.TestCase, _Base):
         source = self._table_ref(self.SOURCE_TABLE)
         destination = self._table_ref(self.DESTINATION_TABLE)
         job = self._make_one(self.JOB_ID, [source], destination, client)
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
         self.assertEqual(job.sources, [source])
         self.assertIs(job._client, client)
         self.assertEqual(job.job_type, self.JOB_TYPE)
@@ -2924,8 +3008,9 @@ class TestCopyJob(unittest.TestCase, _Base):
             },
         }
         klass = self._get_target_class()
+        job = klass.from_api_repr(RESOURCE, client=client)
         with self.assertRaises(KeyError):
-            klass.from_api_repr(RESOURCE, client=client)
+            _ = job.sources
 
     def test_from_api_repr_w_properties(self):
         from google.cloud.bigquery.job import CreateDisposition
@@ -2952,8 +3037,12 @@ class TestCopyJob(unittest.TestCase, _Base):
         source = self._table_ref(self.SOURCE_TABLE)
         destination = self._table_ref(self.DESTINATION_TABLE)
         job = self._make_one(self.JOB_ID, [source], destination, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
 
-        job._begin()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -3016,7 +3105,12 @@ class TestCopyJob(unittest.TestCase, _Base):
         config.create_disposition = CreateDisposition.CREATE_NEVER
         config.write_disposition = WriteDisposition.WRITE_TRUNCATE
         job = self._make_one(self.JOB_ID, [source], destination, client1, config)
-        job._begin(client=client2)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin(client=client2)
+
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -3038,8 +3132,12 @@ class TestCopyJob(unittest.TestCase, _Base):
         source = self._table_ref(self.SOURCE_TABLE)
         destination = self._table_ref(self.DESTINATION_TABLE)
         job = self._make_one(self.JOB_ID, [source], destination, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertFalse(job.exists())
 
-        self.assertFalse(job.exists())
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="GET", path=PATH, query_params={"fields": "id"}, timeout=None,
@@ -3054,8 +3152,12 @@ class TestCopyJob(unittest.TestCase, _Base):
         source = self._table_ref(self.SOURCE_TABLE)
         destination = self._table_ref(self.DESTINATION_TABLE)
         job = self._make_one(self.JOB_ID, [source], destination, client1)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertTrue(job.exists(client=client2))
 
-        self.assertTrue(job.exists(client=client2))
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -3070,8 +3172,12 @@ class TestCopyJob(unittest.TestCase, _Base):
         source = self._table_ref(self.SOURCE_TABLE)
         destination = self._table_ref(self.DESTINATION_TABLE)
         job = self._make_one(self.JOB_ID, [source], destination, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.reload()
 
-        job.reload()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="GET", path=PATH, query_params={}, timeout=None
@@ -3088,8 +3194,12 @@ class TestCopyJob(unittest.TestCase, _Base):
         source = self._table_ref(self.SOURCE_TABLE)
         destination = self._table_ref(self.DESTINATION_TABLE)
         job = self._make_one(self.JOB_ID, [source], destination, client1)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.reload(client=client2)
 
-        job.reload(client=client2)
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -3349,8 +3459,12 @@ class TestExtractJob(unittest.TestCase, _Base):
         source_dataset = DatasetReference(self.PROJECT, self.DS_ID)
         source = source_dataset.table(self.SOURCE_TABLE)
         job = self._make_one(self.JOB_ID, source, [self.DESTINATION_URI], client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
 
-        job._begin()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -3407,8 +3521,12 @@ class TestExtractJob(unittest.TestCase, _Base):
         job = self._make_one(
             self.JOB_ID, source, [self.DESTINATION_URI], client1, config
         )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin(client=client2)
 
-        job._begin(client=client2)
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -3429,8 +3547,12 @@ class TestExtractJob(unittest.TestCase, _Base):
         job = self._make_one(
             self.JOB_ID, self.TABLE_REF, [self.DESTINATION_URI], client
         )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertFalse(job.exists())
 
-        self.assertFalse(job.exists())
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="GET", path=PATH, query_params={"fields": "id"}, timeout=None,
@@ -3445,8 +3567,12 @@ class TestExtractJob(unittest.TestCase, _Base):
         job = self._make_one(
             self.JOB_ID, self.TABLE_REF, [self.DESTINATION_URI], client1
         )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertTrue(job.exists(client=client2))
 
-        self.assertTrue(job.exists(client=client2))
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -3463,9 +3589,12 @@ class TestExtractJob(unittest.TestCase, _Base):
         source_dataset = DatasetReference(self.PROJECT, self.DS_ID)
         source = source_dataset.table(self.SOURCE_TABLE)
         job = self._make_one(self.JOB_ID, source, [self.DESTINATION_URI], client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.reload()
 
-        job.reload()
-
+        final_attributes.assert_called_with({"path": PATH}, client, job)
         conn.api_request.assert_called_once_with(
             method="GET", path=PATH, query_params={}, timeout=None
         )
@@ -3483,8 +3612,12 @@ class TestExtractJob(unittest.TestCase, _Base):
         source_dataset = DatasetReference(self.PROJECT, self.DS_ID)
         source = source_dataset.table(self.SOURCE_TABLE)
         job = self._make_one(self.JOB_ID, source, [self.DESTINATION_URI], client1)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.reload(client=client2)
 
-        job.reload(client=client2)
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -4823,8 +4956,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         conn = _make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin(timeout=7.5)
 
-        job._begin(timeout=7.5)
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -4856,8 +4993,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         config = QueryJobConfig()
         config.default_dataset = DatasetReference(self.PROJECT, DS_ID)
         job = self._make_one(self.JOB_ID, self.QUERY, client, job_config=config)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
 
-        job._begin()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         self.assertIsNone(job.default_dataset)
         self.assertEqual(job.udf_resources, [])
@@ -4936,8 +5077,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         config.maximum_bytes_billed = 123456
         config.schema_update_options = [SchemaUpdateOption.ALLOW_FIELD_RELAXATION]
         job = self._make_one(self.JOB_ID, self.QUERY, client1, job_config=config)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin(client=client2)
 
-        job._begin(client=client2)
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -4978,8 +5123,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         config.udf_resources = udf_resources
         config.use_legacy_sql = True
         job = self._make_one(self.JOB_ID, self.QUERY, client, job_config=config)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
 
-        job._begin()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         self.assertEqual(job.udf_resources, udf_resources)
         conn.api_request.assert_called_once_with(
@@ -5028,8 +5177,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         jconfig = QueryJobConfig()
         jconfig.query_parameters = query_parameters
         job = self._make_one(self.JOB_ID, self.QUERY, client, job_config=jconfig)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
 
-        job._begin()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         self.assertEqual(job.query_parameters, query_parameters)
         conn.api_request.assert_called_once_with(
@@ -5072,8 +5225,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         jconfig = QueryJobConfig()
         jconfig.query_parameters = query_parameters
         job = self._make_one(self.JOB_ID, self.QUERY, client, job_config=jconfig)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
 
-        job._begin()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         self.assertEqual(job.query_parameters, query_parameters)
         conn.api_request.assert_called_once_with(
@@ -5148,8 +5305,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         config.table_definitions = {bt_table: bt_config, csv_table: csv_config}
         config.use_legacy_sql = True
         job = self._make_one(self.JOB_ID, self.QUERY, client, job_config=config)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
 
-        job._begin()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -5187,8 +5348,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         config = QueryJobConfig()
         config.dry_run = True
         job = self._make_one(self.JOB_ID, self.QUERY, client, job_config=config)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job._begin()
 
-        job._begin()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
         self.assertEqual(job.udf_resources, [])
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -5209,8 +5374,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         conn = _make_connection()
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertFalse(job.exists())
 
-        self.assertFalse(job.exists())
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         conn.api_request.assert_called_once_with(
             method="GET", path=PATH, query_params={"fields": "id"}, timeout=None
@@ -5223,8 +5392,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         conn2 = _make_connection({})
         client2 = _make_client(project=self.PROJECT, connection=conn2)
         job = self._make_one(self.JOB_ID, self.QUERY, client1)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            self.assertTrue(job.exists(client=client2))
 
-        self.assertTrue(job.exists(client=client2))
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -5246,8 +5419,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         config = QueryJobConfig()
         config.destination = table_ref
         job = self._make_one(self.JOB_ID, None, client, job_config=config)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.reload()
 
-        job.reload()
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         self.assertNotEqual(job.destination, table_ref)
 
@@ -5272,8 +5449,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         conn2 = _make_connection(RESOURCE)
         client2 = _make_client(project=self.PROJECT, connection=conn2)
         job = self._make_one(self.JOB_ID, self.QUERY, client1)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.reload(client=client2)
 
-        job.reload(client=client2)
+        final_attributes.assert_called_with({"path": PATH}, client2, job)
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
@@ -5296,8 +5477,12 @@ class TestQueryJob(unittest.TestCase, _Base):
         config = QueryJobConfig()
         config.destination = table_ref
         job = self._make_one(self.JOB_ID, None, client, job_config=config)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            job.reload(timeout=4.2)
 
-        job.reload(timeout=4.2)
+        final_attributes.assert_called_with({"path": PATH}, client, job)
 
         self.assertNotEqual(job.destination, table_ref)
 
@@ -5450,7 +5635,7 @@ class TestQueryJob(unittest.TestCase, _Base):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(
-        bigquery_storage_v1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_to_dataframe_bqstorage(self):
         query_resource = {
@@ -5468,8 +5653,8 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(self.PROJECT, connection=connection)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
-        bqstorage_client = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
-        session = bigquery_storage_v1.types.ReadSession()
+        bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+        session = bigquery_storage.types.ReadSession()
         session.avro_schema.schema = json.dumps(
             {
                 "type": "record",
@@ -5487,9 +5672,9 @@ class TestQueryJob(unittest.TestCase, _Base):
         destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
             **resource["configuration"]["query"]["destinationTable"]
         )
-        expected_session = bigquery_storage_v1.types.ReadSession(
+        expected_session = bigquery_storage.types.ReadSession(
             table=destination_table,
-            data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+            data_format=bigquery_storage.types.DataFormat.ARROW,
         )
         bqstorage_client.create_read_session.assert_called_once_with(
             parent="projects/{}".format(self.PROJECT),
@@ -5584,45 +5769,6 @@ class TestQueryJob(unittest.TestCase, _Base):
         self.assertEqual(list(df), exp_columns)  # verify the column names
 
         self.assertEqual(df.date.dtype.name, "datetime64[ns]")
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_to_dataframe_column_date_dtypes_wo_pyarrow(self):
-        begun_resource = self._make_resource()
-        query_resource = {
-            "jobComplete": True,
-            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
-            "totalRows": "1",
-            "schema": {"fields": [{"name": "date", "type": "DATE"}]},
-        }
-        row_data = [
-            ["1999-12-01"],
-        ]
-        rows = [{"f": [{"v": field} for field in row]} for row in row_data]
-        query_resource["rows"] = rows
-        done_resource = copy.deepcopy(begun_resource)
-        done_resource["status"] = {"state": "DONE"}
-        connection = _make_connection(
-            begun_resource, query_resource, done_resource, query_resource
-        )
-        client = _make_client(project=self.PROJECT, connection=connection)
-        job = self._make_one(self.JOB_ID, self.QUERY, client)
-
-        with mock.patch("google.cloud.bigquery.table.pyarrow", None):
-            with warnings.catch_warnings(record=True) as warned:
-                df = job.to_dataframe(
-                    date_as_object=False, create_bqstorage_client=False
-                )
-
-        self.assertIsInstance(df, pandas.DataFrame)
-        self.assertEqual(len(df), 1)  # verify the number of rows
-        exp_columns = [field["name"] for field in query_resource["schema"]["fields"]]
-        self.assertEqual(list(df), exp_columns)  # verify the column names
-
-        self.assertEqual(df.date.dtype.name, "object")
-
-        assert len(warned) == 1
-        warning = warned[0]
-        assert "without pyarrow" in str(warning)
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(tqdm is None, "Requires `tqdm`")
@@ -6042,7 +6188,7 @@ def test__contains_order_by(query, expected):
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(
-    bigquery_storage_v1 is None, reason="Requires `google-cloud-bigquery-storage`"
+    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 @pytest.mark.parametrize(
     "query",
@@ -6078,8 +6224,8 @@ def test_to_dataframe_bqstorage_preserve_order(query):
     connection = _make_connection(get_query_results_resource, job_resource)
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(job_resource, client)
-    bqstorage_client = mock.create_autospec(bigquery_storage_v1.BigQueryReadClient)
-    session = bigquery_storage_v1.types.ReadSession()
+    bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+    session = bigquery_storage.types.ReadSession()
     session.avro_schema.schema = json.dumps(
         {
             "type": "record",
@@ -6097,8 +6243,8 @@ def test_to_dataframe_bqstorage_preserve_order(query):
     destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
         **job_resource["configuration"]["query"]["destinationTable"]
     )
-    expected_session = bigquery_storage_v1.types.ReadSession(
-        table=destination_table, data_format=bigquery_storage_v1.enums.DataFormat.ARROW,
+    expected_session = bigquery_storage.types.ReadSession(
+        table=destination_table, data_format=bigquery_storage.types.DataFormat.ARROW,
     )
     bqstorage_client.create_read_session.assert_called_once_with(
         parent="projects/test-project",

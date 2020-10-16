@@ -12,6 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 
-class PyarrowMissingWarning(DeprecationWarning):
-    pass
+
+@pytest.fixture(scope="session")
+def lexer_class():
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Lexer
+
+    return Lexer
+
+
+def test_empy_input(lexer_class):
+    from google.cloud.bigquery.magics.line_arg_parser import TokenType
+    from google.cloud.bigquery.magics.line_arg_parser.lexer import Token
+
+    lexer = lexer_class("")
+    tokens = list(lexer)
+
+    assert tokens == [Token(TokenType.EOL, lexeme="", pos=0)]

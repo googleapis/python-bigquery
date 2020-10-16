@@ -55,7 +55,7 @@ class Model(object):
     def __init__(self, model_ref):
         # Use _proto on read-only properties to use it's built-in type
         # conversion.
-        self._proto = types.Model()
+        self._proto = types.Model()._pb
 
         # Use _properties on read-write properties to match the REST API
         # semantics. The BigQuery API makes a distinction between an unset
@@ -151,13 +151,13 @@ class Model(object):
 
     @property
     def model_type(self):
-        """google.cloud.bigquery_v2.gapic.enums.Model.ModelType: Type of the
+        """google.cloud.bigquery_v2.types.Model.ModelType: Type of the
         model resource.
 
         Read-only.
 
         The value is one of elements of the
-        :class:`~google.cloud.bigquery_v2.gapic.enums.Model.ModelType`
+        :class:`~google.cloud.bigquery_v2.types.Model.ModelType`
         enumeration.
         """
         return self._proto.model_type
@@ -306,7 +306,7 @@ class Model(object):
             training_run["startTime"] = datetime_helpers.to_rfc3339(start_time)
 
         this._proto = json_format.ParseDict(
-            resource, types.Model(), ignore_unknown_fields=True
+            resource, types.Model()._pb, ignore_unknown_fields=True
         )
         return this
 
@@ -317,6 +317,14 @@ class Model(object):
     def __repr__(self):
         return "Model(reference={})".format(repr(self.reference))
 
+    def to_api_repr(self):
+        """Construct the API resource representation of this model.
+
+        Returns:
+            Dict[str, object]: Model reference represented as an API resource
+        """
+        return json_format.MessageToDict(self._proto)
+
 
 class ModelReference(object):
     """ModelReferences are pointers to models.
@@ -326,7 +334,7 @@ class ModelReference(object):
     """
 
     def __init__(self):
-        self._proto = types.ModelReference()
+        self._proto = types.ModelReference()._pb
         self._properties = {}
 
     @property
@@ -370,8 +378,9 @@ class ModelReference(object):
         # field values.
         ref._properties = resource
         ref._proto = json_format.ParseDict(
-            resource, types.ModelReference(), ignore_unknown_fields=True
+            resource, types.ModelReference()._pb, ignore_unknown_fields=True
         )
+
         return ref
 
     @classmethod

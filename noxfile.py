@@ -112,9 +112,9 @@ def system(session):
 def snippets(session):
     """Run the snippets test suite."""
 
-    # Check the value of `RUN_SNIPPETS` env var. It defaults to true.
-    if os.environ.get("RUN_SNIPPETS", "true") == "false":
-        session.skip("RUN_SNIPPETS is set to false, skipping")
+    # Check the value of `RUN_SNIPPETS_TESTS` env var. It defaults to true.
+    if os.environ.get("RUN_SNIPPETS_TESTS", "true") == "false":
+        session.skip("RUN_SNIPPETS_TESTS is set to false, skipping")
 
     # Sanity check: Only run snippets tests if the environment variable is set.
     if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):

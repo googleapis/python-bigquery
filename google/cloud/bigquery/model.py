@@ -18,7 +18,7 @@
 
 import copy
 
-from google.protobuf import json_format
+import json
 import six
 
 import google.cloud._helpers
@@ -55,7 +55,7 @@ class Model(object):
     def __init__(self, model_ref):
         # Use _proto on read-only properties to use it's built-in type
         # conversion.
-        self._proto = types.Model()._pb
+        self._proto = types.Model()
 
         # Use _properties on read-write properties to match the REST API
         # semantics. The BigQuery API makes a distinction between an unset
@@ -67,7 +67,7 @@ class Model(object):
             model_ref = ModelReference.from_string(model_ref)
 
         if model_ref:
-            self._proto.model_reference.CopyFrom(model_ref._proto)
+            self._proto.model_reference = model_ref._proto
 
     @property
     def reference(self):
@@ -305,9 +305,7 @@ class Model(object):
             start_time = datetime_helpers.from_microseconds(1e3 * float(start_time))
             training_run["startTime"] = datetime_helpers.to_rfc3339(start_time)
 
-        this._proto = json_format.ParseDict(
-            resource, types.Model()._pb, ignore_unknown_fields=True
-        )
+        this._proto = types.Model.from_json(json.dumps(resource))
         return this
 
     def _build_resource(self, filter_fields):
@@ -323,7 +321,7 @@ class Model(object):
         Returns:
             Dict[str, object]: Model reference represented as an API resource
         """
-        return json_format.MessageToDict(self._proto)
+        return json.loads(types.Model.to_json(self._proto))
 
 
 class ModelReference(object):
@@ -334,7 +332,7 @@ class ModelReference(object):
     """
 
     def __init__(self):
-        self._proto = types.ModelReference()._pb
+        self._proto = types.ModelReference()
         self._properties = {}
 
     @property
@@ -377,9 +375,7 @@ class ModelReference(object):
         # Keep a reference to the resource as a workaround to find unknown
         # field values.
         ref._properties = resource
-        ref._proto = json_format.ParseDict(
-            resource, types.ModelReference()._pb, ignore_unknown_fields=True
-        )
+        ref._proto = types.ModelReference.from_json(json.dumps(resource))
 
         return ref
 
@@ -418,7 +414,7 @@ class ModelReference(object):
         Returns:
             Dict[str, object]: Model reference represented as an API resource
         """
-        return json_format.MessageToDict(self._proto)
+        return json.loads(types.ModelReference.to_json(self._proto))
 
     def _key(self):
         """Unique key for this model.

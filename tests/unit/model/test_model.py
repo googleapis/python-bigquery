@@ -123,21 +123,21 @@ def test_from_api_repr(target_class):
     assert got.training_runs[0].training_options.initial_learn_rate == 1.0
     assert (
         got.training_runs[0]
-        .start_time.ToDatetime()
+        .start_time
         .replace(tzinfo=google.cloud._helpers.UTC)
         == creation_time
     )
     assert got.training_runs[1].training_options.initial_learn_rate == 0.5
     assert (
         got.training_runs[1]
-        .start_time.ToDatetime()
+        .start_time
         .replace(tzinfo=google.cloud._helpers.UTC)
         == modified_time
     )
     assert got.training_runs[2].training_options.initial_learn_rate == 0.25
     assert (
         got.training_runs[2]
-        .start_time.ToDatetime()
+        .start_time
         .replace(tzinfo=google.cloud._helpers.UTC)
         == expiration_time
     )
@@ -321,7 +321,7 @@ def test_repr(target_class):
 
 
 def test_to_api_repr(target_class):
-    from google.protobuf import json_format
+    import json
 
     model = target_class("my-proj.my_dset.my_model")
     resource = {
@@ -357,8 +357,6 @@ def test_to_api_repr(target_class):
             "kmsKeyName": "projects/1/locations/us/keyRings/1/cryptoKeys/1"
         },
     }
-    model._proto = json_format.ParseDict(
-        resource, types.Model()._pb, ignore_unknown_fields=True
-    )
+    model._proto = types.Model.from_json(json.dumps(resource))
     got = model.to_api_repr()
     assert got == resource

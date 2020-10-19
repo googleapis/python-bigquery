@@ -3574,6 +3574,8 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 
     def _create_job_helper(self, job_config):
+        from google.cloud.bigquery import _helpers
+
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
@@ -3584,6 +3586,8 @@ class TestClient(unittest.TestCase):
         }
         conn = client._connection = make_connection(RESOURCE)
         client.create_job(job_config=job_config)
+        if "query" in job_config:
+            _helpers._del_sub_prop(job_config, ["query", "destinationTable"])
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -3706,9 +3710,9 @@ class TestClient(unittest.TestCase):
                 }
             },
         }
-        data = {
+        data_without_destination = {
             "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
-            "configuration": configuration,
+            "configuration": {"query": {"query": query, "useLegacySql": False}},
         }
 
         creds = _make_credentials()
@@ -3735,7 +3739,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(
             fake_api_request.call_args_list[1],
             mock.call(
-                method="POST", path="/projects/PROJECT/jobs", data=data, timeout=None,
+                method="POST",
+                path="/projects/PROJECT/jobs",
+                data=data_without_destination,
+                timeout=None,
             ),
         )
 

@@ -52,7 +52,6 @@ from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery._helpers import _verify_job_config_type
-from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
@@ -1658,7 +1657,6 @@ class Client(ClientWithProject):
             )
         elif "query" in job_config:
             copy_config = copy.deepcopy(job_config)
-            _del_sub_prop(copy_config, ["query", "destinationTable"])
             query_job_config = google.cloud.bigquery.job.QueryJobConfig.from_api_repr(
                 copy_config
             )

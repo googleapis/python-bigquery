@@ -816,11 +816,8 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
                 if the job did not complete in the given timeout.
         """
         if self.state is None:
-            with TimeoutGuard(
-                timeout, timeout_error_type=concurrent.futures.TimeoutError
-            ) as guard:
-                self._begin(retry=retry, timeout=timeout)
-            timeout = guard.remaining_timeout
+            self._begin(retry=retry, timeout=timeout)
+        # TODO: modify PollingFuture so it can pass a retry argument to done().
         return super(_AsyncJob, self).result(timeout=timeout, retry=retry)
 
     def cancelled(self):
@@ -1846,7 +1843,7 @@ class CopyJob(_AsyncJob):
         """
         return TableReference.from_api_repr(
             _helpers._get_sub_prop(
-                self._properties, ["configuration", "copy", "destinationTable"],
+                self._properties, ["configuration", "copy", "destinationTable"]
             )
         )
 
@@ -2044,10 +2041,7 @@ class ExtractJob(_AsyncJob):
         self._configuration = job_config
 
         if source:
-            source_ref = {
-                "projectId": source.project,
-                "datasetId": source.dataset_id,
-            }
+            source_ref = {"projectId": source.project, "datasetId": source.dataset_id}
 
             if isinstance(source, (Table, TableListItem, TableReference)):
                 source_ref["tableId"] = source.table_id

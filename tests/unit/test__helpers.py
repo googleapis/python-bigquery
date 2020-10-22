@@ -18,6 +18,7 @@ import decimal
 import unittest
 
 import mock
+import six
 
 
 class Test_not_null(unittest.TestCase):
@@ -805,6 +806,41 @@ class Test_scalar_field_to_json(unittest.TestCase):
         self.assertEqual(converted, str(original))
 
 
+class Test_single_field_to_json(unittest.TestCase):
+    def _call_fut(self, field, value):
+        from google.cloud.bigquery._helpers import _single_field_to_json
+
+        return _single_field_to_json(field, value)
+
+    def test_w_none(self):
+        field = _make_field("INT64")
+        original = None
+        converted = self._call_fut(field, original)
+        self.assertIsNone(converted)
+
+    def test_w_record(self):
+        subfields = [
+            _make_field("INT64", name="one"),
+            _make_field("STRING", name="two"),
+        ]
+        field = _make_field("RECORD", fields=subfields)
+        original = {"one": 42, "two": "two"}
+        converted = self._call_fut(field, original)
+        self.assertEqual(converted, {"one": "42", "two": "two"})
+
+    def test_w_scalar(self):
+        field = _make_field("INT64")
+        original = 42
+        converted = self._call_fut(field, original)
+        self.assertEqual(converted, str(original))
+
+    def test_w_scalar_ignores_mode(self):
+        field = _make_field("STRING", mode="REPEATED")
+        original = "hello world"
+        converted = self._call_fut(field, original)
+        self.assertEqual(converted, original)
+
+
 class Test_repeated_field_to_json(unittest.TestCase):
     def _call_fut(self, field, value):
         from google.cloud.bigquery._helpers import _repeated_field_to_json
@@ -846,6 +882,26 @@ class Test_record_field_to_json(unittest.TestCase):
         original = [42, "two"]
         converted = self._call_fut(fields, original)
         self.assertEqual(converted, {"one": "42", "two": "two"})
+
+    def test_w_list_missing_fields(self):
+        fields = [
+            _make_field("INT64", name="one", mode="NULLABLE"),
+            _make_field("STRING", name="two", mode="NULLABLE"),
+        ]
+        original = [42]
+
+        with six.assertRaisesRegex(self, ValueError, r".*not match schema length.*"):
+            self._call_fut(fields, original)
+
+    def test_w_list_too_many_fields(self):
+        fields = [
+            _make_field("INT64", name="one", mode="NULLABLE"),
+            _make_field("STRING", name="two", mode="NULLABLE"),
+        ]
+        original = [42, "two", "three"]
+
+        with six.assertRaisesRegex(self, ValueError, r".*not match schema length.*"):
+            self._call_fut(fields, original)
 
     def test_w_non_empty_dict(self):
         fields = [
@@ -889,6 +945,25 @@ class Test_record_field_to_json(unittest.TestCase):
 
         # None values should be dropped regardless of the field type
         self.assertEqual(converted, {"one": "42"})
+
+    def test_w_dict_unknown_fields(self):
+        fields = [
+            _make_field("INT64", name="one", mode="NULLABLE"),
+            _make_field("STRING", name="two", mode="NULLABLE"),
+        ]
+        original = {
+            "whoami": datetime.date(2020, 7, 20),
+            "one": 111,
+            "two": "222",
+            "void": None,
+        }
+
+        converted = self._call_fut(fields, original)
+
+        # Unknown fields should be included (if not None), but converted as strings.
+        self.assertEqual(
+            converted, {"whoami": "2020-07-20", "one": "111", "two": "222"},
+        )
 
 
 class Test_field_to_json(unittest.TestCase):

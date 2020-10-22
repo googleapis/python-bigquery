@@ -24,38 +24,48 @@ import operator
 import unittest
 import warnings
 
-import freezegun
 import mock
 import requests
 import six
 from six.moves import http_client
 import pytest
 import pytz
+import pkg_resources
 
-try:
-    import fastparquet
-except (ImportError, AttributeError):  # pragma: NO COVER
-    fastparquet = None
 try:
     import pandas
 except (ImportError, AttributeError):  # pragma: NO COVER
     pandas = None
+try:
+    import opentelemetry
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleExportSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+        InMemorySpanExporter,
+    )
+except (ImportError, AttributeError):  # pragma: NO COVER
+    opentelemetry = None
 try:
     import pyarrow
 except (ImportError, AttributeError):  # pragma: NO COVER
     pyarrow = None
 
 import google.api_core.exceptions
-from google.api_core.gapic_v1 import client_info
+from google.api_core import client_info
 import google.cloud._helpers
 from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import DatasetReference
 
 try:
-    from google.cloud import bigquery_storage_v1beta1
+    from google.cloud import bigquery_storage
 except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage_v1beta1 = None
+    bigquery_storage = None
+from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
+
+PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
+PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 
 
 def _make_credentials():
@@ -217,7 +227,8 @@ class TestClient(unittest.TestCase):
         from concurrent.futures import TimeoutError
         from google.cloud.bigquery.retry import DEFAULT_RETRY
 
-        client = self._make_one()
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
 
         api_request_patcher = mock.patch.object(
             client._connection, "api_request", side_effect=[TimeoutError, "result"],
@@ -235,26 +246,79 @@ class TestClient(unittest.TestCase):
             [mock.call(foo="bar"), mock.call(foo="bar")],  # was retried once
         )
 
+    def test__call_api_span_creator_not_called(self):
+        from concurrent.futures import TimeoutError
+        from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+
+        api_request_patcher = mock.patch.object(
+            client._connection, "api_request", side_effect=[TimeoutError, "result"],
+        )
+        retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
+            lambda exc: isinstance(exc, TimeoutError)
+        )
+
+        with api_request_patcher:
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client._call_api(retry)
+
+            final_attributes.assert_not_called()
+
+    def test__call_api_span_creator_called(self):
+        from concurrent.futures import TimeoutError
+        from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+
+        api_request_patcher = mock.patch.object(
+            client._connection, "api_request", side_effect=[TimeoutError, "result"],
+        )
+        retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
+            lambda exc: isinstance(exc, TimeoutError)
+        )
+
+        with api_request_patcher:
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client._call_api(
+                    retry,
+                    span_name="test_name",
+                    span_attributes={"test_attribute": "test_attribute-value"},
+                )
+
+            final_attributes.assert_called_once()
+
     def test__get_query_results_miss_w_explicit_project_and_timeout(self):
         from google.cloud.exceptions import NotFound
 
         creds = _make_credentials()
         client = self._make_one(self.PROJECT, creds)
         conn = client._connection = make_connection()
-
+        path = "/projects/other-project/queries/nothere"
         with self.assertRaises(NotFound):
-            client._get_query_results(
-                "nothere",
-                None,
-                project="other-project",
-                location=self.LOCATION,
-                timeout_ms=500,
-                timeout=42,
-            )
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client._get_query_results(
+                    "nothere",
+                    None,
+                    project="other-project",
+                    location=self.LOCATION,
+                    timeout_ms=500,
+                    timeout=42,
+                )
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="GET",
-            path="/projects/other-project/queries/nothere",
+            path=path,
             query_params={"maxResults": 0, "timeoutMs": 500, "location": self.LOCATION},
             timeout=42,
         )
@@ -310,9 +374,12 @@ class TestClient(unittest.TestCase):
         email = "bq-123@bigquery-encryption.iam.gserviceaccount.com"
         resource = {"kind": "bigquery#getServiceAccountResponse", "email": email}
         conn = client._connection = make_connection(resource)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            service_account_email = client.get_service_account_email(timeout=7.5)
 
-        service_account_email = client.get_service_account_email(timeout=7.5)
-
+        final_attributes.assert_called_once_with({"path": path}, client, None)
         conn.api_request.assert_called_once_with(method="GET", path=path, timeout=7.5)
         self.assertEqual(service_account_email, email)
 
@@ -325,9 +392,12 @@ class TestClient(unittest.TestCase):
         email = "bq-123@bigquery-encryption.iam.gserviceaccount.com"
         resource = {"kind": "bigquery#getServiceAccountResponse", "email": email}
         conn = client._connection = make_connection(resource)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            service_account_email = client.get_service_account_email(project=project)
 
-        service_account_email = client.get_service_account_email(project=project)
-
+        final_attributes.assert_called_once_with({"path": path}, client, None)
         conn.api_request.assert_called_once_with(method="GET", path=path, timeout=None)
         self.assertEqual(service_account_email, email)
 
@@ -352,10 +422,14 @@ class TestClient(unittest.TestCase):
         )
 
         with api_request_patcher as fake_api_request:
-            service_account_email = client.get_service_account_email(
-                retry=retry, timeout=7.5
-            )
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                service_account_email = client.get_service_account_email(
+                    retry=retry, timeout=7.5
+                )
 
+        final_attributes.assert_called_once_with({"path": api_path}, client, None)
         self.assertEqual(
             service_account_email, "bq-123@bigquery-encryption.iam.gserviceaccount.com"
         )
@@ -395,9 +469,14 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         client = self._make_one(PROJECT_1, creds)
         conn = client._connection = make_connection(DATA)
-
         iterator = client.list_projects()
-        page = six.next(iterator.pages)
+
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
         projects = list(page)
         token = iterator.next_page_token
 
@@ -425,7 +504,13 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(DATA)
 
         iterator = client.list_projects(timeout=7.5)
-        six.next(iterator.pages)
+
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="GET", path="/projects", query_params={}, timeout=7.5
@@ -439,7 +524,13 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(DATA)
 
         iterator = client.list_projects(max_results=3, page_token=TOKEN)
-        page = six.next(iterator.pages)
+
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
         projects = list(page)
         token = iterator.next_page_token
 
@@ -488,7 +579,12 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(DATA)
 
         iterator = client.list_datasets()
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         datasets = list(page)
         token = iterator.next_page_token
 
@@ -508,7 +604,14 @@ class TestClient(unittest.TestCase):
         client = self._make_one(self.PROJECT, creds)
         conn = client._connection = make_connection({})
 
-        list(client.list_datasets(project="other-project", timeout=7.5))
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            list(client.list_datasets(project="other-project", timeout=7.5))
+
+        final_attributes.assert_called_once_with(
+            {"path": "/projects/other-project/datasets"}, client, None
+        )
 
         conn.api_request.assert_called_once_with(
             method="GET",
@@ -529,7 +632,12 @@ class TestClient(unittest.TestCase):
         iterator = client.list_datasets(
             include_all=True, filter=FILTER, max_results=3, page_token=TOKEN
         )
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         datasets = list(page)
         token = iterator.next_page_token
 
@@ -607,8 +715,12 @@ class TestClient(unittest.TestCase):
         }
         conn = client._connection = make_connection(resource)
         dataset_ref = DatasetReference(self.PROJECT, self.DS_ID)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            dataset = client.get_dataset(dataset_ref, timeout=7.5)
 
-        dataset = client.get_dataset(dataset_ref, timeout=7.5)
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="GET", path="/%s" % path, timeout=7.5
@@ -620,56 +732,104 @@ class TestClient(unittest.TestCase):
         # Not a cloud API exception (missing 'errors' field).
         client._connection = make_connection(Exception(""), resource)
         with self.assertRaises(Exception):
-            client.get_dataset(dataset_ref)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.get_dataset(dataset_ref)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         # Zero-length errors field.
         client._connection = make_connection(ServerError(""), resource)
         with self.assertRaises(ServerError):
-            client.get_dataset(dataset_ref)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.get_dataset(dataset_ref)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         # Non-retryable reason.
         client._connection = make_connection(
             ServerError("", errors=[{"reason": "serious"}]), resource
         )
         with self.assertRaises(ServerError):
-            client.get_dataset(dataset_ref)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.get_dataset(dataset_ref)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         # Retryable reason, but retry is disabled.
         client._connection = make_connection(
             ServerError("", errors=[{"reason": "backendError"}]), resource
         )
         with self.assertRaises(ServerError):
-            client.get_dataset(dataset_ref, retry=None)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.get_dataset(dataset_ref, retry=None)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         # Retryable reason, default retry: success.
         client._connection = make_connection(
             ServerError("", errors=[{"reason": "backendError"}]), resource
         )
-        dataset = client.get_dataset(
-            # Test with a string for dataset ID.
-            dataset_ref.dataset_id
-        )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            dataset = client.get_dataset(
+                # Test with a string for dataset ID.
+                dataset_ref.dataset_id
+            )
+
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
+
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
     @unittest.skipIf(
-        bigquery_storage_v1beta1 is None, "Requires `google-cloud-bigquery-storage`"
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_create_bqstorage_client(self):
-        mock_client = mock.create_autospec(
-            bigquery_storage_v1beta1.BigQueryStorageClient
-        )
+        mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client_instance = object()
         mock_client.return_value = mock_client_instance
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
 
         with mock.patch(
-            "google.cloud.bigquery_storage_v1beta1.BigQueryStorageClient", mock_client
+            "google.cloud.bigquery_storage.BigQueryReadClient", mock_client
         ):
             bqstorage_client = client._create_bqstorage_client()
 
         self.assertIs(bqstorage_client, mock_client_instance)
         mock_client.assert_called_once_with(credentials=creds)
+
+    def test_create_bqstorage_client_missing_dependency(self):
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+
+        def fail_bqstorage_import(name, globals, locals, fromlist, level):
+            # NOTE: *very* simplified, assuming a straightforward absolute import
+            return "bigquery_storage" in name or (
+                fromlist is not None and "bigquery_storage" in fromlist
+            )
+
+        no_bqstorage = maybe_fail_import(predicate=fail_bqstorage_import)
+
+        with no_bqstorage, warnings.catch_warnings(record=True) as warned:
+            bqstorage_client = client._create_bqstorage_client()
+
+        self.assertIsNone(bqstorage_client)
+        matching_warnings = [
+            warning
+            for warning in warned
+            if "not installed" in str(warning)
+            and "google-cloud-bigquery-storage" in str(warning)
+        ]
+        assert matching_warnings, "Missing dependency warning not raised."
 
     def test_create_dataset_minimal(self):
         from google.cloud.bigquery.dataset import Dataset
@@ -686,8 +846,12 @@ class TestClient(unittest.TestCase):
 
         ds_ref = DatasetReference(self.PROJECT, self.DS_ID)
         before = Dataset(ds_ref)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            after = client.create_dataset(before, timeout=7.5)
 
-        after = client.create_dataset(before, timeout=7.5)
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
 
         self.assertEqual(after.dataset_id, self.DS_ID)
         self.assertEqual(after.project, self.PROJECT)
@@ -748,8 +912,12 @@ class TestClient(unittest.TestCase):
         before.default_table_expiration_ms = 3600
         before.location = LOCATION
         before.labels = LABELS
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            after = client.create_dataset(before)
 
-        after = client.create_dataset(before)
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
 
         self.assertEqual(after.dataset_id, self.DS_ID)
         self.assertEqual(after.project, self.PROJECT)
@@ -799,8 +967,12 @@ class TestClient(unittest.TestCase):
         ds_ref = DatasetReference(self.PROJECT, self.DS_ID)
         before = Dataset(ds_ref)
         before._properties["newAlphaProperty"] = "unreleased property"
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            after = client.create_dataset(before)
 
-        after = client.create_dataset(before)
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         self.assertEqual(after.dataset_id, self.DS_ID)
         self.assertEqual(after.project, self.PROJECT)
@@ -838,8 +1010,12 @@ class TestClient(unittest.TestCase):
 
         ds_ref = DatasetReference(self.PROJECT, self.DS_ID)
         before = Dataset(ds_ref)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            after = client.create_dataset(before)
 
-        after = client.create_dataset(before)
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
 
         self.assertEqual(after.dataset_id, self.DS_ID)
         self.assertEqual(after.project, self.PROJECT)
@@ -881,8 +1057,12 @@ class TestClient(unittest.TestCase):
         ds_ref = DatasetReference(self.PROJECT, self.DS_ID)
         before = Dataset(ds_ref)
         before.location = OTHER_LOCATION
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            after = client.create_dataset(before)
 
-        after = client.create_dataset(before)
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
 
         self.assertEqual(after.dataset_id, self.DS_ID)
         self.assertEqual(after.project, self.PROJECT)
@@ -917,8 +1097,12 @@ class TestClient(unittest.TestCase):
             project=self.PROJECT, credentials=creds, location=self.LOCATION
         )
         conn = client._connection = make_connection(resource)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            dataset = client.create_dataset(DatasetReference(self.PROJECT, self.DS_ID))
 
-        dataset = client.create_dataset(DatasetReference(self.PROJECT, self.DS_ID))
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
         self.assertEqual(dataset.project, self.PROJECT)
@@ -953,8 +1137,12 @@ class TestClient(unittest.TestCase):
             project=self.PROJECT, credentials=creds, location=self.LOCATION
         )
         conn = client._connection = make_connection(resource)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            dataset = client.create_dataset("{}.{}".format(self.PROJECT, self.DS_ID))
 
-        dataset = client.create_dataset("{}.{}".format(self.PROJECT, self.DS_ID))
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
         self.assertEqual(dataset.project, self.PROJECT)
@@ -989,8 +1177,12 @@ class TestClient(unittest.TestCase):
             project=self.PROJECT, credentials=creds, location=self.LOCATION
         )
         conn = client._connection = make_connection(resource)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            dataset = client.create_dataset(self.DS_ID)
 
-        dataset = client.create_dataset(self.DS_ID)
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
         self.assertEqual(dataset.project, self.PROJECT)
@@ -1040,8 +1232,12 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(
             google.api_core.exceptions.AlreadyExists("dataset already exists"), resource
         )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            dataset = client.create_dataset(self.DS_ID, exists_ok=True)
 
-        dataset = client.create_dataset(self.DS_ID, exists_ok=True)
+        final_attributes.assert_called_with({"path": get_path}, client, None)
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
         self.assertEqual(dataset.project, self.PROJECT)
@@ -1073,6 +1269,7 @@ class TestClient(unittest.TestCase):
         from google.cloud.bigquery.routine import RoutineReference
 
         creds = _make_credentials()
+        path = "/projects/test-routine-project/datasets/test_routines/routines"
         resource = {
             "routineReference": {
                 "projectId": "test-routine-project",
@@ -1084,14 +1281,15 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
         full_routine_id = "test-routine-project.test_routines.minimal_routine"
         routine = Routine(full_routine_id)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            actual_routine = client.create_routine(routine, timeout=7.5)
 
-        actual_routine = client.create_routine(routine, timeout=7.5)
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/projects/test-routine-project/datasets/test_routines/routines",
-            data=resource,
-            timeout=7.5,
+            method="POST", path=path, data=resource, timeout=7.5,
         )
         self.assertEqual(
             actual_routine.reference, RoutineReference.from_string(full_routine_id)
@@ -1105,11 +1303,17 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(
             google.api_core.exceptions.AlreadyExists("routine already exists")
         )
+        path = "/projects/test-routine-project/datasets/test_routines/routines"
         full_routine_id = "test-routine-project.test_routines.minimal_routine"
         routine = Routine(full_routine_id)
 
         with pytest.raises(google.api_core.exceptions.AlreadyExists):
-            client.create_routine(routine)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.create_routine(routine)
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         resource = {
             "routineReference": {
@@ -1119,10 +1323,43 @@ class TestClient(unittest.TestCase):
             }
         }
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/projects/test-routine-project/datasets/test_routines/routines",
-            data=resource,
-            timeout=None,
+            method="POST", path=path, data=resource, timeout=None,
+        )
+
+    @unittest.skipIf(opentelemetry is None, "Requires `opentelemetry`")
+    def test_span_status_is_set(self):
+        from google.cloud.bigquery.routine import Routine
+
+        tracer_provider = TracerProvider()
+        memory_exporter = InMemorySpanExporter()
+        span_processor = SimpleExportSpanProcessor(memory_exporter)
+        tracer_provider.add_span_processor(span_processor)
+        trace.set_tracer_provider(tracer_provider)
+
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+        conn = client._connection = make_connection(
+            google.api_core.exceptions.AlreadyExists("routine already exists")
+        )
+        path = "/projects/test-routine-project/datasets/test_routines/routines"
+        full_routine_id = "test-routine-project.test_routines.minimal_routine"
+        routine = Routine(full_routine_id)
+
+        with pytest.raises(google.api_core.exceptions.AlreadyExists):
+            client.create_routine(routine)
+
+        span_list = memory_exporter.get_finished_spans()
+        self.assertTrue(span_list[0].status is not None)
+
+        resource = {
+            "routineReference": {
+                "projectId": "test-routine-project",
+                "datasetId": "test_routines",
+                "routineId": "minimal_routine",
+            }
+        }
+        conn.api_request.assert_called_once_with(
+            method="POST", path=path, data=resource, timeout=None,
         )
 
     def test_create_routine_w_conflict_exists_ok(self):
@@ -1137,25 +1374,28 @@ class TestClient(unittest.TestCase):
                 "routineId": "minimal_routine",
             }
         }
+        path = "/projects/test-routine-project/datasets/test_routines/routines"
+
         conn = client._connection = make_connection(
             google.api_core.exceptions.AlreadyExists("routine already exists"), resource
         )
         full_routine_id = "test-routine-project.test_routines.minimal_routine"
         routine = Routine(full_routine_id)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            actual_routine = client.create_routine(routine, exists_ok=True)
 
-        actual_routine = client.create_routine(routine, exists_ok=True)
+        final_attributes.assert_called_with(
+            {"path": "%s/minimal_routine" % path}, client, None
+        )
 
         self.assertEqual(actual_routine.project, "test-routine-project")
         self.assertEqual(actual_routine.dataset_id, "test_routines")
         self.assertEqual(actual_routine.routine_id, "minimal_routine")
         conn.api_request.assert_has_calls(
             [
-                mock.call(
-                    method="POST",
-                    path="/projects/test-routine-project/datasets/test_routines/routines",
-                    data=resource,
-                    timeout=None,
-                ),
+                mock.call(method="POST", path=path, data=resource, timeout=None,),
                 mock.call(
                     method="GET",
                     path="/projects/test-routine-project/datasets/test_routines/routines/minimal_routine",
@@ -1175,8 +1415,14 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
         table = Table(self.TABLE_REF)
         table.time_partitioning = TimePartitioning()
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table(table, timeout=7.5)
 
-        got = client.create_table(table, timeout=7.5)
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "dataset_id": table.dataset_id}, client, None
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -1208,8 +1454,14 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
         table = Table(self.TABLE_REF)
         table._properties["newAlphaProperty"] = "unreleased property"
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table(table)
 
-        got = client.create_table(table)
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "dataset_id": table.dataset_id}, client, None
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -1243,8 +1495,14 @@ class TestClient(unittest.TestCase):
         table.encryption_configuration = EncryptionConfiguration(
             kms_key_name=self.KMS_KEY_NAME
         )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table(table)
 
-        got = client.create_table(table)
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "dataset_id": table.dataset_id}, client, None
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -1273,8 +1531,14 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
         table = Table(self.TABLE_REF)
         table.time_partitioning = TimePartitioning(expiration_ms=100)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table(table)
 
-        got = client.create_table(table)
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "dataset_id": table.dataset_id}, client, None
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -1332,7 +1596,14 @@ class TestClient(unittest.TestCase):
         table = Table(self.TABLE_REF, schema=schema)
         table.view_query = query
 
-        got = client.create_table(table)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table(table)
+
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "dataset_id": table.dataset_id}, client, None
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -1393,7 +1664,14 @@ class TestClient(unittest.TestCase):
         ec.autodetect = True
         table.external_data_configuration = ec
 
-        got = client.create_table(table)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table(table)
+
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "dataset_id": table.dataset_id}, client, None
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -1427,7 +1705,16 @@ class TestClient(unittest.TestCase):
         resource = self._make_table_resource()
         conn = client._connection = make_connection(resource)
 
-        got = client.create_table(self.TABLE_REF)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table(self.TABLE_REF)
+
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "dataset_id": self.TABLE_REF.dataset_id},
+            client,
+            None,
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -1450,9 +1737,17 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds)
         resource = self._make_table_resource()
         conn = client._connection = make_connection(resource)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table(
+                "{}.{}.{}".format(self.PROJECT, self.DS_ID, self.TABLE_ID)
+            )
 
-        got = client.create_table(
-            "{}.{}.{}".format(self.PROJECT, self.DS_ID, self.TABLE_ID)
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "dataset_id": self.TABLE_REF.dataset_id},
+            client,
+            None,
         )
 
         conn.api_request.assert_called_once_with(
@@ -1476,8 +1771,16 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds)
         resource = self._make_table_resource()
         conn = client._connection = make_connection(resource)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
 
-        got = client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "dataset_id": self.TABLE_REF.dataset_id},
+            client,
+            None,
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -1505,7 +1808,14 @@ class TestClient(unittest.TestCase):
         )
 
         with pytest.raises(google.api_core.exceptions.AlreadyExists):
-            client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
+
+        final_attributes.assert_called_with(
+            {"path": post_path, "dataset_id": self.TABLE_REF.dataset_id}, client, None,
+        )
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -1535,9 +1845,14 @@ class TestClient(unittest.TestCase):
             google.api_core.exceptions.AlreadyExists("table already exists"), resource
         )
 
-        got = client.create_table(
-            "{}.{}".format(self.DS_ID, self.TABLE_ID), exists_ok=True
-        )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.create_table(
+                "{}.{}".format(self.DS_ID, self.TABLE_ID), exists_ok=True
+            )
+
+        final_attributes.assert_called_with({"path": get_path}, client, None)
 
         self.assertEqual(got.project, self.PROJECT)
         self.assertEqual(got.dataset_id, self.DS_ID)
@@ -1592,7 +1907,12 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
 
         model_ref = DatasetReference(self.PROJECT, self.DS_ID).model(self.MODEL_ID)
-        got = client.get_model(model_ref, timeout=7.5)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.get_model(model_ref, timeout=7.5)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="GET", path="/%s" % path, timeout=7.5
@@ -1618,7 +1938,12 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
 
         model_id = "{}.{}.{}".format(self.PROJECT, self.DS_ID, self.MODEL_ID)
-        got = client.get_model(model_id)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            got = client.get_model(model_id)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="GET", path="/%s" % path, timeout=None
@@ -1646,15 +1971,20 @@ class TestClient(unittest.TestCase):
                 },
                 "routineType": "SCALAR_FUNCTION",
             }
+            path = "/projects/test-routine-project/datasets/test_routines/routines/minimal_routine"
+
             client = self._make_one(project=self.PROJECT, credentials=creds)
             conn = client._connection = make_connection(resource)
 
-            actual_routine = client.get_routine(routine, timeout=7.5)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                actual_routine = client.get_routine(routine, timeout=7.5)
+
+            final_attributes.assert_called_once_with({"path": path}, client, None)
 
             conn.api_request.assert_called_once_with(
-                method="GET",
-                path="/projects/test-routine-project/datasets/test_routines/routines/minimal_routine",
-                timeout=7.5,
+                method="GET", path=path, timeout=7.5,
             )
             self.assertEqual(
                 actual_routine.reference,
@@ -1683,7 +2013,12 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
         resource = self._make_table_resource()
         conn = client._connection = make_connection(resource)
-        table = client.get_table(self.TABLE_REF, timeout=7.5)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            table = client.get_table(self.TABLE_REF, timeout=7.5)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         conn.api_request.assert_called_once_with(
             method="GET", path="/%s" % path, timeout=7.5
@@ -1722,6 +2057,233 @@ class TestClient(unittest.TestCase):
             timeout=None,
         )
         self.assertIn("my-application/1.2.3", expected_user_agent)
+
+    def test_get_iam_policy(self):
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_OWNER_ROLE
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_EDITOR_ROLE
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_VIEWER_ROLE
+        from google.api_core.iam import Policy
+
+        PATH = "/projects/{}/datasets/{}/tables/{}:getIamPolicy".format(
+            self.PROJECT, self.DS_ID, self.TABLE_ID,
+        )
+        BODY = {"options": {"requestedPolicyVersion": 1}}
+        ETAG = "CARDI"
+        VERSION = 1
+        OWNER1 = "user:phred@example.com"
+        OWNER2 = "group:cloud-logs@google.com"
+        EDITOR1 = "domain:google.com"
+        EDITOR2 = "user:phred@example.com"
+        VIEWER1 = "serviceAccount:1234-abcdef@service.example.com"
+        VIEWER2 = "user:phred@example.com"
+        RETURNED = {
+            "resourceId": PATH,
+            "etag": ETAG,
+            "version": VERSION,
+            "bindings": [
+                {"role": BIGQUERY_DATA_OWNER_ROLE, "members": [OWNER1, OWNER2]},
+                {"role": BIGQUERY_DATA_EDITOR_ROLE, "members": [EDITOR1, EDITOR2]},
+                {"role": BIGQUERY_DATA_VIEWER_ROLE, "members": [VIEWER1, VIEWER2]},
+            ],
+        }
+        EXPECTED = {
+            binding["role"]: set(binding["members"]) for binding in RETURNED["bindings"]
+        }
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RETURNED)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            policy = client.get_iam_policy(self.TABLE_REF, timeout=7.5)
+
+        final_attributes.assert_called_once_with({"path": PATH}, client, None)
+
+        conn.api_request.assert_called_once_with(
+            method="POST", path=PATH, data=BODY, timeout=7.5
+        )
+
+        self.assertIsInstance(policy, Policy)
+        self.assertEqual(policy.etag, RETURNED["etag"])
+        self.assertEqual(policy.version, RETURNED["version"])
+        self.assertEqual(dict(policy), EXPECTED)
+
+    def test_get_iam_policy_w_invalid_table(self):
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        table_resource_string = "projects/{}/datasets/{}/tables/{}".format(
+            self.PROJECT, self.DS_ID, self.TABLE_ID,
+        )
+
+        with self.assertRaises(TypeError):
+            client.get_iam_policy(table_resource_string)
+
+    def test_get_iam_policy_w_invalid_version(self):
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        with self.assertRaises(ValueError):
+            client.get_iam_policy(self.TABLE_REF, requested_policy_version=2)
+
+    def test_set_iam_policy(self):
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_OWNER_ROLE
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_EDITOR_ROLE
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_VIEWER_ROLE
+        from google.api_core.iam import Policy
+
+        PATH = "/projects/%s/datasets/%s/tables/%s:setIamPolicy" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+        ETAG = "foo"
+        VERSION = 1
+        OWNER1 = "user:phred@example.com"
+        OWNER2 = "group:cloud-logs@google.com"
+        EDITOR1 = "domain:google.com"
+        EDITOR2 = "user:phred@example.com"
+        VIEWER1 = "serviceAccount:1234-abcdef@service.example.com"
+        VIEWER2 = "user:phred@example.com"
+        BINDINGS = [
+            {"role": BIGQUERY_DATA_OWNER_ROLE, "members": [OWNER1, OWNER2]},
+            {"role": BIGQUERY_DATA_EDITOR_ROLE, "members": [EDITOR1, EDITOR2]},
+            {"role": BIGQUERY_DATA_VIEWER_ROLE, "members": [VIEWER1, VIEWER2]},
+        ]
+        MASK = "bindings,etag"
+        RETURNED = {"etag": ETAG, "version": VERSION, "bindings": BINDINGS}
+
+        policy = Policy()
+        for binding in BINDINGS:
+            policy[binding["role"]] = binding["members"]
+
+        BODY = {"policy": policy.to_api_repr(), "updateMask": MASK}
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RETURNED)
+
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            returned_policy = client.set_iam_policy(
+                self.TABLE_REF, policy, updateMask=MASK, timeout=7.5
+            )
+
+        final_attributes.assert_called_once_with({"path": PATH}, client, None)
+
+        conn.api_request.assert_called_once_with(
+            method="POST", path=PATH, data=BODY, timeout=7.5
+        )
+        self.assertEqual(returned_policy.etag, ETAG)
+        self.assertEqual(returned_policy.version, VERSION)
+        self.assertEqual(dict(returned_policy), dict(policy))
+
+    def test_set_iam_policy_no_mask(self):
+        from google.api_core.iam import Policy
+
+        PATH = "/projects/%s/datasets/%s/tables/%s:setIamPolicy" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+        RETURNED = {"etag": "foo", "version": 1, "bindings": []}
+
+        policy = Policy()
+        BODY = {"policy": policy.to_api_repr()}
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RETURNED)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            client.set_iam_policy(self.TABLE_REF, policy, timeout=7.5)
+
+        final_attributes.assert_called_once_with({"path": PATH}, client, None)
+
+        conn.api_request.assert_called_once_with(
+            method="POST", path=PATH, data=BODY, timeout=7.5
+        )
+
+    def test_set_iam_policy_invalid_policy(self):
+        from google.api_core.iam import Policy
+
+        policy = Policy()
+        invalid_policy_repr = policy.to_api_repr()
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        with self.assertRaises(TypeError):
+            client.set_iam_policy(self.TABLE_REF, invalid_policy_repr)
+
+    def test_set_iam_policy_w_invalid_table(self):
+        from google.api_core.iam import Policy
+
+        policy = Policy()
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        table_resource_string = "projects/%s/datasets/%s/tables/%s" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+
+        with self.assertRaises(TypeError):
+            client.set_iam_policy(table_resource_string, policy)
+
+    def test_test_iam_permissions(self):
+        PATH = "/projects/%s/datasets/%s/tables/%s:testIamPermissions" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+
+        PERMISSIONS = ["bigquery.tables.get", "bigquery.tables.update"]
+        BODY = {"permissions": PERMISSIONS}
+        RETURNED = {"permissions": PERMISSIONS}
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RETURNED)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            client.test_iam_permissions(self.TABLE_REF, PERMISSIONS, timeout=7.5)
+
+        final_attributes.assert_called_once_with({"path": PATH}, client, None)
+
+        conn.api_request.assert_called_once_with(
+            method="POST", path=PATH, data=BODY, timeout=7.5
+        )
+
+    def test_test_iam_permissions_w_invalid_table(self):
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        table_resource_string = "projects/%s/datasets/%s/tables/%s" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+
+        PERMISSIONS = ["bigquery.tables.get", "bigquery.tables.update"]
+
+        with self.assertRaises(TypeError):
+            client.test_iam_permissions(table_resource_string, PERMISSIONS)
 
     def test_update_dataset_w_invalid_field(self):
         from google.cloud.bigquery.dataset import Dataset
@@ -1763,11 +2325,23 @@ class TestClient(unittest.TestCase):
         ds.default_table_expiration_ms = EXP
         ds.labels = LABELS
         ds.access_entries = [AccessEntry("OWNER", "userByEmail", "phred@example.com")]
-        ds2 = client.update_dataset(
-            ds,
-            ["description", "friendly_name", "location", "labels", "access_entries"],
-            timeout=7.5,
+        fields = [
+            "description",
+            "friendly_name",
+            "location",
+            "labels",
+            "access_entries",
+        ]
+
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            ds2 = client.update_dataset(ds, fields=fields, timeout=7.5,)
+
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % PATH, "fields": fields}, client, None
         )
+
         conn.api_request.assert_called_once_with(
             method="PATCH",
             data={
@@ -1809,7 +2383,15 @@ class TestClient(unittest.TestCase):
         dataset = Dataset(DatasetReference(self.PROJECT, self.DS_ID))
         dataset._properties["newAlphaProperty"] = "unreleased property"
 
-        dataset = client.update_dataset(dataset, ["newAlphaProperty"])
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            dataset = client.update_dataset(dataset, ["newAlphaProperty"])
+
+        final_attributes.assert_called_once_with(
+            {"path": path, "fields": ["newAlphaProperty"]}, client, None
+        )
+
         conn.api_request.assert_called_once_with(
             method="PATCH",
             data={"newAlphaProperty": "unreleased property"},
@@ -1856,9 +2438,14 @@ class TestClient(unittest.TestCase):
         model.friendly_name = title
         model.expires = expires
         model.labels = {"x": "y"}
+        fields = ["description", "friendly_name", "labels", "expires"]
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            updated_model = client.update_model(model, fields, timeout=7.5)
 
-        updated_model = client.update_model(
-            model, ["description", "friendly_name", "labels", "expires"], timeout=7.5
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "fields": fields}, client, None
         )
 
         sent = {
@@ -1908,7 +2495,7 @@ class TestClient(unittest.TestCase):
             RoutineArgument(
                 name="x",
                 data_type=bigquery_v2.types.StandardSqlDataType(
-                    type_kind=bigquery_v2.enums.StandardSqlDataType.TypeKind.INT64
+                    type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.INT64
                 ),
             )
         ]
@@ -1916,11 +2503,22 @@ class TestClient(unittest.TestCase):
         routine.language = "SQL"
         routine.type_ = "SCALAR_FUNCTION"
         routine._properties["someNewField"] = "someValue"
+        fields = [
+            "arguments",
+            "language",
+            "body",
+            "type_",
+            "return_type",
+            "someNewField",
+        ]
 
-        actual_routine = client.update_routine(
-            routine,
-            ["arguments", "language", "body", "type_", "return_type", "someNewField"],
-            timeout=7.5,
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            actual_routine = client.update_routine(routine, fields, timeout=7.5,)
+
+        final_attributes.assert_called_once_with(
+            {"path": routine.path, "fields": fields}, client, None
         )
 
         # TODO: routineReference isn't needed when the Routines API supports
@@ -1940,7 +2538,15 @@ class TestClient(unittest.TestCase):
 
         # ETag becomes If-Match header.
         routine._properties["etag"] = "im-an-etag"
-        client.update_routine(routine, [])
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            client.update_routine(routine, [])
+
+        final_attributes.assert_called_once_with(
+            {"path": routine.path, "fields": []}, client, None
+        )
+
         req = conn.api_request.call_args
         self.assertEqual(req[1]["headers"]["If-Match"], "im-an-etag")
 
@@ -1991,9 +2597,15 @@ class TestClient(unittest.TestCase):
         table.description = description
         table.friendly_name = title
         table.labels = {"x": "y"}
+        fields = ["schema", "description", "friendly_name", "labels"]
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            updated_table = client.update_table(table, fields, timeout=7.5)
+        span_path = "/%s" % path
 
-        updated_table = client.update_table(
-            table, ["schema", "description", "friendly_name", "labels"], timeout=7.5
+        final_attributes.assert_called_once_with(
+            {"path": span_path, "fields": fields}, client, None
         )
 
         sent = {
@@ -2027,7 +2639,15 @@ class TestClient(unittest.TestCase):
 
         # ETag becomes If-Match header.
         table._properties["etag"] = "etag"
-        client.update_table(table, [])
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            client.update_table(table, [])
+
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "fields": []}, client, None
+        )
+
         req = conn.api_request.call_args
         self.assertEqual(req[1]["headers"]["If-Match"], "etag")
 
@@ -2047,7 +2667,14 @@ class TestClient(unittest.TestCase):
         table = Table(self.TABLE_REF)
         table._properties["newAlphaProperty"] = "unreleased property"
 
-        updated_table = client.update_table(table, ["newAlphaProperty"])
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            updated_table = client.update_table(table, ["newAlphaProperty"])
+
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "fields": ["newAlphaProperty"]}, client, None,
+        )
 
         conn.api_request.assert_called_once_with(
             method="PATCH",
@@ -2075,8 +2702,14 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
         table = Table(self.TABLE_REF)
         table.view_use_legacy_sql = True
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            updated_table = client.update_table(table, ["view_use_legacy_sql"])
 
-        updated_table = client.update_table(table, ["view_use_legacy_sql"])
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "fields": ["view_use_legacy_sql"]}, client, None,
+        )
 
         conn.api_request.assert_called_once_with(
             method="PATCH",
@@ -2139,8 +2772,14 @@ class TestClient(unittest.TestCase):
         table.view_query = query
         table.view_use_legacy_sql = True
         updated_properties = ["schema", "view_query", "expires", "view_use_legacy_sql"]
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            updated_table = client.update_table(table, updated_properties)
 
-        updated_table = client.update_table(table, updated_properties)
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "fields": updated_properties}, client, None,
+        )
 
         self.assertEqual(updated_table.schema, table.schema)
         self.assertEqual(updated_table.view_query, table.view_query)
@@ -2183,17 +2822,30 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         conn = client._connection = make_connection(resource1, resource2)
-        table = client.get_table(
-            # Test with string for table ID
-            "{}.{}.{}".format(
-                self.TABLE_REF.project,
-                self.TABLE_REF.dataset_id,
-                self.TABLE_REF.table_id,
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            table = client.get_table(
+                # Test with string for table ID
+                "{}.{}.{}".format(
+                    self.TABLE_REF.project,
+                    self.TABLE_REF.dataset_id,
+                    self.TABLE_REF.table_id,
+                )
             )
-        )
+
+        final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
+
         table.schema = None
 
-        updated_table = client.update_table(table, ["schema"])
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            updated_table = client.update_table(table, ["schema"])
+
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "fields": ["schema"]}, client, None
+        )
 
         self.assertEqual(len(conn.api_request.call_args_list), 2)
         req = conn.api_request.call_args_list[1]
@@ -2223,11 +2875,30 @@ class TestClient(unittest.TestCase):
         table = Table(self.TABLE_REF)
         table.description = description
         table.friendly_name = title
-        table2 = client.update_table(table, ["description", "friendly_name"])
+
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            table2 = client.update_table(table, ["description", "friendly_name"])
+
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "fields": ["description", "friendly_name"]},
+            client,
+            None,
+        )
+
         self.assertEqual(table2.description, table.description)
         table2.description = None
 
-        table3 = client.update_table(table2, ["description"])
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            table3 = client.update_table(table2, ["description"])
+
+        final_attributes.assert_called_once_with(
+            {"path": "/%s" % path, "fields": ["description"]}, client, None
+        )
+
         self.assertEqual(len(conn.api_request.call_args_list), 2)
         req = conn.api_request.call_args_list[1]
         self.assertEqual(req[1]["method"], "PATCH")
@@ -2245,7 +2916,12 @@ class TestClient(unittest.TestCase):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         iterator = client.list_tables(dataset, timeout=7.5)
         self.assertIs(iterator.dataset, dataset)
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
         tables = list(page)
         token = iterator.next_page_token
 
@@ -2263,7 +2939,12 @@ class TestClient(unittest.TestCase):
 
         dataset_id = "{}.{}".format(self.PROJECT, self.DS_ID)
         iterator = client.list_models(dataset_id, timeout=7.5)
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
         models = list(page)
         token = iterator.next_page_token
 
@@ -2307,7 +2988,12 @@ class TestClient(unittest.TestCase):
 
         iterator = client.list_models(dataset)
         self.assertIs(iterator.dataset, dataset)
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         models = list(page)
         token = iterator.next_page_token
 
@@ -2333,7 +3019,16 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection({})
 
         iterator = client.list_routines("test-routines.test_routines", timeout=7.5)
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with(
+            {"path": "/projects/test-routines/datasets/test_routines/routines"},
+            client,
+            None,
+        )
         routines = list(page)
         token = iterator.next_page_token
 
@@ -2382,7 +3077,12 @@ class TestClient(unittest.TestCase):
 
         iterator = client.list_routines(dataset)
         self.assertIs(iterator.dataset, dataset)
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
         routines = list(page)
         actual_token = iterator.next_page_token
 
@@ -2446,7 +3146,12 @@ class TestClient(unittest.TestCase):
 
         iterator = client.list_tables(dataset)
         self.assertIs(iterator.dataset, dataset)
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         tables = list(page)
         token = iterator.next_page_token
 
@@ -2505,7 +3210,12 @@ class TestClient(unittest.TestCase):
             page_token=TOKEN,
         )
         self.assertEqual(iterator.dataset, dataset)
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         tables = list(page)
         token = iterator.next_page_token
 
@@ -2540,7 +3250,15 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds)
         conn = client._connection = make_connection(*([{}] * len(datasets)))
         for arg in datasets:
-            client.delete_dataset(arg, timeout=7.5)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.delete_dataset(arg, timeout=7.5)
+
+            final_attributes.assert_called_once_with(
+                {"path": "/%s" % PATH}, client, None
+            )
+
             conn.api_request.assert_called_with(
                 method="DELETE", path="/%s" % PATH, query_params={}, timeout=7.5
             )
@@ -2554,7 +3272,14 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection({}, {})
         ds_ref = DatasetReference(self.PROJECT, self.DS_ID)
         for arg in (ds_ref, Dataset(ds_ref)):
-            client.delete_dataset(arg, delete_contents=True)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.delete_dataset(arg, delete_contents=True)
+
+            final_attributes.assert_called_once_with(
+                {"path": "/%s" % PATH, "deleteContents": True}, client, None
+            )
             conn.api_request.assert_called_with(
                 method="DELETE",
                 path="/%s" % PATH,
@@ -2580,7 +3305,12 @@ class TestClient(unittest.TestCase):
         )
 
         with self.assertRaises(google.api_core.exceptions.NotFound):
-            client.delete_dataset(self.DS_ID)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.delete_dataset(self.DS_ID)
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(
             method="DELETE", path=path, query_params={}, timeout=None
@@ -2595,7 +3325,12 @@ class TestClient(unittest.TestCase):
             google.api_core.exceptions.NotFound("dataset not found")
         )
 
-        client.delete_dataset(self.DS_ID, not_found_ok=True)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            client.delete_dataset(self.DS_ID, not_found_ok=True)
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(
             method="DELETE", path=path, query_params={}, timeout=None
@@ -2621,7 +3356,14 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(*([{}] * len(models)))
 
         for arg in models:
-            client.delete_model(arg, timeout=7.5)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.delete_model(arg, timeout=7.5)
+
+            final_attributes.assert_called_once_with(
+                {"path": "/%s" % path}, client, None
+            )
             conn.api_request.assert_called_with(
                 method="DELETE", path="/%s" % path, timeout=7.5
             )
@@ -2658,10 +3400,14 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(
             google.api_core.exceptions.NotFound("model not found")
         )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            client.delete_model(
+                "{}.{}".format(self.DS_ID, self.MODEL_ID), not_found_ok=True
+            )
 
-        client.delete_model(
-            "{}.{}".format(self.DS_ID, self.MODEL_ID), not_found_ok=True
-        )
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 
@@ -2677,15 +3423,20 @@ class TestClient(unittest.TestCase):
         ]
         creds = _make_credentials()
         http = object()
+        path = "/projects/test-routine-project/datasets/test_routines/routines/minimal_routine"
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
         conn = client._connection = make_connection(*([{}] * len(routines)))
 
         for routine in routines:
-            client.delete_routine(routine, timeout=7.5)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.delete_routine(routine, timeout=7.5)
+
+            final_attributes.assert_called_once_with({"path": path}, client, None)
+
             conn.api_request.assert_called_with(
-                method="DELETE",
-                path="/projects/test-routine-project/datasets/test_routines/routines/minimal_routine",
-                timeout=7.5,
+                method="DELETE", path=path, timeout=7.5,
             )
 
     def test_delete_routine_w_wrong_type(self):
@@ -2701,14 +3452,18 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(
             google.api_core.exceptions.NotFound("routine not found")
         )
+        path = "/projects/routines-project/datasets/test_routines/routines/test_routine"
 
         with self.assertRaises(google.api_core.exceptions.NotFound):
-            client.delete_routine("routines-project.test_routines.test_routine")
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.delete_routine("routines-project.test_routines.test_routine")
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(
-            method="DELETE",
-            path="/projects/routines-project/datasets/test_routines/routines/test_routine",
-            timeout=None,
+            method="DELETE", path=path, timeout=None,
         )
 
     def test_delete_routine_w_not_found_ok_true(self):
@@ -2718,15 +3473,19 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(
             google.api_core.exceptions.NotFound("routine not found")
         )
+        path = "/projects/routines-project/datasets/test_routines/routines/test_routine"
 
-        client.delete_routine(
-            "routines-project.test_routines.test_routine", not_found_ok=True
-        )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            client.delete_routine(
+                "routines-project.test_routines.test_routine", not_found_ok=True
+            )
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(
-            method="DELETE",
-            path="/projects/routines-project/datasets/test_routines/routines/test_routine",
-            timeout=None,
+            method="DELETE", path=path, timeout=None,
         )
 
     def test_delete_table(self):
@@ -2752,7 +3511,15 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(*([{}] * len(tables)))
 
         for arg in tables:
-            client.delete_table(arg, timeout=7.5)
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.delete_table(arg, timeout=7.5)
+
+            final_attributes.assert_called_once_with(
+                {"path": "/%s" % path}, client, None
+            )
+
             conn.api_request.assert_called_with(
                 method="DELETE", path="/%s" % path, timeout=7.5
             )
@@ -2775,7 +3542,12 @@ class TestClient(unittest.TestCase):
         )
 
         with self.assertRaises(google.api_core.exceptions.NotFound):
-            client.delete_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
+            with mock.patch(
+                "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+            ) as final_attributes:
+                client.delete_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 
@@ -2790,11 +3562,200 @@ class TestClient(unittest.TestCase):
             google.api_core.exceptions.NotFound("table not found")
         )
 
-        client.delete_table(
-            "{}.{}".format(self.DS_ID, self.TABLE_ID), not_found_ok=True
-        )
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            client.delete_table(
+                "{}.{}".format(self.DS_ID, self.TABLE_ID), not_found_ok=True
+            )
+
+        final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
+
+    def _create_job_helper(self, job_config):
+        from google.cloud.bigquery import _helpers
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        RESOURCE = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
+            "configuration": job_config,
+        }
+        conn = client._connection = make_connection(RESOURCE)
+        client.create_job(job_config=job_config)
+        if "query" in job_config:
+            _helpers._del_sub_prop(job_config, ["query", "destinationTable"])
+
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path="/projects/%s/jobs" % self.PROJECT,
+            data=RESOURCE,
+            timeout=None,
+        )
+
+    def test_create_job_load_config(self):
+        configuration = {
+            "load": {
+                "destinationTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "source_table",
+                },
+                "sourceUris": ["gs://test_bucket/src_object*"],
+            }
+        }
+
+        self._create_job_helper(configuration)
+
+    def test_create_job_copy_config(self):
+        configuration = {
+            "copy": {
+                "sourceTables": [
+                    {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "tableId": "source_table",
+                    }
+                ],
+                "destinationTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "destination_table",
+                },
+            }
+        }
+
+        self._create_job_helper(configuration)
+
+    def test_create_job_copy_config_w_single_source(self):
+        configuration = {
+            "copy": {
+                "sourceTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "source_table",
+                },
+                "destinationTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "destination_table",
+                },
+            }
+        }
+
+        self._create_job_helper(configuration)
+
+    def test_create_job_extract_config(self):
+        configuration = {
+            "extract": {
+                "sourceTable": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "tableId": "source_table",
+                },
+                "destinationUris": ["gs://test_bucket/dst_object*"],
+            }
+        }
+        self._create_job_helper(configuration)
+
+    def test_create_job_extract_config_for_model(self):
+        configuration = {
+            "extract": {
+                "sourceModel": {
+                    "projectId": self.PROJECT,
+                    "datasetId": self.DS_ID,
+                    "modelId": "source_model",
+                },
+                "destinationUris": ["gs://test_bucket/dst_object*"],
+            }
+        }
+        self._create_job_helper(configuration)
+
+    def test_create_job_query_config(self):
+        configuration = {
+            "query": {
+                "query": "query",
+                "destinationTable": {"tableId": "table_id"},
+                "useLegacySql": False,
+            }
+        }
+        self._create_job_helper(configuration)
+
+    def test_create_job_query_config_w_rateLimitExceeded_error(self):
+        from google.cloud.exceptions import Forbidden
+        from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+        query = "select count(*) from persons"
+        configuration = {
+            "query": {
+                "query": query,
+                "useLegacySql": False,
+                "destinationTable": {"tableId": "table_id"},
+            }
+        }
+        resource = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
+            "configuration": {
+                "query": {
+                    "query": query,
+                    "useLegacySql": False,
+                    "destinationTable": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "tableId": "query_destination_table",
+                    },
+                }
+            },
+        }
+        data_without_destination = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
+            "configuration": {"query": {"query": query, "useLegacySql": False}},
+        }
+
+        creds = _make_credentials()
+        http = object()
+        retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
+            lambda exc: isinstance(exc, Forbidden)
+        )
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        api_request_patcher = mock.patch.object(
+            client._connection,
+            "api_request",
+            side_effect=[
+                Forbidden("", errors=[{"reason": "rateLimitExceeded"}]),
+                resource,
+            ],
+        )
+
+        with api_request_patcher as fake_api_request:
+            job = client.create_job(job_config=configuration, retry=retry)
+
+        self.assertEqual(job.destination.table_id, "query_destination_table")
+        self.assertEqual(len(fake_api_request.call_args_list), 2)  # was retried once
+        self.assertEqual(
+            fake_api_request.call_args_list[1],
+            mock.call(
+                method="POST",
+                path="/projects/PROJECT/jobs",
+                data=data_without_destination,
+                timeout=None,
+            ),
+        )
+
+    def test_create_job_w_invalid_job_config(self):
+        configuration = {"unknown": {}}
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        with self.assertRaises(TypeError) as exc:
+            client.create_job(job_config=configuration)
+
+        self.assertIn("Invalid job configuration", exc.exception.args[0])
 
     def test_job_from_resource_unknown_type(self):
         from google.cloud.bigquery.job import UnknownJob
@@ -3076,7 +4037,12 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(DATA)
 
         iterator = client.list_jobs()
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         jobs = list(page)
         token = iterator.next_page_token
 
@@ -3121,7 +4087,12 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(DATA)
 
         iterator = client.list_jobs()
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         jobs = list(page)
         token = iterator.next_page_token
 
@@ -3150,7 +4121,12 @@ class TestClient(unittest.TestCase):
         iterator = client.list_jobs(
             max_results=1000, page_token=TOKEN, all_users=True, state_filter="done"
         )
-        page = six.next(iterator.pages)
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            page = six.next(iterator.pages)
+
+        final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         jobs = list(page)
         token = iterator.next_page_token
 
@@ -3289,7 +4265,7 @@ class TestClient(unittest.TestCase):
         self.assertIs(job._client, client)
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(list(job.source_uris), [SOURCE_URI])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
 
         conn = client._connection = make_connection(RESOURCE)
 
@@ -3298,7 +4274,7 @@ class TestClient(unittest.TestCase):
         self.assertIs(job._client, client)
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(list(job.source_uris), [SOURCE_URI])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
 
     def test_load_table_from_uri_w_explicit_project(self):
         job_id = "this-is-a-job-id"
@@ -3448,7 +4424,7 @@ class TestClient(unittest.TestCase):
         job = LoadJob(None, None, self.TABLE_REF, client, job_config=config)
         metadata = job.to_api_repr()
         upload, transport = client._initiate_resumable_upload(
-            stream, metadata, num_retries
+            stream, metadata, num_retries, None
         )
 
         # Check the returned values.
@@ -3515,7 +4491,9 @@ class TestClient(unittest.TestCase):
         job = LoadJob(None, None, self.TABLE_REF, client, job_config=config)
         metadata = job.to_api_repr()
         size = len(data)
-        response = client._do_multipart_upload(stream, metadata, size, num_retries)
+        response = client._do_multipart_upload(
+            stream, metadata, size, num_retries, None
+        )
 
         # Check the mocks and the returned value.
         self.assertIs(response, fake_transport.request.return_value)
@@ -3599,16 +4577,67 @@ class TestClient(unittest.TestCase):
         self.assertIs(job._client, client)
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(list(job.sources), [source])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
 
-        conn = client._connection = make_connection(RESOURCE)
-        source2 = dataset.table(SOURCE + "2")
-        job = client.copy_table([source, source2], destination, job_id=JOB)
+    def test_copy_table_w_multiple_sources(self):
+        from google.cloud.bigquery.job import CopyJob
+        from google.cloud.bigquery.table import TableReference
+
+        job_id = "job_name"
+        source_id = "my-project.my_dataset.source_table"
+        source_id2 = "my-project.my_dataset.source_table2"
+        destination_id = "my-other-project.another_dataset.destination_table"
+        expected_resource = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": job_id},
+            "configuration": {
+                "copy": {
+                    "sourceTables": [
+                        {
+                            "projectId": "my-project",
+                            "datasetId": "my_dataset",
+                            "tableId": "source_table",
+                        },
+                        {
+                            "projectId": "my-project",
+                            "datasetId": "my_dataset",
+                            "tableId": "source_table2",
+                        },
+                    ],
+                    "destinationTable": {
+                        "projectId": "my-other-project",
+                        "datasetId": "another_dataset",
+                        "tableId": "destination_table",
+                    },
+                }
+            },
+        }
+        returned_resource = expected_resource.copy()
+        returned_resource["statistics"] = {}
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(returned_resource)
+
+        job = client.copy_table([source_id, source_id2], destination_id, job_id=job_id)
+
+        # Check that copy_table actually starts the job.
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path="/projects/%s/jobs" % self.PROJECT,
+            data=expected_resource,
+            timeout=None,
+        )
         self.assertIsInstance(job, CopyJob)
         self.assertIs(job._client, client)
-        self.assertEqual(job.job_id, JOB)
-        self.assertEqual(list(job.sources), [source, source2])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.job_id, job_id)
+        self.assertEqual(
+            list(sorted(job.sources, key=lambda tbl: tbl.table_id)),
+            [
+                TableReference.from_string(source_id),
+                TableReference.from_string(source_id2),
+            ],
+        )
+        self.assertEqual(job.destination, TableReference.from_string(destination_id))
 
     def test_copy_table_w_explicit_project(self):
         job_id = "this-is-a-job-id"
@@ -4047,6 +5076,140 @@ class TestClient(unittest.TestCase):
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(job.source, source)
         self.assertEqual(list(job.destination_uris), [DESTINATION1, DESTINATION2])
+
+    def test_extract_table_for_source_type_model(self):
+        from google.cloud.bigquery.job import ExtractJob
+
+        JOB = "job_id"
+        SOURCE = "source_model"
+        DESTINATION = "gs://bucket_name/object_name"
+        RESOURCE = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": JOB},
+            "configuration": {
+                "extract": {
+                    "sourceModel": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "modelId": SOURCE,
+                    },
+                    "destinationUris": [DESTINATION],
+                }
+            },
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RESOURCE)
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        source = dataset.model(SOURCE)
+
+        job = client.extract_table(
+            source, DESTINATION, job_id=JOB, timeout=7.5, source_type="Model"
+        )
+
+        # Check that extract_table actually starts the job.
+        conn.api_request.assert_called_once_with(
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
+        )
+
+        # Check the job resource.
+        self.assertIsInstance(job, ExtractJob)
+        self.assertIs(job._client, client)
+        self.assertEqual(job.job_id, JOB)
+        self.assertEqual(job.source, source)
+        self.assertEqual(list(job.destination_uris), [DESTINATION])
+
+    def test_extract_table_for_source_type_model_w_string_model_id(self):
+        JOB = "job_id"
+        source_id = "source_model"
+        DESTINATION = "gs://bucket_name/object_name"
+        RESOURCE = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": JOB},
+            "configuration": {
+                "extract": {
+                    "sourceModel": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "modelId": source_id,
+                    },
+                    "destinationUris": [DESTINATION],
+                }
+            },
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RESOURCE)
+
+        client.extract_table(
+            # Test with string for model ID.
+            "{}.{}".format(self.DS_ID, source_id),
+            DESTINATION,
+            job_id=JOB,
+            timeout=7.5,
+            source_type="Model",
+        )
+
+        # Check that extract_table actually starts the job.
+        conn.api_request.assert_called_once_with(
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
+        )
+
+    def test_extract_table_for_source_type_model_w_model_object(self):
+        from google.cloud.bigquery.model import Model
+
+        JOB = "job_id"
+        DESTINATION = "gs://bucket_name/object_name"
+        model_id = "{}.{}.{}".format(self.PROJECT, self.DS_ID, self.MODEL_ID)
+        model = Model(model_id)
+        RESOURCE = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": JOB},
+            "configuration": {
+                "extract": {
+                    "sourceModel": {
+                        "projectId": self.PROJECT,
+                        "datasetId": self.DS_ID,
+                        "modelId": self.MODEL_ID,
+                    },
+                    "destinationUris": [DESTINATION],
+                }
+            },
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RESOURCE)
+
+        client.extract_table(
+            # Test with Model class object.
+            model,
+            DESTINATION,
+            job_id=JOB,
+            timeout=7.5,
+            source_type="Model",
+        )
+
+        # Check that extract_table actually starts the job.
+        conn.api_request.assert_called_once_with(
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
+        )
+
+    def test_extract_table_for_invalid_source_type_model(self):
+        JOB = "job_id"
+        SOURCE = "source_model"
+        DESTINATION = "gs://bucket_name/object_name"
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        source = dataset.model(SOURCE)
+
+        with self.assertRaises(ValueError) as exc:
+            client.extract_table(
+                source, DESTINATION, job_id=JOB, timeout=7.5, source_type="foo"
+            )
+
+        self.assertIn("Cannot pass", exc.exception.args[0])
 
     def test_query_defaults(self):
         from google.cloud.bigquery.job import QueryJob
@@ -5239,6 +6402,74 @@ class TestClient(unittest.TestCase):
             assert call == expected_call
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_insert_rows_from_dataframe_nan(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.table import Table
+
+        API_PATH = "/projects/{}/datasets/{}/tables/{}/insertAll".format(
+            self.PROJECT, self.DS_ID, self.TABLE_REF.table_id
+        )
+
+        dataframe = pandas.DataFrame(
+            {
+                "str_col": ["abc", "def", float("NaN"), "jkl"],
+                "int_col": [1, float("NaN"), 3, 4],
+                "float_col": [float("NaN"), 0.25, 0.5, 0.125],
+            }
+        )
+
+        # create client
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection({}, {})
+
+        # create table
+        schema = [
+            SchemaField("str_col", "STRING"),
+            SchemaField("int_col", "INTEGER"),
+            SchemaField("float_col", "FLOAT"),
+        ]
+        table = Table(self.TABLE_REF, schema=schema)
+
+        with mock.patch("uuid.uuid4", side_effect=map(str, range(len(dataframe)))):
+            error_info = client.insert_rows_from_dataframe(
+                table, dataframe, chunk_size=3, timeout=7.5
+            )
+
+        self.assertEqual(len(error_info), 2)
+        for chunk_errors in error_info:
+            assert chunk_errors == []
+
+        EXPECTED_SENT_DATA = [
+            {
+                "rows": [
+                    {"insertId": "0", "json": {"str_col": "abc", "int_col": 1}},
+                    {"insertId": "1", "json": {"str_col": "def", "float_col": 0.25}},
+                    {"insertId": "2", "json": {"int_col": 3, "float_col": 0.5}},
+                ]
+            },
+            {
+                "rows": [
+                    {
+                        "insertId": "3",
+                        "json": {"str_col": "jkl", "int_col": 4, "float_col": 0.125},
+                    }
+                ]
+            },
+        ]
+
+        actual_calls = conn.api_request.call_args_list
+
+        for call, expected_data in six.moves.zip_longest(
+            actual_calls, EXPECTED_SENT_DATA
+        ):
+            expected_call = mock.call(
+                method="POST", path=API_PATH, data=expected_data, timeout=7.5
+            )
+            assert call == expected_call
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_insert_rows_from_dataframe_many_columns(self):
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
@@ -5496,43 +6727,6 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(len(partition_list), 0)
 
-    def test_list_partitions_splitting_timout_between_requests(self):
-        from google.cloud.bigquery.table import Table
-
-        row_count = 2
-        meta_info = _make_list_partitons_meta_info(
-            self.PROJECT, self.DS_ID, self.TABLE_ID, row_count
-        )
-
-        data = {
-            "totalRows": str(row_count),
-            "rows": [{"f": [{"v": "20180101"}]}, {"f": [{"v": "20180102"}]}],
-        }
-        creds = _make_credentials()
-        http = object()
-        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        client._connection = make_connection(meta_info, data)
-        table = Table(self.TABLE_REF)
-
-        with freezegun.freeze_time("2019-01-01 00:00:00", tick=False) as frozen_time:
-
-            def delayed_get_table(*args, **kwargs):
-                frozen_time.tick(delta=1.4)
-                return orig_get_table(*args, **kwargs)
-
-            orig_get_table = client.get_table
-            client.get_table = mock.Mock(side_effect=delayed_get_table)
-
-            client.list_partitions(table, timeout=5.0)
-
-        client.get_table.assert_called_once()
-        _, kwargs = client.get_table.call_args
-        self.assertEqual(kwargs.get("timeout"), 5.0)
-
-        client._connection.api_request.assert_called()
-        _, kwargs = client._connection.api_request.call_args
-        self.assertAlmostEqual(kwargs.get("timeout"), 3.6, places=5)
-
     def test_list_rows(self):
         import datetime
         from google.cloud._helpers import UTC
@@ -5610,6 +6804,71 @@ class TestClient(unittest.TestCase):
 
         conn.api_request.assert_called_once_with(
             method="GET", path="/%s" % PATH, query_params={}, timeout=7.5
+        )
+
+    def test_list_rows_w_start_index_w_page_size(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.table import Table
+        from google.cloud.bigquery.table import Row
+
+        PATH = "projects/%s/datasets/%s/tables/%s/data" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+
+        page_1 = {
+            "totalRows": 4,
+            "pageToken": "some-page-token",
+            "rows": [
+                {"f": [{"v": "Phred Phlyntstone"}]},
+                {"f": [{"v": "Bharney Rhubble"}]},
+            ],
+        }
+        page_2 = {
+            "totalRows": 4,
+            "rows": [
+                {"f": [{"v": "Wylma Phlyntstone"}]},
+                {"f": [{"v": "Bhettye Rhubble"}]},
+            ],
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(page_1, page_2)
+        full_name = SchemaField("full_name", "STRING", mode="REQUIRED")
+        table = Table(self.TABLE_REF, schema=[full_name])
+        iterator = client.list_rows(table, max_results=4, page_size=2, start_index=1)
+        pages = iterator.pages
+        rows = list(six.next(pages))
+        extra_params = iterator.extra_params
+        f2i = {"full_name": 0}
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0], Row(("Phred Phlyntstone",), f2i))
+        self.assertEqual(rows[1], Row(("Bharney Rhubble",), f2i))
+
+        rows = list(six.next(pages))
+
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0], Row(("Wylma Phlyntstone",), f2i))
+        self.assertEqual(rows[1], Row(("Bhettye Rhubble",), f2i))
+        self.assertEqual(extra_params, {"startIndex": 1})
+
+        conn.api_request.assert_has_calls(
+            [
+                mock.call(
+                    method="GET",
+                    path="/%s" % PATH,
+                    query_params={"startIndex": 1, "maxResults": 2},
+                    timeout=None,
+                ),
+                mock.call(
+                    method="GET",
+                    path="/%s" % PATH,
+                    query_params={"pageToken": "some-page-token", "maxResults": 2},
+                    timeout=None,
+                ),
+            ]
         )
 
     def test_list_rows_empty_table(self):
@@ -5853,46 +7112,6 @@ class TestClient(unittest.TestCase):
             self.assertEqual(rows[1].age, 31, msg=repr(table))
             self.assertIsNone(rows[2].age, msg=repr(table))
 
-    def test_list_rows_splitting_timout_between_requests(self):
-        from google.cloud.bigquery.schema import SchemaField
-        from google.cloud.bigquery.table import Table
-
-        response = {"totalRows": "0", "rows": []}
-        creds = _make_credentials()
-        http = object()
-        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        client._connection = make_connection(response, response)
-
-        table = Table(
-            self.TABLE_REF, schema=[SchemaField("field_x", "INTEGER", mode="NULLABLE")]
-        )
-
-        with freezegun.freeze_time("1970-01-01 00:00:00", tick=False) as frozen_time:
-
-            def delayed_get_table(*args, **kwargs):
-                frozen_time.tick(delta=1.4)
-                return table
-
-            client.get_table = mock.Mock(side_effect=delayed_get_table)
-
-            rows_iter = client.list_rows(
-                "{}.{}.{}".format(
-                    self.TABLE_REF.project,
-                    self.TABLE_REF.dataset_id,
-                    self.TABLE_REF.table_id,
-                ),
-                timeout=5.0,
-            )
-            six.next(rows_iter.pages)
-
-        client.get_table.assert_called_once()
-        _, kwargs = client.get_table.call_args
-        self.assertEqual(kwargs.get("timeout"), 5.0)
-
-        client._connection.api_request.assert_called_once()
-        _, kwargs = client._connection.api_request.call_args
-        self.assertAlmostEqual(kwargs.get("timeout"), 3.6)
-
     def test_list_rows_error(self):
         creds = _make_credentials()
         http = object()
@@ -6033,7 +7252,7 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES
+            file_obj, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES, None
         )
 
         # the original config object should not have been modified
@@ -6062,7 +7281,7 @@ class TestClientUpload(object):
         expected_resource["jobReference"]["location"] = self.LOCATION
         expected_resource["jobReference"]["projectId"] = "other-project"
         do_upload.assert_called_once_with(
-            file_obj, expected_resource, _DEFAULT_NUM_RETRIES
+            file_obj, expected_resource, _DEFAULT_NUM_RETRIES, None
         )
 
     def test_load_table_from_file_w_client_location(self):
@@ -6092,7 +7311,7 @@ class TestClientUpload(object):
         expected_resource["jobReference"]["location"] = self.LOCATION
         expected_resource["jobReference"]["projectId"] = "other-project"
         do_upload.assert_called_once_with(
-            file_obj, expected_resource, _DEFAULT_NUM_RETRIES
+            file_obj, expected_resource, _DEFAULT_NUM_RETRIES, None
         )
 
     def test_load_table_from_file_resumable_metadata(self):
@@ -6150,7 +7369,7 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, expected_config, _DEFAULT_NUM_RETRIES
+            file_obj, expected_config, _DEFAULT_NUM_RETRIES, None
         )
 
     def test_load_table_from_file_multipart(self):
@@ -6174,7 +7393,11 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, self.EXPECTED_CONFIGURATION, file_obj_size, _DEFAULT_NUM_RETRIES
+            file_obj,
+            self.EXPECTED_CONFIGURATION,
+            file_obj_size,
+            _DEFAULT_NUM_RETRIES,
+            None,
         )
 
     def test_load_table_from_file_with_retries(self):
@@ -6195,7 +7418,7 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, self.EXPECTED_CONFIGURATION, num_retries
+            file_obj, self.EXPECTED_CONFIGURATION, num_retries, None
         )
 
     def test_load_table_from_file_with_rewind(self):
@@ -6228,7 +7451,7 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            gzip_file, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES
+            gzip_file, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES, None
         )
 
     def test_load_table_from_file_with_writable_gzip(self):
@@ -6315,11 +7538,13 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=None,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_file = load_table_from_file.mock_calls[0][1][1]
@@ -6358,11 +7583,13 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_file = load_table_from_file.mock_calls[0][1][1]
@@ -6373,7 +7600,7 @@ class TestClientUpload(object):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_custom_job_config(self):
+    def test_load_table_from_dataframe_w_custom_job_config_wihtout_source_format(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -6382,7 +7609,7 @@ class TestClientUpload(object):
         records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
         dataframe = pandas.DataFrame(records)
         job_config = job.LoadJobConfig(
-            write_disposition=job.WriteDisposition.WRITE_TRUNCATE
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
         )
         original_config_copy = copy.deepcopy(job_config)
 
@@ -6410,11 +7637,13 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -6423,6 +7652,82 @@ class TestClientUpload(object):
 
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_custom_job_config_w_source_format(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.PARQUET,
+        )
+        original_config_copy = copy.deepcopy(job_config)
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(
+                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
+            ),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, get_table_patch as get_table:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+            )
+
+        # no need to fetch and inspect table schema for WRITE_TRUNCATE jobs
+        assert not get_table.called
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=None,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert sent_config.write_disposition == job.WriteDisposition.WRITE_TRUNCATE
+
+        # the original config object should not have been modified
+        assert job_config.to_api_repr() == original_config_copy.to_api_repr()
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_custom_job_config_w_wrong_source_format(self):
+        from google.cloud.bigquery import job
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.ORC,
+        )
+
+        with pytest.raises(ValueError) as exc:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+            )
+
+        assert "Got unexpected source_format:" in str(exc.value)
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
@@ -6482,11 +7787,13 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -6541,11 +7848,13 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -6586,66 +7895,129 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=None,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(fastparquet is None, "Requires `fastparquet`")
-    def test_load_table_from_dataframe_no_schema_warning_wo_pyarrow(self):
-        client = self._make_client()
+    @unittest.skipIf(
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        "Only `pandas version >=1.0.0` supported",
+    )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
 
-        # Pick at least one column type that translates to Pandas dtype
-        # "object". A string column matches that.
-        records = [{"name": "Monty", "age": 100}, {"name": "Python", "age": 60}]
-        dataframe = pandas.DataFrame(records)
+        client = self._make_client()
+        dataframe = pandas.DataFrame({"x": [1, 2, None, 4]}, dtype="Int64")
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(schema=[SchemaField("x", "INT64", "NULLABLE")]),
+        )
+
+        with load_patch as load_table_from_file, get_table_patch:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, location=self.LOCATION
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=None,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert tuple(sent_config.schema) == (
+            SchemaField("x", "INT64", "NULLABLE", None),
+        )
+
+    @unittest.skipIf(
+        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+        "Only `pandas version >=1.0.0` supported",
+    )
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        dataframe = pandas.DataFrame({"x": [1, 2, None, 4]}, dtype="Int64")
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
 
         get_table_patch = mock.patch(
             "google.cloud.bigquery.client.Client.get_table",
             autospec=True,
             side_effect=google.api_core.exceptions.NotFound("Table not found"),
         )
-        load_patch = mock.patch(
-            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
-        )
-        pyarrow_patch = mock.patch("google.cloud.bigquery.client.pyarrow", None)
-        pyarrow_patch_helpers = mock.patch(
-            "google.cloud.bigquery._pandas_helpers.pyarrow", None
-        )
-        catch_warnings = warnings.catch_warnings(record=True)
 
-        with get_table_patch, load_patch, pyarrow_patch, pyarrow_patch_helpers, catch_warnings as warned:
+        with load_patch as load_table_from_file, get_table_patch:
             client.load_table_from_dataframe(
                 dataframe, self.TABLE_REF, location=self.LOCATION
             )
 
-        matches = [
-            warning
-            for warning in warned
-            if warning.category in (DeprecationWarning, PendingDeprecationWarning)
-            and "could not be detected" in str(warning)
-            and "please provide a schema" in str(warning)
-        ]
-        assert matches, "A missing schema deprecation warning was not raised."
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=None,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert tuple(sent_config.schema) == (
+            SchemaField("x", "INT64", "NULLABLE", None),
+        )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_struct_fields_error(self):
+    def test_load_table_from_dataframe_struct_fields(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
 
         client = self._make_client()
 
-        records = [{"float_column": 3.14, "struct_column": [{"foo": 1}, {"bar": -1}]}]
-        dataframe = pandas.DataFrame(data=records)
+        records = [(3.14, {"foo": 1, "bar": 1})]
+        dataframe = pandas.DataFrame(
+            data=records, columns=["float_column", "struct_column"]
+        )
 
         schema = [
             SchemaField("float_column", "FLOAT"),
             SchemaField(
-                "agg_col",
+                "struct_column",
                 "RECORD",
                 fields=[SchemaField("foo", "INTEGER"), SchemaField("bar", "INTEGER")],
             ),
@@ -6656,14 +8028,37 @@ class TestClientUpload(object):
             "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
         )
 
-        with pytest.raises(ValueError) as exc_info, load_patch:
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+        with load_patch as load_table_from_file, get_table_patch:
             client.load_table_from_dataframe(
-                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+                dataframe,
+                self.TABLE_REF,
+                job_config=job_config,
+                location=self.LOCATION,
             )
 
-        err_msg = str(exc_info.value)
-        assert "struct" in err_msg
-        assert "not support" in err_msg
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=None,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert sent_config.schema == schema
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
@@ -6727,11 +8122,13 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -6785,7 +8182,6 @@ class TestClientUpload(object):
         assert "unknown_col" in message
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(fastparquet is None, "Requires `fastparquet`")
     def test_load_table_from_dataframe_w_partial_schema_missing_types(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -6821,11 +8217,13 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         assert warned  # there should be at least one warning
@@ -6838,53 +8236,6 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema is None
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_schema_wo_pyarrow(self):
-        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
-        from google.cloud.bigquery import job
-        from google.cloud.bigquery.schema import SchemaField
-
-        client = self._make_client()
-        records = [{"name": u"Monty", "age": 100}, {"name": u"Python", "age": 60}]
-        dataframe = pandas.DataFrame(records, columns=["name", "age"])
-        schema = (SchemaField("name", "STRING"), SchemaField("age", "INTEGER"))
-        job_config = job.LoadJobConfig(schema=schema)
-
-        load_patch = mock.patch(
-            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
-        )
-        pyarrow_patch = mock.patch("google.cloud.bigquery.client.pyarrow", None)
-
-        with load_patch as load_table_from_file, pyarrow_patch, warnings.catch_warnings(
-            record=True
-        ) as warned:
-            client.load_table_from_dataframe(
-                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
-            )
-
-        assert warned  # there should be at least one warning
-        for warning in warned:
-            assert "pyarrow" in str(warning)
-            assert warning.category in (DeprecationWarning, PendingDeprecationWarning)
-
-        load_table_from_file.assert_called_once_with(
-            client,
-            mock.ANY,
-            self.TABLE_REF,
-            num_retries=_DEFAULT_NUM_RETRIES,
-            rewind=True,
-            job_id=mock.ANY,
-            job_id_prefix=None,
-            location=self.LOCATION,
-            project=None,
-            job_config=mock.ANY,
-        )
-
-        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
-        assert sent_config.source_format == job.SourceFormat.PARQUET
-        assert tuple(sent_config.schema) == schema
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
@@ -6921,7 +8272,7 @@ class TestClientUpload(object):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_wo_pyarrow_custom_compression(self):
+    def test_load_table_from_dataframe_wo_pyarrow_raises_error(self):
         client = self._make_client()
         records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
         dataframe = pandas.DataFrame(records)
@@ -6939,17 +8290,14 @@ class TestClientUpload(object):
             dataframe, "to_parquet", wraps=dataframe.to_parquet
         )
 
-        with load_patch, get_table_patch, pyarrow_patch, to_parquet_patch as to_parquet_spy:
-            client.load_table_from_dataframe(
-                dataframe,
-                self.TABLE_REF,
-                location=self.LOCATION,
-                parquet_compression="gzip",
-            )
-
-        call_args = to_parquet_spy.call_args
-        assert call_args is not None
-        assert call_args.kwargs.get("compression") == "gzip"
+        with load_patch, get_table_patch, pyarrow_patch, to_parquet_patch:
+            with pytest.raises(ValueError):
+                client.load_table_from_dataframe(
+                    dataframe,
+                    self.TABLE_REF,
+                    location=self.LOCATION,
+                    parquet_compression="gzip",
+                )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
@@ -6983,11 +8331,13 @@ class TestClientUpload(object):
             self.TABLE_REF,
             num_retries=_DEFAULT_NUM_RETRIES,
             rewind=True,
+            size=mock.ANY,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7034,12 +8384,14 @@ class TestClientUpload(object):
             client,
             mock.ANY,
             self.TABLE_REF,
+            size=mock.ANY,
             num_retries=_DEFAULT_NUM_RETRIES,
             job_id=mock.ANY,
             job_id_prefix=None,
             location=client.location,
             project=client.project,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7085,12 +8437,14 @@ class TestClientUpload(object):
             client,
             mock.ANY,
             self.TABLE_REF,
+            size=mock.ANY,
             num_retries=_DEFAULT_NUM_RETRIES,
             job_id=mock.ANY,
             job_id_prefix=None,
             location="EU",
             project="project-x",
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7165,7 +8519,7 @@ class TestClientUpload(object):
         client = self._make_client(transport)
 
         result = client._do_resumable_upload(
-            file_obj, self.EXPECTED_CONFIGURATION, None
+            file_obj, self.EXPECTED_CONFIGURATION, None, None
         )
 
         content = result.content.decode("utf-8")
@@ -7188,7 +8542,7 @@ class TestClientUpload(object):
         file_obj_len = len(file_obj.getvalue())
 
         client._do_multipart_upload(
-            file_obj, self.EXPECTED_CONFIGURATION, file_obj_len, None
+            file_obj, self.EXPECTED_CONFIGURATION, file_obj_len, None, None
         )
 
         # Verify that configuration data was passed in with the initial
@@ -7216,7 +8570,7 @@ class TestClientUpload(object):
         file_obj_len = len(file_obj.getvalue())
 
         with pytest.raises(ValueError):
-            client._do_multipart_upload(file_obj, {}, file_obj_len + 1, None)
+            client._do_multipart_upload(file_obj, {}, file_obj_len + 1, None, None)
 
     def test_schema_from_json_with_file_path(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -7251,14 +8605,9 @@ class TestClientUpload(object):
         client = self._make_client()
         mock_file_path = "/mocked/file.json"
 
-        if six.PY2:
-            open_patch = mock.patch(
-                "__builtin__.open", mock.mock_open(read_data=file_content)
-            )
-        else:
-            open_patch = mock.patch(
-                "builtins.open", new=mock.mock_open(read_data=file_content)
-            )
+        open_patch = mock.patch(
+            "builtins.open", new=mock.mock_open(read_data=file_content)
+        )
 
         with open_patch as _mock_file:
             actual = client.schema_from_json(mock_file_path)
@@ -7300,12 +8649,7 @@ class TestClientUpload(object):
         ]
 
         client = self._make_client()
-
-        if six.PY2:
-            fake_file = io.BytesIO(file_content)
-        else:
-            fake_file = io.StringIO(file_content)
-
+        fake_file = io.StringIO(file_content)
         actual = client.schema_from_json(fake_file)
 
         assert expected == actual
@@ -7342,11 +8686,7 @@ class TestClientUpload(object):
 
         client = self._make_client()
         mock_file_path = "/mocked/file.json"
-
-        if six.PY2:
-            open_patch = mock.patch("__builtin__.open", mock.mock_open())
-        else:
-            open_patch = mock.patch("builtins.open", mock.mock_open())
+        open_patch = mock.patch("builtins.open", mock.mock_open())
 
         with open_patch as mock_file, mock.patch("json.dump") as mock_dump:
             client.schema_to_json(schema_list, mock_file_path)
@@ -7388,10 +8728,7 @@ class TestClientUpload(object):
             SchemaField("sales", "FLOAT", "NULLABLE", "total sales"),
         ]
 
-        if six.PY2:
-            fake_file = io.BytesIO()
-        else:
-            fake_file = io.StringIO()
+        fake_file = io.StringIO()
 
         client = self._make_client()
 

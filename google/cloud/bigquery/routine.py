@@ -189,14 +189,17 @@ class Routine(object):
         resource = self._properties.get(self._PROPERTY_TO_API_FIELD["return_type"])
         if not resource:
             return resource
+
         output = google.cloud.bigquery_v2.types.StandardSqlDataType()
-        output = json_format.ParseDict(resource, output, ignore_unknown_fields=True)
-        return output
+        raw_protobuf = json_format.ParseDict(
+            resource, output._pb, ignore_unknown_fields=True
+        )
+        return type(output).wrap(raw_protobuf)
 
     @return_type.setter
     def return_type(self, value):
         if value:
-            resource = json_format.MessageToDict(value)
+            resource = json_format.MessageToDict(value._pb)
         else:
             resource = None
         self._properties[self._PROPERTY_TO_API_FIELD["return_type"]] = resource
@@ -288,7 +291,7 @@ class Routine(object):
 class RoutineArgument(object):
     """Input/output argument of a function or a stored procedure.
 
-    See
+    See:
     https://cloud.google.com/bigquery/docs/reference/rest/v2/routines#argument
 
     Args:
@@ -357,14 +360,17 @@ class RoutineArgument(object):
         resource = self._properties.get(self._PROPERTY_TO_API_FIELD["data_type"])
         if not resource:
             return resource
+
         output = google.cloud.bigquery_v2.types.StandardSqlDataType()
-        output = json_format.ParseDict(resource, output, ignore_unknown_fields=True)
-        return output
+        raw_protobuf = json_format.ParseDict(
+            resource, output._pb, ignore_unknown_fields=True
+        )
+        return type(output).wrap(raw_protobuf)
 
     @data_type.setter
     def data_type(self, value):
         if value:
-            resource = json_format.MessageToDict(value)
+            resource = json_format.MessageToDict(value._pb)
         else:
             resource = None
         self._properties[self._PROPERTY_TO_API_FIELD["data_type"]] = resource
@@ -411,7 +417,7 @@ class RoutineArgument(object):
 class RoutineReference(object):
     """A pointer to a routine.
 
-    See
+    See:
     https://cloud.google.com/bigquery/docs/reference/rest/v2/routines#routinereference
     """
 
@@ -467,8 +473,8 @@ class RoutineReference(object):
                 A routine ID in standard SQL format. If ``default_project``
                 is not specified, this must included a project ID, dataset
                 ID, and routine ID, each separated by ``.``.
-            default_project (str):
-                Optional. The project ID to use when ``routine_id`` does not
+            default_project (Optional[str]):
+                The project ID to use when ``routine_id`` does not
                 include a project ID.
 
         Returns:

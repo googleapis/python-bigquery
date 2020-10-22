@@ -58,6 +58,15 @@ Create an empty table with the
    :start-after: [START bigquery_create_table]
    :end-before: [END bigquery_create_table]
 
+Create a clustered table with the
+:func:`~google.cloud.bigquery.client.Client.create_table` method:
+
+.. literalinclude:: ../samples/create_table_clustered.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_create_table_clustered]
+   :end-before: [END bigquery_create_table_clustered]
+
 Create an integer range partitioned table with the
 :func:`~google.cloud.bigquery.client.Client.create_table` method:
 
@@ -131,6 +140,22 @@ Load an ORC file from Cloud Storage:
 
 See also: `Loading ORC data from Cloud Storage
 <https://cloud.google.com/bigquery/docs/loading-data-cloud-storage-orc>`_.
+
+Load a CSV file from Cloud Storage and auto-detect schema:
+
+.. literalinclude:: ../samples/load_table_uri_autodetect_csv.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_load_table_gcs_csv_autodetect]
+   :end-before: [END bigquery_load_table_gcs_csv_autodetect]
+
+Load a JSON file from Cloud Storage and auto-detect schema:
+
+.. literalinclude:: ../samples/load_table_uri_autodetect_json.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_load_table_gcs_json_autodetect]
+   :end-before: [END bigquery_load_table_gcs_json_autodetect]
 
 Updating a Table
 ^^^^^^^^^^^^^^^^
@@ -220,3 +245,46 @@ Restore a deleted table from a snapshot by using the
    :dedent: 4
    :start-after: [START bigquery_undelete_table]
    :end-before: [END bigquery_undelete_table]
+
+Overwrite a Table
+^^^^^^^^^^^^^^^^^
+
+Replace the table data with an Avro file from Cloud Storage:
+
+.. literalinclude:: ../samples/load_table_uri_truncate_avro.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_load_table_gcs_avro_truncate]
+   :end-before: [END bigquery_load_table_gcs_avro_truncate]
+
+Replace the table data with a CSV file from Cloud Storage:
+
+.. literalinclude:: ../samples/load_table_uri_truncate_csv.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_load_table_gcs_csv_truncate]
+   :end-before: [END bigquery_load_table_gcs_csv_truncate]
+
+Replace the table data with a JSON file from Cloud Storage:
+
+.. literalinclude:: ../samples/load_table_uri_truncate_json.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_load_table_gcs_json_truncate]
+   :end-before: [END bigquery_load_table_gcs_json_truncate]
+
+Replace the table data with an ORC file from Cloud Storage:
+
+.. literalinclude:: ../samples/load_table_uri_truncate_orc.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_load_table_gcs_orc_truncate]
+   :end-before: [END bigquery_load_table_gcs_orc_truncate]
+
+Replace the table data with a Parquet file from Cloud Storage:
+
+.. literalinclude:: ../samples/load_table_uri_truncate_parquet.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_load_table_gcs_parquet_truncate]
+   :end-before: [END bigquery_load_table_gcs_parquet_truncate]

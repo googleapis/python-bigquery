@@ -63,11 +63,38 @@ class TestSchemaField(unittest.TestCase):
         self.assertIs(field._fields[0], sub_field1)
         self.assertIs(field._fields[1], sub_field2)
 
+    def test_constructor_with_policy_tags(self):
+        from google.cloud.bigquery.schema import PolicyTagList
+
+        policy = PolicyTagList(names=("foo", "bar"))
+        field = self._make_one(
+            "test", "STRING", mode="REQUIRED", description="Testing", policy_tags=policy
+        )
+        self.assertEqual(field._name, "test")
+        self.assertEqual(field._field_type, "STRING")
+        self.assertEqual(field._mode, "REQUIRED")
+        self.assertEqual(field._description, "Testing")
+        self.assertEqual(field._fields, ())
+        self.assertEqual(field._policy_tags, policy)
+
     def test_to_api_repr(self):
-        field = self._make_one("foo", "INTEGER", "NULLABLE")
+        from google.cloud.bigquery.schema import PolicyTagList
+
+        policy = PolicyTagList(names=("foo", "bar"))
+        self.assertEqual(
+            policy.to_api_repr(), {"names": ["foo", "bar"]},
+        )
+
+        field = self._make_one("foo", "INTEGER", "NULLABLE", policy_tags=policy)
         self.assertEqual(
             field.to_api_repr(),
-            {"mode": "NULLABLE", "name": "foo", "type": "INTEGER", "description": None},
+            {
+                "mode": "NULLABLE",
+                "name": "foo",
+                "type": "INTEGER",
+                "description": None,
+                "policyTags": {"names": ["foo", "bar"]},
+            },
         )
 
     def test_to_api_repr_with_subfield(self):
@@ -106,6 +133,23 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.field_type, "RECORD")
         self.assertEqual(field.mode, "REQUIRED")
         self.assertEqual(field.description, "test_description")
+        self.assertEqual(len(field.fields), 1)
+        self.assertEqual(field.fields[0].name, "bar")
+        self.assertEqual(field.fields[0].field_type, "INTEGER")
+        self.assertEqual(field.fields[0].mode, "NULLABLE")
+
+    def test_from_api_repr_policy(self):
+        field = self._get_target_class().from_api_repr(
+            {
+                "fields": [{"mode": "nullable", "name": "bar", "type": "integer"}],
+                "name": "foo",
+                "type": "record",
+                "policyTags": {"names": ["one", "two"]},
+            }
+        )
+        self.assertEqual(field.name, "foo")
+        self.assertEqual(field.field_type, "RECORD")
+        self.assertEqual(field.policy_tags.names, ("one", "two"))
         self.assertEqual(len(field.fields), 1)
         self.assertEqual(field.fields[0].name, "bar")
         self.assertEqual(field.fields[0].field_type, "INTEGER")
@@ -162,15 +206,15 @@ class TestSchemaField(unittest.TestCase):
         sql_type = self._get_standard_sql_data_type_class()
         examples = (
             # a few legacy types
-            ("INTEGER", sql_type.INT64),
-            ("FLOAT", sql_type.FLOAT64),
-            ("BOOLEAN", sql_type.BOOL),
-            ("DATETIME", sql_type.DATETIME),
+            ("INTEGER", sql_type.TypeKind.INT64),
+            ("FLOAT", sql_type.TypeKind.FLOAT64),
+            ("BOOLEAN", sql_type.TypeKind.BOOL),
+            ("DATETIME", sql_type.TypeKind.DATETIME),
             # a few standard types
-            ("INT64", sql_type.INT64),
-            ("FLOAT64", sql_type.FLOAT64),
-            ("BOOL", sql_type.BOOL),
-            ("GEOGRAPHY", sql_type.GEOGRAPHY),
+            ("INT64", sql_type.TypeKind.INT64),
+            ("FLOAT64", sql_type.TypeKind.FLOAT64),
+            ("BOOL", sql_type.TypeKind.BOOL),
+            ("GEOGRAPHY", sql_type.TypeKind.GEOGRAPHY),
         )
         for legacy_type, standard_type in examples:
             field = self._make_one("some_field", legacy_type)
@@ -214,26 +258,26 @@ class TestSchemaField(unittest.TestCase):
 
         # level 2 fields
         sub_sub_field_date = types.StandardSqlField(
-            name="date_field", type=sql_type(type_kind=sql_type.DATE)
+            name="date_field", type=sql_type(type_kind=sql_type.TypeKind.DATE)
         )
         sub_sub_field_time = types.StandardSqlField(
-            name="time_field", type=sql_type(type_kind=sql_type.TIME)
+            name="time_field", type=sql_type(type_kind=sql_type.TypeKind.TIME)
         )
 
         # level 1 fields
         sub_field_struct = types.StandardSqlField(
-            name="last_used", type=sql_type(type_kind=sql_type.STRUCT)
+            name="last_used", type=sql_type(type_kind=sql_type.TypeKind.STRUCT)
         )
         sub_field_struct.type.struct_type.fields.extend(
             [sub_sub_field_date, sub_sub_field_time]
         )
         sub_field_bytes = types.StandardSqlField(
-            name="image_content", type=sql_type(type_kind=sql_type.BYTES)
+            name="image_content", type=sql_type(type_kind=sql_type.TypeKind.BYTES)
         )
 
         # level 0 (top level)
         expected_result = types.StandardSqlField(
-            name="image_usage", type=sql_type(type_kind=sql_type.STRUCT)
+            name="image_usage", type=sql_type(type_kind=sql_type.TypeKind.STRUCT)
         )
         expected_result.type.struct_type.fields.extend(
             [sub_field_bytes, sub_field_struct]
@@ -260,8 +304,8 @@ class TestSchemaField(unittest.TestCase):
         sql_type = self._get_standard_sql_data_type_class()
 
         # construct expected result object
-        expected_sql_type = sql_type(type_kind=sql_type.ARRAY)
-        expected_sql_type.array_element_type.type_kind = sql_type.INT64
+        expected_sql_type = sql_type(type_kind=sql_type.TypeKind.ARRAY)
+        expected_sql_type.array_element_type.type_kind = sql_type.TypeKind.INT64
         expected_result = types.StandardSqlField(
             name="valid_numbers", type=expected_sql_type
         )
@@ -279,19 +323,19 @@ class TestSchemaField(unittest.TestCase):
 
         # define person STRUCT
         name_field = types.StandardSqlField(
-            name="name", type=sql_type(type_kind=sql_type.STRING)
+            name="name", type=sql_type(type_kind=sql_type.TypeKind.STRING)
         )
         age_field = types.StandardSqlField(
-            name="age", type=sql_type(type_kind=sql_type.INT64)
+            name="age", type=sql_type(type_kind=sql_type.TypeKind.INT64)
         )
         person_struct = types.StandardSqlField(
-            name="person_info", type=sql_type(type_kind=sql_type.STRUCT)
+            name="person_info", type=sql_type(type_kind=sql_type.TypeKind.STRUCT)
         )
         person_struct.type.struct_type.fields.extend([name_field, age_field])
 
         # define expected result - an ARRAY of person structs
         expected_sql_type = sql_type(
-            type_kind=sql_type.ARRAY, array_element_type=person_struct.type
+            type_kind=sql_type.TypeKind.ARRAY, array_element_type=person_struct.type
         )
         expected_result = types.StandardSqlField(
             name="known_people", type=expected_sql_type
@@ -314,7 +358,9 @@ class TestSchemaField(unittest.TestCase):
         standard_field = field.to_standard_sql()
 
         self.assertEqual(standard_field.name, "weird_field")
-        self.assertEqual(standard_field.type.type_kind, sql_type.TYPE_KIND_UNSPECIFIED)
+        self.assertEqual(
+            standard_field.type.type_kind, sql_type.TypeKind.TYPE_KIND_UNSPECIFIED
+        )
 
     def test___eq___wrong_type(self):
         field = self._make_one("test", "STRING")
@@ -408,7 +454,7 @@ class TestSchemaField(unittest.TestCase):
 
     def test___repr__(self):
         field1 = self._make_one("field1", "STRING")
-        expected = "SchemaField('field1', 'STRING', 'NULLABLE', None, ())"
+        expected = "SchemaField('field1', 'STRING', 'NULLABLE', None, (), None)"
         self.assertEqual(repr(field1), expected)
 
 
@@ -632,3 +678,67 @@ class Test_to_schema_fields(unittest.TestCase):
 
         result = self._call_fut(schema)
         self.assertEqual(result, expected_schema)
+
+
+class TestPolicyTags(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.schema import PolicyTagList
+
+        return PolicyTagList
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_constructor(self):
+        empty_policy_tags = self._make_one()
+        self.assertIsNotNone(empty_policy_tags.names)
+        self.assertEqual(len(empty_policy_tags.names), 0)
+        policy_tags = self._make_one(["foo", "bar"])
+        self.assertEqual(policy_tags.names, ("foo", "bar"))
+
+    def test_from_api_repr(self):
+        klass = self._get_target_class()
+        api_repr = {"names": ["foo"]}
+        policy_tags = klass.from_api_repr(api_repr)
+        self.assertEqual(policy_tags.to_api_repr(), api_repr)
+
+        # Ensure the None case correctly returns None, rather
+        # than an empty instance.
+        policy_tags2 = klass.from_api_repr(None)
+        self.assertIsNone(policy_tags2)
+
+    def test_to_api_repr(self):
+        taglist = self._make_one(names=["foo", "bar"])
+        self.assertEqual(
+            taglist.to_api_repr(), {"names": ["foo", "bar"]},
+        )
+        taglist2 = self._make_one(names=("foo", "bar"))
+        self.assertEqual(
+            taglist2.to_api_repr(), {"names": ["foo", "bar"]},
+        )
+
+    def test___eq___wrong_type(self):
+        policy = self._make_one(names=["foo"])
+        other = object()
+        self.assertNotEqual(policy, other)
+        self.assertEqual(policy, mock.ANY)
+
+    def test___eq___names_mismatch(self):
+        policy = self._make_one(names=["foo", "bar"])
+        other = self._make_one(names=["bar", "baz"])
+        self.assertNotEqual(policy, other)
+
+    def test___hash__set_equality(self):
+        policy1 = self._make_one(["foo", "bar"])
+        policy2 = self._make_one(["bar", "baz"])
+        set_one = {policy1, policy2}
+        set_two = {policy1, policy2}
+        self.assertEqual(set_one, set_two)
+
+    def test___hash__not_equals(self):
+        policy1 = self._make_one(["foo", "bar"])
+        policy2 = self._make_one(["bar", "baz"])
+        set_one = {policy1}
+        set_two = {policy2}
+        self.assertNotEqual(set_one, set_two)

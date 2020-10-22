@@ -55,7 +55,7 @@ class Model(object):
     def __init__(self, model_ref):
         # Use _proto on read-only properties to use it's built-in type
         # conversion.
-        self._proto = types.Model()
+        self._proto = types.Model()._pb
 
         # Use _properties on read-write properties to match the REST API
         # semantics. The BigQuery API makes a distinction between an unset
@@ -151,13 +151,13 @@ class Model(object):
 
     @property
     def model_type(self):
-        """google.cloud.bigquery_v2.gapic.enums.Model.ModelType: Type of the
+        """google.cloud.bigquery_v2.types.Model.ModelType: Type of the
         model resource.
 
         Read-only.
 
         The value is one of elements of the
-        :class:`~google.cloud.bigquery_v2.gapic.enums.Model.ModelType`
+        :class:`~google.cloud.bigquery_v2.types.Model.ModelType`
         enumeration.
         """
         return self._proto.model_type
@@ -228,7 +228,7 @@ class Model(object):
 
     @property
     def friendly_name(self):
-        """Union[str, None]: Title of the table (defaults to :data:`None`).
+        """Optional[str]: Title of the table (defaults to :data:`None`).
 
         Raises:
             ValueError: For invalid value types.
@@ -241,7 +241,7 @@ class Model(object):
 
     @property
     def labels(self):
-        """Dict[str, str]: Labels for the table.
+        """Optional[Dict[str, str]]: Labels for the table.
 
         This method always returns a dict. To change a model's labels,
         modify the dict, then call ``Client.update_model``. To delete a
@@ -257,7 +257,7 @@ class Model(object):
 
     @property
     def encryption_configuration(self):
-        """google.cloud.bigquery.encryption_configuration.EncryptionConfiguration: Custom
+        """Optional[google.cloud.bigquery.encryption_configuration.EncryptionConfiguration]: Custom
         encryption configuration for the model.
 
         Custom encryption configuration (e.g., Cloud KMS keys) or :data:`None`
@@ -306,7 +306,7 @@ class Model(object):
             training_run["startTime"] = datetime_helpers.to_rfc3339(start_time)
 
         this._proto = json_format.ParseDict(
-            resource, types.Model(), ignore_unknown_fields=True
+            resource, types.Model()._pb, ignore_unknown_fields=True
         )
         return this
 
@@ -317,6 +317,14 @@ class Model(object):
     def __repr__(self):
         return "Model(reference={})".format(repr(self.reference))
 
+    def to_api_repr(self):
+        """Construct the API resource representation of this model.
+
+        Returns:
+            Dict[str, object]: Model reference represented as an API resource
+        """
+        return json_format.MessageToDict(self._proto)
+
 
 class ModelReference(object):
     """ModelReferences are pointers to models.
@@ -326,7 +334,7 @@ class ModelReference(object):
     """
 
     def __init__(self):
-        self._proto = types.ModelReference()
+        self._proto = types.ModelReference()._pb
         self._properties = {}
 
     @property
@@ -370,8 +378,9 @@ class ModelReference(object):
         # field values.
         ref._properties = resource
         ref._proto = json_format.ParseDict(
-            resource, types.ModelReference(), ignore_unknown_fields=True
+            resource, types.ModelReference()._pb, ignore_unknown_fields=True
         )
+
         return ref
 
     @classmethod
@@ -383,9 +392,9 @@ class ModelReference(object):
                 A model ID in standard SQL format. If ``default_project``
                 is not specified, this must included a project ID, dataset
                 ID, and model ID, each separated by ``.``.
-            default_project (str):
-                Optional. The project ID to use when ``model_id`` does not
-                include a project ID.
+            default_project (Optional[str]):
+                The project ID to use when ``model_id`` does not include
+                a project ID.
 
         Returns:
             google.cloud.bigquery.model.ModelReference:
@@ -430,6 +439,18 @@ class ModelReference(object):
         return hash(self._key())
 
     def __repr__(self):
-        return "ModelReference(project='{}', dataset_id='{}', project_id='{}')".format(
+        return "ModelReference(project_id='{}', dataset_id='{}', model_id='{}')".format(
             self.project, self.dataset_id, self.model_id
         )
+
+
+def _model_arg_to_model_ref(value, default_project=None):
+    """Helper to convert a string or Model to ModelReference.
+
+    This function keeps ModelReference and other kinds of objects unchanged.
+    """
+    if isinstance(value, six.string_types):
+        return ModelReference.from_string(value, default_project=default_project)
+    if isinstance(value, Model):
+        return value.reference
+    return value

@@ -15,10 +15,10 @@
 """Shared helper functions for BigQuery API classes."""
 
 import base64
-import copy
 import datetime
 import decimal
 import re
+import six
 
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
@@ -396,13 +396,9 @@ def _repeated_field_to_json(field, row_value):
     Returns:
         List[Any]: A list of JSON-serializable objects.
     """
-    # Remove the REPEATED, but keep the other fields. This allows us to process
-    # each item as if it were a top-level field.
-    item_field = copy.deepcopy(field)
-    item_field._mode = "NULLABLE"
     values = []
     for item in row_value:
-        values.append(_field_to_json(item_field, item))
+        values.append(_single_field_to_json(field, item))
     return values
 
 
@@ -419,8 +415,22 @@ def _record_field_to_json(fields, row_value):
     Returns:
         Mapping[str, Any]: A JSON-serializable dictionary.
     """
-    record = {}
     isdict = isinstance(row_value, dict)
+
+    # If row is passed as a tuple, make the length sanity check to avoid either
+    # uninformative index errors a few lines below or silently omitting some of
+    # the values from the result (we cannot know exactly which fields are missing
+    # or redundant, since we don't have their names).
+    if not isdict and len(row_value) != len(fields):
+        msg = "The number of row fields ({}) does not match schema length ({}).".format(
+            len(row_value), len(fields)
+        )
+        raise ValueError(msg)
+
+    record = {}
+
+    if isdict:
+        processed_fields = set()
 
     for subindex, subfield in enumerate(fields):
         subname = subfield.name
@@ -430,7 +440,48 @@ def _record_field_to_json(fields, row_value):
         if subvalue is not None:
             record[subname] = _field_to_json(subfield, subvalue)
 
+        if isdict:
+            processed_fields.add(subname)
+
+    # Unknown fields should not be silently dropped, include them. Since there
+    # is no schema information available for them, include them as strings
+    # to make them JSON-serializable.
+    if isdict:
+        not_processed = set(row_value.keys()) - processed_fields
+
+        for field_name in not_processed:
+            value = row_value[field_name]
+            if value is not None:
+                record[field_name] = six.text_type(value)
+
     return record
+
+
+def _single_field_to_json(field, row_value):
+    """Convert a single field into JSON-serializable values.
+
+    Ignores mode so that this can function for ARRAY / REPEATING fields
+    without requiring a deepcopy of the field. See:
+    https://github.com/googleapis/python-bigquery/issues/6
+
+    Args:
+        field (google.cloud.bigquery.schema.SchemaField):
+            The SchemaField to use for type conversion and field name.
+
+        row_value (Any):
+            Scalar or Struct to be inserted. The type
+            is inferred from the SchemaField's field_type.
+
+    Returns:
+        Any: A JSON-serializable object.
+    """
+    if row_value is None:
+        return None
+
+    if field.field_type == "RECORD":
+        return _record_field_to_json(field.fields, row_value)
+
+    return _scalar_field_to_json(field, row_value)
 
 
 def _field_to_json(field, row_value):
@@ -454,10 +505,7 @@ def _field_to_json(field, row_value):
     if field.mode == "REPEATED":
         return _repeated_field_to_json(field, row_value)
 
-    if field.field_type == "RECORD":
-        return _record_field_to_json(field.fields, row_value)
-
-    return _scalar_field_to_json(field, row_value)
+    return _single_field_to_json(field, row_value)
 
 
 def _snake_to_camel_case(value):
@@ -471,7 +519,7 @@ def _get_sub_prop(container, keys, default=None):
 
     This method works like ``dict.get(key)``, but for nested values.
 
-    Arguments:
+    Args:
         container (Dict):
             A dictionary which may contain other dictionaries as values.
         keys (Iterable):
@@ -479,8 +527,8 @@ def _get_sub_prop(container, keys, default=None):
             the sequence represents a deeper nesting. The first key is for
             the top level. If there is a dictionary there, the second key
             attempts to get the value within that, and so on.
-        default (object):
-            (Optional) Value to returned if any of the keys are not found.
+        default (Optional[object]):
+            Value to returned if any of the keys are not found.
             Defaults to ``None``.
 
     Examples:
@@ -514,7 +562,7 @@ def _get_sub_prop(container, keys, default=None):
 def _set_sub_prop(container, keys, value):
     """Set a nested value in a dictionary.
 
-    Arguments:
+    Args:
         container (Dict):
             A dictionary which may contain other dictionaries as values.
         keys (Iterable):
@@ -557,7 +605,7 @@ def _set_sub_prop(container, keys, value):
 def _del_sub_prop(container, keys):
     """Remove a nested key fro a dictionary.
 
-    Arguments:
+    Args:
         container (Dict):
             A dictionary which may contain other dictionaries as values.
         keys (Iterable):

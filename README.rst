@@ -52,11 +52,14 @@ dependencies.
 
 Supported Python Versions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-Python >= 3.5
+Python >= 3.6
 
-Deprecated Python Versions
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-Python == 2.7. Python 2.7 support will be removed on January 1, 2020.
+Unsupported Python Versions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Python == 2.7, Python == 3.5.
+
+The last version of this library compatible with Python 2.7 and 3.5 is
+`google-cloud-bigquery==1.28.0`.
 
 
 Mac/Linux
@@ -102,3 +105,41 @@ Perform a query
 
     for row in rows:
         print(row.name)
+
+Instrumenting With OpenTelemetry
+--------------------------------
+
+This application uses `OpenTelemetry`_ to output tracing data from
+API calls to BigQuery. To enable OpenTelemetry tracing in
+the BigQuery client the following PyPI packages need to be installed:
+
+.. _OpenTelemetry: https://opentelemetry.io
+
+.. code-block:: console
+
+    pip install google-cloud-bigquery[opentelemetry] opentelemetry-exporter-google-cloud
+
+After installation, OpenTelemetry can be used in the BigQuery
+client and in BigQuery jobs. First, however, an exporter must be
+specified for where the trace data will be outputted to. An
+example of this can be found here:
+
+.. code-block:: python
+
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchExportSpanProcessor
+    from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
+    trace.set_tracer_provider(TracerProvider())
+    trace.get_tracer_provider().add_span_processor(
+        BatchExportSpanProcessor(CloudTraceSpanExporter())
+    )
+
+In this example all tracing data will be published to the Google
+`Cloud Trace`_ console. For more information on OpenTelemetry, please consult the `OpenTelemetry documentation`_.
+
+.. _OpenTelemetry documentation: https://opentelemetry-python.readthedocs.io
+.. _Cloud Trace: https://cloud.google.com/trace
+
+
+

@@ -988,7 +988,7 @@ class Test_AsyncJob(unittest.TestCase):
         self.assertIs(job.result(retry=retry), result.return_value)
 
         begin.assert_called_once_with(retry=retry, timeout=None)
-        result.assert_called_once_with(timeout=None)
+        result.assert_called_once_with(retry=retry, timeout=None)
 
     def test_result_retry_to_done(self):
         client = _make_client(project=self.PROJECT)

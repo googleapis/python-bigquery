@@ -817,7 +817,8 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         if self.state is None:
             self._begin(retry=retry, timeout=timeout)
 
-        return super(_AsyncJob, self).result(timeout=timeout, retry=retry)
+        kwargs = {} if retry is DEFAULT_RETRY else {"retry": retry}
+        return super(_AsyncJob, self).result(timeout=timeout, **kwargs)
 
     def cancelled(self):
         """Check if the job has been cancelled.

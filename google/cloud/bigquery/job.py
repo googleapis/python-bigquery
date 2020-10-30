@@ -2649,10 +2649,10 @@ class QueryJob(_AsyncJob):
             )
 
         self._thread_local = threading.local()
-        self._query_results = None
-        self._get_query_results_kwargs = {}
-        self._done_timeout = None
-        self._transport_timeout = None
+        self._thread_local._query_results = None
+        self._thread_local._query_results_kwargs = {}
+        self._thread_local._done_timeout = None
+        self._thread_local._transport_timeout = None
 
     @property
     def allow_large_results(self):
@@ -3096,9 +3096,9 @@ class QueryJob(_AsyncJob):
         """
         is_done = (
             # Only consider a QueryJob complete when we know we have the final
-            # query results available.
-            self._query_results is not None
-            and self._query_results.complete
+            # query results schema available.
+            self._thread_local._query_results is not None
+            and self._thread_local._query_results.complete
             and self.state == _DONE_STATE
         )
         # Do not refresh if the state is already done, as the job will not
@@ -3111,40 +3111,40 @@ class QueryJob(_AsyncJob):
         # the timeout from the futures API is respected. See:
         # https://github.com/GoogleCloudPlatform/google-cloud-python/issues/4135
         timeout_ms = None
-        if self._done_timeout is not None:
+        if self._thread_local._done_timeout is not None:
             # Subtract a buffer for context switching, network latency, etc.
-            api_timeout = self._done_timeout - _TIMEOUT_BUFFER_SECS
+            api_timeout = self._thread_local._done_timeout - _TIMEOUT_BUFFER_SECS
             api_timeout = max(min(api_timeout, 10), 0)
-            self._done_timeout -= api_timeout
-            self._done_timeout = max(0, self._done_timeout)
+            self._thread_local._done_timeout -= api_timeout
+            self._thread_local._done_timeout = max(0, self._thread_local._done_timeout)
             timeout_ms = int(api_timeout * 1000)
 
         # If an explicit timeout is not given, fall back to the transport timeout
         # stored in _blocking_poll() in the process of polling for job completion.
-        transport_timeout = timeout if timeout is not None else self._transport_timeout
+        transport_timeout = timeout if timeout is not None else self._thread_local._transport_timeout
 
-        if not self._query_results or not self._query_results.complete:
-            self._query_results = self._client._get_query_results(
+        if not self._thread_local._query_results or not self._thread_local._query_results.complete:
+            self._thread_local._query_results = self._client._get_query_results(
                 self.job_id,
                 retry,
                 project=self.project,
                 location=self.location,
                 timeout_ms=timeout_ms,
                 timeout=transport_timeout,
-                **self._get_query_results_kwargs
+                **self._thread_local._query_results_kwargs
             )
 
         # Only reload the job once we know the query is complete.
         # This will ensure that fields such as the destination table are
         # correctly populated.
-        if self._query_results.complete and self.state != _DONE_STATE:
+        if self._thread_local._query_results.complete and self.state != _DONE_STATE:
             self.reload(retry=retry, timeout=transport_timeout)
 
         return self.state == _DONE_STATE
 
     def _blocking_poll(self, timeout=None):
-        self._done_timeout = timeout
-        self._transport_timeout = timeout
+        self._thread_local._done_timeout = timeout
+        self._thread_local._transport_timeout = timeout
         super(QueryJob, self)._blocking_poll(timeout=timeout)
 
     @staticmethod
@@ -3251,14 +3251,19 @@ class QueryJob(_AsyncJob):
         # Save arguments which are relevant for result and reset any cached
         # _query_results so that the first page of results is fetched correctly
         # in the done() method. The done() method is called by the super-class.
+        _prev_query_results_kwargs = self._thread_local._query_results_kwargs.copy()
         if page_size is None:
             max_results_kwarg = max_results
         elif max_results is None:
             max_results_kwarg = page_size
         else:
             max_results_kwarg = min(page_size, max_results)
-        self._get_query_results_kwargs["max_results"] = max_results_kwarg
-        self._get_query_results_kwargs["start_index"] = start_index
+        self._thread_local._query_results_kwargs["max_results"] = max_results_kwarg
+        self._thread_local._query_results_kwargs["start_index"] = start_index
+
+        # Reset the cache if options differ.
+        if self._thread_local._query_results_kwargs != _prev_query_results_kwargs:
+            self._thread_local._query_results = None
 
         try:
             super(QueryJob, self).result(retry=retry, timeout=timeout)
@@ -3273,18 +3278,18 @@ class QueryJob(_AsyncJob):
         # special job, such as a DDL query. Return an empty result set to
         # indicate success and avoid reading from a destination table which
         # can't be read (such as a view table).
-        if self._query_results.total_rows is None:
+        if self._thread_local._query_results.total_rows is None:
             return _EmptyRowIterator()
 
-        schema = self._query_results.schema
+        schema = self._thread_local._query_results.schema
         dest_table_ref = self.destination
         dest_table = Table(dest_table_ref, schema=schema)
-        dest_table._properties["numRows"] = self._query_results.total_rows
+        dest_table._properties["numRows"] = self._thread_local._query_results.total_rows
 
         # Return an iterator instead of returning the job. Omit start_index
         # because it's only needed for the first call to getQueryResults.
         rows = self._client._list_rows_from_query_results(
-            self._query_results,
+            self._thread_local._query_results,
             dest_table,
             page_size=page_size,
             max_results=max_results,

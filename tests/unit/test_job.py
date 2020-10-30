@@ -4209,7 +4209,7 @@ class TestQueryJob(unittest.TestCase, _Base):
         client = _make_client(project=self.PROJECT)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
-        job._query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(
+        job._thread_local._query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(
             {"jobComplete": True, "jobReference": resource["jobReference"]}
         )
         self.assertTrue(job.done())
@@ -5001,7 +5001,16 @@ class TestQueryJob(unittest.TestCase, _Base):
             "datasetId": self.DS_ID,
             "tableId": self.TABLE_ID,
         }
-        conn = _make_connection(query_results_resource, query_results_resource_page_2)
+        conn = _make_connection(
+            # Test 1
+            query_results_resource, query_results_resource_page_2,
+            # Test 2
+           query_results_resource,
+            # Test 3
+           query_results_resource,
+            # Test 4
+           query_results_resource,
+        )
         client = _make_client(self.PROJECT, connection=conn)
         job = self._get_target_class().from_api_repr(job_resource, client)
 
@@ -5113,7 +5122,7 @@ class TestQueryJob(unittest.TestCase, _Base):
             "errors": [error_result],
             "state": "DONE",
         }
-        job._query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(
+        job._thread_local._query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(
             {"jobComplete": True, "jobReference": job._properties["jobReference"]}
         )
         job._set_future_result()

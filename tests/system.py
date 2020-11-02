@@ -1688,7 +1688,6 @@ class TestBigQuery(unittest.TestCase):
         result1 = query_job.result(start_index=start_index)
         total_rows = result1.total_rows
 
-        self.assertEqual(result1.extra_params["startIndex"], start_index)
         self.assertEqual(len(list(result1)), total_rows - start_index)
 
     def test_query_statistics(self):

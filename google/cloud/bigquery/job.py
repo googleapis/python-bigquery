@@ -3136,10 +3136,10 @@ class QueryJob(_AsyncJob):
 
         return self.state == _DONE_STATE
 
-    def _blocking_poll(self, timeout=None):
+    def _blocking_poll(self, timeout=None, **kwargs):
         self._done_timeout = timeout
         self._transport_timeout = timeout
-        super(QueryJob, self)._blocking_poll(timeout=timeout)
+        super(QueryJob, self)._blocking_poll(timeout=timeout, **kwargs)
 
     @staticmethod
     def _format_for_exception(query, job_id):

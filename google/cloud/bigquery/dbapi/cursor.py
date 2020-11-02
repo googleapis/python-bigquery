@@ -190,7 +190,7 @@ class Cursor(object):
         except google.cloud.exceptions.GoogleCloudError as exc:
             raise exceptions.DatabaseError(exc)
 
-        query_results = self._query_job._query_results
+        query_results = self._query_job._thread_local._query_results
         self._set_rowcount(query_results)
         self._set_description(query_results.schema)
 
@@ -239,7 +239,7 @@ class Cursor(object):
 
             rows_iter = client.list_rows(
                 self._query_job.destination,
-                selected_fields=self._query_job._query_results.schema,
+                selected_fields=self._query_job._thread_local._query_results.schema,
                 page_size=self.arraysize,
             )
             self._query_data = iter(rows_iter)

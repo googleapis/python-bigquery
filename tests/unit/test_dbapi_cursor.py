@@ -115,7 +115,7 @@ class TestCursor(unittest.TestCase):
             mock_job.total_bytes_processed = total_bytes_processed
         else:
             mock_job.result.return_value = mock_job
-            mock_job._query_results = self._mock_results(
+            mock_job._thread_local._query_results = self._mock_results(
                 total_rows=total_rows,
                 schema=schema,
                 num_dml_affected_rows=num_dml_affected_rows,

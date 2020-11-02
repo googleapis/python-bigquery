@@ -3121,9 +3121,14 @@ class QueryJob(_AsyncJob):
 
         # If an explicit timeout is not given, fall back to the transport timeout
         # stored in _blocking_poll() in the process of polling for job completion.
-        transport_timeout = timeout if timeout is not None else self._thread_local._transport_timeout
+        transport_timeout = (
+            timeout if timeout is not None else self._thread_local._transport_timeout
+        )
 
-        if not self._thread_local._query_results or not self._thread_local._query_results.complete:
+        if (
+            not self._thread_local._query_results
+            or not self._thread_local._query_results.complete
+        ):
             self._thread_local._query_results = self._client._get_query_results(
                 self.job_id,
                 retry,

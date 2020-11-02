@@ -5003,13 +5003,14 @@ class TestQueryJob(unittest.TestCase, _Base):
         }
         conn = _make_connection(
             # Test 1
-            query_results_resource, query_results_resource_page_2,
+            query_results_resource,
+            query_results_resource_page_2,
             # Test 2
-           query_results_resource,
+            query_results_resource,
             # Test 3
-           query_results_resource,
+            query_results_resource,
             # Test 4
-           query_results_resource,
+            query_results_resource,
         )
         client = _make_client(self.PROJECT, connection=conn)
         job = self._get_target_class().from_api_repr(job_resource, client)

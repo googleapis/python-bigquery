@@ -20,9 +20,7 @@ import concurrent.futures
 import copy
 import re
 import threading
-import tqdm
 import time
-import warnings
 
 import requests
 import six
@@ -55,6 +53,7 @@ from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import TimePartitioning
+from google.cloud.bigquery._tqdm_helpers import _get_progress_bar
 
 _DONE_STATE = "DONE"
 _STOPPED_REASON = "stopped"
@@ -81,11 +80,6 @@ _ERROR_REASON_TO_EXCEPTION = {
     "stopped": http_client.OK,
     "tableUnavailable": http_client.BAD_REQUEST,
 }
-
-_NO_TQDM_ERROR = (
-    "A progress bar was requested, but there was an error loading the tqdm "
-    "library. Please install tqdm to use the progress bar functionality."
-)
 
 
 def _error_result_to_exception(error_result):
@@ -3283,27 +3277,6 @@ class QueryJob(_AsyncJob):
         rows._preserve_order = _contains_order_by(self.query)
         return rows
 
-    def _get_progress_bar(self, progress_bar_type, description, total, unit):
-        """Construct a tqdm progress bar object, if tqdm is installed."""
-        if tqdm is None:
-            if progress_bar_type is not None:
-                warnings.warn(_NO_TQDM_ERROR, UserWarning, stacklevel=3)
-            return None
-
-        try:
-            if progress_bar_type == "tqdm":
-                return tqdm.tqdm(desc=description, total=total, unit=unit)
-            elif progress_bar_type == "tqdm_notebook":
-                return tqdm.tqdm_notebook(desc=description, total=total, unit=unit)
-            elif progress_bar_type == "tqdm_gui":
-                return tqdm.tqdm_gui(desc=description, total=total, unit=unit)
-        except (KeyError, TypeError):
-            # Protect ourselves from any tqdm errors. In case of
-            # unexpected tqdm behavior, just fall back to showing
-            # no progress bar.
-            warnings.warn(_NO_TQDM_ERROR, UserWarning, stacklevel=3)
-        return None
-
     # If changing the signature of this method, make sure to apply the same
     # changes to table.RowIterator.to_arrow()
     def to_arrow(
@@ -3366,51 +3339,45 @@ class QueryJob(_AsyncJob):
 
         ..versionadded:: 1.17.0
         """
-        query_plan = self.query_plan
-        if query_plan and progress_bar_type:
+        if self.query_plan and progress_bar_type:
             start_time = time.time()
             i = 0
-            progress_bar = self._get_progress_bar(
+            progress_bar = _get_progress_bar(
                 progress_bar_type,
-                "Query executing stage {}".format(query_plan[i].name),
-                len(query_plan),
+                "Query executing stage {}".format(self.query_plan[i].name),
+                len(self.query_plan),
                 "query",
             )
             while True:
-                total = len(query_plan)
+                total = len(self.query_plan)
                 self.reload()  # Refreshes the state via a GET request.
 
-                current_stage = query_plan[i]
+                current_stage = self.query_plan[i]
                 progress_bar.set_description(
                     "Query executing stage {} and status {} : {:0.2f}s".format(
                         current_stage.name,
                         current_stage.status,
                         time.time() - start_time,
                     ),
-                    refresh=True,
                 )
-                from concurrent import futures
 
                 try:
                     query_result = self.result(timeout=0.5)
-                    if current_stage.status == "COMPLETE":
-                        progress_bar.update(total)
-                        progress_bar.set_description(
-                            "Query complete after {:0.2f}s".format(
-                                time.time() - start_time
-                            ),
-                            refresh=True,
-                        )
+                    progress_bar.update(total)
+                    progress_bar.set_description(
+                        "Query complete after {:0.2f}s".format(
+                            time.time() - start_time
+                        ),
+                    )
                     break
-                except futures.TimeoutError:
+                except concurrent.futures.TimeoutError:
                     if current_stage.status == "COMPLETE":
                         if i < total - 1:
                             progress_bar.update(i + 1)
                             i += 1
                     continue
 
-            if progress_bar is not None:
-                progress_bar.close()
+            progress_bar.close()
         else:
             query_result = self.result()
 
@@ -3483,7 +3450,46 @@ class QueryJob(_AsyncJob):
         Raises:
             ValueError: If the `pandas` library cannot be imported.
         """
-        return self.result().to_dataframe(
+        query_plan = self.query_plan
+        if query_plan and progress_bar_type:
+            start_time = time.time()
+            i = 0
+            progress_bar = _get_progress_bar(
+                progress_bar_type,
+                "Query executing stage {}".format(query_plan[i].name),
+                len(query_plan),
+                "query",
+            )
+            while True:
+                total = len(query_plan)
+                self.reload()  # Refreshes the state via a GET request.
+
+                current_stage = query_plan[i]
+                progress_bar.set_description(
+                    "Query executing stage {} and status {} : {:0.2f}s".format(
+                        current_stage.name,
+                        current_stage.status,
+                        time.time() - start_time,
+                    )
+                )
+
+                try:
+                    query_result = self.result(timeout=0.5)
+                    progress_bar.update(total)
+                    progress_bar.set_description(
+                        "Query complete after {:0.2f}s".format(time.time() - start_time)
+                    )
+                    break
+                except concurrent.futures.TimeoutError:
+                    if current_stage.status == "COMPLETE":
+                        if i < total - 1:
+                            progress_bar.update(i + 1)
+                            i += 1
+                    continue
+            progress_bar.close()
+        else:
+            query_result = self.result()
+        return query_result.to_dataframe(
             bqstorage_client=bqstorage_client,
             dtypes=dtypes,
             progress_bar_type=progress_bar_type,

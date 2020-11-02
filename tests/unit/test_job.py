@@ -5722,6 +5722,104 @@ class TestQueryJob(unittest.TestCase, _Base):
             ],
         )
 
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(tqdm is None, "Requires `tqdm`")
+    def test_to_arrow_w_tqdm(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery import table
+
+        rows = [
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}]},
+        ]
+
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        connection = _make_connection({})
+        client = _make_client(project=self.PROJECT, connection=connection)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        row_iterator = table.RowIterator(client, api_request, path, schema)
+
+        job._properties["statistics"] = {
+            "query": {
+                "queryPlan": [
+                    {"name": "S00: Input", "id": "0", "status": "COMPLETE"},
+                    {"name": "S01: Output", "id": "1", "status": "COMPLETE"},
+                ]
+            },
+        }
+        reload_patch = mock.patch(
+            "google.cloud.bigquery.job._AsyncJob.reload", autospec=True
+        )
+        result_patch = mock.patch(
+            "google.cloud.bigquery.job.QueryJob.result",
+            side_effect=[
+                concurrent.futures.TimeoutError,
+                concurrent.futures.TimeoutError,
+                row_iterator,
+            ],
+        )
+
+        with result_patch as result_patch_tqdm, reload_patch:
+            tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
+
+        self.assertEqual(result_patch_tqdm.call_count, 3)
+        self.assertIsInstance(tbl, pyarrow.Table)
+        self.assertEqual(tbl.num_rows, 2)
+        result_patch_tqdm.assert_called_with(timeout=0.5)
+
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(tqdm is None, "Requires `tqdm`")
+    def test_to_arrow_w_tqdm_w_pending_status(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery import table
+
+        rows = [
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}]},
+        ]
+
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        connection = _make_connection({})
+        client = _make_client(project=self.PROJECT, connection=connection)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        row_iterator = table.RowIterator(client, api_request, path, schema)
+
+        job._properties["statistics"] = {
+            "query": {
+                "queryPlan": [
+                    {"name": "S00: Input", "id": "0", "status": "PENDING"},
+                    {"name": "S00: Input", "id": "1", "status": "COMPLETE"},
+                ]
+            },
+        }
+        reload_patch = mock.patch(
+            "google.cloud.bigquery.job._AsyncJob.reload", autospec=True
+        )
+        result_patch = mock.patch(
+            "google.cloud.bigquery.job.QueryJob.result",
+            side_effect=[concurrent.futures.TimeoutError, row_iterator],
+        )
+
+        with result_patch as result_patch_tqdm, reload_patch:
+            tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
+
+        self.assertEqual(result_patch_tqdm.call_count, 2)
+        self.assertIsInstance(tbl, pyarrow.Table)
+        self.assertEqual(tbl.num_rows, 2)
+        result_patch_tqdm.assert_called_with(timeout=0.5)
+
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe(self):
         begun_resource = self._make_resource()
@@ -5942,6 +6040,114 @@ class TestQueryJob(unittest.TestCase, _Base):
 
         job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
         tqdm_mock.assert_called()
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(tqdm is None, "Requires `tqdm`")
+    def test_to_dataframe_w_tqdm_pending(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery import table
+
+        schema = [
+            SchemaField("name", "STRING", mode="NULLABLE"),
+            SchemaField("age", "INTEGER", mode="NULLABLE"),
+        ]
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}]},
+            {"f": [{"v": "Bhettye Rhubble"}, {"v": "27"}]},
+        ]
+
+        connection = _make_connection({})
+        client = _make_client(project=self.PROJECT, connection=connection)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        row_iterator = table.RowIterator(client, api_request, path, schema)
+
+        job._properties["statistics"] = {
+            "query": {
+                "queryPlan": [
+                    {"name": "S00: Input", "id": "0", "status": "PRNDING"},
+                    {"name": "S01: Output", "id": "1", "status": "COMPLETE"},
+                ]
+            },
+        }
+        reload_patch = mock.patch(
+            "google.cloud.bigquery.job._AsyncJob.reload", autospec=True
+        )
+        result_patch = mock.patch(
+            "google.cloud.bigquery.job.QueryJob.result",
+            side_effect=[concurrent.futures.TimeoutError, row_iterator],
+        )
+
+        with result_patch as result_patch_tqdm, reload_patch:
+            df = job.to_dataframe(
+                progress_bar_type="tqdm", create_bqstorage_client=False
+            )
+
+        self.assertEqual(result_patch_tqdm.call_count, 2)
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 4)  # verify the number of rows
+        self.assertEqual(list(df), ["name", "age"])  # verify the column names
+        result_patch_tqdm.assert_called_with(timeout=0.5)
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(tqdm is None, "Requires `tqdm`")
+    def test_to_dataframe_w_tqdm(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery import table
+
+        schema = [
+            SchemaField("name", "STRING", mode="NULLABLE"),
+            SchemaField("age", "INTEGER", mode="NULLABLE"),
+        ]
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}]},
+            {"f": [{"v": "Bhettye Rhubble"}, {"v": "27"}]},
+        ]
+
+        connection = _make_connection({})
+        client = _make_client(project=self.PROJECT, connection=connection)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        row_iterator = table.RowIterator(client, api_request, path, schema)
+
+        job._properties["statistics"] = {
+            "query": {
+                "queryPlan": [
+                    {"name": "S00: Input", "id": "0", "status": "COMPLETE"},
+                    {"name": "S01: Output", "id": "1", "status": "COMPLETE"},
+                ]
+            },
+        }
+        reload_patch = mock.patch(
+            "google.cloud.bigquery.job._AsyncJob.reload", autospec=True
+        )
+        result_patch = mock.patch(
+            "google.cloud.bigquery.job.QueryJob.result",
+            side_effect=[
+                concurrent.futures.TimeoutError,
+                concurrent.futures.TimeoutError,
+                row_iterator,
+            ],
+        )
+
+        with result_patch as result_patch_tqdm, reload_patch:
+            df = job.to_dataframe(
+                progress_bar_type="tqdm", create_bqstorage_client=False
+            )
+
+        self.assertEqual(result_patch_tqdm.call_count, 3)
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 4)  # verify the number of rows
+        self.assertEqual(list(df), ["name", "age"])  # verify the column names
+        result_patch_tqdm.assert_called_with(timeout=0.5)
 
     def test_iter(self):
         import types

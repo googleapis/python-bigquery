@@ -60,7 +60,9 @@ class TestCursor(unittest.TestCase):
             total_rows = len(rows)
 
         mock_client = mock.create_autospec(client.Client)
+        mock_client.project = "test-project"
         mock_client.query.return_value = self._mock_job(
+            mock_client,
             total_rows=total_rows,
             schema=schema,
             num_dml_affected_rows=num_dml_affected_rows,
@@ -97,6 +99,7 @@ class TestCursor(unittest.TestCase):
 
     def _mock_job(
         self,
+        client,
         total_rows=0,
         schema=None,
         num_dml_affected_rows=None,
@@ -105,7 +108,8 @@ class TestCursor(unittest.TestCase):
     ):
         from google.cloud.bigquery import job
 
-        mock_job = mock.create_autospec(job.QueryJob)
+        job_template = job.QueryJob("some-id", "SELECT * FROM dataset.table", client)
+        mock_job = mock.create_autospec(job_template)
         mock_job.error_result = None
         mock_job.state = "DONE"
         mock_job.dry_run = dry_run

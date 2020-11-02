@@ -4253,6 +4253,25 @@ class TestQueryJob(unittest.TestCase, _Base):
         call_args = fake_reload.call_args
         self.assertAlmostEqual(call_args.kwargs.get("timeout"), expected_timeout)
 
+    def test_done_w_query_results_reloads(self):
+        import google.cloud.bigquery.query
+
+        job_resource = self._make_resource(ended=False)
+        job_resource_done = self._make_resource(started=True, ended=True)
+        conn = _make_connection(job_resource_done)
+        client = _make_client(self.PROJECT, connection=conn)
+        job = self._get_target_class().from_api_repr(job_resource, client)
+        job._thread_local._query_results = google.cloud.bigquery.query._QueryResults({
+            "jobReference": job._properties["jobReference"],
+            "jobComplete": True,
+        })
+
+        self.assertTrue(job.done())
+        job_path = f"/projects/{job.project}/jobs/{job.job_id}"
+        conn.api_request.assert_called_once_with(
+            method='GET', path=job_path, query_params={}, timeout=None
+        )
+
     def test_query_plan(self):
         from google.cloud._helpers import _RFC3339_MICROS
         from google.cloud.bigquery.job import QueryPlanEntry
@@ -4939,6 +4958,40 @@ class TestQueryJob(unittest.TestCase, _Base):
                     timeout=None,
                 ),
             ]
+        )
+
+    def test_result_w_page_size_and_max_results(self):
+        query_results_resource = {
+            "jobComplete": True,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
+            "totalRows": "2",
+            "rows": [
+                {"f": [{"v": "row1"}]},
+                {"f": [{"v": "row2"}]},
+            ],
+        }
+        job_resource = self._make_resource(started=True, ended=True)
+        conn = _make_connection(query_results_resource, query_results_resource)
+        client = _make_client(self.PROJECT, connection=conn)
+        job = self._get_target_class().from_api_repr(job_resource, client)
+
+        job.result(page_size=3, max_results=5)
+        query_results_path = f"/projects/{self.PROJECT}/queries/{self.JOB_ID}"
+        conn.api_request.assert_called_once_with(
+            method="GET",
+            path=query_results_path,
+            query_params={"maxResults": 3},
+            timeout=None,
+        )
+
+        conn.api_request.reset_mock()
+        job.result(page_size=7, max_results=5)
+        conn.api_request.assert_called_once_with(
+            method="GET",
+            path=query_results_path,
+            query_params={"maxResults": 5},
+            timeout=None,
         )
 
     def test_result_with_start_index(self):

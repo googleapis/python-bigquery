@@ -4261,15 +4261,14 @@ class TestQueryJob(unittest.TestCase, _Base):
         conn = _make_connection(job_resource_done)
         client = _make_client(self.PROJECT, connection=conn)
         job = self._get_target_class().from_api_repr(job_resource, client)
-        job._thread_local._query_results = google.cloud.bigquery.query._QueryResults({
-            "jobReference": job._properties["jobReference"],
-            "jobComplete": True,
-        })
+        job._thread_local._query_results = google.cloud.bigquery.query._QueryResults(
+            {"jobReference": job._properties["jobReference"], "jobComplete": True}
+        )
 
         self.assertTrue(job.done())
         job_path = f"/projects/{job.project}/jobs/{job.job_id}"
         conn.api_request.assert_called_once_with(
-            method='GET', path=job_path, query_params={}, timeout=None
+            method="GET", path=job_path, query_params={}, timeout=None
         )
 
     def test_query_plan(self):
@@ -4966,10 +4965,7 @@ class TestQueryJob(unittest.TestCase, _Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "2",
-            "rows": [
-                {"f": [{"v": "row1"}]},
-                {"f": [{"v": "row2"}]},
-            ],
+            "rows": [{"f": [{"v": "row1"}]}, {"f": [{"v": "row2"}]}],
         }
         job_resource = self._make_resource(started=True, ended=True)
         conn = _make_connection(query_results_resource, query_results_resource)

@@ -1163,7 +1163,8 @@ class QueryJob(_AsyncJob):
         dest_table_ref = self.destination
         dest_table = Table(dest_table_ref, schema=schema)
         dest_table._properties["numRows"] = self._query_results.total_rows
-        rows = self._client.list_rows(
+        rows = self._client._list_rows_from_query_results(
+            self._query_results,
             dest_table,
             page_size=page_size,
             max_results=max_results,

@@ -1419,7 +1419,7 @@ class RowIterator(HTTPIterator):
             selected_fields=self._selected_fields,
         )
         tabledata_list_download = functools.partial(
-            _pandas_helpers.download_arrow_tabledata_list, iter(self.pages), self.schema
+            _pandas_helpers.download_arrow_row_iterator, iter(self.pages), self.schema
         )
         return self._to_page_iterable(
             bqstorage_download,
@@ -1582,7 +1582,7 @@ class RowIterator(HTTPIterator):
             selected_fields=self._selected_fields,
         )
         tabledata_list_download = functools.partial(
-            _pandas_helpers.download_dataframe_tabledata_list,
+            _pandas_helpers.download_dataframe_row_iterator,
             iter(self.pages),
             self.schema,
             dtypes,
@@ -2167,7 +2167,7 @@ def _item_to_row(iterator, resource):
     )
 
 
-def _tabledata_list_page_columns(schema, response):
+def _row_iterator_page_columns(schema, response):
     """Make a generator of all the columns in a page from tabledata.list.
 
     This enables creating a :class:`pandas.DataFrame` and other
@@ -2197,7 +2197,7 @@ def _rows_page_start(iterator, page, response):
     """
     # Make a (lazy) copy of the page in column-oriented format for use in data
     # science packages.
-    page._columns = _tabledata_list_page_columns(iterator._schema, response)
+    page._columns = _row_iterator_page_columns(iterator._schema, response)
 
     total_rows = response.get("totalRows")
     if total_rows is not None:

@@ -4835,7 +4835,9 @@ class TestQueryJob(unittest.TestCase, _Base):
         connection = _make_connection(
             exceptions.NotFound("not normally retriable"),
             query_resource,
+            exceptions.NotFound("not normally retriable"),
             query_resource_done,
+            exceptions.NotFound("not normally retriable"),
             job_resource_done,
         )
         client = _make_client(self.PROJECT, connection=connection)

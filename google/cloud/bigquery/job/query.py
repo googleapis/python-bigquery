@@ -1160,6 +1160,7 @@ class QueryJob(_AsyncJob):
 
         rows = self._client._list_rows_from_query_results(
             self._query_results.job_id,
+            self.location,
             self._query_results.project,
             self._query_results.schema,
             total_rows=self._query_results.total_rows,

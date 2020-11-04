@@ -3177,6 +3177,7 @@ class Client(ClientWithProject):
     def _list_rows_from_query_results(
         self,
         job_id,
+        location,
         project,
         schema,
         total_rows=None,
@@ -3193,6 +3194,7 @@ class Client(ClientWithProject):
         Args:
             job_id (str):
                 ID of a query job.
+            location (str): Location of the query job.
             project (str):
                 ID of the project where the query job was run.
             schema (Sequence[google.cloud.bigquery.schema.SchemaField]):
@@ -3227,7 +3229,11 @@ class Client(ClientWithProject):
                 Iterator of row data
                 :class:`~google.cloud.bigquery.table.Row`-s.
         """
-        params = {"fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS}
+        params = {
+            "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
+            "location": location,
+        }
+
         if start_index is not None:
             params["startIndex"] = start_index
 

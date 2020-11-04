@@ -129,7 +129,7 @@ retry_storage_errors = RetryErrors(
 )
 
 PANDAS_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
-PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("0.17.0")
+PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("2.0.0")
 
 if pandas:
     PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
@@ -1086,9 +1086,9 @@ class TestBigQuery(unittest.TestCase):
 
     @unittest.skipIf(
         pyarrow is None or PYARROW_INSTALLED_VERSION < PYARROW_MINIMUM_VERSION,
-        "Only `pyarrow version >=0.17.0` is supported",
+        "Only `pyarrow version >=2.0.0` is supported",
     )
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pandas is None, "Requires " "`pandas`")
     def test_load_table_from_dataframe_w_struct_datatype(self):
         """Test that a DataFrame with struct datatype can be uploaded if a
         BigQuery schema is specified.
@@ -1123,6 +1123,62 @@ class TestBigQuery(unittest.TestCase):
         load_job.result()
 
         table = Config.CLIENT.get_table(table_id)
+        self.assertEqual(table.schema, table_schema)
+        self.assertEqual(table.num_rows, 3)
+
+    @unittest.skipIf(
+        pyarrow is None or PYARROW_INSTALLED_VERSION < PYARROW_MINIMUM_VERSION,
+        "Only `pyarrow version >=2.0.0` is supported",
+    )
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_load_table_from_dataframe_w_array_datatype(self):
+        """Test that a DataFrame contains array can be uploaded if a
+        BigQuery without specifying a schema.
+
+        https://github.com/googleapis/python-bigquery/issues/19
+        """
+        table_schema = [
+            bigquery.SchemaField(
+                "A",
+                "RECORD",
+                "NULLABLE",
+                None,
+                (
+                    bigquery.SchemaField(
+                        "list",
+                        "RECORD",
+                        "REPEATED",
+                        None,
+                        (
+                            bigquery.SchemaField(
+                                "item", "INTEGER", "NULLABLE", None, (), None
+                            ),
+                        ),
+                        None,
+                    ),
+                ),
+                None,
+            )
+        ]
+        dataset_id = _make_dataset_id("bq_load_test")
+        self.temp_dataset(dataset_id)
+        table_id = "{}.{}.load_table_from_dataframe_w_array_datatype".format(
+            Config.CLIENT.project, dataset_id
+        )
+
+        job_config = bigquery.LoadJobConfig(autodetect=True)
+        table = retry_403(Config.CLIENT.create_table)(Table(table_id))
+        self.to_delete.insert(0, table)
+
+        dataframe = pandas.DataFrame({"A": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]})
+
+        load_job = Config.CLIENT.load_table_from_dataframe(
+            dataframe, table_id, job_config=job_config
+        )
+        load_job.result()
+
+        table = Config.CLIENT.get_table(table_id)
+
         self.assertEqual(table.schema, table_schema)
         self.assertEqual(table.num_rows, 3)
 

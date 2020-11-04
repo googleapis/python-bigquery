@@ -1880,7 +1880,7 @@ class TestRowIterator(unittest.TestCase):
             for warning in warned
             if warning.category is UserWarning
             and "cannot use bqstorage_client" in str(warning).lower()
-            and "tabledata.list" in str(warning)
+            and "REST" in str(warning)
         ]
         self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
         mock_client._create_bqstorage_client.assert_not_called()
@@ -2664,7 +2664,7 @@ class TestRowIterator(unittest.TestCase):
             for warning in warned
             if warning.category is UserWarning
             and "cannot use bqstorage_client" in str(warning).lower()
-            and "tabledata.list" in str(warning)
+            and "REST" in str(warning)
         ]
         self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
 
@@ -2700,7 +2700,7 @@ class TestRowIterator(unittest.TestCase):
             for warning in warned
             if warning.category is UserWarning
             and "cannot use bqstorage_client" in str(warning).lower()
-            and "tabledata.list" in str(warning)
+            and "REST" in str(warning)
         ]
         self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
         mock_client._create_bqstorage_client.assert_not_called()

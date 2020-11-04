@@ -3170,13 +3170,17 @@ class Client(ClientWithProject):
             # Pass in selected_fields separately from schema so that full
             # tables can be fetched without a column filter.
             selected_fields=selected_fields,
+            total_rows=getattr(table, "num_rows", None),
         )
         return row_iterator
 
     def _list_rows_from_query_results(
         self,
-        query_results,
-        table,
+        job_id,
+        project,
+        schema,
+        total_rows=None,
+        destination=None,
         max_results=None,
         start_index=None,
         page_size=None,
@@ -3187,18 +3191,23 @@ class Client(ClientWithProject):
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults
         Args:
-            query_results (google.cloud.bigquery.query._QueryResults):
-                A ``_QueryResults`` instance containing the first page of
-                results.
-            table (Union[ \
+            job_id (str):
+                ID of a query job.
+            project (str):
+                ID of the project where the query job was run.
+            schema (Sequence[google.cloud.bigquery.schema.SchemaField]):
+                The fields expected in these query results. Used to convert
+                from JSON to expected Python types.
+            total_rows (Optional[int]):
+                Total number of rows in the query results.
+            destination (Optional[Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableListItem, \
                 google.cloud.bigquery.table.TableReference, \
                 str, \
-            ]):
-                DEPRECATED: The table to list, or a reference to it.
-                To be removed in a future update, where the QueryJob class is
-                not reloaded by `result()` or `to_dataframe()`.
+            ]]):
+                Destination table reference. Used to fetch the query results
+                with the BigQuery Storage API.
             max_results (Optional[int]):
                 Maximum number of rows to return across the whole iterator.
             start_index (Optional[int]):
@@ -3225,12 +3234,13 @@ class Client(ClientWithProject):
         row_iterator = RowIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),
-            path=f"/projects/{query_results.project}/queries/{query_results.job_id}",
-            schema=query_results.schema,
+            path=f"/projects/{project}/queries/{job_id}",
+            schema=schema,
             max_results=max_results,
             page_size=page_size,
-            table=table,
+            table=destination,
             extra_params=params,
+            total_rows=total_rows,
         )
         return row_iterator
 

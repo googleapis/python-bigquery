@@ -1306,6 +1306,8 @@ class RowIterator(HTTPIterator):
             call the BigQuery Storage API to fetch rows.
         selected_fields (Optional[Sequence[google.cloud.bigquery.schema.SchemaField]]):
             A subset of columns to select from this table.
+        total_rows (Optional[int]):
+            Total number of rows in the table.
 
     """
 
@@ -1321,6 +1323,7 @@ class RowIterator(HTTPIterator):
         extra_params=None,
         table=None,
         selected_fields=None,
+        total_rows=None,
     ):
         super(RowIterator, self).__init__(
             client,
@@ -1342,7 +1345,7 @@ class RowIterator(HTTPIterator):
         self._schema = schema
         self._selected_fields = selected_fields
         self._table = table
-        self._total_rows = getattr(table, "num_rows", None)
+        self._total_rows = total_rows
 
     def _get_next_page_response(self):
         """Requests the next page from the path provided.
@@ -1496,7 +1499,7 @@ class RowIterator(HTTPIterator):
         ) and self.max_results is not None:
             warnings.warn(
                 "Cannot use bqstorage_client if max_results is set, "
-                "reverting to fetching data with the tabledata.list endpoint.",
+                "reverting to fetching data with the REST endpoint.",
                 stacklevel=2,
             )
             create_bqstorage_client = False
@@ -1680,7 +1683,7 @@ class RowIterator(HTTPIterator):
         ) and self.max_results is not None:
             warnings.warn(
                 "Cannot use bqstorage_client if max_results is set, "
-                "reverting to fetching data with the tabledata.list endpoint.",
+                "reverting to fetching data with the REST endpoint.",
                 stacklevel=2,
             )
             create_bqstorage_client = False

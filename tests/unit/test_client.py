@@ -3573,21 +3573,28 @@ class TestClient(unittest.TestCase):
 
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 
-    def _create_job_helper(self, job_config, client_method):
+    def _create_job_helper(self, job_config):
+        from google.cloud.bigquery import _helpers
+
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
 
-        client._connection = make_connection()
-        rf1 = mock.Mock()
-        get_config_patch = mock.patch(
-            "google.cloud.bigquery.job._JobConfig.from_api_repr", return_value=rf1,
-        )
-        load_patch = mock.patch(client_method, autospec=True)
+        RESOURCE = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
+            "configuration": job_config,
+        }
+        conn = client._connection = make_connection(RESOURCE)
+        client.create_job(job_config=job_config)
+        if "query" in job_config:
+            _helpers._del_sub_prop(job_config, ["query", "destinationTable"])
 
-        with load_patch as client_method, get_config_patch:
-            client.create_job(job_config=job_config)
-        client_method.assert_called_once()
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path="/projects/%s/jobs" % self.PROJECT,
+            data=RESOURCE,
+            timeout=None,
+        )
 
     def test_create_job_load_config(self):
         configuration = {
@@ -3601,9 +3608,7 @@ class TestClient(unittest.TestCase):
             }
         }
 
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.load_table_from_uri"
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_copy_config(self):
         configuration = {
@@ -3623,9 +3628,7 @@ class TestClient(unittest.TestCase):
             }
         }
 
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.copy_table",
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_copy_config_w_single_source(self):
         configuration = {
@@ -3643,9 +3646,7 @@ class TestClient(unittest.TestCase):
             }
         }
 
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.copy_table",
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_extract_config(self):
         configuration = {
@@ -3658,9 +3659,7 @@ class TestClient(unittest.TestCase):
                 "destinationUris": ["gs://test_bucket/dst_object*"],
             }
         }
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.extract_table",
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_extract_config_for_model(self):
         configuration = {
@@ -3673,17 +3672,17 @@ class TestClient(unittest.TestCase):
                 "destinationUris": ["gs://test_bucket/dst_object*"],
             }
         }
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.extract_table",
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_query_config(self):
         configuration = {
-            "query": {"query": "query", "destinationTable": {"tableId": "table_id"}}
+            "query": {
+                "query": "query",
+                "destinationTable": {"tableId": "table_id"},
+                "useLegacySql": False,
+            }
         }
-        self._create_job_helper(
-            configuration, "google.cloud.bigquery.client.Client.query",
-        )
+        self._create_job_helper(configuration)
 
     def test_create_job_query_config_w_rateLimitExceeded_error(self):
         from google.cloud.exceptions import Forbidden
@@ -4266,7 +4265,7 @@ class TestClient(unittest.TestCase):
         self.assertIs(job._client, client)
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(list(job.source_uris), [SOURCE_URI])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
 
         conn = client._connection = make_connection(RESOURCE)
 
@@ -4275,7 +4274,7 @@ class TestClient(unittest.TestCase):
         self.assertIs(job._client, client)
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(list(job.source_uris), [SOURCE_URI])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
 
     def test_load_table_from_uri_w_explicit_project(self):
         job_id = "this-is-a-job-id"
@@ -4425,7 +4424,7 @@ class TestClient(unittest.TestCase):
         job = LoadJob(None, None, self.TABLE_REF, client, job_config=config)
         metadata = job.to_api_repr()
         upload, transport = client._initiate_resumable_upload(
-            stream, metadata, num_retries
+            stream, metadata, num_retries, None
         )
 
         # Check the returned values.
@@ -4492,7 +4491,9 @@ class TestClient(unittest.TestCase):
         job = LoadJob(None, None, self.TABLE_REF, client, job_config=config)
         metadata = job.to_api_repr()
         size = len(data)
-        response = client._do_multipart_upload(stream, metadata, size, num_retries)
+        response = client._do_multipart_upload(
+            stream, metadata, size, num_retries, None
+        )
 
         # Check the mocks and the returned value.
         self.assertIs(response, fake_transport.request.return_value)
@@ -4576,16 +4577,67 @@ class TestClient(unittest.TestCase):
         self.assertIs(job._client, client)
         self.assertEqual(job.job_id, JOB)
         self.assertEqual(list(job.sources), [source])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.destination, destination)
 
-        conn = client._connection = make_connection(RESOURCE)
-        source2 = dataset.table(SOURCE + "2")
-        job = client.copy_table([source, source2], destination, job_id=JOB)
+    def test_copy_table_w_multiple_sources(self):
+        from google.cloud.bigquery.job import CopyJob
+        from google.cloud.bigquery.table import TableReference
+
+        job_id = "job_name"
+        source_id = "my-project.my_dataset.source_table"
+        source_id2 = "my-project.my_dataset.source_table2"
+        destination_id = "my-other-project.another_dataset.destination_table"
+        expected_resource = {
+            "jobReference": {"projectId": self.PROJECT, "jobId": job_id},
+            "configuration": {
+                "copy": {
+                    "sourceTables": [
+                        {
+                            "projectId": "my-project",
+                            "datasetId": "my_dataset",
+                            "tableId": "source_table",
+                        },
+                        {
+                            "projectId": "my-project",
+                            "datasetId": "my_dataset",
+                            "tableId": "source_table2",
+                        },
+                    ],
+                    "destinationTable": {
+                        "projectId": "my-other-project",
+                        "datasetId": "another_dataset",
+                        "tableId": "destination_table",
+                    },
+                }
+            },
+        }
+        returned_resource = expected_resource.copy()
+        returned_resource["statistics"] = {}
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(returned_resource)
+
+        job = client.copy_table([source_id, source_id2], destination_id, job_id=job_id)
+
+        # Check that copy_table actually starts the job.
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path="/projects/%s/jobs" % self.PROJECT,
+            data=expected_resource,
+            timeout=None,
+        )
         self.assertIsInstance(job, CopyJob)
         self.assertIs(job._client, client)
-        self.assertEqual(job.job_id, JOB)
-        self.assertEqual(list(job.sources), [source, source2])
-        self.assertIs(job.destination, destination)
+        self.assertEqual(job.job_id, job_id)
+        self.assertEqual(
+            list(sorted(job.sources, key=lambda tbl: tbl.table_id)),
+            [
+                TableReference.from_string(source_id),
+                TableReference.from_string(source_id2),
+            ],
+        )
+        self.assertEqual(job.destination, TableReference.from_string(destination_id))
 
     def test_copy_table_w_explicit_project(self):
         job_id = "this-is-a-job-id"
@@ -7200,7 +7252,7 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES
+            file_obj, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES, None
         )
 
         # the original config object should not have been modified
@@ -7229,7 +7281,7 @@ class TestClientUpload(object):
         expected_resource["jobReference"]["location"] = self.LOCATION
         expected_resource["jobReference"]["projectId"] = "other-project"
         do_upload.assert_called_once_with(
-            file_obj, expected_resource, _DEFAULT_NUM_RETRIES
+            file_obj, expected_resource, _DEFAULT_NUM_RETRIES, None
         )
 
     def test_load_table_from_file_w_client_location(self):
@@ -7259,7 +7311,7 @@ class TestClientUpload(object):
         expected_resource["jobReference"]["location"] = self.LOCATION
         expected_resource["jobReference"]["projectId"] = "other-project"
         do_upload.assert_called_once_with(
-            file_obj, expected_resource, _DEFAULT_NUM_RETRIES
+            file_obj, expected_resource, _DEFAULT_NUM_RETRIES, None
         )
 
     def test_load_table_from_file_resumable_metadata(self):
@@ -7317,7 +7369,7 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, expected_config, _DEFAULT_NUM_RETRIES
+            file_obj, expected_config, _DEFAULT_NUM_RETRIES, None
         )
 
     def test_load_table_from_file_multipart(self):
@@ -7341,7 +7393,11 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, self.EXPECTED_CONFIGURATION, file_obj_size, _DEFAULT_NUM_RETRIES
+            file_obj,
+            self.EXPECTED_CONFIGURATION,
+            file_obj_size,
+            _DEFAULT_NUM_RETRIES,
+            None,
         )
 
     def test_load_table_from_file_with_retries(self):
@@ -7362,7 +7418,7 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, self.EXPECTED_CONFIGURATION, num_retries
+            file_obj, self.EXPECTED_CONFIGURATION, num_retries, None
         )
 
     def test_load_table_from_file_with_rewind(self):
@@ -7395,7 +7451,7 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            gzip_file, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES
+            gzip_file, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES, None
         )
 
     def test_load_table_from_file_with_writable_gzip(self):
@@ -7488,6 +7544,7 @@ class TestClientUpload(object):
             location=None,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_file = load_table_from_file.mock_calls[0][1][1]
@@ -7532,6 +7589,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_file = load_table_from_file.mock_calls[0][1][1]
@@ -7585,6 +7643,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7640,6 +7699,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7733,6 +7793,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7793,6 +7854,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7839,6 +7901,7 @@ class TestClientUpload(object):
             location=None,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
     @unittest.skipIf(
@@ -7880,6 +7943,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7927,6 +7991,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7988,6 +8053,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -8062,6 +8128,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -8156,6 +8223,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         assert warned  # there should be at least one warning
@@ -8269,6 +8337,7 @@ class TestClientUpload(object):
             location=self.LOCATION,
             project=None,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -8322,6 +8391,7 @@ class TestClientUpload(object):
             location=client.location,
             project=client.project,
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -8374,6 +8444,7 @@ class TestClientUpload(object):
             location="EU",
             project="project-x",
             job_config=mock.ANY,
+            timeout=None,
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -8448,7 +8519,7 @@ class TestClientUpload(object):
         client = self._make_client(transport)
 
         result = client._do_resumable_upload(
-            file_obj, self.EXPECTED_CONFIGURATION, None
+            file_obj, self.EXPECTED_CONFIGURATION, None, None
         )
 
         content = result.content.decode("utf-8")
@@ -8471,7 +8542,7 @@ class TestClientUpload(object):
         file_obj_len = len(file_obj.getvalue())
 
         client._do_multipart_upload(
-            file_obj, self.EXPECTED_CONFIGURATION, file_obj_len, None
+            file_obj, self.EXPECTED_CONFIGURATION, file_obj_len, None, None
         )
 
         # Verify that configuration data was passed in with the initial
@@ -8499,7 +8570,7 @@ class TestClientUpload(object):
         file_obj_len = len(file_obj.getvalue())
 
         with pytest.raises(ValueError):
-            client._do_multipart_upload(file_obj, {}, file_obj_len + 1, None)
+            client._do_multipart_upload(file_obj, {}, file_obj_len + 1, None, None)
 
     def test_schema_from_json_with_file_path(self):
         from google.cloud.bigquery.schema import SchemaField

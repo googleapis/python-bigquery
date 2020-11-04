@@ -48,11 +48,11 @@ import google.cloud._helpers
 from google.cloud import exceptions
 from google.cloud.client import ClientWithProject
 
+from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery._helpers import _verify_job_config_type
-from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
@@ -625,7 +625,6 @@ class Client(ClientWithProject):
     def _call_api(
         self, retry, span_name=None, span_attributes=None, job_ref=None, **kwargs
     ):
-
         call = functools.partial(self._connection.api_request, **kwargs)
         if retry:
             call = retry(call)
@@ -1591,7 +1590,7 @@ class Client(ClientWithProject):
             return job.QueryJob.from_api_repr(resource, self)
         return job.UnknownJob.from_api_repr(resource, self)
 
-    def create_job(self, job_config, retry=DEFAULT_RETRY):
+    def create_job(self, job_config, retry=DEFAULT_RETRY, timeout=None):
         """Create a new job.
         Args:
             job_config (dict): configuration job representation returned from the API.
@@ -1599,6 +1598,9 @@ class Client(ClientWithProject):
         Keyword Arguments:
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the RPC.
+            timeout (Optional[float]):
+                The number of seconds to wait for the underlying HTTP transport
+                before using ``retry``.
 
         Returns:
             Union[ \
@@ -1616,40 +1618,53 @@ class Client(ClientWithProject):
             )
             destination = _get_sub_prop(job_config, ["load", "destinationTable"])
             source_uris = _get_sub_prop(job_config, ["load", "sourceUris"])
+            destination = TableReference.from_api_repr(destination)
             return self.load_table_from_uri(
-                source_uris, destination, job_config=load_job_config, retry=retry
+                source_uris,
+                destination,
+                job_config=load_job_config,
+                retry=retry,
+                timeout=timeout,
             )
         elif "copy" in job_config:
             copy_job_config = google.cloud.bigquery.job.CopyJobConfig.from_api_repr(
                 job_config
             )
             destination = _get_sub_prop(job_config, ["copy", "destinationTable"])
+            destination = TableReference.from_api_repr(destination)
             sources = []
             source_configs = _get_sub_prop(job_config, ["copy", "sourceTables"])
-
             if source_configs is None:
                 source_configs = [_get_sub_prop(job_config, ["copy", "sourceTable"])]
             for source_config in source_configs:
                 table_ref = TableReference.from_api_repr(source_config)
                 sources.append(table_ref)
             return self.copy_table(
-                sources, destination, job_config=copy_job_config, retry=retry
+                sources,
+                destination,
+                job_config=copy_job_config,
+                retry=retry,
+                timeout=timeout,
             )
         elif "extract" in job_config:
             extract_job_config = google.cloud.bigquery.job.ExtractJobConfig.from_api_repr(
                 job_config
             )
             source = _get_sub_prop(job_config, ["extract", "sourceTable"])
-            source_type = "Table"
-            if not source:
+            if source:
+                source_type = "Table"
+                source = TableReference.from_api_repr(source)
+            else:
                 source = _get_sub_prop(job_config, ["extract", "sourceModel"])
                 source_type = "Model"
+                source = ModelReference.from_api_repr(source)
             destination_uris = _get_sub_prop(job_config, ["extract", "destinationUris"])
             return self.extract_table(
                 source,
                 destination_uris,
                 job_config=extract_job_config,
                 retry=retry,
+                timeout=timeout,
                 source_type=source_type,
             )
         elif "query" in job_config:
@@ -1659,7 +1674,9 @@ class Client(ClientWithProject):
                 copy_config
             )
             query = _get_sub_prop(copy_config, ["query", "query"])
-            return self.query(query, job_config=query_job_config, retry=retry)
+            return self.query(
+                query, job_config=query_job_config, retry=retry, timeout=timeout
+            )
         else:
             raise TypeError("Invalid job configuration received.")
 
@@ -1981,6 +1998,7 @@ class Client(ClientWithProject):
         location=None,
         project=None,
         job_config=None,
+        timeout=None,
     ):
         """Upload the contents of this table from a file-like object.
 
@@ -2020,6 +2038,9 @@ class Client(ClientWithProject):
                 to the client's project.
             job_config (Optional[google.cloud.bigquery.job.LoadJobConfig]):
                 Extra configuration options for the job.
+            timeout (Optional[float]):
+                The number of seconds to wait for the underlying HTTP transport
+                before using ``retry``.
 
         Returns:
             google.cloud.bigquery.job.LoadJob: A new load job.
@@ -2058,11 +2079,11 @@ class Client(ClientWithProject):
         try:
             if size is None or size >= _MAX_MULTIPART_SIZE:
                 response = self._do_resumable_upload(
-                    file_obj, job_resource, num_retries
+                    file_obj, job_resource, num_retries, timeout
                 )
             else:
                 response = self._do_multipart_upload(
-                    file_obj, job_resource, size, num_retries
+                    file_obj, job_resource, size, num_retries, timeout
                 )
         except resumable_media.InvalidResponse as exc:
             raise exceptions.from_http_response(exc.response)
@@ -2080,6 +2101,7 @@ class Client(ClientWithProject):
         project=None,
         job_config=None,
         parquet_compression="snappy",
+        timeout=None,
     ):
         """Upload the contents of a table from a pandas DataFrame.
 
@@ -2143,6 +2165,9 @@ class Client(ClientWithProject):
                  passed as the ``compression`` argument to the underlying
                  ``DataFrame.to_parquet()`` method.
                  https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
+            timeout (Optional[float]):
+                The number of seconds to wait for the underlying HTTP transport
+                before using ``retry``.
 
         Returns:
             google.cloud.bigquery.job.LoadJob: A new load job.
@@ -2249,6 +2274,7 @@ class Client(ClientWithProject):
                     location=location,
                     project=project,
                     job_config=job_config,
+                    timeout=timeout,
                 )
 
         finally:
@@ -2264,6 +2290,7 @@ class Client(ClientWithProject):
         location=None,
         project=None,
         job_config=None,
+        timeout=None,
     ):
         """Upload the contents of a table from a JSON string or dict.
 
@@ -2313,6 +2340,9 @@ class Client(ClientWithProject):
                 Extra configuration options for the job. The ``source_format``
                 setting is always set to
                 :attr:`~google.cloud.bigquery.job.SourceFormat.NEWLINE_DELIMITED_JSON`.
+            timeout (Optional[float]):
+                The number of seconds to wait for the underlying HTTP transport
+                before using ``retry``.
 
         Returns:
             google.cloud.bigquery.job.LoadJob: A new load job.
@@ -2357,9 +2387,10 @@ class Client(ClientWithProject):
             location=location,
             project=project,
             job_config=job_config,
+            timeout=timeout,
         )
 
-    def _do_resumable_upload(self, stream, metadata, num_retries):
+    def _do_resumable_upload(self, stream, metadata, num_retries, timeout):
         """Perform a resumable upload.
 
         Args:
@@ -2371,13 +2402,17 @@ class Client(ClientWithProject):
                 Number of upload retries. (Deprecated: This
                 argument will be removed in a future release.)
 
+            timeout (float):
+                The number of seconds to wait for the underlying HTTP transport
+                before using ``retry``.
+
         Returns:
             requests.Response:
                 The "200 OK" response object returned after the final chunk
                 is uploaded.
         """
         upload, transport = self._initiate_resumable_upload(
-            stream, metadata, num_retries
+            stream, metadata, num_retries, timeout
         )
 
         while not upload.finished:
@@ -2385,7 +2420,7 @@ class Client(ClientWithProject):
 
         return response
 
-    def _initiate_resumable_upload(self, stream, metadata, num_retries):
+    def _initiate_resumable_upload(self, stream, metadata, num_retries, timeout):
         """Initiate a resumable upload.
 
         Args:
@@ -2396,6 +2431,10 @@ class Client(ClientWithProject):
             num_retries (int):
                 Number of upload retries. (Deprecated: This
                 argument will be removed in a future release.)
+
+            timeout (float):
+                The number of seconds to wait for the underlying HTTP transport
+                before using ``retry``.
 
         Returns:
             Tuple:
@@ -2419,12 +2458,17 @@ class Client(ClientWithProject):
             )
 
         upload.initiate(
-            transport, stream, metadata, _GENERIC_CONTENT_TYPE, stream_final=False
+            transport,
+            stream,
+            metadata,
+            _GENERIC_CONTENT_TYPE,
+            stream_final=False,
+            timeout=timeout,
         )
 
         return upload, transport
 
-    def _do_multipart_upload(self, stream, metadata, size, num_retries):
+    def _do_multipart_upload(self, stream, metadata, size, num_retries, timeout):
         """Perform a multipart upload.
 
         Args:
@@ -2440,6 +2484,10 @@ class Client(ClientWithProject):
             num_retries (int):
                 Number of upload retries. (Deprecated: This
                 argument will be removed in a future release.)
+
+            timeout (float):
+                The number of seconds to wait for the underlying HTTP transport
+                before using ``retry``.
 
         Returns:
             requests.Response:
@@ -2466,7 +2514,9 @@ class Client(ClientWithProject):
                 max_retries=num_retries
             )
 
-        response = upload.transmit(self._http, data, metadata, _GENERIC_CONTENT_TYPE)
+        response = upload.transmit(
+            self._http, data, metadata, _GENERIC_CONTENT_TYPE, timeout=timeout
+        )
 
         return response
 

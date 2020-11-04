@@ -5724,7 +5724,7 @@ class TestQueryJob(unittest.TestCase, _Base):
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(tqdm is None, "Requires `tqdm`")
-    def test_to_arrow_w_tqdm(self):
+    def test_to_arrow_w_tqdm_w_query_plan(self):
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery import table
 
@@ -5819,6 +5819,44 @@ class TestQueryJob(unittest.TestCase, _Base):
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 2)
         result_patch_tqdm.assert_called_with(timeout=0.5)
+
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(tqdm is None, "Requires `tqdm`")
+    def test_to_arrow_w_tqdm_wo_query_plan(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery import table
+
+        rows = [
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}]},
+        ]
+
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        connection = _make_connection({})
+        client = _make_client(project=self.PROJECT, connection=connection)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        row_iterator = table.RowIterator(client, api_request, path, schema)
+
+        reload_patch = mock.patch(
+            "google.cloud.bigquery.job._AsyncJob.reload", autospec=True
+        )
+        result_patch = mock.patch(
+            "google.cloud.bigquery.job.QueryJob.result", side_effect=[row_iterator],
+        )
+
+        with result_patch as result_patch_tqdm, reload_patch:
+            tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
+
+        self.assertEqual(result_patch_tqdm.call_count, 1)
+        self.assertIsInstance(tbl, pyarrow.Table)
+        self.assertEqual(tbl.num_rows, 2)
+        result_patch_tqdm.assert_called()
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe(self):

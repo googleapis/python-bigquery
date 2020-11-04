@@ -15,7 +15,7 @@
 
 def client_query_destination_table_clustered(table_id):
 
-    # [START bigquery_query_destination_table_clustered]
+    # [START bigquery_query_clustered_table]
     from google.cloud import bigquery
 
     # Construct a BigQuery client object.
@@ -38,4 +38,4 @@ def client_query_destination_table_clustered(table_id):
     table = client.get_table(table_id)  # Make an API request.
     if table.clustering_fields == cluster_fields:
         print("The destination table is written using the cluster_fields configuration.")
-    # [END bigquery_query_destination_table_clustered]
+    # [END bigquery_query_clustered_table]

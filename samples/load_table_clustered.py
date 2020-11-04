@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def load_table_clustered(file_path, table_id):
+def load_table_clustered(table_id):
 
     # [START bigquery_load_table_clustered]
     from google.cloud import bigquery
@@ -25,18 +25,23 @@ def load_table_clustered(file_path, table_id):
     # table_id = "your-project.your_dataset.your_table_name"
 
     job_config = bigquery.LoadJobConfig(
-        schema=[
-            bigquery.SchemaField("full_name", "STRING"),
-            bigquery.SchemaField("age", "INTEGER"),
-        ],
-        clustering_fields=["age"],
         skip_leading_rows=1,
-        # The source format defaults to CSV, so the line below is optional.
         source_format=bigquery.SourceFormat.CSV,
+        schema=[
+            bigquery.SchemaField("timestamp", bigquery.SqlTypeNames.TIMESTAMP),
+            bigquery.SchemaField("origin", bigquery.SqlTypeNames.STRING),
+            bigquery.SchemaField("destination", bigquery.SqlTypeNames.STRING),
+            bigquery.SchemaField("amount", bigquery.SqlTypeNames.NUMERIC),
+        ],
+        time_partitioning=bigquery.TimePartitioning(field="timestamp"),
+        clustering_fields=["origin", "destination"],
     )
 
-    with open(file_path, "rb") as source_file:
-        job = client.load_table_from_file(source_file, table_id, job_config=job_config)
+    job = client.load_table_from_uri(
+        ["gs://cloud-samples-data/bigquery/sample-transactions/transactions.csv"],
+        table_id,
+        job_config=job_config,
+    )
 
     job.result()  # Waits for the job to complete.
 

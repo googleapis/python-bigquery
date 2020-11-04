@@ -12,29 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
-from google.cloud import bigquery
-
 from .. import load_table_clustered
 
 
 def test_load_table_clustered(capsys, random_table_id, client):
 
-    samples_test_dir = os.path.abspath(os.path.dirname(__file__))
-    file_path = os.path.join(
-        samples_test_dir, "..", "..", "tests", "data", "people.csv"
-    )
-    table = load_table_clustered.load_table_clustered(file_path, random_table_id)
+    table = load_table_clustered.load_table_clustered(random_table_id)
 
     out, _ = capsys.readouterr()
-    assert "Loaded 2 rows and 2 columns" in out
+    assert "rows and 4 columns" in out
 
     rows = list(client.list_rows(table))  # Make an API request.
-    assert len(rows) == 2
-    # Order is not preserved, so compare individually
-    row1 = bigquery.Row(("Wylma Phlyntstone", 29), {"full_name": 0, "age": 1})
-    assert row1 in rows
-    row2 = bigquery.Row(("Phred Phlyntstone", 32), {"full_name": 0, "age": 1})
-    assert row2 in rows
-    assert table.clustering_fields == ["age"]
+    assert len(rows) > 0
+    assert table.clustering_fields == ["origin", "destination"]

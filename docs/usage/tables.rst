@@ -93,8 +93,8 @@ Creating a clustered table from a query result:
    :start-after: [START bigquery_query_clustered_table]
    :end-before: [END bigquery_query_clustered_table]
 
-Creating a clustered table when you load data
-:func:`~google.cloud.bigquery.client.Client.load_table_from_file` method:
+Creating a clustered table when you load data with the
+:func:`~google.cloud.bigquery.client.Client.load_table_from_uri` method:
 
 .. literalinclude:: ../samples/load_table_clustered.py
    :language: python

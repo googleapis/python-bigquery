@@ -1511,15 +1511,7 @@ class Client(ClientWithProject):
                 raise
 
     def _get_query_results(
-        self,
-        job_id,
-        retry,
-        project=None,
-        timeout_ms=None,
-        location=None,
-        timeout=None,
-        max_results=0,
-        start_index=None,
+        self, job_id, retry, project=None, timeout_ms=None, location=None, timeout=None,
     ):
         """Get the query results object for a query job.
 
@@ -1536,18 +1528,13 @@ class Client(ClientWithProject):
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
-            max_results (Optional[int]):
-                The maximum number of records to fetch per response page.
-                Defaults to unspecified (API default).
-            start_index (Optional[int]):
-                The zero-based index of the starting row to read.
 
         Returns:
             google.cloud.bigquery.query._QueryResults:
                 A new ``_QueryResults`` instance.
         """
 
-        extra_params = {}
+        extra_params = {"maxResults": 0}
 
         if project is None:
             project = self.project
@@ -1560,12 +1547,6 @@ class Client(ClientWithProject):
 
         if location is not None:
             extra_params["location"] = location
-
-        if max_results is not None:
-            extra_params["maxResults"] = max_results
-
-        if start_index is not None:
-            extra_params["startIndex"] = start_index
 
         path = "/projects/{}/queries/{}".format(project, job_id)
 

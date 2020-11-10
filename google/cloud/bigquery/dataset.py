@@ -133,7 +133,15 @@ class AccessEntry(object):
     """
 
     ENTITY_TYPES = frozenset(
-        ["userByEmail", "groupByEmail", "domain", "specialGroup", "view", "iamMember", "routine"]
+        [
+            "userByEmail",
+            "groupByEmail",
+            "domain",
+            "specialGroup",
+            "view",
+            "iamMember",
+            "routine",
+        ]
     )
     """Allowed entity types."""
 
@@ -147,7 +155,8 @@ class AccessEntry(object):
         if entity_type in ("view", "routine"):
             if role is not None:
                 raise ValueError(
-                    "Role must be None for a %r. Received " "role: %r" % (entity_type, role)
+                    "Role must be None for a %r. Received "
+                    "role: %r" % (entity_type, role)
                 )
         else:
             if role is None:

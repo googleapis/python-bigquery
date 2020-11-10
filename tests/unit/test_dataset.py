@@ -141,7 +141,6 @@ class TestAccessEntry(unittest.TestCase):
         exp_resource = {"routine": routine}
         self.assertEqual(resource, exp_resource)
 
-
     def test_from_api_repr(self):
         resource = {"role": "OWNER", "userByEmail": "salmon@example.com"}
         entry = self._get_target_class().from_api_repr(resource)

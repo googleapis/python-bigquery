@@ -222,7 +222,7 @@ class Cursor(object):
 
         is_dml = (
             self._query_job.statement_type
-            and self._query_job.statement_type.upper() != "SELECT"
+            and self._query_job.statement_type.upper() not in ("SELECT", "SCRIPT")
         )
         if is_dml:
             self._query_data = iter([])

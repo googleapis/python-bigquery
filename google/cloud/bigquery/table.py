@@ -45,7 +45,7 @@ from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
-from google.cloud.bigquery._tqdm_helpers import _get_progress_bar
+from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
@@ -1478,7 +1478,7 @@ class RowIterator(HTTPIterator):
             owns_bqstorage_client = bqstorage_client is not None
 
         try:
-            progress_bar = _get_progress_bar(
+            progress_bar = get_progress_bar(
                 progress_bar_type, "Downloading", self.total_rows, "rows"
             )
 

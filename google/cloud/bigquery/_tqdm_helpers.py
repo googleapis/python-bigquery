@@ -31,8 +31,8 @@ _NO_TQDM_ERROR = (
 _PROGRESS_BAR_UPDATE_INTERVAL = 0.5
 
 
-def _get_progress_bar(progress_bar_type, description, total, unit):
-    """Construct a tqdm progress bar object, if tqdm is installed."""
+def get_progress_bar(progress_bar_type, description, total, unit):
+    """Construct a tqdm progress bar object, if tqdm is     ."""
     if tqdm is None:
         if progress_bar_type is not None:
             warnings.warn(_NO_TQDM_ERROR, UserWarning, stacklevel=3)
@@ -53,16 +53,18 @@ def _get_progress_bar(progress_bar_type, description, total, unit):
     return None
 
 
-def _query_job_result_helper(query_job, progress_bar_type=None):
+def wait_for_query(query_job, progress_bar_type=None):
     """Return query result and display a progress bar while the query running, if tqdm is installed."""
-    if progress_bar_type:
+    if progress_bar_type is None:
+        query_result = query_job.result()
+    else:
         start_time = time.time()
-        progress_bar = _get_progress_bar(
+        progress_bar = get_progress_bar(
             progress_bar_type, "Query is running", 1, "query"
         )
-        if query_job.query_plan:
-            i = 0
-            while True:
+        i = 0
+        while True:
+            if query_job.query_plan:
                 total = len(query_job.query_plan)
                 query_job.reload()  # Refreshes the state via a GET request.
                 current_stage = query_job.query_plan[i]
@@ -74,7 +76,6 @@ def _query_job_result_helper(query_job, progress_bar_type=None):
                         time.time() - start_time,
                     ),
                 )
-
                 try:
                     query_result = query_job.result(
                         timeout=_PROGRESS_BAR_UPDATE_INTERVAL
@@ -92,15 +93,13 @@ def _query_job_result_helper(query_job, progress_bar_type=None):
                             progress_bar.update(i + 1)
                             i += 1
                     continue
-
-        else:
-            query_result = query_job.result()
-            progress_bar.set_description(
-                "Query complete after {:0.2f}s".format(time.time() - start_time),
-            )
-            progress_bar.update(1)
+            else:
+                query_result = query_job.result()
+                progress_bar.update(1)
+                progress_bar.set_description(
+                    "Query complete after {:0.2f}s".format(time.time() - start_time),
+                )
+                break
         progress_bar.close()
-    else:
-        query_result = query_job.result()
 
     return query_result

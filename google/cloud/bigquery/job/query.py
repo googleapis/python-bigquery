@@ -40,7 +40,7 @@ from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import _table_arg_to_table_ref
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import TimePartitioning
-from google.cloud.bigquery._tqdm_helpers import _query_job_result_helper
+from google.cloud.bigquery._tqdm_helpers import wait_for_query
 
 from google.cloud.bigquery.job.base import _AsyncJob
 from google.cloud.bigquery.job.base import _DONE_STATE
@@ -1237,7 +1237,7 @@ class QueryJob(_AsyncJob):
 
         ..versionadded:: 1.17.0
         """
-        query_result = _query_job_result_helper(self, progress_bar_type)
+        query_result = wait_for_query(self, progress_bar_type)
         return query_result.to_arrow(
             progress_bar_type=progress_bar_type,
             bqstorage_client=bqstorage_client,
@@ -1307,7 +1307,7 @@ class QueryJob(_AsyncJob):
         Raises:
             ValueError: If the `pandas` library cannot be imported.
         """
-        query_result = _query_job_result_helper(self, progress_bar_type)
+        query_result = wait_for_query(self, progress_bar_type)
         return query_result.to_dataframe(
             bqstorage_client=bqstorage_client,
             dtypes=dtypes,

@@ -56,50 +56,39 @@ def get_progress_bar(progress_bar_type, description, total, unit):
 def wait_for_query(query_job, progress_bar_type=None):
     """Return query result and display a progress bar while the query running, if tqdm is installed."""
     if progress_bar_type is None:
-        query_result = query_job.result()
-    else:
-        start_time = time.time()
-        progress_bar = get_progress_bar(
-            progress_bar_type, "Query is running", 1, "query"
-        )
-        i = 0
-        while True:
-            if query_job.query_plan:
-                total = len(query_job.query_plan)
-                query_job.reload()  # Refreshes the state via a GET request.
-                current_stage = query_job.query_plan[i]
-                progress_bar.total = len(query_job.query_plan)
-                progress_bar.set_description(
-                    "Query executing stage {} and status {} : {:0.2f}s".format(
-                        current_stage.name,
-                        current_stage.status,
-                        time.time() - start_time,
-                    ),
-                )
-                try:
-                    query_result = query_job.result(
-                        timeout=_PROGRESS_BAR_UPDATE_INTERVAL
-                    )
-                    progress_bar.update(total)
-                    progress_bar.set_description(
-                        "Query complete after {:0.2f}s".format(
-                            time.time() - start_time
-                        ),
-                    )
-                    break
-                except concurrent.futures.TimeoutError:
-                    if current_stage.status == "COMPLETE":
-                        if i < total - 1:
-                            progress_bar.update(i + 1)
-                            i += 1
-                    continue
-            else:
-                query_result = query_job.result()
-                progress_bar.update(1)
-                progress_bar.set_description(
-                    "Query complete after {:0.2f}s".format(time.time() - start_time),
-                )
-                break
-        progress_bar.close()
+        return query_job.result()
 
+    default_total = 1
+    current_stage = None
+    start_time = time.time()
+    progress_bar = get_progress_bar(
+        progress_bar_type, "Query is running", default_total, "query"
+    )
+    i = 0
+    while True:
+        if query_job.query_plan:
+            default_total = len(query_job.query_plan)
+            current_stage = query_job.query_plan[i]
+            progress_bar.total = len(query_job.query_plan)
+            progress_bar.set_description(
+                "Query executing stage {} and status {} : {:0.2f}s".format(
+                    current_stage.name, current_stage.status, time.time() - start_time,
+                ),
+            )
+        try:
+            query_result = query_job.result(timeout=_PROGRESS_BAR_UPDATE_INTERVAL)
+            progress_bar.update(default_total)
+            progress_bar.set_description(
+                "Query complete after {:0.2f}s".format(time.time() - start_time),
+            )
+            break
+        except concurrent.futures.TimeoutError:
+            query_job.reload()  # Refreshes the state via a GET request.
+            if current_stage:
+                if current_stage.status == "COMPLETE":
+                    if i < default_total - 1:
+                        progress_bar.update(i + 1)
+                        i += 1
+            continue
+    progress_bar.close()
     return query_result

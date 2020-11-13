@@ -361,13 +361,14 @@ def test_to_arrow_w_tqdm_wo_query_plan():
         "google.cloud.bigquery.job._AsyncJob.reload", autospec=True
     )
     result_patch = mock.patch(
-        "google.cloud.bigquery.job.QueryJob.result", side_effect=[row_iterator],
+        "google.cloud.bigquery.job.QueryJob.result",
+        side_effect=[concurrent.futures.TimeoutError, row_iterator],
     )
 
     with result_patch as result_patch_tqdm, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 1
+    assert result_patch_tqdm.call_count == 2
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
     result_patch_tqdm.assert_called()

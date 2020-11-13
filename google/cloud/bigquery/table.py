@@ -1308,7 +1308,9 @@ class RowIterator(HTTPIterator):
             A subset of columns to select from this table.
         total_rows (Optional[int]):
             Total number of rows in the table.
-
+        first_page_response (Optional[dict]):
+            API response for the first page of results. These are returned when
+            the first page is requested.
     """
 
     def __init__(
@@ -1324,6 +1326,7 @@ class RowIterator(HTTPIterator):
         table=None,
         selected_fields=None,
         total_rows=None,
+        first_page_response=None,
     ):
         super(RowIterator, self).__init__(
             client,
@@ -1346,6 +1349,42 @@ class RowIterator(HTTPIterator):
         self._selected_fields = selected_fields
         self._table = table
         self._total_rows = total_rows
+        self._first_page_response = first_page_response
+
+    def _is_completely_cached(self):
+        """Check if all results are completely cached.
+
+        This is useful to know, because we can avoid alternative download
+        mechanisms.
+        """
+        if self._first_page_response is None or self.next_page_token:
+            return False
+
+        return self._first_page_response.get(self._next_token) is None
+
+    def _validate_bqstorage(self, bqstorage_client, create_bqstorage_client):
+        """Returns if the BigQuery Storage API can be used.
+
+        Returns:
+            bool
+                True if the BigQuery Storage client can be used or created.
+        """
+        using_bqstorage_api = bqstorage_client or create_bqstorage_client
+        if not using_bqstorage_api:
+            return False
+
+        if self._is_completely_cached():
+            return False
+
+        if self.max_results is not None:
+            warnings.warn(
+                "Cannot use bqstorage_client if max_results is set, "
+                "reverting to fetching data with the REST endpoint.",
+                stacklevel=2,
+            )
+            return False
+
+        return True
 
     def _get_next_page_response(self):
         """Requests the next page from the path provided.
@@ -1354,6 +1393,11 @@ class RowIterator(HTTPIterator):
             Dict[str, object]:
                 The parsed JSON response of the next page's contents.
         """
+        if self._first_page_response:
+            response = self._first_page_response
+            self._first_page_response = None
+            return response
+
         params = self._get_query_params()
         if self._page_size is not None:
             if self.page_number and "startIndex" in params:
@@ -1403,6 +1447,9 @@ class RowIterator(HTTPIterator):
     def _to_page_iterable(
         self, bqstorage_download, tabledata_list_download, bqstorage_client=None
     ):
+        if not self._validate_bqstorage(bqstorage_client, False):
+            bqstorage_client = None
+
         if bqstorage_client is not None:
             for item in bqstorage_download():
                 yield item
@@ -1494,14 +1541,7 @@ class RowIterator(HTTPIterator):
         if pyarrow is None:
             raise ValueError(_NO_PYARROW_ERROR)
 
-        if (
-            bqstorage_client or create_bqstorage_client
-        ) and self.max_results is not None:
-            warnings.warn(
-                "Cannot use bqstorage_client if max_results is set, "
-                "reverting to fetching data with the REST endpoint.",
-                stacklevel=2,
-            )
+        if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
             bqstorage_client = None
 
@@ -1678,14 +1718,7 @@ class RowIterator(HTTPIterator):
         if dtypes is None:
             dtypes = {}
 
-        if (
-            bqstorage_client or create_bqstorage_client
-        ) and self.max_results is not None:
-            warnings.warn(
-                "Cannot use bqstorage_client if max_results is set, "
-                "reverting to fetching data with the REST endpoint.",
-                stacklevel=2,
-            )
+        if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
             bqstorage_client = None
 

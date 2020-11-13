@@ -99,6 +99,7 @@ def test_to_dataframe_bqstorage_preserve_order(query):
             ]
         },
         "totalRows": "4",
+        "pageToken": "next-page",
     }
     connection = _make_connection(get_query_results_resource, job_resource)
     client = _make_client(connection=connection)
@@ -133,7 +134,16 @@ def test_to_dataframe_bqstorage_preserve_order(query):
 
 
 @pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
-def test_to_arrow():
+@pytest.mark.parametrize(
+    "method_kwargs",
+    [
+        {"create_bqstorage_client": False},
+        # Since all rows are contained in the first page of results, the BigQuery
+        # Storage API won't actually be used.
+        {"create_bqstorage_client": True},
+    ],
+)
+def test_to_arrow(method_kwargs):
     from google.cloud.bigquery.job import QueryJob as target_class
 
     begun_resource = _make_job_resource(job_type="query")
@@ -161,8 +171,6 @@ def test_to_arrow():
                 },
             ]
         },
-    }
-    tabledata_resource = {
         "rows": [
             {
                 "f": [
@@ -176,17 +184,15 @@ def test_to_arrow():
                     {"v": {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]}},
                 ]
             },
-        ]
+        ],
     }
     done_resource = copy.deepcopy(begun_resource)
     done_resource["status"] = {"state": "DONE"}
-    connection = _make_connection(
-        begun_resource, query_resource, done_resource, tabledata_resource
-    )
+    connection = _make_connection(begun_resource, query_resource, done_resource)
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(begun_resource, client)
 
-    tbl = job.to_arrow(create_bqstorage_client=False)
+    tbl = job.to_arrow(**method_kwargs)
 
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
@@ -220,7 +226,16 @@ def test_to_arrow():
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_to_dataframe():
+@pytest.mark.parametrize(
+    "method_kwargs",
+    [
+        {"create_bqstorage_client": False},
+        # Since all rows are contained in the first page of results, the BigQuery
+        # Storage API won't actually be used.
+        {"create_bqstorage_client": True},
+    ],
+)
+def test_to_dataframe(method_kwargs):
     from google.cloud.bigquery.job import QueryJob as target_class
 
     begun_resource = _make_job_resource(job_type="query")
@@ -234,24 +249,20 @@ def test_to_dataframe():
                 {"name": "age", "type": "INTEGER", "mode": "NULLABLE"},
             ]
         },
-    }
-    tabledata_resource = {
         "rows": [
             {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
             {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
             {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}]},
             {"f": [{"v": "Bhettye Rhubble"}, {"v": "27"}]},
-        ]
+        ],
     }
     done_resource = copy.deepcopy(begun_resource)
     done_resource["status"] = {"state": "DONE"}
-    connection = _make_connection(
-        begun_resource, query_resource, done_resource, tabledata_resource
-    )
+    connection = _make_connection(begun_resource, query_resource, done_resource)
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(begun_resource, client)
 
-    df = job.to_dataframe(create_bqstorage_client=False)
+    df = job.to_dataframe(**method_kwargs)
 
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
@@ -296,6 +307,7 @@ def test_to_dataframe_bqstorage():
                 {"name": "age", "type": "INTEGER", "mode": "NULLABLE"},
             ]
         },
+        "pageToken": "next-page",
     }
     connection = _make_connection(query_resource)
     client = _make_client(connection=connection)

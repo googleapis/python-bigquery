@@ -81,6 +81,10 @@ def pyarrow_numeric():
     return pyarrow.decimal128(38, 9)
 
 
+def pyarrow_bignumeric():
+    return pyarrow.decimal256(76, 38)
+
+
 def pyarrow_time():
     return pyarrow.time64("us")
 
@@ -104,6 +108,7 @@ if pyarrow:
         "INT64": pyarrow.int64,
         "INTEGER": pyarrow.int64,
         "NUMERIC": pyarrow_numeric,
+        "BIGNUMERIC": pyarrow_bignumeric,
         "STRING": pyarrow.string,
         "TIME": pyarrow_time,
         "TIMESTAMP": pyarrow_timestamp,
@@ -132,6 +137,7 @@ if pyarrow:
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
         # The exact decimal's scale and precision are not important, as only
         # the type ID matters, and it's the same for all decimal128 instances.
+        pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
     }
 
 else:  # pragma: NO COVER

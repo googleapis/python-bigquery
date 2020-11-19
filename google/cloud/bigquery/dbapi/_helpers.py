@@ -21,6 +21,11 @@ import numbers
 
 import six
 
+try:
+    import pyarrow
+except ImportError:  # pragma: NO COVER
+    pyarrow = None
+
 from google.cloud import bigquery
 from google.cloud.bigquery import table
 from google.cloud.bigquery.dbapi import exceptions
@@ -186,7 +191,11 @@ def bigquery_scalar_type(value):
     elif isinstance(value, numbers.Real):
         return "FLOAT64"
     elif isinstance(value, decimal.Decimal):
-        return "NUMERIC"
+        scalar_object = pyarrow.scalar(value)
+        if isinstance(scalar_object, pyarrow.Decimal128Scalar):
+            return "NUMERIC"
+        else:
+            return "BIGNUMERIC"
     elif isinstance(value, six.text_type):
         return "STRING"
     elif isinstance(value, six.binary_type):

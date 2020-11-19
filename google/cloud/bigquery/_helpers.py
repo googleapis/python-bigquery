@@ -319,6 +319,7 @@ def _timestamp_to_json_row(value):
     """
     if isinstance(value, datetime.datetime):
         value = _microseconds_from_datetime(value) * 1e-6
+        value = round(value, 6)
     return value
 
 

@@ -733,6 +733,13 @@ class Test_timestamp_to_json_row(unittest.TestCase):
         when = datetime.datetime(2016, 12, 20, 15, 58, 27, 339328)
         self.assertEqual(self._call_fut(when), _microseconds_from_datetime(when) / 1e6)
 
+    def test_w_datetime_w_utc_zone(self):
+        from google.cloud._helpers import _microseconds_from_datetime
+        from google.cloud._helpers import UTC
+
+        when = datetime.datetime(2020, 11, 17, 1, 6, 52, 353795, tzinfo=UTC)
+        self.assertEqual(self._call_fut(when), _microseconds_from_datetime(when) / 1e6)
+
 
 class Test_datetime_to_json(unittest.TestCase):
     def _call_fut(self, value):

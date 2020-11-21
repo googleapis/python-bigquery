@@ -548,7 +548,7 @@ def _create_dataset_if_necessary(client, dataset_id):
 @magic_arguments.argument(
     "--progress_bar_type",
     type=str,
-    default="tqdm",
+    default=None,
     help=(
         "Sets progress bar type to display a progress bar while executing the query."
         "Defaults to use tqdm. Install the ``tqdm`` package to use this feature."

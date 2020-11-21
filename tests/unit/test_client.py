@@ -6052,7 +6052,6 @@ class TestClient(unittest.TestCase):
         )
 
     def test_insert_rows_w_repeated_fields(self):
-        from google.cloud._helpers import _RFC3339_MICROS
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -6110,24 +6109,16 @@ class TestClient(unittest.TestCase):
                             {
                                 "score": "12",
                                 "times": [
-                                    datetime.datetime(
-                                        2018, 12, 1, 12, 0, 0, tzinfo=pytz.utc
-                                    ).strftime(_RFC3339_MICROS),
-                                    datetime.datetime(
-                                        2018, 12, 1, 13, 0, 0, tzinfo=pytz.utc
-                                    ).strftime(_RFC3339_MICROS),
+                                    "2018-12-01T12:00:00.000000Z",
+                                    "2018-12-01T13:00:00.000000Z",
                                 ],
                                 "distances": [1.25, 2.5],
                             },
                             {
                                 "score": "13",
                                 "times": [
-                                    datetime.datetime(
-                                        2018, 12, 2, 12, 0, 0, tzinfo=pytz.utc
-                                    ).strftime(_RFC3339_MICROS),
-                                    datetime.datetime(
-                                        2018, 12, 2, 13, 0, 0, tzinfo=pytz.utc
-                                    ).strftime(_RFC3339_MICROS),
+                                    "2018-12-02T12:00:00.000000Z",
+                                    "2018-12-02T13:00:00.000000Z",
                                 ],
                                 "distances": [-1.25, -2.5],
                             },

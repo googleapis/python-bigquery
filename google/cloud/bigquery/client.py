@@ -2197,15 +2197,16 @@ class Client(ClientWithProject):
         else:
             job_config = job.LoadJobConfig()
 
-        if job_config.source_format:
-            if job_config.source_format != job.SourceFormat.PARQUET:
-                raise ValueError(
-                    "Got unexpected source_format: '{}'. Currently, only PARQUET is supported".format(
-                        job_config.source_format
-                    )
-                )
-        else:
+        supported_formats = (job.SourceFormat.CSV, job.SourceFormat.PARQUET)
+        if job_config.source_format is None:
+            # default value
             job_config.source_format = job.SourceFormat.PARQUET
+        if job_config.source_format not in supported_formats:
+            raise ValueError(
+                "Got unexpected source_format: '{}'. Currently, only PARQUET and CSV are supported".format(
+                    job_config.source_format
+                )
+            )
 
         if location is None:
             location = self.location
@@ -2245,38 +2246,70 @@ class Client(ClientWithProject):
                 stacklevel=2,
             )
 
-        tmpfd, tmppath = tempfile.mkstemp(suffix="_job_{}.parquet".format(job_id[:8]))
+        tmpfd, tmppath = tempfile.mkstemp(
+            suffix="_job_{}.{}".format(job_id[:8], job_config.source_format.lower(),)
+        )
         os.close(tmpfd)
 
         try:
-            if job_config.schema:
-                if parquet_compression == "snappy":  # adjust the default value
-                    parquet_compression = parquet_compression.upper()
 
-                _pandas_helpers.dataframe_to_parquet(
-                    dataframe,
-                    job_config.schema,
-                    tmppath,
-                    parquet_compression=parquet_compression,
-                )
+            if job_config.source_format == job.SourceFormat.PARQUET:
+
+                if job_config.schema:
+                    if parquet_compression == "snappy":  # adjust the default value
+                        parquet_compression = parquet_compression.upper()
+
+                    _pandas_helpers.dataframe_to_parquet(
+                        dataframe,
+                        job_config.schema,
+                        tmppath,
+                        parquet_compression=parquet_compression,
+                    )
+                else:
+                    dataframe.to_parquet(tmppath, compression=parquet_compression)
+
+                with open(tmppath, "rb") as parquet_file:
+                    file_size = os.path.getsize(tmppath)
+                    return self.load_table_from_file(
+                        parquet_file,
+                        destination,
+                        num_retries=num_retries,
+                        rewind=True,
+                        size=file_size,
+                        job_id=job_id,
+                        job_id_prefix=job_id_prefix,
+                        location=location,
+                        project=project,
+                        job_config=job_config,
+                        timeout=timeout,
+                    )
+
             else:
-                dataframe.to_parquet(tmppath, compression=parquet_compression)
 
-            with open(tmppath, "rb") as parquet_file:
-                file_size = os.path.getsize(tmppath)
-                return self.load_table_from_file(
-                    parquet_file,
-                    destination,
-                    num_retries=num_retries,
-                    rewind=True,
-                    size=file_size,
-                    job_id=job_id,
-                    job_id_prefix=job_id_prefix,
-                    location=location,
-                    project=project,
-                    job_config=job_config,
-                    timeout=timeout,
+                dataframe.to_csv(
+                    tmppath,
+                    index=False,
+                    header=False,
+                    encoding="utf-8",
+                    float_format="%.17g",
+                    date_format="%Y-%m-%d %H:%M:%S.%f",
                 )
+
+                with open(tmppath, "rb") as csv_file:
+                    file_size = os.path.getsize(tmppath)
+                    return self.load_table_from_file(
+                        csv_file,
+                        destination,
+                        num_retries=num_retries,
+                        rewind=True,
+                        size=file_size,
+                        job_id=job_id,
+                        job_id_prefix=job_id_prefix,
+                        location=location,
+                        project=project,
+                        job_config=job_config,
+                        timeout=timeout,
+                    )
 
         finally:
             os.remove(tmppath)

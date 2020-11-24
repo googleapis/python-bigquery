@@ -1075,6 +1075,7 @@ class QueryJob(_AsyncJob):
 
     def _reload_query_results(self, retry=DEFAULT_RETRY, timeout=None):
         """Refresh the cached query results.
+
         Args:
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the call that retrieves query results.

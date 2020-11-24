@@ -1301,7 +1301,9 @@ class RowIterator(HTTPIterator):
             A subset of columns to select from this table.
         total_rows (Optional[int]):
             Total number of rows in the table.
-
+        first_page_response (Optional[dict]):
+            API response for the first page of results. These are returned when
+            the first page is requested.
     """
 
     def __init__(
@@ -1317,6 +1319,7 @@ class RowIterator(HTTPIterator):
         table=None,
         selected_fields=None,
         total_rows=None,
+        first_page_response=None,
     ):
         super(RowIterator, self).__init__(
             client,
@@ -1339,6 +1342,7 @@ class RowIterator(HTTPIterator):
         self._selected_fields = selected_fields
         self._table = table
         self._total_rows = total_rows
+        self._first_page_response = first_page_response
 
     def _is_completely_cached(self):
         """Check if all results are completely cached.
@@ -1382,6 +1386,11 @@ class RowIterator(HTTPIterator):
             Dict[str, object]:
                 The parsed JSON response of the next page's contents.
         """
+        if self._first_page_response:
+            response = self._first_page_response
+            self._first_page_response = None
+            return response
+
         params = self._get_query_params()
         if self._page_size is not None:
             if self.page_number and "startIndex" in params:

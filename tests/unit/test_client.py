@@ -6807,7 +6807,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(iterator.next_page_token, TOKEN)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path="/%s" % PATH, query_params={}, timeout=7.5
+            method="GET",
+            path="/%s" % PATH,
+            query_params={"formatOptions.useInt64Timestamp": True},
+            timeout=7.5,
         )
 
     def test_list_rows_w_start_index_w_page_size(self):
@@ -6856,20 +6859,30 @@ class TestClient(unittest.TestCase):
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0], Row(("Wylma Phlyntstone",), f2i))
         self.assertEqual(rows[1], Row(("Bhettye Rhubble",), f2i))
-        self.assertEqual(extra_params, {"startIndex": 1})
+        self.assertEqual(
+            extra_params, {"startIndex": 1, "formatOptions.useInt64Timestamp": True}
+        )
 
         conn.api_request.assert_has_calls(
             [
                 mock.call(
                     method="GET",
                     path="/%s" % PATH,
-                    query_params={"startIndex": 1, "maxResults": 2},
+                    query_params={
+                        "startIndex": 1,
+                        "maxResults": 2,
+                        "formatOptions.useInt64Timestamp": True,
+                    },
                     timeout=None,
                 ),
                 mock.call(
                     method="GET",
                     path="/%s" % PATH,
-                    query_params={"pageToken": "some-page-token", "maxResults": 2},
+                    query_params={
+                        "pageToken": "some-page-token",
+                        "maxResults": 2,
+                        "formatOptions.useInt64Timestamp": True,
+                    },
                     timeout=None,
                 ),
             ]
@@ -6920,6 +6933,7 @@ class TestClient(unittest.TestCase):
             iterator = client.list_rows(table, **test[0])
             six.next(iterator.pages)
             req = conn.api_request.call_args_list[i]
+            test[1]["formatOptions.useInt64Timestamp"] = True
             self.assertEqual(req[1]["query_params"], test[1], "for kwargs %s" % test[0])
 
     def test_list_rows_repeated_fields(self):
@@ -6979,7 +6993,10 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_once_with(
             method="GET",
             path="/%s" % PATH,
-            query_params={"selectedFields": "color,struct"},
+            query_params={
+                "selectedFields": "color,struct",
+                "formatOptions.useInt64Timestamp": True,
+            },
             timeout=None,
         )
 
@@ -7047,7 +7064,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(page_token, TOKEN)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path="/%s" % PATH, query_params={}, timeout=None
+            method="GET",
+            path="/%s" % PATH,
+            query_params={"formatOptions.useInt64Timestamp": True},
+            timeout=None,
         )
 
     def test_list_rows_with_missing_schema(self):
@@ -7109,7 +7129,10 @@ class TestClient(unittest.TestCase):
 
             rows = list(row_iter)
             conn.api_request.assert_called_once_with(
-                method="GET", path=tabledata_path, query_params={}, timeout=None
+                method="GET",
+                path=tabledata_path,
+                query_params={"formatOptions.useInt64Timestamp": True},
+                timeout=None,
             )
             self.assertEqual(row_iter.total_rows, 3, msg=repr(table))
             self.assertEqual(rows[0].name, "Phred Phlyntstone", msg=repr(table))

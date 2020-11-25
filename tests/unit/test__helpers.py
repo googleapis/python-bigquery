@@ -206,6 +206,22 @@ class Test_timestamp_from_json(unittest.TestCase):
             coerced, _EPOCH + datetime.timedelta(seconds=1, microseconds=234567)
         )
 
+    def test_w_string_int_value(self):
+        from google.cloud._helpers import _EPOCH
+
+        coerced = self._call_fut("1234567", object())
+        self.assertEqual(
+            coerced, _EPOCH + datetime.timedelta(seconds=1, microseconds=234567)
+        )
+
+    def test_w_int_value(self):
+        from google.cloud._helpers import _EPOCH
+
+        coerced = self._call_fut(1234567, object())
+        self.assertEqual(
+            coerced, _EPOCH + datetime.timedelta(seconds=1, microseconds=234567)
+        )
+
 
 class Test_timestamp_query_param_from_json(unittest.TestCase):
     def _call_fut(self, value, field):

@@ -310,8 +310,7 @@ class Model(object):
                 resource, types.Model()._pb, ignore_unknown_fields=True
             )
         except json_format.ParseError:
-            if this.model_type == 0:
-                resource["modelType"] = "MODEL_TYPE_UNSPECIFIED"
+            resource["modelType"] = "MODEL_TYPE_UNSPECIFIED"
             this._proto = json_format.ParseDict(
                 resource, types.Model()._pb, ignore_unknown_fields=True
             )

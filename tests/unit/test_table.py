@@ -818,7 +818,9 @@ class TestTable(unittest.TestCase, _SchemaBase):
         self.assertEqual(got.project, "string-project")
         self.assertEqual(got.dataset_id, "string_dataset")
         self.assertEqual(got.table_id, "string_table")
-        self.assertEqual(str(got.reference), "string-project.string_dataset.string_table")
+        self.assertEqual(
+            str(got.reference), "string-project.string_dataset.string_table"
+        )
 
     def test_from_string_legacy_string(self):
         cls = self._get_target_class()

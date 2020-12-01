@@ -760,7 +760,7 @@ class Table(object):
 
     @mview_query.deleter
     def mview_query(self):
-        """Delete SQL query defining the table as a view."""
+        """Delete SQL query defining the table as a materialized view."""
         self._properties.pop("materializedView", None)
 
     @property

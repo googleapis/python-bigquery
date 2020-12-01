@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ def test_materialized_view(capsys, bigquery_client, base_table_id, view_id):
     out, _ = capsys.readouterr()
     assert view_id in out
 
-    view = materialized_view.alter_materialized_view(override_values)
+    view = materialized_view.update_materialized_view(override_values)
     assert view.mview_enable_refresh
     assert view.mview_refresh_interval == datetime.timedelta(hours=1)
     out, _ = capsys.readouterr()

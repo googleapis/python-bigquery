@@ -41,19 +41,19 @@ def create_materialized_view(override_values={}):
     return view
 
 
-def alter_materialized_view(override_values={}):
-    # [START bigquery_alter_materialized_view]
+def update_materialized_view(override_values={}):
+    # [START bigquery_update_materialized_view]
     import datetime
     from google.cloud import bigquery
 
     bigquery_client = bigquery.Client()
 
     view_id = "my-project.my_dataset.my_materialized_view"
-    # [END bigquery_alter_materialized_view]
+    # [END bigquery_update_materialized_view]
     # To facilitate testing, we replace values with alternatives
     # provided by the testing harness.
     view_id = override_values.get("view_id", view_id)
-    # [START bigquery_alter_materialized_view]
+    # [START bigquery_update_materialized_view]
     view = bigquery.Table(view_id)
     view.mview_enable_refresh = True
     view.mview_refresh_interval = datetime.timedelta(hours=1)
@@ -65,7 +65,7 @@ def alter_materialized_view(override_values={}):
         ["mview_enable_refresh", "mview_refresh_interval"],
     )
     print(f"Updated {view.table_type}: {str(view.reference)}")
-    # [END bigquery_alter_materialized_view]
+    # [END bigquery_update_materialized_view]
     return view
 
 

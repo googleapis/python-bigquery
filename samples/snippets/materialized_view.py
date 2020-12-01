@@ -28,7 +28,7 @@ def create_materialized_view(override_values={}):
     base_table_id = override_values.get("base_table_id", view_id)
     # [START bigquery_create_materialized_view]
     view = bigquery.Table(view_id)
-    view.mv_query = f"""
+    view.mview_query = f"""
     SELECT product_id, SUM(clicks) AS sum_clicks
     FROM  `{base_table_id}`
     GROUP BY 1
@@ -55,14 +55,14 @@ def alter_materialized_view(override_values={}):
     view_id = override_values.get("view_id", view_id)
     # [START bigquery_alter_materialized_view]
     view = bigquery.Table(view_id)
-    view.mv_enable_refresh = True
-    view.mv_refresh_interval = datetime.timedelta(hours=1)
+    view.mview_enable_refresh = True
+    view.mview_refresh_interval = datetime.timedelta(hours=1)
 
     # Make an API request to update the materialized view.
     view = bigquery_client.update_table(
         view,
         # Pass in a list of any fields you need to modify.
-        ["mv_enable_refresh", "mv_refresh_interval"],
+        ["mview_enable_refresh", "mview_refresh_interval"],
     )
     print(f"Updated {view.table_type}: {str(view.reference)}")
     # [END bigquery_alter_materialized_view]

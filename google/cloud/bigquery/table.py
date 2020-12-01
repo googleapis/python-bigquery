@@ -297,9 +297,9 @@ class Table(object):
         "expires": "expirationTime",
         "external_data_configuration": "externalDataConfiguration",
         "friendly_name": "friendlyName",
-        "mv_enable_refresh": "materializedView",
-        "mv_query": "materializedView",
-        "mv_refresh_interval": "materializedView",
+        "mview_enable_refresh": "materializedView",
+        "mview_query": "materializedView",
+        "mview_refresh_interval": "materializedView",
         "partition_expiration": "timePartitioning",
         "partitioning_type": "timePartitioning",
         "time_partitioning": "timePartitioning",
@@ -746,25 +746,25 @@ class Table(object):
         self._properties["view"]["useLegacySql"] = value
 
     @property
-    def mv_query(self):
+    def mview_query(self):
         """Optional[str]: SQL query defining the table as a materialized
         view (defaults to :data:`None`).
         """
         return _helpers._get_sub_prop(self._properties, ["materializedView", "query"])
 
-    @mv_query.setter
-    def mv_query(self, value):
+    @mview_query.setter
+    def mview_query(self, value):
         _helpers._set_sub_prop(
             self._properties, ["materializedView", "query"], str(value)
         )
 
-    @mv_query.deleter
-    def mv_query(self):
+    @mview_query.deleter
+    def mview_query(self):
         """Delete SQL query defining the table as a view."""
         self._properties.pop("materializedView", None)
 
     @property
-    def mv_last_refresh_time(self):
+    def mview_last_refresh_time(self):
         """Optional[datetime.datetime]: Datetime at which the materialized view was last
         refreshed (:data:`None` until set from the server).
         """
@@ -778,7 +778,7 @@ class Table(object):
             )
 
     @property
-    def mv_enable_refresh(self):
+    def mview_enable_refresh(self):
         """Optional[bool]: Enable automatic refresh of the materialized view
         when the base table is updated. The default value is :data:`True`.
         """
@@ -786,14 +786,14 @@ class Table(object):
             self._properties, ["materializedView", "enableRefresh"]
         )
 
-    @mv_enable_refresh.setter
-    def mv_enable_refresh(self, value):
+    @mview_enable_refresh.setter
+    def mview_enable_refresh(self, value):
         return _helpers._set_sub_prop(
             self._properties, ["materializedView", "enableRefresh"], value
         )
 
     @property
-    def mv_refresh_interval(self):
+    def mview_refresh_interval(self):
         """Optional[datetime.timedelta]: The maximum frequency at which this
         materialized view will be refreshed. The default value is 1800000
         milliseconds (30 minutes).
@@ -804,8 +804,8 @@ class Table(object):
         if refresh_interval is not None:
             return datetime.timedelta(milliseconds=int(refresh_interval))
 
-    @mv_refresh_interval.setter
-    def mv_refresh_interval(self, value):
+    @mview_refresh_interval.setter
+    def mview_refresh_interval(self, value):
         if value is None:
             refresh_interval_ms = None
         else:

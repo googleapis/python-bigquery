@@ -78,13 +78,13 @@ def test_materialized_view(capsys, bigquery_client, base_table_id, view_id):
         "view_id": view_id,
     }
     view = materialized_view.create_materialized_view(override_values)
-    assert base_table_id in view.mv_query
+    assert base_table_id in view.mview_query
     out, _ = capsys.readouterr()
     assert view_id in out
 
     view = materialized_view.alter_materialized_view(override_values)
-    assert view.mv_enable_refresh
-    assert view.mv_refresh_interval == datetime.timedelta(hours=1)
+    assert view.mview_enable_refresh
+    assert view.mview_refresh_interval == datetime.timedelta(hours=1)
     out, _ = capsys.readouterr()
     assert view_id in out
 

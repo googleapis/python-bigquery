@@ -820,47 +820,47 @@ class TestTable(unittest.TestCase, _SchemaBase):
         with self.assertRaises(ValueError):
             table.labels = 12345
 
-    def test_mv_query(self):
+    def test_mview_query(self):
         table = self._make_one()
-        self.assertIsNone(table.mv_query)
-        table.mv_query = "SELECT name, SUM(number) FROM dset.tbl GROUP BY 1"
+        self.assertIsNone(table.mview_query)
+        table.mview_query = "SELECT name, SUM(number) FROM dset.tbl GROUP BY 1"
         self.assertEqual(
-            table.mv_query, "SELECT name, SUM(number) FROM dset.tbl GROUP BY 1"
+            table.mview_query, "SELECT name, SUM(number) FROM dset.tbl GROUP BY 1"
         )
-        del table.mv_query
-        self.assertIsNone(table.mv_query)
+        del table.mview_query
+        self.assertIsNone(table.mview_query)
 
-    def test_mv_last_refresh_time(self):
+    def test_mview_last_refresh_time(self):
         table = self._make_one()
-        self.assertIsNone(table.mv_last_refresh_time)
+        self.assertIsNone(table.mview_last_refresh_time)
         table._properties["materializedView"] = {
             "lastRefreshTime": "1606751842496",
         }
         self.assertEqual(
-            table.mv_last_refresh_time,
+            table.mview_last_refresh_time,
             datetime.datetime(2020, 11, 30, 15, 57, 22, 496000, tzinfo=pytz.utc),
         )
 
-    def test_mv_enable_refresh(self):
+    def test_mview_enable_refresh(self):
         table = self._make_one()
-        self.assertIsNone(table.mv_enable_refresh)
-        table.mv_enable_refresh = True
-        self.assertTrue(table.mv_enable_refresh)
-        table.mv_enable_refresh = False
-        self.assertFalse(table.mv_enable_refresh)
-        table.mv_enable_refresh = None
-        self.assertIsNone(table.mv_enable_refresh)
+        self.assertIsNone(table.mview_enable_refresh)
+        table.mview_enable_refresh = True
+        self.assertTrue(table.mview_enable_refresh)
+        table.mview_enable_refresh = False
+        self.assertFalse(table.mview_enable_refresh)
+        table.mview_enable_refresh = None
+        self.assertIsNone(table.mview_enable_refresh)
 
-    def test_mv_refresh_interval(self):
+    def test_mview_refresh_interval(self):
         table = self._make_one()
-        self.assertIsNone(table.mv_refresh_interval)
-        table.mv_refresh_interval = datetime.timedelta(minutes=30)
-        self.assertEqual(table.mv_refresh_interval, datetime.timedelta(minutes=30))
+        self.assertIsNone(table.mview_refresh_interval)
+        table.mview_refresh_interval = datetime.timedelta(minutes=30)
+        self.assertEqual(table.mview_refresh_interval, datetime.timedelta(minutes=30))
         self.assertEqual(
             table._properties["materializedView"]["refreshIntervalMs"], "1800000"
         )
-        table.mv_refresh_interval = None
-        self.assertIsNone(table.mv_refresh_interval)
+        table.mview_refresh_interval = None
+        self.assertIsNone(table.mview_refresh_interval)
 
     def test_from_string(self):
         cls = self._get_target_class()

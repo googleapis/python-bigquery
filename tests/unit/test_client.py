@@ -6739,42 +6739,21 @@ class TestClient(unittest.TestCase):
             self.DS_ID,
             self.TABLE_ID,
         )
-        WHEN_TS = 1437767599.006
-        WHEN = datetime.datetime.utcfromtimestamp(WHEN_TS).replace(tzinfo=UTC)
-        WHEN_1 = WHEN + datetime.timedelta(seconds=1)
-        WHEN_2 = WHEN + datetime.timedelta(seconds=2)
+        WHEN_TS = 1437767599006000
+
+        WHEN = datetime.datetime.utcfromtimestamp(WHEN_TS / 1e6).replace(tzinfo=UTC)
+        WHEN_1 = WHEN + datetime.timedelta(microseconds=1)
+        WHEN_2 = WHEN + datetime.timedelta(microseconds=2)
         ROWS = 1234
         TOKEN = "TOKEN"
-
-        def _bigquery_timestamp_float_repr(ts_float):
-            # Preserve microsecond precision for E+09 timestamps
-            return "%0.15E" % (ts_float,)
 
         DATA = {
             "totalRows": str(ROWS),
             "pageToken": TOKEN,
             "rows": [
-                {
-                    "f": [
-                        {"v": "Phred Phlyntstone"},
-                        {"v": "32"},
-                        {"v": _bigquery_timestamp_float_repr(WHEN_TS)},
-                    ]
-                },
-                {
-                    "f": [
-                        {"v": "Bharney Rhubble"},
-                        {"v": "33"},
-                        {"v": _bigquery_timestamp_float_repr(WHEN_TS + 1)},
-                    ]
-                },
-                {
-                    "f": [
-                        {"v": "Wylma Phlyntstone"},
-                        {"v": "29"},
-                        {"v": _bigquery_timestamp_float_repr(WHEN_TS + 2)},
-                    ]
-                },
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}, {"v": WHEN_TS},]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}, {"v": WHEN_TS + 1},]},
+                {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}, {"v": WHEN_TS + 2},]},
                 {"f": [{"v": "Bhettye Rhubble"}, {"v": None}, {"v": None}]},
             ],
         }

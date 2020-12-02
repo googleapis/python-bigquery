@@ -623,7 +623,7 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     assert client_info.user_agent == "ipython-" + IPython.__version__
 
     query_job_mock.to_dataframe.assert_called_once_with(
-        bqstorage_client=bqstorage_instance_mock, progress_bar_type=None
+        bqstorage_client=bqstorage_instance_mock, progress_bar_type="tqdm"
     )
 
     assert isinstance(return_value, pandas.DataFrame)
@@ -666,7 +666,7 @@ def test_bigquery_magic_with_rest_client_requested(monkeypatch):
 
         bqstorage_mock.assert_not_called()
         query_job_mock.to_dataframe.assert_called_once_with(
-            bqstorage_client=None, progress_bar_type=None
+            bqstorage_client=None, progress_bar_type="tqdm"
         )
 
     assert isinstance(return_value, pandas.DataFrame)

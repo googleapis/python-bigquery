@@ -2113,7 +2113,8 @@ class Client(ClientWithProject):
 
             Due to the way REPEATED fields are encoded in the ``parquet`` file
             format, a mismatch with the existing table schema can occur, and
-            100% compatibility cannot be guaranteed for REPEATED fields.
+            100% compatibility cannot be guaranteed for REPEATED fields when
+            using the parquet format.
 
             https://github.com/googleapis/python-bigquery/issues/17
 
@@ -2153,6 +2154,14 @@ class Client(ClientWithProject):
                 column names matching those of the dataframe. The BigQuery
                 schema is used to determine the correct data type conversion.
                 Indexes are not loaded. Requires the :mod:`pyarrow` library.
+
+                By default, this method uses the parquet source format. To
+                override this, supply a value for
+                :attr:`~google.cloud.bigquery.job.LoadJobConfig.source_format`
+                with the format name. Currently only
+                :attr:`~google.cloud.bigquery.job.SourceFormat.CSV` and
+                :attr:`~google.cloud.bigquery.job.SourceFormat.PARQUET` are
+                supported.
             parquet_compression (Optional[str]):
                  [Beta] The compression method to use if intermittently
                  serializing ``dataframe`` to a parquet file.
@@ -2181,10 +2190,6 @@ class Client(ClientWithProject):
                 If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
                 class.
         """
-        if pyarrow is None:
-            # pyarrow is now the only supported  parquet engine.
-            raise ValueError("This method requires pyarrow to be installed")
-
         job_id = _make_job_id(job_id, job_id_prefix)
 
         if job_config:
@@ -2197,7 +2202,7 @@ class Client(ClientWithProject):
         else:
             job_config = job.LoadJobConfig()
 
-        supported_formats = (job.SourceFormat.CSV, job.SourceFormat.PARQUET)
+        supported_formats = {job.SourceFormat.CSV, job.SourceFormat.PARQUET}
         if job_config.source_format is None:
             # default value
             job_config.source_format = job.SourceFormat.PARQUET
@@ -2207,6 +2212,10 @@ class Client(ClientWithProject):
                     job_config.source_format
                 )
             )
+
+        if pyarrow is None and job_config.source_format == job.SourceFormat.PARQUET:
+            # pyarrow is now the only supported  parquet engine.
+            raise ValueError("This method requires pyarrow to be installed")
 
         if location is None:
             location = self.location
@@ -2247,7 +2256,7 @@ class Client(ClientWithProject):
             )
 
         tmpfd, tmppath = tempfile.mkstemp(
-            suffix="_job_{}.{}".format(job_id[:8], job_config.source_format.lower(),)
+            suffix="_job_{}.{}".format(job_id[:8], job_config.source_format.lower())
         )
         os.close(tmpfd)
 
@@ -2268,22 +2277,6 @@ class Client(ClientWithProject):
                 else:
                     dataframe.to_parquet(tmppath, compression=parquet_compression)
 
-                with open(tmppath, "rb") as parquet_file:
-                    file_size = os.path.getsize(tmppath)
-                    return self.load_table_from_file(
-                        parquet_file,
-                        destination,
-                        num_retries=num_retries,
-                        rewind=True,
-                        size=file_size,
-                        job_id=job_id,
-                        job_id_prefix=job_id_prefix,
-                        location=location,
-                        project=project,
-                        job_config=job_config,
-                        timeout=timeout,
-                    )
-
             else:
 
                 dataframe.to_csv(
@@ -2295,21 +2288,21 @@ class Client(ClientWithProject):
                     date_format="%Y-%m-%d %H:%M:%S.%f",
                 )
 
-                with open(tmppath, "rb") as csv_file:
-                    file_size = os.path.getsize(tmppath)
-                    return self.load_table_from_file(
-                        csv_file,
-                        destination,
-                        num_retries=num_retries,
-                        rewind=True,
-                        size=file_size,
-                        job_id=job_id,
-                        job_id_prefix=job_id_prefix,
-                        location=location,
-                        project=project,
-                        job_config=job_config,
-                        timeout=timeout,
-                    )
+            with open(tmppath, "rb") as tmpfile:
+                file_size = os.path.getsize(tmppath)
+                return self.load_table_from_file(
+                    tmpfile,
+                    destination,
+                    num_retries=num_retries,
+                    rewind=True,
+                    size=file_size,
+                    job_id=job_id,
+                    job_id_prefix=job_id_prefix,
+                    location=location,
+                    project=project,
+                    job_config=job_config,
+                    timeout=timeout,
+                )
 
         finally:
             os.remove(tmppath)

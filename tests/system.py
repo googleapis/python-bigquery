@@ -1169,7 +1169,7 @@ class TestBigQuery(unittest.TestCase):
     def test_load_table_from_dataframe_w_explicit_schema_source_format_csv(self):
         from google.cloud.bigquery.job import SourceFormat
 
-        scalars_schema = (
+        table_schema = (
             bigquery.SchemaField("bool_col", "BOOLEAN"),
             bigquery.SchemaField("bytes_col", "BYTES"),
             bigquery.SchemaField("date_col", "DATE"),
@@ -1181,15 +1181,6 @@ class TestBigQuery(unittest.TestCase):
             bigquery.SchemaField("str_col", "STRING"),
             bigquery.SchemaField("time_col", "TIME"),
             bigquery.SchemaField("ts_col", "TIMESTAMP"),
-        )
-        table_schema = scalars_schema + (
-            # TODO: Array columns can't be read due to NULLABLE versus REPEATED
-            #       mode mismatch. See:
-            #       https://issuetracker.google.com/133415569#comment3
-            # bigquery.SchemaField("array_col", "INTEGER", mode="REPEATED"),
-            # TODO: Support writing StructArrays to Parquet. See:
-            #       https://jira.apache.org/jira/browse/ARROW-2587
-            # bigquery.SchemaField("struct_col", "RECORD", fields=scalars_schema),
         )
         df_data = collections.OrderedDict(
             [
@@ -1261,6 +1252,52 @@ class TestBigQuery(unittest.TestCase):
         table = Config.CLIENT.get_table(table_id)
         self.assertEqual(tuple(table.schema), table_schema)
         self.assertEqual(table.num_rows, 3)
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_load_table_from_dataframe_w_explicit_schema_source_format_csv_floats(self):
+        from google.cloud.bigquery.job import SourceFormat
+
+        table_schema = (bigquery.SchemaField("float_col", "FLOAT"),)
+        df_data = collections.OrderedDict(
+            [
+                (
+                    "float_col",
+                    [
+                        0.14285714285714285,
+                        0.51428571485748,
+                        0.87128748,
+                        1.807960649,
+                        2.0679610649,
+                        2.4406779661016949,
+                        3.7148514257,
+                        3.8571428571428572,
+                        1.51251252e40,
+                    ],
+                ),
+            ]
+        )
+        dataframe = pandas.DataFrame(df_data, dtype="object", columns=df_data.keys())
+
+        dataset_id = _make_dataset_id("bq_load_test")
+        self.temp_dataset(dataset_id)
+        table_id = "{}.{}.load_table_from_dataframe_w_explicit_schema_csv".format(
+            Config.CLIENT.project, dataset_id
+        )
+
+        job_config = bigquery.LoadJobConfig(
+            schema=table_schema, source_format=SourceFormat.CSV
+        )
+        load_job = Config.CLIENT.load_table_from_dataframe(
+            dataframe, table_id, job_config=job_config
+        )
+        load_job.result()
+
+        table = Config.CLIENT.get_table(table_id)
+        rows = self._fetch_single_page(table)
+        floats = [r.values()[0] for r in rows]
+        self.assertEqual(tuple(table.schema), table_schema)
+        self.assertEqual(table.num_rows, 9)
+        self.assertEqual(floats, df_data["float_col"])
 
     def test_load_table_from_json_schema_autodetect(self):
         json_rows = [

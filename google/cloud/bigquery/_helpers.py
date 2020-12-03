@@ -188,6 +188,7 @@ _CELLDATA_FROM_JSON = {
     "FLOAT": _float_from_json,
     "FLOAT64": _float_from_json,
     "NUMERIC": _decimal_from_json,
+    "BIGNUMERIC": _decimal_from_json,
     "BOOLEAN": _bool_from_json,
     "BOOL": _bool_from_json,
     "STRING": _string_from_json,

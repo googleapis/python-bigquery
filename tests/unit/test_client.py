@@ -6751,9 +6751,9 @@ class TestClient(unittest.TestCase):
             "totalRows": str(ROWS),
             "pageToken": TOKEN,
             "rows": [
-                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}, {"v": WHEN_TS},]},
-                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}, {"v": WHEN_TS + 1},]},
-                {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}, {"v": WHEN_TS + 2},]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}, {"v": WHEN_TS}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}, {"v": WHEN_TS + 1}]},
+                {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}, {"v": WHEN_TS + 2}]},
                 {"f": [{"v": "Bhettye Rhubble"}, {"v": None}, {"v": None}]},
             ],
         }

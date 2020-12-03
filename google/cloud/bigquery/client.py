@@ -2111,8 +2111,10 @@ class Client(ClientWithProject):
 
         .. note::
 
-            Due to the way REPEATED fields are encoded in the ``parquet`` file
-            format, a mismatch with the existing table schema can occur, and
+            REPEATED fields are NOT supported when using the CSV source format.
+            They are supported when using the PARQUET source format, but
+            due to the way they are encoded in the ``parquet`` file,
+            a mismatch with the existing table schema can occur, so
             100% compatibility cannot be guaranteed for REPEATED fields when
             using the parquet format.
 

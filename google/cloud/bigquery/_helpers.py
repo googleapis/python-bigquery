@@ -82,16 +82,6 @@ def _timestamp_from_json(value, field):
     """Coerce 'value' to a datetime, if set or not nullable."""
     if _not_null(value, field):
         # value will be a integer in seconds, to microsecond precision, in UTC.
-
-        # if value is not None:
-        #     if type(value) == int:
-        #         value = value
-        #     elif type(value) == float:
-        #         value = 1e6 * float(value)
-        #     elif value.isdigit():
-        #         value = int(value)
-        #     else:
-        #         value = 1e6 * float(value)
         return _datetime_from_microseconds(int(value))
 
 

@@ -6934,30 +6934,15 @@ class TestClient(unittest.TestCase):
         resource = {
             "totalRows": 3,
             "rows": [
-                {
-                    "f": [
-                        {"v": "-1.23456789"},
-                        {"v": "-123456789.987654321"},
-                    ]
-                },
-                {
-                    "f": [
-                        {"v": None},
-                        {"v": "3.141592653589793238462643383279502884"},
-                    ]
-                },
-                {
-                    "f": [
-                        {"v": "2718281828459045235360287471.352662497"},
-                        {"v": None},
-                    ]
-                },
+                {"f": [{"v": "-1.23456789"}, {"v": "-123456789.987654321"}]},
+                {"f": [{"v": None}, {"v": "3.141592653589793238462643383279502884"}]},
+                {"f": [{"v": "2718281828459045235360287471.352662497"}, {"v": None}]},
             ],
         }
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        conn = client._connection = make_connection(resource)
+        client._connection = make_connection(resource)
         schema = [
             SchemaField("num", "NUMERIC"),
             SchemaField("bignum", "BIGNUMERIC"),
@@ -6971,8 +6956,12 @@ class TestClient(unittest.TestCase):
         self.assertEqual(rows[0]["num"], decimal.Decimal("-1.23456789"))
         self.assertEqual(rows[0]["bignum"], decimal.Decimal("-123456789.987654321"))
         self.assertIsNone(rows[1]["num"])
-        self.assertEqual(rows[1]["bignum"], decimal.Decimal("3.141592653589793238462643383279502884"))
-        self.assertEqual(rows[2]["num"], decimal.Decimal("2718281828459045235360287471.352662497"))
+        self.assertEqual(
+            rows[1]["bignum"], decimal.Decimal("3.141592653589793238462643383279502884")
+        )
+        self.assertEqual(
+            rows[2]["num"], decimal.Decimal("2718281828459045235360287471.352662497")
+        )
         self.assertIsNone(rows[2]["bignum"])
 
     def test_list_rows_repeated_fields(self):

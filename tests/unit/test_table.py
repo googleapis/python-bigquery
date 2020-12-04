@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime as dt
+import datetime
 import logging
 import time
 import unittest
@@ -21,6 +21,7 @@ import warnings
 import mock
 import pkg_resources
 import pytest
+import pytz
 import six
 
 import google.api_core.exceptions
@@ -292,6 +293,13 @@ class TestTable(unittest.TestCase, _SchemaBase):
         return Table
 
     def _make_one(self, *args, **kw):
+        from google.cloud.bigquery.dataset import DatasetReference
+
+        if len(args) == 0:
+            dataset = DatasetReference(self.PROJECT, self.DS_ID)
+            table_ref = dataset.table(self.TABLE_NAME)
+            args = (table_ref,)
+
         return self._get_target_class()(*args, **kw)
 
     def _setUpConstants(self):
@@ -812,6 +820,48 @@ class TestTable(unittest.TestCase, _SchemaBase):
         with self.assertRaises(ValueError):
             table.labels = 12345
 
+    def test_mview_query(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_query)
+        table.mview_query = "SELECT name, SUM(number) FROM dset.tbl GROUP BY 1"
+        self.assertEqual(
+            table.mview_query, "SELECT name, SUM(number) FROM dset.tbl GROUP BY 1"
+        )
+        del table.mview_query
+        self.assertIsNone(table.mview_query)
+
+    def test_mview_last_refresh_time(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_last_refresh_time)
+        table._properties["materializedView"] = {
+            "lastRefreshTime": "1606751842496",
+        }
+        self.assertEqual(
+            table.mview_last_refresh_time,
+            datetime.datetime(2020, 11, 30, 15, 57, 22, 496000, tzinfo=pytz.utc),
+        )
+
+    def test_mview_enable_refresh(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_enable_refresh)
+        table.mview_enable_refresh = True
+        self.assertTrue(table.mview_enable_refresh)
+        table.mview_enable_refresh = False
+        self.assertFalse(table.mview_enable_refresh)
+        table.mview_enable_refresh = None
+        self.assertIsNone(table.mview_enable_refresh)
+
+    def test_mview_refresh_interval(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_refresh_interval)
+        table.mview_refresh_interval = datetime.timedelta(minutes=30)
+        self.assertEqual(table.mview_refresh_interval, datetime.timedelta(minutes=30))
+        self.assertEqual(
+            table._properties["materializedView"]["refreshIntervalMs"], "1800000"
+        )
+        table.mview_refresh_interval = None
+        self.assertIsNone(table.mview_refresh_interval)
+
     def test_from_string(self):
         cls = self._get_target_class()
         got = cls.from_string("string-project.string_dataset.string_table")
@@ -1286,7 +1336,6 @@ class TestTableListItem(unittest.TestCase):
         return self._get_target_class()(*args, **kw)
 
     def _setUpConstants(self):
-        import datetime
         from google.cloud._helpers import UTC
 
         self.WHEN_TS = 1437767599.125
@@ -2402,8 +2451,8 @@ class TestRowIterator(unittest.TestCase):
 
         schema = [SchemaField("some_timestamp", "TIMESTAMP")]
         rows = [
-            {"f": [{"v": "81953424000.0"}]},  # 4567-01-01 00:00:00  UTC
-            {"f": [{"v": "253402214400.0"}]},  # 9999-12-31 00:00:00  UTC
+            {"f": [{"v": "81953424000000000"}]},  # 4567-01-01 00:00:00  UTC
+            {"f": [{"v": "253402214400000000"}]},  # 9999-12-31 00:00:00  UTC
         ]
         path = "/foo"
         api_request = mock.Mock(return_value={"rows": rows})
@@ -2413,7 +2462,7 @@ class TestRowIterator(unittest.TestCase):
 
         tzinfo = None
         if PYARROW_VERSION >= PYARROW_TIMESTAMP_VERSION:
-            tzinfo = dt.timezone.utc
+            tzinfo = datetime.timezone.utc
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 2)  # verify the number of rows
@@ -2421,8 +2470,8 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(
             list(df["some_timestamp"]),
             [
-                dt.datetime(4567, 1, 1, tzinfo=tzinfo),
-                dt.datetime(9999, 12, 31, tzinfo=tzinfo),
+                datetime.datetime(4567, 1, 1, tzinfo=tzinfo),
+                datetime.datetime(9999, 12, 31, tzinfo=tzinfo),
             ],
         )
 
@@ -2454,7 +2503,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(list(df.columns), ["some_datetime"])
         self.assertEqual(
             list(df["some_datetime"]),
-            [dt.datetime(4567, 1, 1), dt.datetime(9999, 12, 31)],
+            [datetime.datetime(4567, 1, 1), datetime.datetime(9999, 12, 31)],
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
@@ -2626,9 +2675,9 @@ class TestRowIterator(unittest.TestCase):
         ]
         row_data = [
             [None, None, None, None, None, None],
-            ["1.4338368E9", "420", "1.1", u"Cash", "true", "1999-12-01"],
-            ["1.3878117E9", "2580", "17.7", u"Cash", "false", "1953-06-14"],
-            ["1.3855653E9", "2280", "4.4", u"Credit", "true", "1981-11-04"],
+            ["1433836800000000", "420", "1.1", u"Cash", "true", "1999-12-01"],
+            ["1387811700000000", "2580", "17.7", u"Cash", "false", "1953-06-14"],
+            ["1385565300000000", "2280", "4.4", u"Credit", "true", "1981-11-04"],
         ]
         rows = [{"f": [{"v": field} for field in row]} for row in row_data]
         path = "/foo"
@@ -2666,9 +2715,17 @@ class TestRowIterator(unittest.TestCase):
             SchemaField("date", "DATE"),
         ]
         row_data = [
-            ["1.4338368E9", "420", "1.1", "1.77", u"Cash", "true", "1999-12-01"],
-            ["1.3878117E9", "2580", "17.7", "28.5", u"Cash", "false", "1953-06-14"],
-            ["1.3855653E9", "2280", "4.4", "7.1", u"Credit", "true", "1981-11-04"],
+            ["1433836800000000", "420", "1.1", "1.77", u"Cash", "true", "1999-12-01"],
+            [
+                "1387811700000000",
+                "2580",
+                "17.7",
+                "28.5",
+                u"Cash",
+                "false",
+                "1953-06-14",
+            ],
+            ["1385565300000000", "2280", "4.4", "7.1", u"Credit", "true", "1981-11-04"],
         ]
         rows = [{"f": [{"v": field} for field in row]} for row in row_data]
         path = "/foo"

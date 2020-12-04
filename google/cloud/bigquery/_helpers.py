@@ -348,6 +348,7 @@ _SCALAR_VALUE_TO_JSON_ROW = {
     "FLOAT": _float_to_json,
     "FLOAT64": _float_to_json,
     "NUMERIC": _decimal_to_json,
+    "BIGNUMERIC": _decimal_to_json,
     "BOOLEAN": _bool_to_json,
     "BOOL": _bool_to_json,
     "BYTES": _bytes_to_json,

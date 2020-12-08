@@ -41,5 +41,6 @@ python3.6 -m nox --version
 if [[ -n "${NOX_SESSION:-}" ]]; then
     python3.6 -m nox -s "${NOX_SESSION:-}"
 else
-    python3.6 -m nox
+    # docfx session runs in the 'docs-presubmit' presubmit
+    python3.6 -m nox -k "not docfx"
 fi

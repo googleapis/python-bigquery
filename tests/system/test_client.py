@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import base64
-import collections
 import concurrent.futures
 import csv
 import datetime
@@ -21,17 +20,16 @@ import decimal
 import json
 import operator
 import os
+import pathlib
 import time
 import unittest
 import uuid
-import re
 
 import requests
 import six
 import psutil
-import pytest
-import pytz
-import pkg_resources
+
+from . import helpers
 
 try:
     from google.cloud import bigquery_storage
@@ -39,32 +37,15 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 
 try:
-    import fastavro  # to parse BQ storage client results
-except ImportError:  # pragma: NO COVER
-    fastavro = None
-
-try:
-    import pandas
-except ImportError:  # pragma: NO COVER
-    pandas = None
-try:
     import pyarrow
     import pyarrow.types
 except ImportError:  # pragma: NO COVER
     pyarrow = None
-try:
-    import IPython
-    from IPython.utils import io
-    from IPython.testing import tools
-    from IPython.terminal import interactiveshell
-except ImportError:  # pragma: NO COVER
-    IPython = None
 
 from google.api_core.exceptions import PreconditionFailed
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import ClientError
 from google.api_core.exceptions import Conflict
-from google.api_core.exceptions import Forbidden
 from google.api_core.exceptions import GoogleAPICallError
 from google.api_core.exceptions import NotFound
 from google.api_core.exceptions import InternalServerError
@@ -77,7 +58,6 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.table import Table
 from google.cloud._helpers import UTC
-from google.cloud.bigquery import dbapi
 from google.cloud import storage
 
 from test_utils.retry import RetryErrors
@@ -87,7 +67,7 @@ from test_utils.system import unique_resource_id
 
 
 JOB_TIMEOUT = 120  # 2 minutes
-WHERE = os.path.abspath(os.path.dirname(__file__))
+DATA_PATH = pathlib.Path(__file__).parent.parent / "data"
 
 # Common table data used for many tests.
 ROWS = [
@@ -128,19 +108,6 @@ retry_storage_errors = RetryErrors(
     (TooManyRequests, InternalServerError, ServiceUnavailable)
 )
 
-PANDAS_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
-PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("0.17.0")
-
-if pandas:
-    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
-else:
-    PANDAS_INSTALLED_VERSION = None
-
-if pyarrow:
-    PYARROW_INSTALLED_VERSION = pkg_resources.get_distribution("pyarrow").parsed_version
-else:
-    PYARROW_INSTALLED_VERSION = None
-
 
 def _has_rows(result):
     return len(result) > 0
@@ -150,25 +117,13 @@ def _make_dataset_id(prefix):
     return "%s%s" % (prefix, unique_resource_id())
 
 
-def _load_json_schema(filename="data/schema.json"):
+def _load_json_schema(filename="schema.json"):
     from google.cloud.bigquery.table import _parse_schema_resource
 
-    json_filename = os.path.join(WHERE, filename)
+    json_filename = DATA_PATH / filename
 
     with open(json_filename, "r") as schema_file:
         return _parse_schema_resource(json.load(schema_file))
-
-
-def _rate_limit_exceeded(forbidden):
-    """Predicate: pass only exceptions with 'rateLimitExceeded' as reason."""
-    return any(error["reason"] == "rateLimitExceeded" for error in forbidden._errors)
-
-
-# We need to wait to stay within the rate limits.
-# The alternative outcome is a 403 Forbidden response from upstream, which
-# they return instead of the more appropriate 429.
-# See https://cloud.google.com/bigquery/quota-policy
-retry_403 = RetryErrors(Forbidden, error_predicate=_rate_limit_exceeded)
 
 
 class Config(object):
@@ -185,7 +140,6 @@ class Config(object):
 
 def setUpModule():
     Config.CLIENT = bigquery.Client()
-    Config.CURSOR = dbapi.connect(Config.CLIENT).cursor()
 
 
 class TestBigQuery(unittest.TestCase):
@@ -267,7 +221,7 @@ class TestBigQuery(unittest.TestCase):
         dataset_arg = Dataset(dataset_ref)
         dataset_arg.friendly_name = "Friendly"
         dataset_arg.description = "Description"
-        dataset = retry_403(client.create_dataset)(dataset_arg)
+        dataset = helpers.retry_403(client.create_dataset)(dataset_arg)
         self.to_delete.append(dataset)
         dataset_ref = bigquery.DatasetReference(project, dataset_id)
 
@@ -350,7 +304,7 @@ class TestBigQuery(unittest.TestCase):
         table_arg = Table(dataset.table(table_id), schema=SCHEMA)
         self.assertFalse(_table_exists(table_arg))
 
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
 
         self.assertTrue(_table_exists(table))
@@ -385,7 +339,7 @@ class TestBigQuery(unittest.TestCase):
         table_arg = Table(dataset.table(table_id), schema=schema)
         self.assertFalse(_table_exists(table_arg))
 
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
 
         self.assertTrue(_table_exists(table))
@@ -421,7 +375,7 @@ class TestBigQuery(unittest.TestCase):
         table_arg.time_partitioning = TimePartitioning(field="transaction_time")
 
         table_arg.clustering_fields = ["user_email", "store_code"]
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
 
         self.assertTrue(_table_exists(table))
@@ -435,7 +389,7 @@ class TestBigQuery(unittest.TestCase):
         dataset_id = _make_dataset_id("delete_table_true_with_string")
         project = Config.CLIENT.project
         dataset_ref = bigquery.DatasetReference(project, dataset_id)
-        retry_403(Config.CLIENT.create_dataset)(Dataset(dataset_ref))
+        helpers.retry_403(Config.CLIENT.create_dataset)(Dataset(dataset_ref))
         self.assertTrue(_dataset_exists(dataset_ref))
         Config.CLIENT.delete_dataset(dataset_id)
         self.assertFalse(_dataset_exists(dataset_ref))
@@ -444,11 +398,11 @@ class TestBigQuery(unittest.TestCase):
         dataset_id = _make_dataset_id("delete_table_true_with_content")
         project = Config.CLIENT.project
         dataset_ref = bigquery.DatasetReference(project, dataset_id)
-        dataset = retry_403(Config.CLIENT.create_dataset)(Dataset(dataset_ref))
+        dataset = helpers.retry_403(Config.CLIENT.create_dataset)(Dataset(dataset_ref))
 
         table_id = "test_table"
         table_arg = Table(dataset.table(table_id), schema=SCHEMA)
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         Config.CLIENT.delete_dataset(dataset, delete_contents=True)
 
         self.assertFalse(_table_exists(table))
@@ -460,7 +414,7 @@ class TestBigQuery(unittest.TestCase):
         table_id = "test_table"
         table_arg = Table(dataset.table(table_id), schema=SCHEMA)
 
-        retry_403(Config.CLIENT.create_table)(table_arg)
+        helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         with self.assertRaises(exceptions.BadRequest):
             Config.CLIENT.delete_dataset(dataset)
 
@@ -509,7 +463,7 @@ class TestBigQuery(unittest.TestCase):
         ]
         for table_name in tables_to_create:
             table = Table(dataset.table(table_name), schema=SCHEMA)
-            created_table = retry_403(Config.CLIENT.create_table)(table)
+            created_table = helpers.retry_403(Config.CLIENT.create_table)(table)
             self.to_delete.insert(0, created_table)
 
         # Retrieve the tables.
@@ -539,7 +493,7 @@ class TestBigQuery(unittest.TestCase):
         TABLE_NAME = "test_table"
         table_arg = Table(dataset.table(TABLE_NAME), schema=SCHEMA)
         self.assertFalse(_table_exists(table_arg))
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
         self.assertTrue(_table_exists(table))
         self.assertIsNone(table.friendly_name)
@@ -579,7 +533,7 @@ class TestBigQuery(unittest.TestCase):
         TABLE_NAME = "test_table"
         table_arg = Table(dataset.table(TABLE_NAME), schema=SCHEMA)
         self.assertFalse(_table_exists(table_arg))
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
         self.assertTrue(_table_exists(table))
         voter = bigquery.SchemaField("voter", "BOOLEAN", mode="NULLABLE")
@@ -679,7 +633,7 @@ class TestBigQuery(unittest.TestCase):
         ]
         table_arg = Table(dataset.table(TABLE_ID), schema=schema)
         self.assertFalse(_table_exists(table_arg))
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
         self.assertTrue(_table_exists(table))
 
@@ -717,7 +671,7 @@ class TestBigQuery(unittest.TestCase):
         table = Table(table_ref)
         self.to_delete.insert(0, table)
 
-        with open(os.path.join(WHERE, "data", "colors.avro"), "rb") as avrof:
+        with open(DATA_PATH / "colors.avro", "rb") as avrof:
             config = bigquery.LoadJobConfig()
             config.source_format = SourceFormat.AVRO
             config.write_disposition = WriteDisposition.WRITE_TRUNCATE
@@ -736,398 +690,6 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(
             sorted(row_tuples, key=by_wavelength), sorted(ROWS, key=by_wavelength)
         )
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_automatic_schema(self):
-        """Test that a DataFrame with dtypes that map well to BigQuery types
-        can be uploaded without specifying a schema.
-
-        https://github.com/googleapis/google-cloud-python/issues/9044
-        """
-        df_data = collections.OrderedDict(
-            [
-                ("bool_col", pandas.Series([True, False, True], dtype="bool")),
-                (
-                    "ts_col",
-                    pandas.Series(
-                        [
-                            datetime.datetime(2010, 1, 2, 3, 44, 50),
-                            datetime.datetime(2011, 2, 3, 14, 50, 59),
-                            datetime.datetime(2012, 3, 14, 15, 16),
-                        ],
-                        dtype="datetime64[ns]",
-                    ).dt.tz_localize(pytz.utc),
-                ),
-                (
-                    "dt_col",
-                    pandas.Series(
-                        [
-                            datetime.datetime(2010, 1, 2, 3, 44, 50),
-                            datetime.datetime(2011, 2, 3, 14, 50, 59),
-                            datetime.datetime(2012, 3, 14, 15, 16),
-                        ],
-                        dtype="datetime64[ns]",
-                    ),
-                ),
-                ("float32_col", pandas.Series([1.0, 2.0, 3.0], dtype="float32")),
-                ("float64_col", pandas.Series([4.0, 5.0, 6.0], dtype="float64")),
-                ("int8_col", pandas.Series([-12, -11, -10], dtype="int8")),
-                ("int16_col", pandas.Series([-9, -8, -7], dtype="int16")),
-                ("int32_col", pandas.Series([-6, -5, -4], dtype="int32")),
-                ("int64_col", pandas.Series([-3, -2, -1], dtype="int64")),
-                ("uint8_col", pandas.Series([0, 1, 2], dtype="uint8")),
-                ("uint16_col", pandas.Series([3, 4, 5], dtype="uint16")),
-                ("uint32_col", pandas.Series([6, 7, 8], dtype="uint32")),
-            ]
-        )
-        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
-
-        dataset_id = _make_dataset_id("bq_load_test")
-        self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_automatic_schema".format(
-            Config.CLIENT.project, dataset_id
-        )
-
-        load_job = Config.CLIENT.load_table_from_dataframe(dataframe, table_id)
-        load_job.result()
-
-        table = Config.CLIENT.get_table(table_id)
-        self.assertEqual(
-            tuple(table.schema),
-            (
-                bigquery.SchemaField("bool_col", "BOOLEAN"),
-                bigquery.SchemaField("ts_col", "TIMESTAMP"),
-                # BigQuery does not support uploading DATETIME values from
-                # Parquet files. See:
-                # https://github.com/googleapis/google-cloud-python/issues/9996
-                bigquery.SchemaField("dt_col", "TIMESTAMP"),
-                bigquery.SchemaField("float32_col", "FLOAT"),
-                bigquery.SchemaField("float64_col", "FLOAT"),
-                bigquery.SchemaField("int8_col", "INTEGER"),
-                bigquery.SchemaField("int16_col", "INTEGER"),
-                bigquery.SchemaField("int32_col", "INTEGER"),
-                bigquery.SchemaField("int64_col", "INTEGER"),
-                bigquery.SchemaField("uint8_col", "INTEGER"),
-                bigquery.SchemaField("uint16_col", "INTEGER"),
-                bigquery.SchemaField("uint32_col", "INTEGER"),
-            ),
-        )
-        self.assertEqual(table.num_rows, 3)
-
-    @unittest.skipIf(
-        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIMUM_VERSION,
-        "Only `pandas version >=1.0.0` is supported",
-    )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
-        """Test that a DataFrame containing column with None-type values and int64 datatype
-        can be uploaded if a BigQuery schema is specified.
-
-        https://github.com/googleapis/python-bigquery/issues/22
-        """
-
-        dataset_id = _make_dataset_id("bq_load_test")
-        self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_nullable_int64_datatype".format(
-            Config.CLIENT.project, dataset_id
-        )
-        table_schema = (bigquery.SchemaField("x", "INTEGER", mode="NULLABLE"),)
-        table = retry_403(Config.CLIENT.create_table)(
-            Table(table_id, schema=table_schema)
-        )
-        self.to_delete.insert(0, table)
-
-        df_data = collections.OrderedDict(
-            [("x", pandas.Series([1, 2, None, 4], dtype="Int64"))]
-        )
-        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
-        load_job = Config.CLIENT.load_table_from_dataframe(dataframe, table_id)
-        load_job.result()
-        table = Config.CLIENT.get_table(table_id)
-        self.assertEqual(tuple(table.schema), (bigquery.SchemaField("x", "INTEGER"),))
-        self.assertEqual(table.num_rows, 4)
-
-    @unittest.skipIf(
-        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIMUM_VERSION,
-        "Only `pandas version >=1.0.0` is supported",
-    )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
-        """Test that a DataFrame containing column with None-type values and int64 datatype
-        can be uploaded without specifying a schema.
-
-        https://github.com/googleapis/python-bigquery/issues/22
-        """
-
-        dataset_id = _make_dataset_id("bq_load_test")
-        self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_nullable_int64_datatype".format(
-            Config.CLIENT.project, dataset_id
-        )
-        df_data = collections.OrderedDict(
-            [("x", pandas.Series([1, 2, None, 4], dtype="Int64"))]
-        )
-        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
-        load_job = Config.CLIENT.load_table_from_dataframe(dataframe, table_id)
-        load_job.result()
-        table = Config.CLIENT.get_table(table_id)
-        self.assertEqual(tuple(table.schema), (bigquery.SchemaField("x", "INTEGER"),))
-        self.assertEqual(table.num_rows, 4)
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_nulls(self):
-        """Test that a DataFrame with null columns can be uploaded if a
-        BigQuery schema is specified.
-
-        See: https://github.com/googleapis/google-cloud-python/issues/7370
-        """
-        # Schema with all scalar types.
-        scalars_schema = (
-            bigquery.SchemaField("bool_col", "BOOLEAN"),
-            bigquery.SchemaField("bytes_col", "BYTES"),
-            bigquery.SchemaField("date_col", "DATE"),
-            bigquery.SchemaField("dt_col", "DATETIME"),
-            bigquery.SchemaField("float_col", "FLOAT"),
-            bigquery.SchemaField("geo_col", "GEOGRAPHY"),
-            bigquery.SchemaField("int_col", "INTEGER"),
-            bigquery.SchemaField("num_col", "NUMERIC"),
-            bigquery.SchemaField("str_col", "STRING"),
-            bigquery.SchemaField("time_col", "TIME"),
-            bigquery.SchemaField("ts_col", "TIMESTAMP"),
-        )
-        table_schema = scalars_schema + (
-            # TODO: Array columns can't be read due to NULLABLE versus REPEATED
-            #       mode mismatch. See:
-            #       https://issuetracker.google.com/133415569#comment3
-            # bigquery.SchemaField("array_col", "INTEGER", mode="REPEATED"),
-            # TODO: Support writing StructArrays to Parquet. See:
-            #       https://jira.apache.org/jira/browse/ARROW-2587
-            # bigquery.SchemaField("struct_col", "RECORD", fields=scalars_schema),
-        )
-        num_rows = 100
-        nulls = [None] * num_rows
-        df_data = collections.OrderedDict(
-            [
-                ("bool_col", nulls),
-                ("bytes_col", nulls),
-                ("date_col", nulls),
-                ("dt_col", nulls),
-                ("float_col", nulls),
-                ("geo_col", nulls),
-                ("int_col", nulls),
-                ("num_col", nulls),
-                ("str_col", nulls),
-                ("time_col", nulls),
-                ("ts_col", nulls),
-            ]
-        )
-        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
-
-        dataset_id = _make_dataset_id("bq_load_test")
-        self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_nulls".format(
-            Config.CLIENT.project, dataset_id
-        )
-
-        # Create the table before loading so that schema mismatch errors are
-        # identified.
-        table = retry_403(Config.CLIENT.create_table)(
-            Table(table_id, schema=table_schema)
-        )
-        self.to_delete.insert(0, table)
-
-        job_config = bigquery.LoadJobConfig(schema=table_schema)
-        load_job = Config.CLIENT.load_table_from_dataframe(
-            dataframe, table_id, job_config=job_config
-        )
-        load_job.result()
-
-        table = Config.CLIENT.get_table(table)
-        self.assertEqual(tuple(table.schema), table_schema)
-        self.assertEqual(table.num_rows, num_rows)
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_required(self):
-        """Test that a DataFrame with required columns can be uploaded if a
-        BigQuery schema is specified.
-
-        See: https://github.com/googleapis/google-cloud-python/issues/8093
-        """
-        table_schema = (
-            bigquery.SchemaField("name", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("age", "INTEGER", mode="REQUIRED"),
-        )
-
-        records = [{"name": "Chip", "age": 2}, {"name": "Dale", "age": 3}]
-        dataframe = pandas.DataFrame(records, columns=["name", "age"])
-        job_config = bigquery.LoadJobConfig(schema=table_schema)
-        dataset_id = _make_dataset_id("bq_load_test")
-        self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_required".format(
-            Config.CLIENT.project, dataset_id
-        )
-
-        # Create the table before loading so that schema mismatch errors are
-        # identified.
-        table = retry_403(Config.CLIENT.create_table)(
-            Table(table_id, schema=table_schema)
-        )
-        self.to_delete.insert(0, table)
-
-        job_config = bigquery.LoadJobConfig(schema=table_schema)
-        load_job = Config.CLIENT.load_table_from_dataframe(
-            dataframe, table_id, job_config=job_config
-        )
-        load_job.result()
-
-        table = Config.CLIENT.get_table(table)
-        self.assertEqual(tuple(table.schema), table_schema)
-        self.assertEqual(table.num_rows, 2)
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_w_explicit_schema(self):
-        # Schema with all scalar types.
-        # TODO: Uploading DATETIME columns currently fails, thus that field type
-        #       is temporarily  removed from the test.
-        # See:
-        #       https://github.com/googleapis/python-bigquery/issues/61
-        #       https://issuetracker.google.com/issues/151765076
-        scalars_schema = (
-            bigquery.SchemaField("bool_col", "BOOLEAN"),
-            bigquery.SchemaField("bytes_col", "BYTES"),
-            bigquery.SchemaField("date_col", "DATE"),
-            # bigquery.SchemaField("dt_col", "DATETIME"),
-            bigquery.SchemaField("float_col", "FLOAT"),
-            bigquery.SchemaField("geo_col", "GEOGRAPHY"),
-            bigquery.SchemaField("int_col", "INTEGER"),
-            bigquery.SchemaField("num_col", "NUMERIC"),
-            bigquery.SchemaField("str_col", "STRING"),
-            bigquery.SchemaField("time_col", "TIME"),
-            bigquery.SchemaField("ts_col", "TIMESTAMP"),
-        )
-        table_schema = scalars_schema + (
-            # TODO: Array columns can't be read due to NULLABLE versus REPEATED
-            #       mode mismatch. See:
-            #       https://issuetracker.google.com/133415569#comment3
-            # bigquery.SchemaField("array_col", "INTEGER", mode="REPEATED"),
-            # TODO: Support writing StructArrays to Parquet. See:
-            #       https://jira.apache.org/jira/browse/ARROW-2587
-            # bigquery.SchemaField("struct_col", "RECORD", fields=scalars_schema),
-        )
-        df_data = collections.OrderedDict(
-            [
-                ("bool_col", [True, None, False]),
-                ("bytes_col", [b"abc", None, b"def"]),
-                (
-                    "date_col",
-                    [datetime.date(1, 1, 1), None, datetime.date(9999, 12, 31)],
-                ),
-                # (
-                #     "dt_col",
-                #     [
-                #         datetime.datetime(1, 1, 1, 0, 0, 0),
-                #         None,
-                #         datetime.datetime(9999, 12, 31, 23, 59, 59, 999999),
-                #     ],
-                # ),
-                ("float_col", [float("-inf"), float("nan"), float("inf")]),
-                (
-                    "geo_col",
-                    [
-                        "POINT(30 10)",
-                        None,
-                        "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))",
-                    ],
-                ),
-                ("int_col", [-9223372036854775808, None, 9223372036854775807]),
-                (
-                    "num_col",
-                    [
-                        decimal.Decimal("-99999999999999999999999999999.999999999"),
-                        None,
-                        decimal.Decimal("99999999999999999999999999999.999999999"),
-                    ],
-                ),
-                ("str_col", [u"abc", None, u"def"]),
-                (
-                    "time_col",
-                    [datetime.time(0, 0, 0), None, datetime.time(23, 59, 59, 999999)],
-                ),
-                (
-                    "ts_col",
-                    [
-                        datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
-                        None,
-                        datetime.datetime(
-                            9999, 12, 31, 23, 59, 59, 999999, tzinfo=pytz.utc
-                        ),
-                    ],
-                ),
-            ]
-        )
-        dataframe = pandas.DataFrame(df_data, dtype="object", columns=df_data.keys())
-
-        dataset_id = _make_dataset_id("bq_load_test")
-        self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_explicit_schema".format(
-            Config.CLIENT.project, dataset_id
-        )
-
-        job_config = bigquery.LoadJobConfig(schema=table_schema)
-        load_job = Config.CLIENT.load_table_from_dataframe(
-            dataframe, table_id, job_config=job_config
-        )
-        load_job.result()
-
-        table = Config.CLIENT.get_table(table_id)
-        self.assertEqual(tuple(table.schema), table_schema)
-        self.assertEqual(table.num_rows, 3)
-
-    @unittest.skipIf(
-        pyarrow is None or PYARROW_INSTALLED_VERSION < PYARROW_MINIMUM_VERSION,
-        "Only `pyarrow version >=0.17.0` is supported",
-    )
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_load_table_from_dataframe_w_struct_datatype(self):
-        """Test that a DataFrame with struct datatype can be uploaded if a
-        BigQuery schema is specified.
-
-        https://github.com/googleapis/python-bigquery/issues/21
-        """
-        dataset_id = _make_dataset_id("bq_load_test")
-        self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_struct_datatype".format(
-            Config.CLIENT.project, dataset_id
-        )
-        table_schema = [
-            bigquery.SchemaField(
-                "bar",
-                "RECORD",
-                fields=[
-                    bigquery.SchemaField("id", "INTEGER", mode="REQUIRED"),
-                    bigquery.SchemaField("age", "INTEGER", mode="REQUIRED"),
-                ],
-                mode="REQUIRED",
-            ),
-        ]
-        table = retry_403(Config.CLIENT.create_table)(
-            Table(table_id, schema=table_schema)
-        )
-        self.to_delete.insert(0, table)
-
-        df_data = [{"id": 1, "age": 21}, {"id": 2, "age": 22}, {"id": 2, "age": 23}]
-        dataframe = pandas.DataFrame(data={"bar": df_data}, columns=["bar"])
-
-        load_job = Config.CLIENT.load_table_from_dataframe(dataframe, table_id)
-        load_job.result()
-
-        table = Config.CLIENT.get_table(table_id)
-        self.assertEqual(table.schema, table_schema)
-        self.assertEqual(table.num_rows, 3)
 
     def test_load_table_from_json_basic_use(self):
         table_schema = (
@@ -1150,7 +712,7 @@ class TestBigQuery(unittest.TestCase):
 
         # Create the table before loading so that schema mismatch errors are
         # identified.
-        table = retry_403(Config.CLIENT.create_table)(
+        table = helpers.retry_403(Config.CLIENT.create_table)(
             Table(table_id, schema=table_schema)
         )
         self.to_delete.insert(0, table)
@@ -1164,140 +726,6 @@ class TestBigQuery(unittest.TestCase):
         table = Config.CLIENT.get_table(table)
         self.assertEqual(tuple(table.schema), table_schema)
         self.assertEqual(table.num_rows, 2)
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_load_table_from_dataframe_w_explicit_schema_source_format_csv(self):
-        from google.cloud.bigquery.job import SourceFormat
-
-        table_schema = (
-            bigquery.SchemaField("bool_col", "BOOLEAN"),
-            bigquery.SchemaField("bytes_col", "BYTES"),
-            bigquery.SchemaField("date_col", "DATE"),
-            bigquery.SchemaField("dt_col", "DATETIME"),
-            bigquery.SchemaField("float_col", "FLOAT"),
-            bigquery.SchemaField("geo_col", "GEOGRAPHY"),
-            bigquery.SchemaField("int_col", "INTEGER"),
-            bigquery.SchemaField("num_col", "NUMERIC"),
-            bigquery.SchemaField("str_col", "STRING"),
-            bigquery.SchemaField("time_col", "TIME"),
-            bigquery.SchemaField("ts_col", "TIMESTAMP"),
-        )
-        df_data = collections.OrderedDict(
-            [
-                ("bool_col", [True, None, False]),
-                ("bytes_col", ["abc", None, "def"]),
-                (
-                    "date_col",
-                    [datetime.date(1, 1, 1), None, datetime.date(9999, 12, 31)],
-                ),
-                (
-                    "dt_col",
-                    [
-                        datetime.datetime(1, 1, 1, 0, 0, 0),
-                        None,
-                        datetime.datetime(9999, 12, 31, 23, 59, 59, 999999),
-                    ],
-                ),
-                ("float_col", [float("-inf"), float("nan"), float("inf")]),
-                (
-                    "geo_col",
-                    [
-                        "POINT(30 10)",
-                        None,
-                        "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))",
-                    ],
-                ),
-                ("int_col", [-9223372036854775808, None, 9223372036854775807]),
-                (
-                    "num_col",
-                    [
-                        decimal.Decimal("-99999999999999999999999999999.999999999"),
-                        None,
-                        decimal.Decimal("99999999999999999999999999999.999999999"),
-                    ],
-                ),
-                ("str_col", [u"abc", None, u"def"]),
-                (
-                    "time_col",
-                    [datetime.time(0, 0, 0), None, datetime.time(23, 59, 59, 999999)],
-                ),
-                (
-                    "ts_col",
-                    [
-                        datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
-                        None,
-                        datetime.datetime(
-                            9999, 12, 31, 23, 59, 59, 999999, tzinfo=pytz.utc
-                        ),
-                    ],
-                ),
-            ]
-        )
-        dataframe = pandas.DataFrame(df_data, dtype="object", columns=df_data.keys())
-
-        dataset_id = _make_dataset_id("bq_load_test")
-        self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_explicit_schema_csv".format(
-            Config.CLIENT.project, dataset_id
-        )
-
-        job_config = bigquery.LoadJobConfig(
-            schema=table_schema, source_format=SourceFormat.CSV
-        )
-        load_job = Config.CLIENT.load_table_from_dataframe(
-            dataframe, table_id, job_config=job_config
-        )
-        load_job.result()
-
-        table = Config.CLIENT.get_table(table_id)
-        self.assertEqual(tuple(table.schema), table_schema)
-        self.assertEqual(table.num_rows, 3)
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_load_table_from_dataframe_w_explicit_schema_source_format_csv_floats(self):
-        from google.cloud.bigquery.job import SourceFormat
-
-        table_schema = (bigquery.SchemaField("float_col", "FLOAT"),)
-        df_data = collections.OrderedDict(
-            [
-                (
-                    "float_col",
-                    [
-                        0.14285714285714285,
-                        0.51428571485748,
-                        0.87128748,
-                        1.807960649,
-                        2.0679610649,
-                        2.4406779661016949,
-                        3.7148514257,
-                        3.8571428571428572,
-                        1.51251252e40,
-                    ],
-                ),
-            ]
-        )
-        dataframe = pandas.DataFrame(df_data, dtype="object", columns=df_data.keys())
-
-        dataset_id = _make_dataset_id("bq_load_test")
-        self.temp_dataset(dataset_id)
-        table_id = "{}.{}.load_table_from_dataframe_w_explicit_schema_csv".format(
-            Config.CLIENT.project, dataset_id
-        )
-
-        job_config = bigquery.LoadJobConfig(
-            schema=table_schema, source_format=SourceFormat.CSV
-        )
-        load_job = Config.CLIENT.load_table_from_dataframe(
-            dataframe, table_id, job_config=job_config
-        )
-        load_job.result()
-
-        table = Config.CLIENT.get_table(table_id)
-        rows = self._fetch_single_page(table)
-        floats = [r.values()[0] for r in rows]
-        self.assertEqual(tuple(table.schema), table_schema)
-        self.assertEqual(table.num_rows, 9)
-        self.assertEqual(floats, df_data["float_col"])
 
     def test_load_table_from_json_schema_autodetect(self):
         json_rows = [
@@ -1320,7 +748,7 @@ class TestBigQuery(unittest.TestCase):
             bigquery.SchemaField("is_awesome", "BOOLEAN", mode="NULLABLE"),
         )
         # create the table before loading so that the column order is predictable
-        table = retry_403(Config.CLIENT.create_table)(
+        table = helpers.retry_403(Config.CLIENT.create_table)(
             Table(table_id, schema=table_schema)
         )
         self.to_delete.insert(0, table)
@@ -1348,14 +776,14 @@ class TestBigQuery(unittest.TestCase):
             ("orange", 590),
             ("red", 650),
         ]
-        with open(os.path.join(WHERE, "data", "colors.avro"), "rb") as f:
+        with open(DATA_PATH / "colors.avro", "rb") as f:
             GS_URL = self._write_avro_to_storage(
                 "bq_load_test" + unique_resource_id(), "colors.avro", f
             )
 
         dataset = self.temp_dataset(_make_dataset_id("bq_load_test"))
         table_arg = dataset.table(table_name)
-        table = retry_403(Config.CLIENT.create_table)(Table(table_arg))
+        table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_arg))
         self.to_delete.insert(0, table)
 
         config = bigquery.LoadJobConfig()
@@ -1386,7 +814,7 @@ class TestBigQuery(unittest.TestCase):
         dataset = self.temp_dataset(_make_dataset_id("load_gcs_then_dump"))
 
         table_arg = Table(dataset.table(TABLE_ID), schema=SCHEMA)
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
 
         config = bigquery.LoadJobConfig()
@@ -1604,7 +1032,7 @@ class TestBigQuery(unittest.TestCase):
         table_ref = Table(dataset.table(table_id))
         self.assertFalse(_table_exists(table_ref))
 
-        table = retry_403(Config.CLIENT.create_table)(table_ref)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_ref)
         self.to_delete.insert(0, table)
 
         self.assertTrue(_table_exists(table))
@@ -1629,7 +1057,7 @@ class TestBigQuery(unittest.TestCase):
         table_ref = Table(dataset.table(table_id))
         self.assertFalse(_table_exists(table_ref))
 
-        table = retry_403(Config.CLIENT.create_table)(table_ref)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_ref)
         self.to_delete.insert(0, table)
 
         self.assertTrue(_table_exists(table))
@@ -1653,7 +1081,7 @@ class TestBigQuery(unittest.TestCase):
         dataset = self.temp_dataset(DATASET_ID)
 
         table_arg = Table(dataset.table(TABLE_NAME), schema=SCHEMA)
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
 
         job = Config.CLIENT.query(QUERY, job_id_prefix=JOB_ID_PREFIX)
@@ -1707,75 +1135,12 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(len(rows[0]), 1)
             self.assertEqual(rows[0][0], example["expected"])
 
-    def _generate_standard_sql_types_examples(self):
-        naive = datetime.datetime(2016, 12, 5, 12, 41, 9)
-        naive_microseconds = datetime.datetime(2016, 12, 5, 12, 41, 9, 250000)
-        stamp = "%s %s" % (naive.date().isoformat(), naive.time().isoformat())
-        stamp_microseconds = stamp + ".250000"
-        zoned = naive.replace(tzinfo=UTC)
-        zoned_microseconds = naive_microseconds.replace(tzinfo=UTC)
-        numeric = decimal.Decimal("123456789.123456789")
-        return [
-            {"sql": "SELECT 1", "expected": 1},
-            {"sql": "SELECT 1.3", "expected": 1.3},
-            {"sql": "SELECT TRUE", "expected": True},
-            {"sql": 'SELECT "ABC"', "expected": "ABC"},
-            {"sql": 'SELECT CAST("foo" AS BYTES)', "expected": b"foo"},
-            {"sql": 'SELECT TIMESTAMP "%s"' % (stamp,), "expected": zoned},
-            {
-                "sql": 'SELECT TIMESTAMP "%s"' % (stamp_microseconds,),
-                "expected": zoned_microseconds,
-            },
-            {"sql": 'SELECT DATETIME(TIMESTAMP "%s")' % (stamp,), "expected": naive},
-            {
-                "sql": 'SELECT DATETIME(TIMESTAMP "%s")' % (stamp_microseconds,),
-                "expected": naive_microseconds,
-            },
-            {"sql": 'SELECT DATE(TIMESTAMP "%s")' % (stamp,), "expected": naive.date()},
-            {"sql": 'SELECT TIME(TIMESTAMP "%s")' % (stamp,), "expected": naive.time()},
-            {"sql": 'SELECT NUMERIC "%s"' % (numeric,), "expected": numeric},
-            {"sql": "SELECT (1, 2)", "expected": {"_field_1": 1, "_field_2": 2}},
-            {
-                "sql": "SELECT ((1, 2), (3, 4), 5)",
-                "expected": {
-                    "_field_1": {"_field_1": 1, "_field_2": 2},
-                    "_field_2": {"_field_1": 3, "_field_2": 4},
-                    "_field_3": 5,
-                },
-            },
-            {"sql": "SELECT [1, 2, 3]", "expected": [1, 2, 3]},
-            {
-                "sql": "SELECT ([1, 2], 3, [4, 5])",
-                "expected": {"_field_1": [1, 2], "_field_2": 3, "_field_3": [4, 5]},
-            },
-            {
-                "sql": "SELECT [(1, 2, 3), (4, 5, 6)]",
-                "expected": [
-                    {"_field_1": 1, "_field_2": 2, "_field_3": 3},
-                    {"_field_1": 4, "_field_2": 5, "_field_3": 6},
-                ],
-            },
-            {
-                "sql": "SELECT [([1, 2, 3], 4), ([5, 6], 7)]",
-                "expected": [
-                    {u"_field_1": [1, 2, 3], u"_field_2": 4},
-                    {u"_field_1": [5, 6], u"_field_2": 7},
-                ],
-            },
-            {
-                "sql": "SELECT ARRAY(SELECT STRUCT([1, 2]))",
-                "expected": [{u"_field_1": [1, 2]}],
-            },
-            {"sql": "SELECT ST_GeogPoint(1, 2)", "expected": "POINT(1 2)"},
-        ]
-
     def test_query_w_standard_sql_types(self):
-        examples = self._generate_standard_sql_types_examples()
-        for example in examples:
-            rows = list(Config.CLIENT.query(example["sql"]))
+        for sql, expected in helpers.STANDARD_SQL_EXAMPLES:
+            rows = list(Config.CLIENT.query(sql))
             self.assertEqual(len(rows), 1)
             self.assertEqual(len(rows[0]), 1)
-            self.assertEqual(rows[0][0], example["expected"])
+            self.assertEqual(rows[0][0], expected)
 
     def test_query_w_failed_query(self):
         from google.api_core.exceptions import BadRequest
@@ -1905,154 +1270,6 @@ class TestBigQuery(unittest.TestCase):
         self.assertGreater(stages_with_inputs, 0)
         self.assertGreater(len(plan), stages_with_inputs)
 
-    def test_dbapi_w_standard_sql_types(self):
-        examples = self._generate_standard_sql_types_examples()
-        for example in examples:
-            Config.CURSOR.execute(example["sql"])
-            self.assertEqual(Config.CURSOR.rowcount, 1)
-            row = Config.CURSOR.fetchone()
-            self.assertEqual(len(row), 1)
-            self.assertEqual(row[0], example["expected"])
-            row = Config.CURSOR.fetchone()
-            self.assertIsNone(row)
-
-    def test_dbapi_fetchall(self):
-        query = "SELECT * FROM UNNEST([(1, 2), (3, 4), (5, 6)])"
-
-        for arraysize in range(1, 5):
-            Config.CURSOR.execute(query)
-            self.assertEqual(Config.CURSOR.rowcount, 3, "expected 3 rows")
-            Config.CURSOR.arraysize = arraysize
-            rows = Config.CURSOR.fetchall()
-            row_tuples = [r.values() for r in rows]
-            self.assertEqual(row_tuples, [(1, 2), (3, 4), (5, 6)])
-
-    def test_dbapi_fetchall_from_script(self):
-        query = """
-        CREATE TEMP TABLE Example
-        (
-          x INT64,
-          y STRING
-        );
-
-        INSERT INTO Example
-        VALUES (5, 'foo'),
-        (6, 'bar'),
-        (7, 'baz');
-
-        SELECT *
-        FROM Example
-        ORDER BY x ASC;
-        """
-
-        Config.CURSOR.execute(query)
-        self.assertEqual(Config.CURSOR.rowcount, 3, "expected 3 rows")
-        rows = Config.CURSOR.fetchall()
-        row_tuples = [r.values() for r in rows]
-        self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
-
-    def test_dbapi_create_view(self):
-
-        query = """
-        CREATE VIEW {}.dbapi_create_view
-        AS SELECT name, SUM(number) AS total
-        FROM `bigquery-public-data.usa_names.usa_1910_2013`
-        GROUP BY name;
-        """.format(
-            Config.DATASET
-        )
-
-        Config.CURSOR.execute(query)
-        self.assertEqual(Config.CURSOR.rowcount, 0, "expected 0 rows")
-
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
-        bqstorage_client = bigquery_storage.BigQueryReadClient(
-            credentials=Config.CLIENT._credentials
-        )
-        cursor = dbapi.connect(Config.CLIENT, bqstorage_client).cursor()
-
-        cursor.execute(
-            """
-            SELECT id, `by`, time_ts
-            FROM `bigquery-public-data.hacker_news.comments`
-            ORDER BY `id` ASC
-            LIMIT 100000
-        """
-        )
-
-        result_rows = [cursor.fetchone(), cursor.fetchone(), cursor.fetchone()]
-
-        field_name = operator.itemgetter(0)
-        fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
-
-        # Since DB API is not thread safe, only a single result stream should be
-        # requested by the BQ storage client, meaning that results should arrive
-        # in the sorted order.
-        expected_data = [
-            [
-                ("by", "sama"),
-                ("id", 15),
-                ("time_ts", datetime.datetime(2006, 10, 9, 19, 51, 1, tzinfo=UTC)),
-            ],
-            [
-                ("by", "pg"),
-                ("id", 17),
-                ("time_ts", datetime.datetime(2006, 10, 9, 19, 52, 45, tzinfo=UTC)),
-            ],
-            [
-                ("by", "pg"),
-                ("id", 22),
-                ("time_ts", datetime.datetime(2006, 10, 10, 2, 18, 22, tzinfo=UTC)),
-            ],
-        ]
-        self.assertEqual(fetched_data, expected_data)
-
-    def test_dbapi_dry_run_query(self):
-        from google.cloud.bigquery.job import QueryJobConfig
-
-        query = """
-            SELECT country_name
-            FROM `bigquery-public-data.utility_us.country_code_iso`
-            WHERE country_name LIKE 'U%'
-        """
-
-        Config.CURSOR.execute(query, job_config=QueryJobConfig(dry_run=True))
-        self.assertEqual(Config.CURSOR.rowcount, 0, "expected no rows")
-
-        rows = Config.CURSOR.fetchall()
-
-        self.assertEqual(list(rows), [])
-
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    def test_dbapi_connection_does_not_leak_sockets(self):
-        current_process = psutil.Process()
-        conn_count_start = len(current_process.connections())
-
-        # Provide no explicit clients, so that the connection will create and own them.
-        connection = dbapi.connect()
-        cursor = connection.cursor()
-
-        cursor.execute(
-            """
-            SELECT id, `by`, time_ts
-            FROM `bigquery-public-data.hacker_news.comments`
-            ORDER BY `id` ASC
-            LIMIT 100000
-        """
-        )
-        rows = cursor.fetchall()
-        self.assertEqual(len(rows), 100000)
-
-        connection.close()
-        conn_count_end = len(current_process.connections())
-        self.assertEqual(conn_count_end, conn_count_start)
-
     def _load_table_for_dml(self, rows, dataset_id, table_id):
         from google.cloud._testing import _NamedTemporaryFile
         from google.cloud.bigquery.job import CreateDisposition
@@ -2063,7 +1280,7 @@ class TestBigQuery(unittest.TestCase):
         greeting = bigquery.SchemaField("greeting", "STRING", mode="NULLABLE")
         table_ref = dataset.table(table_id)
         table_arg = Table(table_ref, schema=[greeting])
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
 
         with _NamedTemporaryFile() as temp:
@@ -2102,23 +1319,6 @@ class TestBigQuery(unittest.TestCase):
         query_job.result()
 
         self.assertEqual(query_job.num_dml_affected_rows, 1)
-
-    def test_dbapi_w_dml(self):
-        dataset_name = _make_dataset_id("dml_dbapi")
-        table_name = "test_table"
-        self._load_table_for_dml(
-            [("こんにちは",), ("Hello World",), ("Howdy!",)], dataset_name, table_name
-        )
-        query_template = """UPDATE {}.{}
-            SET greeting = 'Guten Tag'
-            WHERE greeting = 'Hello World'
-            """
-
-        Config.CURSOR.execute(
-            query_template.format(dataset_name, table_name),
-            job_id="test_dbapi_w_dml_{}".format(str(uuid.uuid4())),
-        )
-        self.assertEqual(Config.CURSOR.rowcount, 1)
 
     def test_query_w_query_params(self):
         from google.cloud.bigquery.job import QueryJobConfig
@@ -2296,90 +1496,6 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(len(rows[0]), 1)
             self.assertEqual(rows[0][0], example["expected"])
 
-    def test_dbapi_w_query_parameters(self):
-        examples = [
-            {
-                "sql": "SELECT %(boolval)s",
-                "expected": True,
-                "query_parameters": {"boolval": True},
-            },
-            {
-                "sql": 'SELECT %(a "very" weird `name`)s',
-                "expected": True,
-                "query_parameters": {'a "very" weird `name`': True},
-            },
-            {
-                "sql": "SELECT %(select)s",
-                "expected": True,
-                "query_parameters": {"select": True},  # this name is a keyword
-            },
-            {"sql": "SELECT %s", "expected": False, "query_parameters": [False]},
-            {
-                "sql": "SELECT %(intval)s",
-                "expected": 123,
-                "query_parameters": {"intval": 123},
-            },
-            {
-                "sql": "SELECT %s",
-                "expected": -123456789,
-                "query_parameters": [-123456789],
-            },
-            {
-                "sql": "SELECT %(floatval)s",
-                "expected": 1.25,
-                "query_parameters": {"floatval": 1.25},
-            },
-            {
-                "sql": "SELECT LOWER(%(strval)s)",
-                "query_parameters": {"strval": "I Am A String"},
-                "expected": "i am a string",
-            },
-            {
-                "sql": "SELECT DATE_SUB(%(dateval)s, INTERVAL 1 DAY)",
-                "query_parameters": {"dateval": datetime.date(2017, 4, 2)},
-                "expected": datetime.date(2017, 4, 1),
-            },
-            {
-                "sql": "SELECT TIME_ADD(%(timeval)s, INTERVAL 4 SECOND)",
-                "query_parameters": {"timeval": datetime.time(12, 34, 56)},
-                "expected": datetime.time(12, 35, 0),
-            },
-            {
-                "sql": ("SELECT DATETIME_ADD(%(datetimeval)s, INTERVAL 53 SECOND)"),
-                "query_parameters": {
-                    "datetimeval": datetime.datetime(2012, 3, 4, 5, 6, 7)
-                },
-                "expected": datetime.datetime(2012, 3, 4, 5, 7, 0),
-            },
-            {
-                "sql": "SELECT TIMESTAMP_TRUNC(%(zoned)s, MINUTE)",
-                "query_parameters": {
-                    "zoned": datetime.datetime(2012, 3, 4, 5, 6, 7, tzinfo=UTC)
-                },
-                "expected": datetime.datetime(2012, 3, 4, 5, 6, 0, tzinfo=UTC),
-            },
-            {
-                "sql": "SELECT TIMESTAMP_TRUNC(%(zoned)s, MINUTE)",
-                "query_parameters": {
-                    "zoned": datetime.datetime(2012, 3, 4, 5, 6, 7, 250000, tzinfo=UTC)
-                },
-                "expected": datetime.datetime(2012, 3, 4, 5, 6, 0, tzinfo=UTC),
-            },
-        ]
-        for example in examples:
-            msg = "sql: {} query_parameters: {}".format(
-                example["sql"], example["query_parameters"]
-            )
-
-            Config.CURSOR.execute(example["sql"], example["query_parameters"])
-
-            self.assertEqual(Config.CURSOR.rowcount, 1, msg=msg)
-            row = Config.CURSOR.fetchone()
-            self.assertEqual(len(row), 1, msg=msg)
-            self.assertEqual(row[0], example["expected"], msg=msg)
-            row = Config.CURSOR.fetchone()
-            self.assertIsNone(row, msg=msg)
-
     def test_large_query_w_public_data(self):
         PUBLIC = "bigquery-public-data"
         DATASET_ID = "samples"
@@ -2428,154 +1544,6 @@ class TestBigQuery(unittest.TestCase):
 
         Config.CLIENT.cancel_job(query_job.job_id, location=query_job.location)
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_query_results_to_dataframe(self):
-        QUERY = """
-            SELECT id, author, time_ts, dead
-            FROM `bigquery-public-data.hacker_news.comments`
-            LIMIT 10
-        """
-
-        df = Config.CLIENT.query(QUERY).result().to_dataframe()
-
-        self.assertIsInstance(df, pandas.DataFrame)
-        self.assertEqual(len(df), 10)  # verify the number of rows
-        column_names = ["id", "author", "time_ts", "dead"]
-        self.assertEqual(list(df), column_names)  # verify the column names
-        exp_datatypes = {
-            "id": int,
-            "author": six.text_type,
-            "time_ts": pandas.Timestamp,
-            "dead": bool,
-        }
-        for index, row in df.iterrows():
-            for col in column_names:
-                # all the schema fields are nullable, so None is acceptable
-                if not row[col] is None:
-                    self.assertIsInstance(row[col], exp_datatypes[col])
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    def test_query_results_to_dataframe_w_bqstorage(self):
-        query = """
-            SELECT id, author, time_ts, dead
-            FROM `bigquery-public-data.hacker_news.comments`
-            LIMIT 10
-        """
-
-        bqstorage_client = bigquery_storage.BigQueryReadClient(
-            credentials=Config.CLIENT._credentials
-        )
-
-        df = Config.CLIENT.query(query).result().to_dataframe(bqstorage_client)
-
-        self.assertIsInstance(df, pandas.DataFrame)
-        self.assertEqual(len(df), 10)  # verify the number of rows
-        column_names = ["id", "author", "time_ts", "dead"]
-        self.assertEqual(list(df), column_names)
-        exp_datatypes = {
-            "id": int,
-            "author": six.text_type,
-            "time_ts": pandas.Timestamp,
-            "dead": bool,
-        }
-        for index, row in df.iterrows():
-            for col in column_names:
-                # all the schema fields are nullable, so None is acceptable
-                if not row[col] is None:
-                    self.assertIsInstance(row[col], exp_datatypes[col])
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_insert_rows_from_dataframe(self):
-        SF = bigquery.SchemaField
-        schema = [
-            SF("float_col", "FLOAT", mode="REQUIRED"),
-            SF("int_col", "INTEGER", mode="REQUIRED"),
-            SF("bool_col", "BOOLEAN", mode="REQUIRED"),
-            SF("string_col", "STRING", mode="NULLABLE"),
-        ]
-
-        dataframe = pandas.DataFrame(
-            [
-                {
-                    "float_col": 1.11,
-                    "bool_col": True,
-                    "string_col": "my string",
-                    "int_col": 10,
-                },
-                {
-                    "float_col": 2.22,
-                    "bool_col": False,
-                    "string_col": "another string",
-                    "int_col": 20,
-                },
-                {
-                    "float_col": 3.33,
-                    "bool_col": False,
-                    "string_col": "another string",
-                    "int_col": 30,
-                },
-                {
-                    "float_col": 4.44,
-                    "bool_col": True,
-                    "string_col": "another string",
-                    "int_col": 40,
-                },
-                {
-                    "float_col": 5.55,
-                    "bool_col": False,
-                    "string_col": "another string",
-                    "int_col": 50,
-                },
-                {
-                    "float_col": 6.66,
-                    "bool_col": True,
-                    # Include a NaN value, because pandas often uses NaN as a
-                    # NULL value indicator.
-                    "string_col": float("NaN"),
-                    "int_col": 60,
-                },
-            ]
-        )
-
-        table_id = "test_table"
-        dataset = self.temp_dataset(_make_dataset_id("issue_7553"))
-        table_arg = Table(dataset.table(table_id), schema=schema)
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
-        self.to_delete.insert(0, table)
-
-        chunk_errors = Config.CLIENT.insert_rows_from_dataframe(
-            table, dataframe, chunk_size=3
-        )
-        for errors in chunk_errors:
-            assert not errors
-
-        # Use query to fetch rows instead of listing directly from the table so
-        # that we get values from the streaming buffer.
-        rows = list(
-            Config.CLIENT.query(
-                "SELECT * FROM `{}.{}.{}`".format(
-                    table.project, table.dataset_id, table.table_id
-                )
-            )
-        )
-
-        sorted_rows = sorted(rows, key=operator.attrgetter("int_col"))
-        row_tuples = [r.values() for r in sorted_rows]
-        expected = [
-            tuple(None if col != col else col for col in data_row)
-            for data_row in dataframe.itertuples(index=False)
-        ]
-
-        assert len(row_tuples) == len(expected)
-
-        for row, expected_row in zip(row_tuples, expected):
-            six.assertCountEqual(
-                self, row, expected_row
-            )  # column order does not matter
-
     def test_insert_rows_nested_nested(self):
         # See #2951
         SF = bigquery.SchemaField
@@ -2606,7 +1574,7 @@ class TestBigQuery(unittest.TestCase):
         table_id = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("issue_2951"))
         table_arg = Table(dataset.table(table_id), schema=schema)
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
 
         Config.CLIENT.insert_rows(table, to_insert)
@@ -2646,7 +1614,7 @@ class TestBigQuery(unittest.TestCase):
         table_id = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("issue_2951"))
         table_arg = Table(dataset.table(table_id), schema=schema)
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
 
         Config.CLIENT.insert_rows(table, to_insert)
@@ -2686,8 +1654,8 @@ class TestBigQuery(unittest.TestCase):
             str(routine.reference)
         )
 
-        routine = retry_403(Config.CLIENT.create_routine)(routine)
-        query_job = retry_403(Config.CLIENT.query)(query_string)
+        routine = helpers.retry_403(Config.CLIENT.create_routine)(routine)
+        query_job = helpers.retry_403(Config.CLIENT.query)(query_string)
         rows = list(query_job.result())
 
         assert len(rows) == 1
@@ -2698,14 +1666,14 @@ class TestBigQuery(unittest.TestCase):
         dataset = self.temp_dataset(_make_dataset_id("create_table_nested_schema"))
         schema = _load_json_schema()
         table_arg = Table(dataset.table(table_name), schema=schema)
-        table = retry_403(Config.CLIENT.create_table)(table_arg)
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
         self.assertTrue(_table_exists(table))
         self.assertEqual(table.table_id, table_name)
 
         to_insert = []
         # Data is in "JSON Lines" format, see http://jsonlines.org/
-        json_filename = os.path.join(WHERE, "data", "characters.jsonl")
+        json_filename = DATA_PATH / "characters.jsonl"
         with open(json_filename) as rows_file:
             for line in rows_file:
                 to_insert.append(json.loads(line))
@@ -2749,9 +1717,6 @@ class TestBigQuery(unittest.TestCase):
             e_favtime = datetime.datetime(*parts[0:6])
             self.assertEqual(found[7], e_favtime)
             self.assertEqual(found[8], decimal.Decimal(expected["FavoriteNumber"]))
-
-    def _fetch_dataframe(self, query):
-        return Config.CLIENT.query(query).result().to_dataframe()
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(
@@ -2818,85 +1783,6 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(pyarrow.types.is_list(record_col[1].type))
         self.assertTrue(pyarrow.types.is_int64(record_col[1].type.value_type))
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_nested_table_to_dataframe(self):
-        from google.cloud.bigquery.job import SourceFormat
-        from google.cloud.bigquery.job import WriteDisposition
-
-        SF = bigquery.SchemaField
-        schema = [
-            SF("string_col", "STRING", mode="NULLABLE"),
-            SF(
-                "record_col",
-                "RECORD",
-                mode="NULLABLE",
-                fields=[
-                    SF("nested_string", "STRING", mode="NULLABLE"),
-                    SF("nested_repeated", "INTEGER", mode="REPEATED"),
-                    SF(
-                        "nested_record",
-                        "RECORD",
-                        mode="NULLABLE",
-                        fields=[SF("nested_nested_string", "STRING", mode="NULLABLE")],
-                    ),
-                ],
-            ),
-            SF("bigfloat_col", "FLOAT", mode="NULLABLE"),
-            SF("smallfloat_col", "FLOAT", mode="NULLABLE"),
-        ]
-        record = {
-            "nested_string": "another string value",
-            "nested_repeated": [0, 1, 2],
-            "nested_record": {"nested_nested_string": "some deep insight"},
-        }
-        to_insert = [
-            {
-                "string_col": "Some value",
-                "record_col": record,
-                "bigfloat_col": 3.14,
-                "smallfloat_col": 2.72,
-            }
-        ]
-        rows = [json.dumps(row) for row in to_insert]
-        body = six.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
-        table_id = "test_table"
-        dataset = self.temp_dataset(_make_dataset_id("nested_df"))
-        table = dataset.table(table_id)
-        self.to_delete.insert(0, table)
-        job_config = bigquery.LoadJobConfig()
-        job_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
-        job_config.source_format = SourceFormat.NEWLINE_DELIMITED_JSON
-        job_config.schema = schema
-        # Load a table using a local JSON file from memory.
-        Config.CLIENT.load_table_from_file(body, table, job_config=job_config).result()
-
-        df = Config.CLIENT.list_rows(table, selected_fields=schema).to_dataframe(
-            dtypes={"smallfloat_col": "float16"}
-        )
-
-        self.assertIsInstance(df, pandas.DataFrame)
-        self.assertEqual(len(df), 1)  # verify the number of rows
-        exp_columns = ["string_col", "record_col", "bigfloat_col", "smallfloat_col"]
-        self.assertEqual(list(df), exp_columns)  # verify the column names
-        row = df.iloc[0]
-        # verify the row content
-        self.assertEqual(row["string_col"], "Some value")
-        expected_keys = tuple(sorted(record.keys()))
-        row_keys = tuple(sorted(row["record_col"].keys()))
-        self.assertEqual(row_keys, expected_keys)
-        # Can't compare numpy arrays, which pyarrow encodes the embedded
-        # repeated column to, so convert to list.
-        self.assertEqual(list(row["record_col"]["nested_repeated"]), [0, 1, 2])
-        # verify that nested data can be accessed with indices/keys
-        self.assertEqual(row["record_col"]["nested_repeated"][0], 0)
-        self.assertEqual(
-            row["record_col"]["nested_record"]["nested_nested_string"],
-            "some deep insight",
-        )
-        # verify dtypes
-        self.assertEqual(df.dtypes["bigfloat_col"].name, "float64")
-        self.assertEqual(df.dtypes["smallfloat_col"].name, "float16")
-
     def test_list_rows_empty_table(self):
         from google.cloud.bigquery.table import RowIterator
 
@@ -2945,77 +1831,15 @@ class TestBigQuery(unittest.TestCase):
         page = next(pages)
         self.assertEqual(page.num_items, num_last_page)
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    def test_list_rows_max_results_w_bqstorage(self):
-        table_ref = DatasetReference("bigquery-public-data", "utility_us").table(
-            "country_code_iso"
-        )
-        bqstorage_client = bigquery_storage.BigQueryReadClient(
-            credentials=Config.CLIENT._credentials
-        )
-
-        row_iterator = Config.CLIENT.list_rows(
-            table_ref,
-            selected_fields=[bigquery.SchemaField("country_name", "STRING")],
-            max_results=100,
-        )
-        dataframe = row_iterator.to_dataframe(bqstorage_client=bqstorage_client)
-
-        self.assertEqual(len(dataframe.index), 100)
-
     def temp_dataset(self, dataset_id, location=None):
         project = Config.CLIENT.project
         dataset_ref = bigquery.DatasetReference(project, dataset_id)
         dataset = Dataset(dataset_ref)
         if location:
             dataset.location = location
-        dataset = retry_403(Config.CLIENT.create_dataset)(dataset)
+        dataset = helpers.retry_403(Config.CLIENT.create_dataset)(dataset)
         self.to_delete.append(dataset)
         return dataset
-
-
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(IPython is None, reason="Requires `ipython`")
-@pytest.mark.usefixtures("ipython_interactive")
-def test_bigquery_magic():
-    ip = IPython.get_ipython()
-    current_process = psutil.Process()
-    conn_count_start = len(current_process.connections())
-
-    ip.extension_manager.load_extension("google.cloud.bigquery")
-    sql = """
-        SELECT
-            CONCAT(
-            'https://stackoverflow.com/questions/',
-            CAST(id as STRING)) as url,
-            view_count
-        FROM `bigquery-public-data.stackoverflow.posts_questions`
-        WHERE tags like '%google-bigquery%'
-        ORDER BY view_count DESC
-        LIMIT 10
-    """
-    with io.capture_output() as captured:
-        result = ip.run_cell_magic("bigquery", "--use_rest_api", sql)
-
-    conn_count_end = len(current_process.connections())
-
-    lines = re.split("\n|\r", captured.stdout)
-    # Removes blanks & terminal code (result of display clearing)
-    updates = list(filter(lambda x: bool(x) and x != "\x1b[2K", lines))
-    assert re.match("Executing query with job ID: .*", updates[0])
-    assert all(re.match("Query executing: .*s", line) for line in updates[1:-1])
-    assert re.match("Query complete after .*s", updates[-1])
-    assert isinstance(result, pandas.DataFrame)
-    assert len(result) == 10  # verify row count
-    assert list(result) == ["url", "view_count"]  # verify column names
-
-    # NOTE: For some reason, the number of open sockets is sometimes one *less*
-    # than expected when running system tests on Kokoro, thus using the <= assertion.
-    # That's still fine, however, since the sockets are apparently not leaked.
-    assert conn_count_end <= conn_count_start  # system resources are released
 
 
 def _job_done(instance):
@@ -3037,21 +1861,3 @@ def _table_exists(t):
         return True
     except NotFound:
         return False
-
-
-@pytest.fixture(scope="session")
-def ipython():
-    config = tools.default_config()
-    config.TerminalInteractiveShell.simple_prompt = True
-    shell = interactiveshell.TerminalInteractiveShell.instance(config=config)
-    return shell
-
-
-@pytest.fixture()
-def ipython_interactive(request, ipython):
-    """Activate IPython's builtin hooks
-
-    for the duration of the test scope.
-    """
-    with ipython.builtin_trap:
-        yield ipython

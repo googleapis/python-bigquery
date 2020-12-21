@@ -115,9 +115,7 @@ def system(session):
     session.install("ipython", "-c", constraints_path)
 
     # Run py.test against the system tests.
-    session.run(
-        "py.test", "--quiet", os.path.join("tests", "system.py"), *session.posargs
-    )
+    session.run("py.test", "--quiet", os.path.join("tests", "system"), *session.posargs)
 
 
 @nox.session(python=["3.8"])

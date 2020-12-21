@@ -94,6 +94,14 @@ _NEED_TABLE_ARGUMENT = (
 )
 _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
 
+# In microbenchmarks, it's been shown that even in ideal conditions (query
+# finished, local data), requests to getQueryResults can take 10+ seconds.
+# In less-than-ideal situations, the response can take even longer, as it must
+# be able to download a full 100+ MB row in that time. Don't let the
+# connection timeout before data can be downloaded.
+# https://github.com/googleapis/python-bigquery/issues/438
+_MIN_GET_QUERY_RESULTS_TIMEOUT = 120
+
 
 class Project(object):
     """Wrapper for resource describing a BigQuery project.
@@ -1579,6 +1587,9 @@ class Client(ClientWithProject):
         """
 
         extra_params = {"maxResults": 0}
+
+        if timeout is not None:
+            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if project is None:
             project = self.project
@@ -3306,6 +3317,9 @@ class Client(ClientWithProject):
             "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
             "location": location,
         }
+
+        if timeout is not None:
+            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if start_index is not None:
             params["startIndex"] = start_index

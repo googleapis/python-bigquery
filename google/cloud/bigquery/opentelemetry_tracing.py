@@ -25,7 +25,7 @@ try:
     HAS_OPENTELEMETRY = True
 
 except ImportError:
-    logger.info(
+    logger.debug(
         "This service is instrumented using OpenTelemetry. "
         "OpenTelemetry could not be imported; please "
         "add opentelemetry-api and opentelemetry-instrumentation "

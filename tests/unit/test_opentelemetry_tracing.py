@@ -59,6 +59,16 @@ def test_opentelemetry_not_installed(setup, monkeypatch):
 
 
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
+def test_opentelemetry_not_installed_doesnt_warn(setup, monkeypatch):
+    monkeypatch.setitem(sys.modules, "opentelemetry", None)
+    reload_module(opentelemetry_tracing)
+    opentelemetry_tracing.WARNED_OPENTELEMETRY = True
+    with opentelemetry_tracing.create_span("No-op for opentelemetry") as span:
+        assert span is None
+        assert opentelemetry_tracing.WARNED_OPENTELEMETRY
+
+
+@pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
 def test_opentelemetry_success(setup):
     expected_attributes = {"foo": "baz", "db.system": "BigQuery"}
 

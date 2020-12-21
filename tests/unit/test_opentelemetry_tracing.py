@@ -52,8 +52,10 @@ def setup():
 def test_opentelemetry_not_installed(setup, monkeypatch):
     monkeypatch.setitem(sys.modules, "opentelemetry", None)
     reload_module(opentelemetry_tracing)
+    assert not opentelemetry_tracing.WARNED_OPENTELEMETRY
     with opentelemetry_tracing.create_span("No-op for opentelemetry") as span:
         assert span is None
+        assert opentelemetry_tracing.WARNED_OPENTELEMETRY
 
 
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")

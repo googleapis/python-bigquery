@@ -14,6 +14,7 @@
 
 import copy
 import unittest
+import warnings
 
 from google.api_core import exceptions
 import google.api_core.retry
@@ -1020,6 +1021,14 @@ class Test_JobConfig(unittest.TestCase):
         job_config = self._make_one()
         self.assertEqual(job_config._job_type, self.JOB_TYPE)
         self.assertEqual(job_config._properties, {self.JOB_TYPE: {}})
+
+    def test_ctor_with_unknown_property_generates_warning(self):
+        with warnings.catch_warnings(record=True) as warned:
+            config = self._make_one()
+            config.wrong_name = None
+            assert len(warned) == 1
+            warning = warned[0]
+            assert "Property wrong_name is unknown for" in str(warning)
 
     def test_fill_from_default(self):
         from google.cloud.bigquery import QueryJobConfig

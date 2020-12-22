@@ -19,7 +19,7 @@ import time
 import warnings
 
 try:
-    import tqdm
+    import tqdm  # type: ignore
 except ImportError:  # pragma: NO COVER
     tqdm = None
 

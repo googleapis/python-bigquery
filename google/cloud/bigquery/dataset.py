@@ -18,7 +18,7 @@ from __future__ import absolute_import
 
 import copy
 
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.model import ModelReference
@@ -220,7 +220,7 @@ class AccessEntry(object):
         return resource
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict):
         """Factory: construct an access entry given its API representation
 
         Args:
@@ -288,7 +288,7 @@ class DatasetReference(object):
     routine = _get_routine_reference
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict):
         """Factory: construct a dataset reference given its API representation
 
         Args:
@@ -304,7 +304,7 @@ class DatasetReference(object):
         return cls(project, dataset_id)
 
     @classmethod
-    def from_string(cls, dataset_id, default_project=None):
+    def from_string(cls, dataset_id: str, default_project: str = None):
         """Construct a dataset reference from dataset ID string.
 
         Args:
@@ -640,7 +640,7 @@ class Dataset(object):
         self._properties["defaultEncryptionConfiguration"] = api_repr
 
     @classmethod
-    def from_string(cls, full_dataset_id):
+    def from_string(cls, full_dataset_id: str):
         """Construct a dataset from fully-qualified dataset ID.
 
         Args:
@@ -664,7 +664,7 @@ class Dataset(object):
         return cls(DatasetReference.from_string(full_dataset_id))
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict):
         """Factory: construct a dataset given its API representation
 
         Args:

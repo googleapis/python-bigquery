@@ -119,12 +119,14 @@ class Routine(object):
 
         Read-only.
         """
+        # pytype: disable=module-attr
         value = self._properties.get(self._PROPERTY_TO_API_FIELD["created"])
         if value is not None and value != 0:
             # value will be in milliseconds.
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(value)
             )
+        # pytype: enable=module-attr
 
     @property
     def modified(self):
@@ -133,12 +135,14 @@ class Routine(object):
 
         Read-only.
         """
+        # pytype: disable=module-attr
         value = self._properties.get(self._PROPERTY_TO_API_FIELD["modified"])
         if value is not None and value != 0:
             # value will be in milliseconds.
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(value)
             )
+        # pytype: enable=module-attr
 
     @property
     def language(self):
@@ -438,17 +442,17 @@ class RoutineReference(object):
     @property
     def project(self):
         """str: ID of the project containing the routine."""
-        return self._properties["projectId"]
+        return self._properties["projectId"]  # pytype: disable=key-error
 
     @property
     def dataset_id(self):
         """str: ID of dataset containing the routine."""
-        return self._properties["datasetId"]
+        return self._properties["datasetId"]  # pytype: disable=key-error
 
     @property
     def routine_id(self):
         """str: The routine ID."""
-        return self._properties["routineId"]
+        return self._properties["routineId"]  # pytype: disable=key-error
 
     @property
     def path(self):

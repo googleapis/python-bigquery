@@ -19,12 +19,12 @@ import datetime
 import decimal
 import re
 
-from google.cloud._helpers import UTC
-from google.cloud._helpers import _date_from_iso8601_date
-from google.cloud._helpers import _datetime_from_microseconds
-from google.cloud._helpers import _RFC3339_MICROS
-from google.cloud._helpers import _RFC3339_NO_FRACTION
-from google.cloud._helpers import _to_bytes
+from google.cloud._helpers import UTC  # type: ignore
+from google.cloud._helpers import _date_from_iso8601_date  # type: ignore
+from google.cloud._helpers import _datetime_from_microseconds  # type: ignore
+from google.cloud._helpers import _RFC3339_MICROS  # type: ignore
+from google.cloud._helpers import _RFC3339_NO_FRACTION  # type: ignore
+from google.cloud._helpers import _to_bytes  # type: ignore
 
 _RFC3339_MICROS_NO_ZULU = "%Y-%m-%dT%H:%M:%S.%f"
 _TIMEONLY_WO_MICROS = "%H:%M:%S"

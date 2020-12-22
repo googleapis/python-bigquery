@@ -23,13 +23,13 @@ import warnings
 from packaging import version
 
 try:
-    import pandas
+    import pandas  # type: ignore
 except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
-    import pyarrow
-    import pyarrow.parquet
+    import pyarrow  # type: ignore
+    import pyarrow.parquet  # type: ignore
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
@@ -373,6 +373,7 @@ def augment_schema(dataframe, current_bq_schema):
     Returns:
         Optional[Sequence[google.cloud.bigquery.schema.SchemaField]]
     """
+    # pytype: disable=attribute-error
     augmented_schema = []
     unknown_type_fields = []
 
@@ -406,6 +407,7 @@ def augment_schema(dataframe, current_bq_schema):
         return None
 
     return augmented_schema
+    # pytype: enable=attribute-error
 
 
 def dataframe_to_arrow(dataframe, bq_schema):
@@ -624,7 +626,7 @@ def _download_table_bqstorage(
 
     # Passing a BQ Storage client in implies that the BigQuery Storage library
     # is available and can be imported.
-    from google.cloud import bigquery_storage
+    from google.cloud import bigquery_storage  # type: ignore
 
     if "$" in table.table_id:
         raise ValueError(

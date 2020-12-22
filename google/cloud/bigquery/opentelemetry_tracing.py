@@ -14,13 +14,13 @@
 
 import logging
 from contextlib import contextmanager
-from google.api_core.exceptions import GoogleAPICallError
+from google.api_core.exceptions import GoogleAPICallError  # type: ignore
 
 logger = logging.getLogger(__name__)
 try:
-    from opentelemetry import trace
-    from opentelemetry.instrumentation.utils import http_status_to_canonical_code
-    from opentelemetry.trace.status import Status
+    from opentelemetry import trace  # type: ignore
+    from opentelemetry.instrumentation.utils import http_status_to_canonical_code  # type: ignore
+    from opentelemetry.trace.status import Status  # type: ignore
 
     HAS_OPENTELEMETRY = True
     _warned_telemetry = True

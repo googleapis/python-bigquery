@@ -25,19 +25,19 @@ import pytz
 import warnings
 
 try:
-    import pandas
+    import pandas  # type: ignore
 except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
-    import pyarrow
+    import pyarrow  # type: ignore
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
 import google.api_core.exceptions
-from google.api_core.page_iterator import HTTPIterator
+from google.api_core.page_iterator import HTTPIterator  # type: ignore
 
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.schema import _build_schema_resource
@@ -46,6 +46,10 @@ from google.cloud.bigquery.schema import _to_schema_fields
 from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
+
+# Types needed only for Type Hints
+from google.cloud import bigquery_storage  # type: ignore
+from typing import Any, Dict
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -143,7 +147,7 @@ class TableReference(object):
         )
 
     @classmethod
-    def from_string(cls, table_id, default_project=None):
+    def from_string(cls, table_id: str, default_project: str = None):
         """Construct a table reference from table ID string.
 
         Args:
@@ -182,7 +186,7 @@ class TableReference(object):
         )
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict):
         """Factory:  construct a table reference given its API representation
 
         Args:
@@ -847,7 +851,7 @@ class Table(object):
         self._properties["externalDataConfiguration"] = api_repr
 
     @classmethod
-    def from_string(cls, full_table_id):
+    def from_string(cls, full_table_id: str):
         """Construct a table from fully-qualified table ID.
 
         Args:
@@ -871,7 +875,7 @@ class Table(object):
         return cls(TableReference.from_string(full_table_id))
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict):
         """Factory: construct a table given its API representation
 
         Args:
@@ -1104,7 +1108,7 @@ class TableListItem(object):
             return list(prop.get("fields", ()))
 
     @classmethod
-    def from_string(cls, full_table_id):
+    def from_string(cls, full_table_id: str):
         """Construct a table from fully-qualified table ID.
 
         Args:
@@ -1259,7 +1263,7 @@ class Row(object):
         for key, index in self._xxx_field_to_index.items():
             yield (key, copy.deepcopy(self._xxx_values[index]))
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Any = None):
         """Return a value for key, with a default value if it does not exist.
 
         Args:
@@ -1520,9 +1524,9 @@ class RowIterator(HTTPIterator):
     # changes to job.QueryJob.to_arrow()
     def to_arrow(
         self,
-        progress_bar_type=None,
-        bqstorage_client=None,
-        create_bqstorage_client=True,
+        progress_bar_type: str = None,
+        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        create_bqstorage_client: bool = True,
     ):
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
@@ -1623,9 +1627,9 @@ class RowIterator(HTTPIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client=None,
-        dtypes=None,
-        max_queue_size=_pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,
+        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        dtypes: Dict[str, Any] = None,
+        max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,
     ):
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -1698,11 +1702,11 @@ class RowIterator(HTTPIterator):
     # changes to job.QueryJob.to_dataframe()
     def to_dataframe(
         self,
-        bqstorage_client=None,
-        dtypes=None,
-        progress_bar_type=None,
-        create_bqstorage_client=True,
-        date_as_object=True,
+        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        dtypes: Dict[str, Any] = None,
+        progress_bar_type: str = None,
+        create_bqstorage_client: bool = True,
+        date_as_object: bool = True,
     ):
         """Create a pandas DataFrame by loading all pages of a query.
 
@@ -2164,7 +2168,7 @@ class TimePartitioning(object):
         self._properties["requirePartitionFilter"] = value
 
     @classmethod
-    def from_api_repr(cls, api_repr):
+    def from_api_repr(cls, api_repr: dict):
         """Return a :class:`TimePartitioning` object deserialized from a dict.
 
         This method creates a new ``TimePartitioning`` instance that points to

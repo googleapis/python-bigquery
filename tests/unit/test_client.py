@@ -319,7 +319,7 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_once_with(
             method="GET",
             path=path,
-            query_params={"timeoutMs": 500, "location": self.LOCATION},
+            query_params={"maxResults": 0, "timeoutMs": 500, "location": self.LOCATION},
             timeout=42,
         )
 
@@ -336,7 +336,7 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_once_with(
             method="GET",
             path="/projects/PROJECT/queries/nothere",
-            query_params={"location": self.LOCATION},
+            query_params={"maxResults": 0, "location": self.LOCATION},
             timeout=None,
         )
 
@@ -5804,7 +5804,7 @@ class TestClient(unittest.TestCase):
         import datetime
         from google.cloud._helpers import UTC
         from google.cloud._helpers import _datetime_to_rfc3339
-        from google.cloud._helpers import _microseconds_from_datetime
+        from google.cloud._helpers import _RFC3339_MICROS
         from google.cloud.bigquery.schema import SchemaField
 
         WHEN_TS = 1437767599.006
@@ -5834,7 +5834,7 @@ class TestClient(unittest.TestCase):
             result = {"full_name": row[0], "age": str(row[1])}
             joined = row[2]
             if isinstance(joined, datetime.datetime):
-                joined = _microseconds_from_datetime(joined) * 1e-6
+                joined = joined.strftime(_RFC3339_MICROS)
             if joined is not None:
                 result["joined"] = joined
             return result
@@ -5864,7 +5864,7 @@ class TestClient(unittest.TestCase):
         import datetime
         from google.cloud._helpers import UTC
         from google.cloud._helpers import _datetime_to_rfc3339
-        from google.cloud._helpers import _microseconds_from_datetime
+        from google.cloud._helpers import _RFC3339_MICROS
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -5910,7 +5910,7 @@ class TestClient(unittest.TestCase):
                 row = copy.deepcopy(row)
                 del row["joined"]
             elif isinstance(joined, datetime.datetime):
-                row["joined"] = _microseconds_from_datetime(joined) * 1e-6
+                row["joined"] = joined.strftime(_RFC3339_MICROS)
             row["age"] = str(row["age"])
             return row
 
@@ -6109,16 +6109,16 @@ class TestClient(unittest.TestCase):
                             {
                                 "score": "12",
                                 "times": [
-                                    1543665600.0,  # 2018-12-01 12:00 UTC
-                                    1543669200.0,  # 2018-12-01 13:00 UTC
+                                    "2018-12-01T12:00:00.000000Z",
+                                    "2018-12-01T13:00:00.000000Z",
                                 ],
                                 "distances": [1.25, 2.5],
                             },
                             {
                                 "score": "13",
                                 "times": [
-                                    1543752000.0,  # 2018-12-02 12:00 UTC
-                                    1543755600.0,  # 2018-12-02 13:00 UTC
+                                    "2018-12-02T12:00:00.000000Z",
+                                    "2018-12-02T13:00:00.000000Z",
                                 ],
                                 "distances": [-1.25, -2.5],
                             },
@@ -6290,38 +6290,43 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=project, credentials=creds, _http=http)
-        conn = client._connection = make_connection({})
         table_ref = DatasetReference(project, ds_id).table(table_id)
-        schema = [SchemaField("account", "STRING"), SchemaField("balance", "NUMERIC")]
-        insert_table = table.Table(table_ref, schema=schema)
         rows = [
             ("Savings", decimal.Decimal("23.47")),
             ("Checking", decimal.Decimal("1.98")),
             ("Mortgage", decimal.Decimal("-12345678909.87654321")),
         ]
-
-        with mock.patch("uuid.uuid4", side_effect=map(str, range(len(rows)))):
-            errors = client.insert_rows(insert_table, rows)
-
-        self.assertEqual(len(errors), 0)
-        rows_json = [
-            {"account": "Savings", "balance": "23.47"},
-            {"account": "Checking", "balance": "1.98"},
-            {"account": "Mortgage", "balance": "-12345678909.87654321"},
+        schemas = [
+            [SchemaField("account", "STRING"), SchemaField("balance", "NUMERIC")],
+            [SchemaField("account", "STRING"), SchemaField("balance", "BIGNUMERIC")],
         ]
-        sent = {
-            "rows": [
-                {"json": row, "insertId": str(i)} for i, row in enumerate(rows_json)
+
+        for schema in schemas:
+            conn = client._connection = make_connection({})
+
+            insert_table = table.Table(table_ref, schema=schema)
+            with mock.patch("uuid.uuid4", side_effect=map(str, range(len(rows)))):
+                errors = client.insert_rows(insert_table, rows)
+
+            self.assertEqual(len(errors), 0)
+            rows_json = [
+                {"account": "Savings", "balance": "23.47"},
+                {"account": "Checking", "balance": "1.98"},
+                {"account": "Mortgage", "balance": "-12345678909.87654321"},
             ]
-        }
-        conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/projects/{}/datasets/{}/tables/{}/insertAll".format(
-                project, ds_id, table_id
-            ),
-            data=sent,
-            timeout=None,
-        )
+            sent = {
+                "rows": [
+                    {"json": row, "insertId": str(i)} for i, row in enumerate(rows_json)
+                ]
+            }
+            conn.api_request.assert_called_once_with(
+                method="POST",
+                path="/projects/{}/datasets/{}/tables/{}/insertAll".format(
+                    project, ds_id, table_id
+                ),
+                data=sent,
+                timeout=None,
+            )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_insert_rows_from_dataframe(self):
@@ -6739,42 +6744,21 @@ class TestClient(unittest.TestCase):
             self.DS_ID,
             self.TABLE_ID,
         )
-        WHEN_TS = 1437767599.006
-        WHEN = datetime.datetime.utcfromtimestamp(WHEN_TS).replace(tzinfo=UTC)
-        WHEN_1 = WHEN + datetime.timedelta(seconds=1)
-        WHEN_2 = WHEN + datetime.timedelta(seconds=2)
+        WHEN_TS = 1437767599006000
+
+        WHEN = datetime.datetime.utcfromtimestamp(WHEN_TS / 1e6).replace(tzinfo=UTC)
+        WHEN_1 = WHEN + datetime.timedelta(microseconds=1)
+        WHEN_2 = WHEN + datetime.timedelta(microseconds=2)
         ROWS = 1234
         TOKEN = "TOKEN"
-
-        def _bigquery_timestamp_float_repr(ts_float):
-            # Preserve microsecond precision for E+09 timestamps
-            return "%0.15E" % (ts_float,)
 
         DATA = {
             "totalRows": str(ROWS),
             "pageToken": TOKEN,
             "rows": [
-                {
-                    "f": [
-                        {"v": "Phred Phlyntstone"},
-                        {"v": "32"},
-                        {"v": _bigquery_timestamp_float_repr(WHEN_TS)},
-                    ]
-                },
-                {
-                    "f": [
-                        {"v": "Bharney Rhubble"},
-                        {"v": "33"},
-                        {"v": _bigquery_timestamp_float_repr(WHEN_TS + 1)},
-                    ]
-                },
-                {
-                    "f": [
-                        {"v": "Wylma Phlyntstone"},
-                        {"v": "29"},
-                        {"v": _bigquery_timestamp_float_repr(WHEN_TS + 2)},
-                    ]
-                },
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}, {"v": WHEN_TS}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}, {"v": WHEN_TS + 1}]},
+                {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}, {"v": WHEN_TS + 2}]},
                 {"f": [{"v": "Bhettye Rhubble"}, {"v": None}, {"v": None}]},
             ],
         }
@@ -6807,7 +6791,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(iterator.next_page_token, TOKEN)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path="/%s" % PATH, query_params={}, timeout=7.5
+            method="GET",
+            path="/%s" % PATH,
+            query_params={"formatOptions.useInt64Timestamp": True},
+            timeout=7.5,
         )
 
     def test_list_rows_w_start_index_w_page_size(self):
@@ -6856,20 +6843,30 @@ class TestClient(unittest.TestCase):
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0], Row(("Wylma Phlyntstone",), f2i))
         self.assertEqual(rows[1], Row(("Bhettye Rhubble",), f2i))
-        self.assertEqual(extra_params, {"startIndex": 1})
+        self.assertEqual(
+            extra_params, {"startIndex": 1, "formatOptions.useInt64Timestamp": True}
+        )
 
         conn.api_request.assert_has_calls(
             [
                 mock.call(
                     method="GET",
                     path="/%s" % PATH,
-                    query_params={"startIndex": 1, "maxResults": 2},
+                    query_params={
+                        "startIndex": 1,
+                        "maxResults": 2,
+                        "formatOptions.useInt64Timestamp": True,
+                    },
                     timeout=None,
                 ),
                 mock.call(
                     method="GET",
                     path="/%s" % PATH,
-                    query_params={"pageToken": "some-page-token", "maxResults": 2},
+                    query_params={
+                        "pageToken": "some-page-token",
+                        "maxResults": 2,
+                        "formatOptions.useInt64Timestamp": True,
+                    },
                     timeout=None,
                 ),
             ]
@@ -6920,7 +6917,45 @@ class TestClient(unittest.TestCase):
             iterator = client.list_rows(table, **test[0])
             six.next(iterator.pages)
             req = conn.api_request.call_args_list[i]
+            test[1]["formatOptions.useInt64Timestamp"] = True
             self.assertEqual(req[1]["query_params"], test[1], "for kwargs %s" % test[0])
+
+    def test_list_rows_w_numeric(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.table import Table
+
+        resource = {
+            "totalRows": 3,
+            "rows": [
+                {"f": [{"v": "-1.23456789"}, {"v": "-123456789.987654321"}]},
+                {"f": [{"v": None}, {"v": "3.141592653589793238462643383279502884"}]},
+                {"f": [{"v": "2718281828459045235360287471.352662497"}, {"v": None}]},
+            ],
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        client._connection = make_connection(resource)
+        schema = [
+            SchemaField("num", "NUMERIC"),
+            SchemaField("bignum", "BIGNUMERIC"),
+        ]
+        table = Table(self.TABLE_REF, schema=schema)
+
+        iterator = client.list_rows(table)
+        rows = list(iterator)
+
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0]["num"], decimal.Decimal("-1.23456789"))
+        self.assertEqual(rows[0]["bignum"], decimal.Decimal("-123456789.987654321"))
+        self.assertIsNone(rows[1]["num"])
+        self.assertEqual(
+            rows[1]["bignum"], decimal.Decimal("3.141592653589793238462643383279502884")
+        )
+        self.assertEqual(
+            rows[2]["num"], decimal.Decimal("2718281828459045235360287471.352662497")
+        )
+        self.assertIsNone(rows[2]["bignum"])
 
     def test_list_rows_repeated_fields(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -6979,7 +7014,10 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_once_with(
             method="GET",
             path="/%s" % PATH,
-            query_params={"selectedFields": "color,struct"},
+            query_params={
+                "selectedFields": "color,struct",
+                "formatOptions.useInt64Timestamp": True,
+            },
             timeout=None,
         )
 
@@ -7047,7 +7085,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(page_token, TOKEN)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path="/%s" % PATH, query_params={}, timeout=None
+            method="GET",
+            path="/%s" % PATH,
+            query_params={"formatOptions.useInt64Timestamp": True},
+            timeout=None,
         )
 
     def test_list_rows_with_missing_schema(self):
@@ -7109,7 +7150,10 @@ class TestClient(unittest.TestCase):
 
             rows = list(row_iter)
             conn.api_request.assert_called_once_with(
-                method="GET", path=tabledata_path, query_params={}, timeout=None
+                method="GET",
+                path=tabledata_path,
+                query_params={"formatOptions.useInt64Timestamp": True},
+                timeout=None,
             )
             self.assertEqual(row_iter.total_rows, 3, msg=repr(table))
             self.assertEqual(rows[0].name, "Phred Phlyntstone", msg=repr(table))
@@ -8365,6 +8409,56 @@ class TestClientUpload(object):
 
         err_msg = str(exc.value)
         assert "Expected an instance of LoadJobConfig" in err_msg
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_load_table_from_dataframe_with_csv_source_format(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.CSV,
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(
+                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
+            ),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, get_table_patch:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=None,
+            project=None,
+            job_config=mock.ANY,
+            timeout=None,
+        )
+
+        sent_file = load_table_from_file.mock_calls[0][1][1]
+        assert sent_file.closed
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.CSV
 
     def test_load_table_from_json_basic_use(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES

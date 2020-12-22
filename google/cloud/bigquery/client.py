@@ -881,7 +881,22 @@ class Client(ClientWithProject):
             dataset (google.cloud.bigquery.dataset.Dataset):
                 The dataset to update.
             fields (Sequence[str]):
-                The properties of ``dataset`` to change (e.g. "friendly_name").
+                The properties of ``dataset`` to change. These are strings
+                corresponding to the properties of
+                :class:`~google.cloud.bigquery.dataset.Dataset`.
+
+                For example, to update the default expiration times, specify
+                both properties in the ``fields`` argument:
+
+                .. code-block:: python
+
+                    bigquery_client.update_dataset(
+                        dataset,
+                        [
+                            "default_partition_expiration_ms",
+                            "default_table_expiration_ms",
+                        ]
+                    )
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the RPC.
             timeout (Optional[float]):
@@ -928,8 +943,18 @@ class Client(ClientWithProject):
         Args:
             model (google.cloud.bigquery.model.Model): The model to update.
             fields (Sequence[str]):
-                The fields of ``model`` to change, spelled as the Model
-                properties (e.g. "friendly_name").
+                The properties of ``model`` to change. These are strings
+                corresponding to the properties of
+                :class:`~google.cloud.bigquery.model.Model`.
+
+                For example, to update the descriptive properties of the model,
+                specify them in the ``fields`` argument:
+
+                .. code-block:: python
+
+                    bigquery_client.update_model(
+                        model, ["description", "friendly_name"]
+                    )
             retry (Optional[google.api_core.retry.Retry]):
                 A description of how to retry the API call.
             timeout (Optional[float]):
@@ -980,11 +1005,20 @@ class Client(ClientWithProject):
         occurred since the read.
 
         Args:
-            routine (google.cloud.bigquery.routine.Routine): The routine to update.
+            routine (google.cloud.bigquery.routine.Routine):
+                The routine to update.
             fields (Sequence[str]):
                 The fields of ``routine`` to change, spelled as the
-                :class:`~google.cloud.bigquery.routine.Routine` properties
-                (e.g. ``type_``).
+                :class:`~google.cloud.bigquery.routine.Routine` properties.
+
+                For example, to update the description property of the routine,
+                specify it in the ``fields`` argument:
+
+                .. code-block:: python
+
+                    bigquery_client.update_routine(
+                        routine, ["description"]
+                    )
             retry (Optional[google.api_core.retry.Retry]):
                 A description of how to retry the API call.
             timeout (Optional[float]):
@@ -1035,8 +1069,18 @@ class Client(ClientWithProject):
         Args:
             table (google.cloud.bigquery.table.Table): The table to update.
             fields (Sequence[str]):
-                The fields of ``table`` to change, spelled as the Table
-                properties (e.g. "friendly_name").
+                The fields of ``table`` to change, spelled as the
+                :class:`~google.cloud.bigquery.table.Table` properties.
+
+                For example, to update the descriptive properties of the table,
+                specify them in the ``fields`` argument:
+
+                .. code-block:: python
+
+                    bigquery_client.update_table(
+                        table,
+                        ["description", "friendly_name"]
+                    )
             retry (Optional[google.api_core.retry.Retry]):
                 A description of how to retry the API call.
             timeout (Optional[float]):
@@ -1534,7 +1578,7 @@ class Client(ClientWithProject):
                 A new ``_QueryResults`` instance.
         """
 
-        extra_params = {}
+        extra_params = {"maxResults": 0}
 
         if project is None:
             project = self.project
@@ -2111,9 +2155,12 @@ class Client(ClientWithProject):
 
         .. note::
 
-            Due to the way REPEATED fields are encoded in the ``parquet`` file
-            format, a mismatch with the existing table schema can occur, and
-            100% compatibility cannot be guaranteed for REPEATED fields.
+            REPEATED fields are NOT supported when using the CSV source format.
+            They are supported when using the PARQUET source format, but
+            due to the way they are encoded in the ``parquet`` file,
+            a mismatch with the existing table schema can occur, so
+            100% compatibility cannot be guaranteed for REPEATED fields when
+            using the parquet format.
 
             https://github.com/googleapis/python-bigquery/issues/17
 
@@ -2153,6 +2200,14 @@ class Client(ClientWithProject):
                 column names matching those of the dataframe. The BigQuery
                 schema is used to determine the correct data type conversion.
                 Indexes are not loaded. Requires the :mod:`pyarrow` library.
+
+                By default, this method uses the parquet source format. To
+                override this, supply a value for
+                :attr:`~google.cloud.bigquery.job.LoadJobConfig.source_format`
+                with the format name. Currently only
+                :attr:`~google.cloud.bigquery.job.SourceFormat.CSV` and
+                :attr:`~google.cloud.bigquery.job.SourceFormat.PARQUET` are
+                supported.
             parquet_compression (Optional[str]):
                  [Beta] The compression method to use if intermittently
                  serializing ``dataframe`` to a parquet file.
@@ -2181,10 +2236,6 @@ class Client(ClientWithProject):
                 If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
                 class.
         """
-        if pyarrow is None:
-            # pyarrow is now the only supported  parquet engine.
-            raise ValueError("This method requires pyarrow to be installed")
-
         job_id = _make_job_id(job_id, job_id_prefix)
 
         if job_config:
@@ -2197,15 +2248,20 @@ class Client(ClientWithProject):
         else:
             job_config = job.LoadJobConfig()
 
-        if job_config.source_format:
-            if job_config.source_format != job.SourceFormat.PARQUET:
-                raise ValueError(
-                    "Got unexpected source_format: '{}'. Currently, only PARQUET is supported".format(
-                        job_config.source_format
-                    )
-                )
-        else:
+        supported_formats = {job.SourceFormat.CSV, job.SourceFormat.PARQUET}
+        if job_config.source_format is None:
+            # default value
             job_config.source_format = job.SourceFormat.PARQUET
+        if job_config.source_format not in supported_formats:
+            raise ValueError(
+                "Got unexpected source_format: '{}'. Currently, only PARQUET and CSV are supported".format(
+                    job_config.source_format
+                )
+            )
+
+        if pyarrow is None and job_config.source_format == job.SourceFormat.PARQUET:
+            # pyarrow is now the only supported  parquet engine.
+            raise ValueError("This method requires pyarrow to be installed")
 
         if location is None:
             location = self.location
@@ -2245,27 +2301,43 @@ class Client(ClientWithProject):
                 stacklevel=2,
             )
 
-        tmpfd, tmppath = tempfile.mkstemp(suffix="_job_{}.parquet".format(job_id[:8]))
+        tmpfd, tmppath = tempfile.mkstemp(
+            suffix="_job_{}.{}".format(job_id[:8], job_config.source_format.lower())
+        )
         os.close(tmpfd)
 
         try:
-            if job_config.schema:
-                if parquet_compression == "snappy":  # adjust the default value
-                    parquet_compression = parquet_compression.upper()
 
-                _pandas_helpers.dataframe_to_parquet(
-                    dataframe,
-                    job_config.schema,
-                    tmppath,
-                    parquet_compression=parquet_compression,
-                )
+            if job_config.source_format == job.SourceFormat.PARQUET:
+
+                if job_config.schema:
+                    if parquet_compression == "snappy":  # adjust the default value
+                        parquet_compression = parquet_compression.upper()
+
+                    _pandas_helpers.dataframe_to_parquet(
+                        dataframe,
+                        job_config.schema,
+                        tmppath,
+                        parquet_compression=parquet_compression,
+                    )
+                else:
+                    dataframe.to_parquet(tmppath, compression=parquet_compression)
+
             else:
-                dataframe.to_parquet(tmppath, compression=parquet_compression)
 
-            with open(tmppath, "rb") as parquet_file:
+                dataframe.to_csv(
+                    tmppath,
+                    index=False,
+                    header=False,
+                    encoding="utf-8",
+                    float_format="%.17g",
+                    date_format="%Y-%m-%d %H:%M:%S.%f",
+                )
+
+            with open(tmppath, "rb") as tmpfile:
                 file_size = os.path.getsize(tmppath)
                 return self.load_table_from_file(
-                    parquet_file,
+                    tmpfile,
                     destination,
                     num_retries=num_retries,
                     rewind=True,
@@ -3157,6 +3229,7 @@ class Client(ClientWithProject):
         if start_index is not None:
             params["startIndex"] = start_index
 
+        params["formatOptions.useInt64Timestamp"] = True
         row_iterator = RowIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),
@@ -3187,7 +3260,6 @@ class Client(ClientWithProject):
         page_size=None,
         retry=DEFAULT_RETRY,
         timeout=None,
-        first_page_response=None,
     ):
         """List the rows of a completed query.
         See
@@ -3238,6 +3310,7 @@ class Client(ClientWithProject):
         if start_index is not None:
             params["startIndex"] = start_index
 
+        params["formatOptions.useInt64Timestamp"] = True
         row_iterator = RowIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),
@@ -3248,7 +3321,6 @@ class Client(ClientWithProject):
             table=destination,
             extra_params=params,
             total_rows=total_rows,
-            first_page_response=first_page_response,
         )
         return row_iterator
 

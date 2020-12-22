@@ -40,6 +40,7 @@ from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import _table_arg_to_table_ref
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import TimePartitioning
+from google.cloud.bigquery._tqdm_helpers import wait_for_query
 
 from google.cloud.bigquery.job.base import _AsyncJob
 from google.cloud.bigquery.job.base import _DONE_STATE
@@ -1176,10 +1177,6 @@ class QueryJob(_AsyncJob):
         if self._query_results.total_rows is None:
             return _EmptyRowIterator()
 
-        first_page_response = None
-        if max_results is None and page_size is None and start_index is None:
-            first_page_response = self._query_results._properties
-
         rows = self._client._list_rows_from_query_results(
             self.job_id,
             self.location,
@@ -1192,7 +1189,6 @@ class QueryJob(_AsyncJob):
             start_index=start_index,
             retry=retry,
             timeout=timeout,
-            first_page_response=first_page_response,
         )
         rows._preserve_order = _contains_order_by(self.query)
         return rows
@@ -1259,7 +1255,8 @@ class QueryJob(_AsyncJob):
 
         ..versionadded:: 1.17.0
         """
-        return self.result().to_arrow(
+        query_result = wait_for_query(self, progress_bar_type)
+        return query_result.to_arrow(
             progress_bar_type=progress_bar_type,
             bqstorage_client=bqstorage_client,
             create_bqstorage_client=create_bqstorage_client,
@@ -1328,7 +1325,8 @@ class QueryJob(_AsyncJob):
         Raises:
             ValueError: If the `pandas` library cannot be imported.
         """
-        return self.result().to_dataframe(
+        query_result = wait_for_query(self, progress_bar_type)
+        return query_result.to_dataframe(
             bqstorage_client=bqstorage_client,
             dtypes=dtypes,
             progress_bar_type=progress_bar_type,

@@ -23,7 +23,7 @@ import six
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
 from google.cloud._helpers import _datetime_from_microseconds
-from google.cloud._helpers import _microseconds_from_datetime
+from google.cloud._helpers import _RFC3339_MICROS
 from google.cloud._helpers import _RFC3339_NO_FRACTION
 from google.cloud._helpers import _to_bytes
 
@@ -40,7 +40,7 @@ _PROJECT_PREFIX_PATTERN = re.compile(
 
 def _not_null(value, field):
     """Check whether 'value' should be coerced to 'field' type."""
-    return value is not None or field.mode != "NULLABLE"
+    return value is not None or (field is not None and field.mode != "NULLABLE")
 
 
 def _int_from_json(value, field):
@@ -81,8 +81,8 @@ def _bytes_from_json(value, field):
 def _timestamp_from_json(value, field):
     """Coerce 'value' to a datetime, if set or not nullable."""
     if _not_null(value, field):
-        # value will be a float in seconds, to microsecond precision, in UTC.
-        return _datetime_from_microseconds(1e6 * float(value))
+        # value will be a integer in seconds, to microsecond precision, in UTC.
+        return _datetime_from_microseconds(int(value))
 
 
 def _timestamp_query_param_from_json(value, field):
@@ -314,12 +314,9 @@ def _timestamp_to_json_parameter(value):
 
 
 def _timestamp_to_json_row(value):
-    """Coerce 'value' to an JSON-compatible representation.
-
-    This version returns floating-point seconds value used in row data.
-    """
+    """Coerce 'value' to an JSON-compatible representation."""
     if isinstance(value, datetime.datetime):
-        value = _microseconds_from_datetime(value) * 1e-6
+        value = value.strftime(_RFC3339_MICROS)
     return value
 
 
@@ -351,7 +348,7 @@ _SCALAR_VALUE_TO_JSON_ROW = {
     "FLOAT": _float_to_json,
     "FLOAT64": _float_to_json,
     "NUMERIC": _decimal_to_json,
-    "BIGNUMERIC": _decimal_from_json,
+    "BIGNUMERIC": _decimal_to_json,
     "BOOLEAN": _bool_to_json,
     "BOOL": _bool_to_json,
     "BYTES": _bytes_to_json,

@@ -12,4 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "2.6.1"
+from google.cloud import bigquery
+import pytest
+
+
+@pytest.fixture(scope="session")
+def bigquery_client():
+    bigquery_client = bigquery.Client()
+    return bigquery_client
+
+
+@pytest.fixture(scope="session")
+def project_id(bigquery_client):
+    return bigquery_client.project

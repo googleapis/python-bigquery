@@ -25,6 +25,18 @@ BLACK_VERSION = "black==19.10b0"
 BLACK_PATHS = ("docs", "google", "samples", "tests", "noxfile.py", "setup.py")
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
+# 'docfx' is excluded since it only needs to run in 'docs-presubmit'
+nox.options.sessions = [
+    "unit",
+    "system",
+    "snippets",
+    "cover",
+    "lint",
+    "lint_setup_py",
+    "blacken",
+    "docs",
+]
+
 
 def default(session):
     """Default unit test session.
@@ -135,7 +147,13 @@ def snippets(session):
     # Skip tests in samples/snippets, as those are run in a different session
     # using the nox config from that directory.
     session.run("py.test", os.path.join("docs", "snippets.py"), *session.posargs)
-    session.run("py.test", "samples", "--ignore=samples/snippets", *session.posargs)
+    session.run(
+        "py.test",
+        "samples",
+        "--ignore=samples/snippets",
+        "--ignore=samples/geography",
+        *session.posargs,
+    )
 
 
 @nox.session(python="3.8")

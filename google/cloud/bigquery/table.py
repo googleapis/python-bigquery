@@ -36,11 +36,6 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
-try:
-    import tqdm
-except ImportError:  # pragma: NO COVER
-    tqdm = None
-
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator
 
@@ -50,6 +45,7 @@ from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
+from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
@@ -68,10 +64,7 @@ _NO_PYARROW_ERROR = (
     "The pyarrow library is not installed, please install "
     "pyarrow to use the to_arrow() function."
 )
-_NO_TQDM_ERROR = (
-    "A progress bar was requested, but there was an error loading the tqdm "
-    "library. Please install tqdm to use the progress bar functionality."
-)
+
 _TABLE_HAS_NO_SCHEMA = 'Table has no schema:  call "client.get_table()"'
 
 
@@ -269,6 +262,9 @@ class TableReference(object):
     def __hash__(self):
         return hash(self._key())
 
+    def __str__(self):
+        return f"{self.project}.{self.dataset_id}.{self.table_id}"
+
     def __repr__(self):
         from google.cloud.bigquery.dataset import DatasetReference
 
@@ -297,15 +293,18 @@ class Table(object):
     """
 
     _PROPERTY_TO_API_FIELD = {
-        "friendly_name": "friendlyName",
+        "encryption_configuration": "encryptionConfiguration",
         "expires": "expirationTime",
-        "time_partitioning": "timePartitioning",
-        "partitioning_type": "timePartitioning",
+        "external_data_configuration": "externalDataConfiguration",
+        "friendly_name": "friendlyName",
+        "mview_enable_refresh": "materializedView",
+        "mview_query": "materializedView",
+        "mview_refresh_interval": "materializedView",
         "partition_expiration": "timePartitioning",
+        "partitioning_type": "timePartitioning",
+        "time_partitioning": "timePartitioning",
         "view_use_legacy_sql": "view",
         "view_query": "view",
-        "external_data_configuration": "externalDataConfiguration",
-        "encryption_configuration": "encryptionConfiguration",
         "require_partition_filter": "requirePartitionFilter",
     }
 
@@ -482,7 +481,7 @@ class Table(object):
         """Union[str, None]: ID for the table (:data:`None` until set from the
         server).
 
-        In the format ``project_id:dataset_id.table_id``.
+        In the format ``project-id:dataset_id.table_id``.
         """
         return self._properties.get("id")
 
@@ -491,7 +490,8 @@ class Table(object):
         """Union[str, None]: The type of the table (:data:`None` until set from
         the server).
 
-        Possible values are ``'TABLE'``, ``'VIEW'``, or ``'EXTERNAL'``.
+        Possible values are ``'TABLE'``, ``'VIEW'``, ``'MATERIALIZED_VIEW'`` or
+        ``'EXTERNAL'``.
         """
         return self._properties.get("type")
 
@@ -717,18 +717,14 @@ class Table(object):
         Raises:
             ValueError: For invalid value types.
         """
-        view = self._properties.get("view")
-        if view is not None:
-            return view.get("query")
+        return _helpers._get_sub_prop(self._properties, ["view", "query"])
 
     @view_query.setter
     def view_query(self, value):
         if not isinstance(value, six.string_types):
             raise ValueError("Pass a string")
-        view = self._properties.get("view")
-        if view is None:
-            view = self._properties["view"] = {}
-        view["query"] = value
+        _helpers._set_sub_prop(self._properties, ["view", "query"], value)
+        view = self._properties["view"]
         # The service defaults useLegacySql to True, but this
         # client uses Standard SQL by default.
         if view.get("useLegacySql") is None:
@@ -748,6 +744,78 @@ class Table(object):
         if self._properties.get("view") is None:
             self._properties["view"] = {}
         self._properties["view"]["useLegacySql"] = value
+
+    @property
+    def mview_query(self):
+        """Optional[str]: SQL query defining the table as a materialized
+        view (defaults to :data:`None`).
+        """
+        return _helpers._get_sub_prop(self._properties, ["materializedView", "query"])
+
+    @mview_query.setter
+    def mview_query(self, value):
+        _helpers._set_sub_prop(
+            self._properties, ["materializedView", "query"], str(value)
+        )
+
+    @mview_query.deleter
+    def mview_query(self):
+        """Delete SQL query defining the table as a materialized view."""
+        self._properties.pop("materializedView", None)
+
+    @property
+    def mview_last_refresh_time(self):
+        """Optional[datetime.datetime]: Datetime at which the materialized view was last
+        refreshed (:data:`None` until set from the server).
+        """
+        refresh_time = _helpers._get_sub_prop(
+            self._properties, ["materializedView", "lastRefreshTime"]
+        )
+        if refresh_time is not None:
+            # refresh_time will be in milliseconds.
+            return google.cloud._helpers._datetime_from_microseconds(
+                1000 * int(refresh_time)
+            )
+
+    @property
+    def mview_enable_refresh(self):
+        """Optional[bool]: Enable automatic refresh of the materialized view
+        when the base table is updated. The default value is :data:`True`.
+        """
+        return _helpers._get_sub_prop(
+            self._properties, ["materializedView", "enableRefresh"]
+        )
+
+    @mview_enable_refresh.setter
+    def mview_enable_refresh(self, value):
+        return _helpers._set_sub_prop(
+            self._properties, ["materializedView", "enableRefresh"], value
+        )
+
+    @property
+    def mview_refresh_interval(self):
+        """Optional[datetime.timedelta]: The maximum frequency at which this
+        materialized view will be refreshed. The default value is 1800000
+        milliseconds (30 minutes).
+        """
+        refresh_interval = _helpers._get_sub_prop(
+            self._properties, ["materializedView", "refreshIntervalMs"]
+        )
+        if refresh_interval is not None:
+            return datetime.timedelta(milliseconds=int(refresh_interval))
+
+    @mview_refresh_interval.setter
+    def mview_refresh_interval(self, value):
+        if value is None:
+            refresh_interval_ms = None
+        else:
+            refresh_interval_ms = str(value // datetime.timedelta(milliseconds=1))
+
+        _helpers._set_sub_prop(
+            self._properties,
+            ["materializedView", "refreshIntervalMs"],
+            refresh_interval_ms,
+        )
 
     @property
     def streaming_buffer(self):
@@ -1418,32 +1486,6 @@ class RowIterator(HTTPIterator):
         """int: The total number of rows in the table."""
         return self._total_rows
 
-    def _get_progress_bar(self, progress_bar_type):
-        """Construct a tqdm progress bar object, if tqdm is installed."""
-        if tqdm is None:
-            if progress_bar_type is not None:
-                warnings.warn(_NO_TQDM_ERROR, UserWarning, stacklevel=3)
-            return None
-
-        description = "Downloading"
-        unit = "rows"
-
-        try:
-            if progress_bar_type == "tqdm":
-                return tqdm.tqdm(desc=description, total=self.total_rows, unit=unit)
-            elif progress_bar_type == "tqdm_notebook":
-                return tqdm.tqdm_notebook(
-                    desc=description, total=self.total_rows, unit=unit
-                )
-            elif progress_bar_type == "tqdm_gui":
-                return tqdm.tqdm_gui(desc=description, total=self.total_rows, unit=unit)
-        except (KeyError, TypeError):
-            # Protect ourselves from any tqdm errors. In case of
-            # unexpected tqdm behavior, just fall back to showing
-            # no progress bar.
-            warnings.warn(_NO_TQDM_ERROR, UserWarning, stacklevel=3)
-        return None
-
     def _to_page_iterable(
         self, bqstorage_download, tabledata_list_download, bqstorage_client=None
     ):
@@ -1551,7 +1593,9 @@ class RowIterator(HTTPIterator):
             owns_bqstorage_client = bqstorage_client is not None
 
         try:
-            progress_bar = self._get_progress_bar(progress_bar_type)
+            progress_bar = get_progress_bar(
+                progress_bar_type, "Downloading", self.total_rows, "rows"
+            )
 
             record_batches = []
             for record_batch in self._to_arrow_iterable(

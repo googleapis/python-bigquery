@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,4 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "2.6.1"
+from .. import client_query_destination_table_clustered
+
+
+def test_client_query_destination_table_clustered(capsys, random_table_id):
+
+    client_query_destination_table_clustered.client_query_destination_table_clustered(
+        random_table_id
+    )
+    out, err = capsys.readouterr()
+    assert (
+        "The destination table is written using the cluster_fields configuration."
+        in out
+    )

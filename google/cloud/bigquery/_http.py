@@ -14,7 +14,7 @@
 
 """Create / interact with Google BigQuery connections."""
 
-from google.cloud import _http
+from google.cloud import _http  # type: ignore
 
 from google.cloud.bigquery import __version__
 

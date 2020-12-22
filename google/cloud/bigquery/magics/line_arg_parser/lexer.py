@@ -149,7 +149,7 @@ class StrEnumMeta(enum.EnumMeta):
     def __new__(metacls, name, bases, oldclassdict):
         # Scan through the declared enum members and convert any value that is a plain
         # empty tuple into a `str` of the name instead.
-        newclassdict = enum._EnumDict()
+        newclassdict = enum._EnumDict()  # type: ignore
         for key, val in oldclassdict.items():
             if val == ():
                 val = key

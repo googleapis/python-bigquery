@@ -21,6 +21,7 @@ import shutil
 import nox
 
 
+PYTYPE_VERSION = "pytype==2020.7.24"
 BLACK_VERSION = "black==19.10b0"
 BLACK_PATHS = ("docs", "google", "samples", "tests", "noxfile.py", "setup.py")
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
@@ -84,6 +85,14 @@ def default(session):
 def unit(session):
     """Run the unit test suite."""
     default(session)
+
+
+@nox.session(python="3.7")
+def pytype(session):
+    """Run pytype
+    """
+    session.install(PYTYPE_VERSION)
+    session.run("pytype",)
 
 
 @nox.session(python=["3.8"])

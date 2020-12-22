@@ -24,7 +24,7 @@ import six
 from google.cloud.bigquery import job
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
-import google.cloud.exceptions
+import google.cloud.exceptions  # type: ignore
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -249,7 +249,7 @@ class Cursor(object):
         """
         # Hitting this code path with a BQ Storage client instance implies that
         # bigquery_storage can indeed be imported here without errors.
-        from google.cloud import bigquery_storage
+        from google.cloud import bigquery_storage  # type: ignore
 
         table_reference = self._query_job.destination
 

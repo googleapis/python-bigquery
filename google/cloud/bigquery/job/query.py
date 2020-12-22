@@ -47,6 +47,11 @@ from google.cloud.bigquery.job.base import _DONE_STATE
 from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
 
+# Types needed only for Type Hints
+from google.api_core import retry as retries  # type: ignore
+from google.cloud import bigquery_storage  # type: ignore
+from typing import Any, Dict
+
 
 _CONTAINS_ORDER_BY = re.compile(r"ORDER\s+BY", re.IGNORECASE)
 _TIMEOUT_BUFFER_SECS = 0.1
@@ -975,7 +980,12 @@ class QueryJob(_AsyncJob):
             result = int(result)
         return result
 
-    def done(self, retry=DEFAULT_RETRY, timeout=None, reload=True):
+    def done(
+        self,
+        retry: retries.Retry = DEFAULT_RETRY,
+        timeout: float = None,
+        reload: bool = True,
+    ):
         """Refresh the job and checks if it is complete.
 
         Args:
@@ -1073,7 +1083,9 @@ class QueryJob(_AsyncJob):
             exc.query_job = self
             raise
 
-    def _reload_query_results(self, retry=DEFAULT_RETRY, timeout=None):
+    def _reload_query_results(
+        self, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None
+    ):
         """Refresh the cached query results.
 
         Args:
@@ -1114,11 +1126,11 @@ class QueryJob(_AsyncJob):
 
     def result(
         self,
-        page_size=None,
-        max_results=None,
-        retry=DEFAULT_RETRY,
-        timeout=None,
-        start_index=None,
+        page_size: int = None,
+        max_results: int = None,
+        retry: retries.Retry = DEFAULT_RETRY,
+        timeout: float = None,
+        start_index: int = None,
     ):
         """Start the job and wait for it to complete and get the result.
 
@@ -1197,9 +1209,9 @@ class QueryJob(_AsyncJob):
     # changes to table.RowIterator.to_arrow()
     def to_arrow(
         self,
-        progress_bar_type=None,
-        bqstorage_client=None,
-        create_bqstorage_client=True,
+        progress_bar_type: str = None,
+        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        create_bqstorage_client: bool = True,
     ):
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
@@ -1266,11 +1278,11 @@ class QueryJob(_AsyncJob):
     # changes to table.RowIterator.to_dataframe()
     def to_dataframe(
         self,
-        bqstorage_client=None,
-        dtypes=None,
-        progress_bar_type=None,
-        create_bqstorage_client=True,
-        date_as_object=True,
+        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        dtypes: Dict[str, Any] = None,
+        progress_bar_type: str = None,
+        create_bqstorage_client: bool = True,
+        date_as_object: bool = True,
     ):
         """Return a pandas DataFrame from a QueryJob
 

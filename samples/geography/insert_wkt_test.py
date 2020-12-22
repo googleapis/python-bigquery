@@ -12,4 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "2.6.1"
+from . import insert_wkt
+
+
+def test_insert_wkt(table_id):
+    errors = insert_wkt.insert_wkt(override_values={"table_id": table_id})
+    assert not errors

@@ -41,6 +41,10 @@ class TestQueryParameters(unittest.TestCase):
             (-123456789, "INT64"),
             (1.25, "FLOAT64"),
             (decimal.Decimal("1.25"), "NUMERIC"),
+            (
+                decimal.Decimal("1.1234567890123456789012345678901234567890"),
+                "BIGNUMERIC",
+            ),
             (b"I am some bytes", "BYTES"),
             (u"I am a string", "STRING"),
             (datetime.date(2017, 4, 1), "DATE"),

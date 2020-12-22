@@ -433,6 +433,14 @@ def test_bq_to_arrow_data_type_w_struct_unknown_subfield(module_under_test):
                 "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))",
             ],
         ),
+        (
+            "BIGNUMERIC",
+            [
+                decimal.Decimal("-1.123456789012345678901234567890"),
+                None,
+                decimal.Decimal("3.141592653589793238462643383279"),
+            ],
+        ),
     ],
 )
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

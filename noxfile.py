@@ -147,7 +147,13 @@ def snippets(session):
     # Skip tests in samples/snippets, as those are run in a different session
     # using the nox config from that directory.
     session.run("py.test", os.path.join("docs", "snippets.py"), *session.posargs)
-    session.run("py.test", "samples", "--ignore=samples/snippets", *session.posargs)
+    session.run(
+        "py.test",
+        "samples",
+        "--ignore=samples/snippets",
+        "--ignore=samples/geography",
+        *session.posargs,
+    )
 
 
 @nox.session(python="3.8")
@@ -160,6 +166,38 @@ def cover(session):
     session.install("coverage", "pytest-cov")
     session.run("coverage", "report", "--show-missing", "--fail-under=100")
     session.run("coverage", "erase")
+
+
+@nox.session(python="3.8")
+def prerelease_deps(session):
+    """Run all tests with prerelease versions of dependencies installed.
+
+    https://github.com/googleapis/python-bigquery/issues/95
+    """
+    # PyArrow prerelease packages are published to an alternative PyPI host.
+    # https://arrow.apache.org/docs/python/install.html#installing-nightly-packages
+    session.install(
+        "--extra-index-url", "https://pypi.fury.io/arrow-nightlies/", "--pre", "pyarrow"
+    )
+    session.install("--pre", "grpcio", "pandas")
+    session.install(
+        "mock",
+        "pytest",
+        "google-cloud-testutils",
+        "pytest-cov",
+        "freezegun",
+        "IPython",
+    )
+    session.install("-e", ".[all]")
+
+    # Print out prerelease package versions.
+    session.run("python", "-c", "import grpc; print(grpc.__version__)")
+    session.run("python", "-c", "import pandas; print(pandas.__version__)")
+    session.run("python", "-c", "import pyarrow; print(pyarrow.__version__)")
+
+    # Run all tests, except a few samples tests which require extra dependencies.
+    session.run("py.test", "tests")
+    session.run("py.test", "samples/tests")
 
 
 @nox.session(python="3.8")

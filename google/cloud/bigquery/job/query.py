@@ -49,7 +49,8 @@ from google.cloud.bigquery.job.base import _JobReference
 # Types needed only for Type Hints
 from google.api_core import retry as retries  # type: ignore
 from google.cloud import bigquery_storage  # type: ignore
-from typing import Any, Dict
+from google.cloud.bigquery.table import RowIterator
+from typing import Any, Dict, Union
 
 
 _CONTAINS_ORDER_BY = re.compile(r"ORDER\s+BY", re.IGNORECASE)
@@ -496,7 +497,7 @@ class QueryJobConfig(_JobConfig):
     def schema_update_options(self, values):
         self._set_sub_prop("schemaUpdateOptions", values)
 
-    def to_api_repr(self):
+    def to_api_repr(self) -> dict:
         """Build an API representation of the query job config.
 
         Returns:
@@ -723,7 +724,7 @@ class QueryJob(_AsyncJob):
         }
 
     @classmethod
-    def from_api_repr(cls, resource, client):
+    def from_api_repr(cls, resource: dict, client) -> "QueryJob":
         """Factory:  construct a job given its API representation
 
         Args:
@@ -1123,7 +1124,7 @@ class QueryJob(_AsyncJob):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
         start_index: int = None,
-    ):
+    ) -> Union[RowIterator, _EmptyRowIterator]:
         """Start the job and wait for it to complete and get the result.
 
         Args:
@@ -1206,7 +1207,7 @@ class QueryJob(_AsyncJob):
         progress_bar_type: str = None,
         bqstorage_client: bigquery_storage.BigQueryReadClient = None,
         create_bqstorage_client: bool = True,
-    ):
+    ) -> Any:
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
 
@@ -1277,7 +1278,7 @@ class QueryJob(_AsyncJob):
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
         date_as_object: bool = True,
-    ):
+    ) -> Any:
         """Return a pandas DataFrame from a QueryJob
 
         Args:
@@ -1357,7 +1358,7 @@ class QueryPlanEntryStep(object):
         self.substeps = list(substeps)
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict) -> "QueryPlanEntryStep":
         """Factory: construct instance from the JSON repr.
 
         Args:
@@ -1387,7 +1388,7 @@ class QueryPlanEntry(object):
         self._properties = {}
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict) -> "QueryPlanEntry":
         """Factory: construct instance from the JSON repr.
 
         Args:

@@ -76,7 +76,6 @@ from google.cloud.bigquery.table import RowIterator
 
 # Types needed only for Type Hints
 import datetime
-import pandas
 from google.cloud.bigquery.job import (
     _AsyncJob,
     LoadJobConfig,
@@ -233,7 +232,7 @@ class Client(ClientWithProject):
         project: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> str:
         """Get the email address of the project's BigQuery service account
 
         Note:
@@ -280,7 +279,7 @@ class Client(ClientWithProject):
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> page_iterator.Iterator:
         """List projects for the project associated with this client.
 
         See
@@ -340,7 +339,7 @@ class Client(ClientWithProject):
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> page_iterator.Iterator:
         """List datasets for the project associated with this client.
 
         See
@@ -410,7 +409,7 @@ class Client(ClientWithProject):
             extra_params=extra_params,
         )
 
-    def dataset(self, dataset_id: str, project: str = None):
+    def dataset(self, dataset_id: str, project: str = None) -> DatasetReference:
         """Deprecated: Construct a reference to a dataset.
 
         .. deprecated:: 1.24.0
@@ -491,7 +490,7 @@ class Client(ClientWithProject):
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Dataset:
         """API call: create the dataset via a POST request.
 
         See
@@ -566,7 +565,7 @@ class Client(ClientWithProject):
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Routine:
         """[Beta] Create a routine via a POST request.
 
         See
@@ -621,7 +620,7 @@ class Client(ClientWithProject):
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Table:
         """API call:  create a table via a PUT request
 
         See
@@ -693,7 +692,7 @@ class Client(ClientWithProject):
         dataset_ref: Union[DatasetReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Dataset:
         """Fetch the dataset referenced by ``dataset_ref``
 
         Args:
@@ -737,7 +736,7 @@ class Client(ClientWithProject):
         requested_policy_version: int = 1,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Policy:
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
 
@@ -767,7 +766,7 @@ class Client(ClientWithProject):
         updateMask: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Policy:
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
 
@@ -825,7 +824,7 @@ class Client(ClientWithProject):
         model_ref: Union[ModelReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Model:
         """[Beta] Fetch the model referenced by ``model_ref``.
 
          Args:
@@ -868,7 +867,7 @@ class Client(ClientWithProject):
         routine_ref: Union[Routine, RoutineReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Routine:
         """[Beta] Get the routine referenced by ``routine_ref``.
 
          Args:
@@ -912,7 +911,7 @@ class Client(ClientWithProject):
         table: Union[Table, TableReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Table:
         """Fetch the table referenced by ``table``.
 
         Args:
@@ -954,7 +953,7 @@ class Client(ClientWithProject):
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Dataset:
         """Change some fields of a dataset.
 
         Use ``fields`` to specify which fields to update. At least one field
@@ -1024,7 +1023,7 @@ class Client(ClientWithProject):
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Model:
         """[Beta] Change some fields of a model.
 
         Use ``fields`` to specify which fields to update. At least one field
@@ -1088,7 +1087,7 @@ class Client(ClientWithProject):
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Routine:
         """[Beta] Change some fields of a routine.
 
         Use ``fields`` to specify which fields to update. At least one field
@@ -1162,7 +1161,7 @@ class Client(ClientWithProject):
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Table:
         """Change some fields of a table.
 
         Use ``fields`` to specify which fields to update. At least one field
@@ -1228,7 +1227,7 @@ class Client(ClientWithProject):
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> page_iterator.Iterator:
         """[Beta] List models in the dataset.
 
         See
@@ -1300,7 +1299,7 @@ class Client(ClientWithProject):
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> page_iterator.Iterator:
         """[Beta] List routines in the dataset.
 
         See
@@ -1372,7 +1371,7 @@ class Client(ClientWithProject):
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> page_iterator.Iterator:
         """List tables in the dataset.
 
         See
@@ -1443,7 +1442,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
         not_found_ok: bool = False,
-    ):
+    ) -> None:
         """Delete a dataset.
 
         See
@@ -1502,7 +1501,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
         not_found_ok: bool = False,
-    ):
+    ) -> None:
         """[Beta] Delete a model
 
         See
@@ -1554,7 +1553,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
         not_found_ok: bool = False,
-    ):
+    ) -> None:
         """[Beta] Delete a routine.
 
         See
@@ -1608,7 +1607,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
         not_found_ok: bool = False,
-    ):
+    ) -> None:
         """Delete a table
 
         See
@@ -1718,7 +1717,7 @@ class Client(ClientWithProject):
         )
         return _QueryResults.from_api_repr(resource)
 
-    def job_from_resource(self, resource: dict):
+    def job_from_resource(self, resource: dict) -> job.UnknownJob:
         """Detect correct job type from resource and instantiate.
 
         Args:
@@ -1749,7 +1748,7 @@ class Client(ClientWithProject):
         job_config: dict,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
         """Create a new job.
         Args:
             job_config (dict): configuration job representation returned from the API.
@@ -1846,7 +1845,7 @@ class Client(ClientWithProject):
         location: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
         """Fetch a job for the project associated with this client.
 
         See
@@ -1908,7 +1907,7 @@ class Client(ClientWithProject):
         location: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
         """Attempt to cancel a job from a job ID.
 
         See
@@ -1975,7 +1974,7 @@ class Client(ClientWithProject):
         timeout: float = None,
         min_creation_time: datetime.datetime = None,
         max_creation_time: datetime.datetime = None,
-    ):
+    ) -> page_iterator.Iterator:
         """List jobs for the project associated with this client.
 
         See
@@ -2084,7 +2083,7 @@ class Client(ClientWithProject):
         job_config: LoadJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> job.LoadJob:
         """Starts a job for loading data into a table from CloudStorage.
 
         See
@@ -2168,7 +2167,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: LoadJobConfig = None,
         timeout: float = None,
-    ):
+    ) -> job.LoadJob:
         """Upload the contents of this table from a file-like object.
 
         Similar to :meth:`load_table_from_uri`, this method creates, starts and
@@ -2261,7 +2260,7 @@ class Client(ClientWithProject):
 
     def load_table_from_dataframe(
         self,
-        dataframe: pandas.DataFrame,
+        dataframe: "pandas.DataFrame",
         destination: Union[Table, TableReference, str],
         num_retries: int = _DEFAULT_NUM_RETRIES,
         job_id: str = None,
@@ -2271,7 +2270,7 @@ class Client(ClientWithProject):
         job_config: LoadJobConfig = None,
         parquet_compression: str = "snappy",
         timeout: float = None,
-    ):
+    ) -> job.LoadJob:
         """Upload the contents of a table from a pandas DataFrame.
 
         Similar to :meth:`load_table_from_uri`, this method creates, starts and
@@ -2497,7 +2496,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: LoadJobConfig = None,
         timeout: float = None,
-    ):
+    ) -> job.LoadJob:
         """Upload the contents of a table from a JSON string or dict.
 
         Args:
@@ -2778,7 +2777,7 @@ class Client(ClientWithProject):
         job_config: CopyJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> job.CopyJob:
         """Copy one or more tables to another table.
 
         See
@@ -2882,7 +2881,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
         source_type: str = "Table",
-    ):
+    ) -> job.ExtractJob:
         """Start a job to extract a table into Cloud Storage files.
 
         See
@@ -2979,7 +2978,7 @@ class Client(ClientWithProject):
         project: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> job.QueryJob:
         """Run a SQL query.
 
         See
@@ -3062,7 +3061,7 @@ class Client(ClientWithProject):
         rows: Union[Sequence[Tuple], Sequence[Dict]],
         selected_fields: Sequence[SchemaField] = None,
         **kwargs: dict,
-    ):
+    ) -> Sequence[dict]:
         """Insert rows into a table via the streaming API.
 
         See
@@ -3127,11 +3126,11 @@ class Client(ClientWithProject):
     def insert_rows_from_dataframe(
         self,
         table: Union[Table, TableReference, str],
-        dataframe: pandas.DataFrame,
+        dataframe: "pandas.DataFrame",
         selected_fields: Sequence[SchemaField] = None,
         chunk_size: int = 500,
         **kwargs: Dict,
-    ):
+    ) -> Sequence[Sequence[dict]]:
         """Insert rows into a table from a dataframe via the streaming API.
 
         Args:
@@ -3187,7 +3186,7 @@ class Client(ClientWithProject):
         template_suffix: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Sequence[dict]:
         """Insert rows into a table without applying local type conversions.
 
         See
@@ -3288,7 +3287,7 @@ class Client(ClientWithProject):
         table: Union[Table, TableReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Sequence[str]:
         """List the partitions in a table.
 
         Args:
@@ -3338,7 +3337,7 @@ class Client(ClientWithProject):
         page_size: int = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> RowIterator:
         """List the rows of the table.
 
         See
@@ -3450,7 +3449,7 @@ class Client(ClientWithProject):
         page_size: int = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> RowIterator:
         """List the rows of a completed query.
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults

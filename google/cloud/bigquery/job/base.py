@@ -444,7 +444,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
     def exists(
         self, client=None, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None
-    ):
+    ) -> bool:
         """API call:  test for the existence of the job via a GET request
 
         See
@@ -526,7 +526,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
     def cancel(
         self, client=None, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None
-    ):
+    ) -> bool:
         """API call:  cancel job via a POST request
 
         See
@@ -597,7 +597,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
         reload: bool = True,
-    ):
+    ) -> bool:
         """Checks if the job is complete.
 
         Args:
@@ -618,7 +618,9 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             self.reload(retry=retry, timeout=timeout)
         return self.state == _DONE_STATE
 
-    def result(self, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None):
+    def result(
+        self, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None
+    ) -> "_AsyncJob":
         """Start the job and wait for it to complete and get the result.
 
         Args:
@@ -764,7 +766,7 @@ class _JobConfig(object):
         """
         _helpers._del_sub_prop(self._properties, [self._job_type, key])
 
-    def to_api_repr(self):
+    def to_api_repr(self) -> dict:
         """Build an API representation of the job config.
 
         Returns:
@@ -807,7 +809,7 @@ class _JobConfig(object):
         return new_job_config
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict) -> "_JobConfig":
         """Factory: construct a job configuration given its API representation
 
         Args:
@@ -905,7 +907,7 @@ class UnknownJob(_AsyncJob):
     """A job whose type cannot be determined."""
 
     @classmethod
-    def from_api_repr(cls, resource, client):
+    def from_api_repr(cls, resource: dict, client) -> "UnknownJob":
         """Construct an UnknownJob from the JSON representation.
 
         Args:

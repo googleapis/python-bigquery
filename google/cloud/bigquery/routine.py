@@ -259,7 +259,7 @@ class Routine(object):
         self._properties[self._PROPERTY_TO_API_FIELD["description"]] = value
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict) -> "Routine":
         """Factory: construct a routine given its API representation.
 
         Args:
@@ -274,7 +274,7 @@ class Routine(object):
         ref._properties = resource
         return ref
 
-    def to_api_repr(self):
+    def to_api_repr(self) -> dict:
         """Construct the API resource representation of this routine.
 
         Returns:
@@ -380,7 +380,7 @@ class RoutineArgument(object):
         self._properties[self._PROPERTY_TO_API_FIELD["data_type"]] = resource
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict) -> "RoutineArgument":
         """Factory: construct a routine argument given its API representation.
 
         Args:
@@ -394,7 +394,7 @@ class RoutineArgument(object):
         ref._properties = resource
         return ref
 
-    def to_api_repr(self):
+    def to_api_repr(self) -> dict:
         """Construct the API resource representation of this routine argument.
 
         Returns:
@@ -453,7 +453,7 @@ class RoutineReference(object):
         )
 
     @classmethod
-    def from_api_repr(cls, resource):
+    def from_api_repr(cls, resource: dict) -> "RoutineReference":
         """Factory: construct a routine reference given its API representation.
 
         Args:
@@ -469,7 +469,9 @@ class RoutineReference(object):
         return ref
 
     @classmethod
-    def from_string(cls, routine_id, default_project=None):
+    def from_string(
+        cls, routine_id: str, default_project: str = None
+    ) -> "RoutineReference":
         """Factory: construct a routine reference from routine ID string.
 
         Args:
@@ -497,7 +499,7 @@ class RoutineReference(object):
             {"projectId": proj, "datasetId": dset, "routineId": routine}
         )
 
-    def to_api_repr(self):
+    def to_api_repr(self) -> dict:
         """Construct the API resource representation of this routine reference.
 
         Returns:

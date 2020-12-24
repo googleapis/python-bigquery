@@ -84,7 +84,7 @@ class SchemaField(object):
         self._policy_tags = policy_tags
 
     @classmethod
-    def from_api_repr(cls, api_repr):
+    def from_api_repr(cls, api_repr: dict) -> "SchemaField":
         """Return a ``SchemaField`` object deserialized from a dictionary.
 
         Args:
@@ -157,7 +157,7 @@ class SchemaField(object):
         """
         return self._policy_tags
 
-    def to_api_repr(self):
+    def to_api_repr(self) -> dict:
         """Return a dictionary representing this schema field.
 
         Returns:
@@ -200,7 +200,7 @@ class SchemaField(object):
             self._policy_tags,
         )
 
-    def to_standard_sql(self):
+    def to_standard_sql(self) -> types.StandardSqlField:
         """Return the field as the standard SQL field representation object.
 
         Returns:
@@ -375,7 +375,7 @@ class PolicyTagList(object):
         return "PolicyTagList{}".format(self._key())
 
     @classmethod
-    def from_api_repr(cls, api_repr):
+    def from_api_repr(cls, api_repr: dict) -> "PolicyTagList":
         """Return a :class:`PolicyTagList` object deserialized from a dict.
 
         This method creates a new ``PolicyTagList`` instance that points to
@@ -398,7 +398,7 @@ class PolicyTagList(object):
         names = api_repr.get("names", ())
         return cls(names=names)
 
-    def to_api_repr(self):
+    def to_api_repr(self) -> dict:
         """Return a dictionary representing this object.
 
         This method returns the properties dict of the ``PolicyTagList``

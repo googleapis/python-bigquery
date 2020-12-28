@@ -2260,7 +2260,7 @@ class Client(ClientWithProject):
 
     def load_table_from_dataframe(
         self,
-        dataframe: "pandas.DataFrame",
+        dataframe,
         destination: Union[Table, TableReference, str],
         num_retries: int = _DEFAULT_NUM_RETRIES,
         job_id: str = None,
@@ -3076,7 +3076,7 @@ class Client(ClientWithProject):
     def insert_rows_from_dataframe(
         self,
         table: Union[Table, TableReference, str],
-        dataframe: "pandas.DataFrame",
+        dataframe,
         selected_fields: Sequence[SchemaField] = None,
         chunk_size: int = 500,
         **kwargs: Dict,

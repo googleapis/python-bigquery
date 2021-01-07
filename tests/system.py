@@ -2572,9 +2572,7 @@ class TestBigQuery(unittest.TestCase):
         assert len(row_tuples) == len(expected)
 
         for row, expected_row in zip(row_tuples, expected):
-            self.assertCountEqual(
-                self, row, expected_row
-            )  # column order does not matter
+            self.assertCountEqual(row, expected_row)  # column order does not matter
 
     def test_insert_rows_nested_nested(self):
         # See #2951

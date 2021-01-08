@@ -16,7 +16,6 @@
 
 import copy
 import threading
-import warnings
 
 from google.api_core import exceptions
 import google.api_core.future.polling
@@ -661,9 +660,9 @@ class _JobConfig(object):
             setattr(self, prop, val)
 
     def __setattr__(self, name, value):
-        """Override to be able to warn if an uknown property is being set"""
+        """Override to be able to raise error if an unknown property is being set"""
         if not name.startswith("_") and name not in type(self).__dict__:
-            warnings.warn("Property {} is unknown for {}.".format(name, type(self)))
+            raise AttributeError("Property {} is unknown for {}.".format(name, type(self)))
         super(_JobConfig, self).__setattr__(name, value)
 
     @property

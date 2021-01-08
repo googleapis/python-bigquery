@@ -1809,10 +1809,11 @@ class TestBigQuery(unittest.TestCase):
         )
 
         with self.assertRaises(concurrent.futures.TimeoutError):
-            query_job.done(timeout=1)
-
-        with self.assertRaises(concurrent.futures.TimeoutError):
             query_job.result(timeout=1)
+
+        # Even though the query takes >1 second, the call to getQueryResults
+        # should succeed.
+        self.assertFalse(query_job.done(timeout=1))
 
         Config.CLIENT.cancel_job(query_job.job_id, location=query_job.location)
 

@@ -26,7 +26,6 @@ import unittest
 import uuid
 import re
 
-import requests
 import six
 import psutil
 import pytest

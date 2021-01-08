@@ -1579,7 +1579,9 @@ class Client(ClientWithProject):
             location (Optional[str]): Location of the query job.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
-                before using ``retry``.
+                before using ``retry``. If set, this connection timeout may be
+                increased to a minimum value. This prevents retries on what
+                would otherwise be a successful response.
 
         Returns:
             google.cloud.bigquery.query._QueryResults:
@@ -3305,7 +3307,9 @@ class Client(ClientWithProject):
                 How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
-                before using ``retry``.
+                before using ``retry``. If set, this connection timeout may be
+                increased to a minimum value. This prevents retries on what
+                would otherwise be a successful response.
                 If multiple requests are made under the hood, ``timeout``
                 applies to each individual request.
         Returns:

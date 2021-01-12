@@ -988,7 +988,9 @@ class QueryJob(_AsyncJob):
                 unfinished jobs before checking. Default ``True``.
 
         Returns:
-            bool: True if the job is complete, False otherwise.
+            bool: True if the job is complete, False otherwise. If job status
+                cannot be determined due to a non-retryable error or too many
+                retries, the method returns ``True``.
         """
         # Do not refresh if the state is already done, as the job will not
         # change once complete.
@@ -996,7 +998,15 @@ class QueryJob(_AsyncJob):
         if not reload or is_done:
             return is_done
 
-        self._reload_query_results(retry=retry, timeout=timeout)
+        try:
+            self._reload_query_results(retry=retry, timeout=timeout)
+        except Exception as exc:
+            # The job state might still be "RUNNING", but if an exception bubbles
+            # up (either a RetryError or a non-retryable error), we declare that we
+            # are done for good (and the blocking pull should not continue polling).
+            # Ditto in a similar try-except block below.
+            self.set_exception(exc)
+            return True
 
         # If an explicit timeout is not given, fall back to the transport timeout
         # stored in _blocking_poll() in the process of polling for job completion.
@@ -1006,7 +1016,11 @@ class QueryJob(_AsyncJob):
         # This will ensure that fields such as the destination table are
         # correctly populated.
         if self._query_results.complete:
-            self.reload(retry=retry, timeout=transport_timeout)
+            try:
+                self.reload(retry=retry, timeout=transport_timeout)
+            except Exception as exc:
+                self.set_exception(exc)
+                return True
 
         return self.state == _DONE_STATE
 

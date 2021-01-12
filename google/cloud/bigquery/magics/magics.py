@@ -153,8 +153,6 @@ try:
 except ImportError:  # pragma: NO COVER
     raise ImportError("This module can only be loaded in IPython.")
 
-import six
-
 from google.api_core import client_info
 from google.api_core import client_options
 from google.api_core.exceptions import NotFound
@@ -182,6 +180,7 @@ class Context(object):
         self._default_query_job_config = bigquery.QueryJobConfig()
         self._bigquery_client_options = client_options.ClientOptions()
         self._bqstorage_client_options = client_options.ClientOptions()
+        self._progress_bar_type = "tqdm"
 
     @property
     def credentials(self):
@@ -312,6 +311,26 @@ class Context(object):
     @default_query_job_config.setter
     def default_query_job_config(self, value):
         self._default_query_job_config = value
+
+    @property
+    def progress_bar_type(self):
+        """str: Default progress bar type to use to display progress bar while
+        executing queries through IPython magics.
+
+        Note::
+            Install the ``tqdm`` package to use this feature.
+
+        Example:
+            Manually setting the progress_bar_type:
+
+            >>> from google.cloud.bigquery import magics
+            >>> magics.context.progress_bar_type = "tqdm"
+        """
+        return self._progress_bar_type
+
+    @progress_bar_type.setter
+    def progress_bar_type(self, value):
+        self._progress_bar_type = value
 
 
 context = Context()
@@ -524,6 +543,15 @@ def _create_dataset_if_necessary(client, dataset_id):
         "name (ex. $my_dict_var)."
     ),
 )
+@magic_arguments.argument(
+    "--progress_bar_type",
+    type=str,
+    default=None,
+    help=(
+        "Sets progress bar type to display a progress bar while executing the query."
+        "Defaults to use tqdm. Install the ``tqdm`` package to use this feature."
+    ),
+)
 def _cell_magic(line, query):
     """Underlying function for bigquery cell magic
 
@@ -547,16 +575,16 @@ def _cell_magic(line, query):
             "--params is not a correctly formatted JSON string or a JSON "
             "serializable dictionary"
         )
-        six.raise_from(rebranded_error, exc)
+        raise rebranded_error from exc
     except lap.exceptions.DuplicateQueryParamsError as exc:
         rebranded_error = ValueError("Duplicate --params option.")
-        six.raise_from(rebranded_error, exc)
+        raise rebranded_error from exc
     except lap.exceptions.ParseError as exc:
         rebranded_error = ValueError(
             "Unrecognized input, are option values correct? "
             "Error details: {}".format(exc.args[0])
         )
-        six.raise_from(rebranded_error, exc)
+        raise rebranded_error from exc
 
     args = magic_arguments.parse_argstring(_cell_magic, rest_of_args)
 
@@ -687,12 +715,16 @@ def _cell_magic(line, query):
             )
             return query_job
 
+        progress_bar = context.progress_bar_type or args.progress_bar_type
+
         if max_results:
             result = query_job.result(max_results=max_results).to_dataframe(
-                bqstorage_client=bqstorage_client
+                bqstorage_client=bqstorage_client, progress_bar_type=progress_bar
             )
         else:
-            result = query_job.to_dataframe(bqstorage_client=bqstorage_client)
+            result = query_job.to_dataframe(
+                bqstorage_client=bqstorage_client, progress_bar_type=progress_bar
+            )
 
         if args.destination_var:
             IPython.get_ipython().push({args.destination_var: result})
@@ -734,7 +766,7 @@ def _make_bqstorage_client(use_bqstorage_api, credentials, client_options):
             "to use it. Alternatively, use the classic REST API by specifying "
             "the --use_rest_api magic option."
         )
-        six.raise_from(customized_error, err)
+        raise customized_error from err
 
     try:
         from google.api_core.gapic_v1 import client_info as gapic_client_info
@@ -742,7 +774,7 @@ def _make_bqstorage_client(use_bqstorage_api, credentials, client_options):
         customized_error = ImportError(
             "Install the grpcio package to use the BigQuery Storage API."
         )
-        six.raise_from(customized_error, err)
+        raise customized_error from err
 
     return bigquery_storage.BigQueryReadClient(
         credentials=credentials,

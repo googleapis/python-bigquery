@@ -19,7 +19,6 @@
 import copy
 
 from google.protobuf import json_format
-import six
 
 import google.cloud._helpers
 from google.api_core import datetime_helpers
@@ -63,7 +62,7 @@ class Model(object):
         # buffer classes do not.
         self._properties = {}
 
-        if isinstance(model_ref, six.string_types):
+        if isinstance(model_ref, str):
             model_ref = ModelReference.from_string(model_ref)
 
         if model_ref:
@@ -305,9 +304,15 @@ class Model(object):
             start_time = datetime_helpers.from_microseconds(1e3 * float(start_time))
             training_run["startTime"] = datetime_helpers.to_rfc3339(start_time)
 
-        this._proto = json_format.ParseDict(
-            resource, types.Model()._pb, ignore_unknown_fields=True
-        )
+        try:
+            this._proto = json_format.ParseDict(
+                resource, types.Model()._pb, ignore_unknown_fields=True
+            )
+        except json_format.ParseError:
+            resource["modelType"] = "MODEL_TYPE_UNSPECIFIED"
+            this._proto = json_format.ParseDict(
+                resource, types.Model()._pb, ignore_unknown_fields=True
+            )
         return this
 
     def _build_resource(self, filter_fields):
@@ -449,7 +454,7 @@ def _model_arg_to_model_ref(value, default_project=None):
 
     This function keeps ModelReference and other kinds of objects unchanged.
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         return ModelReference.from_string(value, default_project=default_project)
     if isinstance(value, Model):
         return value.reference

@@ -18,7 +18,9 @@ import datetime
 import decimal
 import email
 import gzip
+import http.client
 import io
+import itertools
 import json
 import operator
 import unittest
@@ -26,8 +28,6 @@ import warnings
 
 import mock
 import requests
-import six
-from six.moves import http_client
 import pytest
 import pytz
 import pkg_resources
@@ -311,7 +311,7 @@ class TestClient(unittest.TestCase):
                     project="other-project",
                     location=self.LOCATION,
                     timeout_ms=500,
-                    timeout=42,
+                    timeout=420,
                 )
 
         final_attributes.assert_called_once_with({"path": path}, client, None)
@@ -319,8 +319,33 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_once_with(
             method="GET",
             path=path,
-            query_params={"timeoutMs": 500, "location": self.LOCATION},
-            timeout=42,
+            query_params={"maxResults": 0, "timeoutMs": 500, "location": self.LOCATION},
+            timeout=420,
+        )
+
+    def test__get_query_results_miss_w_short_timeout(self):
+        import google.cloud.bigquery.client
+        from google.cloud.exceptions import NotFound
+
+        creds = _make_credentials()
+        client = self._make_one(self.PROJECT, creds)
+        conn = client._connection = make_connection()
+        path = "/projects/other-project/queries/nothere"
+        with self.assertRaises(NotFound):
+            client._get_query_results(
+                "nothere",
+                None,
+                project="other-project",
+                location=self.LOCATION,
+                timeout_ms=500,
+                timeout=1,
+            )
+
+        conn.api_request.assert_called_once_with(
+            method="GET",
+            path=path,
+            query_params={"maxResults": 0, "timeoutMs": 500, "location": self.LOCATION},
+            timeout=google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
         )
 
     def test__get_query_results_miss_w_client_location(self):
@@ -336,7 +361,7 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_once_with(
             method="GET",
             path="/projects/PROJECT/queries/nothere",
-            query_params={"location": self.LOCATION},
+            query_params={"maxResults": 0, "location": self.LOCATION},
             timeout=None,
         )
 
@@ -474,7 +499,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
         projects = list(page)
@@ -508,7 +533,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            six.next(iterator.pages)
+            next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
 
@@ -528,7 +553,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
         projects = list(page)
@@ -582,7 +607,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         datasets = list(page)
@@ -635,7 +660,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         datasets = list(page)
@@ -2919,7 +2944,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": path}, client, None)
         tables = list(page)
@@ -2942,7 +2967,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": path}, client, None)
         models = list(page)
@@ -2991,7 +3016,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         models = list(page)
@@ -3022,7 +3047,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with(
             {"path": "/projects/test-routines/datasets/test_routines/routines"},
@@ -3080,7 +3105,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": path}, client, None)
         routines = list(page)
@@ -3149,7 +3174,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         tables = list(page)
@@ -3213,7 +3238,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         tables = list(page)
@@ -4040,7 +4065,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         jobs = list(page)
@@ -4090,7 +4115,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         jobs = list(page)
@@ -4124,7 +4149,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         jobs = list(page)
@@ -4412,7 +4437,7 @@ class TestClient(unittest.TestCase):
         # Create mocks to be checked for doing transport.
         resumable_url = "http://test.invalid?upload_id=hey-you"
         response_headers = {"location": resumable_url}
-        fake_transport = self._mock_transport(http_client.OK, response_headers)
+        fake_transport = self._mock_transport(http.client.OK, response_headers)
         client = self._make_one(project=self.PROJECT, _http=fake_transport)
         conn = client._connection = make_connection()
 
@@ -4479,7 +4504,7 @@ class TestClient(unittest.TestCase):
         from google.cloud.bigquery.job import LoadJobConfig
         from google.cloud.bigquery.job import SourceFormat
 
-        fake_transport = self._mock_transport(http_client.OK, {})
+        fake_transport = self._mock_transport(http.client.OK, {})
         client = self._make_one(project=self.PROJECT, _http=fake_transport)
         conn = client._connection = make_connection()
 
@@ -5022,7 +5047,7 @@ class TestClient(unittest.TestCase):
         _, req = conn.api_request.call_args
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
-        self.assertIsInstance(req["data"]["jobReference"]["jobId"], six.string_types)
+        self.assertIsInstance(req["data"]["jobReference"]["jobId"], str)
         self.assertIsNone(req["timeout"])
 
         # Check the job resource.
@@ -5227,7 +5252,7 @@ class TestClient(unittest.TestCase):
         job = client.query(QUERY)
 
         self.assertIsInstance(job, QueryJob)
-        self.assertIsInstance(job.job_id, six.string_types)
+        self.assertIsInstance(job.job_id, str)
         self.assertIs(job._client, client)
         self.assertEqual(job.query, QUERY)
         self.assertEqual(job.udf_resources, [])
@@ -5240,7 +5265,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
         self.assertIsNone(req["timeout"])
         sent = req["data"]
-        self.assertIsInstance(sent["jobReference"]["jobId"], six.string_types)
+        self.assertIsInstance(sent["jobReference"]["jobId"], str)
         sent_config = sent["configuration"]["query"]
         self.assertEqual(sent_config["query"], QUERY)
         self.assertFalse(sent_config["useLegacySql"])
@@ -5687,7 +5712,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
         self.assertIsNone(req["timeout"])
         sent = req["data"]
-        self.assertIsInstance(sent["jobReference"]["jobId"], six.string_types)
+        self.assertIsInstance(sent["jobReference"]["jobId"], str)
         sent_config = sent["configuration"]["query"]
         self.assertEqual(sent_config["query"], QUERY)
         self.assertTrue(sent_config["useLegacySql"])
@@ -6290,38 +6315,43 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=project, credentials=creds, _http=http)
-        conn = client._connection = make_connection({})
         table_ref = DatasetReference(project, ds_id).table(table_id)
-        schema = [SchemaField("account", "STRING"), SchemaField("balance", "NUMERIC")]
-        insert_table = table.Table(table_ref, schema=schema)
         rows = [
             ("Savings", decimal.Decimal("23.47")),
             ("Checking", decimal.Decimal("1.98")),
             ("Mortgage", decimal.Decimal("-12345678909.87654321")),
         ]
-
-        with mock.patch("uuid.uuid4", side_effect=map(str, range(len(rows)))):
-            errors = client.insert_rows(insert_table, rows)
-
-        self.assertEqual(len(errors), 0)
-        rows_json = [
-            {"account": "Savings", "balance": "23.47"},
-            {"account": "Checking", "balance": "1.98"},
-            {"account": "Mortgage", "balance": "-12345678909.87654321"},
+        schemas = [
+            [SchemaField("account", "STRING"), SchemaField("balance", "NUMERIC")],
+            [SchemaField("account", "STRING"), SchemaField("balance", "BIGNUMERIC")],
         ]
-        sent = {
-            "rows": [
-                {"json": row, "insertId": str(i)} for i, row in enumerate(rows_json)
+
+        for schema in schemas:
+            conn = client._connection = make_connection({})
+
+            insert_table = table.Table(table_ref, schema=schema)
+            with mock.patch("uuid.uuid4", side_effect=map(str, range(len(rows)))):
+                errors = client.insert_rows(insert_table, rows)
+
+            self.assertEqual(len(errors), 0)
+            rows_json = [
+                {"account": "Savings", "balance": "23.47"},
+                {"account": "Checking", "balance": "1.98"},
+                {"account": "Mortgage", "balance": "-12345678909.87654321"},
             ]
-        }
-        conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/projects/{}/datasets/{}/tables/{}/insertAll".format(
-                project, ds_id, table_id
-            ),
-            data=sent,
-            timeout=None,
-        )
+            sent = {
+                "rows": [
+                    {"json": row, "insertId": str(i)} for i, row in enumerate(rows_json)
+                ]
+            }
+            conn.api_request.assert_called_once_with(
+                method="POST",
+                path="/projects/{}/datasets/{}/tables/{}/insertAll".format(
+                    project, ds_id, table_id
+                ),
+                data=sent,
+                timeout=None,
+            )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_insert_rows_from_dataframe(self):
@@ -6393,7 +6423,7 @@ class TestClient(unittest.TestCase):
 
         actual_calls = conn.api_request.call_args_list
 
-        for call, expected_data in six.moves.zip_longest(
+        for call, expected_data in itertools.zip_longest(
             actual_calls, EXPECTED_SENT_DATA
         ):
             expected_call = mock.call(
@@ -6461,7 +6491,7 @@ class TestClient(unittest.TestCase):
 
         actual_calls = conn.api_request.call_args_list
 
-        for call, expected_data in six.moves.zip_longest(
+        for call, expected_data in itertools.zip_longest(
             actual_calls, EXPECTED_SENT_DATA
         ):
             expected_call = mock.call(
@@ -6739,42 +6769,21 @@ class TestClient(unittest.TestCase):
             self.DS_ID,
             self.TABLE_ID,
         )
-        WHEN_TS = 1437767599.006
-        WHEN = datetime.datetime.utcfromtimestamp(WHEN_TS).replace(tzinfo=UTC)
-        WHEN_1 = WHEN + datetime.timedelta(seconds=1)
-        WHEN_2 = WHEN + datetime.timedelta(seconds=2)
+        WHEN_TS = 1437767599006000
+
+        WHEN = datetime.datetime.utcfromtimestamp(WHEN_TS / 1e6).replace(tzinfo=UTC)
+        WHEN_1 = WHEN + datetime.timedelta(microseconds=1)
+        WHEN_2 = WHEN + datetime.timedelta(microseconds=2)
         ROWS = 1234
         TOKEN = "TOKEN"
-
-        def _bigquery_timestamp_float_repr(ts_float):
-            # Preserve microsecond precision for E+09 timestamps
-            return "%0.15E" % (ts_float,)
 
         DATA = {
             "totalRows": str(ROWS),
             "pageToken": TOKEN,
             "rows": [
-                {
-                    "f": [
-                        {"v": "Phred Phlyntstone"},
-                        {"v": "32"},
-                        {"v": _bigquery_timestamp_float_repr(WHEN_TS)},
-                    ]
-                },
-                {
-                    "f": [
-                        {"v": "Bharney Rhubble"},
-                        {"v": "33"},
-                        {"v": _bigquery_timestamp_float_repr(WHEN_TS + 1)},
-                    ]
-                },
-                {
-                    "f": [
-                        {"v": "Wylma Phlyntstone"},
-                        {"v": "29"},
-                        {"v": _bigquery_timestamp_float_repr(WHEN_TS + 2)},
-                    ]
-                },
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}, {"v": WHEN_TS}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}, {"v": WHEN_TS + 1}]},
+                {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}, {"v": WHEN_TS + 2}]},
                 {"f": [{"v": "Bhettye Rhubble"}, {"v": None}, {"v": None}]},
             ],
         }
@@ -6792,7 +6801,7 @@ class TestClient(unittest.TestCase):
 
         # Check that initial total_rows is populated from the table.
         self.assertEqual(iterator.total_rows, 7)
-        page = six.next(iterator.pages)
+        page = next(iterator.pages)
         rows = list(page)
 
         # Check that total_rows is updated based on API response.
@@ -6807,7 +6816,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(iterator.next_page_token, TOKEN)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path="/%s" % PATH, query_params={}, timeout=7.5
+            method="GET",
+            path="/%s" % PATH,
+            query_params={"formatOptions.useInt64Timestamp": True},
+            timeout=7.5,
         )
 
     def test_list_rows_w_start_index_w_page_size(self):
@@ -6844,32 +6856,42 @@ class TestClient(unittest.TestCase):
         table = Table(self.TABLE_REF, schema=[full_name])
         iterator = client.list_rows(table, max_results=4, page_size=2, start_index=1)
         pages = iterator.pages
-        rows = list(six.next(pages))
+        rows = list(next(pages))
         extra_params = iterator.extra_params
         f2i = {"full_name": 0}
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0], Row(("Phred Phlyntstone",), f2i))
         self.assertEqual(rows[1], Row(("Bharney Rhubble",), f2i))
 
-        rows = list(six.next(pages))
+        rows = list(next(pages))
 
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0], Row(("Wylma Phlyntstone",), f2i))
         self.assertEqual(rows[1], Row(("Bhettye Rhubble",), f2i))
-        self.assertEqual(extra_params, {"startIndex": 1})
+        self.assertEqual(
+            extra_params, {"startIndex": 1, "formatOptions.useInt64Timestamp": True}
+        )
 
         conn.api_request.assert_has_calls(
             [
                 mock.call(
                     method="GET",
                     path="/%s" % PATH,
-                    query_params={"startIndex": 1, "maxResults": 2},
+                    query_params={
+                        "startIndex": 1,
+                        "maxResults": 2,
+                        "formatOptions.useInt64Timestamp": True,
+                    },
                     timeout=None,
                 ),
                 mock.call(
                     method="GET",
                     path="/%s" % PATH,
-                    query_params={"pageToken": "some-page-token", "maxResults": 2},
+                    query_params={
+                        "pageToken": "some-page-token",
+                        "maxResults": 2,
+                        "formatOptions.useInt64Timestamp": True,
+                    },
                     timeout=None,
                 ),
             ]
@@ -6918,9 +6940,47 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(*len(tests) * [{}])
         for i, test in enumerate(tests):
             iterator = client.list_rows(table, **test[0])
-            six.next(iterator.pages)
+            next(iterator.pages)
             req = conn.api_request.call_args_list[i]
+            test[1]["formatOptions.useInt64Timestamp"] = True
             self.assertEqual(req[1]["query_params"], test[1], "for kwargs %s" % test[0])
+
+    def test_list_rows_w_numeric(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.table import Table
+
+        resource = {
+            "totalRows": 3,
+            "rows": [
+                {"f": [{"v": "-1.23456789"}, {"v": "-123456789.987654321"}]},
+                {"f": [{"v": None}, {"v": "3.141592653589793238462643383279502884"}]},
+                {"f": [{"v": "2718281828459045235360287471.352662497"}, {"v": None}]},
+            ],
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        client._connection = make_connection(resource)
+        schema = [
+            SchemaField("num", "NUMERIC"),
+            SchemaField("bignum", "BIGNUMERIC"),
+        ]
+        table = Table(self.TABLE_REF, schema=schema)
+
+        iterator = client.list_rows(table)
+        rows = list(iterator)
+
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0]["num"], decimal.Decimal("-1.23456789"))
+        self.assertEqual(rows[0]["bignum"], decimal.Decimal("-123456789.987654321"))
+        self.assertIsNone(rows[1]["num"])
+        self.assertEqual(
+            rows[1]["bignum"], decimal.Decimal("3.141592653589793238462643383279502884")
+        )
+        self.assertEqual(
+            rows[2]["num"], decimal.Decimal("2718281828459045235360287471.352662497")
+        )
+        self.assertIsNone(rows[2]["bignum"])
 
     def test_list_rows_repeated_fields(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -6965,7 +7025,7 @@ class TestClient(unittest.TestCase):
         struct = SchemaField("struct", "RECORD", mode="REPEATED", fields=[index, score])
 
         iterator = client.list_rows(self.TABLE_REF, selected_fields=[color, struct])
-        page = six.next(iterator.pages)
+        page = next(iterator.pages)
         rows = list(page)
         total_rows = iterator.total_rows
         page_token = iterator.next_page_token
@@ -6979,7 +7039,10 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_once_with(
             method="GET",
             path="/%s" % PATH,
-            query_params={"selectedFields": "color,struct"},
+            query_params={
+                "selectedFields": "color,struct",
+                "formatOptions.useInt64Timestamp": True,
+            },
             timeout=None,
         )
 
@@ -7027,7 +7090,7 @@ class TestClient(unittest.TestCase):
         table = Table(self.TABLE_REF, schema=[full_name, phone])
 
         iterator = client.list_rows(table)
-        page = six.next(iterator.pages)
+        page = next(iterator.pages)
         rows = list(page)
         total_rows = iterator.total_rows
         page_token = iterator.next_page_token
@@ -7047,7 +7110,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(page_token, TOKEN)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path="/%s" % PATH, query_params={}, timeout=None
+            method="GET",
+            path="/%s" % PATH,
+            query_params={"formatOptions.useInt64Timestamp": True},
+            timeout=None,
         )
 
     def test_list_rows_with_missing_schema(self):
@@ -7109,7 +7175,10 @@ class TestClient(unittest.TestCase):
 
             rows = list(row_iter)
             conn.api_request.assert_called_once_with(
-                method="GET", path=tabledata_path, query_params={}, timeout=None
+                method="GET",
+                path=tabledata_path,
+                query_params={"formatOptions.useInt64Timestamp": True},
+                timeout=None,
             )
             self.assertEqual(row_iter.total_rows, 3, msg=repr(table))
             self.assertEqual(rows[0].name, "Phred Phlyntstone", msg=repr(table))
@@ -7197,7 +7266,7 @@ class TestClientUpload(object):
         if side_effect is None:
             side_effect = [
                 cls._make_response(
-                    http_client.OK,
+                    http.client.OK,
                     json.dumps(resource),
                     {"Content-Type": "application/json"},
                 )
@@ -7478,7 +7547,7 @@ class TestClientUpload(object):
         file_obj = self._make_file_obj()
 
         response = self._make_response(
-            content="Someone is already in this spot.", status_code=http_client.CONFLICT
+            content="Someone is already in this spot.", status_code=http.client.CONFLICT
         )
 
         do_upload_patch = self._make_do_upload_patch(
@@ -8366,6 +8435,56 @@ class TestClientUpload(object):
         err_msg = str(exc.value)
         assert "Expected an instance of LoadJobConfig" in err_msg
 
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_load_table_from_dataframe_with_csv_source_format(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.CSV,
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(
+                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
+            ),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, get_table_patch:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=None,
+            project=None,
+            job_config=mock.ANY,
+            timeout=None,
+        )
+
+        sent_file = load_table_from_file.mock_calls[0][1][1]
+        assert sent_file.closed
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.CSV
+
     def test_load_table_from_json_basic_use(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -8490,7 +8609,7 @@ class TestClientUpload(object):
 
         resumable_url = "http://test.invalid?upload_id=and-then-there-was-1"
         initial_response = cls._make_response(
-            http_client.OK, "", {"location": resumable_url}
+            http.client.OK, "", {"location": resumable_url}
         )
         data_response = cls._make_response(
             resumable_media.PERMANENT_REDIRECT,
@@ -8498,7 +8617,7 @@ class TestClientUpload(object):
             {"range": "bytes=0-{:d}".format(size - 1)},
         )
         final_response = cls._make_response(
-            http_client.OK,
+            http.client.OK,
             json.dumps({"size": size}),
             {"Content-Type": "application/json"},
         )
@@ -8540,7 +8659,7 @@ class TestClientUpload(object):
         )
 
     def test__do_multipart_upload(self):
-        transport = self._make_transport([self._make_response(http_client.OK)])
+        transport = self._make_transport([self._make_response(http.client.OK)])
         client = self._make_client(transport)
         file_obj = self._make_file_obj()
         file_obj_len = len(file_obj.getvalue())

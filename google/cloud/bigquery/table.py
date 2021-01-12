@@ -24,8 +24,6 @@ import operator
 import pytz
 import warnings
 
-import six
-
 try:
     import pandas
 except ImportError:  # pragma: NO COVER
@@ -262,6 +260,9 @@ class TableReference(object):
     def __hash__(self):
         return hash(self._key())
 
+    def __str__(self):
+        return f"{self.project}.{self.dataset_id}.{self.table_id}"
+
     def __repr__(self):
         from google.cloud.bigquery.dataset import DatasetReference
 
@@ -290,15 +291,18 @@ class Table(object):
     """
 
     _PROPERTY_TO_API_FIELD = {
-        "friendly_name": "friendlyName",
+        "encryption_configuration": "encryptionConfiguration",
         "expires": "expirationTime",
-        "time_partitioning": "timePartitioning",
-        "partitioning_type": "timePartitioning",
+        "external_data_configuration": "externalDataConfiguration",
+        "friendly_name": "friendlyName",
+        "mview_enable_refresh": "materializedView",
+        "mview_query": "materializedView",
+        "mview_refresh_interval": "materializedView",
         "partition_expiration": "timePartitioning",
+        "partitioning_type": "timePartitioning",
+        "time_partitioning": "timePartitioning",
         "view_use_legacy_sql": "view",
         "view_query": "view",
-        "external_data_configuration": "externalDataConfiguration",
-        "encryption_configuration": "encryptionConfiguration",
         "require_partition_filter": "requirePartitionFilter",
     }
 
@@ -475,7 +479,7 @@ class Table(object):
         """Union[str, None]: ID for the table (:data:`None` until set from the
         server).
 
-        In the format ``project_id:dataset_id.table_id``.
+        In the format ``project-id:dataset_id.table_id``.
         """
         return self._properties.get("id")
 
@@ -484,7 +488,8 @@ class Table(object):
         """Union[str, None]: The type of the table (:data:`None` until set from
         the server).
 
-        Possible values are ``'TABLE'``, ``'VIEW'``, or ``'EXTERNAL'``.
+        Possible values are ``'TABLE'``, ``'VIEW'``, ``'MATERIALIZED_VIEW'`` or
+        ``'EXTERNAL'``.
         """
         return self._properties.get("type")
 
@@ -650,7 +655,7 @@ class Table(object):
 
     @description.setter
     def description(self, value):
-        if not isinstance(value, six.string_types) and value is not None:
+        if not isinstance(value, str) and value is not None:
             raise ValueError("Pass a string, or None")
         self._properties["description"] = value
 
@@ -687,7 +692,7 @@ class Table(object):
 
     @friendly_name.setter
     def friendly_name(self, value):
-        if not isinstance(value, six.string_types) and value is not None:
+        if not isinstance(value, str) and value is not None:
             raise ValueError("Pass a string, or None")
         self._properties["friendlyName"] = value
 
@@ -710,18 +715,14 @@ class Table(object):
         Raises:
             ValueError: For invalid value types.
         """
-        view = self._properties.get("view")
-        if view is not None:
-            return view.get("query")
+        return _helpers._get_sub_prop(self._properties, ["view", "query"])
 
     @view_query.setter
     def view_query(self, value):
-        if not isinstance(value, six.string_types):
+        if not isinstance(value, str):
             raise ValueError("Pass a string")
-        view = self._properties.get("view")
-        if view is None:
-            view = self._properties["view"] = {}
-        view["query"] = value
+        _helpers._set_sub_prop(self._properties, ["view", "query"], value)
+        view = self._properties["view"]
         # The service defaults useLegacySql to True, but this
         # client uses Standard SQL by default.
         if view.get("useLegacySql") is None:
@@ -741,6 +742,78 @@ class Table(object):
         if self._properties.get("view") is None:
             self._properties["view"] = {}
         self._properties["view"]["useLegacySql"] = value
+
+    @property
+    def mview_query(self):
+        """Optional[str]: SQL query defining the table as a materialized
+        view (defaults to :data:`None`).
+        """
+        return _helpers._get_sub_prop(self._properties, ["materializedView", "query"])
+
+    @mview_query.setter
+    def mview_query(self, value):
+        _helpers._set_sub_prop(
+            self._properties, ["materializedView", "query"], str(value)
+        )
+
+    @mview_query.deleter
+    def mview_query(self):
+        """Delete SQL query defining the table as a materialized view."""
+        self._properties.pop("materializedView", None)
+
+    @property
+    def mview_last_refresh_time(self):
+        """Optional[datetime.datetime]: Datetime at which the materialized view was last
+        refreshed (:data:`None` until set from the server).
+        """
+        refresh_time = _helpers._get_sub_prop(
+            self._properties, ["materializedView", "lastRefreshTime"]
+        )
+        if refresh_time is not None:
+            # refresh_time will be in milliseconds.
+            return google.cloud._helpers._datetime_from_microseconds(
+                1000 * int(refresh_time)
+            )
+
+    @property
+    def mview_enable_refresh(self):
+        """Optional[bool]: Enable automatic refresh of the materialized view
+        when the base table is updated. The default value is :data:`True`.
+        """
+        return _helpers._get_sub_prop(
+            self._properties, ["materializedView", "enableRefresh"]
+        )
+
+    @mview_enable_refresh.setter
+    def mview_enable_refresh(self, value):
+        return _helpers._set_sub_prop(
+            self._properties, ["materializedView", "enableRefresh"], value
+        )
+
+    @property
+    def mview_refresh_interval(self):
+        """Optional[datetime.timedelta]: The maximum frequency at which this
+        materialized view will be refreshed. The default value is 1800000
+        milliseconds (30 minutes).
+        """
+        refresh_interval = _helpers._get_sub_prop(
+            self._properties, ["materializedView", "refreshIntervalMs"]
+        )
+        if refresh_interval is not None:
+            return datetime.timedelta(milliseconds=int(refresh_interval))
+
+    @mview_refresh_interval.setter
+    def mview_refresh_interval(self, value):
+        if value is None:
+            refresh_interval_ms = None
+        else:
+            refresh_interval_ms = str(value // datetime.timedelta(milliseconds=1))
+
+        _helpers._set_sub_prop(
+            self._properties,
+            ["materializedView", "refreshIntervalMs"],
+            refresh_interval_ms,
+        )
 
     @property
     def streaming_buffer(self):
@@ -1169,7 +1242,7 @@ class Row(object):
             >>> list(Row(('a', 'b'), {'x': 0, 'y': 1}).keys())
             ['x', 'y']
         """
-        return six.iterkeys(self._xxx_field_to_index)
+        return self._xxx_field_to_index.keys()
 
     def items(self):
         """Return items as ``(key, value)`` pairs.
@@ -1183,7 +1256,7 @@ class Row(object):
             >>> list(Row(('a', 'b'), {'x': 0, 'y': 1}).items())
             [('x', 'a'), ('y', 'b')]
         """
-        for key, index in six.iteritems(self._xxx_field_to_index):
+        for key, index in self._xxx_field_to_index.items():
             yield (key, copy.deepcopy(self._xxx_values[index]))
 
     def get(self, key, default=None):
@@ -1233,7 +1306,7 @@ class Row(object):
         return len(self._xxx_values)
 
     def __getitem__(self, key):
-        if isinstance(key, six.string_types):
+        if isinstance(key, str):
             value = self._xxx_field_to_index.get(key)
             if value is None:
                 raise KeyError("no row field {!r}".format(key))
@@ -2218,7 +2291,7 @@ def _table_arg_to_table_ref(value, default_project=None):
 
     This function keeps TableReference and other kinds of objects unchanged.
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         value = TableReference.from_string(value, default_project=default_project)
     if isinstance(value, (Table, TableListItem)):
         value = value.reference
@@ -2230,7 +2303,7 @@ def _table_arg_to_table(value, default_project=None):
 
     This function keeps Table and other kinds of objects unchanged.
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         value = TableReference.from_string(value, default_project=default_project)
     if isinstance(value, TableReference):
         value = Table(value)

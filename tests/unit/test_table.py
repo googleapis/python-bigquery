@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime as dt
+import datetime
 import logging
 import time
 import unittest
@@ -21,7 +21,7 @@ import warnings
 import mock
 import pkg_resources
 import pytest
-import six
+import pytz
 
 import google.api_core.exceptions
 
@@ -272,6 +272,11 @@ class TestTableReference(unittest.TestCase):
         )
         self.assertEqual(repr(table1), expected)
 
+    def test___str__(self):
+        dataset = DatasetReference("project1", "dataset1")
+        table1 = self._make_one(dataset, "table1")
+        self.assertEqual(str(table1), "project1.dataset1.table1")
+
 
 class TestTable(unittest.TestCase, _SchemaBase):
 
@@ -287,6 +292,13 @@ class TestTable(unittest.TestCase, _SchemaBase):
         return Table
 
     def _make_one(self, *args, **kw):
+        from google.cloud.bigquery.dataset import DatasetReference
+
+        if len(args) == 0:
+            dataset = DatasetReference(self.PROJECT, self.DS_ID)
+            table_ref = dataset.table(self.TABLE_NAME)
+            args = (table_ref,)
+
         return self._get_target_class()(*args, **kw)
 
     def _setUpConstants(self):
@@ -807,12 +819,57 @@ class TestTable(unittest.TestCase, _SchemaBase):
         with self.assertRaises(ValueError):
             table.labels = 12345
 
+    def test_mview_query(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_query)
+        table.mview_query = "SELECT name, SUM(number) FROM dset.tbl GROUP BY 1"
+        self.assertEqual(
+            table.mview_query, "SELECT name, SUM(number) FROM dset.tbl GROUP BY 1"
+        )
+        del table.mview_query
+        self.assertIsNone(table.mview_query)
+
+    def test_mview_last_refresh_time(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_last_refresh_time)
+        table._properties["materializedView"] = {
+            "lastRefreshTime": "1606751842496",
+        }
+        self.assertEqual(
+            table.mview_last_refresh_time,
+            datetime.datetime(2020, 11, 30, 15, 57, 22, 496000, tzinfo=pytz.utc),
+        )
+
+    def test_mview_enable_refresh(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_enable_refresh)
+        table.mview_enable_refresh = True
+        self.assertTrue(table.mview_enable_refresh)
+        table.mview_enable_refresh = False
+        self.assertFalse(table.mview_enable_refresh)
+        table.mview_enable_refresh = None
+        self.assertIsNone(table.mview_enable_refresh)
+
+    def test_mview_refresh_interval(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_refresh_interval)
+        table.mview_refresh_interval = datetime.timedelta(minutes=30)
+        self.assertEqual(table.mview_refresh_interval, datetime.timedelta(minutes=30))
+        self.assertEqual(
+            table._properties["materializedView"]["refreshIntervalMs"], "1800000"
+        )
+        table.mview_refresh_interval = None
+        self.assertIsNone(table.mview_refresh_interval)
+
     def test_from_string(self):
         cls = self._get_target_class()
         got = cls.from_string("string-project.string_dataset.string_table")
         self.assertEqual(got.project, "string-project")
         self.assertEqual(got.dataset_id, "string_dataset")
         self.assertEqual(got.table_id, "string_table")
+        self.assertEqual(
+            str(got.reference), "string-project.string_dataset.string_table"
+        )
 
     def test_from_string_legacy_string(self):
         cls = self._get_target_class()
@@ -1278,7 +1335,6 @@ class TestTableListItem(unittest.TestCase):
         return self._get_target_class()(*args, **kw)
 
     def _setUpConstants(self):
-        import datetime
         from google.cloud._helpers import UTC
 
         self.WHEN_TS = 1437767599.125
@@ -1617,18 +1673,52 @@ class TestRowIterator(unittest.TestCase):
 
         rows_iter = iter(row_iterator)
 
-        val1 = six.next(rows_iter)
+        val1 = next(rows_iter)
         self.assertEqual(val1.name, "Phred Phlyntstone")
         self.assertEqual(row_iterator.num_results, 1)
 
-        val2 = six.next(rows_iter)
+        val2 = next(rows_iter)
         self.assertEqual(val2.name, "Bharney Rhubble")
         self.assertEqual(row_iterator.num_results, 2)
 
         with self.assertRaises(StopIteration):
-            six.next(rows_iter)
+            next(rows_iter)
 
         api_request.assert_called_once_with(method="GET", path=path, query_params={})
+
+    def test_iterate_with_cached_first_page(self):
+        from google.cloud.bigquery.schema import SchemaField
+
+        first_page = {
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+            ],
+            "pageToken": "next-page",
+        }
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        row_iterator = self._make_one(
+            _mock_client(), api_request, path, schema, first_page_response=first_page
+        )
+        rows = list(row_iterator)
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(rows[0].age, 27)
+        self.assertEqual(rows[1].age, 28)
+        self.assertEqual(rows[2].age, 32)
+        self.assertEqual(rows[3].age, 33)
+
+        api_request.assert_called_once_with(
+            method="GET", path=path, query_params={"pageToken": "next-page"}
+        )
 
     def test_page_size(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -1653,6 +1743,29 @@ class TestRowIterator(unittest.TestCase):
             method="GET",
             path=path,
             query_params={"maxResults": row_iterator._page_size},
+        )
+
+    def test__is_completely_cached_returns_false_without_first_page(self):
+        iterator = self._make_one(first_page_response=None)
+        self.assertFalse(iterator._is_completely_cached())
+
+    def test__is_completely_cached_returns_false_with_page_token(self):
+        first_page = {"pageToken": "next-page"}
+        iterator = self._make_one(first_page_response=first_page)
+        self.assertFalse(iterator._is_completely_cached())
+
+    def test__is_completely_cached_returns_true(self):
+        first_page = {"rows": []}
+        iterator = self._make_one(first_page_response=first_page)
+        self.assertTrue(iterator._is_completely_cached())
+
+    def test__validate_bqstorage_returns_false_when_completely_cached(self):
+        first_page = {"rows": []}
+        iterator = self._make_one(first_page_response=first_page)
+        self.assertFalse(
+            iterator._validate_bqstorage(
+                bqstorage_client=None, create_bqstorage_client=True
+            )
         )
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
@@ -2323,13 +2436,6 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.name.dtype.name, "object")
         self.assertEqual(df.age.dtype.name, "int64")
 
-    @pytest.mark.xfail(
-        six.PY2,
-        reason=(
-            "Requires pyarrow>-1.0 to work, but the latter is not compatible "
-            "with Python 2 anymore."
-        ),
-    )
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_to_dataframe_timestamp_out_of_pyarrow_bounds(self):
@@ -2337,8 +2443,8 @@ class TestRowIterator(unittest.TestCase):
 
         schema = [SchemaField("some_timestamp", "TIMESTAMP")]
         rows = [
-            {"f": [{"v": "81953424000.0"}]},  # 4567-01-01 00:00:00  UTC
-            {"f": [{"v": "253402214400.0"}]},  # 9999-12-31 00:00:00  UTC
+            {"f": [{"v": "81953424000000000"}]},  # 4567-01-01 00:00:00  UTC
+            {"f": [{"v": "253402214400000000"}]},  # 9999-12-31 00:00:00  UTC
         ]
         path = "/foo"
         api_request = mock.Mock(return_value={"rows": rows})
@@ -2348,7 +2454,7 @@ class TestRowIterator(unittest.TestCase):
 
         tzinfo = None
         if PYARROW_VERSION >= PYARROW_TIMESTAMP_VERSION:
-            tzinfo = dt.timezone.utc
+            tzinfo = datetime.timezone.utc
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 2)  # verify the number of rows
@@ -2356,18 +2462,11 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(
             list(df["some_timestamp"]),
             [
-                dt.datetime(4567, 1, 1, tzinfo=tzinfo),
-                dt.datetime(9999, 12, 31, tzinfo=tzinfo),
+                datetime.datetime(4567, 1, 1, tzinfo=tzinfo),
+                datetime.datetime(9999, 12, 31, tzinfo=tzinfo),
             ],
         )
 
-    @pytest.mark.xfail(
-        six.PY2,
-        reason=(
-            "Requires pyarrow>-1.0 to work, but the latter is not compatible "
-            "with Python 2 anymore."
-        ),
-    )
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_to_dataframe_datetime_out_of_pyarrow_bounds(self):
@@ -2389,7 +2488,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(list(df.columns), ["some_datetime"])
         self.assertEqual(
             list(df["some_datetime"]),
-            [dt.datetime(4567, 1, 1), dt.datetime(9999, 12, 31)],
+            [datetime.datetime(4567, 1, 1), datetime.datetime(9999, 12, 31)],
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
@@ -2561,9 +2660,9 @@ class TestRowIterator(unittest.TestCase):
         ]
         row_data = [
             [None, None, None, None, None, None],
-            ["1.4338368E9", "420", "1.1", u"Cash", "true", "1999-12-01"],
-            ["1.3878117E9", "2580", "17.7", u"Cash", "false", "1953-06-14"],
-            ["1.3855653E9", "2280", "4.4", u"Credit", "true", "1981-11-04"],
+            ["1433836800000000", "420", "1.1", u"Cash", "true", "1999-12-01"],
+            ["1387811700000000", "2580", "17.7", u"Cash", "false", "1953-06-14"],
+            ["1385565300000000", "2280", "4.4", u"Credit", "true", "1981-11-04"],
         ]
         rows = [{"f": [{"v": field} for field in row]} for row in row_data]
         path = "/foo"
@@ -2583,7 +2682,7 @@ class TestRowIterator(unittest.TestCase):
             else:
                 self.assertIsInstance(row.start_timestamp, pandas.Timestamp)
                 self.assertIsInstance(row.seconds, float)
-                self.assertIsInstance(row.payment_type, six.string_types)
+                self.assertIsInstance(row.payment_type, str)
                 self.assertIsInstance(row.complete, bool)
                 self.assertIsInstance(row.date, datetime.date)
 
@@ -2601,9 +2700,17 @@ class TestRowIterator(unittest.TestCase):
             SchemaField("date", "DATE"),
         ]
         row_data = [
-            ["1.4338368E9", "420", "1.1", "1.77", u"Cash", "true", "1999-12-01"],
-            ["1.3878117E9", "2580", "17.7", "28.5", u"Cash", "false", "1953-06-14"],
-            ["1.3855653E9", "2280", "4.4", "7.1", u"Credit", "true", "1981-11-04"],
+            ["1433836800000000", "420", "1.1", "1.77", u"Cash", "true", "1999-12-01"],
+            [
+                "1387811700000000",
+                "2580",
+                "17.7",
+                "28.5",
+                u"Cash",
+                "false",
+                "1953-06-14",
+            ],
+            ["1385565300000000", "2280", "4.4", "7.1", u"Credit", "true", "1981-11-04"],
         ]
         rows = [{"f": [{"v": field} for field in row]} for row in row_data]
         path = "/foo"
@@ -3420,7 +3527,7 @@ class TestPartitionRange(unittest.TestCase):
     def test_unhashable_object(self):
         object_under_test1 = self._make_one(start=1, end=10, interval=2)
 
-        with six.assertRaisesRegex(self, TypeError, r".*unhashable type.*"):
+        with self.assertRaisesRegex(TypeError, r".*unhashable type.*"):
             hash(object_under_test1)
 
     def test_repr(self):
@@ -3520,7 +3627,7 @@ class TestRangePartitioning(unittest.TestCase):
         object_under_test1 = self._make_one(
             range_=PartitionRange(start=1, end=10, interval=2), field="integer_col"
         )
-        with six.assertRaisesRegex(self, TypeError, r".*unhashable type.*"):
+        with self.assertRaisesRegex(TypeError, r".*unhashable type.*"):
             hash(object_under_test1)
 
     def test_repr(self):

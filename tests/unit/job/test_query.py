@@ -14,6 +14,7 @@
 
 import concurrent
 import copy
+import http
 import textwrap
 
 import freezegun
@@ -21,7 +22,6 @@ from google.api_core import exceptions
 import google.api_core.retry
 import mock
 import requests
-from six.moves import http_client
 
 from google.cloud.bigquery.client import _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS
 import google.cloud.bigquery.query
@@ -787,9 +787,7 @@ class TestQueryJob(_Base):
                 "location": "EU",
             },
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
-            "totalRows": "3",
-            "rows": [{"f": [{"v": "abc"}]}],
-            "pageToken": "next-page",
+            "totalRows": "2",
         }
         job_resource = self._make_resource(started=True, location="EU")
         job_resource_done = self._make_resource(started=True, ended=True, location="EU")
@@ -801,9 +799,9 @@ class TestQueryJob(_Base):
         query_page_resource = {
             # Explicitly set totalRows to be different from the initial
             # response to test update during iteration.
-            "totalRows": "2",
+            "totalRows": "1",
             "pageToken": None,
-            "rows": [{"f": [{"v": "def"}]}],
+            "rows": [{"f": [{"v": "abc"}]}],
         }
         conn = _make_connection(
             query_resource, query_resource_done, job_resource_done, query_page_resource
@@ -814,20 +812,19 @@ class TestQueryJob(_Base):
         result = job.result()
 
         self.assertIsInstance(result, RowIterator)
-        self.assertEqual(result.total_rows, 3)
+        self.assertEqual(result.total_rows, 2)
         rows = list(result)
-        self.assertEqual(len(rows), 2)
+        self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].col1, "abc")
-        self.assertEqual(rows[1].col1, "def")
         # Test that the total_rows property has changed during iteration, based
         # on the response from tabledata.list.
-        self.assertEqual(result.total_rows, 2)
+        self.assertEqual(result.total_rows, 1)
 
         query_results_path = f"/projects/{self.PROJECT}/queries/{self.JOB_ID}"
         query_results_call = mock.call(
             method="GET",
             path=query_results_path,
-            query_params={"location": "EU"},
+            query_params={"maxResults": 0, "location": "EU"},
             timeout=None,
         )
         reload_call = mock.call(
@@ -842,7 +839,7 @@ class TestQueryJob(_Base):
             query_params={
                 "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
                 "location": "EU",
-                "pageToken": "next-page",
+                "formatOptions.useInt64Timestamp": True,
             },
             timeout=None,
         )
@@ -855,9 +852,7 @@ class TestQueryJob(_Base):
             "jobComplete": True,
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
-            "totalRows": "2",
-            "rows": [{"f": [{"v": "abc"}]}],
-            "pageToken": "next-page",
+            "totalRows": "1",
         }
         job_resource = self._make_resource(started=True, ended=True, location="EU")
         job_resource["configuration"]["query"]["destinationTable"] = {
@@ -866,9 +861,9 @@ class TestQueryJob(_Base):
             "tableId": "dest_table",
         }
         results_page_resource = {
-            "totalRows": "2",
+            "totalRows": "1",
             "pageToken": None,
-            "rows": [{"f": [{"v": "def"}]}],
+            "rows": [{"f": [{"v": "abc"}]}],
         }
         conn = _make_connection(query_resource_done, results_page_resource)
         client = _make_client(self.PROJECT, connection=conn)
@@ -877,15 +872,14 @@ class TestQueryJob(_Base):
         result = job.result()
 
         rows = list(result)
-        self.assertEqual(len(rows), 2)
+        self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].col1, "abc")
-        self.assertEqual(rows[1].col1, "def")
 
         query_results_path = f"/projects/{self.PROJECT}/queries/{self.JOB_ID}"
         query_results_call = mock.call(
             method="GET",
             path=query_results_path,
-            query_params={"location": "EU"},
+            query_params={"maxResults": 0, "location": "EU"},
             timeout=None,
         )
         query_results_page_call = mock.call(
@@ -894,7 +888,7 @@ class TestQueryJob(_Base):
             query_params={
                 "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
                 "location": "EU",
-                "pageToken": "next-page",
+                "formatOptions.useInt64Timestamp": True,
             },
             timeout=None,
         )
@@ -908,12 +902,6 @@ class TestQueryJob(_Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "5",
-            # These rows are discarded because max_results is set.
-            "rows": [
-                {"f": [{"v": "xyz"}]},
-                {"f": [{"v": "uvw"}]},
-                {"f": [{"v": "rst"}]},
-            ],
         }
         query_page_resource = {
             "totalRows": "5",
@@ -939,7 +927,6 @@ class TestQueryJob(_Base):
         rows = list(result)
 
         self.assertEqual(len(rows), 3)
-        self.assertEqual(rows[0].col1, "abc")
         self.assertEqual(len(connection.api_request.call_args_list), 2)
         query_page_request = connection.api_request.call_args_list[1]
         self.assertEqual(
@@ -994,7 +981,7 @@ class TestQueryJob(_Base):
         query_results_call = mock.call(
             method="GET",
             path=f"/projects/{self.PROJECT}/queries/{self.JOB_ID}",
-            query_params={"location": "asia-northeast1"},
+            query_params={"maxResults": 0, "location": "asia-northeast1"},
             timeout=None,
         )
         reload_call = mock.call(
@@ -1059,6 +1046,8 @@ class TestQueryJob(_Base):
         self.assertEqual(reload_request[1]["method"], "GET")
 
     def test_result_w_timeout(self):
+        import google.cloud.bigquery.client
+
         begun_resource = self._make_resource()
         query_resource = {
             "jobComplete": True,
@@ -1085,6 +1074,10 @@ class TestQueryJob(_Base):
             "/projects/{}/queries/{}".format(self.PROJECT, self.JOB_ID),
         )
         self.assertEqual(query_request[1]["query_params"]["timeoutMs"], 900)
+        self.assertEqual(
+            query_request[1]["timeout"],
+            google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
+        )
         self.assertEqual(reload_request[1]["method"], "GET")
 
     def test_result_w_page_size(self):
@@ -1094,12 +1087,6 @@ class TestQueryJob(_Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "4",
-            # These rows are discarded because page_size is set.
-            "rows": [
-                {"f": [{"v": "xyz"}]},
-                {"f": [{"v": "uvw"}]},
-                {"f": [{"v": "rst"}]},
-            ],
         }
         job_resource = self._make_resource(started=True, ended=True, location="US")
         q_config = job_resource["configuration"]["query"]
@@ -1130,7 +1117,6 @@ class TestQueryJob(_Base):
         # Assert
         actual_rows = list(result)
         self.assertEqual(len(actual_rows), 4)
-        self.assertEqual(actual_rows[0].col1, "row1")
 
         query_results_path = f"/projects/{self.PROJECT}/queries/{self.JOB_ID}"
         query_page_1_call = mock.call(
@@ -1140,6 +1126,7 @@ class TestQueryJob(_Base):
                 "maxResults": 3,
                 "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
                 "location": "US",
+                "formatOptions.useInt64Timestamp": True,
             },
             timeout=None,
         )
@@ -1151,6 +1138,7 @@ class TestQueryJob(_Base):
                 "maxResults": 3,
                 "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
                 "location": "US",
+                "formatOptions.useInt64Timestamp": True,
             },
             timeout=None,
         )
@@ -1164,12 +1152,6 @@ class TestQueryJob(_Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "5",
-            # These rows are discarded because start_index is set.
-            "rows": [
-                {"f": [{"v": "xyz"}]},
-                {"f": [{"v": "uvw"}]},
-                {"f": [{"v": "rst"}]},
-            ],
         }
         tabledata_resource = {
             "totalRows": "5",
@@ -1196,7 +1178,6 @@ class TestQueryJob(_Base):
         rows = list(result)
 
         self.assertEqual(len(rows), 4)
-        self.assertEqual(rows[0].col1, "abc")
         self.assertEqual(len(connection.api_request.call_args_list), 2)
         tabledata_list_request = connection.api_request.call_args_list[1]
         self.assertEqual(
@@ -1235,7 +1216,7 @@ class TestQueryJob(_Base):
             job.result()
 
         self.assertIsInstance(exc_info.exception, exceptions.GoogleCloudError)
-        self.assertEqual(exc_info.exception.code, http_client.BAD_REQUEST)
+        self.assertEqual(exc_info.exception.code, http.client.BAD_REQUEST)
 
         exc_job_instance = getattr(exc_info.exception, "query_job", None)
         self.assertIs(exc_job_instance, job)
@@ -1290,7 +1271,7 @@ class TestQueryJob(_Base):
             job.result()
 
         self.assertIsInstance(exc_info.exception, exceptions.GoogleCloudError)
-        self.assertEqual(exc_info.exception.code, http_client.BAD_REQUEST)
+        self.assertEqual(exc_info.exception.code, http.client.BAD_REQUEST)
 
         exc_job_instance = getattr(exc_info.exception, "query_job", None)
         self.assertIs(exc_job_instance, job)

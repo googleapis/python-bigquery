@@ -18,7 +18,6 @@ import base64
 import datetime
 import decimal
 import re
-import six
 
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
@@ -40,7 +39,7 @@ _PROJECT_PREFIX_PATTERN = re.compile(
 
 def _not_null(value, field):
     """Check whether 'value' should be coerced to 'field' type."""
-    return value is not None or field.mode != "NULLABLE"
+    return value is not None or (field is not None and field.mode != "NULLABLE")
 
 
 def _int_from_json(value, field):
@@ -81,8 +80,8 @@ def _bytes_from_json(value, field):
 def _timestamp_from_json(value, field):
     """Coerce 'value' to a datetime, if set or not nullable."""
     if _not_null(value, field):
-        # value will be a float in seconds, to microsecond precision, in UTC.
-        return _datetime_from_microseconds(1e6 * float(value))
+        # value will be a integer in seconds, to microsecond precision, in UTC.
+        return _datetime_from_microseconds(int(value))
 
 
 def _timestamp_query_param_from_json(value, field):
@@ -188,6 +187,7 @@ _CELLDATA_FROM_JSON = {
     "FLOAT": _float_from_json,
     "FLOAT64": _float_from_json,
     "NUMERIC": _decimal_from_json,
+    "BIGNUMERIC": _decimal_from_json,
     "BOOLEAN": _bool_from_json,
     "BOOL": _bool_from_json,
     "STRING": _string_from_json,
@@ -347,6 +347,7 @@ _SCALAR_VALUE_TO_JSON_ROW = {
     "FLOAT": _float_to_json,
     "FLOAT64": _float_to_json,
     "NUMERIC": _decimal_to_json,
+    "BIGNUMERIC": _decimal_to_json,
     "BOOLEAN": _bool_to_json,
     "BOOL": _bool_to_json,
     "BYTES": _bytes_to_json,
@@ -449,7 +450,7 @@ def _record_field_to_json(fields, row_value):
         for field_name in not_processed:
             value = row_value[field_name]
             if value is not None:
-                record[field_name] = six.text_type(value)
+                record[field_name] = str(value)
 
     return record
 

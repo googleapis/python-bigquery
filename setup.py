@@ -33,7 +33,6 @@ dependencies = [
     "proto-plus >= 1.10.0",
     "google-cloud-core >= 1.4.1, < 2.0dev",
     "google-resumable-media >= 0.6.0, < 2.0dev",
-    "six >=1.13.0,< 2.0.0dev",
     "protobuf >= 3.12.0",
 ]
 extras = {
@@ -55,9 +54,9 @@ extras = {
     ],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
-        "opentelemetry-api==0.9b0",
-        "opentelemetry-sdk==0.9b0",
-        "opentelemetry-instrumentation==0.9b0 ",
+        "opentelemetry-api==0.11b0",
+        "opentelemetry-sdk==0.11b0",
+        "opentelemetry-instrumentation==0.11b0",
     ],
 }
 
@@ -121,7 +120,7 @@ setuptools.setup(
     namespace_packages=namespaces,
     install_requires=dependencies,
     extras_require=extras,
-    python_requires=">=3.6",
+    python_requires=">=3.6, <3.9",
     include_package_data=True,
     zip_safe=False,
 )

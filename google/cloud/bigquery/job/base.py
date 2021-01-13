@@ -662,7 +662,9 @@ class _JobConfig(object):
     def __setattr__(self, name, value):
         """Override to be able to raise error if an unknown property is being set"""
         if not name.startswith("_") and not hasattr(type(self), name):
-            raise AttributeError("Property {} is unknown for {}.".format(name, type(self)))
+            raise AttributeError(
+                "Property {} is unknown for {}.".format(name, type(self))
+            )
         super(_JobConfig, self).__setattr__(name, value)
 
     @property

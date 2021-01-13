@@ -16,6 +16,7 @@ import concurrent
 import copy
 import http
 import textwrap
+import types
 
 import freezegun
 from google.api_core import exceptions
@@ -363,13 +364,19 @@ class TestQueryJob(_Base):
 
         resource = self._make_resource(ended=False)
         job = self._get_target_class().from_api_repr(resource, client)
-        job.reload = mock.Mock(side_effect=exceptions.RetryError)
         job._exception = None
 
-        is_done = job.done()
+        def fake_reload(self, *args, **kwargs):
+            self._properties["status"]["state"] = "DONE"
+            self.set_exception(copy.copy(bad_request_error))
+
+        fake_reload_method = types.MethodType(fake_reload, job)
+
+        with mock.patch.object(job, "reload", new=fake_reload_method):
+            is_done = job.done()
 
         assert is_done
-        assert job._exception is bad_request_error
+        assert isinstance(job._exception, exceptions.BadRequest)
 
     def test_done_w_job_reload_error(self):
         client = _make_client(project=self.PROJECT)
@@ -387,10 +394,7 @@ class TestQueryJob(_Base):
         job.reload = mock.Mock(side_effect=retry_error)
         job._exception = None
 
-        is_done = job.done()
-
-        assert is_done
-        assert job._exception is retry_error
+        self.assertRaisesRegex(exceptions.RetryError, r"Too many retries", job.done)
 
     def test_query_plan(self):
         from google.cloud._helpers import _RFC3339_MICROS

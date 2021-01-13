@@ -988,9 +988,12 @@ class QueryJob(_AsyncJob):
                 unfinished jobs before checking. Default ``True``.
 
         Returns:
-            bool: True if the job is complete, False otherwise. If job status
-                cannot be determined due to a non-retryable error or too many
-                retries, the method returns ``True``.
+            bool: True if the job is complete, False otherwise.
+
+        Raises:
+            google.api_core.exceptions,GoogleAPICallError:
+                If a non-retryable error ocurrs while reloading the job metadata,
+                or if too many retry attempts fail.
         """
         # Do not refresh if the state is already done, as the job will not
         # change once complete.
@@ -998,29 +1001,23 @@ class QueryJob(_AsyncJob):
         if not reload or is_done:
             return is_done
 
-        try:
-            self._reload_query_results(retry=retry, timeout=timeout)
-        except Exception as exc:
-            # The job state might still be "RUNNING", but if an exception bubbles
-            # up (either a RetryError or a non-retryable error), we declare that we
-            # are done for good (and the blocking pull should not continue polling).
-            # Ditto in a similar try-except block below.
-            self.set_exception(exc)
-            return True
-
         # If an explicit timeout is not given, fall back to the transport timeout
         # stored in _blocking_poll() in the process of polling for job completion.
         transport_timeout = timeout if timeout is not None else self._transport_timeout
+
+        try:
+            self._reload_query_results(retry=retry, timeout=transport_timeout)
+        except exceptions.GoogleAPIError:
+            # Reloading also updates error details on self, no need for an
+            # explicit self.set_exception() call.
+            self.reload(retry=retry, timeout=transport_timeout)
+            return self.state == _DONE_STATE
 
         # Only reload the job once we know the query is complete.
         # This will ensure that fields such as the destination table are
         # correctly populated.
         if self._query_results.complete:
-            try:
-                self.reload(retry=retry, timeout=transport_timeout)
-            except Exception as exc:
-                self.set_exception(exc)
-                return True
+            self.reload(retry=retry, timeout=transport_timeout)
 
         return self.state == _DONE_STATE
 

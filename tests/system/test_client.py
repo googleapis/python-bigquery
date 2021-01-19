@@ -17,6 +17,7 @@ import concurrent.futures
 import csv
 import datetime
 import decimal
+import io
 import json
 import operator
 import os
@@ -25,8 +26,6 @@ import time
 import unittest
 import uuid
 
-import requests
-import six
 import psutil
 
 from . import helpers
@@ -58,6 +57,7 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.table import Table
 from google.cloud._helpers import UTC
+from google.cloud.bigquery import enums
 from google.cloud import storage
 
 from test_utils.retry import RetryErrors
@@ -173,7 +173,7 @@ class TestBigQuery(unittest.TestCase):
 
         got = client.get_service_account_email()
 
-        self.assertIsInstance(got, six.text_type)
+        self.assertIsInstance(got, str)
         self.assertIn("@", got)
 
     def _create_bucket(self, bucket_name, location=None):
@@ -552,7 +552,7 @@ class TestBigQuery(unittest.TestCase):
     @staticmethod
     def _fetch_single_page(table, selected_fields=None):
         iterator = Config.CLIENT.list_rows(table, selected_fields=selected_fields)
-        page = six.next(iterator.pages)
+        page = next(iterator.pages)
         return list(page)
 
     def _create_table_many_columns(self, rowcount):
@@ -843,7 +843,7 @@ class TestBigQuery(unittest.TestCase):
         self._create_bucket(bucket_name, location="eu")
 
         # Create a temporary dataset & table in the EU.
-        table_bytes = six.BytesIO(b"a,3\nb,2\nc,1\n")
+        table_bytes = io.BytesIO(b"a,3\nb,2\nc,1\n")
         client = Config.CLIENT
         dataset = self.temp_dataset(_make_dataset_id("eu_load_file"), location="EU")
         table_ref = dataset.table("letters")
@@ -1096,6 +1096,23 @@ class TestBigQuery(unittest.TestCase):
         # raise an error, and that the job completed (in the `retry()`
         # above).
 
+    def test_job_labels(self):
+        DATASET_ID = _make_dataset_id("job_cancel")
+        JOB_ID_PREFIX = "fetch_" + DATASET_ID
+        QUERY = "SELECT 1 as one"
+
+        self.temp_dataset(DATASET_ID)
+
+        job_config = bigquery.QueryJobConfig(
+            labels={"custom_label": "label_value", "another_label": "foo123"}
+        )
+        job = Config.CLIENT.query(
+            QUERY, job_id_prefix=JOB_ID_PREFIX, job_config=job_config
+        )
+
+        expected_labels = {"custom_label": "label_value", "another_label": "foo123"}
+        self.assertEqual(job.labels, expected_labels)
+
     def test_get_failed_job(self):
         # issue 4246
         from google.api_core.exceptions import BadRequest
@@ -1155,22 +1172,30 @@ class TestBigQuery(unittest.TestCase):
         rows = list(Config.CLIENT.query("SELECT 1;").result())
         assert rows[0][0] == 1
 
-        project = Config.CLIENT.project
-        dataset_ref = bigquery.DatasetReference(project, "dset")
         bad_config = LoadJobConfig()
-        bad_config.destination = dataset_ref.table("tbl")
+        bad_config.source_format = enums.SourceFormat.CSV
         with self.assertRaises(Exception):
             Config.CLIENT.query(good_query, job_config=bad_config).result()
 
     def test_query_w_timeout(self):
+        job_config = bigquery.QueryJobConfig()
+        job_config.use_query_cache = False
+
         query_job = Config.CLIENT.query(
             "SELECT * FROM `bigquery-public-data.github_repos.commits`;",
             job_id_prefix="test_query_w_timeout_",
+            location="US",
+            job_config=job_config,
         )
 
         with self.assertRaises(concurrent.futures.TimeoutError):
-            # 1 second is much too short for this query.
             query_job.result(timeout=1)
+
+        # Even though the query takes >1 second, the call to getQueryResults
+        # should succeed.
+        self.assertFalse(query_job.done(timeout=1))
+
+        Config.CLIENT.cancel_job(query_job.job_id, location=query_job.location)
 
     def test_query_w_page_size(self):
         page_size = 45
@@ -1524,26 +1549,6 @@ class TestBigQuery(unittest.TestCase):
         row_tuples = [r.values() for r in query_job]
         self.assertEqual(row_tuples, [(1,)])
 
-    def test_querying_data_w_timeout(self):
-        job_config = bigquery.QueryJobConfig()
-        job_config.use_query_cache = False
-
-        query_job = Config.CLIENT.query(
-            """
-            SELECT COUNT(*)
-            FROM UNNEST(GENERATE_ARRAY(1,1000000)), UNNEST(GENERATE_ARRAY(1, 10000))
-            """,
-            location="US",
-            job_config=job_config,
-        )
-
-        # Specify a very tight deadline to demonstrate that the timeout
-        # actually has effect.
-        with self.assertRaises(requests.exceptions.Timeout):
-            query_job.done(timeout=0.1)
-
-        Config.CLIENT.cancel_job(query_job.job_id, location=query_job.location)
-
     def test_insert_rows_nested_nested(self):
         # See #2951
         SF = bigquery.SchemaField
@@ -1745,7 +1750,7 @@ class TestBigQuery(unittest.TestCase):
             {"string_col": "Some value", "record_col": record, "float_col": 3.14}
         ]
         rows = [json.dumps(row) for row in to_insert]
-        body = six.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
+        body = io.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
         table_id = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("nested_df"))
         table = dataset.table(table_id)
@@ -1809,7 +1814,7 @@ class TestBigQuery(unittest.TestCase):
         schema = [SF("string_col", "STRING", mode="NULLABLE")]
         to_insert = [{"string_col": "item%d" % i} for i in range(num_items)]
         rows = [json.dumps(row) for row in to_insert]
-        body = six.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
+        body = io.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
 
         table_id = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("nested_df"))

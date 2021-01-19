@@ -34,7 +34,6 @@ try:
     import pyarrow
 except ImportError:  # pragma: NO COVER
     pyarrow = None
-import six
 
 from google import resumable_media
 from google.resumable_media.requests import MultipartUpload
@@ -93,6 +92,14 @@ _NEED_TABLE_ARGUMENT = (
     "The table argument should be a table ID string, Table, or TableReference"
 )
 _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
+
+# In microbenchmarks, it's been shown that even in ideal conditions (query
+# finished, local data), requests to getQueryResults can take 10+ seconds.
+# In less-than-ideal situations, the response can take even longer, as it must
+# be able to download a full 100+ MB row in that time. Don't let the
+# connection timeout before data can be downloaded.
+# https://github.com/googleapis/python-bigquery/issues/438
+_MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
 
 class Project(object):
@@ -1571,7 +1578,9 @@ class Client(ClientWithProject):
             location (Optional[str]): Location of the query job.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
-                before using ``retry``.
+                before using ``retry``. If set, this connection timeout may be
+                increased to a minimum value. This prevents retries on what
+                would otherwise be a successful response.
 
         Returns:
             google.cloud.bigquery.query._QueryResults:
@@ -1579,6 +1588,9 @@ class Client(ClientWithProject):
         """
 
         extra_params = {"maxResults": 0}
+
+        if timeout is not None:
+            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if project is None:
             project = self.project
@@ -2017,7 +2029,7 @@ class Client(ClientWithProject):
 
         job_ref = job._JobReference(job_id, project=project, location=location)
 
-        if isinstance(source_uris, six.string_types):
+        if isinstance(source_uris, str):
             source_uris = [source_uris]
 
         destination = _table_arg_to_table_ref(destination, default_project=self.project)
@@ -2779,7 +2791,7 @@ class Client(ClientWithProject):
                 )
             )
 
-        if isinstance(destination_uris, six.string_types):
+        if isinstance(destination_uris, str):
             destination_uris = [destination_uris]
 
         if job_config:
@@ -3294,7 +3306,9 @@ class Client(ClientWithProject):
                 How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
-                before using ``retry``.
+                before using ``retry``. If set, this connection timeout may be
+                increased to a minimum value. This prevents retries on what
+                would otherwise be a successful response.
                 If multiple requests are made under the hood, ``timeout``
                 applies to each individual request.
         Returns:
@@ -3306,6 +3320,9 @@ class Client(ClientWithProject):
             "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
             "location": location,
         }
+
+        if timeout is not None:
+            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if start_index is not None:
             params["startIndex"] = start_index

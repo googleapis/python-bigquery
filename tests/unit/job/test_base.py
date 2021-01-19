@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import copy
+import http
 import unittest
 
 from google.api_core import exceptions
 import google.api_core.retry
 import mock
-from six.moves import http_client
+import pytest
 
 from .helpers import _make_client
 from .helpers import _make_connection
@@ -35,14 +36,14 @@ class Test__error_result_to_exception(unittest.TestCase):
     def test_simple(self):
         error_result = {"reason": "invalid", "message": "bad request"}
         exception = self._call_fut(error_result)
-        self.assertEqual(exception.code, http_client.BAD_REQUEST)
+        self.assertEqual(exception.code, http.client.BAD_REQUEST)
         self.assertTrue(exception.message.startswith("bad request"))
         self.assertIn(error_result, exception.errors)
 
     def test_missing_reason(self):
         error_result = {}
         exception = self._call_fut(error_result)
-        self.assertEqual(exception.code, http_client.INTERNAL_SERVER_ERROR)
+        self.assertEqual(exception.code, http.client.INTERNAL_SERVER_ERROR)
 
 
 class Test_JobReference(unittest.TestCase):
@@ -250,7 +251,7 @@ class Test_AsyncJob(unittest.TestCase):
         labels = {"foo": "bar"}
         client = _make_client(project=self.PROJECT)
         job = self._make_one(self.JOB_ID, client)
-        job._properties["labels"] = labels
+        job._properties.setdefault("configuration", {})["labels"] = labels
         self.assertEqual(job.labels, labels)
 
     def test_etag(self):
@@ -1020,6 +1021,12 @@ class Test_JobConfig(unittest.TestCase):
         job_config = self._make_one()
         self.assertEqual(job_config._job_type, self.JOB_TYPE)
         self.assertEqual(job_config._properties, {self.JOB_TYPE: {}})
+
+    def test_ctor_with_unknown_property_raises_error(self):
+        error_text = "Property wrong_name is unknown for"
+        with pytest.raises(AttributeError, match=error_text):
+            config = self._make_one()
+            config.wrong_name = None
 
     def test_fill_from_default(self):
         from google.cloud.bigquery import QueryJobConfig

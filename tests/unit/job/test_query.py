@@ -14,6 +14,7 @@
 
 import concurrent
 import copy
+import http
 import textwrap
 
 import freezegun
@@ -21,7 +22,6 @@ from google.api_core import exceptions
 import google.api_core.retry
 import mock
 import requests
-from six.moves import http_client
 
 from google.cloud.bigquery.client import _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS
 import google.cloud.bigquery.query
@@ -1046,6 +1046,8 @@ class TestQueryJob(_Base):
         self.assertEqual(reload_request[1]["method"], "GET")
 
     def test_result_w_timeout(self):
+        import google.cloud.bigquery.client
+
         begun_resource = self._make_resource()
         query_resource = {
             "jobComplete": True,
@@ -1072,6 +1074,10 @@ class TestQueryJob(_Base):
             "/projects/{}/queries/{}".format(self.PROJECT, self.JOB_ID),
         )
         self.assertEqual(query_request[1]["query_params"]["timeoutMs"], 900)
+        self.assertEqual(
+            query_request[1]["timeout"],
+            google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
+        )
         self.assertEqual(reload_request[1]["method"], "GET")
 
     def test_result_w_page_size(self):
@@ -1210,7 +1216,7 @@ class TestQueryJob(_Base):
             job.result()
 
         self.assertIsInstance(exc_info.exception, exceptions.GoogleCloudError)
-        self.assertEqual(exc_info.exception.code, http_client.BAD_REQUEST)
+        self.assertEqual(exc_info.exception.code, http.client.BAD_REQUEST)
 
         exc_job_instance = getattr(exc_info.exception, "query_job", None)
         self.assertIs(exc_job_instance, job)
@@ -1265,7 +1271,7 @@ class TestQueryJob(_Base):
             job.result()
 
         self.assertIsInstance(exc_info.exception, exceptions.GoogleCloudError)
-        self.assertEqual(exc_info.exception.code, http_client.BAD_REQUEST)
+        self.assertEqual(exc_info.exception.code, http.client.BAD_REQUEST)
 
         exc_job_instance = getattr(exc_info.exception, "query_job", None)
         self.assertIs(exc_job_instance, job)

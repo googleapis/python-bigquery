@@ -196,7 +196,8 @@ def prerelease_deps(session):
     session.run("python", "-c", "import pyarrow; print(pyarrow.__version__)")
 
     # Run all tests, except a few samples tests which require extra dependencies.
-    session.run("py.test", "tests")
+    session.run("py.test", "tests/unit")
+    session.run("py.test", "tests/system")
     session.run("py.test", "samples/tests")
 
 

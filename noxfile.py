@@ -179,12 +179,13 @@ def prerelease_deps(session):
     )
     session.install("--pre", "grpcio", "pandas")
     session.install(
-        "mock",
-        "pytest",
-        "google-cloud-testutils",
-        "pytest-cov",
         "freezegun",
+        "google-cloud-testutils",
         "IPython",
+        "mock",
+        "psutil"
+        "pytest",
+        "pytest-cov",
     )
     session.install("-e", ".[all]")
 

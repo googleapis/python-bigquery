@@ -77,7 +77,7 @@ from test_utils.retry import RetryResult
 from test_utils.system import unique_resource_id
 
 
-JOB_TIMEOUT = 120  # 2 minute
+JOB_TIMEOUT = 120  # 2 minutes
 DATA_PATH = pathlib.Path(__file__).parent.parent / "data"
 
 # Common table data used for many tests.

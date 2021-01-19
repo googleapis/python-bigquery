@@ -183,7 +183,7 @@ def prerelease_deps(session):
         "google-cloud-testutils",
         "IPython",
         "mock",
-        "psutil"
+        "psutil",
         "pytest",
         "pytest-cov",
     )

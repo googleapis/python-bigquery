@@ -2203,6 +2203,16 @@ class TestBigQuery(unittest.TestCase):
         characters_param = ArrayQueryParameter(
             name=None, array_type="RECORD", values=[phred_param, bharney_param]
         )
+        empty_struct_array_param = ArrayQueryParameter(
+            name="empty_array_param",
+            array_type="RECORD",
+            values=[],
+            struct_item_type=StructQueryParameter(
+                None,
+                ScalarQueryParameter(name="foo", type_="INT64", value=None),
+                ScalarQueryParameter(name="bar", type_="STRING", value=None),
+            ),
+        )
         hero_param = StructQueryParameter("hero", phred_name_param, phred_age_param)
         sidekick_param = StructQueryParameter(
             "sidekick", bharney_name_param, bharney_age_param
@@ -2292,6 +2302,11 @@ class TestBigQuery(unittest.TestCase):
                     {"name": bharney_name, "age": bharney_age},
                 ],
                 "query_parameters": [characters_param],
+            },
+            {
+                "sql": "SELECT @empty_array_param",
+                "expected": [],
+                "query_parameters": [empty_struct_array_param],
             },
             {
                 "sql": "SELECT @roles",

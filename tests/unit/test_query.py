@@ -330,6 +330,10 @@ class Test_ArrayQueryParameter(unittest.TestCase):
         self.assertEqual(param.array_type, "INT64")
         self.assertEqual(param.values, [1, 2])
 
+    def test_ctor_empty_struct_array_wo_type_info(self):
+        with self.assertRaisesRegex(ValueError, r"(?i)missing.*struct.*type info.*"):
+            self._make_one(name="foo", array_type="STRUCT", values=[])
+
     def test___eq__(self):
         param = self._make_one(name="foo", array_type="INT64", values=[123])
         self.assertEqual(param, param)
@@ -491,6 +495,31 @@ class Test_ArrayQueryParameter(unittest.TestCase):
         struct = StructQueryParameter.positional(one, another)
         klass = self._get_target_class()
         param = klass.positional(array_type="RECORD", values=[struct])
+        self.assertEqual(param.to_api_repr(), EXPECTED)
+
+    def test_to_api_repr_w_empty_array_of_records_type(self):
+        from google.cloud.bigquery.query import StructQueryParameter
+
+        EXPECTED = {
+            "parameterType": {
+                "type": "ARRAY",
+                "arrayType": {
+                    "type": "STRUCT",
+                    "structTypes": [
+                        {"name": "foo", "type": {"type": "STRING"}},
+                        {"name": "bar", "type": {"type": "INT64"}},
+                    ],
+                },
+            },
+            "parameterValue": {"arrayValues": []},
+        }
+        one = _make_subparam("foo", "STRING", None)
+        another = _make_subparam("bar", "INT64", None)
+        struct = StructQueryParameter.positional(one, another)
+        klass = self._get_target_class()
+        param = klass.positional(
+            array_type="RECORD", values=[], struct_item_type=struct
+        )
         self.assertEqual(param.to_api_repr(), EXPECTED)
 
     def test___eq___wrong_type(self):

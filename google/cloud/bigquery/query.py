@@ -186,31 +186,56 @@ class ArrayQueryParameter(_AbstractQueryParameter):
 
         array_type (str):
             Name of type of array elements.  One of `'STRING'`, `'INT64'`,
-            `'FLOAT64'`, `'NUMERIC'`, `'BOOL'`, `'TIMESTAMP'`, or `'DATE'`.
+            `'FLOAT64'`, `'NUMERIC'`, `'BOOL'`, `'TIMESTAMP'`, `'DATE'`,
+            or `'STRUCT'`/`'RECORD'`.
 
-        values (List[appropriate scalar type]): The parameter array values.
+        values (List[appropriate type]): The parameter array values.
+
+        struct_item_type (Optional[google.cloud.bigquery.query.StructQueryParameter]):
+            The type of array elements. The argument is generally not used, but is
+            required if ``array_type`` is ``'STRUCT'``/``'RECORD'`` and ``values``
+            is empty.
+            This is because the backend requires detailed type information about
+            array elements, but that cannot be determined for ``'STRUCT'`` items
+            if there are no elements in the array.
     """
 
-    def __init__(self, name, array_type, values):
+    def __init__(self, name, array_type, values, struct_item_type=None):
         self.name = name
         self.array_type = array_type
         self.values = values
 
+        if not values and array_type in {"RECORD", "STRUCT"}:
+            if struct_item_type is None:
+                raise ValueError("Missing struct item type info for an empty array.")
+            self._struct_item_type_api = struct_item_type.to_api_repr()["parameterType"]
+        else:
+            self._struct_item_type_api = None  # won't be used
+
     @classmethod
-    def positional(cls, array_type, values):
+    def positional(cls, array_type, values, struct_item_type=None):
         """Factory for positional parameters.
 
         Args:
             array_type (str):
                 Name of type of array elements.  One of `'STRING'`, `'INT64'`,
-                `'FLOAT64'`, `'NUMERIC'`, `'BOOL'`, `'TIMESTAMP'`, or `'DATE'`.
+                `'FLOAT64'`, `'NUMERIC'`, `'BOOL'`, `'TIMESTAMP'`, `'DATE'`,
+                or `'STRUCT'`/`'RECORD'`.
 
-            values (List[appropriate scalar type]): The parameter array values.
+            values (List[appropriate type]): The parameter array values.
+
+            struct_item_type (Optional[google.cloud.bigquery.query.StructQueryParameter]):
+                The type of array elements. The argument is generally not used, but is
+                required if ``array_type`` is ``'STRUCT'``/``'RECORD'`` and ``values``
+                is empty.
+                This is because the backend requires detailed type information about
+                array elements, but that cannot be determined for ``'STRUCT'`` items
+                if there are no elements in the array.
 
         Returns:
             google.cloud.bigquery.query.ArrayQueryParameter: Instance without name
         """
-        return cls(None, array_type, values)
+        return cls(None, array_type, values, struct_item_type=struct_item_type)
 
     @classmethod
     def _from_api_repr_struct(cls, resource):
@@ -265,8 +290,12 @@ class ArrayQueryParameter(_AbstractQueryParameter):
         values = self.values
         if self.array_type == "RECORD" or self.array_type == "STRUCT":
             reprs = [value.to_api_repr() for value in values]
-            a_type = reprs[0]["parameterType"]
             a_values = [repr_["parameterValue"] for repr_ in reprs]
+
+            if reprs:
+                a_type = reprs[0]["parameterType"]
+            else:
+                a_type = self._struct_item_type_api
         else:
             a_type = {"type": self.array_type}
             converter = _SCALAR_VALUE_TO_JSON_PARAM.get(self.array_type)

@@ -22,6 +22,7 @@ import io
 import json
 import operator
 import os
+import pathlib
 import time
 import unittest
 import uuid
@@ -76,8 +77,8 @@ from test_utils.retry import RetryResult
 from test_utils.system import unique_resource_id
 
 
-JOB_TIMEOUT = 120  # 2 minutes
-WHERE = os.path.abspath(os.path.dirname(__file__))
+JOB_TIMEOUT = 120  # 2 minute
+DATA_PATH = pathlib.Path(__file__).parent.parent / "data"
 
 # Common table data used for many tests.
 ROWS = [
@@ -140,10 +141,10 @@ def _make_dataset_id(prefix):
     return "%s%s" % (prefix, unique_resource_id())
 
 
-def _load_json_schema(filename="data/schema.json"):
+def _load_json_schema(filename="schema.json"):
     from google.cloud.bigquery.table import _parse_schema_resource
 
-    json_filename = os.path.join(WHERE, filename)
+    json_filename = DATA_PATH / filename
 
     with open(json_filename, "r") as schema_file:
         return _parse_schema_resource(json.load(schema_file))
@@ -707,7 +708,7 @@ class TestBigQuery(unittest.TestCase):
         table = Table(table_ref)
         self.to_delete.insert(0, table)
 
-        with open(os.path.join(WHERE, "data", "colors.avro"), "rb") as avrof:
+        with open(DATA_PATH / "colors.avro", "rb") as avrof:
             config = bigquery.LoadJobConfig()
             config.source_format = SourceFormat.AVRO
             config.write_disposition = WriteDisposition.WRITE_TRUNCATE
@@ -1338,7 +1339,7 @@ class TestBigQuery(unittest.TestCase):
             ("orange", 590),
             ("red", 650),
         ]
-        with open(os.path.join(WHERE, "data", "colors.avro"), "rb") as f:
+        with open(DATA_PATH / "colors.avro", "rb") as f:
             GS_URL = self._write_avro_to_storage(
                 "bq_load_test" + unique_resource_id(), "colors.avro", f
             )
@@ -2698,7 +2699,7 @@ class TestBigQuery(unittest.TestCase):
 
         to_insert = []
         # Data is in "JSON Lines" format, see http://jsonlines.org/
-        json_filename = os.path.join(WHERE, "data", "characters.jsonl")
+        json_filename = DATA_PATH / "characters.jsonl"
         with open(json_filename) as rows_file:
             for line in rows_file:
                 to_insert.append(json.loads(line))

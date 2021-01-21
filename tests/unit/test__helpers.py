@@ -726,7 +726,7 @@ class Test_timestamp_to_json_row(unittest.TestCase):
         ZULU = "2016-12-20 15:58:27.339328+00:00"
         self.assertEqual(self._call_fut(ZULU), ZULU)
 
-    def test_w_datetime(self):
+    def test_w_datetime_no_zone(self):
         when = datetime.datetime(2016, 12, 20, 15, 58, 27, 339328)
         self.assertEqual(self._call_fut(when), "2016-12-20T15:58:27.339328Z")
 
@@ -735,6 +735,14 @@ class Test_timestamp_to_json_row(unittest.TestCase):
 
         when = datetime.datetime(2020, 11, 17, 1, 6, 52, 353795, tzinfo=UTC)
         self.assertEqual(self._call_fut(when), "2020-11-17T01:06:52.353795Z")
+
+    def test_w_datetime_w_non_utc_zone(self):
+        from dateutil.tz import tzoffset
+
+        EST = tzoffset(None, -18_000)
+
+        when = datetime.datetime(2020, 11, 17, 1, 6, 52, 353795, tzinfo=EST)
+        self.assertEqual(self._call_fut(when), "2020-11-17T06:06:52.353795Z")
 
 
 class Test_datetime_to_json(unittest.TestCase):
@@ -752,6 +760,14 @@ class Test_datetime_to_json(unittest.TestCase):
 
         when = datetime.datetime(2016, 12, 3, 14, 11, 27, 123456, tzinfo=UTC)
         self.assertEqual(self._call_fut(when), "2016-12-03T14:11:27.123456")
+
+    def test_w_datetime_w_non_utc_zone(self):
+        from dateutil.tz import tzoffset
+
+        EST = tzoffset(None, -18_000)
+
+        when = datetime.datetime(2016, 12, 3, 14, 11, 27, 123456, tzinfo=EST)
+        self.assertEqual(self._call_fut(when), "2016-12-03T19:11:27.123456")
 
 
 class Test_date_to_json(unittest.TestCase):

@@ -4455,9 +4455,8 @@ class TestClient(unittest.TestCase):
         # Check the returned values.
         self.assertIsInstance(upload, ResumableUpload)
         upload_url = (
-            "https://bigquery.googleapis.com/upload/bigquery/v2/projects/"
-            + self.PROJECT
-            + "/jobs?uploadType=resumable"
+            f"https://bigquery.googleapis.com/upload/bigquery/v2/projects/{self.PROJECT}"
+            "/jobs?uploadType=resumable"
         )
         self.assertEqual(upload.upload_url, upload_url)
         expected_headers = _get_upload_headers(conn.user_agent)
@@ -4537,15 +4536,16 @@ class TestClient(unittest.TestCase):
         )
         payload = (
             b"--==0==\r\n"
-            + b"content-type: application/json; charset=UTF-8\r\n\r\n"
-            + json.dumps(metadata).encode("utf-8")
-            + b"\r\n"
-            + b"--==0==\r\n"
-            + b"content-type: */*\r\n\r\n"
-            + data
-            + b"\r\n"
-            + b"--==0==--"
-        )
+            b"content-type: application/json; charset=UTF-8\r\n\r\n"
+            b"%(json_metadata)s"
+            b"\r\n"
+            b"--==0==\r\n"
+            b"content-type: */*\r\n\r\n"
+            b"%(data)s"
+            b"\r\n"
+            b"--==0==--"
+        ) % {b"json_metadata": json.dumps(metadata).encode("utf-8"), b"data": data}
+
         headers = _get_upload_headers(conn.user_agent)
         headers["content-type"] = b'multipart/related; boundary="==0=="'
         fake_transport.request.assert_called_once_with(

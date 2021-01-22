@@ -4552,11 +4552,11 @@ class TestClient(unittest.TestCase):
             "POST", upload_url, data=payload, headers=headers, timeout=mock.ANY
         )
 
-    @mock.patch(u"google.resumable_media._upload.get_boundary", return_value=b"==0==")
+    @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
     def test__do_multipart_upload(self, get_boundary):
         self._do_multipart_upload_success_helper(get_boundary)
 
-    @mock.patch(u"google.resumable_media._upload.get_boundary", return_value=b"==0==")
+    @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
     def test__do_multipart_upload_with_retry(self, get_boundary):
         self._do_multipart_upload_success_helper(get_boundary, num_retries=8)
 
@@ -6373,10 +6373,10 @@ class TestClient(unittest.TestCase):
 
         dataframe = pandas.DataFrame(
             [
-                {"name": u"Little One", "age": 10, "adult": False},
-                {"name": u"Young Gun", "age": 20, "adult": True},
-                {"name": u"Dad", "age": 30, "adult": True},
-                {"name": u"Stranger", "age": 40, "adult": True},
+                {"name": "Little One", "age": 10, "adult": False},
+                {"name": "Young Gun", "age": 20, "adult": True},
+                {"name": "Dad", "age": 30, "adult": True},
+                {"name": "Stranger", "age": 40, "adult": True},
             ]
         )
 
@@ -6569,8 +6569,8 @@ class TestClient(unittest.TestCase):
 
         dataframe = pandas.DataFrame(
             [
-                {"name": u"Little One", "adult": False},
-                {"name": u"Young Gun", "adult": True},
+                {"name": "Little One", "adult": False},
+                {"name": "Young Gun", "adult": True},
             ]
         )
 
@@ -8204,7 +8204,7 @@ class TestClientUpload(object):
                         dtype="datetime64[ns]",
                     ).dt.tz_localize(pytz.utc),
                 ),
-                ("string_col", [u"abc", None, u"def"]),
+                ("string_col", ["abc", None, "def"]),
                 ("bytes_col", [b"abc", b"def", None]),
             ]
         )
@@ -8263,7 +8263,7 @@ class TestClientUpload(object):
             [
                 ("int_col", [1, 2, 3]),
                 ("int_as_float_col", [1.0, float("nan"), 3.0]),
-                ("string_col", [u"abc", None, u"def"]),
+                ("string_col", ["abc", None, "def"]),
             ]
         )
         dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
@@ -8298,7 +8298,7 @@ class TestClientUpload(object):
         client = self._make_client()
         df_data = collections.OrderedDict(
             [
-                ("string_col", [u"abc", u"def", u"ghi"]),
+                ("string_col", ["abc", "def", "ghi"]),
                 ("unknown_col", [b"jkl", None, b"mno"]),
             ]
         )
@@ -8352,7 +8352,7 @@ class TestClientUpload(object):
         from google.cloud.bigquery.schema import SchemaField
 
         client = self._make_client()
-        records = [{"name": u"Monty", "age": 100}, {"name": u"Python", "age": 60}]
+        records = [{"name": "Monty", "age": 100}, {"name": "Python", "age": 60}]
         dataframe = pandas.DataFrame(records)
         schema = (SchemaField("name", "STRING"), SchemaField("age", "INTEGER"))
         job_config = job.LoadJobConfig(schema=schema)

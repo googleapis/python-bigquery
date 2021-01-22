@@ -8726,7 +8726,7 @@ class TestClientUpload(object):
                 if call.args[0] == "POST" and "uploadType=resumable" in call.args[1]
             ),
             None,
-        )
+        )  # pragma: NO COVER
 
         assert initiation_url is not None
         assert "projects/custom-project" in initiation_url

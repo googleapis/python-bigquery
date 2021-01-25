@@ -734,9 +734,6 @@ class Test_timestamp_to_json_row(unittest.TestCase):
             def utcoffset(self, _):
                 return datetime.timedelta(minutes=-300)
 
-            def dst(self, _):
-                return datetime.timedelta(0)
-
         when = datetime.datetime(2020, 11, 17, 1, 6, 52, 353795, tzinfo=EstZone())
         self.assertEqual(self._call_fut(when), "2020-11-17T06:06:52.353795Z")
 
@@ -761,9 +758,6 @@ class Test_datetime_to_json(unittest.TestCase):
         class EstZone(datetime.tzinfo):
             def utcoffset(self, _):
                 return datetime.timedelta(minutes=-300)
-
-            def dst(self, _):
-                return datetime.timedelta(0)
 
         when = datetime.datetime(2016, 12, 3, 14, 11, 27, 123456, tzinfo=EstZone())
         self.assertEqual(self._call_fut(when), "2016-12-03T19:11:27.123456")

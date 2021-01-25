@@ -34,7 +34,6 @@ dependencies = [
     "google-cloud-core >= 1.4.1, < 2.0dev",
     "google-resumable-media >= 0.6.0, < 2.0dev",
     "protobuf >= 3.12.0",
-    "python-dateutil >= 2.8.1",  # used in tests, otherwise dependency of "pandas" extra
 ]
 extras = {
     "bqstorage": [

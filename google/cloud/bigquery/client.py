@@ -44,6 +44,7 @@ import google.api_core.client_options
 import google.api_core.exceptions
 from google.api_core.iam import Policy
 from google.api_core import page_iterator
+from google.auth.transport import requests
 import google.cloud._helpers
 from google.cloud import exceptions
 from google.cloud.client import ClientWithProject
@@ -2449,6 +2450,7 @@ class Client(ClientWithProject):
         transport = self._http
         headers = _get_upload_headers(self._connection.user_agent)
         upload_url = _RESUMABLE_URL_TEMPLATE.format(project=self.project)
+        upload_url = self._determine_url_for_mtls(upload_url)
         # TODO: modify ResumableUpload to take a retry.Retry object
         # that it can use for the initial RPC.
         upload = ResumableUpload(upload_url, chunk_size, headers=headers)
@@ -2508,6 +2510,7 @@ class Client(ClientWithProject):
         headers = _get_upload_headers(self._connection.user_agent)
 
         upload_url = _MULTIPART_URL_TEMPLATE.format(project=self.project)
+        upload_url = self._determine_url_for_mtls(upload_url)
         upload = MultipartUpload(upload_url, headers=headers)
 
         if num_retries is not None:
@@ -2520,6 +2523,19 @@ class Client(ClientWithProject):
         )
 
         return response
+    
+    def _determine_url_for_mtls(self, url):
+        if not isinstance(self._http, requests.AuthorizedSession):
+            return url
+        env = os.getenv("GOOGLE_API_USE_MTLS_ENDPOINT", "auto")
+        if env == "always":
+            return url.replace("bigquery.googleapis.com", "bigquery.mtls.googleapis.com")
+        if env == "never":
+            return url
+        if self._http.is_mtls:
+            return url.replace("bigquery.googleapis.com", "bigquery.mtls.googleapis.com")
+        return url
+        
 
     def copy_table(
         self,

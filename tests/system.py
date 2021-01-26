@@ -141,6 +141,8 @@ if pyarrow:
 else:
     PYARROW_INSTALLED_VERSION = None
 
+MTLS_TESTING = os.getenv("GOOGLE_API_USE_CLIENT_CERTIFICATE") == "true";
+
 
 def _has_rows(result):
     return len(result) > 0
@@ -2526,6 +2528,7 @@ class TestBigQuery(unittest.TestCase):
         expected_rows = [("Some value", record)]
         self.assertEqual(row_tuples, expected_rows)
 
+    @pytest.mark.skipif(MTLS_TESTING, reason="mTLS testing has no permission to the max-value.js file")
     def test_create_routine(self):
         routine_name = "test_routine"
         dataset = self.temp_dataset(_make_dataset_id("create_routine"))

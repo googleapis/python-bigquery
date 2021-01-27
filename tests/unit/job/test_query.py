@@ -309,7 +309,7 @@ class TestQueryJob(_Base):
 
         self.assertTrue(job.cancelled())
 
-    def test_done(self):
+    def test_done_job_complete(self):
         client = _make_client(project=self.PROJECT)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
@@ -357,7 +357,7 @@ class TestQueryJob(_Base):
         call_args = fake_reload.call_args
         self.assertAlmostEqual(call_args.kwargs.get("timeout"), expected_timeout)
 
-    def test_done_w_query_results_error_reload_ok(self):
+    def test_done_w_query_results_error_reload_ok_job_finished(self):
         client = _make_client(project=self.PROJECT)
         bad_request_error = exceptions.BadRequest("Error in query")
         client._get_query_results = mock.Mock(side_effect=bad_request_error)
@@ -377,6 +377,26 @@ class TestQueryJob(_Base):
 
         assert is_done
         assert isinstance(job._exception, exceptions.BadRequest)
+
+    def test_done_w_query_results_error_reload_ok_job_still_running(self):
+        client = _make_client(project=self.PROJECT)
+        retry_error = exceptions.RetryError("Too many retries", cause=TimeoutError)
+        client._get_query_results = mock.Mock(side_effect=retry_error)
+
+        resource = self._make_resource(ended=False)
+        job = self._get_target_class().from_api_repr(resource, client)
+        job._exception = None
+
+        def fake_reload(self, *args, **kwargs):
+            self._properties["status"]["state"] = "RUNNING"
+
+        fake_reload_method = types.MethodType(fake_reload, job)
+
+        with mock.patch.object(job, "reload", new=fake_reload_method):
+            is_done = job.done()
+
+        assert not is_done
+        assert job._exception is None
 
     def test_done_w_query_results_error_reload_error(self):
         client = _make_client(project=self.PROJECT)

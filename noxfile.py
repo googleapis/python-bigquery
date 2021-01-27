@@ -80,13 +80,13 @@ def default(session):
     )
 
 
-@nox.session(python=["3.6", "3.7", "3.8"])
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
 def unit(session):
     """Run the unit test suite."""
     default(session)
 
 
-@nox.session(python=["3.8"])
+@nox.session(python=["3.9"])
 def system(session):
     """Run the system test suite."""
 
@@ -154,7 +154,7 @@ def snippets(session):
     )
 
 
-@nox.session(python="3.8")
+@nox.session(python="3.9")
 def cover(session):
     """Run the final coverage report.
 
@@ -166,7 +166,7 @@ def cover(session):
     session.run("coverage", "erase")
 
 
-@nox.session(python="3.8")
+@nox.session(python="3.9")
 def prerelease_deps(session):
     """Run all tests with prerelease versions of dependencies installed.
 
@@ -201,7 +201,7 @@ def prerelease_deps(session):
     session.run("py.test", "samples/tests")
 
 
-@nox.session(python="3.8")
+@nox.session(python="3.9")
 def lint(session):
     """Run linters.
 
@@ -218,7 +218,7 @@ def lint(session):
     session.run("black", "--check", *BLACK_PATHS)
 
 
-@nox.session(python="3.8")
+@nox.session(python="3.9")
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
@@ -239,7 +239,7 @@ def blacken(session):
     session.run("black", *BLACK_PATHS)
 
 
-@nox.session(python="3.8")
+@nox.session(python="3.9")
 def docs(session):
     """Build the docs."""
 
@@ -262,7 +262,7 @@ def docs(session):
     )
 
 
-@nox.session(python="3.8")
+@nox.session(python="3.9")
 def docfx(session):
     """Build the docfx yaml files for this library."""
 

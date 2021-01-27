@@ -988,12 +988,8 @@ class QueryJob(_AsyncJob):
                 unfinished jobs before checking. Default ``True``.
 
         Returns:
-            bool: True if the job is complete, False otherwise.
-
-        Raises:
-            google.api_core.exceptions,GoogleAPICallError:
-                If a non-retryable error ocurrs while reloading the job metadata,
-                or if too many retry attempts fail.
+            bool: ``True`` if the job is complete or if fetching its status resulted in
+                an error, ``False`` otherwise.
         """
         # Do not refresh if the state is already done, as the job will not
         # change once complete.
@@ -1008,16 +1004,25 @@ class QueryJob(_AsyncJob):
         try:
             self._reload_query_results(retry=retry, timeout=transport_timeout)
         except exceptions.GoogleAPIError:
-            # Reloading also updates error details on self, no need for an
-            # explicit self.set_exception() call.
-            self.reload(retry=retry, timeout=transport_timeout)
-            return self.state == _DONE_STATE
+            # Reloading also updates error details on self, thus no need for an
+            # explicit self.set_exception() call if reloading succeeds.
+            try:
+                self.reload(retry=retry, timeout=transport_timeout)
+            except exceptions.GoogleAPIError as exc:
+                self.set_exception(exc)
+                return True
+            else:
+                return self.state == _DONE_STATE
 
         # Only reload the job once we know the query is complete.
         # This will ensure that fields such as the destination table are
         # correctly populated.
         if self._query_results.complete:
-            self.reload(retry=retry, timeout=transport_timeout)
+            try:
+                self.reload(retry=retry, timeout=transport_timeout)
+            except exceptions.GoogleAPIError as exc:
+                self.set_exception(exc)
+                return True
 
         return self.state == _DONE_STATE
 

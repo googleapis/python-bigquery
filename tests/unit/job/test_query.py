@@ -357,7 +357,7 @@ class TestQueryJob(_Base):
         call_args = fake_reload.call_args
         self.assertAlmostEqual(call_args.kwargs.get("timeout"), expected_timeout)
 
-    def test_done_w_query_results_error(self):
+    def test_done_w_query_results_error_reload_ok(self):
         client = _make_client(project=self.PROJECT)
         bad_request_error = exceptions.BadRequest("Error in query")
         client._get_query_results = mock.Mock(side_effect=bad_request_error)
@@ -378,7 +378,23 @@ class TestQueryJob(_Base):
         assert is_done
         assert isinstance(job._exception, exceptions.BadRequest)
 
-    def test_done_w_job_reload_error(self):
+    def test_done_w_query_results_error_reload_error(self):
+        client = _make_client(project=self.PROJECT)
+        bad_request_error = exceptions.BadRequest("Error in query")
+        client._get_query_results = mock.Mock(side_effect=bad_request_error)
+
+        resource = self._make_resource(ended=False)
+        job = self._get_target_class().from_api_repr(resource, client)
+        reload_error = exceptions.DataLoss("Oops, sorry!")
+        job.reload = mock.Mock(side_effect=reload_error)
+        job._exception = None
+
+        is_done = job.done()
+
+        assert is_done
+        assert job._exception is reload_error
+
+    def test_done_w_job_query_results_ok_reload_error(self):
         client = _make_client(project=self.PROJECT)
         query_results = google.cloud.bigquery.query._QueryResults(
             properties={
@@ -394,7 +410,10 @@ class TestQueryJob(_Base):
         job.reload = mock.Mock(side_effect=retry_error)
         job._exception = None
 
-        self.assertRaisesRegex(exceptions.RetryError, r"Too many retries", job.done)
+        is_done = job.done()
+
+        assert is_done
+        assert job._exception is retry_error
 
     def test_query_plan(self):
         from google.cloud._helpers import _RFC3339_MICROS

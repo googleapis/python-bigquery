@@ -21,6 +21,7 @@ def make_connection(*responses):
     mock_conn = mock.create_autospec(google.cloud.bigquery._http.Connection)
     mock_conn.user_agent = "testing 1.2.3"
     mock_conn.api_request.side_effect = list(responses) + [NotFound("miss")]
+    mock_conn.API_BASE_URL = "https://bigquery.googleapis.com"
     return mock_conn
 
 

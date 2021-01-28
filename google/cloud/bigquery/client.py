@@ -80,10 +80,7 @@ from google.cloud.bigquery.table import RowIterator
 _DEFAULT_CHUNKSIZE = 1048576  # 1024 * 1024 B = 1 MB
 _MAX_MULTIPART_SIZE = 5 * 1024 * 1024
 _DEFAULT_NUM_RETRIES = 6
-_BASE_UPLOAD_TEMPLATE = (
-    "https://bigquery.googleapis.com/upload/bigquery/v2/projects/"
-    "{project}/jobs?uploadType="
-)
+_BASE_UPLOAD_TEMPLATE = "{host}/upload/bigquery/v2/projects/{project}/jobs?uploadType=";
 _MULTIPART_URL_TEMPLATE = _BASE_UPLOAD_TEMPLATE + "multipart"
 _RESUMABLE_URL_TEMPLATE = _BASE_UPLOAD_TEMPLATE + "resumable"
 _GENERIC_CONTENT_TYPE = "*/*"
@@ -2449,8 +2446,10 @@ class Client(ClientWithProject):
         chunk_size = _DEFAULT_CHUNKSIZE
         transport = self._http
         headers = _get_upload_headers(self._connection.user_agent)
-        upload_url = _RESUMABLE_URL_TEMPLATE.format(project=self.project)
-        upload_url = self._determine_url_for_mtls(upload_url)
+        upload_url = _RESUMABLE_URL_TEMPLATE.format(
+            host=self._connection.get_api_base_url_for_mtls(),
+            project=self.project
+        )
         # TODO: modify ResumableUpload to take a retry.Retry object
         # that it can use for the initial RPC.
         upload = ResumableUpload(upload_url, chunk_size, headers=headers)
@@ -2509,7 +2508,10 @@ class Client(ClientWithProject):
 
         headers = _get_upload_headers(self._connection.user_agent)
 
-        upload_url = _MULTIPART_URL_TEMPLATE.format(project=self.project)
+        upload_url = _MULTIPART_URL_TEMPLATE.format(
+            host=self._connection.get_api_base_url_for_mtls(),
+            project=self.project
+        )
         upload_url = self._determine_url_for_mtls(upload_url)
         upload = MultipartUpload(upload_url, headers=headers)
 

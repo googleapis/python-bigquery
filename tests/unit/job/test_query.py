@@ -1052,7 +1052,7 @@ class TestQueryJob(_Base):
             initial=0.001,
             maximum=0.001,
             multiplier=1.0,
-            deadline=0.001,
+            deadline=0.1,
             predicate=custom_predicate,
         )
 

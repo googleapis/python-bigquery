@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [2.7.1](https://www.github.com/googleapis/python-bigquery/compare/v2.7.0...v2.7.1) (2021-02-03)
+
+
+### Bug Fixes
+
+* don't try to close closed cursors ([#498](https://www.github.com/googleapis/python-bigquery/issues/498)) ([bf44e7b](https://www.github.com/googleapis/python-bigquery/commit/bf44e7b67d2de41c13053a4550484b9ea049db3e))
+
 ## [2.7.0](https://www.github.com/googleapis/python-bigquery/compare/v2.6.2...v2.7.0) (2021-01-27)
 
 

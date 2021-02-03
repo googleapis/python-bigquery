@@ -48,6 +48,226 @@ class UDFResource(object):
         return not self == other
 
 
+class _AbstractQueryParameterType:
+    """Base class for representing query parameter types.
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/QueryParameter#queryparametertype
+    """
+
+    @classmethod
+    def from_api_repr(cls, resource):
+        """Factory: construct parameter type from JSON resource.
+
+        Args:
+            resource (Dict): JSON mapping of parameter
+
+        Returns:
+            google.cloud.bigquery.query.QueryParameterType: Instance
+        """
+        raise NotImplementedError
+
+    def to_api_repr(self):
+        """Construct JSON API representation for the parameter type.
+
+        Returns:
+            Dict: JSON mapping
+        """
+        raise NotImplementedError
+
+
+class ScalarQueryParameterType(_AbstractQueryParameterType):
+    """Type representation for scalar query parameters.
+
+    Args:
+        type_ (str):
+            One of 'STRING', 'INT64', 'FLOAT64', 'NUMERIC', 'BOOL', 'TIMESTAMP',
+            'DATETIME', or 'DATE'.
+        name (Optional[str]):
+            The name of the query parameter. Primarily used if the type is
+            one of the subfields in ``StructQueryParameterType`` instance.
+        description (Optional[str]):
+            The query parameter description. Primarily used if the type is
+            one of the subfields in ``StructQueryParameterType`` instance.
+    """
+
+    def __init__(self, type_, *, name=None, description=None):
+        self._type = type_
+        self.name = name
+        self.description = description
+
+    @classmethod
+    def from_api_repr(cls, resource):
+        """Factory: construct parameter type from JSON resource.
+
+        Args:
+            resource (Dict): JSON mapping of parameter
+
+        Returns:
+            google.cloud.bigquery.query.ScalarQueryParameterType: Instance
+        """
+        type_ = resource["type"]
+        return cls(type_)
+
+    def to_api_repr(self):
+        """Construct JSON API representation for the parameter type.
+
+        Returns:
+            Dict: JSON mapping
+        """
+        return {"type": self._type}
+
+    def __repr__(self):
+        name = f", name={self.name!r}" if self.name is not None else ""
+        description = (
+            f", description={self.description!r}"
+            if self.description is not None
+            else ""
+        )
+        return f"{self.__class__.__name__}({self._type!r}{name}{description})"
+
+
+class ArrayQueryParameterType(_AbstractQueryParameterType):
+    """Type representation for array query parameters.
+
+    Args:
+        array_type (Union[ScalarQueryParameterType, StructQueryParameterType]):
+            The type of array elements.
+        name (Optional[str]):
+            The name of the query parameter. Primarily used if the type is
+            one of the subfields in ``StructQueryParameterType`` instance.
+        description (Optional[str]):
+            The query parameter description. Primarily used if the type is
+            one of the subfields in ``StructQueryParameterType`` instance.
+    """
+
+    def __init__(self, array_type, *, name=None, description=None):
+        self._array_type = array_type
+        self.name = name
+        self.description = description
+
+    @classmethod
+    def from_api_repr(cls, resource):
+        """Factory: construct parameter type from JSON resource.
+
+        Args:
+            resource (Dict): JSON mapping of parameter
+
+        Returns:
+            google.cloud.bigquery.query.ArrayQueryParameterType: Instance
+        """
+        array_item_type = resource["arrayType"]["type"]
+
+        if array_item_type in {"STRUCT", "RECORD"}:
+            klass = StructQueryParameterType
+        else:
+            klass = ScalarQueryParameterType
+
+        item_type_instance = klass.from_api_repr(resource["arrayType"])
+        return cls(item_type_instance)
+
+    def to_api_repr(self):
+        """Construct JSON API representation for the parameter type.
+
+        Returns:
+            Dict: JSON mapping
+        """
+        return {
+            "type": "ARRAY",
+            "arrayType": self._array_type.to_api_repr(),
+        }
+
+    def __repr__(self):
+        name = f", name={self.name!r}" if self.name is not None else ""
+        description = (
+            f", description={self.description!r}"
+            if self.description is not None
+            else ""
+        )
+        return f"{self.__class__.__name__}({self._array_type!r}{name}{description})"
+
+
+class StructQueryParameterType(_AbstractQueryParameterType):
+    """Type representation for struct query parameters.
+
+    Args:
+        subtypes (Iterable[Union[ \
+            ArrayQueryParameterType, ScalarQueryParameterType, StructQueryParameterType \
+        ]]):
+            An non-empty iterable describing the struct's field types.
+        name (Optional[str]):
+            The name of the query parameter. Primarily used if the type is
+            one of the subfields in ``StructQueryParameterType`` instance.
+        description (Optional[str]):
+            The query parameter description. Primarily used if the type is
+            one of the subfields in ``StructQueryParameterType`` instance.
+    """
+
+    def __init__(self, *subtypes, name=None, description=None):
+        self._subtypes = [type_ for type_ in subtypes]  # make a shallow copy
+        self.name = name
+        self.description = description
+
+    @classmethod
+    def from_api_repr(cls, resource):
+        """Factory: construct parameter type from JSON resource.
+
+        Args:
+            resource (Dict): JSON mapping of parameter
+
+        Returns:
+            google.cloud.bigquery.query.StructQueryParameterType: Instance
+        """
+        subtypes = []
+
+        for struct_subtype in resource["structTypes"]:
+            type_repr = struct_subtype["type"]
+            if type_repr["type"] in {"STRUCT", "RECORD"}:
+                klass = StructQueryParameterType
+            elif type_repr["type"] == "ARRAY":
+                klass = ArrayQueryParameterType
+            else:
+                klass = ScalarQueryParameterType
+
+            type_instance = klass.from_api_repr(type_repr)
+            type_instance.name = struct_subtype.get("name")
+            type_instance.description = struct_subtype.get("description")
+            subtypes.append(type_instance)
+
+        return cls(*subtypes)
+
+    def to_api_repr(self):
+        """Construct JSON API representation for the parameter type.
+
+        Returns:
+            Dict: JSON mapping
+        """
+        struct_types = []
+
+        for subtype in self._subtypes:
+            item = {"type": subtype.to_api_repr()}
+            if subtype.name is not None:
+                item["name"] = subtype.name
+            if subtype.description is not None:
+                item["description"] = subtype.description
+
+            struct_types.append(item)
+
+        return {
+            "type": "STRUCT",
+            "structTypes": struct_types,
+        }
+
+    def __repr__(self):
+        name = f", name={self.name!r}" if self.name is not None else ""
+        description = (
+            f", description={self.description!r}"
+            if self.description is not None
+            else ""
+        )
+        items = ", ".join(repr(subtype) for subtype in self._subtypes)
+        return f"{self.__class__.__name__}({items}{name}{description})"
+
+
 class _AbstractQueryParameter(object):
     """Base class for named / positional query parameters.
     """

@@ -43,6 +43,314 @@ class Test_UDFResource(unittest.TestCase):
         self.assertNotEqual(udf, wrong_type)
 
 
+class Test__AbstractQueryParameterType(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.query import _AbstractQueryParameterType
+
+        return _AbstractQueryParameterType
+
+    @classmethod
+    def _make_one(cls, *args, **kw):
+        return cls._get_target_class()(*args, **kw)
+
+    def test_from_api_virtual(self):
+        klass = self._get_target_class()
+        with self.assertRaises(NotImplementedError):
+            klass.from_api_repr({})
+
+    def test_to_api_virtual(self):
+        param_type = self._make_one()
+        with self.assertRaises(NotImplementedError):
+            param_type.to_api_repr()
+
+
+class Test_ScalarQueryParameterType(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+
+        return ScalarQueryParameterType
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_from_api_repr(self):
+        klass = self._get_target_class()
+        result = klass.from_api_repr({"type": "BOOLEAN"})
+        self.assertEqual(result._type, "BOOLEAN")
+        self.assertIsNone(result.name)
+        self.assertIsNone(result.description)
+
+    def test_to_api_repr(self):
+        param_type = self._make_one("BYTES", name="foo", description="bar")
+        result = param_type.to_api_repr()
+        self.assertEqual(result, {"type": "BYTES"})
+
+    def test_repr_no_optional_attrs(self):
+        param_type = self._make_one("BYTES")
+        self.assertEqual(repr(param_type), "ScalarQueryParameterType('BYTES')")
+
+    def test_repr_all_optional_attrs(self):
+        param_type = self._make_one("BYTES", name="foo", description="this is foo")
+        self.assertEqual(
+            repr(param_type),
+            "ScalarQueryParameterType('BYTES', name='foo', description='this is foo')",
+        )
+
+
+class Test_ArrayQueryParameterType(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.query import ArrayQueryParameterType
+
+        return ArrayQueryParameterType
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_from_api_repr(self):
+        from google.cloud.bigquery.query import StructQueryParameterType
+
+        api_resource = {
+            "type": "ARRAY",
+            "arrayType": {
+                "type": "STRUCT",
+                "structTypes": [
+                    {
+                        "name": "weight",
+                        "type": {"type": "INTEGER"},
+                        "description": "in kg",
+                    },
+                    {"name": "last_name", "type": {"type": "STRING"}},
+                ],
+            },
+        }
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(api_resource)
+
+        self.assertIsNone(result.name)
+        self.assertIsNone(result.description)
+        item_type = result._array_type
+        self.assertIsInstance(item_type, StructQueryParameterType)
+
+        self.assertIsNone(item_type.name)
+        self.assertIsNone(item_type.description)
+
+        subtype = item_type._subtypes[0]
+        self.assertEqual(subtype.name, "weight")
+        self.assertEqual(subtype.description, "in kg")
+        self.assertEqual(subtype._type, "INTEGER")
+
+        subtype = item_type._subtypes[1]
+        self.assertEqual(subtype.name, "last_name")
+        self.assertIsNone(subtype.description)
+        self.assertEqual(subtype._type, "STRING")
+
+    def test_to_api_repr(self):
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+        from google.cloud.bigquery.query import StructQueryParameterType
+
+        array_item_type = StructQueryParameterType(
+            ScalarQueryParameterType("INTEGER", name="weight", description="in kg"),
+            ScalarQueryParameterType("STRING", name="last_name"),
+        )
+        param_type = self._make_one(array_item_type, name="foo", description="bar")
+
+        result = param_type.to_api_repr()
+
+        expected_result = {
+            "type": "ARRAY",
+            "arrayType": {
+                "type": "STRUCT",
+                "structTypes": [
+                    {
+                        "name": "weight",
+                        "type": {"type": "INTEGER"},
+                        "description": "in kg",
+                    },
+                    {"name": "last_name", "type": {"type": "STRING"}},
+                ],
+            },
+        }
+        self.assertEqual(result, expected_result)
+
+    def test_repr_no_optional_attrs(self):
+        param_type = self._make_one("BOOLEAN")
+        self.assertEqual(repr(param_type), "ArrayQueryParameterType('BOOLEAN')")
+
+    def test_repr_all_optional_attrs(self):
+        param_type = self._make_one("INT64", name="bar", description="this is bar")
+        self.assertEqual(
+            repr(param_type),
+            "ArrayQueryParameterType('INT64', name='bar', description='this is bar')",
+        )
+
+
+class Test_StructQueryParameterType(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.query import StructQueryParameterType
+
+        return StructQueryParameterType
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_from_api_repr(self):
+        from google.cloud.bigquery.query import ArrayQueryParameterType
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+
+        api_resource = {
+            "type": "STRUCT",
+            "structTypes": [
+                {
+                    "name": "age",
+                    "type": {"type": "INTEGER"},
+                    "description": "in years",
+                },
+                {
+                    "name": "aliases",
+                    "type": {"type": "ARRAY", "arrayType": {"type": "STRING"}},
+                },
+                {
+                    "description": "a nested struct",
+                    "type": {
+                        "type": "STRUCT",
+                        "structTypes": [
+                            {"type": {"type": "DATE"}, "name": "nested_date"},
+                            {
+                                "type": {"type": "BOOLEAN"},
+                                "description": "nested bool field",
+                            },
+                        ],
+                    },
+                },
+            ],
+        }
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(api_resource)
+
+        self.assertIsNone(result.name)
+        self.assertIsNone(result.description)
+        self.assertEqual(len(result._subtypes), 3)
+
+        subtype = result._subtypes[0]
+        self.assertIsInstance(subtype, ScalarQueryParameterType)
+        self.assertEqual(subtype.name, "age")
+        self.assertEqual(subtype.description, "in years")
+
+        subtype = result._subtypes[1]
+        self.assertIsInstance(subtype, ArrayQueryParameterType)
+        self.assertEqual(subtype.name, "aliases")
+        self.assertIsNone(subtype.description)
+        self.assertIsInstance(subtype._array_type, ScalarQueryParameterType)
+        self.assertEqual(subtype._array_type._type, "STRING")
+
+        subtype = result._subtypes[2]
+        self.assertIsInstance(subtype, self._get_target_class())
+        self.assertIsNone(subtype.name)
+        self.assertEqual(subtype.description, "a nested struct")
+
+        date_field = subtype._subtypes[0]
+        self.assertEqual(date_field._type, "DATE")
+        self.assertEqual(date_field.name, "nested_date")
+        self.assertIsNone(date_field.description)
+
+        bool_field = subtype._subtypes[1]
+        self.assertEqual(bool_field._type, "BOOLEAN")
+        self.assertIsNone(bool_field.name)
+        self.assertEqual(bool_field.description, "nested bool field")
+
+    def test_to_api_repr(self):
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+
+        int_type = ScalarQueryParameterType("INTEGER", description="in years")
+        date_type = ScalarQueryParameterType("DATE", name="day_of_birth")
+        param_type = self._make_one(int_type, date_type, name="foo", description="bar")
+
+        result = param_type.to_api_repr()
+
+        expected_result = {
+            "type": "STRUCT",
+            "structTypes": [
+                {"type": {"type": "INTEGER"}, "description": "in years"},
+                {"name": "day_of_birth", "type": {"type": "DATE"}},
+            ],
+        }
+        self.assertEqual(result, expected_result)
+
+    def test_to_api_repr_nested(self):
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+
+        struct_class = self._get_target_class()
+
+        int_type = ScalarQueryParameterType("INTEGER", description="in years")
+        nested_struct_type = struct_class(
+            ScalarQueryParameterType("DATE", name="nested_date"),
+            ScalarQueryParameterType("BOOLEAN", description="nested bool field"),
+            name="nested",
+        )
+        param_type = self._make_one(
+            int_type, nested_struct_type, name="foo", description="bar"
+        )
+
+        result = param_type.to_api_repr()
+
+        expected_result = {
+            "type": "STRUCT",
+            "structTypes": [
+                {"type": {"type": "INTEGER"}, "description": "in years"},
+                {
+                    "name": "nested",
+                    "type": {
+                        "type": "STRUCT",
+                        "structTypes": [
+                            {"type": {"type": "DATE"}, "name": "nested_date"},
+                            {
+                                "type": {"type": "BOOLEAN"},
+                                "description": "nested bool field",
+                            },
+                        ],
+                    },
+                },
+            ],
+        }
+        self.assertEqual(result, expected_result)
+
+    def test_repr_no_optional_attrs(self):
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+
+        param_type = self._make_one(
+            ScalarQueryParameterType("BOOLEAN"), ScalarQueryParameterType("STRING")
+        )
+        expected = (
+            "StructQueryParameterType("
+            "ScalarQueryParameterType('BOOLEAN'), ScalarQueryParameterType('STRING')"
+            ")"
+        )
+        self.assertEqual(repr(param_type), expected)
+
+    def test_repr_all_optional_attrs(self):
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+
+        param_type = self._make_one(
+            ScalarQueryParameterType("BOOLEAN"),
+            ScalarQueryParameterType("STRING"),
+            name="data_record",
+            description="this is it",
+        )
+        expected = (
+            "StructQueryParameterType("
+            "ScalarQueryParameterType('BOOLEAN'), ScalarQueryParameterType('STRING'), "
+            "name='data_record', description='this is it'"
+            ")"
+        )
+        self.assertEqual(repr(param_type), expected)
+
+
 class Test__AbstractQueryParameter(unittest.TestCase):
     @staticmethod
     def _get_target_class():

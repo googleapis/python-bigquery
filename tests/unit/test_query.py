@@ -769,6 +769,19 @@ class Test_ArrayQueryParameter(unittest.TestCase):
         param = klass.positional(array_type="INT64", values=[1, 2])
         self.assertEqual(param.to_api_repr(), EXPECTED)
 
+    def test_to_api_repr_array_type_as_type_instance(self):
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+
+        EXPECTED = {
+            "parameterType": {"type": "ARRAY", "arrayType": {"type": "BOOLEAN"}},
+            "parameterValue": {"arrayValues": [{"value": "true"}, {"value": "false"}]},
+        }
+        klass = self._get_target_class()
+        param = klass.positional(
+            array_type=ScalarQueryParameterType("BOOLEAN"), values=[True, False],
+        )
+        self.assertEqual(param.to_api_repr(), EXPECTED)
+
     def test_to_api_repr_w_unknown_type(self):
         EXPECTED = {
             "parameterType": {"type": "ARRAY", "arrayType": {"type": "UNKNOWN"}},
@@ -806,7 +819,8 @@ class Test_ArrayQueryParameter(unittest.TestCase):
         self.assertEqual(param.to_api_repr(), EXPECTED)
 
     def test_to_api_repr_w_empty_array_of_records_type(self):
-        from google.cloud.bigquery.query import StructQueryParameter
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+        from google.cloud.bigquery.query import StructQueryParameterType
 
         EXPECTED = {
             "parameterType": {
@@ -821,13 +835,12 @@ class Test_ArrayQueryParameter(unittest.TestCase):
             },
             "parameterValue": {"arrayValues": []},
         }
-        one = _make_subparam("foo", "STRING", None)
-        another = _make_subparam("bar", "INT64", None)
-        struct = StructQueryParameter.positional(one, another)
-        klass = self._get_target_class()
-        param = klass.positional(
-            array_type="RECORD", values=[], struct_item_type=struct
+        item_type = StructQueryParameterType(
+            ScalarQueryParameterType("STRING", name="foo"),
+            ScalarQueryParameterType("INT64", name="bar"),
         )
+        klass = self._get_target_class()
+        param = klass.positional(array_type=item_type, values=[])
         self.assertEqual(param.to_api_repr(), EXPECTED)
 
     def test___eq___wrong_type(self):
@@ -874,10 +887,37 @@ class Test_ArrayQueryParameter(unittest.TestCase):
         field2 = self._make_one("test", "INT64", [12])
         self.assertNotEqual(field1, field2)
 
-    def test___repr__(self):
+    def test___repr__array_type_str(self):
         field1 = self._make_one("field1", "STRING", ["value"])
         expected = "ArrayQueryParameter('field1', 'STRING', ['value'])"
         self.assertEqual(repr(field1), expected)
+
+    def test___repr__array_type_scalar_type_instance(self):
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+
+        int_items = self._make_one(
+            "int_items", ScalarQueryParameterType("INTEGER"), [64]
+        )
+        expected = "ArrayQueryParameter('int_items', 'INTEGER', [64])"
+        self.assertEqual(repr(int_items), expected)
+
+    def test___repr__array_type_struct_type_instance(self):
+        from google.cloud.bigquery.query import ScalarQueryParameterType
+        from google.cloud.bigquery.query import StructQueryParameterType
+
+        struct_items = self._make_one(
+            "struct_items",
+            StructQueryParameterType(
+                ScalarQueryParameterType("INTEGER", name="age"),
+                ScalarQueryParameterType("STRING", name="last_name"),
+            ),
+            [{"age": 18, "last_name": "Doe"}],
+        )
+        expected = (
+            "ArrayQueryParameter('struct_items', 'STRUCT', "
+            "[{'age': 18, 'last_name': 'Doe'}])"
+        )
+        self.assertEqual(repr(struct_items), expected)
 
 
 class Test_StructQueryParameter(unittest.TestCase):

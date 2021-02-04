@@ -2544,6 +2544,9 @@ class Client(ClientWithProject):
 
         if project is None:
             project = self.project
+        # TODO: Increase the minimum version of google-cloud-core to 1.6.0
+        # and remove this logic. See:
+        # https://github.com/googleapis/python-bigquery/issues/509
         hostname = (
             self._connection.API_BASE_URL
             if not hasattr(self._connection, "get_api_base_url_for_mtls")

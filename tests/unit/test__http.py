@@ -33,7 +33,7 @@ class TestConnection(unittest.TestCase):
 
     def _make_one(self, *args, **kw):
         if "api_endpoint" not in kw:
-            kw["api_endpoint"] = "https://storage.googleapis.com"
+            kw["api_endpoint"] = "https://bigquery.googleapis.com"
 
         return self._get_target_class()(*args, **kw)
 

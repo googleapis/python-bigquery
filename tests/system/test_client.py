@@ -2140,7 +2140,9 @@ class TestBigQuery(unittest.TestCase):
         from google.cloud.bigquery.job import QueryJobConfig
         from google.cloud.bigquery.query import ArrayQueryParameter
         from google.cloud.bigquery.query import ScalarQueryParameter
+        from google.cloud.bigquery.query import ScalarQueryParameterType
         from google.cloud.bigquery.query import StructQueryParameter
+        from google.cloud.bigquery.query import StructQueryParameterType
 
         question = "What is the answer to life, the universe, and everything?"
         question_param = ScalarQueryParameter(
@@ -2197,12 +2199,10 @@ class TestBigQuery(unittest.TestCase):
         )
         empty_struct_array_param = ArrayQueryParameter(
             name="empty_array_param",
-            array_type="RECORD",
             values=[],
-            struct_item_type=StructQueryParameter(
-                None,
-                ScalarQueryParameter(name="foo", type_="INT64", value=None),
-                ScalarQueryParameter(name="bar", type_="STRING", value=None),
+            array_type=StructQueryParameterType(
+                ScalarQueryParameterType(name="foo", type_="INT64"),
+                ScalarQueryParameterType(name="bar", type_="STRING"),
             ),
         )
         hero_param = StructQueryParameter("hero", phred_name_param, phred_age_param)

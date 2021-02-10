@@ -9,12 +9,12 @@
 
 ### Features
 
-* add mtls support to client ([#492](https://www.github.com/googleapis/python-bigquery/issues/492)) ([1823cad](https://www.github.com/googleapis/python-bigquery/commit/1823cadee3acf95c516d0479400e4175349ea199))
+* Add mTLS support to client. ([#492](https://www.github.com/googleapis/python-bigquery/issues/492)) ([1823cad](https://www.github.com/googleapis/python-bigquery/commit/1823cadee3acf95c516d0479400e4175349ea199))
 
 
 ### Bug Fixes
 
-* don't try to close closed cursors ([#498](https://www.github.com/googleapis/python-bigquery/issues/498)) ([bf44e7b](https://www.github.com/googleapis/python-bigquery/commit/bf44e7b67d2de41c13053a4550484b9ea049db3e))
+* Don't try to close closed cursors. ([#498](https://www.github.com/googleapis/python-bigquery/issues/498)) ([bf44e7b](https://www.github.com/googleapis/python-bigquery/commit/bf44e7b67d2de41c13053a4550484b9ea049db3e))
 
 ## [2.7.0](https://www.github.com/googleapis/python-bigquery/compare/v2.6.2...v2.7.0) (2021-01-27)
 

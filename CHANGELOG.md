@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [2.8.1](https://www.github.com/googleapis/python-bigquery/compare/v2.8.0...v2.8.1) (2021-02-16)
+
+
+### Documentation
+
+* clarify `%%bigquery`` magics and fix broken link ([#508](https://www.github.com/googleapis/python-bigquery/issues/508)) ([eedf93b](https://www.github.com/googleapis/python-bigquery/commit/eedf93b6636c5ff1bd810c6038cfeaea8ccb64d8))
+
 ## [2.8.0](https://www.github.com/googleapis/python-bigquery/compare/v2.7.0...v2.8.0) (2021-02-08)
 
 

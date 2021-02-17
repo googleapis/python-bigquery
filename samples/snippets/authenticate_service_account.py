@@ -31,7 +31,7 @@ def main():
     )
 
     # Alternatively, use service_account.Credentials.from_service_account_info() 
-    # to set credentials from a json string rather than read from a file
+    # to set credentials directly via a json object rather than set a filepath
     # TODO(developer): Set key_json to the content of the service account key file.
     # credentials = service_account.Credentials.from_service_account_info(key_json)
 

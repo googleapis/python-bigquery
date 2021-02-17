@@ -18,6 +18,7 @@ import datetime
 import pytest
 
 import google.cloud._helpers
+from google.cloud import bigquery
 from google.cloud import bigquery_v2
 
 
@@ -73,7 +74,7 @@ def test_ctor_w_properties(target_class):
     )
     type_ = "SCALAR_FUNCTION"
     description = "A routine description."
-    determinism_level = "NOT_DETERMINISTIC"
+    determinism_level = bigquery.DeterminismLevel.NOT_DETERMINISTIC
 
     actual_routine = target_class(
         routine_id,
@@ -94,7 +95,9 @@ def test_ctor_w_properties(target_class):
     assert actual_routine.return_type == return_type
     assert actual_routine.type_ == type_
     assert actual_routine.description == description
-    assert actual_routine.determinism_level == "NOT_DETERMINISTIC"
+    assert (
+        actual_routine.determinism_level == bigquery.DeterminismLevel.NOT_DETERMINISTIC
+    )
 
 
 def test_from_api_repr(target_class):
@@ -123,7 +126,7 @@ def test_from_api_repr(target_class):
         "routineType": "SCALAR_FUNCTION",
         "someNewField": "someValue",
         "description": "A routine description.",
-        "determinismLevel": "DETERMINISTIC",
+        "determinismLevel": bigquery.DeterminismLevel.DETERMINISTIC,
     }
     actual_routine = target_class.from_api_repr(resource)
 
@@ -214,7 +217,7 @@ def test_from_api_repr_w_unknown_fields(target_class):
                 "returnType": {"typeKind": "INT64"},
                 "routineType": "SCALAR_FUNCTION",
                 "description": "A routine description.",
-                "determinismLevel": "DETERMINISM_LEVEL_UNSPECIFIED",
+                "determinismLevel": bigquery.DeterminismLevel.DETERMINISM_LEVEL_UNSPECIFIED,
             },
             ["arguments"],
             {"arguments": [{"name": "x", "dataType": {"typeKind": "INT64"}}]},
@@ -227,7 +230,7 @@ def test_from_api_repr_w_unknown_fields(target_class):
                 "returnType": {"typeKind": "INT64"},
                 "routineType": "SCALAR_FUNCTION",
                 "description": "A routine description.",
-                "determinismLevel": "DETERMINISM_LEVEL_UNSPECIFIED",
+                "determinismLevel": bigquery.DeterminismLevel.DETERMINISM_LEVEL_UNSPECIFIED,
             },
             ["body"],
             {"definitionBody": "x * 3"},
@@ -240,7 +243,7 @@ def test_from_api_repr_w_unknown_fields(target_class):
                 "returnType": {"typeKind": "INT64"},
                 "routineType": "SCALAR_FUNCTION",
                 "description": "A routine description.",
-                "determinismLevel": "DETERMINISM_LEVEL_UNSPECIFIED",
+                "determinismLevel": bigquery.DeterminismLevel.DETERMINISM_LEVEL_UNSPECIFIED,
             },
             ["language"],
             {"language": "SQL"},
@@ -253,7 +256,7 @@ def test_from_api_repr_w_unknown_fields(target_class):
                 "returnType": {"typeKind": "INT64"},
                 "routineType": "SCALAR_FUNCTION",
                 "description": "A routine description.",
-                "determinismLevel": "DETERMINISM_LEVEL_UNSPECIFIED",
+                "determinismLevel": bigquery.DeterminismLevel.DETERMINISM_LEVEL_UNSPECIFIED,
             },
             ["return_type"],
             {"returnType": {"typeKind": "INT64"}},
@@ -266,7 +269,7 @@ def test_from_api_repr_w_unknown_fields(target_class):
                 "returnType": {"typeKind": "INT64"},
                 "routineType": "SCALAR_FUNCTION",
                 "description": "A routine description.",
-                "determinismLevel": "DETERMINISM_LEVEL_UNSPECIFIED",
+                "determinismLevel": bigquery.DeterminismLevel.DETERMINISM_LEVEL_UNSPECIFIED,
             },
             ["type_"],
             {"routineType": "SCALAR_FUNCTION"},
@@ -279,7 +282,7 @@ def test_from_api_repr_w_unknown_fields(target_class):
                 "returnType": {"typeKind": "INT64"},
                 "routineType": "SCALAR_FUNCTION",
                 "description": "A routine description.",
-                "determinismLevel": "DETERMINISM_LEVEL_UNSPECIFIED",
+                "determinismLevel": bigquery.DeterminismLevel.DETERMINISM_LEVEL_UNSPECIFIED,
             },
             ["description"],
             {"description": "A routine description."},
@@ -292,10 +295,12 @@ def test_from_api_repr_w_unknown_fields(target_class):
                 "returnType": {"typeKind": "INT64"},
                 "routineType": "SCALAR_FUNCTION",
                 "description": "A routine description.",
-                "determinismLevel": "DETERMINISM_LEVEL_UNSPECIFIED",
+                "determinismLevel": bigquery.DeterminismLevel.DETERMINISM_LEVEL_UNSPECIFIED,
             },
             ["determinism_level"],
-            {"determinismLevel": "DETERMINISM_LEVEL_UNSPECIFIED"},
+            {
+                "determinismLevel": bigquery.DeterminismLevel.DETERMINISM_LEVEL_UNSPECIFIED
+            },
         ),
         (
             {},

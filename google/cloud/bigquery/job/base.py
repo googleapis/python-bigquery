@@ -75,7 +75,7 @@ def _error_result_to_exception(error_result):
 
 
 ReservationUsage = namedtuple("ReservationUsage", "name slot_ms")
-ReservationUsage.__doc__ = " Job resource usage for a reservation."
+ReservationUsage.__doc__ = "Job resource usage for a reservation."
 ReservationUsage.name.__doc__ = (
     'Reservation name or "unreserved" for on-demand resources usage.'
 )

@@ -14,12 +14,13 @@
 
 """Base classes and helpers for job classes."""
 
+from collections import namedtuple
 import copy
+import http
 import threading
 
 from google.api_core import exceptions
 import google.api_core.future.polling
-from six.moves import http_client
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.retry import DEFAULT_RETRY
@@ -28,24 +29,24 @@ from google.cloud.bigquery.retry import DEFAULT_RETRY
 _DONE_STATE = "DONE"
 _STOPPED_REASON = "stopped"
 _ERROR_REASON_TO_EXCEPTION = {
-    "accessDenied": http_client.FORBIDDEN,
-    "backendError": http_client.INTERNAL_SERVER_ERROR,
-    "billingNotEnabled": http_client.FORBIDDEN,
-    "billingTierLimitExceeded": http_client.BAD_REQUEST,
-    "blocked": http_client.FORBIDDEN,
-    "duplicate": http_client.CONFLICT,
-    "internalError": http_client.INTERNAL_SERVER_ERROR,
-    "invalid": http_client.BAD_REQUEST,
-    "invalidQuery": http_client.BAD_REQUEST,
-    "notFound": http_client.NOT_FOUND,
-    "notImplemented": http_client.NOT_IMPLEMENTED,
-    "quotaExceeded": http_client.FORBIDDEN,
-    "rateLimitExceeded": http_client.FORBIDDEN,
-    "resourceInUse": http_client.BAD_REQUEST,
-    "resourcesExceeded": http_client.BAD_REQUEST,
-    "responseTooLarge": http_client.FORBIDDEN,
-    "stopped": http_client.OK,
-    "tableUnavailable": http_client.BAD_REQUEST,
+    "accessDenied": http.client.FORBIDDEN,
+    "backendError": http.client.INTERNAL_SERVER_ERROR,
+    "billingNotEnabled": http.client.FORBIDDEN,
+    "billingTierLimitExceeded": http.client.BAD_REQUEST,
+    "blocked": http.client.FORBIDDEN,
+    "duplicate": http.client.CONFLICT,
+    "internalError": http.client.INTERNAL_SERVER_ERROR,
+    "invalid": http.client.BAD_REQUEST,
+    "invalidQuery": http.client.BAD_REQUEST,
+    "notFound": http.client.NOT_FOUND,
+    "notImplemented": http.client.NOT_IMPLEMENTED,
+    "quotaExceeded": http.client.FORBIDDEN,
+    "rateLimitExceeded": http.client.FORBIDDEN,
+    "resourceInUse": http.client.BAD_REQUEST,
+    "resourcesExceeded": http.client.BAD_REQUEST,
+    "responseTooLarge": http.client.FORBIDDEN,
+    "stopped": http.client.OK,
+    "tableUnavailable": http.client.BAD_REQUEST,
 }
 
 
@@ -66,11 +67,21 @@ def _error_result_to_exception(error_result):
     """
     reason = error_result.get("reason")
     status_code = _ERROR_REASON_TO_EXCEPTION.get(
-        reason, http_client.INTERNAL_SERVER_ERROR
+        reason, http.client.INTERNAL_SERVER_ERROR
     )
     return exceptions.from_http_status(
         status_code, error_result.get("message", ""), errors=[error_result]
     )
+
+
+ReservationUsage = namedtuple("ReservationUsage", "name slot_ms")
+ReservationUsage.__doc__ = "Job resource usage for a reservation."
+ReservationUsage.name.__doc__ = (
+    'Reservation name or "unreserved" for on-demand resources usage.'
+)
+ReservationUsage.slot_ms.__doc__ = (
+    "Total slot milliseconds used by the reservation for a particular job."
+)
 
 
 class _JobReference(object):
@@ -233,7 +244,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
     @property
     def labels(self):
         """Dict[str, str]: Labels for the job."""
-        return self._properties.setdefault("labels", {})
+        return self._properties.setdefault("configuration", {}).setdefault("labels", {})
 
     @property
     def etag(self):
@@ -304,6 +315,22 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         """Helper for job-type specific statistics-based properties."""
         statistics = self._properties.get("statistics", {})
         return statistics.get(self._JOB_TYPE, {})
+
+    @property
+    def reservation_usage(self):
+        """Job resource usage breakdown by reservation.
+
+        Returns:
+            List[google.cloud.bigquery.job.ReservationUsage]:
+                Reservation usage stats. Can be empty if not set from the server.
+        """
+        usage_stats_raw = _helpers._get_sub_prop(
+            self._properties, ["statistics", "reservationUsage"], default=()
+        )
+        return [
+            ReservationUsage(name=usage["name"], slot_ms=int(usage["slotMs"]))
+            for usage in usage_stats_raw
+        ]
 
     @property
     def error_result(self):
@@ -659,13 +686,20 @@ class _JobConfig(object):
         for prop, val in kwargs.items():
             setattr(self, prop, val)
 
+    def __setattr__(self, name, value):
+        """Override to be able to raise error if an unknown property is being set"""
+        if not name.startswith("_") and not hasattr(type(self), name):
+            raise AttributeError(
+                "Property {} is unknown for {}.".format(name, type(self))
+            )
+        super(_JobConfig, self).__setattr__(name, value)
+
     @property
     def labels(self):
         """Dict[str, str]: Labels for the job.
 
-        This method always returns a dict. To change a job's labels,
-        modify the dict, then call ``Client.update_job``. To delete a
-        label, set its value to :data:`None` before updating.
+        This method always returns a dict. Once a job has been created on the
+        server, its labels cannot be modified anymore.
 
         Raises:
             ValueError: If ``value`` type is invalid.

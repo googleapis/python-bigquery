@@ -4,6 +4,47 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+## [2.8.0](https://www.github.com/googleapis/python-bigquery/compare/v2.7.0...v2.8.0) (2021-02-08)
+
+
+### Features
+
+* Add mTLS support to client. ([#492](https://www.github.com/googleapis/python-bigquery/issues/492)) ([1823cad](https://www.github.com/googleapis/python-bigquery/commit/1823cadee3acf95c516d0479400e4175349ea199))
+
+
+### Bug Fixes
+
+* Don't try to close closed cursors. ([#498](https://www.github.com/googleapis/python-bigquery/issues/498)) ([bf44e7b](https://www.github.com/googleapis/python-bigquery/commit/bf44e7b67d2de41c13053a4550484b9ea049db3e))
+
+## [2.7.0](https://www.github.com/googleapis/python-bigquery/compare/v2.6.2...v2.7.0) (2021-01-27)
+
+
+### Bug Fixes
+
+* invalid conversion of timezone-aware datetime values to JSON ([#480](https://www.github.com/googleapis/python-bigquery/issues/480)) ([61b4385](https://www.github.com/googleapis/python-bigquery/commit/61b438523d305ce66a68fde7cb49e9abbf0a8d1d))
+* reading the labels attribute on Job instances ([#471](https://www.github.com/googleapis/python-bigquery/issues/471)) ([80944f0](https://www.github.com/googleapis/python-bigquery/commit/80944f080bcc4fda870a6daf1d884de616d39ae7))
+* use explicitly given project over the client's default project for load jobs ([#482](https://www.github.com/googleapis/python-bigquery/issues/482)) ([530e1e8](https://www.github.com/googleapis/python-bigquery/commit/530e1e8d8fe8939e914a78ff1b220907c1b87af7))
+
+
+### Dependencies
+
+* declare support for Python 3.9 ([#488](https://www.github.com/googleapis/python-bigquery/issues/488)) ([55daa7d](https://www.github.com/googleapis/python-bigquery/commit/55daa7da9857a8a2fb14a80a4efa3f466386a85f))
+
+### [2.6.2](https://www.github.com/googleapis/python-bigquery/compare/v2.6.1...v2.6.2) (2021-01-11)
+
+
+### Bug Fixes
+
+* add minimum timeout to getQueryResults API requests ([#444](https://www.github.com/googleapis/python-bigquery/issues/444)) ([015a73e](https://www.github.com/googleapis/python-bigquery/commit/015a73e1839e3427408ef6e0f879717d9ddbdb61))
+* use debug logging level for OpenTelemetry message ([#442](https://www.github.com/googleapis/python-bigquery/issues/442)) ([7ea6b7c](https://www.github.com/googleapis/python-bigquery/commit/7ea6b7c2469d2415192cfdacc379e38e49d24775))
+
+
+### Documentation
+
+* add GEOGRAPHY data type code samples ([#428](https://www.github.com/googleapis/python-bigquery/issues/428)) ([dbc68b3](https://www.github.com/googleapis/python-bigquery/commit/dbc68b3d1f325f80d24a2da5f028b0f653fb0317))
+* fix Shapely import in GEOGRAPHY sample ([#431](https://www.github.com/googleapis/python-bigquery/issues/431)) ([96a1c5b](https://www.github.com/googleapis/python-bigquery/commit/96a1c5b3c72855ba6ae8c88dfd0cdb02d2faf909))
+* move and refresh view samples ([#420](https://www.github.com/googleapis/python-bigquery/issues/420)) ([079b6a1](https://www.github.com/googleapis/python-bigquery/commit/079b6a162f6929bf801366d92f8daeb3318426c4))
+
 ### [2.6.1](https://www.github.com/googleapis/python-bigquery/compare/v2.6.0...v2.6.1) (2020-12-09)
 
 

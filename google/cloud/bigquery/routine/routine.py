@@ -17,7 +17,6 @@
 """Define resources for the BigQuery Routines API."""
 
 from google.protobuf import json_format
-import six
 
 import google.cloud._helpers
 from google.cloud.bigquery import _helpers
@@ -51,10 +50,11 @@ class Routine(object):
         "return_type": "returnType",
         "type_": "routineType",
         "description": "description",
+        "determinism_level": "determinismLevel",
     }
 
     def __init__(self, routine_ref, **kwargs):
-        if isinstance(routine_ref, six.string_types):
+        if isinstance(routine_ref, str):
             routine_ref = RoutineReference.from_string(routine_ref)
 
         self._properties = {"routineReference": routine_ref.to_api_repr()}
@@ -253,6 +253,17 @@ class Routine(object):
     @description.setter
     def description(self, value):
         self._properties[self._PROPERTY_TO_API_FIELD["description"]] = value
+
+    @property
+    def determinism_level(self):
+        """Optional[str]: (experimental) The determinism level of the JavaScript UDF
+        if defined.
+        """
+        return self._properties.get(self._PROPERTY_TO_API_FIELD["determinism_level"])
+
+    @determinism_level.setter
+    def determinism_level(self, value):
+        self._properties[self._PROPERTY_TO_API_FIELD["determinism_level"]] = value
 
     @classmethod
     def from_api_repr(cls, resource):

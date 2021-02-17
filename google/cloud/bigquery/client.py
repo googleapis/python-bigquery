@@ -34,7 +34,6 @@ try:
     import pyarrow
 except ImportError:  # pragma: NO COVER
     pyarrow = None
-import six
 
 from google import resumable_media
 from google.resumable_media.requests import MultipartUpload
@@ -79,10 +78,7 @@ from google.cloud.bigquery.table import RowIterator
 _DEFAULT_CHUNKSIZE = 1048576  # 1024 * 1024 B = 1 MB
 _MAX_MULTIPART_SIZE = 5 * 1024 * 1024
 _DEFAULT_NUM_RETRIES = 6
-_BASE_UPLOAD_TEMPLATE = (
-    "https://bigquery.googleapis.com/upload/bigquery/v2/projects/"
-    "{project}/jobs?uploadType="
-)
+_BASE_UPLOAD_TEMPLATE = "{host}/upload/bigquery/v2/projects/{project}/jobs?uploadType="
 _MULTIPART_URL_TEMPLATE = _BASE_UPLOAD_TEMPLATE + "multipart"
 _RESUMABLE_URL_TEMPLATE = _BASE_UPLOAD_TEMPLATE + "resumable"
 _GENERIC_CONTENT_TYPE = "*/*"
@@ -93,6 +89,14 @@ _NEED_TABLE_ARGUMENT = (
     "The table argument should be a table ID string, Table, or TableReference"
 )
 _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
+
+# In microbenchmarks, it's been shown that even in ideal conditions (query
+# finished, local data), requests to getQueryResults can take 10+ seconds.
+# In less-than-ideal situations, the response can take even longer, as it must
+# be able to download a full 100+ MB row in that time. Don't let the
+# connection timeout before data can be downloaded.
+# https://github.com/googleapis/python-bigquery/issues/438
+_MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
 
 class Project(object):
@@ -1571,7 +1575,9 @@ class Client(ClientWithProject):
             location (Optional[str]): Location of the query job.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
-                before using ``retry``.
+                before using ``retry``. If set, this connection timeout may be
+                increased to a minimum value. This prevents retries on what
+                would otherwise be a successful response.
 
         Returns:
             google.cloud.bigquery.query._QueryResults:
@@ -1579,6 +1585,9 @@ class Client(ClientWithProject):
         """
 
         extra_params = {"maxResults": 0}
+
+        if timeout is not None:
+            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if project is None:
             project = self.project
@@ -2017,7 +2026,7 @@ class Client(ClientWithProject):
 
         job_ref = job._JobReference(job_id, project=project, location=location)
 
-        if isinstance(source_uris, six.string_types):
+        if isinstance(source_uris, str):
             source_uris = [source_uris]
 
         destination = _table_arg_to_table_ref(destination, default_project=self.project)
@@ -2124,11 +2133,11 @@ class Client(ClientWithProject):
         try:
             if size is None or size >= _MAX_MULTIPART_SIZE:
                 response = self._do_resumable_upload(
-                    file_obj, job_resource, num_retries, timeout
+                    file_obj, job_resource, num_retries, timeout, project=project
                 )
             else:
                 response = self._do_multipart_upload(
-                    file_obj, job_resource, size, num_retries, timeout
+                    file_obj, job_resource, size, num_retries, timeout, project=project
                 )
         except resumable_media.InvalidResponse as exc:
             raise exceptions.from_http_response(exc.response)
@@ -2463,7 +2472,9 @@ class Client(ClientWithProject):
             timeout=timeout,
         )
 
-    def _do_resumable_upload(self, stream, metadata, num_retries, timeout):
+    def _do_resumable_upload(
+        self, stream, metadata, num_retries, timeout, project=None
+    ):
         """Perform a resumable upload.
 
         Args:
@@ -2479,13 +2490,17 @@ class Client(ClientWithProject):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
 
+            project (Optional[str]):
+                Project ID of the project of where to run the upload. Defaults
+                to the client's project.
+
         Returns:
             requests.Response:
                 The "200 OK" response object returned after the final chunk
                 is uploaded.
         """
         upload, transport = self._initiate_resumable_upload(
-            stream, metadata, num_retries, timeout
+            stream, metadata, num_retries, timeout, project=project
         )
 
         while not upload.finished:
@@ -2493,7 +2508,9 @@ class Client(ClientWithProject):
 
         return response
 
-    def _initiate_resumable_upload(self, stream, metadata, num_retries, timeout):
+    def _initiate_resumable_upload(
+        self, stream, metadata, num_retries, timeout, project=None
+    ):
         """Initiate a resumable upload.
 
         Args:
@@ -2509,6 +2526,10 @@ class Client(ClientWithProject):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
 
+            project (Optional[str]):
+                Project ID of the project of where to run the upload. Defaults
+                to the client's project.
+
         Returns:
             Tuple:
                 Pair of
@@ -2520,7 +2541,19 @@ class Client(ClientWithProject):
         chunk_size = _DEFAULT_CHUNKSIZE
         transport = self._http
         headers = _get_upload_headers(self._connection.user_agent)
-        upload_url = _RESUMABLE_URL_TEMPLATE.format(project=self.project)
+
+        if project is None:
+            project = self.project
+        # TODO: Increase the minimum version of google-cloud-core to 1.6.0
+        # and remove this logic. See:
+        # https://github.com/googleapis/python-bigquery/issues/509
+        hostname = (
+            self._connection.API_BASE_URL
+            if not hasattr(self._connection, "get_api_base_url_for_mtls")
+            else self._connection.get_api_base_url_for_mtls()
+        )
+        upload_url = _RESUMABLE_URL_TEMPLATE.format(host=hostname, project=project)
+
         # TODO: modify ResumableUpload to take a retry.Retry object
         # that it can use for the initial RPC.
         upload = ResumableUpload(upload_url, chunk_size, headers=headers)
@@ -2541,7 +2574,9 @@ class Client(ClientWithProject):
 
         return upload, transport
 
-    def _do_multipart_upload(self, stream, metadata, size, num_retries, timeout):
+    def _do_multipart_upload(
+        self, stream, metadata, size, num_retries, timeout, project=None
+    ):
         """Perform a multipart upload.
 
         Args:
@@ -2562,6 +2597,10 @@ class Client(ClientWithProject):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
 
+            project (Optional[str]):
+                Project ID of the project of where to run the upload. Defaults
+                to the client's project.
+
         Returns:
             requests.Response:
                 The "200 OK" response object returned after the multipart
@@ -2579,7 +2618,18 @@ class Client(ClientWithProject):
 
         headers = _get_upload_headers(self._connection.user_agent)
 
-        upload_url = _MULTIPART_URL_TEMPLATE.format(project=self.project)
+        if project is None:
+            project = self.project
+
+        # TODO: Increase the minimum version of google-cloud-core to 1.6.0
+        # and remove this logic. See:
+        # https://github.com/googleapis/python-bigquery/issues/509
+        hostname = (
+            self._connection.API_BASE_URL
+            if not hasattr(self._connection, "get_api_base_url_for_mtls")
+            else self._connection.get_api_base_url_for_mtls()
+        )
+        upload_url = _MULTIPART_URL_TEMPLATE.format(host=hostname, project=project)
         upload = MultipartUpload(upload_url, headers=headers)
 
         if num_retries is not None:
@@ -2779,7 +2829,7 @@ class Client(ClientWithProject):
                 )
             )
 
-        if isinstance(destination_uris, six.string_types):
+        if isinstance(destination_uris, str):
             destination_uris = [destination_uris]
 
         if job_config:
@@ -3294,7 +3344,9 @@ class Client(ClientWithProject):
                 How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
-                before using ``retry``.
+                before using ``retry``. If set, this connection timeout may be
+                increased to a minimum value. This prevents retries on what
+                would otherwise be a successful response.
                 If multiple requests are made under the hood, ``timeout``
                 applies to each individual request.
         Returns:
@@ -3306,6 +3358,9 @@ class Client(ClientWithProject):
             "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
             "location": location,
         }
+
+        if timeout is not None:
+            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if start_index is not None:
             params["startIndex"] = start_index

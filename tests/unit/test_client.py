@@ -18,7 +18,9 @@ import datetime
 import decimal
 import email
 import gzip
+import http.client
 import io
+import itertools
 import json
 import operator
 import unittest
@@ -26,8 +28,6 @@ import warnings
 
 import mock
 import requests
-import six
-from six.moves import http_client
 import pytest
 import pytz
 import pkg_resources
@@ -311,7 +311,7 @@ class TestClient(unittest.TestCase):
                     project="other-project",
                     location=self.LOCATION,
                     timeout_ms=500,
-                    timeout=42,
+                    timeout=420,
                 )
 
         final_attributes.assert_called_once_with({"path": path}, client, None)
@@ -320,7 +320,32 @@ class TestClient(unittest.TestCase):
             method="GET",
             path=path,
             query_params={"maxResults": 0, "timeoutMs": 500, "location": self.LOCATION},
-            timeout=42,
+            timeout=420,
+        )
+
+    def test__get_query_results_miss_w_short_timeout(self):
+        import google.cloud.bigquery.client
+        from google.cloud.exceptions import NotFound
+
+        creds = _make_credentials()
+        client = self._make_one(self.PROJECT, creds)
+        conn = client._connection = make_connection()
+        path = "/projects/other-project/queries/nothere"
+        with self.assertRaises(NotFound):
+            client._get_query_results(
+                "nothere",
+                None,
+                project="other-project",
+                location=self.LOCATION,
+                timeout_ms=500,
+                timeout=1,
+            )
+
+        conn.api_request.assert_called_once_with(
+            method="GET",
+            path=path,
+            query_params={"maxResults": 0, "timeoutMs": 500, "location": self.LOCATION},
+            timeout=google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
         )
 
     def test__get_query_results_miss_w_client_location(self):
@@ -474,7 +499,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
         projects = list(page)
@@ -508,7 +533,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            six.next(iterator.pages)
+            next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
 
@@ -528,7 +553,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/projects"}, client, None)
         projects = list(page)
@@ -582,7 +607,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         datasets = list(page)
@@ -635,7 +660,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         datasets = list(page)
@@ -2032,6 +2057,7 @@ class TestClient(unittest.TestCase):
             url=mock.ANY, method=mock.ANY, headers=mock.ANY, data=mock.ANY
         )
         http.reset_mock()
+        http.is_mtls = False
         mock_response.status_code = 200
         mock_response.json.return_value = self._make_table_resource()
         user_agent_override = client_info.ClientInfo(user_agent="my-application/1.2.3")
@@ -2919,7 +2945,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": path}, client, None)
         tables = list(page)
@@ -2942,7 +2968,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": path}, client, None)
         models = list(page)
@@ -2991,7 +3017,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         models = list(page)
@@ -3022,7 +3048,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with(
             {"path": "/projects/test-routines/datasets/test_routines/routines"},
@@ -3080,7 +3106,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": path}, client, None)
         routines = list(page)
@@ -3149,7 +3175,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         tables = list(page)
@@ -3213,7 +3239,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         tables = list(page)
@@ -4040,7 +4066,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         jobs = list(page)
@@ -4090,7 +4116,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         jobs = list(page)
@@ -4124,7 +4150,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            page = six.next(iterator.pages)
+            page = next(iterator.pages)
 
         final_attributes.assert_called_once_with({"path": "/%s" % PATH}, client, None)
         jobs = list(page)
@@ -4400,7 +4426,7 @@ class TestClient(unittest.TestCase):
         fake_transport.request.return_value = fake_response
         return fake_transport
 
-    def _initiate_resumable_upload_helper(self, num_retries=None):
+    def _initiate_resumable_upload_helper(self, num_retries=None, mtls=False):
         from google.resumable_media.requests import ResumableUpload
         from google.cloud.bigquery.client import _DEFAULT_CHUNKSIZE
         from google.cloud.bigquery.client import _GENERIC_CONTENT_TYPE
@@ -4412,9 +4438,11 @@ class TestClient(unittest.TestCase):
         # Create mocks to be checked for doing transport.
         resumable_url = "http://test.invalid?upload_id=hey-you"
         response_headers = {"location": resumable_url}
-        fake_transport = self._mock_transport(http_client.OK, response_headers)
+        fake_transport = self._mock_transport(http.client.OK, response_headers)
         client = self._make_one(project=self.PROJECT, _http=fake_transport)
         conn = client._connection = make_connection()
+        if mtls:
+            conn.get_api_base_url_for_mtls = mock.Mock(return_value="https://foo.mtls")
 
         # Create some mock arguments and call the method under test.
         data = b"goodbye gudbi gootbee"
@@ -4429,10 +4457,11 @@ class TestClient(unittest.TestCase):
 
         # Check the returned values.
         self.assertIsInstance(upload, ResumableUpload)
+
+        host_name = "https://foo.mtls" if mtls else "https://bigquery.googleapis.com"
         upload_url = (
-            "https://bigquery.googleapis.com/upload/bigquery/v2/projects/"
-            + self.PROJECT
-            + "/jobs?uploadType=resumable"
+            f"{host_name}/upload/bigquery/v2/projects/{self.PROJECT}"
+            "/jobs?uploadType=resumable"
         )
         self.assertEqual(upload.upload_url, upload_url)
         expected_headers = _get_upload_headers(conn.user_agent)
@@ -4470,18 +4499,28 @@ class TestClient(unittest.TestCase):
     def test__initiate_resumable_upload(self):
         self._initiate_resumable_upload_helper()
 
+    def test__initiate_resumable_upload_mtls(self):
+        self._initiate_resumable_upload_helper(mtls=True)
+
     def test__initiate_resumable_upload_with_retry(self):
         self._initiate_resumable_upload_helper(num_retries=11)
 
-    def _do_multipart_upload_success_helper(self, get_boundary, num_retries=None):
+    def _do_multipart_upload_success_helper(
+        self, get_boundary, num_retries=None, project=None, mtls=False
+    ):
         from google.cloud.bigquery.client import _get_upload_headers
         from google.cloud.bigquery.job import LoadJob
         from google.cloud.bigquery.job import LoadJobConfig
         from google.cloud.bigquery.job import SourceFormat
 
-        fake_transport = self._mock_transport(http_client.OK, {})
+        fake_transport = self._mock_transport(http.client.OK, {})
         client = self._make_one(project=self.PROJECT, _http=fake_transport)
         conn = client._connection = make_connection()
+        if mtls:
+            conn.get_api_base_url_for_mtls = mock.Mock(return_value="https://foo.mtls")
+
+        if project is None:
+            project = self.PROJECT
 
         # Create some mock arguments.
         data = b"Bzzzz-zap \x00\x01\xf4"
@@ -4491,8 +4530,9 @@ class TestClient(unittest.TestCase):
         job = LoadJob(None, None, self.TABLE_REF, client, job_config=config)
         metadata = job.to_api_repr()
         size = len(data)
+
         response = client._do_multipart_upload(
-            stream, metadata, size, num_retries, None
+            stream, metadata, size, num_retries, None, project=project
         )
 
         # Check the mocks and the returned value.
@@ -4500,35 +4540,44 @@ class TestClient(unittest.TestCase):
         self.assertEqual(stream.tell(), size)
         get_boundary.assert_called_once_with()
 
+        host_name = "https://foo.mtls" if mtls else "https://bigquery.googleapis.com"
         upload_url = (
-            "https://bigquery.googleapis.com/upload/bigquery/v2/projects/"
-            + self.PROJECT
-            + "/jobs?uploadType=multipart"
+            f"{host_name}/upload/bigquery/v2/projects/{project}"
+            "/jobs?uploadType=multipart"
         )
         payload = (
             b"--==0==\r\n"
-            + b"content-type: application/json; charset=UTF-8\r\n\r\n"
-            + json.dumps(metadata).encode("utf-8")
-            + b"\r\n"
-            + b"--==0==\r\n"
-            + b"content-type: */*\r\n\r\n"
-            + data
-            + b"\r\n"
-            + b"--==0==--"
-        )
+            b"content-type: application/json; charset=UTF-8\r\n\r\n"
+            b"%(json_metadata)s"
+            b"\r\n"
+            b"--==0==\r\n"
+            b"content-type: */*\r\n\r\n"
+            b"%(data)s"
+            b"\r\n"
+            b"--==0==--"
+        ) % {b"json_metadata": json.dumps(metadata).encode("utf-8"), b"data": data}
+
         headers = _get_upload_headers(conn.user_agent)
         headers["content-type"] = b'multipart/related; boundary="==0=="'
         fake_transport.request.assert_called_once_with(
             "POST", upload_url, data=payload, headers=headers, timeout=mock.ANY
         )
 
-    @mock.patch(u"google.resumable_media._upload.get_boundary", return_value=b"==0==")
+    @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
     def test__do_multipart_upload(self, get_boundary):
         self._do_multipart_upload_success_helper(get_boundary)
 
-    @mock.patch(u"google.resumable_media._upload.get_boundary", return_value=b"==0==")
+    @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
+    def test__do_multipart_upload_mtls(self, get_boundary):
+        self._do_multipart_upload_success_helper(get_boundary, mtls=True)
+
+    @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
     def test__do_multipart_upload_with_retry(self, get_boundary):
         self._do_multipart_upload_success_helper(get_boundary, num_retries=8)
+
+    @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
+    def test__do_multipart_upload_with_custom_project(self, get_boundary):
+        self._do_multipart_upload_success_helper(get_boundary, project="custom-project")
 
     def test_copy_table(self):
         from google.cloud.bigquery.job import CopyJob
@@ -5022,7 +5071,7 @@ class TestClient(unittest.TestCase):
         _, req = conn.api_request.call_args
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
-        self.assertIsInstance(req["data"]["jobReference"]["jobId"], six.string_types)
+        self.assertIsInstance(req["data"]["jobReference"]["jobId"], str)
         self.assertIsNone(req["timeout"])
 
         # Check the job resource.
@@ -5227,7 +5276,7 @@ class TestClient(unittest.TestCase):
         job = client.query(QUERY)
 
         self.assertIsInstance(job, QueryJob)
-        self.assertIsInstance(job.job_id, six.string_types)
+        self.assertIsInstance(job.job_id, str)
         self.assertIs(job._client, client)
         self.assertEqual(job.query, QUERY)
         self.assertEqual(job.udf_resources, [])
@@ -5240,7 +5289,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
         self.assertIsNone(req["timeout"])
         sent = req["data"]
-        self.assertIsInstance(sent["jobReference"]["jobId"], six.string_types)
+        self.assertIsInstance(sent["jobReference"]["jobId"], str)
         sent_config = sent["configuration"]["query"]
         self.assertEqual(sent_config["query"], QUERY)
         self.assertFalse(sent_config["useLegacySql"])
@@ -5687,7 +5736,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
         self.assertIsNone(req["timeout"])
         sent = req["data"]
-        self.assertIsInstance(sent["jobReference"]["jobId"], six.string_types)
+        self.assertIsInstance(sent["jobReference"]["jobId"], str)
         sent_config = sent["configuration"]["query"]
         self.assertEqual(sent_config["query"], QUERY)
         self.assertTrue(sent_config["useLegacySql"])
@@ -6339,10 +6388,10 @@ class TestClient(unittest.TestCase):
 
         dataframe = pandas.DataFrame(
             [
-                {"name": u"Little One", "age": 10, "adult": False},
-                {"name": u"Young Gun", "age": 20, "adult": True},
-                {"name": u"Dad", "age": 30, "adult": True},
-                {"name": u"Stranger", "age": 40, "adult": True},
+                {"name": "Little One", "age": 10, "adult": False},
+                {"name": "Young Gun", "age": 20, "adult": True},
+                {"name": "Dad", "age": 30, "adult": True},
+                {"name": "Stranger", "age": 40, "adult": True},
             ]
         )
 
@@ -6398,7 +6447,7 @@ class TestClient(unittest.TestCase):
 
         actual_calls = conn.api_request.call_args_list
 
-        for call, expected_data in six.moves.zip_longest(
+        for call, expected_data in itertools.zip_longest(
             actual_calls, EXPECTED_SENT_DATA
         ):
             expected_call = mock.call(
@@ -6466,7 +6515,7 @@ class TestClient(unittest.TestCase):
 
         actual_calls = conn.api_request.call_args_list
 
-        for call, expected_data in six.moves.zip_longest(
+        for call, expected_data in itertools.zip_longest(
             actual_calls, EXPECTED_SENT_DATA
         ):
             expected_call = mock.call(
@@ -6535,8 +6584,8 @@ class TestClient(unittest.TestCase):
 
         dataframe = pandas.DataFrame(
             [
-                {"name": u"Little One", "adult": False},
-                {"name": u"Young Gun", "adult": True},
+                {"name": "Little One", "adult": False},
+                {"name": "Young Gun", "adult": True},
             ]
         )
 
@@ -6776,7 +6825,7 @@ class TestClient(unittest.TestCase):
 
         # Check that initial total_rows is populated from the table.
         self.assertEqual(iterator.total_rows, 7)
-        page = six.next(iterator.pages)
+        page = next(iterator.pages)
         rows = list(page)
 
         # Check that total_rows is updated based on API response.
@@ -6831,14 +6880,14 @@ class TestClient(unittest.TestCase):
         table = Table(self.TABLE_REF, schema=[full_name])
         iterator = client.list_rows(table, max_results=4, page_size=2, start_index=1)
         pages = iterator.pages
-        rows = list(six.next(pages))
+        rows = list(next(pages))
         extra_params = iterator.extra_params
         f2i = {"full_name": 0}
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0], Row(("Phred Phlyntstone",), f2i))
         self.assertEqual(rows[1], Row(("Bharney Rhubble",), f2i))
 
-        rows = list(six.next(pages))
+        rows = list(next(pages))
 
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0], Row(("Wylma Phlyntstone",), f2i))
@@ -6915,7 +6964,7 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(*len(tests) * [{}])
         for i, test in enumerate(tests):
             iterator = client.list_rows(table, **test[0])
-            six.next(iterator.pages)
+            next(iterator.pages)
             req = conn.api_request.call_args_list[i]
             test[1]["formatOptions.useInt64Timestamp"] = True
             self.assertEqual(req[1]["query_params"], test[1], "for kwargs %s" % test[0])
@@ -7000,7 +7049,7 @@ class TestClient(unittest.TestCase):
         struct = SchemaField("struct", "RECORD", mode="REPEATED", fields=[index, score])
 
         iterator = client.list_rows(self.TABLE_REF, selected_fields=[color, struct])
-        page = six.next(iterator.pages)
+        page = next(iterator.pages)
         rows = list(page)
         total_rows = iterator.total_rows
         page_token = iterator.next_page_token
@@ -7065,7 +7114,7 @@ class TestClient(unittest.TestCase):
         table = Table(self.TABLE_REF, schema=[full_name, phone])
 
         iterator = client.list_rows(table)
-        page = six.next(iterator.pages)
+        page = next(iterator.pages)
         rows = list(page)
         total_rows = iterator.total_rows
         page_token = iterator.next_page_token
@@ -7205,17 +7254,18 @@ class TestClientUpload(object):
     #       `pytest`-style tests rather than `unittest`-style.
     from google.cloud.bigquery.job import SourceFormat
 
-    TABLE_REF = DatasetReference("project_id", "test_dataset").table("test_table")
+    PROJECT = "project_id"
+    TABLE_REF = DatasetReference(PROJECT, "test_dataset").table("test_table")
 
     LOCATION = "us-central"
 
-    @staticmethod
-    def _make_client(transport=None, location=None):
+    @classmethod
+    def _make_client(cls, transport=None, location=None):
         from google.cloud.bigquery import _http
         from google.cloud.bigquery import client
 
         cl = client.Client(
-            project="project_id",
+            project=cls.PROJECT,
             credentials=_make_credentials(),
             _http=transport,
             location=location,
@@ -7241,7 +7291,7 @@ class TestClientUpload(object):
         if side_effect is None:
             side_effect = [
                 cls._make_response(
-                    http_client.OK,
+                    http.client.OK,
                     json.dumps(resource),
                     {"Content-Type": "application/json"},
                 )
@@ -7249,12 +7299,12 @@ class TestClientUpload(object):
         return mock.patch.object(client, method, side_effect=side_effect, autospec=True)
 
     EXPECTED_CONFIGURATION = {
-        "jobReference": {"projectId": "project_id", "jobId": "job_id"},
+        "jobReference": {"projectId": PROJECT, "jobId": "job_id"},
         "configuration": {
             "load": {
                 "sourceFormat": SourceFormat.CSV,
                 "destinationTable": {
-                    "projectId": "project_id",
+                    "projectId": PROJECT,
                     "datasetId": "test_dataset",
                     "tableId": "test_table",
                 },
@@ -7300,7 +7350,11 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES, None
+            file_obj,
+            self.EXPECTED_CONFIGURATION,
+            _DEFAULT_NUM_RETRIES,
+            None,
+            project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
         )
 
         # the original config object should not have been modified
@@ -7329,7 +7383,11 @@ class TestClientUpload(object):
         expected_resource["jobReference"]["location"] = self.LOCATION
         expected_resource["jobReference"]["projectId"] = "other-project"
         do_upload.assert_called_once_with(
-            file_obj, expected_resource, _DEFAULT_NUM_RETRIES, None
+            file_obj,
+            expected_resource,
+            _DEFAULT_NUM_RETRIES,
+            None,
+            project="other-project",
         )
 
     def test_load_table_from_file_w_client_location(self):
@@ -7359,7 +7417,11 @@ class TestClientUpload(object):
         expected_resource["jobReference"]["location"] = self.LOCATION
         expected_resource["jobReference"]["projectId"] = "other-project"
         do_upload.assert_called_once_with(
-            file_obj, expected_resource, _DEFAULT_NUM_RETRIES, None
+            file_obj,
+            expected_resource,
+            _DEFAULT_NUM_RETRIES,
+            None,
+            project="other-project",
         )
 
     def test_load_table_from_file_resumable_metadata(self):
@@ -7384,7 +7446,7 @@ class TestClientUpload(object):
         config.null_marker = r"\N"
 
         expected_config = {
-            "jobReference": {"projectId": "project_id", "jobId": "job_id"},
+            "jobReference": {"projectId": self.PROJECT, "jobId": "job_id"},
             "configuration": {
                 "load": {
                     "destinationTable": {
@@ -7417,7 +7479,11 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, expected_config, _DEFAULT_NUM_RETRIES, None
+            file_obj,
+            expected_config,
+            _DEFAULT_NUM_RETRIES,
+            None,
+            project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
         )
 
     def test_load_table_from_file_multipart(self):
@@ -7446,6 +7512,7 @@ class TestClientUpload(object):
             file_obj_size,
             _DEFAULT_NUM_RETRIES,
             None,
+            project=self.PROJECT,
         )
 
     def test_load_table_from_file_with_retries(self):
@@ -7466,7 +7533,11 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            file_obj, self.EXPECTED_CONFIGURATION, num_retries, None
+            file_obj,
+            self.EXPECTED_CONFIGURATION,
+            num_retries,
+            None,
+            project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
         )
 
     def test_load_table_from_file_with_rewind(self):
@@ -7499,7 +7570,11 @@ class TestClientUpload(object):
             )
 
         do_upload.assert_called_once_with(
-            gzip_file, self.EXPECTED_CONFIGURATION, _DEFAULT_NUM_RETRIES, None
+            gzip_file,
+            self.EXPECTED_CONFIGURATION,
+            _DEFAULT_NUM_RETRIES,
+            None,
+            project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
         )
 
     def test_load_table_from_file_with_writable_gzip(self):
@@ -7522,7 +7597,7 @@ class TestClientUpload(object):
         file_obj = self._make_file_obj()
 
         response = self._make_response(
-            content="Someone is already in this spot.", status_code=http_client.CONFLICT
+            content="Someone is already in this spot.", status_code=http.client.CONFLICT
         )
 
         do_upload_patch = self._make_do_upload_patch(
@@ -8144,7 +8219,7 @@ class TestClientUpload(object):
                         dtype="datetime64[ns]",
                     ).dt.tz_localize(pytz.utc),
                 ),
-                ("string_col", [u"abc", None, u"def"]),
+                ("string_col", ["abc", None, "def"]),
                 ("bytes_col", [b"abc", b"def", None]),
             ]
         )
@@ -8203,7 +8278,7 @@ class TestClientUpload(object):
             [
                 ("int_col", [1, 2, 3]),
                 ("int_as_float_col", [1.0, float("nan"), 3.0]),
-                ("string_col", [u"abc", None, u"def"]),
+                ("string_col", ["abc", None, "def"]),
             ]
         )
         dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
@@ -8238,7 +8313,7 @@ class TestClientUpload(object):
         client = self._make_client()
         df_data = collections.OrderedDict(
             [
-                ("string_col", [u"abc", u"def", u"ghi"]),
+                ("string_col", ["abc", "def", "ghi"]),
                 ("unknown_col", [b"jkl", None, b"mno"]),
             ]
         )
@@ -8292,7 +8367,7 @@ class TestClientUpload(object):
         from google.cloud.bigquery.schema import SchemaField
 
         client = self._make_client()
-        records = [{"name": u"Monty", "age": 100}, {"name": u"Python", "age": 60}]
+        records = [{"name": "Monty", "age": 100}, {"name": "Python", "age": 60}]
         dataframe = pandas.DataFrame(records)
         schema = (SchemaField("name", "STRING"), SchemaField("age", "INTEGER"))
         job_config = job.LoadJobConfig(schema=schema)
@@ -8584,7 +8659,7 @@ class TestClientUpload(object):
 
         resumable_url = "http://test.invalid?upload_id=and-then-there-was-1"
         initial_response = cls._make_response(
-            http_client.OK, "", {"location": resumable_url}
+            http.client.OK, "", {"location": resumable_url}
         )
         data_response = cls._make_response(
             resumable_media.PERMANENT_REDIRECT,
@@ -8592,7 +8667,7 @@ class TestClientUpload(object):
             {"range": "bytes=0-{:d}".format(size - 1)},
         )
         final_response = cls._make_response(
-            http_client.OK,
+            http.client.OK,
             json.dumps({"size": size}),
             {"Content-Type": "application/json"},
         )
@@ -8633,8 +8708,46 @@ class TestClientUpload(object):
             timeout=mock.ANY,
         )
 
+    def test__do_resumable_upload_custom_project(self):
+        file_obj = self._make_file_obj()
+        file_obj_len = len(file_obj.getvalue())
+        transport = self._make_transport(
+            self._make_resumable_upload_responses(file_obj_len)
+        )
+        client = self._make_client(transport)
+
+        result = client._do_resumable_upload(
+            file_obj, self.EXPECTED_CONFIGURATION, None, None, project="custom-project",
+        )
+
+        content = result.content.decode("utf-8")
+        assert json.loads(content) == {"size": file_obj_len}
+
+        # Verify that configuration data was passed in with the initial
+        # request.
+        transport.request.assert_any_call(
+            "POST",
+            mock.ANY,
+            data=json.dumps(self.EXPECTED_CONFIGURATION).encode("utf-8"),
+            headers=mock.ANY,
+            timeout=mock.ANY,
+        )
+
+        # Check the project ID used in the call to initiate resumable upload.
+        initiation_url = next(
+            (
+                call.args[1]
+                for call in transport.request.call_args_list
+                if call.args[0] == "POST" and "uploadType=resumable" in call.args[1]
+            ),
+            None,
+        )  # pragma: NO COVER
+
+        assert initiation_url is not None
+        assert "projects/custom-project" in initiation_url
+
     def test__do_multipart_upload(self):
-        transport = self._make_transport([self._make_response(http_client.OK)])
+        transport = self._make_transport([self._make_response(http.client.OK)])
         client = self._make_client(transport)
         file_obj = self._make_file_obj()
         file_obj_len = len(file_obj.getvalue())

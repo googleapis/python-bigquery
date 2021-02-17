@@ -15,7 +15,7 @@
 import re
 
 import enum
-import six
+import itertools
 
 from google.cloud.bigquery_v2 import types as gapic_types
 
@@ -71,6 +71,9 @@ class DestinationFormat(object):
 
     AVRO = "AVRO"
     """Specifies Avro format."""
+
+    PARQUET = "PARQUET"
+    """Specifies Parquet format."""
 
 
 class Encoding(object):
@@ -178,7 +181,7 @@ def _make_sql_scalars_enum():
     )
 
     new_doc = "\n".join(
-        six.moves.filterfalse(skip_pattern.search, orig_doc.splitlines())
+        itertools.filterfalse(skip_pattern.search, orig_doc.splitlines())
     )
     new_enum.__doc__ = "An Enum of scalar SQL types.\n" + new_doc
 
@@ -231,3 +234,20 @@ class WriteDisposition(object):
     WRITE_EMPTY = "WRITE_EMPTY"
     """If the table already exists and contains data, a 'duplicate' error is
     returned in the job result."""
+
+
+class DeterminismLevel:
+    """Specifies determinism level for JavaScript user-defined functions (UDFs).
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/routines#DeterminismLevel
+    """
+
+    DETERMINISM_LEVEL_UNSPECIFIED = "DETERMINISM_LEVEL_UNSPECIFIED"
+    """The determinism of the UDF is unspecified."""
+
+    DETERMINISTIC = "DETERMINISTIC"
+    """The UDF is deterministic, meaning that 2 function calls with the same inputs
+    always produce the same result, even across 2 query runs."""
+
+    NOT_DETERMINISTIC = "NOT_DETERMINISTIC"
+    """The UDF is not deterministic."""

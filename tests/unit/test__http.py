@@ -32,11 +32,14 @@ class TestConnection(unittest.TestCase):
         return Connection
 
     def _make_one(self, *args, **kw):
+        if "api_endpoint" not in kw:
+            kw["api_endpoint"] = "https://bigquery.googleapis.com"
+
         return self._get_target_class()(*args, **kw)
 
     def test_build_api_url_no_extra_query_params(self):
-        from six.moves.urllib.parse import parse_qsl
-        from six.moves.urllib.parse import urlsplit
+        from urllib.parse import parse_qsl
+        from urllib.parse import urlsplit
 
         conn = self._make_one(object())
         uri = conn.build_api_url("/foo")
@@ -49,8 +52,8 @@ class TestConnection(unittest.TestCase):
         self.assertEqual(parms, {})
 
     def test_build_api_url_w_custom_endpoint(self):
-        from six.moves.urllib.parse import parse_qsl
-        from six.moves.urllib.parse import urlsplit
+        from urllib.parse import parse_qsl
+        from urllib.parse import urlsplit
 
         custom_endpoint = "https://foo-bigquery.googleapis.com"
         conn = self._make_one(object(), api_endpoint=custom_endpoint)
@@ -64,8 +67,8 @@ class TestConnection(unittest.TestCase):
         self.assertEqual(parms, {})
 
     def test_build_api_url_w_extra_query_params(self):
-        from six.moves.urllib.parse import parse_qsl
-        from six.moves.urllib.parse import urlsplit
+        from urllib.parse import parse_qsl
+        from urllib.parse import urlsplit
 
         conn = self._make_one(object())
         uri = conn.build_api_url("/foo", {"bar": "baz"})
@@ -138,3 +141,14 @@ class TestConnection(unittest.TestCase):
             url=expected_uri,
             timeout=self._get_default_timeout(),
         )
+
+    def test_ctor_mtls(self):
+        conn = self._make_one(object(), api_endpoint=None)
+        self.assertEqual(conn.ALLOW_AUTO_SWITCH_TO_MTLS_URL, True)
+        self.assertEqual(conn.API_BASE_URL, "https://bigquery.googleapis.com")
+        self.assertEqual(conn.API_BASE_MTLS_URL, "https://bigquery.mtls.googleapis.com")
+
+        conn = self._make_one(object(), api_endpoint="http://foo")
+        self.assertEqual(conn.ALLOW_AUTO_SWITCH_TO_MTLS_URL, False)
+        self.assertEqual(conn.API_BASE_URL, "http://foo")
+        self.assertEqual(conn.API_BASE_MTLS_URL, "https://bigquery.mtls.googleapis.com")

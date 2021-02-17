@@ -18,16 +18,15 @@ import concurrent.futures
 import csv
 import datetime
 import decimal
+import io
 import json
 import operator
 import os
+import pathlib
 import time
 import unittest
 import uuid
-import re
 
-import requests
-import six
 import psutil
 import pytest
 import pytz
@@ -52,13 +51,6 @@ try:
     import pyarrow.types
 except ImportError:  # pragma: NO COVER
     pyarrow = None
-try:
-    import IPython
-    from IPython.utils import io
-    from IPython.testing import tools
-    from IPython.terminal import interactiveshell
-except ImportError:  # pragma: NO COVER
-    IPython = None
 
 from google.api_core.exceptions import PreconditionFailed
 from google.api_core.exceptions import BadRequest
@@ -77,7 +69,7 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.table import Table
 from google.cloud._helpers import UTC
-from google.cloud.bigquery import dbapi
+from google.cloud.bigquery import dbapi, enums
 from google.cloud import storage
 
 from test_utils.retry import RetryErrors
@@ -87,7 +79,7 @@ from test_utils.system import unique_resource_id
 
 
 JOB_TIMEOUT = 120  # 2 minutes
-WHERE = os.path.abspath(os.path.dirname(__file__))
+DATA_PATH = pathlib.Path(__file__).parent.parent / "data"
 
 # Common table data used for many tests.
 ROWS = [
@@ -141,6 +133,8 @@ if pyarrow:
 else:
     PYARROW_INSTALLED_VERSION = None
 
+MTLS_TESTING = os.getenv("GOOGLE_API_USE_CLIENT_CERTIFICATE") == "true"
+
 
 def _has_rows(result):
     return len(result) > 0
@@ -150,10 +144,10 @@ def _make_dataset_id(prefix):
     return "%s%s" % (prefix, unique_resource_id())
 
 
-def _load_json_schema(filename="data/schema.json"):
+def _load_json_schema(filename="schema.json"):
     from google.cloud.bigquery.table import _parse_schema_resource
 
-    json_filename = os.path.join(WHERE, filename)
+    json_filename = DATA_PATH / filename
 
     with open(json_filename, "r") as schema_file:
         return _parse_schema_resource(json.load(schema_file))
@@ -219,7 +213,7 @@ class TestBigQuery(unittest.TestCase):
 
         got = client.get_service_account_email()
 
-        self.assertIsInstance(got, six.text_type)
+        self.assertIsInstance(got, str)
         self.assertIn("@", got)
 
     def _create_bucket(self, bucket_name, location=None):
@@ -598,7 +592,7 @@ class TestBigQuery(unittest.TestCase):
     @staticmethod
     def _fetch_single_page(table, selected_fields=None):
         iterator = Config.CLIENT.list_rows(table, selected_fields=selected_fields)
-        page = six.next(iterator.pages)
+        page = next(iterator.pages)
         return list(page)
 
     def _create_table_many_columns(self, rowcount):
@@ -717,7 +711,7 @@ class TestBigQuery(unittest.TestCase):
         table = Table(table_ref)
         self.to_delete.insert(0, table)
 
-        with open(os.path.join(WHERE, "data", "colors.avro"), "rb") as avrof:
+        with open(DATA_PATH / "colors.avro", "rb") as avrof:
             config = bigquery.LoadJobConfig()
             config.source_format = SourceFormat.AVRO
             config.write_disposition = WriteDisposition.WRITE_TRUNCATE
@@ -1348,7 +1342,7 @@ class TestBigQuery(unittest.TestCase):
             ("orange", 590),
             ("red", 650),
         ]
-        with open(os.path.join(WHERE, "data", "colors.avro"), "rb") as f:
+        with open(DATA_PATH / "colors.avro", "rb") as f:
             GS_URL = self._write_avro_to_storage(
                 "bq_load_test" + unique_resource_id(), "colors.avro", f
             )
@@ -1415,7 +1409,7 @@ class TestBigQuery(unittest.TestCase):
         self._create_bucket(bucket_name, location="eu")
 
         # Create a temporary dataset & table in the EU.
-        table_bytes = six.BytesIO(b"a,3\nb,2\nc,1\n")
+        table_bytes = io.BytesIO(b"a,3\nb,2\nc,1\n")
         client = Config.CLIENT
         dataset = self.temp_dataset(_make_dataset_id("eu_load_file"), location="EU")
         table_ref = dataset.table("letters")
@@ -1668,6 +1662,23 @@ class TestBigQuery(unittest.TestCase):
         # raise an error, and that the job completed (in the `retry()`
         # above).
 
+    def test_job_labels(self):
+        DATASET_ID = _make_dataset_id("job_cancel")
+        JOB_ID_PREFIX = "fetch_" + DATASET_ID
+        QUERY = "SELECT 1 as one"
+
+        self.temp_dataset(DATASET_ID)
+
+        job_config = bigquery.QueryJobConfig(
+            labels={"custom_label": "label_value", "another_label": "foo123"}
+        )
+        job = Config.CLIENT.query(
+            QUERY, job_id_prefix=JOB_ID_PREFIX, job_config=job_config
+        )
+
+        expected_labels = {"custom_label": "label_value", "another_label": "foo123"}
+        self.assertEqual(job.labels, expected_labels)
+
     def test_get_failed_job(self):
         # issue 4246
         from google.api_core.exceptions import BadRequest
@@ -1790,22 +1801,30 @@ class TestBigQuery(unittest.TestCase):
         rows = list(Config.CLIENT.query("SELECT 1;").result())
         assert rows[0][0] == 1
 
-        project = Config.CLIENT.project
-        dataset_ref = bigquery.DatasetReference(project, "dset")
         bad_config = LoadJobConfig()
-        bad_config.destination = dataset_ref.table("tbl")
+        bad_config.source_format = enums.SourceFormat.CSV
         with self.assertRaises(Exception):
             Config.CLIENT.query(good_query, job_config=bad_config).result()
 
     def test_query_w_timeout(self):
+        job_config = bigquery.QueryJobConfig()
+        job_config.use_query_cache = False
+
         query_job = Config.CLIENT.query(
             "SELECT * FROM `bigquery-public-data.github_repos.commits`;",
             job_id_prefix="test_query_w_timeout_",
+            location="US",
+            job_config=job_config,
         )
 
         with self.assertRaises(concurrent.futures.TimeoutError):
-            # 1 second is much too short for this query.
             query_job.result(timeout=1)
+
+        # Even though the query takes >1 second, the call to getQueryResults
+        # should succeed.
+        self.assertFalse(query_job.done(timeout=1))
+
+        Config.CLIENT.cancel_job(query_job.job_id, location=query_job.location)
 
     def test_query_w_page_size(self):
         page_size = 45
@@ -2408,26 +2427,6 @@ class TestBigQuery(unittest.TestCase):
         row_tuples = [r.values() for r in query_job]
         self.assertEqual(row_tuples, [(1,)])
 
-    def test_querying_data_w_timeout(self):
-        job_config = bigquery.QueryJobConfig()
-        job_config.use_query_cache = False
-
-        query_job = Config.CLIENT.query(
-            """
-            SELECT COUNT(*)
-            FROM UNNEST(GENERATE_ARRAY(1,1000000)), UNNEST(GENERATE_ARRAY(1, 10000))
-            """,
-            location="US",
-            job_config=job_config,
-        )
-
-        # Specify a very tight deadline to demonstrate that the timeout
-        # actually has effect.
-        with self.assertRaises(requests.exceptions.Timeout):
-            query_job.done(timeout=0.1)
-
-        Config.CLIENT.cancel_job(query_job.job_id, location=query_job.location)
-
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_query_results_to_dataframe(self):
         QUERY = """
@@ -2444,7 +2443,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(list(df), column_names)  # verify the column names
         exp_datatypes = {
             "id": int,
-            "author": six.text_type,
+            "author": str,
             "time_ts": pandas.Timestamp,
             "dead": bool,
         }
@@ -2477,7 +2476,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(list(df), column_names)
         exp_datatypes = {
             "id": int,
-            "author": six.text_type,
+            "author": str,
             "time_ts": pandas.Timestamp,
             "dead": bool,
         }
@@ -2572,9 +2571,7 @@ class TestBigQuery(unittest.TestCase):
         assert len(row_tuples) == len(expected)
 
         for row, expected_row in zip(row_tuples, expected):
-            six.assertCountEqual(
-                self, row, expected_row
-            )  # column order does not matter
+            self.assertCountEqual(row, expected_row)  # column order does not matter
 
     def test_insert_rows_nested_nested(self):
         # See #2951
@@ -2657,6 +2654,9 @@ class TestBigQuery(unittest.TestCase):
         expected_rows = [("Some value", record)]
         self.assertEqual(row_tuples, expected_rows)
 
+    @pytest.mark.skipif(
+        MTLS_TESTING, reason="mTLS testing has no permission to the max-value.js file"
+    )
     def test_create_routine(self):
         routine_name = "test_routine"
         dataset = self.temp_dataset(_make_dataset_id("create_routine"))
@@ -2682,6 +2682,7 @@ class TestBigQuery(unittest.TestCase):
             )
         ]
         routine.body = "return maxValue(arr)"
+        routine.determinism_level = bigquery.DeterminismLevel.DETERMINISTIC
         query_string = "SELECT `{}`([-100.0, 3.14, 100.0, 42.0]) as max_value;".format(
             str(routine.reference)
         )
@@ -2705,7 +2706,7 @@ class TestBigQuery(unittest.TestCase):
 
         to_insert = []
         # Data is in "JSON Lines" format, see http://jsonlines.org/
-        json_filename = os.path.join(WHERE, "data", "characters.jsonl")
+        json_filename = DATA_PATH / "characters.jsonl"
         with open(json_filename) as rows_file:
             for line in rows_file:
                 to_insert.append(json.loads(line))
@@ -2780,7 +2781,7 @@ class TestBigQuery(unittest.TestCase):
             {"string_col": "Some value", "record_col": record, "float_col": 3.14}
         ]
         rows = [json.dumps(row) for row in to_insert]
-        body = six.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
+        body = io.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
         table_id = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("nested_df"))
         table = dataset.table(table_id)
@@ -2858,7 +2859,7 @@ class TestBigQuery(unittest.TestCase):
             }
         ]
         rows = [json.dumps(row) for row in to_insert]
-        body = six.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
+        body = io.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
         table_id = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("nested_df"))
         table = dataset.table(table_id)
@@ -2923,7 +2924,7 @@ class TestBigQuery(unittest.TestCase):
         schema = [SF("string_col", "STRING", mode="NULLABLE")]
         to_insert = [{"string_col": "item%d" % i} for i in range(num_items)]
         rows = [json.dumps(row) for row in to_insert]
-        body = six.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
+        body = io.BytesIO("{}\n".format("\n".join(rows)).encode("ascii"))
 
         table_id = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("nested_df"))
@@ -2977,47 +2978,6 @@ class TestBigQuery(unittest.TestCase):
         return dataset
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(IPython is None, reason="Requires `ipython`")
-@pytest.mark.usefixtures("ipython_interactive")
-def test_bigquery_magic():
-    ip = IPython.get_ipython()
-    current_process = psutil.Process()
-    conn_count_start = len(current_process.connections())
-
-    ip.extension_manager.load_extension("google.cloud.bigquery")
-    sql = """
-        SELECT
-            CONCAT(
-            'https://stackoverflow.com/questions/',
-            CAST(id as STRING)) as url,
-            view_count
-        FROM `bigquery-public-data.stackoverflow.posts_questions`
-        WHERE tags like '%google-bigquery%'
-        ORDER BY view_count DESC
-        LIMIT 10
-    """
-    with io.capture_output() as captured:
-        result = ip.run_cell_magic("bigquery", "--use_rest_api", sql)
-
-    conn_count_end = len(current_process.connections())
-
-    lines = re.split("\n|\r", captured.stdout)
-    # Removes blanks & terminal code (result of display clearing)
-    updates = list(filter(lambda x: bool(x) and x != "\x1b[2K", lines))
-    assert re.match("Executing query with job ID: .*", updates[0])
-    assert all(re.match("Query executing: .*s", line) for line in updates[1:-1])
-    assert re.match("Query complete after .*s", updates[-1])
-    assert isinstance(result, pandas.DataFrame)
-    assert len(result) == 10  # verify row count
-    assert list(result) == ["url", "view_count"]  # verify column names
-
-    # NOTE: For some reason, the number of open sockets is sometimes one *less*
-    # than expected when running system tests on Kokoro, thus using the <= assertion.
-    # That's still fine, however, since the sockets are apparently not leaked.
-    assert conn_count_end <= conn_count_start  # system resources are released
-
-
 def _job_done(instance):
     return instance.state.lower() == "done"
 
@@ -3037,21 +2997,3 @@ def _table_exists(t):
         return True
     except NotFound:
         return False
-
-
-@pytest.fixture(scope="session")
-def ipython():
-    config = tools.default_config()
-    config.TerminalInteractiveShell.simple_prompt = True
-    shell = interactiveshell.TerminalInteractiveShell.instance(config=config)
-    return shell
-
-
-@pytest.fixture()
-def ipython_interactive(request, ipython):
-    """Activate IPython's builtin hooks
-
-    for the duration of the test scope.
-    """
-    with ipython.builtin_trap:
-        yield ipython

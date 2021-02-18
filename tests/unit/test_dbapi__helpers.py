@@ -84,6 +84,7 @@ class TestQueryParameters(unittest.TestCase):
             ([123, -456, 0], "INT64"),
             ([1.25, 2.50], "FLOAT64"),
             ([decimal.Decimal("1.25")], "NUMERIC"),
+            ([decimal.Decimal("{d38}.{d38}".format(d38="9" * 38))], "BIGNUMERIC"),
             ([b"foo", b"bar"], "BYTES"),
             ([u"foo", u"bar"], "STRING"),
             ([datetime.date(2017, 4, 1), datetime.date(2018, 4, 1)], "DATE"),

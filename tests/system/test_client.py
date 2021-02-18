@@ -887,6 +887,7 @@ class TestBigQuery(unittest.TestCase):
             bigquery.SchemaField("geo_col", "GEOGRAPHY"),
             bigquery.SchemaField("int_col", "INTEGER"),
             bigquery.SchemaField("num_col", "NUMERIC"),
+            bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
             bigquery.SchemaField("str_col", "STRING"),
             bigquery.SchemaField("time_col", "TIME"),
             bigquery.SchemaField("ts_col", "TIMESTAMP"),
@@ -912,6 +913,7 @@ class TestBigQuery(unittest.TestCase):
                 ("geo_col", nulls),
                 ("int_col", nulls),
                 ("num_col", nulls),
+                ("bignum_col", nulls),
                 ("str_col", nulls),
                 ("time_col", nulls),
                 ("ts_col", nulls),
@@ -999,6 +1001,7 @@ class TestBigQuery(unittest.TestCase):
             bigquery.SchemaField("geo_col", "GEOGRAPHY"),
             bigquery.SchemaField("int_col", "INTEGER"),
             bigquery.SchemaField("num_col", "NUMERIC"),
+            bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
             bigquery.SchemaField("str_col", "STRING"),
             bigquery.SchemaField("time_col", "TIME"),
             bigquery.SchemaField("ts_col", "TIMESTAMP"),
@@ -1044,6 +1047,14 @@ class TestBigQuery(unittest.TestCase):
                         decimal.Decimal("-99999999999999999999999999999.999999999"),
                         None,
                         decimal.Decimal("99999999999999999999999999999.999999999"),
+                    ],
+                ),
+                (
+                    "bignum_col",
+                    [
+                        decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
+                        None,
+                        decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
                     ],
                 ),
                 ("str_col", [u"abc", None, u"def"]),
@@ -1172,6 +1183,7 @@ class TestBigQuery(unittest.TestCase):
             bigquery.SchemaField("geo_col", "GEOGRAPHY"),
             bigquery.SchemaField("int_col", "INTEGER"),
             bigquery.SchemaField("num_col", "NUMERIC"),
+            bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
             bigquery.SchemaField("str_col", "STRING"),
             bigquery.SchemaField("time_col", "TIME"),
             bigquery.SchemaField("ts_col", "TIMESTAMP"),
@@ -1208,6 +1220,14 @@ class TestBigQuery(unittest.TestCase):
                         decimal.Decimal("-99999999999999999999999999999.999999999"),
                         None,
                         decimal.Decimal("99999999999999999999999999999.999999999"),
+                    ],
+                ),
+                (
+                    "bignum_col",
+                    [
+                        decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
+                        None,
+                        decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
                     ],
                 ),
                 ("str_col", [u"abc", None, u"def"]),
@@ -2157,6 +2177,10 @@ class TestBigQuery(unittest.TestCase):
         pi_numeric_param = ScalarQueryParameter(
             name="pi_numeric_param", type_="NUMERIC", value=pi_numeric
         )
+        bignum = decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38))
+        bignum_param = ScalarQueryParameter(
+            name="bignum_param", type_="BIGNUMERIC", value=bignum
+        )
         truthy = True
         truthy_param = ScalarQueryParameter(name="truthy", type_="BOOL", value=truthy)
         beef = b"DEADBEEF"
@@ -2236,6 +2260,11 @@ class TestBigQuery(unittest.TestCase):
                 "sql": "SELECT @pi_numeric_param",
                 "expected": pi_numeric,
                 "query_parameters": [pi_numeric_param],
+            },
+            {
+                "sql": "SELECT @bignum_param",
+                "expected": bignum,
+                "query_parameters": [bignum_param],
             },
             {
                 "sql": "SELECT @truthy",

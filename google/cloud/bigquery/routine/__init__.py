@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,4 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "2.8.0"
+"""User-Defined Routines."""
+
+
+from google.cloud.bigquery.enums import DeterminismLevel
+from google.cloud.bigquery.routine.routine import Routine
+from google.cloud.bigquery.routine.routine import RoutineArgument
+from google.cloud.bigquery.routine.routine import RoutineReference
+
+
+__all__ = (
+    "DeterminismLevel",
+    "Routine",
+    "RoutineArgument",
+    "RoutineReference",
+)

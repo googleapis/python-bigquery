@@ -107,7 +107,6 @@ if pyarrow:
         "INT64": pyarrow.int64,
         "INTEGER": pyarrow.int64,
         "NUMERIC": pyarrow_numeric,
-        "BIGNUMERIC": pyarrow_bignumeric,
         "STRING": pyarrow.string,
         "TIME": pyarrow_time,
         "TIMESTAMP": pyarrow_timestamp,
@@ -134,10 +133,13 @@ if pyarrow:
         pyarrow.binary().id: "BYTES",
         pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
+    }
+
+    if int(pyarrow.__version__.split(".")[0]) >= 3:
+        BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
         # The exact decimal's scale and precision are not important, as only
         # the type ID matters, and it's the same for all decimal128 instances.
-        pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
-    }
+        ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
 
 else:  # pragma: NO COVER
     BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER

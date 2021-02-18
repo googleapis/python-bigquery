@@ -11,8 +11,8 @@
       "git": {
         "name": "googleapis",
         "remote": "https://github.com/googleapis/googleapis.git",
-        "sha": "df4fd38d040c5c8a0869936205bca13fb64b2cff",
-        "internalRef": "344443035"
+        "sha": "e13001be33d69042a9505e698f792587a804a5cf",
+        "internalRef": "358152223"
       }
     },
     {
@@ -42,6 +42,7 @@
     }
   ],
   "generatedFiles": [
+    ".coveragerc",
     ".flake8",
     ".github/CONTRIBUTING.md",
     ".github/ISSUE_TEMPLATE/bug_report.md",
@@ -94,6 +95,7 @@
     "MANIFEST.in",
     "docs/_static/custom.css",
     "docs/_templates/layout.html",
+    "docs/bigquery_v2/model_service.rst",
     "docs/bigquery_v2/services.rst",
     "docs/bigquery_v2/types.rst",
     "docs/conf.py",

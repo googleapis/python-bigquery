@@ -25,6 +25,7 @@ except ImportError:  # pragma: NO COVER
 
 import google.cloud._helpers
 from google.cloud.bigquery import table
+from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
 from tests.unit.helpers import _to_pyarrow
@@ -39,10 +40,6 @@ class TestQueryParameters(unittest.TestCase):
             (-123456789, "INT64"),
             (1.25, "FLOAT64"),
             (decimal.Decimal("1.25"), "NUMERIC"),
-            (
-                decimal.Decimal("1.1234567890123456789012345678901234567890"),
-                "BIGNUMERIC",
-            ),
             (b"I am some bytes", "BYTES"),
             (u"I am a string", "STRING"),
             (datetime.date(2017, 4, 1), "DATE"),
@@ -55,6 +52,14 @@ class TestQueryParameters(unittest.TestCase):
                 "TIMESTAMP",
             ),
         ]
+        if _BIGNUMERIC_SUPPORT:
+            expected_types.append(
+                (
+                    decimal.Decimal("1.1234567890123456789012345678901234567890"),
+                    "BIGNUMERIC",
+                )
+            )
+
         for value, expected_type in expected_types:
             msg = "value: {} expected_type: {}".format(value, expected_type)
             parameter = _helpers.scalar_to_query_parameter(value)
@@ -84,7 +89,6 @@ class TestQueryParameters(unittest.TestCase):
             ([123, -456, 0], "INT64"),
             ([1.25, 2.50], "FLOAT64"),
             ([decimal.Decimal("1.25")], "NUMERIC"),
-            ([decimal.Decimal("{d38}.{d38}".format(d38="9" * 38))], "BIGNUMERIC"),
             ([b"foo", b"bar"], "BYTES"),
             ([u"foo", u"bar"], "STRING"),
             ([datetime.date(2017, 4, 1), datetime.date(2018, 4, 1)], "DATE"),
@@ -108,6 +112,11 @@ class TestQueryParameters(unittest.TestCase):
                 "TIMESTAMP",
             ),
         ]
+
+        if _BIGNUMERIC_SUPPORT:
+            expected_types.append(
+                ([decimal.Decimal("{d38}.{d38}".format(d38="9" * 38))], "BIGNUMERIC")
+            )
 
         for values, expected_type in expected_types:
             msg = "value: {} expected_type: {}".format(values, expected_type)

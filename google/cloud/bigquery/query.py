@@ -114,6 +114,9 @@ class ScalarQueryParameterType(_AbstractQueryParameterType):
         Returns:
             Dict: JSON mapping
         """
+        # Name and description are only used if the type is a field inside a struct
+        # type, but it's StructQueryParameterType's responsibilty to use these two
+        # attributes in the API representation when needed. Here we omit them.
         return {"type": self._type}
 
     def __repr__(self):
@@ -171,6 +174,9 @@ class ArrayQueryParameterType(_AbstractQueryParameterType):
         Returns:
             Dict: JSON mapping
         """
+        # Name and description are only used if the type is a field inside a struct
+        # type, but it's StructQueryParameterType's responsibilty to use these two
+        # attributes in the API representation when needed. Here we omit them.
         return {
             "type": "ARRAY",
             "arrayType": self._array_type.to_api_repr(),

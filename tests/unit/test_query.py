@@ -138,15 +138,15 @@ class Test_ArrayQueryParameterType(unittest.TestCase):
         self.assertIsNone(item_type.name)
         self.assertIsNone(item_type.description)
 
-        subtype = item_type._subtypes[0]
-        self.assertEqual(subtype.name, "weight")
-        self.assertEqual(subtype.description, "in kg")
-        self.assertEqual(subtype._type, "INTEGER")
+        field = item_type.fields[0]
+        self.assertEqual(field.name, "weight")
+        self.assertEqual(field.description, "in kg")
+        self.assertEqual(field._type, "INTEGER")
 
-        subtype = item_type._subtypes[1]
-        self.assertEqual(subtype.name, "last_name")
-        self.assertIsNone(subtype.description)
-        self.assertEqual(subtype._type, "STRING")
+        field = item_type.fields[1]
+        self.assertEqual(field.name, "last_name")
+        self.assertIsNone(field.description)
+        self.assertEqual(field._type, "STRING")
 
     def test_to_api_repr(self):
         from google.cloud.bigquery.query import ScalarQueryParameterType
@@ -235,31 +235,31 @@ class Test_StructQueryParameterType(unittest.TestCase):
 
         self.assertIsNone(result.name)
         self.assertIsNone(result.description)
-        self.assertEqual(len(result._subtypes), 3)
+        self.assertEqual(len(result.fields), 3)
 
-        subtype = result._subtypes[0]
-        self.assertIsInstance(subtype, ScalarQueryParameterType)
-        self.assertEqual(subtype.name, "age")
-        self.assertEqual(subtype.description, "in years")
+        field = result.fields[0]
+        self.assertIsInstance(field, ScalarQueryParameterType)
+        self.assertEqual(field.name, "age")
+        self.assertEqual(field.description, "in years")
 
-        subtype = result._subtypes[1]
-        self.assertIsInstance(subtype, ArrayQueryParameterType)
-        self.assertEqual(subtype.name, "aliases")
-        self.assertIsNone(subtype.description)
-        self.assertIsInstance(subtype._array_type, ScalarQueryParameterType)
-        self.assertEqual(subtype._array_type._type, "STRING")
+        field = result.fields[1]
+        self.assertIsInstance(field, ArrayQueryParameterType)
+        self.assertEqual(field.name, "aliases")
+        self.assertIsNone(field.description)
+        self.assertIsInstance(field._array_type, ScalarQueryParameterType)
+        self.assertEqual(field._array_type._type, "STRING")
 
-        subtype = result._subtypes[2]
-        self.assertIsInstance(subtype, self._get_target_class())
-        self.assertIsNone(subtype.name)
-        self.assertEqual(subtype.description, "a nested struct")
+        field = result.fields[2]
+        self.assertIsInstance(field, self._get_target_class())
+        self.assertIsNone(field.name)
+        self.assertEqual(field.description, "a nested struct")
 
-        date_field = subtype._subtypes[0]
+        date_field = field.fields[0]
         self.assertEqual(date_field._type, "DATE")
         self.assertEqual(date_field.name, "nested_date")
         self.assertIsNone(date_field.description)
 
-        bool_field = subtype._subtypes[1]
+        bool_field = field.fields[1]
         self.assertEqual(bool_field._type, "BOOLEAN")
         self.assertIsNone(bool_field.name)
         self.assertEqual(bool_field.description, "nested bool field")

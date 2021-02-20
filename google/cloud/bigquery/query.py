@@ -209,9 +209,13 @@ class StructQueryParameterType(_AbstractQueryParameterType):
     """
 
     def __init__(self, *fields, name=None, description=None):
-        self._fields = [type_ for type_ in fields]  # make a shallow copy
+        self._fields = fields  # fields is a tuple (immutable), no shallow copy needed
         self.name = name
         self.description = description
+
+    @property
+    def fields(self):
+        return self._fields  # no copy needed, self._fields is an immutable sequence
 
     @classmethod
     def from_api_repr(cls, resource):

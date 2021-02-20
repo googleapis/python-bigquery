@@ -198,6 +198,10 @@ class Test_StructQueryParameterType(unittest.TestCase):
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)
 
+    def test_raises_error_without_any_fields(self):
+        with self.assertRaisesRegex(ValueError, ".*at least one field.*"):
+            self._make_one()
+
     def test_from_api_repr(self):
         from google.cloud.bigquery.query import ArrayQueryParameterType
         from google.cloud.bigquery.query import ScalarQueryParameterType

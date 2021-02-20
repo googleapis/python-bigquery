@@ -209,6 +209,9 @@ class StructQueryParameterType(_AbstractQueryParameterType):
     """
 
     def __init__(self, *fields, name=None, description=None):
+        if not fields:
+            raise ValueError("Struct type must have at least one field defined.")
+
         self._fields = fields  # fields is a tuple (immutable), no shallow copy needed
         self.name = name
         self.description = description

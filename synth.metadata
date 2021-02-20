@@ -4,29 +4,29 @@
       "git": {
         "name": ".",
         "remote": "https://github.com/googleapis/python-bigquery.git",
-        "sha": "64e1c0581b915e36756ea465936939390da7d818"
+        "sha": "1c6681aba872c00afb16a904a2ba9bae8e9618d3"
       }
     },
     {
       "git": {
         "name": "googleapis",
         "remote": "https://github.com/googleapis/googleapis.git",
-        "sha": "df4fd38d040c5c8a0869936205bca13fb64b2cff",
-        "internalRef": "344443035"
+        "sha": "e13001be33d69042a9505e698f792587a804a5cf",
+        "internalRef": "358152223"
       }
     },
     {
       "git": {
         "name": "synthtool",
         "remote": "https://github.com/googleapis/synthtool.git",
-        "sha": "d1bb9173100f62c0cfc8f3138b62241e7f47ca6a"
+        "sha": "4dca4132c6d63788c6675e1b1e11e7b9225f8694"
       }
     },
     {
       "git": {
         "name": "synthtool",
         "remote": "https://github.com/googleapis/synthtool.git",
-        "sha": "d1bb9173100f62c0cfc8f3138b62241e7f47ca6a"
+        "sha": "4dca4132c6d63788c6675e1b1e11e7b9225f8694"
       }
     }
   ],
@@ -42,6 +42,7 @@
     }
   ],
   "generatedFiles": [
+    ".coveragerc",
     ".flake8",
     ".github/CONTRIBUTING.md",
     ".github/ISSUE_TEMPLATE/bug_report.md",
@@ -92,8 +93,10 @@
     "CONTRIBUTING.rst",
     "LICENSE",
     "MANIFEST.in",
+    "bigquery-v2-py.tar.gz",
     "docs/_static/custom.css",
     "docs/_templates/layout.html",
+    "docs/bigquery_v2/model_service.rst",
     "docs/bigquery_v2/services.rst",
     "docs/bigquery_v2/types.rst",
     "docs/conf.py",

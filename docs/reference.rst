@@ -62,6 +62,7 @@ Job-Related Types
     job.QueryPlanEntry
     job.QueryPlanEntryStep
     job.QueryPriority
+    job.ReservationUsage
     job.SourceFormat
     job.WriteDisposition
     job.SchemaUpdateOption
@@ -110,6 +111,7 @@ Routine
 .. autosummary::
     :toctree: generated
 
+    routine.DeterminismLevel
     routine.Routine
     routine.RoutineArgument
     routine.RoutineReference

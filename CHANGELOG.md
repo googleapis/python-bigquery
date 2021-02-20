@@ -4,6 +4,32 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+## [2.9.0](https://www.github.com/googleapis/python-bigquery/compare/v2.8.0...v2.9.0) (2021-02-18)
+
+
+### Features
+
+* add determinism level for javascript UDFs ([#522](https://www.github.com/googleapis/python-bigquery/issues/522)) ([edd3328](https://www.github.com/googleapis/python-bigquery/commit/edd3328fffa3040b2cd3a3c668c90a0e43e4c94c))
+* expose reservation usage stats on jobs ([#524](https://www.github.com/googleapis/python-bigquery/issues/524)) ([4ffb4e0](https://www.github.com/googleapis/python-bigquery/commit/4ffb4e067abdaa54dad6eff49a7fbdb0fa358637))
+
+
+### Documentation
+
+* clarify `%%bigquery`` magics and fix broken link ([#508](https://www.github.com/googleapis/python-bigquery/issues/508)) ([eedf93b](https://www.github.com/googleapis/python-bigquery/commit/eedf93b6636c5ff1bd810c6038cfeaea8ccb64d8))
+* update python contributing guide ([#514](https://www.github.com/googleapis/python-bigquery/issues/514)) ([01e851d](https://www.github.com/googleapis/python-bigquery/commit/01e851d00fc17a780375580776753d78f6d74174))
+
+## [2.8.0](https://www.github.com/googleapis/python-bigquery/compare/v2.7.0...v2.8.0) (2021-02-08)
+
+
+### Features
+
+* Add mTLS support to client. ([#492](https://www.github.com/googleapis/python-bigquery/issues/492)) ([1823cad](https://www.github.com/googleapis/python-bigquery/commit/1823cadee3acf95c516d0479400e4175349ea199))
+
+
+### Bug Fixes
+
+* Don't try to close closed cursors. ([#498](https://www.github.com/googleapis/python-bigquery/issues/498)) ([bf44e7b](https://www.github.com/googleapis/python-bigquery/commit/bf44e7b67d2de41c13053a4550484b9ea049db3e))
+
 ## [2.7.0](https://www.github.com/googleapis/python-bigquery/compare/v2.6.2...v2.7.0) (2021-01-27)
 
 

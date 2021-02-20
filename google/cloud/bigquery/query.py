@@ -196,7 +196,7 @@ class StructQueryParameterType(_AbstractQueryParameterType):
     """Type representation for struct query parameters.
 
     Args:
-        subtypes (Iterable[Union[ \
+        fields (Iterable[Union[ \
             ArrayQueryParameterType, ScalarQueryParameterType, StructQueryParameterType \
         ]]):
             An non-empty iterable describing the struct's field types.
@@ -208,8 +208,8 @@ class StructQueryParameterType(_AbstractQueryParameterType):
             one of the subfields in ``StructQueryParameterType`` instance.
     """
 
-    def __init__(self, *subtypes, name=None, description=None):
-        self._subtypes = [type_ for type_ in subtypes]  # make a shallow copy
+    def __init__(self, *fields, name=None, description=None):
+        self._fields = [type_ for type_ in fields]  # make a shallow copy
         self.name = name
         self.description = description
 
@@ -223,10 +223,10 @@ class StructQueryParameterType(_AbstractQueryParameterType):
         Returns:
             google.cloud.bigquery.query.StructQueryParameterType: Instance
         """
-        subtypes = []
+        fields = []
 
-        for struct_subtype in resource["structTypes"]:
-            type_repr = struct_subtype["type"]
+        for struct_field in resource["structTypes"]:
+            type_repr = struct_field["type"]
             if type_repr["type"] in {"STRUCT", "RECORD"}:
                 klass = StructQueryParameterType
             elif type_repr["type"] == "ARRAY":
@@ -235,11 +235,11 @@ class StructQueryParameterType(_AbstractQueryParameterType):
                 klass = ScalarQueryParameterType
 
             type_instance = klass.from_api_repr(type_repr)
-            type_instance.name = struct_subtype.get("name")
-            type_instance.description = struct_subtype.get("description")
-            subtypes.append(type_instance)
+            type_instance.name = struct_field.get("name")
+            type_instance.description = struct_field.get("description")
+            fields.append(type_instance)
 
-        return cls(*subtypes)
+        return cls(*fields)
 
     def to_api_repr(self):
         """Construct JSON API representation for the parameter type.
@@ -247,20 +247,20 @@ class StructQueryParameterType(_AbstractQueryParameterType):
         Returns:
             Dict: JSON mapping
         """
-        struct_types = []
+        fields = []
 
-        for subtype in self._subtypes:
-            item = {"type": subtype.to_api_repr()}
-            if subtype.name is not None:
-                item["name"] = subtype.name
-            if subtype.description is not None:
-                item["description"] = subtype.description
+        for field in self._fields:
+            item = {"type": field.to_api_repr()}
+            if field.name is not None:
+                item["name"] = field.name
+            if field.description is not None:
+                item["description"] = field.description
 
-            struct_types.append(item)
+            fields.append(item)
 
         return {
             "type": "STRUCT",
-            "structTypes": struct_types,
+            "structTypes": fields,
         }
 
     def __repr__(self):
@@ -270,7 +270,7 @@ class StructQueryParameterType(_AbstractQueryParameterType):
             if self.description is not None
             else ""
         )
-        items = ", ".join(repr(subtype) for subtype in self._subtypes)
+        items = ", ".join(repr(field) for field in self._fields)
         return f"{self.__class__.__name__}({items}{name}{description})"
 
 

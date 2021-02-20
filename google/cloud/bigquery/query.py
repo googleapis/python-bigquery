@@ -508,7 +508,9 @@ class ArrayQueryParameter(_AbstractQueryParameter):
             if reprs:
                 a_type = reprs[0]["parameterType"]
             else:
-                # The constructor disallows STRUCT/RECORD type when empty values.
+                # This assertion always evaluates to True because the
+                # constructor disallows STRUCT/RECORD type defined as a
+                # string with empty values.
                 assert isinstance(self.array_type, StructQueryParameterType)
                 a_type = self.array_type.to_api_repr()
         else:

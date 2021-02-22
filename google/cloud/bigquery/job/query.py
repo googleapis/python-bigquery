@@ -1131,7 +1131,7 @@ class QueryJob(_AsyncJob):
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the call that retrieves rows. If the job state is
                 ``DONE``, retrying is aborted early even if the results are not
-                availalbe, as this will not change anymore.
+                available, as this will not change anymore.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.

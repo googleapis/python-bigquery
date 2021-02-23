@@ -412,7 +412,7 @@ class TestQueryJob(_Base):
         is_done = job.done()
 
         assert is_done
-        assert job._exception is reload_error
+        assert job._exception is bad_request_error
 
     def test_done_w_job_query_results_ok_reload_error(self):
         client = _make_client(project=self.PROJECT)

@@ -1004,12 +1004,14 @@ class QueryJob(_AsyncJob):
 
         try:
             self._reload_query_results(retry=retry, timeout=transport_timeout)
-        except exceptions.GoogleAPIError:
+        except exceptions.GoogleAPIError as exc:
             # Reloading also updates error details on self, thus no need for an
             # explicit self.set_exception() call if reloading succeeds.
             try:
                 self.reload(retry=retry, timeout=transport_timeout)
-            except exceptions.GoogleAPIError as exc:
+            except exceptions.GoogleAPIError:
+                # Use the query results reload exception, as it generally contains
+                # much more useful error information.
                 self.set_exception(exc)
                 return True
             else:

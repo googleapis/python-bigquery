@@ -4,6 +4,14 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [2.9.1](https://www.github.com/googleapis/python-bigquery/compare/v2.9.0...v2.9.1) (2021-02-23)
+
+
+### Documentation
+
+* **bigquery:** Add alternative approach to setting credentials ([#517](https://www.github.com/googleapis/python-bigquery/issues/517)) ([60fbf28](https://www.github.com/googleapis/python-bigquery/commit/60fbf287b0d34d5db2e61cce7a5b42735ed43d0e))
+* explain retry behavior for DONE jobs ([#532](https://www.github.com/googleapis/python-bigquery/issues/532)) ([696c443](https://www.github.com/googleapis/python-bigquery/commit/696c443f0a6740be0767e12b706a7771bc1460c3))
+
 ## [2.9.0](https://www.github.com/googleapis/python-bigquery/compare/v2.8.0...v2.9.0) (2021-02-18)
 
 

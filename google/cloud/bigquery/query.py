@@ -316,7 +316,7 @@ class ScalarQueryParameter(_AbstractQueryParameter):
 
         type_ (str):
             Name of parameter type.  One of 'STRING', 'INT64',
-            'FLOAT64', 'NUMERIC', 'BOOL', 'TIMESTAMP', 'DATETIME', or
+            'FLOAT64', 'NUMERIC', 'BIGNUMERIC', 'BOOL', 'TIMESTAMP', 'DATETIME', or
             'DATE'.
 
         value (Union[str, int, float, decimal.Decimal, bool, datetime.datetime, datetime.date]):
@@ -335,7 +335,7 @@ class ScalarQueryParameter(_AbstractQueryParameter):
         Args:
             type_ (str):
                 Name of parameter type.  One of 'STRING', 'INT64',
-                'FLOAT64', 'NUMERIC', 'BOOL', 'TIMESTAMP', 'DATETIME', or
+                'FLOAT64', 'NUMERIC', 'BIGNUMERIC', 'BOOL', 'TIMESTAMP', 'DATETIME', or
                 'DATE'.
 
             value (Union[str, int, float, decimal.Decimal, bool, datetime.datetime, datetime.date]):
@@ -419,8 +419,8 @@ class ArrayQueryParameter(_AbstractQueryParameter):
 
         array_type (Union[str, ScalarQueryParameterType, StructQueryParameterType]):
             The type of array elements. If given as a string, it must be one of
-            `'STRING'`, `'INT64'`, `'FLOAT64'`, `'NUMERIC'`, `'BOOL'`, `'TIMESTAMP'`,
-            `'DATE'`, or `'STRUCT'`/`'RECORD'`.
+            `'STRING'`, `'INT64'`, `'FLOAT64'`, `'NUMERIC'`, `'BIGNUMERIC'`, `'BOOL'`,
+            `'TIMESTAMP'`, `'DATE'`, or `'STRUCT'`/`'RECORD'`.
             If the type is ``'STRUCT'``/``'RECORD'`` and ``values`` is empty,
             the exact item type cannot be deduced, thus a ``StructQueryParameterType``
             instance needs to be passed in.
@@ -447,8 +447,8 @@ class ArrayQueryParameter(_AbstractQueryParameter):
         Args:
             array_type (Union[str, ScalarQueryParameterType, StructQueryParameterType]):
                 The type of array elements. If given as a string, it must be one of
-                `'STRING'`, `'INT64'`, `'FLOAT64'`, `'NUMERIC'`, `'BOOL'`, `'TIMESTAMP'`,
-                `'DATE'`, or `'STRUCT'`/`'RECORD'`.
+                `'STRING'`, `'INT64'`, `'FLOAT64'`, `'NUMERIC'`, `'BIGNUMERIC'`,
+                `'BOOL'`, `'TIMESTAMP'`, `'DATE'`, or `'STRUCT'`/`'RECORD'`.
                 If the type is ``'STRUCT'``/``'RECORD'`` and ``values`` is empty,
                 the exact item type cannot be deduced, thus a ``StructQueryParameterType``
                 instance needs to be passed in.

@@ -327,7 +327,7 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         ("float_col", [float("-inf"), float("nan"), float("inf")]),
         (
             "geo_col",
-            ["POINT(30 10)", None, "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))",],
+            ["POINT(30 10)", None, "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))"],
         ),
         ("int_col", [-9223372036854775808, None, 9223372036854775807]),
         (

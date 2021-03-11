@@ -33,54 +33,54 @@ _numeric = decimal.Decimal("123456789.123456789")
 
 # Examples of most data types to test with query() and DB-API.
 STANDARD_SQL_EXAMPLES = [
-    {"sql": "SELECT 1", "expected": 1},
-    {"sql": "SELECT 1.3", "expected": 1.3},
-    {"sql": "SELECT TRUE", "expected": True},
-    {"sql": 'SELECT "ABC"', "expected": "ABC"},
-    {"sql": 'SELECT CAST("foo" AS BYTES)', "expected": b"foo"},
-    {"sql": 'SELECT TIMESTAMP "%s"' % (_stamp,), "expected": _zoned},
-    {
-        "sql": 'SELECT TIMESTAMP "%s"' % (_stamp_microseconds,),
-        "expected": _zoned_microseconds,
-    },
-    {"sql": 'SELECT DATETIME(TIMESTAMP "%s")' % (_stamp,), "expected": _naive},
-    {
-        "sql": 'SELECT DATETIME(TIMESTAMP "%s")' % (_stamp_microseconds,),
-        "expected": _naive_microseconds,
-    },
-    {"sql": 'SELECT DATE(TIMESTAMP "%s")' % (_stamp,), "expected": _naive.date()},
-    {"sql": 'SELECT TIME(TIMESTAMP "%s")' % (_stamp,), "expected": _naive.time()},
-    {"sql": 'SELECT NUMERIC "%s"' % (_numeric,), "expected": _numeric},
-    {"sql": "SELECT (1, 2)", "expected": {"_field_1": 1, "_field_2": 2}},
-    {
-        "sql": "SELECT ((1, 2), (3, 4), 5)",
-        "expected": {
+    ("SELECT 1", 1),
+    ("SELECT 1.3", 1.3),
+    ("SELECT TRUE", True),
+    ('SELECT "ABC"', "ABC"),
+    ('SELECT CAST("foo" AS BYTES)', b"foo"),
+    ('SELECT TIMESTAMP "%s"' % (_stamp,), _zoned),
+    (
+        'SELECT TIMESTAMP "%s"' % (_stamp_microseconds,),
+        _zoned_microseconds,
+    ),
+    ('SELECT DATETIME(TIMESTAMP "%s")' % (_stamp,), _naive),
+    (
+        'SELECT DATETIME(TIMESTAMP "%s")' % (_stamp_microseconds,),
+        _naive_microseconds,
+    ),
+    ('SELECT DATE(TIMESTAMP "%s")' % (_stamp,), _naive.date()),
+    ('SELECT TIME(TIMESTAMP "%s")' % (_stamp,), _naive.time()),
+    ('SELECT NUMERIC "%s"' % (_numeric,), _numeric),
+    ("SELECT (1, 2)", {"_field_1": 1, "_field_2": 2}),
+    (
+        "SELECT ((1, 2), (3, 4), 5)",
+        {
             "_field_1": {"_field_1": 1, "_field_2": 2},
             "_field_2": {"_field_1": 3, "_field_2": 4},
             "_field_3": 5,
         },
-    },
-    {"sql": "SELECT [1, 2, 3]", "expected": [1, 2, 3]},
-    {
-        "sql": "SELECT ([1, 2], 3, [4, 5])",
-        "expected": {"_field_1": [1, 2], "_field_2": 3, "_field_3": [4, 5]},
-    },
-    {
-        "sql": "SELECT [(1, 2, 3), (4, 5, 6)]",
-        "expected": [
+    ),
+    ("SELECT [1, 2, 3]", [1, 2, 3]),
+    (
+        "SELECT ([1, 2], 3, [4, 5])",
+        {"_field_1": [1, 2], "_field_2": 3, "_field_3": [4, 5]},
+    ),
+    (
+        "SELECT [(1, 2, 3), (4, 5, 6)]",
+        [
             {"_field_1": 1, "_field_2": 2, "_field_3": 3},
             {"_field_1": 4, "_field_2": 5, "_field_3": 6},
         ],
-    },
-    {
-        "sql": "SELECT [([1, 2, 3], 4), ([5, 6], 7)]",
-        "expected": [
+    ),
+    (
+        "SELECT [([1, 2, 3], 4), ([5, 6], 7)]",
+        [
             {"_field_1": [1, 2, 3], "_field_2": 4},
             {"_field_1": [5, 6], "_field_2": 7},
         ],
-    },
-    {"sql": "SELECT ARRAY(SELECT STRUCT([1, 2]))", "expected": [{"_field_1": [1, 2]}],},
-    {"sql": "SELECT ST_GeogPoint(1, 2)", "expected": "POINT(1 2)"},
+    ),
+    ("SELECT ARRAY(SELECT STRUCT([1, 2]))", [{"_field_1": [1, 2]}]),
+    ("SELECT ST_GeogPoint(1, 2)", "POINT(1 2)"),
 ]
 
 

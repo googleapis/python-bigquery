@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import base64
-import collections
 import concurrent.futures
 import csv
 import datetime
@@ -29,9 +28,9 @@ import uuid
 
 import psutil
 import pytest
-import pytz
 import pkg_resources
 
+from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 from . import helpers
 
 try:

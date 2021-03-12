@@ -39,15 +39,9 @@ STANDARD_SQL_EXAMPLES = [
     ('SELECT "ABC"', "ABC"),
     ('SELECT CAST("foo" AS BYTES)', b"foo"),
     ('SELECT TIMESTAMP "%s"' % (_stamp,), _zoned),
-    (
-        'SELECT TIMESTAMP "%s"' % (_stamp_microseconds,),
-        _zoned_microseconds,
-    ),
+    ('SELECT TIMESTAMP "%s"' % (_stamp_microseconds,), _zoned_microseconds,),
     ('SELECT DATETIME(TIMESTAMP "%s")' % (_stamp,), _naive),
-    (
-        'SELECT DATETIME(TIMESTAMP "%s")' % (_stamp_microseconds,),
-        _naive_microseconds,
-    ),
+    ('SELECT DATETIME(TIMESTAMP "%s")' % (_stamp_microseconds,), _naive_microseconds,),
     ('SELECT DATE(TIMESTAMP "%s")' % (_stamp,), _naive.date()),
     ('SELECT TIME(TIMESTAMP "%s")' % (_stamp,), _naive.time()),
     ('SELECT NUMERIC "%s"' % (_numeric,), _numeric),
@@ -74,10 +68,7 @@ STANDARD_SQL_EXAMPLES = [
     ),
     (
         "SELECT [([1, 2, 3], 4), ([5, 6], 7)]",
-        [
-            {"_field_1": [1, 2, 3], "_field_2": 4},
-            {"_field_1": [5, 6], "_field_2": 7},
-        ],
+        [{"_field_1": [1, 2, 3], "_field_2": 4}, {"_field_1": [5, 6], "_field_2": 7}],
     ),
     ("SELECT ARRAY(SELECT STRUCT([1, 2]))", [{"_field_1": [1, 2]}]),
     ("SELECT ST_GeogPoint(1, 2)", "POINT(1 2)"),

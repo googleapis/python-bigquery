@@ -42,7 +42,7 @@ class TestQueryParameters(unittest.TestCase):
             (1.25, "FLOAT64"),
             (decimal.Decimal("1.25"), "NUMERIC"),
             (b"I am some bytes", "BYTES"),
-            (u"I am a string", "STRING"),
+            ("I am a string", "STRING"),
             (datetime.date(2017, 4, 1), "DATE"),
             (datetime.time(12, 34, 56), "TIME"),
             (datetime.datetime(2012, 3, 4, 5, 6, 7), "DATETIME"),
@@ -113,7 +113,7 @@ class TestQueryParameters(unittest.TestCase):
             ([1.25, 2.50], "FLOAT64"),
             ([decimal.Decimal("1.25")], "NUMERIC"),
             ([b"foo", b"bar"], "BYTES"),
-            ([u"foo", u"bar"], "STRING"),
+            (["foo", "bar"], "STRING"),
             ([datetime.date(2017, 4, 1), datetime.date(2018, 4, 1)], "DATE"),
             ([datetime.time(12, 34, 56), datetime.time(10, 20, 30)], "TIME"),
             (
@@ -157,7 +157,7 @@ class TestQueryParameters(unittest.TestCase):
             _helpers.array_to_query_parameter([])
 
     def test_array_to_query_parameter_unsupported_sequence(self):
-        unsupported_iterables = [{10, 20, 30}, u"foo", b"bar", bytearray([65, 75, 85])]
+        unsupported_iterables = [{10, 20, 30}, "foo", b"bar", bytearray([65, 75, 85])]
         for iterable in unsupported_iterables:
             with self.assertRaises(exceptions.ProgrammingError):
                 _helpers.array_to_query_parameter(iterable)
@@ -167,7 +167,7 @@ class TestQueryParameters(unittest.TestCase):
             _helpers.array_to_query_parameter([object(), 2, 7])
 
     def test_to_query_parameters_w_dict(self):
-        parameters = {"somebool": True, "somestring": u"a-string-value"}
+        parameters = {"somebool": True, "somestring": "a-string-value"}
         query_parameters = _helpers.to_query_parameters(parameters)
         query_parameter_tuples = []
         for param in query_parameters:
@@ -177,7 +177,7 @@ class TestQueryParameters(unittest.TestCase):
             sorted(
                 [
                     ("somebool", "BOOL", True),
-                    ("somestring", "STRING", u"a-string-value"),
+                    ("somestring", "STRING", "a-string-value"),
                 ]
             ),
         )
@@ -200,14 +200,14 @@ class TestQueryParameters(unittest.TestCase):
             _helpers.to_query_parameters(parameters)
 
     def test_to_query_parameters_w_list(self):
-        parameters = [True, u"a-string-value"]
+        parameters = [True, "a-string-value"]
         query_parameters = _helpers.to_query_parameters(parameters)
         query_parameter_tuples = []
         for param in query_parameters:
             query_parameter_tuples.append((param.name, param.type_, param.value))
         self.assertSequenceEqual(
             sorted(query_parameter_tuples),
-            sorted([(None, "BOOL", True), (None, "STRING", u"a-string-value")]),
+            sorted([(None, "BOOL", True), (None, "STRING", "a-string-value")]),
         )
 
     def test_to_query_parameters_w_list_array_param(self):

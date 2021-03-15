@@ -189,6 +189,10 @@ def bigquery_scalar_type(value):
     elif isinstance(value, numbers.Real):
         return "FLOAT64"
     elif isinstance(value, decimal.Decimal):
+        if pyarrow is None:
+            # We don't try to manually guess if it's maybe a BIGNUMERIC.
+            return "NUMERIC"
+
         # We check for NUMERIC before BIGNUMERIC in order to support pyarrow < 3.0.
         scalar_object = pyarrow.scalar(value)
         if isinstance(scalar_object, pyarrow.Decimal128Scalar):

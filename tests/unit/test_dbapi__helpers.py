@@ -17,6 +17,7 @@ import decimal
 import math
 import operator as op
 import unittest
+from unittest import mock
 
 try:
     import pyarrow
@@ -70,6 +71,28 @@ class TestQueryParameters(unittest.TestCase):
             self.assertEqual(named_parameter.name, "myvar", msg=msg)
             self.assertEqual(named_parameter.type_, expected_type, msg=msg)
             self.assertEqual(named_parameter.value, value, msg=msg)
+
+    def test_decimal_to_query_parameter_no_pyarrow(self):
+        # The value should have a high-enough scale to be recognized as BIGNUMERIC
+        # if pyarrow was available.
+        value = decimal.Decimal("1.1234567890123456789012345678901234567890")
+        msg = f"value: {value} expected_type: NUMERIC"
+
+        patcher = mock.patch("google.cloud.bigquery.dbapi._helpers.pyarrow", new=None)
+
+        with patcher:
+            parameter = _helpers.scalar_to_query_parameter(value)
+
+        self.assertIsNone(parameter.name, msg=msg)
+        self.assertEqual(parameter.type_, "NUMERIC", msg=msg)
+        self.assertEqual(parameter.value, value, msg=msg)
+
+        with patcher:
+            named_parameter = _helpers.scalar_to_query_parameter(value, name="myvar")
+
+        self.assertEqual(named_parameter.name, "myvar", msg=msg)
+        self.assertEqual(named_parameter.type_, "NUMERIC", msg=msg)
+        self.assertEqual(named_parameter.value, value, msg=msg)
 
     def test_scalar_to_query_parameter_w_unexpected_type(self):
         with self.assertRaises(exceptions.ProgrammingError):

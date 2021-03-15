@@ -687,6 +687,8 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
     sorted_rows = sorted(rows, key=operator.attrgetter("int_col"))
     row_tuples = [r.values() for r in sorted_rows]
     expected = [
+        # Pandas often represents NULL values as NaN. Convert to None for
+        # easier comparison.
         tuple(None if col != col else col for col in data_row)
         for data_row in dataframe.itertuples(index=False)
     ]
@@ -694,7 +696,12 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
     assert len(row_tuples) == len(expected)
 
     for row, expected_row in zip(row_tuples, expected):
-        assert len(row) == len(expected_row)  # column order does not matter
+        assert (
+            # Use Counter to verify the same number of values in each, because
+            # column order does not matter.
+            collections.Counter(row)
+            == collections.Counter(expected_row)
+        )
 
 
 def test_nested_table_to_dataframe(bigquery_client, dataset_id):

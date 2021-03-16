@@ -17,7 +17,6 @@ import decimal
 import math
 import operator as op
 import unittest
-from unittest import mock
 
 try:
     import pyarrow
@@ -26,7 +25,6 @@ except ImportError:  # pragma: NO COVER
 
 import google.cloud._helpers
 from google.cloud.bigquery import table
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
 from tests.unit.helpers import _to_pyarrow
@@ -40,7 +38,6 @@ class TestQueryParameters(unittest.TestCase):
             (123, "INT64"),
             (-123456789, "INT64"),
             (1.25, "FLOAT64"),
-            (decimal.Decimal("1.25"), "NUMERIC"),
             (b"I am some bytes", "BYTES"),
             ("I am a string", "STRING"),
             (datetime.date(2017, 4, 1), "DATE"),
@@ -52,14 +49,17 @@ class TestQueryParameters(unittest.TestCase):
                 ),
                 "TIMESTAMP",
             ),
+            (decimal.Decimal("1.25"), "NUMERIC"),
+            (decimal.Decimal("9.9999999999999999999999999999999999999E+28"), "NUMERIC"),
+            (decimal.Decimal("1.0E+29"), "BIGNUMERIC"),  # more than max NUMERIC value
+            (decimal.Decimal("1.123456789"), "NUMERIC"),
+            (decimal.Decimal("1.1234567891"), "BIGNUMERIC"),  # scale > 9
+            (decimal.Decimal("12345678901234567890123456789.012345678"), "NUMERIC"),
+            (
+                decimal.Decimal("12345678901234567890123456789012345678"),
+                "BIGNUMERIC",  # larger than max NUMERIC value, despite precision <=38
+            ),
         ]
-        if _BIGNUMERIC_SUPPORT:
-            expected_types.append(
-                (
-                    decimal.Decimal("1.1234567890123456789012345678901234567890"),
-                    "BIGNUMERIC",
-                )
-            )
 
         for value, expected_type in expected_types:
             msg = "value: {} expected_type: {}".format(value, expected_type)
@@ -72,27 +72,32 @@ class TestQueryParameters(unittest.TestCase):
             self.assertEqual(named_parameter.type_, expected_type, msg=msg)
             self.assertEqual(named_parameter.value, value, msg=msg)
 
-    def test_decimal_to_query_parameter_no_pyarrow(self):
-        # The value should have a high-enough scale to be recognized as BIGNUMERIC
-        # if pyarrow was available.
-        value = decimal.Decimal("1.1234567890123456789012345678901234567890")
-        msg = f"value: {value} expected_type: NUMERIC"
+    def test_decimal_to_query_parameter(self):  # TODO: merge with previous test
 
-        patcher = mock.patch("google.cloud.bigquery.dbapi._helpers.pyarrow", new=None)
+        expected_types = [
+            (decimal.Decimal("9.9999999999999999999999999999999999999E+28"), "NUMERIC"),
+            (decimal.Decimal("1.0E+29"), "BIGNUMERIC"),  # more than max value
+            (decimal.Decimal("1.123456789"), "NUMERIC"),
+            (decimal.Decimal("1.1234567891"), "BIGNUMERIC"),  # scale > 9
+            (decimal.Decimal("12345678901234567890123456789.012345678"), "NUMERIC"),
+            (
+                decimal.Decimal("12345678901234567890123456789012345678"),
+                "BIGNUMERIC",  # larger than max size, even if precision <=38
+            ),
+        ]
 
-        with patcher:
+        for value, expected_type in expected_types:
+            msg = f"value: {value} expected_type: {expected_type}"
+
             parameter = _helpers.scalar_to_query_parameter(value)
+            self.assertIsNone(parameter.name, msg=msg)
+            self.assertEqual(parameter.type_, expected_type, msg=msg)
+            self.assertEqual(parameter.value, value, msg=msg)
 
-        self.assertIsNone(parameter.name, msg=msg)
-        self.assertEqual(parameter.type_, "NUMERIC", msg=msg)
-        self.assertEqual(parameter.value, value, msg=msg)
-
-        with patcher:
             named_parameter = _helpers.scalar_to_query_parameter(value, name="myvar")
-
-        self.assertEqual(named_parameter.name, "myvar", msg=msg)
-        self.assertEqual(named_parameter.type_, "NUMERIC", msg=msg)
-        self.assertEqual(named_parameter.value, value, msg=msg)
+            self.assertEqual(named_parameter.name, "myvar", msg=msg)
+            self.assertEqual(named_parameter.type_, expected_type, msg=msg)
+            self.assertEqual(named_parameter.value, value, msg=msg)
 
     def test_scalar_to_query_parameter_w_unexpected_type(self):
         with self.assertRaises(exceptions.ProgrammingError):
@@ -112,6 +117,7 @@ class TestQueryParameters(unittest.TestCase):
             ([123, -456, 0], "INT64"),
             ([1.25, 2.50], "FLOAT64"),
             ([decimal.Decimal("1.25")], "NUMERIC"),
+            ([decimal.Decimal("{d38}.{d38}".format(d38="9" * 38))], "BIGNUMERIC"),
             ([b"foo", b"bar"], "BYTES"),
             (["foo", "bar"], "STRING"),
             ([datetime.date(2017, 4, 1), datetime.date(2018, 4, 1)], "DATE"),
@@ -135,11 +141,6 @@ class TestQueryParameters(unittest.TestCase):
                 "TIMESTAMP",
             ),
         ]
-
-        if _BIGNUMERIC_SUPPORT:
-            expected_types.append(
-                ([decimal.Decimal("{d38}.{d38}".format(d38="9" * 38))], "BIGNUMERIC")
-            )
 
         for values, expected_type in expected_types:
             msg = "value: {} expected_type: {}".format(values, expected_type)

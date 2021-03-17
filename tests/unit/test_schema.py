@@ -60,8 +60,8 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field._mode, "NULLABLE")
         self.assertIsNone(field._description)
         self.assertEqual(len(field._fields), 2)
-        self.assertIs(field._fields[0], sub_field1)
-        self.assertIs(field._fields[1], sub_field2)
+        self.assertEqual(field._fields[0], sub_field1)
+        self.assertEqual(field._fields[1], sub_field2)
 
     def test_constructor_with_policy_tags(self):
         from google.cloud.bigquery.schema import PolicyTagList
@@ -168,17 +168,17 @@ class TestSchemaField(unittest.TestCase):
     def test_name_property(self):
         name = "lemon-ness"
         schema_field = self._make_one(name, "INTEGER")
-        self.assertIs(schema_field.name, name)
+        self.assertEqual(schema_field.name, name)
 
     def test_field_type_property(self):
         field_type = "BOOLEAN"
         schema_field = self._make_one("whether", field_type)
-        self.assertIs(schema_field.field_type, field_type)
+        self.assertEqual(schema_field.field_type, field_type)
 
     def test_mode_property(self):
         mode = "REPEATED"
         schema_field = self._make_one("again", "FLOAT", mode=mode)
-        self.assertIs(schema_field.mode, mode)
+        self.assertEqual(schema_field.mode, mode)
 
     def test_is_nullable(self):
         mode = "NULLABLE"
@@ -193,14 +193,14 @@ class TestSchemaField(unittest.TestCase):
     def test_description_property(self):
         description = "It holds some data."
         schema_field = self._make_one("do", "TIMESTAMP", description=description)
-        self.assertIs(schema_field.description, description)
+        self.assertEqual(schema_field.description, description)
 
     def test_fields_property(self):
         sub_field1 = self._make_one("one", "STRING")
         sub_field2 = self._make_one("fish", "INTEGER")
         fields = (sub_field1, sub_field2)
         schema_field = self._make_one("boat", "RECORD", fields=fields)
-        self.assertIs(schema_field.fields, fields)
+        self.assertEqual(schema_field.fields, fields)
 
     def test_to_standard_sql_simple_type(self):
         sql_type = self._get_standard_sql_data_type_class()

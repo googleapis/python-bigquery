@@ -1596,18 +1596,8 @@ class TestClient(unittest.TestCase):
             {
                 "schema": {
                     "fields": [
-                        {
-                            "name": "full_name",
-                            "type": "STRING",
-                            "mode": "REQUIRED",
-                            "description": None,
-                        },
-                        {
-                            "name": "age",
-                            "type": "INTEGER",
-                            "mode": "REQUIRED",
-                            "description": None,
-                        },
+                        {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                        {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
                     ]
                 },
                 "view": {"query": query},
@@ -1641,18 +1631,8 @@ class TestClient(unittest.TestCase):
                 },
                 "schema": {
                     "fields": [
-                        {
-                            "name": "full_name",
-                            "type": "STRING",
-                            "mode": "REQUIRED",
-                            "description": None,
-                        },
-                        {
-                            "name": "age",
-                            "type": "INTEGER",
-                            "mode": "REQUIRED",
-                            "description": None,
-                        },
+                        {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                        {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
                     ]
                 },
                 "view": {"query": query, "useLegacySql": False},
@@ -2602,7 +2582,7 @@ class TestClient(unittest.TestCase):
                             "name": "age",
                             "type": "INTEGER",
                             "mode": "REQUIRED",
-                            "description": None,
+                            "description": "New field description",
                         },
                     ]
                 },
@@ -2613,8 +2593,10 @@ class TestClient(unittest.TestCase):
             }
         )
         schema = [
-            SchemaField("full_name", "STRING", mode="REQUIRED"),
-            SchemaField("age", "INTEGER", mode="REQUIRED"),
+            SchemaField("full_name", "STRING", mode="REQUIRED", description=None),
+            SchemaField(
+                "age", "INTEGER", mode="REQUIRED", description="New field description"
+            ),
         ]
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
@@ -2647,7 +2629,7 @@ class TestClient(unittest.TestCase):
                         "name": "age",
                         "type": "INTEGER",
                         "mode": "REQUIRED",
-                        "description": None,
+                        "description": "New field description",
                     },
                 ]
             },
@@ -7658,18 +7640,40 @@ class TestClientUpload(object):
     def test_load_table_from_dataframe(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
-        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.schema import PolicyTagList, SchemaField
 
         client = self._make_client()
-        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        records = [
+            {"id": 1, "age": 100, "accounts": [2, 3]},
+            {"id": 2, "age": 60, "accounts": [5]},
+            {"id": 3, "age": 40, "accounts": []},
+        ]
         dataframe = pandas.DataFrame(records)
+
+        get_table_schema = [
+            SchemaField(
+                "id",
+                "INTEGER",
+                mode="REQUIRED",
+                description="integer column",
+                policy_tags=PolicyTagList(names=("foo", "bar")),
+            ),
+            SchemaField(
+                "age",
+                "INTEGER",
+                mode="NULLABLE",
+                description="age column",
+                policy_tags=PolicyTagList(names=("baz",)),
+            ),
+            SchemaField(
+                "accounts", "INTEGER", mode="REPEATED", description="array column",
+            ),
+        ]
 
         get_table_patch = mock.patch(
             "google.cloud.bigquery.client.Client.get_table",
             autospec=True,
-            return_value=mock.Mock(
-                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
-            ),
+            return_value=mock.Mock(schema=get_table_schema),
         )
         load_patch = mock.patch(
             "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
@@ -7695,8 +7699,18 @@ class TestClientUpload(object):
         sent_file = load_table_from_file.mock_calls[0][1][1]
         assert sent_file.closed
 
-        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
-        assert sent_config.source_format == job.SourceFormat.PARQUET
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"].to_api_repr()[
+            "load"
+        ]
+        assert sent_config["sourceFormat"] == job.SourceFormat.PARQUET
+        for field_index, field in enumerate(sent_config["schema"]["fields"]):
+            assert field["name"] == get_table_schema[field_index].name
+            assert field["type"] == get_table_schema[field_index].field_type
+            assert field["mode"] == get_table_schema[field_index].mode
+            # Omit unnecessary fields when they come from getting the table
+            # (not passed in via job_config)
+            assert "description" not in field
+            assert "policyTags" not in field
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")

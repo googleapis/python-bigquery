@@ -2294,7 +2294,12 @@ class Client(ClientWithProject):
                 job_config.schema = [
                     # Field description and policy tags are not needed to
                     # serialize a data frame.
-                    SchemaField(field.name, field.field_type, mode=field.mode)
+                    SchemaField(
+                        field.name,
+                        field.field_type,
+                        mode=field.mode,
+                        fields=field.fields,
+                    )
                     # schema fields not present in the dataframe are not needed
                     for field in table.schema
                     if field.name in columns_and_indexes

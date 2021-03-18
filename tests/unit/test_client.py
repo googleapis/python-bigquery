@@ -7659,26 +7659,33 @@ class TestClientUpload(object):
             {"id": 2, "age": 60, "accounts": [5]},
             {"id": 3, "age": 40, "accounts": []},
         ]
-        dataframe = pandas.DataFrame(records)
-
-        get_table_schema = [
-            SchemaField(
+        # Mixup column order so that we can verify sent schema matches the
+        # serialized order, not the table column order.
+        column_order = ["age", "accounts", "id"]
+        dataframe = pandas.DataFrame(records, columns=column_order)
+        table_fields = {
+            "id": SchemaField(
                 "id",
                 "INTEGER",
                 mode="REQUIRED",
                 description="integer column",
                 policy_tags=PolicyTagList(names=("foo", "bar")),
             ),
-            SchemaField(
+            "age": SchemaField(
                 "age",
                 "INTEGER",
                 mode="NULLABLE",
                 description="age column",
                 policy_tags=PolicyTagList(names=("baz",)),
             ),
-            SchemaField(
+            "accounts": SchemaField(
                 "accounts", "INTEGER", mode="REPEATED", description="array column",
             ),
+        }
+        get_table_schema = [
+            table_fields["id"],
+            table_fields["age"],
+            table_fields["accounts"],
         ]
 
         get_table_patch = mock.patch(
@@ -7715,9 +7722,12 @@ class TestClientUpload(object):
         ]
         assert sent_config["sourceFormat"] == job.SourceFormat.PARQUET
         for field_index, field in enumerate(sent_config["schema"]["fields"]):
-            assert field["name"] == get_table_schema[field_index].name
-            assert field["type"] == get_table_schema[field_index].field_type
-            assert field["mode"] == get_table_schema[field_index].mode
+            assert field["name"] == column_order[field_index]
+            table_field = table_fields[field["name"]]
+            assert field["name"] == table_field.name
+            assert field["type"] == table_field.field_type
+            assert field["mode"] == table_field.mode
+            assert len(field.get("fields", [])) == len(table_field.fields)
             # Omit unnecessary fields when they come from getting the table
             # (not passed in via job_config)
             assert "description" not in field

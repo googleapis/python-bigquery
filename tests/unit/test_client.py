@@ -2755,13 +2755,24 @@ class TestClient(unittest.TestCase):
                     "name": "age",
                     "type": "INTEGER",
                     "mode": "REQUIRED",
-                    "description": None,
+                    "description": "this is a column",
                 },
+                {"name": "country", "type": "STRING", "mode": "NULLABLE"},
             ]
         }
         schema = [
-            SchemaField("full_name", "STRING", mode="REQUIRED"),
-            SchemaField("age", "INTEGER", mode="REQUIRED"),
+            SchemaField(
+                "full_name",
+                "STRING",
+                mode="REQUIRED",
+                # Explicitly unset the description.
+                description=None,
+            ),
+            SchemaField(
+                "age", "INTEGER", mode="REQUIRED", description="this is a column"
+            ),
+            # Omit the description to not make updates to it.
+            SchemaField("country", "STRING"),
         ]
         resource = self._make_table_resource()
         resource.update(

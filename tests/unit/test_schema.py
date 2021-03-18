@@ -35,19 +35,19 @@ class TestSchemaField(unittest.TestCase):
 
     def test_constructor_defaults(self):
         field = self._make_one("test", "STRING")
-        self.assertEqual(field._name, "test")
-        self.assertEqual(field._field_type, "STRING")
-        self.assertEqual(field._mode, "NULLABLE")
-        self.assertIsNone(field._description)
-        self.assertEqual(field._fields, ())
+        self.assertEqual(field.name, "test")
+        self.assertEqual(field.field_type, "STRING")
+        self.assertEqual(field.mode, "NULLABLE")
+        self.assertIsNone(field.description)
+        self.assertEqual(field.fields, ())
 
     def test_constructor_explicit(self):
         field = self._make_one("test", "STRING", mode="REQUIRED", description="Testing")
-        self.assertEqual(field._name, "test")
-        self.assertEqual(field._field_type, "STRING")
-        self.assertEqual(field._mode, "REQUIRED")
-        self.assertEqual(field._description, "Testing")
-        self.assertEqual(field._fields, ())
+        self.assertEqual(field.name, "test")
+        self.assertEqual(field.field_type, "STRING")
+        self.assertEqual(field.mode, "REQUIRED")
+        self.assertEqual(field.description, "Testing")
+        self.assertEqual(field.fields, ())
 
     def test_constructor_subfields(self):
         sub_field1 = self._make_one("area_code", "STRING")
@@ -55,13 +55,13 @@ class TestSchemaField(unittest.TestCase):
         field = self._make_one(
             "phone_number", "RECORD", fields=[sub_field1, sub_field2]
         )
-        self.assertEqual(field._name, "phone_number")
-        self.assertEqual(field._field_type, "RECORD")
-        self.assertEqual(field._mode, "NULLABLE")
-        self.assertIsNone(field._description)
-        self.assertEqual(len(field._fields), 2)
-        self.assertEqual(field._fields[0], sub_field1)
-        self.assertEqual(field._fields[1], sub_field2)
+        self.assertEqual(field.name, "phone_number")
+        self.assertEqual(field.field_type, "RECORD")
+        self.assertEqual(field.mode, "NULLABLE")
+        self.assertIsNone(field.description)
+        self.assertEqual(len(field.fields), 2)
+        self.assertEqual(field.fields[0], sub_field1)
+        self.assertEqual(field.fields[1], sub_field2)
 
     def test_constructor_with_policy_tags(self):
         from google.cloud.bigquery.schema import PolicyTagList
@@ -70,12 +70,12 @@ class TestSchemaField(unittest.TestCase):
         field = self._make_one(
             "test", "STRING", mode="REQUIRED", description="Testing", policy_tags=policy
         )
-        self.assertEqual(field._name, "test")
-        self.assertEqual(field._field_type, "STRING")
-        self.assertEqual(field._mode, "REQUIRED")
-        self.assertEqual(field._description, "Testing")
-        self.assertEqual(field._fields, ())
-        self.assertEqual(field._policy_tags, policy)
+        self.assertEqual(field.name, "test")
+        self.assertEqual(field.field_type, "STRING")
+        self.assertEqual(field.mode, "REQUIRED")
+        self.assertEqual(field.description, "Testing")
+        self.assertEqual(field.fields, ())
+        self.assertEqual(field.policy_tags, policy)
 
     def test_to_api_repr(self):
         from google.cloud.bigquery.schema import PolicyTagList
@@ -92,7 +92,6 @@ class TestSchemaField(unittest.TestCase):
                 "mode": "NULLABLE",
                 "name": "foo",
                 "type": "INTEGER",
-                "description": None,
                 "policyTags": {"names": ["foo", "bar"]},
             },
         )
@@ -104,18 +103,10 @@ class TestSchemaField(unittest.TestCase):
             self.assertEqual(
                 field.to_api_repr(),
                 {
-                    "fields": [
-                        {
-                            "mode": "NULLABLE",
-                            "name": "bar",
-                            "type": "INTEGER",
-                            "description": None,
-                        }
-                    ],
+                    "fields": [{"mode": "NULLABLE", "name": "bar", "type": "INTEGER"}],
                     "mode": "REQUIRED",
                     "name": "foo",
                     "type": record_type,
-                    "description": None,
                 },
             )
 
@@ -532,17 +523,10 @@ class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
         resource = self._call_fut([full_name, age])
         self.assertEqual(len(resource), 2)
         self.assertEqual(
-            resource[0],
-            {
-                "name": "full_name",
-                "type": "STRING",
-                "mode": "REQUIRED",
-                "description": None,
-            },
+            resource[0], {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
         )
         self.assertEqual(
-            resource[1],
-            {"name": "age", "type": "INTEGER", "mode": "REQUIRED", "description": None},
+            resource[1], {"name": "age", "type": "INTEGER", "mode": "REQUIRED"}
         )
 
     def test_w_description(self):
@@ -552,7 +536,13 @@ class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
         full_name = SchemaField(
             "full_name", "STRING", mode="REQUIRED", description=DESCRIPTION
         )
-        age = SchemaField("age", "INTEGER", mode="REQUIRED")
+        age = SchemaField(
+            "age",
+            "INTEGER",
+            mode="REQUIRED",
+            # Explicitly unset description.
+            description=None,
+        )
         resource = self._call_fut([full_name, age])
         self.assertEqual(len(resource), 2)
         self.assertEqual(
@@ -581,13 +571,7 @@ class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
         resource = self._call_fut([full_name, phone])
         self.assertEqual(len(resource), 2)
         self.assertEqual(
-            resource[0],
-            {
-                "name": "full_name",
-                "type": "STRING",
-                "mode": "REQUIRED",
-                "description": None,
-            },
+            resource[0], {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
         )
         self.assertEqual(
             resource[1],
@@ -595,20 +579,9 @@ class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
                 "name": "phone",
                 "type": "RECORD",
                 "mode": "REPEATED",
-                "description": None,
                 "fields": [
-                    {
-                        "name": "type",
-                        "type": "STRING",
-                        "mode": "REQUIRED",
-                        "description": None,
-                    },
-                    {
-                        "name": "number",
-                        "type": "STRING",
-                        "mode": "REQUIRED",
-                        "description": None,
-                    },
+                    {"name": "type", "type": "STRING", "mode": "REQUIRED"},
+                    {"name": "number", "type": "STRING", "mode": "REQUIRED"},
                 ],
             },
         )

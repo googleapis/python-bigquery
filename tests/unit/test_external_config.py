@@ -93,7 +93,7 @@ class TestExternalConfig(unittest.TestCase):
         }
         self.assertEqual(got_resource, exp_resource)
 
-    def test_connection_di(self):
+    def test_connection_id(self):
         ec = external_config.ExternalConfig("")
         self.assertIsNone(ec.connection_id)
         ec.connection_id = "path/to/connection"

@@ -774,7 +774,7 @@ class ExternalConfig(object):
         return self._properties.get("connectionId")
 
     @connection_id.setter
-    def connectionid(self, value):
+    def connection_id(self, value):
         self._properties["connectionId"] = value
 
     @schema.setter

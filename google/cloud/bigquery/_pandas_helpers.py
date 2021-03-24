@@ -703,15 +703,12 @@ def _download_table_bqstorage(
                     continue
 
             # Return any remaining values after the workers finished.
-            while not worker_queue.empty():  # pragma: NO COVER
+            while True:  # pragma: NO COVER
                 try:
-                    # Include a timeout because even though the queue is
-                    # non-empty, it doesn't guarantee that a subsequent call to
-                    # get() will not block.
-                    frame = worker_queue.get(timeout=_PROGRESS_INTERVAL)
+                    frame = worker_queue.get_nowait()
                     yield frame
                 except queue.Empty:  # pragma: NO COVER
-                    continue
+                    break
         finally:
             # No need for a lock because reading/replacing a variable is
             # defined to be an atomic operation in the Python language

@@ -1490,13 +1490,12 @@ class RowIterator(HTTPIterator):
         if not self._validate_bqstorage(bqstorage_client, False):
             bqstorage_client = None
 
-        if bqstorage_client is not None:
-            for item in bqstorage_download():
-                yield item
-            return
-
-        for item in tabledata_list_download():
-            yield item
+        result_pages = (
+            bqstorage_download()
+            if bqstorage_client is not None
+            else tabledata_list_download()
+        )
+        yield from result_pages
 
     def _to_arrow_iterable(
         self,

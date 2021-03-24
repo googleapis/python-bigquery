@@ -45,6 +45,8 @@ _NO_BQSTORAGE_ERROR = (
 
 _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seconds.
 
+_DEFAULT_MAX_QUEUE_SIZE = 1  # max queue size for BQ Storage downloads
+
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
     "datetime64[ns, UTC]": "TIMESTAMP",
@@ -608,6 +610,7 @@ def _download_table_bqstorage(
     preserve_order=False,
     selected_fields=None,
     page_to_item=None,
+    max_queue_size=_DEFAULT_MAX_QUEUE_SIZE,
 ):
     """Use (faster, but billable) BQ Storage API to construct DataFrame."""
 
@@ -654,7 +657,12 @@ def _download_table_bqstorage(
     download_state = _DownloadState()
 
     # Create a queue to collect frames as they are created in each thread.
-    worker_queue = queue.Queue()
+    #
+    # The queue needs to be bounded, because if the user code processes the fetched
+    # result pages to slowly, but at the same time new pages are rapidly being fetched
+    # from the server, the queue can grow to the point where the process runs
+    # out of memory.
+    worker_queue = queue.Queue(maxsize=max_queue_size)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=total_streams) as pool:
         try:
@@ -716,7 +724,12 @@ def _download_table_bqstorage(
 
 
 def download_arrow_bqstorage(
-    project_id, table, bqstorage_client, preserve_order=False, selected_fields=None
+    project_id,
+    table,
+    bqstorage_client,
+    preserve_order=False,
+    selected_fields=None,
+    max_queue_size=_DEFAULT_MAX_QUEUE_SIZE,
 ):
     return _download_table_bqstorage(
         project_id,
@@ -725,6 +738,7 @@ def download_arrow_bqstorage(
         preserve_order=preserve_order,
         selected_fields=selected_fields,
         page_to_item=_bqstorage_page_to_arrow,
+        max_queue_size=max_queue_size,
     )
 
 
@@ -736,6 +750,7 @@ def download_dataframe_bqstorage(
     dtypes,
     preserve_order=False,
     selected_fields=None,
+    max_queue_size=_DEFAULT_MAX_QUEUE_SIZE,
 ):
     page_to_item = functools.partial(_bqstorage_page_to_dataframe, column_names, dtypes)
     return _download_table_bqstorage(
@@ -745,6 +760,7 @@ def download_dataframe_bqstorage(
         preserve_order=preserve_order,
         selected_fields=selected_fields,
         page_to_item=page_to_item,
+        max_queue_size=max_queue_size,
     )
 
 

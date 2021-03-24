@@ -1498,7 +1498,11 @@ class RowIterator(HTTPIterator):
         for item in tabledata_list_download():
             yield item
 
-    def _to_arrow_iterable(self, bqstorage_client=None):
+    def _to_arrow_iterable(
+        self,
+        bqstorage_client=None,
+        max_queue_size=_pandas_helpers._DEFAULT_MAX_QUEUE_SIZE,
+    ):
         """Create an iterable of arrow RecordBatches, to process the table as a stream."""
         bqstorage_download = functools.partial(
             _pandas_helpers.download_arrow_bqstorage,
@@ -1507,6 +1511,7 @@ class RowIterator(HTTPIterator):
             bqstorage_client,
             preserve_order=self._preserve_order,
             selected_fields=self._selected_fields,
+            max_queue_size=max_queue_size,
         )
         tabledata_list_download = functools.partial(
             _pandas_helpers.download_arrow_row_iterator, iter(self.pages), self.schema
@@ -1524,6 +1529,7 @@ class RowIterator(HTTPIterator):
         progress_bar_type=None,
         bqstorage_client=None,
         create_bqstorage_client=True,
+        max_queue_size=_pandas_helpers._DEFAULT_MAX_QUEUE_SIZE,
     ):
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
@@ -1567,6 +1573,13 @@ class RowIterator(HTTPIterator):
 
                 ..versionadded:: 1.24.0
 
+            max_queue_size (Optional[int]):
+                The maximum number of result pages to hold in the internal queue when
+                streaming query results over the BigQuery Storage API. Ignored if
+                Storage API is not used.
+
+                ..versionadded:: 2.14.0
+
         Returns:
             pyarrow.Table
                 A :class:`pyarrow.Table` populated with row data and column
@@ -1597,7 +1610,7 @@ class RowIterator(HTTPIterator):
 
             record_batches = []
             for record_batch in self._to_arrow_iterable(
-                bqstorage_client=bqstorage_client
+                bqstorage_client=bqstorage_client, max_queue_size=max_queue_size,
             ):
                 record_batches.append(record_batch)
 
@@ -1622,7 +1635,12 @@ class RowIterator(HTTPIterator):
             arrow_schema = _pandas_helpers.bq_to_arrow_schema(self._schema)
             return pyarrow.Table.from_batches(record_batches, schema=arrow_schema)
 
-    def to_dataframe_iterable(self, bqstorage_client=None, dtypes=None):
+    def to_dataframe_iterable(
+        self,
+        bqstorage_client=None,
+        dtypes=None,
+        max_queue_size=_pandas_helpers._DEFAULT_MAX_QUEUE_SIZE,
+    ):
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
         Args:
@@ -1641,6 +1659,13 @@ class RowIterator(HTTPIterator):
                 A dictionary of column names pandas ``dtype``s. The provided
                 ``dtype`` is used when constructing the series for the column
                 specified. Otherwise, the default pandas behavior is used.
+
+            max_queue_size (Optional[int]):
+                The maximum number of result pages to hold in the internal queue when
+                streaming query results over the BigQuery Storage API. Ignored if
+                Storage API is not used.
+
+                ..versionadded:: 2.14.0
 
         Returns:
             pandas.DataFrame:
@@ -1665,6 +1690,7 @@ class RowIterator(HTTPIterator):
             dtypes,
             preserve_order=self._preserve_order,
             selected_fields=self._selected_fields,
+            max_queue_size=max_queue_size,
         )
         tabledata_list_download = functools.partial(
             _pandas_helpers.download_dataframe_row_iterator,
@@ -1687,6 +1713,7 @@ class RowIterator(HTTPIterator):
         progress_bar_type=None,
         create_bqstorage_client=True,
         date_as_object=True,
+        max_queue_size=_pandas_helpers._DEFAULT_MAX_QUEUE_SIZE,
     ):
         """Create a pandas DataFrame by loading all pages of a query.
 
@@ -1742,6 +1769,13 @@ class RowIterator(HTTPIterator):
 
                 ..versionadded:: 1.26.0
 
+            max_queue_size (Optional[int]):
+                The maximum number of result pages to hold in the internal queue when
+                streaming query results over the BigQuery Storage API. Ignored if
+                Storage API is not used.
+
+                ..versionadded:: 2.14.0
+
         Returns:
             pandas.DataFrame:
                 A :class:`~pandas.DataFrame` populated with row data and column
@@ -1768,6 +1802,7 @@ class RowIterator(HTTPIterator):
             progress_bar_type=progress_bar_type,
             bqstorage_client=bqstorage_client,
             create_bqstorage_client=create_bqstorage_client,
+            max_queue_size=max_queue_size,
         )
 
         # When converting timestamp values to nanosecond precision, the result
@@ -1815,6 +1850,7 @@ class _EmptyRowIterator(object):
         progress_bar_type=None,
         bqstorage_client=None,
         create_bqstorage_client=True,
+        max_queue_size=_pandas_helpers._DEFAULT_MAX_QUEUE_SIZE,
     ):
         """[Beta] Create an empty class:`pyarrow.Table`.
 
@@ -1822,6 +1858,7 @@ class _EmptyRowIterator(object):
             progress_bar_type (str): Ignored. Added for compatibility with RowIterator.
             bqstorage_client (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
+            max_queue_size (int): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pyarrow.Table: An empty :class:`pyarrow.Table`.
@@ -1837,6 +1874,7 @@ class _EmptyRowIterator(object):
         progress_bar_type=None,
         create_bqstorage_client=True,
         date_as_object=True,
+        max_queue_size=_pandas_helpers._DEFAULT_MAX_QUEUE_SIZE,
     ):
         """Create an empty dataframe.
 
@@ -1846,6 +1884,7 @@ class _EmptyRowIterator(object):
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
             date_as_object (bool): Ignored. Added for compatibility with RowIterator.
+            max_queue_size (int): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.

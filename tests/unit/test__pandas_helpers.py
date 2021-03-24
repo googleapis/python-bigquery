@@ -17,6 +17,7 @@ import datetime
 import decimal
 import functools
 import operator
+import queue
 import warnings
 
 import mock
@@ -1263,6 +1264,45 @@ def test_dataframe_to_parquet_dict_sequence_schema(module_under_test):
     ]
     schema_arg = fake_to_arrow.call_args.args[1]
     assert schema_arg == expected_schema_arg
+
+
+def test__download_table_bqstorage_bounded_queue_size(module_under_test):
+    from google.cloud.bigquery import dataset
+    from google.cloud.bigquery import table
+
+    table_ref = table.TableReference(
+        dataset.DatasetReference("project-x", "dataset-y"), "table-z",
+    )
+
+    bigquery_storage = pytest.importorskip(
+        "google.cloud.bigquery_storage",
+        reason="Requires BigQuery Storage dependency."
+    )
+    bqstorage_client = mock.create_autospec(
+        bigquery_storage.BigQueryReadClient, instance=True
+    )
+    fake_session = mock.Mock(streams=["stream/s1", "stream/s2", "stream/s3"])
+    bqstorage_client.create_read_session.return_value = fake_session
+
+    def fake_download_stream(
+        download_state, bqstorage_client, session, stream, worker_queue, page_to_item
+    ):
+        worker_queue.put_nowait("result")
+
+    download_stream = mock.Mock(side_effect=fake_download_stream)
+
+    with pytest.raises(queue.Full), mock.patch.object(
+        module_under_test, "_download_table_bqstorage_stream", new=download_stream
+    ):
+        result_gen = module_under_test._download_table_bqstorage(
+            "some-project", table_ref, bqstorage_client, max_queue_size=2,
+        )
+        list(result_gen)
+
+    # Timing-safe, as the method under test should block until the pool shutdown is
+    # complete, at which point all download stream workers have already been submitted
+    # to the thread pool.
+    assert download_stream.call_count == 3
 
 
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")

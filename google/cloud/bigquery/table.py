@@ -1625,7 +1625,7 @@ class RowIterator(HTTPIterator):
         self,
         bqstorage_client=None,
         dtypes=None,
-        max_queue_size=_pandas_helpers._DEFAULT_MAX_QUEUE_SIZE,
+        max_queue_size=_pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,
     ):
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -1650,6 +1650,10 @@ class RowIterator(HTTPIterator):
                 The maximum number of result pages to hold in the internal queue when
                 streaming query results over the BigQuery Storage API. Ignored if
                 Storage API is not used.
+
+                By default, the max queue size is set to the number of BQ Storage streams
+                created by the server. If ``max_queue_size`` is :data:`None`, the queue
+                size is infinite.
 
                 ..versionadded:: 2.14.0
 

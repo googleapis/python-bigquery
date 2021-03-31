@@ -721,12 +721,7 @@ def _download_table_bqstorage(
 
 
 def download_arrow_bqstorage(
-    project_id,
-    table,
-    bqstorage_client,
-    preserve_order=False,
-    selected_fields=None,
-    max_queue_size=_DEFAULT_MAX_QUEUE_SIZE,
+    project_id, table, bqstorage_client, preserve_order=False, selected_fields=None,
 ):
     return _download_table_bqstorage(
         project_id,
@@ -735,7 +730,6 @@ def download_arrow_bqstorage(
         preserve_order=preserve_order,
         selected_fields=selected_fields,
         page_to_item=_bqstorage_page_to_arrow,
-        max_queue_size=max_queue_size,
     )
 
 

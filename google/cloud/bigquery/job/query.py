@@ -28,7 +28,6 @@ from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.query import _query_param_from_api_repr
 from google.cloud.bigquery.query import ArrayQueryParameter
 from google.cloud.bigquery.query import ScalarQueryParameter
@@ -1200,7 +1199,6 @@ class QueryJob(_AsyncJob):
         progress_bar_type=None,
         bqstorage_client=None,
         create_bqstorage_client=True,
-        max_queue_size=_pandas_helpers._DEFAULT_MAX_QUEUE_SIZE,
     ):
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
@@ -1244,13 +1242,6 @@ class QueryJob(_AsyncJob):
 
                 ..versionadded:: 1.24.0
 
-            max_queue_size (Optional[int]):
-                The maximum number of result pages to hold in the internal queue when
-                streaming query results over the BigQuery Storage API. Ignored if
-                Storage API is not used.
-
-                ..versionadded:: 2.14.0
-
         Returns:
             pyarrow.Table
                 A :class:`pyarrow.Table` populated with row data and column
@@ -1268,7 +1259,6 @@ class QueryJob(_AsyncJob):
             progress_bar_type=progress_bar_type,
             bqstorage_client=bqstorage_client,
             create_bqstorage_client=create_bqstorage_client,
-            max_queue_size=max_queue_size,
         )
 
     # If changing the signature of this method, make sure to apply the same
@@ -1280,7 +1270,6 @@ class QueryJob(_AsyncJob):
         progress_bar_type=None,
         create_bqstorage_client=True,
         date_as_object=True,
-        max_queue_size=_pandas_helpers._DEFAULT_MAX_QUEUE_SIZE,
     ):
         """Return a pandas DataFrame from a QueryJob
 
@@ -1327,13 +1316,6 @@ class QueryJob(_AsyncJob):
 
                 ..versionadded:: 1.26.0
 
-            max_queue_size (Optional[int]):
-                The maximum number of result pages to hold in the internal queue when
-                streaming query results over the BigQuery Storage API. Ignored if
-                Storage API is not used.
-
-                ..versionadded:: 2.14.0
-
         Returns:
             A :class:`~pandas.DataFrame` populated with row data and column
             headers from the query results. The column headers are derived
@@ -1349,7 +1331,6 @@ class QueryJob(_AsyncJob):
             progress_bar_type=progress_bar_type,
             create_bqstorage_client=create_bqstorage_client,
             date_as_object=date_as_object,
-            max_queue_size=max_queue_size,
         )
 
     def __iter__(self):

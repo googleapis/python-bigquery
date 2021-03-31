@@ -1758,13 +1758,6 @@ class RowIterator(HTTPIterator):
 
                 ..versionadded:: 1.26.0
 
-            max_queue_size (Optional[int]):
-                The maximum number of result pages to hold in the internal queue when
-                streaming query results over the BigQuery Storage API. Ignored if
-                Storage API is not used.
-
-                ..versionadded:: 2.14.0
-
         Returns:
             pandas.DataFrame:
                 A :class:`~pandas.DataFrame` populated with row data and column

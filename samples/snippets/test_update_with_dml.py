@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from google.cloud import bigquery
+import pytest
 
 from conftest import resource_prefix
 import update_with_dml

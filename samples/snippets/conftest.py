@@ -19,10 +19,26 @@ from google.cloud import bigquery
 import pytest
 
 
+RESOURCE_PREFIX = "python_bigquery_samples_snippets"
+
+
 def resource_prefix() -> str:
     timestamp = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     random_string = hex(random.randrange(1000000))[2:]
-    return f"python_bigquery_samples_snippets_{timestamp}_{random_string}"
+    return f"{RESOURCE_PREFIX}_{timestamp}_{random_string}"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_datasets(bigquery_client: bigquery.Client):
+    yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    for dataset in bigquery_client.list_datasets():
+        if (
+            dataset.dataset_id.startswith(RESOURCE_PREFIX)
+            and dataset.created < yesterday
+        ):
+            bigquery_client.delete_dataset(
+                dataset, delete_contents=True, not_found_ok=True
+            )
 
 
 @pytest.fixture(scope="session")

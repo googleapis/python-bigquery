@@ -68,7 +68,8 @@ def get_reference(x):
 dataset_like = [
     (google.cloud.bigquery.dataset.DatasetReference, identity),
     (make_dataset, identity),
-]
+    (make_dataset_list_item, get_reference),
+    ]
 
 dataset_polymorphic = pytest.mark.parametrize(
     "make_dataset,get_reference", dataset_like

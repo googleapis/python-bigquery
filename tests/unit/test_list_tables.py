@@ -13,7 +13,7 @@ def test_list_tables_empty_w_timeout(
 
     dataset = make_dataset(PROJECT, DS_ID)
     iterator = client.list_tables(dataset, timeout=7.5)
-    assert iterator.dataset is get_reference(dataset)
+    assert iterator.dataset == get_reference(dataset)
     with mock.patch(
         "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
     ) as final_attributes:
@@ -68,7 +68,7 @@ def test_list_tables_defaults(make_dataset, get_reference, client, PROJECT, DS_I
     dataset = make_dataset(PROJECT, DS_ID)
 
     iterator = client.list_tables(dataset)
-    assert iterator.dataset is dataset
+    assert iterator.dataset == get_reference(dataset)
     with mock.patch(
         "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
     ) as final_attributes:

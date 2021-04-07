@@ -1321,7 +1321,10 @@ class Client(ClientWithProject):
             )
 
         if not isinstance(dataset, (Dataset, DatasetReference)):
-            raise TypeError("dataset must be a Dataset, DatasetReference, or string")
+            if isinstance(dataset, DatasetListItem):
+                dataset = dataset.reference
+            else:
+                raise TypeError("dataset must be a Dataset, DatasetReference, or string")
 
         path = "%s/tables" % dataset.path
         span_attributes = {"path": path}

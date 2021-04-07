@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import google.cloud.bigquery.client
+import google.cloud.bigquery.dataset
+import mock
+import pytest
+
 
 def make_connection(*responses):
     import google.cloud.bigquery._http
@@ -31,3 +36,40 @@ def _to_pyarrow(value):
     import pyarrow
 
     return pyarrow.array([value])[0]
+
+
+def make_client(project="PROJECT", credentials=None, **kw):
+    if credentials is None:
+        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+
+    return google.cloud.bigquery.client.Client(project, credentials, **kw)
+
+
+def make_dataset(project, ds_id):
+    return google.cloud.bigquery.dataset.Dataset(
+        google.cloud.bigquery.dataset.DatasetReference(project, ds_id)
+    )
+
+
+def make_dataset_list_item(project, ds_id):
+    return google.cloud.bigquery.dataset.DatasetListItem(
+        dict(datasetReference=dict(projectId=project, datasetId=ds_id))
+    )
+
+
+def identity(x):
+    return x
+
+
+def get_reference(x):
+    return x.reference
+
+
+dataset_like = [
+    (google.cloud.bigquery.dataset.DatasetReference, identity),
+    (make_dataset, identity),
+]
+
+dataset_polymorphic = pytest.mark.parametrize(
+    "make_dataset,get_reference", dataset_like
+)

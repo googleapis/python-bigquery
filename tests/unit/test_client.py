@@ -2926,7 +2926,6 @@ class TestClient(unittest.TestCase):
         self.assertEqual(req[1]["data"], sent)
         self.assertIsNone(table3.description)
 
-
     def test_list_models_empty_w_timeout(self):
         path = "/projects/{}/datasets/{}/models".format(self.PROJECT, self.DS_ID)
         creds = _make_credentials()
@@ -3101,7 +3100,6 @@ class TestClient(unittest.TestCase):
             client.list_routines(
                 DatasetReference(self.PROJECT, self.DS_ID).table("foo")
             )
-
 
     def test_delete_dataset(self):
         from google.cloud.bigquery.dataset import Dataset

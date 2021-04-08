@@ -38,12 +38,8 @@ try:
 except ImportError:
     _ARROW_COMPRESSION_SUPPORT = False
 else:
-    import pkg_resources
-
-    # Having BQ Storage available implies that pyarrow is available, too.
-    _ARROW_COMPRESSION_SUPPORT = pkg_resources.get_distribution(
-        "pyarrow"
-    ).parsed_version >= pkg_resources.parse_version("1.0.0")
+    # Having BQ Storage available implies that pyarrow >=1.0.0 is available, too.
+    _ARROW_COMPRESSION_SUPPORT = True
 
 from google.cloud.bigquery import schema
 

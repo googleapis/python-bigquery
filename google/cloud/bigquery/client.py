@@ -1249,14 +1249,7 @@ class Client(ClientWithProject):
                 :class:`~google.cloud.bigquery.routine.Routine`s contained
                 within the requested dataset, limited by ``max_results``.
         """
-        if isinstance(dataset, str):
-            dataset = DatasetReference.from_string(
-                dataset, default_project=self.project
-            )
-
-        if not isinstance(dataset, (Dataset, DatasetReference)):
-            raise TypeError("dataset must be a Dataset, DatasetReference, or string")
-
+        dataset = self._dataset_from_arg(dataset)
         path = "{}/routines".format(dataset.path)
 
         span_attributes = {"path": path}

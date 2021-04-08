@@ -449,6 +449,24 @@ class Client(ClientWithProject):
 
         return bigquery_storage.BigQueryReadClient(credentials=self._credentials)
 
+
+    def _dataset_from_arg(self, dataset):
+        if isinstance(dataset, str):
+            dataset = DatasetReference.from_string(
+                dataset, default_project=self.project
+            )
+
+        if not isinstance(dataset, (Dataset, DatasetReference)):
+            if isinstance(dataset, DatasetListItem):
+                dataset = dataset.reference
+            else:
+                raise TypeError(
+                    "dataset must be a Dataset, DatasetReference, DatasetListItem,"
+                    " or string"
+                )
+        return dataset
+
+
     def create_dataset(
         self, dataset, exists_ok=False, retry=DEFAULT_RETRY, timeout=None
     ):
@@ -1160,13 +1178,7 @@ class Client(ClientWithProject):
                 :class:`~google.cloud.bigquery.model.Model` contained
                 within the requested dataset.
         """
-        if isinstance(dataset, str):
-            dataset = DatasetReference.from_string(
-                dataset, default_project=self.project
-            )
-
-        if not isinstance(dataset, (Dataset, DatasetReference)):
-            raise TypeError("dataset must be a Dataset, DatasetReference, or string")
+        dataset = self._dataset_from_arg(dataset)
 
         path = "%s/models" % dataset.path
         span_attributes = {"path": path}
@@ -1315,20 +1327,7 @@ class Client(ClientWithProject):
                 :class:`~google.cloud.bigquery.table.TableListItem` contained
                 within the requested dataset.
         """
-        if isinstance(dataset, str):
-            dataset = DatasetReference.from_string(
-                dataset, default_project=self.project
-            )
-
-        if not isinstance(dataset, (Dataset, DatasetReference)):
-            if isinstance(dataset, DatasetListItem):
-                dataset = dataset.reference
-            else:
-                raise TypeError(
-                    "dataset must be a Dataset, DatasetReference, DatasetListItem,"
-                    " or string"
-                )
-
+        dataset = self._dataset_from_arg(dataset)
         path = "%s/tables" % dataset.path
         span_attributes = {"path": path}
 

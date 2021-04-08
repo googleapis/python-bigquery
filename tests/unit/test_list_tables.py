@@ -15,7 +15,6 @@ def test_list_tables_empty_w_timeout(
     iterator = client.list_tables(dataset, timeout=7.5)
     assert iterator.dataset == get_reference(dataset)
     page = next(iterator.pages)
-
     tables = list(page)
     token = iterator.next_page_token
 
@@ -66,7 +65,6 @@ def test_list_tables_defaults(make_dataset, get_reference, client, PROJECT, DS_I
     iterator = client.list_tables(dataset)
     assert iterator.dataset == get_reference(dataset)
     page = next(iterator.pages)
-
     tables = list(page)
     token = iterator.next_page_token
 
@@ -125,7 +123,6 @@ def test_list_tables_explicit(client, PROJECT, DS_ID):
     )
     assert iterator.dataset == dataset
     page = next(iterator.pages)
-
     tables = list(page)
     token = iterator.next_page_token
 

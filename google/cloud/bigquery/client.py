@@ -477,6 +477,7 @@ class Client(ClientWithProject):
             dataset (Union[ \
                 google.cloud.bigquery.dataset.Dataset, \
                 google.cloud.bigquery.dataset.DatasetReference, \
+                google.cloud.bigquery.dataset.DatasetListItem, \
                 str, \
             ]):
                 A :class:`~google.cloud.bigquery.dataset.Dataset` to create.
@@ -1146,6 +1147,7 @@ class Client(ClientWithProject):
             dataset (Union[ \
                 google.cloud.bigquery.dataset.Dataset, \
                 google.cloud.bigquery.dataset.DatasetReference, \
+                google.cloud.bigquery.dataset.DatasetListItem, \
                 str, \
             ]):
                 A reference to the dataset whose models to list from the
@@ -1217,6 +1219,7 @@ class Client(ClientWithProject):
             dataset (Union[ \
                 google.cloud.bigquery.dataset.Dataset, \
                 google.cloud.bigquery.dataset.DatasetReference, \
+                google.cloud.bigquery.dataset.DatasetListItem, \
                 str, \
             ]):
                 A reference to the dataset whose routines to list from the
@@ -1288,6 +1291,7 @@ class Client(ClientWithProject):
             dataset (Union[ \
                 google.cloud.bigquery.dataset.Dataset, \
                 google.cloud.bigquery.dataset.DatasetReference, \
+                google.cloud.bigquery.dataset.DatasetListItem, \
                 str, \
             ]):
                 A reference to the dataset whose tables to list from the
@@ -1358,6 +1362,7 @@ class Client(ClientWithProject):
             dataset (Union[ \
                 google.cloud.bigquery.dataset.Dataset, \
                 google.cloud.bigquery.dataset.DatasetReference, \
+                google.cloud.bigquery.dataset.DatasetListItem, \
                 str, \
             ]):
                 A reference to the dataset to delete. If a string is passed

@@ -43,6 +43,10 @@ def make_client(project="PROJECT", **kw):
     return google.cloud.bigquery.client.Client(project, credentials, **kw)
 
 
+def make_dataset_reference_string(project, ds_id):
+    return f"{project}.{ds_id}"
+
+
 def make_dataset(project, ds_id):
     return google.cloud.bigquery.dataset.Dataset(
         google.cloud.bigquery.dataset.DatasetReference(project, ds_id)
@@ -67,6 +71,8 @@ dataset_like = [
     (google.cloud.bigquery.dataset.DatasetReference, identity),
     (make_dataset, identity),
     (make_dataset_list_item, get_reference),
+    (make_dataset_reference_string,
+     google.cloud.bigquery.dataset.DatasetReference.from_string),
 ]
 
 dataset_polymorphic = pytest.mark.parametrize(

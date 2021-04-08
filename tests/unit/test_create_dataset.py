@@ -27,10 +27,7 @@ def test_create_dataset_minimal(make_dataset, get_reference, client, PROJECT, DS
         method="POST",
         path="/%s" % PATH,
         data={
-            "datasetReference": {
-                "projectId": PROJECT,
-                "datasetId": DS_ID,
-            },
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
             "labels": {},
         },
         timeout=7.5,
@@ -92,18 +89,12 @@ def test_create_dataset_w_attrs(client, PROJECT, DS_ID):
         method="POST",
         path="/%s" % PATH,
         data={
-            "datasetReference": {
-                "projectId": PROJECT,
-                "datasetId": DS_ID,
-            },
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
             "description": DESCRIPTION,
             "friendlyName": FRIENDLY_NAME,
             "location": LOCATION,
             "defaultTableExpirationMs": "3600",
-            "access": [
-                {"role": "OWNER", "userByEmail": USER_EMAIL},
-                {"view": VIEW},
-            ],
+            "access": [{"role": "OWNER", "userByEmail": USER_EMAIL}, {"view": VIEW}],
             "labels": LABELS,
         },
         timeout=None,
@@ -134,10 +125,7 @@ def test_create_dataset_w_custom_property(client, PROJECT, DS_ID):
         method="POST",
         path=path,
         data={
-            "datasetReference": {
-                "projectId": PROJECT,
-                "datasetId": DS_ID,
-            },
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
             "newAlphaProperty": "unreleased property",
             "labels": {},
         },
@@ -170,10 +158,7 @@ def test_create_dataset_w_client_location_wo_dataset_location(PROJECT, DS_ID, LO
         method="POST",
         path="/%s" % PATH,
         data={
-            "datasetReference": {
-                "projectId": PROJECT,
-                "datasetId": DS_ID,
-            },
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
             "labels": {},
             "location": LOCATION,
         },
@@ -208,10 +193,7 @@ def test_create_dataset_w_client_location_w_dataset_location(PROJECT, DS_ID, LOC
         method="POST",
         path="/%s" % PATH,
         data={
-            "datasetReference": {
-                "projectId": PROJECT,
-                "datasetId": DS_ID,
-            },
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
             "labels": {},
             "location": OTHER_LOCATION,
         },
@@ -241,10 +223,7 @@ def test_create_dataset_w_reference(PROJECT, DS_ID, LOCATION):
         method="POST",
         path=path,
         data={
-            "datasetReference": {
-                "projectId": PROJECT,
-                "datasetId": DS_ID,
-            },
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
             "labels": {},
             "location": LOCATION,
         },
@@ -274,10 +253,7 @@ def test_create_dataset_w_fully_qualified_string(PROJECT, DS_ID, LOCATION):
         method="POST",
         path=path,
         data={
-            "datasetReference": {
-                "projectId": PROJECT,
-                "datasetId": DS_ID,
-            },
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
             "labels": {},
             "location": LOCATION,
         },
@@ -312,10 +288,7 @@ def test_create_dataset_w_string(PROJECT, DS_ID, LOCATION):
         method="POST",
         path=path,
         data={
-            "datasetReference": {
-                "projectId": PROJECT,
-                "datasetId": DS_ID,
-            },
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
             "labels": {},
             "location": LOCATION,
         },
@@ -365,10 +338,7 @@ def test_create_dataset_alreadyexists_w_exists_ok_true(PROJECT, DS_ID, LOCATION)
                 method="POST",
                 path=post_path,
                 data={
-                    "datasetReference": {
-                        "projectId": PROJECT,
-                        "datasetId": DS_ID,
-                    },
+                    "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
                     "labels": {},
                     "location": LOCATION,
                 },

@@ -231,9 +231,7 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds)
 
         api_request_patcher = mock.patch.object(
-            client._connection,
-            "api_request",
-            side_effect=[TimeoutError, "result"],
+            client._connection, "api_request", side_effect=[TimeoutError, "result"],
         )
         retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
             lambda exc: isinstance(exc, TimeoutError)
@@ -256,9 +254,7 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds)
 
         api_request_patcher = mock.patch.object(
-            client._connection,
-            "api_request",
-            side_effect=[TimeoutError, "result"],
+            client._connection, "api_request", side_effect=[TimeoutError, "result"],
         )
         retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
             lambda exc: isinstance(exc, TimeoutError)
@@ -280,9 +276,7 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds)
 
         api_request_patcher = mock.patch.object(
-            client._connection,
-            "api_request",
-            side_effect=[TimeoutError, "result"],
+            client._connection, "api_request", side_effect=[TimeoutError, "result"],
         )
         retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
             lambda exc: isinstance(exc, TimeoutError)
@@ -445,9 +439,7 @@ class TestClient(unittest.TestCase):
             "email": "bq-123@bigquery-encryption.iam.gserviceaccount.com",
         }
         api_request_patcher = mock.patch.object(
-            client._connection,
-            "api_request",
-            side_effect=[ValueError, resource],
+            client._connection, "api_request", side_effect=[ValueError, resource],
         )
 
         retry = DEFAULT_RETRY.with_deadline(1).with_predicate(
@@ -889,10 +881,7 @@ class TestClient(unittest.TestCase):
         final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path=path,
-            data=resource,
-            timeout=7.5,
+            method="POST", path=path, data=resource, timeout=7.5,
         )
         self.assertEqual(
             actual_routine.reference, RoutineReference.from_string(full_routine_id)
@@ -926,10 +915,7 @@ class TestClient(unittest.TestCase):
             }
         }
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path=path,
-            data=resource,
-            timeout=None,
+            method="POST", path=path, data=resource, timeout=None,
         )
 
     @unittest.skipIf(opentelemetry is None, "Requires `opentelemetry`")
@@ -965,10 +951,7 @@ class TestClient(unittest.TestCase):
             }
         }
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path=path,
-            data=resource,
-            timeout=None,
+            method="POST", path=path, data=resource, timeout=None,
         )
 
     def test_create_routine_w_conflict_exists_ok(self):
@@ -1004,12 +987,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(actual_routine.routine_id, "minimal_routine")
         conn.api_request.assert_has_calls(
             [
-                mock.call(
-                    method="POST",
-                    path=path,
-                    data=resource,
-                    timeout=None,
-                ),
+                mock.call(method="POST", path=path, data=resource, timeout=None,),
                 mock.call(
                     method="GET",
                     path="/projects/test-routine-project/datasets/test_routines/routines/minimal_routine",
@@ -1408,9 +1386,7 @@ class TestClient(unittest.TestCase):
                 client.create_table("{}.{}".format(self.DS_ID, self.TABLE_ID))
 
         final_attributes.assert_called_with(
-            {"path": post_path, "dataset_id": self.TABLE_REF.dataset_id},
-            client,
-            None,
+            {"path": post_path, "dataset_id": self.TABLE_REF.dataset_id}, client, None,
         )
 
         conn.api_request.assert_called_once_with(
@@ -1580,9 +1556,7 @@ class TestClient(unittest.TestCase):
             final_attributes.assert_called_once_with({"path": path}, client, None)
 
             conn.api_request.assert_called_once_with(
-                method="GET",
-                path=path,
-                timeout=7.5,
+                method="GET", path=path, timeout=7.5,
             )
             self.assertEqual(
                 actual_routine.reference,
@@ -1664,9 +1638,7 @@ class TestClient(unittest.TestCase):
         from google.api_core.iam import Policy
 
         PATH = "/projects/{}/datasets/{}/tables/{}:getIamPolicy".format(
-            self.PROJECT,
-            self.DS_ID,
-            self.TABLE_ID,
+            self.PROJECT, self.DS_ID, self.TABLE_ID,
         )
         BODY = {"options": {"requestedPolicyVersion": 1}}
         ETAG = "CARDI"
@@ -1717,9 +1689,7 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
 
         table_resource_string = "projects/{}/datasets/{}/tables/{}".format(
-            self.PROJECT,
-            self.DS_ID,
-            self.TABLE_ID,
+            self.PROJECT, self.DS_ID, self.TABLE_ID,
         )
 
         with self.assertRaises(TypeError):
@@ -1939,11 +1909,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            ds2 = client.update_dataset(
-                ds,
-                fields=fields,
-                timeout=7.5,
-            )
+            ds2 = client.update_dataset(ds, fields=fields, timeout=7.5,)
 
         final_attributes.assert_called_once_with(
             {"path": "/%s" % PATH, "fields": fields}, client, None
@@ -2122,11 +2088,7 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            actual_routine = client.update_routine(
-                routine,
-                fields,
-                timeout=7.5,
-            )
+            actual_routine = client.update_routine(routine, fields, timeout=7.5,)
 
         final_attributes.assert_called_once_with(
             {"path": routine.path, "fields": fields}, client, None
@@ -2286,9 +2248,7 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, ["newAlphaProperty"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": ["newAlphaProperty"]},
-            client,
-            None,
+            {"path": "/%s" % path, "fields": ["newAlphaProperty"]}, client, None,
         )
 
         conn.api_request.assert_called_once_with(
@@ -2323,9 +2283,7 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, ["view_use_legacy_sql"])
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": ["view_use_legacy_sql"]},
-            client,
-            None,
+            {"path": "/%s" % path, "fields": ["view_use_legacy_sql"]}, client, None,
         )
 
         conn.api_request.assert_called_once_with(
@@ -2406,9 +2364,7 @@ class TestClient(unittest.TestCase):
             updated_table = client.update_table(table, updated_properties)
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % path, "fields": updated_properties},
-            client,
-            None,
+            {"path": "/%s" % path, "fields": updated_properties}, client, None,
         )
 
         self.assertEqual(updated_table.schema, table.schema)
@@ -2637,9 +2593,7 @@ class TestClient(unittest.TestCase):
             final_attributes.assert_called_once_with({"path": path}, client, None)
 
             conn.api_request.assert_called_with(
-                method="DELETE",
-                path=path,
-                timeout=7.5,
+                method="DELETE", path=path, timeout=7.5,
             )
 
     def test_delete_routine_w_wrong_type(self):
@@ -2666,9 +2620,7 @@ class TestClient(unittest.TestCase):
         final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(
-            method="DELETE",
-            path=path,
-            timeout=None,
+            method="DELETE", path=path, timeout=None,
         )
 
     def test_delete_routine_w_not_found_ok_true(self):
@@ -2690,9 +2642,7 @@ class TestClient(unittest.TestCase):
         final_attributes.assert_called_once_with({"path": path}, client, None)
 
         conn.api_request.assert_called_with(
-            method="DELETE",
-            path=path,
-            timeout=None,
+            method="DELETE", path=path, timeout=None,
         )
 
     def test_delete_table(self):
@@ -4097,10 +4047,7 @@ class TestClient(unittest.TestCase):
 
         # Check that extract_table actually starts the job.
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/projects/PROJECT/jobs",
-            data=RESOURCE,
-            timeout=7.5,
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
         )
 
         # Check the job resource.
@@ -4342,10 +4289,7 @@ class TestClient(unittest.TestCase):
 
         # Check that extract_table actually starts the job.
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/projects/PROJECT/jobs",
-            data=RESOURCE,
-            timeout=7.5,
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
         )
 
         # Check the job resource.
@@ -4388,10 +4332,7 @@ class TestClient(unittest.TestCase):
 
         # Check that extract_table actually starts the job.
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/projects/PROJECT/jobs",
-            data=RESOURCE,
-            timeout=7.5,
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
         )
 
     def test_extract_table_for_source_type_model_w_model_object(self):
@@ -4430,10 +4371,7 @@ class TestClient(unittest.TestCase):
 
         # Check that extract_table actually starts the job.
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/projects/PROJECT/jobs",
-            data=RESOURCE,
-            timeout=7.5,
+            method="POST", path="/projects/PROJECT/jobs", data=RESOURCE, timeout=7.5,
         )
 
     def test_extract_table_for_invalid_source_type_model(self):
@@ -4619,11 +4557,7 @@ class TestClient(unittest.TestCase):
 
         from google.cloud.bigquery import QueryJobConfig
 
-        client = self._make_one(
-            project=self.PROJECT,
-            credentials=creds,
-            _http=http,
-        )
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http,)
         conn = client._connection = make_connection(resource)
 
         job_config = QueryJobConfig()
@@ -5387,10 +5321,7 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(len(errors), 0)
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/%s" % PATH,
-            data=SENT,
-            timeout=None,
+            method="POST", path="/%s" % PATH, data=SENT, timeout=None,
         )
 
     def test_insert_rows_w_record_schema(self):
@@ -5464,9 +5395,7 @@ class TestClient(unittest.TestCase):
         from google.cloud.bigquery.table import Table
 
         PATH = "projects/{}/datasets/{}/tables/{}/insertAll".format(
-            self.PROJECT,
-            self.DS_ID,
-            self.TABLE_ID,
+            self.PROJECT, self.DS_ID, self.TABLE_ID,
         )
         creds = _make_credentials()
         http = object()
@@ -5492,10 +5421,7 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(len(errors), 0)
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/{}".format(PATH),
-            data=SENT,
-            timeout=None,
+            method="POST", path="/{}".format(PATH), data=SENT, timeout=None,
         )
 
     def test_insert_rows_errors(self):
@@ -5871,10 +5797,7 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(len(errors), 0)
         conn.api_request.assert_called_once_with(
-            method="POST",
-            path="/%s" % PATH,
-            data=SENT,
-            timeout=7.5,
+            method="POST", path="/%s" % PATH, data=SENT, timeout=7.5,
         )
 
     def test_insert_rows_json_with_string_id(self):
@@ -5910,9 +5833,7 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection({})
 
         errors = client.insert_rows_json(
-            "proj.dset.tbl",
-            rows,
-            row_ids=[None] * len(rows),
+            "proj.dset.tbl", rows, row_ids=[None] * len(rows),
         )
 
         self.assertEqual(len(errors), 0)
@@ -6578,10 +6499,7 @@ class TestClientUpload(object):
         )
         with do_upload_patch as do_upload:
             client.load_table_from_file(
-                file_obj,
-                self.TABLE_REF,
-                job_id="job_id",
-                job_config=job_config,
+                file_obj, self.TABLE_REF, job_id="job_id", job_config=job_config,
             )
 
         do_upload.assert_called_once_with(
@@ -6899,10 +6817,7 @@ class TestClientUpload(object):
                 policy_tags=PolicyTagList(names=("baz",)),
             ),
             "accounts": SchemaField(
-                "accounts",
-                "INTEGER",
-                mode="REPEATED",
-                description="array column",
+                "accounts", "INTEGER", mode="REPEATED", description="array column",
             ),
         }
         get_table_schema = [
@@ -7997,11 +7912,7 @@ class TestClientUpload(object):
         client = self._make_client(transport)
 
         result = client._do_resumable_upload(
-            file_obj,
-            self.EXPECTED_CONFIGURATION,
-            None,
-            None,
-            project="custom-project",
+            file_obj, self.EXPECTED_CONFIGURATION, None, None, project="custom-project",
         )
 
         content = result.content.decode("utf-8")

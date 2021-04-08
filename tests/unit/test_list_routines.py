@@ -1,6 +1,4 @@
 from .helpers import make_connection, dataset_polymorphic
-import google.cloud.bigquery.dataset
-import mock
 import pytest
 
 

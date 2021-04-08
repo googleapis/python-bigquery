@@ -449,7 +449,6 @@ class Client(ClientWithProject):
 
         return bigquery_storage.BigQueryReadClient(credentials=self._credentials)
 
-
     def _dataset_from_arg(self, dataset):
         if isinstance(dataset, str):
             dataset = DatasetReference.from_string(
@@ -465,7 +464,6 @@ class Client(ClientWithProject):
                     " or string"
                 )
         return dataset
-
 
     def create_dataset(
         self, dataset, exists_ok=False, retry=DEFAULT_RETRY, timeout=None
@@ -509,10 +507,7 @@ class Client(ClientWithProject):
             >>> dataset = client.create_dataset(dataset)
 
         """
-        if isinstance(dataset, str):
-            dataset = DatasetReference.from_string(
-                dataset, default_project=self.project
-            )
+        dataset = self._dataset_from_arg(dataset)
         if isinstance(dataset, DatasetReference):
             dataset = Dataset(dataset)
 
@@ -697,7 +692,11 @@ class Client(ClientWithProject):
         return Dataset.from_api_repr(api_response)
 
     def get_iam_policy(
-        self, table, requested_policy_version=1, retry=DEFAULT_RETRY, timeout=None,
+        self,
+        table,
+        requested_policy_version=1,
+        retry=DEFAULT_RETRY,
+        timeout=None,
     ):
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
@@ -722,7 +721,12 @@ class Client(ClientWithProject):
         return Policy.from_api_repr(response)
 
     def set_iam_policy(
-        self, table, policy, updateMask=None, retry=DEFAULT_RETRY, timeout=None,
+        self,
+        table,
+        policy,
+        updateMask=None,
+        retry=DEFAULT_RETRY,
+        timeout=None,
     ):
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
@@ -751,7 +755,11 @@ class Client(ClientWithProject):
         return Policy.from_api_repr(response)
 
     def test_iam_permissions(
-        self, table, permissions, retry=DEFAULT_RETRY, timeout=None,
+        self,
+        table,
+        permissions,
+        retry=DEFAULT_RETRY,
+        timeout=None,
     ):
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
@@ -1382,14 +1390,7 @@ class Client(ClientWithProject):
                 Defaults to ``False``. If ``True``, ignore "not found" errors
                 when deleting the dataset.
         """
-        if isinstance(dataset, str):
-            dataset = DatasetReference.from_string(
-                dataset, default_project=self.project
-            )
-
-        if not isinstance(dataset, (Dataset, DatasetReference)):
-            raise TypeError("dataset must be a Dataset or a DatasetReference")
-
+        dataset = self._dataset_from_arg(dataset)
         params = {}
         path = dataset.path
         if delete_contents:
@@ -1557,7 +1558,13 @@ class Client(ClientWithProject):
                 raise
 
     def _get_query_results(
-        self, job_id, retry, project=None, timeout_ms=None, location=None, timeout=None,
+        self,
+        job_id,
+        retry,
+        project=None,
+        timeout_ms=None,
+        location=None,
+        timeout=None,
     ):
         """Get the query results object for a query job.
 
@@ -1699,8 +1706,8 @@ class Client(ClientWithProject):
                 timeout=timeout,
             )
         elif "extract" in job_config:
-            extract_job_config = google.cloud.bigquery.job.ExtractJobConfig.from_api_repr(
-                job_config
+            extract_job_config = (
+                google.cloud.bigquery.job.ExtractJobConfig.from_api_repr(job_config)
             )
             source = _get_sub_prop(job_config, ["extract", "sourceTable"])
             if source:

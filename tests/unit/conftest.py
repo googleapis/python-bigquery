@@ -21,6 +21,11 @@ def DS_ID():
     yield "DATASET_ID"
 
 
+@pytest.fixture
+def LOCATION():
+    yield "us-central"
+
+
 @pytest.fixture(autouse=True, scope="session")
 def bypass_opentelemetry_tracing():
     @contextlib.contextmanager

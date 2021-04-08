@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [2.13.2](https://www.github.com/googleapis/python-bigquery/compare/v2.13.1...v2.13.2) (2021-04-08)
+
+
+### Documentation
+
+* update the description of the return value of `_QueryResults.rows()` ([#594](https://www.github.com/googleapis/python-bigquery/issues/594)) ([8f4c0b8](https://www.github.com/googleapis/python-bigquery/commit/8f4c0b84dac3840532d7865247b8ad94b625b897))
+
 ### [2.13.1](https://www.github.com/googleapis/python-bigquery/compare/v2.13.0...v2.13.1) (2021-03-23)
 
 

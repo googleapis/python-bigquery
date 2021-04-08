@@ -20,6 +20,7 @@ def test_list_models_empty_w_timeout(client, PROJECT, DS_ID):
         method="GET", path=path, query_params={}, timeout=7.5
     )
 
+
 @dataset_polymorphic
 def test_list_models_defaults(make_dataset, get_reference, client, PROJECT, DS_ID):
     from google.cloud.bigquery.model import Model
@@ -66,6 +67,7 @@ def test_list_models_defaults(make_dataset, get_reference, client, PROJECT, DS_I
     conn.api_request.assert_called_once_with(
         method="GET", path="/%s" % PATH, query_params={}, timeout=None
     )
+
 
 def test_list_models_wrong_type(client):
     with pytest.raises(TypeError):

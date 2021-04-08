@@ -50,6 +50,7 @@ def test_delete_dataset_w_not_found_ok_false(PROJECT, DS_ID):
         method="DELETE", path=path, query_params={}, timeout=None
     )
 
+
 def test_delete_dataset_w_not_found_ok_true(PROJECT, DS_ID):
     path = "/projects/{}/datasets/{}".format(PROJECT, DS_ID)
     http = object()

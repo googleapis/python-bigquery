@@ -23,13 +23,13 @@ import warnings
 from packaging import version  # pytype: disable=import-error
 
 try:
-    import pandas  # type: ignore
+    import pandas  # pytype: disable=import-error
 except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
-    import pyarrow  # type: ignore
-    import pyarrow.parquet  # type: ignore
+    import pyarrow  # pytype: disable=import-error
+    import pyarrow.parquet  # pytype: disable=import-error
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from google.api_core import exceptions  # type: ignore
-from google.api_core import retry  # type: ignore
+from google.api_core import exceptions  # pytype: disable=import-error
+from google.api_core import retry  # pytype: disable=import-error
 import requests.exceptions
 
 

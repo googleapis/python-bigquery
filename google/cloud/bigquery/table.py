@@ -25,19 +25,19 @@ import pytz
 import warnings
 
 try:
-    import pandas  # type: ignore
+    import pandas  # pytype: disable=import-error
 except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
-    import pyarrow  # type: ignore
+    import pyarrow  # pytype: disable=import-error
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
 import google.api_core.exceptions
-from google.api_core.page_iterator import HTTPIterator  # type: ignore
+from google.api_core.page_iterator import HTTPIterator  # pytype: disable=import-error
 
-import google.cloud._helpers  # type: ignore
+import google.cloud._helpers  # pytype: disable=import-error
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.schema import _build_schema_resource
@@ -48,7 +48,7 @@ from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 # Types needed only for Type Hints
-from google.cloud import bigquery_storage  # type: ignore
+from google.cloud import bigquery_storage  # pytype: disable=import-error
 from typing import Any, Dict, Iterable, Tuple
 
 

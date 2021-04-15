@@ -49,7 +49,7 @@ import google.api_core.client_options
 import google.api_core.exceptions as core_exceptions  # pytype: disable=import-error
 from google.api_core.iam import Policy  # pytype: disable=import-error
 from google.api_core import page_iterator  # pytype: disable=import-error
-from google.api_core import retry as retries  # type: ignore
+from google.api_core import retry as retries  # pytype: disable=import-error
 import google.cloud._helpers
 from google.cloud import exceptions  # pytype: disable=import-error
 from google.cloud.client import ClientWithProject  # pytype: disable=import-error

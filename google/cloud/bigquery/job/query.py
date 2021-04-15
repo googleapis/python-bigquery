@@ -49,8 +49,8 @@ from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
 
 # Types needed only for Type Hints
-from google.api_core import retry as retries  # type: ignore
-from google.cloud import bigquery_storage  # type: ignore
+from google.api_core import retry as retries  # pytype: disable=import-error
+from google.cloud import bigquery_storage  # pytype: disable=import-error
 from google.cloud.bigquery.table import RowIterator
 from typing import Any, Dict, Union
 

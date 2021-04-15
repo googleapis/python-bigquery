@@ -19,14 +19,14 @@ import copy
 import http
 import threading
 
-from google.api_core import exceptions  # type: ignore
-import google.api_core.future.polling  # type: ignore
+from google.api_core import exceptions  # pytype: disable=import-error
+import google.api_core.future.polling  # pytype: disable=import-error
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.retry import DEFAULT_RETRY
 
 # Types needed only for Type Hints
-from google.api_core import retry as retries  # type: ignore
+from google.api_core import retry as retries  # pytype: disable=import-error
 
 
 _DONE_STATE = "DONE"
@@ -131,7 +131,9 @@ class _JobReference(object):
         return job_ref
 
 
-class _AsyncJob(google.api_core.future.polling.PollingFuture):
+class _AsyncJob(
+    google.api_core.future.polling.PollingFuture  # pytype: disable=module-attr
+):
     """Base class for asynchronous jobs.
 
     Args:
@@ -834,7 +836,7 @@ class _JobConfig(object):
                 + repr(default_job_config._job_type)
             )
 
-        new_job_config = self.__class__()  # type: ignore
+        new_job_config = self.__class__()  # pytype: disable=import-error
 
         default_job_properties = copy.deepcopy(default_job_config._properties)
         for key in self._properties:
@@ -858,7 +860,7 @@ class _JobConfig(object):
         Returns:
             google.cloud.bigquery.job._JobConfig: Configuration parsed from ``resource``.
         """
-        job_config = cls()  # type: ignore
+        job_config = cls()  # pytype: disable=import-error
         job_config._properties = resource
         return job_config
 

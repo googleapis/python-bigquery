@@ -836,7 +836,10 @@ class _JobConfig(object):
                 + repr(default_job_config._job_type)
             )
 
-        new_job_config = self.__class__()  # pytype: disable=import-error
+        # cls is one of the job config subclasses that provides the job_type argument to
+        # this base class on instantiation, thus missing-parameter warning is a false
+        # positive here.
+        new_job_config = self.__class__()  # pytype: disable=missing-parameter
 
         default_job_properties = copy.deepcopy(default_job_config._properties)
         for key in self._properties:
@@ -860,7 +863,10 @@ class _JobConfig(object):
         Returns:
             google.cloud.bigquery.job._JobConfig: Configuration parsed from ``resource``.
         """
-        job_config = cls()  # pytype: disable=import-error
+        # cls is one of the job config subclasses that provides the job_type argument to
+        # this base class on instantiation, thus missing-parameter warning is a false
+        # positive here.
+        job_config = cls()  # pytype: disable=missing-parameter
         job_config._properties = resource
         return job_config
 

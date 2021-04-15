@@ -2933,31 +2933,30 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection()
 
         with self.assertRaises(NotFound):
-            client.get_job(JOB_ID, project=OTHER_PROJECT, location=self.LOCATION)
+            client.get_job(JOB_ID, project=OTHER_PROJECT)
 
         conn.api_request.assert_called_once_with(
             method="GET",
             path="/projects/OTHER_PROJECT/jobs/NONESUCH",
-            query_params={"projection": "full", "location": self.LOCATION},
+            query_params={"projection": "full"},
             timeout=None,
         )
 
     def test_get_job_miss_w_client_location(self):
         from google.cloud.exceptions import NotFound
 
-        OTHER_PROJECT = "OTHER_PROJECT"
         JOB_ID = "NONESUCH"
         creds = _make_credentials()
-        client = self._make_one(self.PROJECT, creds, location=self.LOCATION)
+        client = self._make_one("client-proj", creds, location="client-loc")
         conn = client._connection = make_connection()
 
         with self.assertRaises(NotFound):
-            client.get_job(JOB_ID, project=OTHER_PROJECT)
+            client.get_job(JOB_ID)
 
         conn.api_request.assert_called_once_with(
             method="GET",
-            path="/projects/OTHER_PROJECT/jobs/NONESUCH",
-            query_params={"projection": "full", "location": self.LOCATION},
+            path="/projects/client-proj/jobs/NONESUCH",
+            query_params={"projection": "full", "location": "client-loc"},
             timeout=None,
         )
 
@@ -2972,7 +2971,7 @@ class TestClient(unittest.TestCase):
         ASYNC_QUERY_DATA = {
             "id": "{}:{}".format(self.PROJECT, JOB_ID),
             "jobReference": {
-                "projectId": "job-based-proj",
+                "projectId": "resource-proj",
                 "jobId": "query_job",
                 "location": "us-east1",
             },
@@ -2999,14 +2998,14 @@ class TestClient(unittest.TestCase):
 
         self.assertIsInstance(job, QueryJob)
         self.assertEqual(job.job_id, JOB_ID)
-        self.assertEqual(job.project, "job-based-proj")
+        self.assertEqual(job.project, "resource-proj")
         self.assertEqual(job.location, "us-east1")
         self.assertEqual(job.create_disposition, CreateDisposition.CREATE_IF_NEEDED)
         self.assertEqual(job.write_disposition, WriteDisposition.WRITE_TRUNCATE)
 
         conn.api_request.assert_called_once_with(
             method="GET",
-            path="/projects/job-based-proj/jobs/query_job",
+            path="/projects/resource-proj/jobs/query_job",
             query_params={"projection": "full", "location": "us-east1"},
             timeout=7.5,
         )

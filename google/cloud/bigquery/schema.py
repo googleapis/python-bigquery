@@ -194,7 +194,8 @@ class SchemaField(object):
         return (
             self.name,
             self.field_type.upper(),
-            self.mode.upper(),
+            # Mode is always str, if not given it defaults to a str value
+            self.mode.upper(),  # pytype: disable=attribute-error
             self.description,
             self._fields,
             self._policy_tags,

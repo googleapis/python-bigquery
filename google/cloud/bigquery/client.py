@@ -88,7 +88,7 @@ from google.cloud.bigquery.job import (
     ExtractJobConfig,
 )
 from google.api_core import retry as retries  # type: ignore
-from typing import Any, BinaryIO, Dict, Iterable, Sequence, Tuple, Union
+from typing import Any, BinaryIO, Dict, Iterable, Sequence, Tuple, Union, Optional
 
 
 _DEFAULT_CHUNKSIZE = 1048576  # 1024 * 1024 B = 1 MB
@@ -1969,7 +1969,7 @@ class Client(ClientWithProject):
     def list_jobs(
         self,
         project: str = None,
-        parent_job: Union[_AsyncJob, str] = None,
+        parent_job: Optional[Union[_AsyncJob, str]] = None,
         max_results: int = None,
         page_token: str = None,
         all_users: bool = None,
@@ -2029,7 +2029,7 @@ class Client(ClientWithProject):
                 Iterable of job instances.
         """
         if isinstance(parent_job, job._AsyncJob):
-            parent_job = parent_job.job_id
+            parent_job = parent_job.job_id  # pytype: disable=attribute-error
 
         extra_params = {
             "allUsers": all_users,
@@ -2776,7 +2776,9 @@ class Client(ClientWithProject):
 
     def copy_table(
         self,
-        sources: Union[Table, TableReference, str],
+        sources: Union[
+            Table, TableReference, str, Sequence[Union[Table, TableReference, str]]
+        ],
         destination: Union[Table, TableReference, str],
         job_id: str = None,
         job_id_prefix: str = None,
@@ -3066,7 +3068,7 @@ class Client(ClientWithProject):
     def insert_rows(
         self,
         table: Union[Table, TableReference, str],
-        rows: Union[Sequence[Tuple], Sequence[Dict]],
+        rows: Union[Iterable[Tuple], Iterable[Dict]],
         selected_fields: Sequence[SchemaField] = None,
         **kwargs: dict,
     ) -> Sequence[dict]:

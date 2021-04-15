@@ -20,7 +20,9 @@ import copy
 import logging
 
 try:
-    from google.cloud.bigquery_storage import ArrowSerializationOptions
+    from google.cloud.bigquery_storage import (  # pytype: disable=import-error
+        ArrowSerializationOptions,
+    )
 except ImportError:
     _ARROW_COMPRESSION_SUPPORT = False
 else:

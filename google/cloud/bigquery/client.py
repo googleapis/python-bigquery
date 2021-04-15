@@ -31,21 +31,25 @@ import uuid
 import warnings
 
 try:
-    import pyarrow
+    import pyarrow  # pytype: disable=import-error
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
-from google import resumable_media
-from google.resumable_media.requests import MultipartUpload
-from google.resumable_media.requests import ResumableUpload
+from google import resumable_media  # pytype: disable=import-error
+from google.resumable_media.requests import (  # pytype: disable=import-error
+    MultipartUpload,
+)
+from google.resumable_media.requests import (  # pytype: disable=import-error
+    ResumableUpload,
+)
 
 import google.api_core.client_options
-import google.api_core.exceptions
-from google.api_core.iam import Policy
-from google.api_core import page_iterator
+import google.api_core.exceptions as core_exceptions  # pytype: disable=import-error
+from google.api_core.iam import Policy  # pytype: disable=import-error
+from google.api_core import page_iterator  # pytype: disable=import-error
 import google.cloud._helpers
-from google.cloud import exceptions
-from google.cloud.client import ClientWithProject
+from google.cloud import exceptions  # pytype: disable=import-error
+from google.cloud.client import ClientWithProject  # pytype: disable=import-error
 
 from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
@@ -199,7 +203,7 @@ class Client(ClientWithProject):
         kw_args = {"client_info": client_info}
         if client_options:
             if type(client_options) == dict:
-                client_options = google.api_core.client_options.from_dict(
+                client_options = google.api_core.client_options.from_dict(  # pytype: disable=module-attr
                     client_options
                 )
             if client_options.api_endpoint:
@@ -458,7 +462,7 @@ class Client(ClientWithProject):
                 A BigQuery Storage API client.
         """
         try:
-            from google.cloud import bigquery_storage
+            from google.cloud import bigquery_storage  # pytype: disable=import-error
         except ImportError:
             warnings.warn(
                 "Cannot create BigQuery Storage client, the dependency "
@@ -554,7 +558,7 @@ class Client(ClientWithProject):
                 timeout=timeout,
             )
             return Dataset.from_api_repr(api_response)
-        except google.api_core.exceptions.Conflict:
+        except core_exceptions.Conflict:
             if not exists_ok:
                 raise
             return self.get_dataset(dataset.reference, retry=retry)
@@ -609,7 +613,7 @@ class Client(ClientWithProject):
                 timeout=timeout,
             )
             return Routine.from_api_repr(api_response)
-        except google.api_core.exceptions.Conflict:
+        except core_exceptions.Conflict:  # pytype: disable=module-attr
             if not exists_ok:
                 raise
             return self.get_routine(routine.reference, retry=retry)
@@ -669,7 +673,7 @@ class Client(ClientWithProject):
                 timeout=timeout,
             )
             return Table.from_api_repr(api_response)
-        except google.api_core.exceptions.Conflict:
+        except core_exceptions.Conflict:
             if not exists_ok:
                 raise
             return self.get_table(table.reference, retry=retry)
@@ -1491,7 +1495,7 @@ class Client(ClientWithProject):
                 query_params=params,
                 timeout=timeout,
             )
-        except google.api_core.exceptions.NotFound:
+        except core_exceptions.NotFound:
             if not not_found_ok:
                 raise
 
@@ -1543,7 +1547,7 @@ class Client(ClientWithProject):
                 path=path,
                 timeout=timeout,
             )
-        except google.api_core.exceptions.NotFound:
+        except core_exceptions.NotFound:
             if not not_found_ok:
                 raise
 
@@ -1597,7 +1601,7 @@ class Client(ClientWithProject):
                 path=path,
                 timeout=timeout,
             )
-        except google.api_core.exceptions.NotFound:
+        except core_exceptions.NotFound:
             if not not_found_ok:
                 raise
 
@@ -1647,7 +1651,7 @@ class Client(ClientWithProject):
                 path=path,
                 timeout=timeout,
             )
-        except google.api_core.exceptions.NotFound:
+        except core_exceptions.NotFound:
             if not not_found_ok:
                 raise
 
@@ -2031,10 +2035,14 @@ class Client(ClientWithProject):
             "allUsers": all_users,
             "stateFilter": state_filter,
             "minCreationTime": _str_or_none(
-                google.cloud._helpers._millis_from_datetime(min_creation_time)
+                google.cloud._helpers._millis_from_datetime(  # pytype: disable=module-attr
+                    min_creation_time
+                )
             ),
             "maxCreationTime": _str_or_none(
-                google.cloud._helpers._millis_from_datetime(max_creation_time)
+                google.cloud._helpers._millis_from_datetime(  # pytype: disable=module-attr
+                    max_creation_time
+                )
             ),
             "projection": "full",
             "parentJobId": parent_job,
@@ -2398,7 +2406,7 @@ class Client(ClientWithProject):
         ):
             try:
                 table = self.get_table(destination)
-            except google.api_core.exceptions.NotFound:
+            except core_exceptions.NotFound:
                 table = None
             else:
                 columns_and_indexes = frozenset(
@@ -3692,7 +3700,7 @@ def _check_mode(stream):
     mode = getattr(stream, "mode", None)
 
     if isinstance(stream, gzip.GzipFile):
-        if mode != gzip.READ:
+        if mode != gzip.READ:  # pytype: disable=module-attr
             raise ValueError(
                 "Cannot upload gzip files opened in write mode:  use "
                 "gzip.GzipFile(filename, mode='rb')"

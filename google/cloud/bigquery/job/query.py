@@ -18,8 +18,10 @@ import concurrent.futures
 import copy
 import re
 
-from google.api_core import exceptions
-from google.api_core.future import polling as polling_future
+from google.api_core import exceptions  # pytype: disable=import-error
+from google.api_core.future import (  # pytype: disable=import-error
+    polling as polling_future,
+)
 import requests
 
 from google.cloud.bigquery.dataset import Dataset

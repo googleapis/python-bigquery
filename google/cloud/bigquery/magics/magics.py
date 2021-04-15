@@ -156,15 +156,15 @@ import warnings
 from concurrent import futures
 
 try:
-    import IPython
-    from IPython import display
-    from IPython.core import magic_arguments
+    import IPython  # pytype: disable=import-error
+    from IPython import display  # pytype: disable=import-error
+    from IPython.core import magic_arguments  # pytype: disable=import-error
 except ImportError:  # pragma: NO COVER
     raise ImportError("This module can only be loaded in IPython.")
 
-from google.api_core import client_info
-from google.api_core import client_options
-from google.api_core.exceptions import NotFound
+from google.api_core import client_info  # pytype: disable=import-error
+from google.api_core import client_options  # pytype: disable=import-error
+from google.api_core.exceptions import NotFound  # pytype: disable=import-error
 import google.auth
 from google.cloud import bigquery
 import google.cloud.bigquery.dataset
@@ -219,7 +219,7 @@ class Context(object):
             /en/latest/user-guide.html#obtaining-credentials
         """
         if self._credentials is None:
-            self._credentials, _ = google.auth.default()
+            self._credentials, _ = google.auth.default()  # pytype: disable=module-attr
         return self._credentials
 
     @credentials.setter
@@ -244,7 +244,7 @@ class Context(object):
             >>> magics.context.project = 'my-project'
         """
         if self._project is None:
-            _, self._project = google.auth.default()
+            _, self._project = google.auth.default()  # pytype: disable=module-attr
         return self._project
 
     @project.setter
@@ -767,7 +767,7 @@ def _make_bqstorage_client(use_bqstorage_api, credentials, client_options):
         return None
 
     try:
-        from google.cloud import bigquery_storage
+        from google.cloud import bigquery_storage  # pytype: disable=import-error
     except ImportError as err:
         customized_error = ImportError(
             "The default BigQuery Storage API client cannot be used, install "
@@ -778,7 +778,9 @@ def _make_bqstorage_client(use_bqstorage_api, credentials, client_options):
         raise customized_error from err
 
     try:
-        from google.api_core.gapic_v1 import client_info as gapic_client_info
+        from google.api_core.gapic_v1 import (  # pytype: disable=import-error
+            client_info as gapic_client_info,
+        )
     except ImportError as err:
         customized_error = ImportError(
             "Install the grpcio package to use the BigQuery Storage API."

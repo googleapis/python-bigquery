@@ -20,7 +20,7 @@ import logging
 import queue
 import warnings
 
-from packaging import version
+from packaging import version  # pytype: disable=import-error
 
 try:
     import pandas  # type: ignore
@@ -34,7 +34,9 @@ except ImportError:  # pragma: NO COVER
     pyarrow = None
 
 try:
-    from google.cloud.bigquery_storage import ArrowSerializationOptions
+    from google.cloud.bigquery_storage import (  # pytype: disable=import-error
+        ArrowSerializationOptions,
+    )
 except ImportError:
     _ARROW_COMPRESSION_SUPPORT = False
 else:

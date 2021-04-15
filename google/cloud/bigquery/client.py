@@ -19,6 +19,7 @@ from __future__ import division
 
 from collections import abc as collections_abc
 import copy
+import datetime
 import functools
 import gzip
 import io
@@ -27,6 +28,7 @@ import json
 import math
 import os
 import tempfile
+from typing import Any, BinaryIO, Dict, Iterable, Optional, Sequence, Tuple, Union
 import uuid
 import warnings
 
@@ -47,6 +49,7 @@ import google.api_core.client_options
 import google.api_core.exceptions as core_exceptions  # pytype: disable=import-error
 from google.api_core.iam import Policy  # pytype: disable=import-error
 from google.api_core import page_iterator  # pytype: disable=import-error
+from google.api_core import retry as retries  # type: ignore
 import google.cloud._helpers
 from google.cloud import exceptions  # pytype: disable=import-error
 from google.cloud.client import ClientWithProject  # pytype: disable=import-error
@@ -63,6 +66,13 @@ from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
+from google.cloud.bigquery.job import (
+    LoadJobConfig,
+    QueryJob,
+    QueryJobConfig,
+    CopyJobConfig,
+    ExtractJobConfig,
+)
 from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.model import _model_arg_to_model_ref
@@ -77,18 +87,6 @@ from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
-
-# Types needed only for Type Hints
-import datetime
-from google.cloud.bigquery.job import (
-    _AsyncJob,
-    LoadJobConfig,
-    QueryJobConfig,
-    CopyJobConfig,
-    ExtractJobConfig,
-)
-from google.api_core import retry as retries  # type: ignore
-from typing import Any, BinaryIO, Dict, Iterable, Sequence, Tuple, Union, Optional
 
 
 _DEFAULT_CHUNKSIZE = 1048576  # 1024 * 1024 B = 1 MB
@@ -803,7 +801,7 @@ class Client(ClientWithProject):
         permissions: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-    ):
+    ) -> Dict[str, Any]:
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
 
@@ -1969,7 +1967,7 @@ class Client(ClientWithProject):
     def list_jobs(
         self,
         project: str = None,
-        parent_job: Optional[Union[_AsyncJob, str]] = None,
+        parent_job: Optional[Union[QueryJob, str]] = None,
         max_results: int = None,
         page_token: str = None,
         all_users: bool = None,
@@ -3094,7 +3092,7 @@ class Client(ClientWithProject):
             selected_fields (Sequence[google.cloud.bigquery.schema.SchemaField]):
                 The fields to return. Required if ``table`` is a
                 :class:`~google.cloud.bigquery.table.TableReference`.
-            kwargs (Dict):
+            kwargs (dict):
                 Keyword arguments to
                 :meth:`~google.cloud.bigquery.client.Client.insert_rows_json`.
 

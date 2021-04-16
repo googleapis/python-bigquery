@@ -419,7 +419,7 @@ def _format_operation_dict(operation, parameters):
 
     try:
         return operation % formatted_params
-    except (KeyError, ValueError) as exc:
+    except (KeyError, ValueError, TypeError) as exc:
         raise exceptions.ProgrammingError(exc)
 
 

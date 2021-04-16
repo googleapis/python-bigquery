@@ -696,7 +696,7 @@ class TestCursor(unittest.TestCase):
         self.assertRaises(
             dbapi.ProgrammingError,
             cursor._format_operation,
-            "SELECT '100 %';",
+            "SELECT %(foo)s, '100 %';",
             {"foo": "bar"},
         )
 
@@ -707,6 +707,6 @@ class TestCursor(unittest.TestCase):
         self.assertRaises(
             dbapi.ProgrammingError,
             cursor._format_operation,
-            "SELECT '100 %';",
+            "SELECT %s, %s, '100 %';",
             ["foo", "bar"],
         )

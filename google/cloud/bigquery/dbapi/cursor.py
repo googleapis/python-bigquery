@@ -389,7 +389,7 @@ def _format_operation_list(operation, parameters):
 
     try:
         return operation % tuple(formatted_params)
-    except TypeError as exc:
+    except (TypeError, ValueError) as exc:
         raise exceptions.ProgrammingError(exc)
 
 
@@ -419,7 +419,7 @@ def _format_operation_dict(operation, parameters):
 
     try:
         return operation % formatted_params
-    except KeyError as exc:
+    except (KeyError, ValueError) as exc:
         raise exceptions.ProgrammingError(exc)
 
 
@@ -441,7 +441,7 @@ def _format_operation(operation, parameters=None):
             ``parameters`` argument.
     """
     if parameters is None or len(parameters) == 0:
-        return operation
+        return operation.replace("%%", "%")  # Still do precents de-escaping.
 
     if isinstance(parameters, collections_abc.Mapping):
         return _format_operation_dict(operation, parameters)

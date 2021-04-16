@@ -178,6 +178,7 @@ class TestCursor(unittest.TestCase):
             "fetchone",
             "setinputsizes",
             "setoutputsize",
+            "__iter__",
         )
 
         for method in method_names:

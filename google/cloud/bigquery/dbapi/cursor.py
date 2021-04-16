@@ -441,7 +441,7 @@ def _format_operation(operation, parameters=None):
             ``parameters`` argument.
     """
     if parameters is None or len(parameters) == 0:
-        return operation.replace("%%", "%")  # Still do precents de-escaping.
+        return operation.replace("%%", "%")  # Still do percent de-escaping.
 
     if isinstance(parameters, collections_abc.Mapping):
         return _format_operation_dict(operation, parameters)

@@ -37,7 +37,7 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
-from google import resumable_media  # pytype: disable=import-error
+from google import resumable_media  # type: ignore
 from google.resumable_media.requests import (  # pytype: disable=import-error
     MultipartUpload,
 )

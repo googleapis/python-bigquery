@@ -20,9 +20,7 @@ import copy
 import logging
 
 try:
-    from google.cloud.bigquery_storage import (  # pytype: disable=import-error
-        ArrowSerializationOptions,
-    )
+    from google.cloud.bigquery_storage import ArrowSerializationOptions
 except ImportError:
     _ARROW_COMPRESSION_SUPPORT = False
 else:
@@ -32,7 +30,7 @@ else:
 from google.cloud.bigquery import job
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
-import google.cloud.exceptions  # pytype: disable=import-error
+import google.cloud.exceptions
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -195,7 +193,7 @@ class Cursor(object):
         # Wait for the query to finish.
         try:
             self._query_job.result()
-        except google.cloud.exceptions.GoogleCloudError as exc:  # pytype: disable=module-attr
+        except google.cloud.exceptions.GoogleCloudError as exc:
             raise exceptions.DatabaseError(exc)
 
         query_results = self._query_job._query_results
@@ -257,7 +255,7 @@ class Cursor(object):
         """
         # Hitting this code path with a BQ Storage client instance implies that
         # bigquery_storage can indeed be imported here without errors.
-        from google.cloud import bigquery_storage  # pytype: disable=import-error
+        from google.cloud import bigquery_storage
 
         table_reference = self._query_job.destination
 

@@ -94,8 +94,9 @@ def unit(session):
 
 @nox.session(python="3.8")
 def pytype(session):
-    """Run pytype
-    """
+    """Run type checks."""
+    session.install("-e", ".[all]")
+    session.install("ipython")
     session.install(PYTYPE_VERSION)
     session.run("pytype")
 

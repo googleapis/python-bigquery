@@ -20,23 +20,21 @@ import logging
 import queue
 import warnings
 
-from packaging import version  # pytype: disable=import-error
+from packaging import version
 
 try:
-    import pandas  # pytype: disable=import-error
+    import pandas
 except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
-    import pyarrow  # pytype: disable=import-error
-    import pyarrow.parquet  # pytype: disable=import-error
+    import pyarrow
+    import pyarrow.parquet
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
 try:
-    from google.cloud.bigquery_storage import (  # pytype: disable=import-error
-        ArrowSerializationOptions,
-    )
+    from google.cloud.bigquery_storage import ArrowSerializationOptions
 except ImportError:
     _ARROW_COMPRESSION_SUPPORT = False
 else:
@@ -628,7 +626,7 @@ def _download_table_bqstorage(
 
     # Passing a BQ Storage client in implies that the BigQuery Storage library
     # is available and can be imported.
-    from google.cloud import bigquery_storage  # type: ignore
+    from google.cloud import bigquery_storage
 
     if "$" in table.table_id:
         raise ValueError(

@@ -20,10 +20,8 @@ import re
 import typing
 from typing import Any, Dict, Union
 
-from google.api_core import exceptions  # pytype: disable=import-error
-from google.api_core.future import (  # pytype: disable=import-error
-    polling as polling_future,
-)
+from google.api_core import exceptions
+from google.api_core.future import polling as polling_future
 import requests
 
 from google.cloud.bigquery.dataset import Dataset
@@ -51,8 +49,11 @@ from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
 
 if typing.TYPE_CHECKING:
-    from google.api_core import retry as retries  # pytype: disable=import-error
-    from google.cloud import bigquery_storage  # pytype: disable=import-error
+    # Assumption: type checks are only used by library developers and CI environments
+    # that have all optional dependencies installed, thus no conditional pyarrow import.
+    import pyarrow
+    from google.api_core import retry as retries
+    from google.cloud import bigquery_storage
     from google.cloud.bigquery.table import RowIterator
 
 
@@ -1210,7 +1211,7 @@ class QueryJob(_AsyncJob):
         progress_bar_type: str = None,
         bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         create_bqstorage_client: bool = True,
-    ) -> Any:
+    ) -> "pyarrow.Table":
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
 

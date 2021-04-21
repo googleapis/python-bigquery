@@ -20,14 +20,14 @@ import http
 import threading
 import typing
 
-from google.api_core import exceptions  # pytype: disable=import-error
-import google.api_core.future.polling  # pytype: disable=import-error
+from google.api_core import exceptions
+import google.api_core.future.polling
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.retry import DEFAULT_RETRY
 
 if typing.TYPE_CHECKING:
-    from google.api_core import retry as retries  # pytype: disable=import-error
+    from google.api_core import retry as retries
 
 
 _DONE_STATE = "DONE"
@@ -132,9 +132,7 @@ class _JobReference(object):
         return job_ref
 
 
-class _AsyncJob(
-    google.api_core.future.polling.PollingFuture  # pytype: disable=module-attr
-):
+class _AsyncJob(google.api_core.future.polling.PollingFuture):
     """Base class for asynchronous jobs.
 
     Args:

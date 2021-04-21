@@ -119,14 +119,12 @@ class Routine(object):
 
         Read-only.
         """
-        # pytype: disable=module-attr
         value = self._properties.get(self._PROPERTY_TO_API_FIELD["created"])
         if value is not None and value != 0:
             # value will be in milliseconds.
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(value)
             )
-        # pytype: enable=module-attr
 
     @property
     def modified(self):
@@ -135,14 +133,12 @@ class Routine(object):
 
         Read-only.
         """
-        # pytype: disable=module-attr
         value = self._properties.get(self._PROPERTY_TO_API_FIELD["modified"])
         if value is not None and value != 0:
             # value will be in milliseconds.
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(value)
             )
-        # pytype: enable=module-attr
 
     @property
     def language(self):

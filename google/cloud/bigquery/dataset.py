@@ -18,7 +18,7 @@ from __future__ import absolute_import
 
 import copy
 
-import google.cloud._helpers  # type: ignore
+import google.cloud._helpers
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.model import ModelReference

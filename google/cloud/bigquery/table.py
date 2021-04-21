@@ -27,19 +27,19 @@ from typing import Any, Dict, Iterable, Tuple
 import warnings
 
 try:
-    import pandas  # pytype: disable=import-error
+    import pandas
 except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
-    import pyarrow  # pytype: disable=import-error
+    import pyarrow
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
 import google.api_core.exceptions
-from google.api_core.page_iterator import HTTPIterator  # pytype: disable=import-error
+from google.api_core.page_iterator import HTTPIterator
 
-import google.cloud._helpers  # type: ignore
+import google.cloud._helpers
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.schema import _build_schema_resource
@@ -50,7 +50,7 @@ from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 if typing.TYPE_CHECKING:
-    from google.cloud import bigquery_storage  # pytype: disable=import-error
+    from google.cloud import bigquery_storage
 
 
 _LOGGER = logging.getLogger(__name__)

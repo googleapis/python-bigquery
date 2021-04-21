@@ -19,7 +19,6 @@ from __future__ import absolute_import
 import copy
 import datetime
 import functools
-import logging
 import operator
 import pytz
 import warnings
@@ -48,12 +47,6 @@ from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 
-_LOGGER = logging.getLogger(__name__)
-
-_NO_BQSTORAGE_ERROR = (
-    "The google-cloud-bigquery-storage library is not installed, "
-    "please install google-cloud-bigquery-storage to use bqstorage features."
-)
 _NO_PANDAS_ERROR = (
     "The pandas library is not installed, please install "
     "pandas to use the to_dataframe() function."

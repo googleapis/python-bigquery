@@ -22,6 +22,8 @@ import functools
 import logging
 import operator
 import pytz
+import typing
+from typing import Any, Dict, Iterable, Tuple
 import warnings
 
 try:
@@ -47,9 +49,8 @@ from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
-# Types needed only for Type Hints
-from google.cloud import bigquery_storage  # pytype: disable=import-error
-from typing import Any, Dict, Iterable, Tuple
+if typing.TYPE_CHECKING:
+    from google.cloud import bigquery_storage  # pytype: disable=import-error
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -1527,7 +1528,7 @@ class RowIterator(HTTPIterator):
     def to_arrow(
         self,
         progress_bar_type: str = None,
-        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         create_bqstorage_client: bool = True,
     ) -> Any:
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
@@ -1629,7 +1630,7 @@ class RowIterator(HTTPIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         dtypes: Dict[str, Any] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,
     ) -> Any:
@@ -1704,7 +1705,7 @@ class RowIterator(HTTPIterator):
     # changes to job.QueryJob.to_dataframe()
     def to_dataframe(
         self,
-        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,

@@ -17,6 +17,8 @@
 import concurrent.futures
 import copy
 import re
+import typing
+from typing import Any, Dict, Union
 
 from google.api_core import exceptions  # pytype: disable=import-error
 from google.api_core.future import (  # pytype: disable=import-error
@@ -48,11 +50,10 @@ from google.cloud.bigquery.job.base import _AsyncJob
 from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
 
-# Types needed only for Type Hints
-from google.api_core import retry as retries  # pytype: disable=import-error
-from google.cloud import bigquery_storage  # pytype: disable=import-error
-from google.cloud.bigquery.table import RowIterator
-from typing import Any, Dict, Union
+if typing.TYPE_CHECKING:
+    from google.api_core import retry as retries  # pytype: disable=import-error
+    from google.cloud import bigquery_storage  # pytype: disable=import-error
+    from google.cloud.bigquery.table import RowIterator
 
 
 _CONTAINS_ORDER_BY = re.compile(r"ORDER\s+BY", re.IGNORECASE)
@@ -1045,7 +1046,7 @@ class QueryJob(_AsyncJob):
             raise
 
     def _reload_query_results(
-        self, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None
+        self, retry: "retries.Retry" = DEFAULT_RETRY, timeout: float = None
     ):
         """Refresh the cached query results.
 
@@ -1123,10 +1124,10 @@ class QueryJob(_AsyncJob):
         self,
         page_size: int = None,
         max_results: int = None,
-        retry: retries.Retry = DEFAULT_RETRY,
+        retry: "retries.Retry" = DEFAULT_RETRY,
         timeout: float = None,
         start_index: int = None,
-    ) -> Union[RowIterator, _EmptyRowIterator]:
+    ) -> Union["RowIterator", _EmptyRowIterator]:
         """Start the job and wait for it to complete and get the result.
 
         Args:
@@ -1207,7 +1208,7 @@ class QueryJob(_AsyncJob):
     def to_arrow(
         self,
         progress_bar_type: str = None,
-        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         create_bqstorage_client: bool = True,
     ) -> Any:
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
@@ -1275,7 +1276,7 @@ class QueryJob(_AsyncJob):
     # changes to table.RowIterator.to_dataframe()
     def to_dataframe(
         self,
-        bqstorage_client: bigquery_storage.BigQueryReadClient = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,

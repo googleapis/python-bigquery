@@ -18,6 +18,7 @@ from collections import namedtuple
 import copy
 import http
 import threading
+import typing
 
 from google.api_core import exceptions  # pytype: disable=import-error
 import google.api_core.future.polling  # pytype: disable=import-error
@@ -25,8 +26,8 @@ import google.api_core.future.polling  # pytype: disable=import-error
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.retry import DEFAULT_RETRY
 
-# Types needed only for Type Hints
-from google.api_core import retry as retries  # pytype: disable=import-error
+if typing.TYPE_CHECKING:
+    from google.api_core import retry as retries  # pytype: disable=import-error
 
 
 _DONE_STATE = "DONE"
@@ -472,7 +473,7 @@ class _AsyncJob(
         self._set_properties(api_response)
 
     def exists(
-        self, client=None, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None
+        self, client=None, retry: "retries.Retry" = DEFAULT_RETRY, timeout: float = None
     ) -> bool:
         """API call:  test for the existence of the job via a GET request
 
@@ -517,7 +518,7 @@ class _AsyncJob(
             return True
 
     def reload(
-        self, client=None, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None
+        self, client=None, retry: "retries.Retry" = DEFAULT_RETRY, timeout: float = None
     ):
         """API call:  refresh job properties via a GET request.
 
@@ -554,7 +555,7 @@ class _AsyncJob(
         self._set_properties(api_response)
 
     def cancel(
-        self, client=None, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None
+        self, client=None, retry: "retries.Retry" = DEFAULT_RETRY, timeout: float = None
     ) -> bool:
         """API call:  cancel job via a POST request
 
@@ -623,7 +624,7 @@ class _AsyncJob(
 
     def done(
         self,
-        retry: retries.Retry = DEFAULT_RETRY,
+        retry: "retries.Retry" = DEFAULT_RETRY,
         timeout: float = None,
         reload: bool = True,
     ) -> bool:
@@ -650,7 +651,7 @@ class _AsyncJob(
         return self.state == _DONE_STATE
 
     def result(
-        self, retry: retries.Retry = DEFAULT_RETRY, timeout: float = None
+        self, retry: "retries.Retry" = DEFAULT_RETRY, timeout: float = None
     ) -> "_AsyncJob":
         """Start the job and wait for it to complete and get the result.
 

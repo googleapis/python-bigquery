@@ -50,6 +50,10 @@ from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 if typing.TYPE_CHECKING:
+    # Unconditionally import optional dependencies again to tell pytype that
+    # they are not None.
+    import pandas
+    import pyarrow
     from google.cloud import bigquery_storage
 
 
@@ -1530,7 +1534,7 @@ class RowIterator(HTTPIterator):
         progress_bar_type: str = None,
         bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         create_bqstorage_client: bool = True,
-    ) -> Any:
+    ) -> "pyarrow.Table":
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
 
@@ -1633,7 +1637,7 @@ class RowIterator(HTTPIterator):
         bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         dtypes: Dict[str, Any] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,
-    ) -> Any:
+    ) -> "pandas.DataFrame":
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
         Args:
@@ -1710,7 +1714,7 @@ class RowIterator(HTTPIterator):
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
         date_as_object: bool = True,
-    ) -> Any:
+    ) -> "pandas.DataFrame":
         """Create a pandas DataFrame by loading all pages of a query.
 
         Args:
@@ -1838,7 +1842,7 @@ class _EmptyRowIterator(object):
         progress_bar_type=None,
         bqstorage_client=None,
         create_bqstorage_client=True,
-    ) -> Any:
+    ) -> "pyarrow.Table":
         """[Beta] Create an empty class:`pyarrow.Table`.
 
         Args:
@@ -1860,7 +1864,7 @@ class _EmptyRowIterator(object):
         progress_bar_type=None,
         create_bqstorage_client=True,
         date_as_object=True,
-    ) -> Any:
+    ) -> "pandas.DataFrame":
         """Create an empty dataframe.
 
         Args:

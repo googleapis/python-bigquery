@@ -50,7 +50,8 @@ from google.cloud.bigquery.job.base import _JobReference
 
 if typing.TYPE_CHECKING:
     # Assumption: type checks are only used by library developers and CI environments
-    # that have all optional dependencies installed, thus no conditional pyarrow import.
+    # that have all optional dependencies installed, thus no conditional imports.
+    import pandas
     import pyarrow
     from google.api_core import retry as retries
     from google.cloud import bigquery_storage
@@ -1282,7 +1283,7 @@ class QueryJob(_AsyncJob):
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
         date_as_object: bool = True,
-    ) -> Any:
+    ) -> "pandas.DataFrame":
         """Return a pandas DataFrame from a QueryJob
 
         Args:

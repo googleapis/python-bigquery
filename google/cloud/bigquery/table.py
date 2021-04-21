@@ -49,9 +49,9 @@ from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
-    # they are not None.
+    # they are not None, avoiding false "no attribute" errors.
     import pandas
     import pyarrow
     from google.cloud import bigquery_storage

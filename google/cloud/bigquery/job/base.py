@@ -26,7 +26,7 @@ import google.api_core.future.polling
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.retry import DEFAULT_RETRY
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: NO COVER
     from google.api_core import retry as retries
 
 

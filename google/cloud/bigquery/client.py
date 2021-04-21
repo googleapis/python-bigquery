@@ -1657,7 +1657,7 @@ class Client(ClientWithProject):
         timeout_ms: int = None,
         location: str = None,
         timeout: float = None,
-    ):
+    ) -> _QueryResults:
         """Get the query results object for a query job.
 
         Args:

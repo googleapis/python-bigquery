@@ -640,8 +640,7 @@ class Table(object):
             prop = self._properties.setdefault("clustering", {})
             prop["fields"] = value
         else:
-            if "clustering" in self._properties:
-                del self._properties["clustering"]
+            self._properties["clustering"] = None
 
     @property
     def description(self):

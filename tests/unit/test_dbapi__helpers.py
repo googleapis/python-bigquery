@@ -16,6 +16,7 @@ import datetime
 import decimal
 import math
 import operator as op
+import pytest
 import unittest
 
 try:
@@ -142,7 +143,7 @@ class TestQueryParameters(unittest.TestCase):
 
     def test_to_query_parameters_w_dict(self):
         parameters = {"somebool": True, "somestring": "a-string-value"}
-        query_parameters = _helpers.to_query_parameters(parameters)
+        query_parameters = _helpers.to_query_parameters(parameters, {})
         query_parameter_tuples = []
         for param in query_parameters:
             query_parameter_tuples.append((param.name, param.type_, param.value))
@@ -158,7 +159,7 @@ class TestQueryParameters(unittest.TestCase):
 
     def test_to_query_parameters_w_dict_array_param(self):
         parameters = {"somelist": [10, 20]}
-        query_parameters = _helpers.to_query_parameters(parameters)
+        query_parameters = _helpers.to_query_parameters(parameters, {})
 
         self.assertEqual(len(query_parameters), 1)
         param = query_parameters[0]
@@ -171,11 +172,11 @@ class TestQueryParameters(unittest.TestCase):
         parameters = {"my_param": {"foo": "bar"}}
 
         with self.assertRaises(NotImplementedError):
-            _helpers.to_query_parameters(parameters)
+            _helpers.to_query_parameters(parameters, {})
 
     def test_to_query_parameters_w_list(self):
         parameters = [True, "a-string-value"]
-        query_parameters = _helpers.to_query_parameters(parameters)
+        query_parameters = _helpers.to_query_parameters(parameters, [None, None])
         query_parameter_tuples = []
         for param in query_parameters:
             query_parameter_tuples.append((param.name, param.type_, param.value))
@@ -186,7 +187,7 @@ class TestQueryParameters(unittest.TestCase):
 
     def test_to_query_parameters_w_list_array_param(self):
         parameters = [[10, 20]]
-        query_parameters = _helpers.to_query_parameters(parameters)
+        query_parameters = _helpers.to_query_parameters(parameters, [None])
 
         self.assertEqual(len(query_parameters), 1)
         param = query_parameters[0]
@@ -199,10 +200,10 @@ class TestQueryParameters(unittest.TestCase):
         parameters = [{"foo": "bar"}]
 
         with self.assertRaises(NotImplementedError):
-            _helpers.to_query_parameters(parameters)
+            _helpers.to_query_parameters(parameters, [None])
 
     def test_to_query_parameters_none_argument(self):
-        query_parameters = _helpers.to_query_parameters(None)
+        query_parameters = _helpers.to_query_parameters(None, None)
         self.assertEqual(query_parameters, [])
 
 
@@ -338,3 +339,64 @@ class TestRaiseOnClosedDecorator(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "I'm closed!"):
             instance.instance_method()
+
+
+def test_scalar_to_query_parameter_honors_given_type():
+    from google.cloud import bigquery
+
+    assert _helpers.scalar_to_query_parameter(1.23, None, "NUMERIC") == (
+        bigquery.ScalarQueryParameter(None, "NUMERIC", 1.23)
+    )
+    assert _helpers.scalar_to_query_parameter(None, "foo", "NUMERIC") == (
+        bigquery.ScalarQueryParameter("foo", "NUMERIC", None)
+    )
+    with pytest.raises(
+        google.cloud.bigquery.dbapi.exceptions.ProgrammingError,
+        match="The given parameter type, INT, for foo is not a valid BigQuery scalar type.",
+    ):
+        _helpers.scalar_to_query_parameter(None, "foo", "INT")
+
+
+def test_array_to_query_parameter_honors_given_type():
+    from google.cloud import bigquery
+
+    assert _helpers.array_to_query_parameter([1.23], None, "NUMERIC") == (
+        bigquery.ArrayQueryParameter(None, "NUMERIC", [1.23])
+    )
+    assert _helpers.array_to_query_parameter((), "foo", "NUMERIC") == (
+        bigquery.ArrayQueryParameter("foo", "NUMERIC", ())
+    )
+    with pytest.raises(
+        google.cloud.bigquery.dbapi.exceptions.ProgrammingError,
+        match="The given parameter type, INT, for foo is not a valid BigQuery scalar type.",
+    ):
+        _helpers.array_to_query_parameter((), "foo", "INT")
+
+
+def test_to_query_parameters_dict_w_types():
+    from google.cloud import bigquery
+
+    assert sorted(
+        _helpers.to_query_parameters(
+            dict(i=1, x=1.2, y=None, z=[]), dict(x="numeric", y="string", z="float64")
+        ),
+        key=lambda p: p.name,
+    ) == [
+        bigquery.ScalarQueryParameter("i", "INT64", 1),
+        bigquery.ScalarQueryParameter("x", "NUMERIC", 1.2),
+        bigquery.ScalarQueryParameter("y", "STRING", None),
+        bigquery.ArrayQueryParameter("z", "FLOAT64", []),
+    ]
+
+
+def test_to_query_parameters_list_w_types():
+    from google.cloud import bigquery
+
+    assert _helpers.to_query_parameters(
+        [1, 1.2, None, []], [None, "numeric", "string", "float64"]
+    ) == [
+        bigquery.ScalarQueryParameter(None, "INT64", 1),
+        bigquery.ScalarQueryParameter(None, "NUMERIC", 1.2),
+        bigquery.ScalarQueryParameter(None, "STRING", None),
+        bigquery.ArrayQueryParameter(None, "FLOAT64", []),
+    ]

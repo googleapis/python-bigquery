@@ -175,9 +175,7 @@ def to_query_parameters_dict(parameters, query_parameter_types):
                 "(parameter {}).".format(name)
             )
         else:
-            query_parameter_type = query_parameter_types and query_parameter_types.get(
-                name
-            )
+            query_parameter_type = query_parameter_types.get(name)
             if array_like(value):
                 param = array_to_query_parameter(
                     value, name=name, query_parameter_type=query_parameter_type

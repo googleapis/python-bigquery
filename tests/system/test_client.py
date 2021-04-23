@@ -125,7 +125,7 @@ def _has_rows(result):
 
 
 def _make_dataset_id(prefix):
-    return "python_bigquery_tests_system_%s%s" % (prefix, unique_resource_id())
+    return "python_bigquery_tests_system_{prefix}{unique_resource_id()}"
 
 
 def _load_json_schema(filename="schema.json"):

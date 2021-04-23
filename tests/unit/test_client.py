@@ -2498,7 +2498,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(req[1]["data"], sent)
         self.assertIsNone(table3.description)
 
-    def test_delete_job_not_found(self):
+    def test_delete_job_metadata_not_found(self):
         creds = _make_credentials()
         client = self._make_one("client-proj", creds, location="client-loc")
         conn = client._connection = make_connection(
@@ -2507,10 +2507,10 @@ class TestClient(unittest.TestCase):
         )
 
         with self.assertRaises(google.api_core.exceptions.NotFound):
-            client.delete_job("my-job")
+            client.delete_job_metadata("my-job")
 
         conn.api_request.reset_mock()
-        client.delete_job("my-job", not_found_ok=True)
+        client.delete_job_metadata("my-job", not_found_ok=True)
 
         conn.api_request.assert_called_once_with(
             method="DELETE",
@@ -2519,12 +2519,12 @@ class TestClient(unittest.TestCase):
             timeout=None,
         )
 
-    def test_delete_job_with_id(self):
+    def test_delete_job_metadata_with_id(self):
         creds = _make_credentials()
         client = self._make_one(self.PROJECT, creds)
         conn = client._connection = make_connection({})
 
-        client.delete_job("my-job", project="param-proj", location="param-loc")
+        client.delete_job_metadata("my-job", project="param-proj", location="param-loc")
 
         conn.api_request.assert_called_once_with(
             method="DELETE",
@@ -2533,7 +2533,7 @@ class TestClient(unittest.TestCase):
             timeout=None,
         )
 
-    def test_delete_job_with_resource(self):
+    def test_delete_job_metadata_with_resource(self):
         from google.cloud.bigquery.job import QueryJob
 
         query_resource = {
@@ -2549,7 +2549,7 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(query_resource)
         job_from_resource = QueryJob.from_api_repr(query_resource, client)
 
-        client.delete_job(job_from_resource)
+        client.delete_job_metadata(job_from_resource)
 
         conn.api_request.assert_called_once_with(
             method="DELETE",

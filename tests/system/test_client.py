@@ -125,7 +125,7 @@ def _has_rows(result):
 
 
 def _make_dataset_id(prefix):
-    return "python_bigquery_tests_system_{prefix}{unique_resource_id()}"
+    return f"python_bigquery_tests_system_{prefix}{unique_resource_id()}"
 
 
 def _load_json_schema(filename="schema.json"):
@@ -432,12 +432,10 @@ class TestBigQuery(unittest.TestCase):
         with self.assertRaises(exceptions.BadRequest):
             Config.CLIENT.delete_dataset(dataset)
 
-    def test_delete_job(self):
+    def test_delete_job_metadata(self):
         dataset_id = _make_dataset_id("us_east1")
         self.temp_dataset(dataset_id, location="us-east1")
-        full_table_id = (
-            f"{Config.CLIENT.project}.{dataset_id}.test_delete_job_explicit_location"
-        )
+        full_table_id = f"{Config.CLIENT.project}.{dataset_id}.test_delete_job_metadata"
         table = Table(full_table_id, schema=[SchemaField("col", "STRING")])
         Config.CLIENT.create_table(table)
         query_job: bigquery.QueryJob = Config.CLIENT.query(
@@ -446,7 +444,7 @@ class TestBigQuery(unittest.TestCase):
         query_job.result()
         self.assertIsNotNone(Config.CLIENT.get_job(query_job))
 
-        Config.CLIENT.delete_job(query_job)
+        Config.CLIENT.delete_job_metadata(query_job)
         with self.assertRaises(NotFound):
             Config.CLIENT.get_job(query_job)
 

@@ -1453,7 +1453,7 @@ class Client(ClientWithProject):
             if not not_found_ok:
                 raise
 
-    def delete_job(
+    def delete_job_metadata(
         self,
         job_id,
         project=None,

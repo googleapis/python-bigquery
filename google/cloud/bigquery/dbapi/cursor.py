@@ -365,6 +365,10 @@ class Cursor(object):
     def setoutputsize(self, size, column=None):
         """No-op, but for consistency raise an error if cursor is closed."""
 
+    def __iter__(self):
+        self._try_fetch()
+        return iter(self._query_data)
+
 
 def _format_operation_list(operation, parameters):
     """Formats parameters in operation in the way BigQuery expects.
@@ -389,7 +393,7 @@ def _format_operation_list(operation, parameters):
 
     try:
         return operation % tuple(formatted_params)
-    except TypeError as exc:
+    except (TypeError, ValueError) as exc:
         raise exceptions.ProgrammingError(exc)
 
 
@@ -419,7 +423,7 @@ def _format_operation_dict(operation, parameters):
 
     try:
         return operation % formatted_params
-    except KeyError as exc:
+    except (KeyError, ValueError, TypeError) as exc:
         raise exceptions.ProgrammingError(exc)
 
 
@@ -441,7 +445,7 @@ def _format_operation(operation, parameters=None):
             ``parameters`` argument.
     """
     if parameters is None or len(parameters) == 0:
-        return operation
+        return operation.replace("%%", "%")  # Still do percent de-escaping.
 
     if isinstance(parameters, collections_abc.Mapping):
         return _format_operation_dict(operation, parameters)

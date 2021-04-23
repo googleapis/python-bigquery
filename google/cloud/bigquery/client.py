@@ -1506,7 +1506,7 @@ class Client(ClientWithProject):
         # Location is always required for jobs.delete()
         extra_params["location"] = location
 
-        path = "/projects/{}/jobs/{}/delete".format(project, job_id)
+        path = f"/projects/{project}/jobs/{job_id}/delete"
 
         span_attributes = {"path": path, "job_id": job_id, "location": location}
 

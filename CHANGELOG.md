@@ -23,7 +23,7 @@
 
 * consistent percents handling in DB API query ([#619](https://www.github.com/googleapis/python-bigquery/issues/619)) ([6502a60](https://www.github.com/googleapis/python-bigquery/commit/6502a602337ae562652a20b20270949f2c9d5073))
 * missing license headers in new test files ([#604](https://www.github.com/googleapis/python-bigquery/issues/604)) ([df48cc5](https://www.github.com/googleapis/python-bigquery/commit/df48cc5a0be99ad39d5835652d1b7422209afc5d))
-* unsetting clustering fileds on Table is now possible ([#622](https://www.github.com/googleapis/python-bigquery/issues/622)) ([33a871f](https://www.github.com/googleapis/python-bigquery/commit/33a871f06329f9bf5a6a92fab9ead65bf2bee75d))
+* unsetting clustering fields on Table is now possible ([#622](https://www.github.com/googleapis/python-bigquery/issues/622)) ([33a871f](https://www.github.com/googleapis/python-bigquery/commit/33a871f06329f9bf5a6a92fab9ead65bf2bee75d))
 
 
 ### Documentation

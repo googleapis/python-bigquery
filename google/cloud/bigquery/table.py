@@ -691,6 +691,8 @@ class Table(object):
             prop = self._properties.setdefault(api_field, {})
             prop["fields"] = value
         else:
+            # In order to allow unsetting clustering fields completely, we explicitly
+            # set this property to None (as oposed to merely removing the key).
             self._properties[api_field] = None
 
     @property

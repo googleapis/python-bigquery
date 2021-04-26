@@ -30,16 +30,16 @@ DateFromTicks = datetime.date.fromtimestamp
 TimestampFromTicks = datetime.datetime.fromtimestamp
 
 
-def Binary(string):
+def Binary(data):
     """Contruct a DB-API binary value.
 
     Args:
-        string (str): A string to encode as a binary value.
+        data (bytes): A bytes object containing binary data.
 
     Returns:
-        bytes: The UTF-8 encoded bytes representing the string.
+        bytes: The data passed in.
     """
-    return string.encode("utf-8")
+    return data if isinstance(data, bytes) else data.encode("utf-8")
 
 
 def TimeFromTicks(ticks, tz=None):

@@ -29,6 +29,7 @@ class TestTypes(unittest.TestCase):
     def test_binary_constructor(self):
         self.assertEqual(types.Binary(u"hello"), b"hello")
         self.assertEqual(types.Binary(u"\u1f60"), u"\u1f60".encode("utf-8"))
+        self.assertEqual(types.Binary(b"hello"), b"hello")
 
     def test_timefromticks(self):
         somedatetime = datetime.datetime(

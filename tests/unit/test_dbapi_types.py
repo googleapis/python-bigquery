@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import datetime
+import pytest
 import unittest
 
 import google.cloud._helpers
@@ -30,6 +31,18 @@ class TestTypes(unittest.TestCase):
         self.assertEqual(types.Binary(u"hello"), b"hello")
         self.assertEqual(types.Binary(u"\u1f60"), u"\u1f60".encode("utf-8"))
         self.assertEqual(types.Binary(b"hello"), b"hello")
+        self.assertEqual(types.Binary(bytearray(b"hello")), b"hello")
+        self.assertEqual(types.Binary(memoryview(b"hello")), b"hello")
+
+        class C:
+            def __bytes__(self): return b'Google'
+
+        self.assertEqual(types.Binary(C()), b"Google")
+
+        for bad in 42, 42.0, None:
+            with pytest.raises(TypeError):
+                types.Binary(bad)
+
 
     def test_timefromticks(self):
         somedatetime = datetime.datetime(

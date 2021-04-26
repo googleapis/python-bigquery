@@ -34,12 +34,24 @@ def Binary(data):
     """Contruct a DB-API binary value.
 
     Args:
-        data (bytes): A bytes object containing binary data.
+        data (bytes-like): An object containing binary data and that
+                           can be converted to bytes with the `bytes` builtin.
 
     Returns:
-        bytes: The data passed in.
+        bytes: The binary data as a bytes object.
     """
-    return data if isinstance(data, bytes) else data.encode("utf-8")
+    try:
+        result = bytes(data)
+        if len(result) == data:
+            # Data is an integer. This is not the conversion we're looking for,
+            raise TypeError("cannot convert 'decimal.Decimal' object to binary")
+        else:
+            return result
+    except TypeError:
+        if isinstance(data, str):
+            return data.encode("utf-8")
+        else:
+            raise
 
 
 def TimeFromTicks(ticks, tz=None):

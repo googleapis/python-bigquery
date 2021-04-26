@@ -6,7 +6,6 @@ DB-API Reference
   :show-inheritance:
 
 
-
 DB-API Query-Parameter Syntax
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -42,13 +41,3 @@ For unnamed parameters, use the named syntax with a type, but now
 name, as in::
 
   insert into people (name, income) values (%(:string)s, %(:numeric)s)
-
-
-
-
-
-
-
-
-
-

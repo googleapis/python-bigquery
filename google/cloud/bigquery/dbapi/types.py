@@ -40,13 +40,12 @@ def Binary(data):
     Returns:
         bytes: The binary data as a bytes object.
     """
+    if isinstance(data, int):
+        # This is not the conversion we're looking for, because it
+        # will simply create a bytes object of the given size.
+        raise TypeError("cannot convert 'decimal.Decimal' object to binary")
     try:
-        result = bytes(data)
-        if len(result) == data:
-            # Data is an integer. This is not the conversion we're looking for,
-            raise TypeError("cannot convert 'decimal.Decimal' object to binary")
-        else:
-            return result
+        return bytes(data)
     except TypeError:
         if isinstance(data, str):
             return data.encode("utf-8")

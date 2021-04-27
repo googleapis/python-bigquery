@@ -35,14 +35,14 @@ class TestTypes(unittest.TestCase):
         self.assertEqual(types.Binary(memoryview(b"hello")), b"hello")
 
         class C:
-            def __bytes__(self): return b'Google'
+            def __bytes__(self):
+                return b"Google"
 
         self.assertEqual(types.Binary(C()), b"Google")
 
         for bad in 42, 42.0, None:
             with pytest.raises(TypeError):
                 types.Binary(bad)
-
 
     def test_timefromticks(self):
         somedatetime = datetime.datetime(

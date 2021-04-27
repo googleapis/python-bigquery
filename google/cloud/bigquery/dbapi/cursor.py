@@ -474,7 +474,7 @@ def _format_operation(operation, parameters):
 
 
 def _extract_types(
-    operation, extra_type_sub=re.compile(r"(?<!%)%(\(([^:)]*)(:(\w+))?\))?s").sub,
+    operation, extra_type_sub=re.compile(r"(?<!%)%(?:\(([^:)]*)(?::(\w+))?\))?s").sub,
 ):
     """Remove type information from parameter placeholders.
 
@@ -487,7 +487,7 @@ def _extract_types(
 
     def repl(m):
         nonlocal parameter_types
-        _, name, _, type_ = m.groups()
+        name, type_ = m.groups()
         try:
             if name:
                 if not parameter_types:

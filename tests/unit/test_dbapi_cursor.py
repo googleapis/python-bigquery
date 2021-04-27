@@ -14,8 +14,9 @@
 
 import mock
 import operator as op
-import pytest
 import unittest
+
+import pytest
 
 
 try:
@@ -758,48 +759,39 @@ class TestCursor(unittest.TestCase):
             ["foo", "bar"],
         )
 
-
-def test__extract_types():
+@pytest.mark.parametrize(
+    "inp,expect",
+    [
+        ("", ("", None)),
+        ("values(%(foo)s, %(bar)s)", ("values(%(foo)s, %(bar)s)", {})),
+        ("values(%(foo:INT64)s, %(bar)s)",
+         ("values(%(foo)s, %(bar)s)", dict(foo="INT64"))),
+        ("values(%(foo:INT64)s, %(foo)s)",
+         ("values(%(foo)s, %(foo)s)", dict(foo="INT64"))),
+        ("values(%(foo:INT64)s, %(foo:INT64)s)",
+         ("values(%(foo)s, %(foo)s)", dict(foo="INT64"))),
+        ("values(%(foo:INT64)s, %(bar:NUMERIC)s) 100 %",
+         ("values(%(foo)s, %(bar)s) 100 %", dict(foo="INT64", bar="NUMERIC"))),
+        (" %s %()s %(:int64)s ",
+         (" %s %s %s ", [None, None, "int64"])),
+    ])
+def test__extract_types(inp, expect):
     from google.cloud.bigquery.dbapi.cursor import _extract_types as et
+    assert et(inp) == expect
 
-    assert et("") == ("", None)
-    assert et("values(%(foo)s, %(bar)s)") == ("values(%(foo)s, %(bar)s)", {})
-    assert et("values(%(foo:INT64)s, %(bar)s)") == (
-        "values(%(foo)s, %(bar)s)",
-        dict(foo="INT64"),
-    )
-    assert et("values(%(foo:INT64)s, %(foo)s)") == (
-        "values(%(foo)s, %(foo)s)",
-        dict(foo="INT64"),
-    )
-    assert et("values(%(foo:INT64)s, %(foo:INT64)s)") == (
-        "values(%(foo)s, %(foo)s)",
-        dict(foo="INT64"),
-    )
-
-    assert et("values(%(foo:INT64)s, %(bar:NUMERIC)s) 100 %") == (
-        "values(%(foo)s, %(bar)s) 100 %",
-        dict(foo="INT64", bar="NUMERIC"),
-    )
-
-    assert et(" %s %()s %(:int64)s ") == (" %s %s %s ", [None, None, "int64"])
-
+@pytest.mark.parametrize(
+    "match,inp",
+    [
+        ("Conflicting types for foo: numeric and int64.",
+         " %(foo:numeric)s %(foo:int64)s "),
+        (r"' %s %\(foo\)s ' mixes named and unamed parameters.",
+         " %s %(foo)s "),
+        (r"' %\(foo\)s %s ' mixes named and unamed parameters.",
+         " %(foo)s %s "),
+    ])
+def test__extract_types_fail(match, inp):
+    from google.cloud.bigquery.dbapi.cursor import _extract_types as et
     from google.cloud.bigquery.dbapi import exceptions
 
-    with pytest.raises(
-        exceptions.ProgrammingError,
-        match="Conflicting types for foo: numeric and int64.",
-    ):
-        et(" %(foo:numeric)s %(foo:int64)s ")
-
-    with pytest.raises(
-        exceptions.ProgrammingError,
-        match=r"' %s %\(foo\)s ' mixes named and unamed parameters.",
-    ):
-        et(" %s %(foo)s ")
-
-    with pytest.raises(
-        exceptions.ProgrammingError,
-        match=r"' %\(foo\)s %s ' mixes named and unamed parameters.",
-    ):
-        et(" %(foo)s %s ")
+    with pytest.raises(exceptions.ProgrammingError, match=match):
+        et(inp)

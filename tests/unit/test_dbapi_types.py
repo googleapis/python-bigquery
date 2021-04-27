@@ -47,13 +47,15 @@ class CustomBinary:
 
 @pytest.mark.parametrize(
     "raw,expected",
-    [(u"hello", b"hello"),
-     (u"\u1f60", u"\u1f60".encode("utf-8")),
-     (b"hello", b"hello"),
-     (bytearray(b"hello"), b"hello"),
-     (memoryview(b"hello"), b"hello"),
-     (CustomBinary(), b"Google"),
-     ])
+    [
+        (u"hello", b"hello"),
+        (u"\u1f60", u"\u1f60".encode("utf-8")),
+        (b"hello", b"hello"),
+        (bytearray(b"hello"), b"hello"),
+        (memoryview(b"hello"), b"hello"),
+        (CustomBinary(), b"Google"),
+    ],
+)
 def test_binary_constructor(raw, expected):
     assert types.Binary(raw) == expected
 

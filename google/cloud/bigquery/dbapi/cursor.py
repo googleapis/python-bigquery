@@ -474,7 +474,7 @@ def _format_operation(operation, parameters):
 
 
 def _extract_types(
-    operation, extra_type_sub=re.compile(r"%(\(([^:)]*)(:(\w+))?\))?s").sub,
+    operation, extra_type_sub=re.compile(r"(?<!%)%(\(([^:)]*)(:(\w+))?\))?s").sub,
 ):
     """Remove type information from parameter placeholders.
 

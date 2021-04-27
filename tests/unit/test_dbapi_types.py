@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 import datetime
-import pytest
 import unittest
+
+import pytest
 
 import google.cloud._helpers
 from google.cloud.bigquery.dbapi import types
@@ -27,23 +28,6 @@ class TestTypes(unittest.TestCase):
         self.assertEqual("STRUCT", types.BINARY)
         self.assertNotEqual("STRING", types.BINARY)
 
-    def test_binary_constructor(self):
-        self.assertEqual(types.Binary(u"hello"), b"hello")
-        self.assertEqual(types.Binary(u"\u1f60"), u"\u1f60".encode("utf-8"))
-        self.assertEqual(types.Binary(b"hello"), b"hello")
-        self.assertEqual(types.Binary(bytearray(b"hello")), b"hello")
-        self.assertEqual(types.Binary(memoryview(b"hello")), b"hello")
-
-        class C:
-            def __bytes__(self):
-                return b"Google"
-
-        self.assertEqual(types.Binary(C()), b"Google")
-
-        for bad in 42, 42.0, None:
-            with pytest.raises(TypeError):
-                types.Binary(bad)
-
     def test_timefromticks(self):
         somedatetime = datetime.datetime(
             2017, 2, 18, 12, 47, 26, tzinfo=google.cloud._helpers.UTC
@@ -54,3 +38,27 @@ class TestTypes(unittest.TestCase):
             types.TimeFromTicks(ticks, google.cloud._helpers.UTC),
             datetime.time(12, 47, 26, tzinfo=google.cloud._helpers.UTC),
         )
+
+
+class CustomBinary:
+    def __bytes__(self):
+        return b"Google"
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [(u"hello", b"hello"),
+     (u"\u1f60", u"\u1f60".encode("utf-8")),
+     (b"hello", b"hello"),
+     (bytearray(b"hello"), b"hello"),
+     (memoryview(b"hello"), b"hello"),
+     (CustomBinary(), b"Google"),
+     ])
+def test_binary_constructor(raw, expected):
+    assert types.Binary(raw) == expected
+
+
+@pytest.mark.parametrize("bad", (42, 42,0, None))
+def test_invalid_binary_constructor(bad):
+    with pytest.raises(TypeError):
+        types.Binary(bad)

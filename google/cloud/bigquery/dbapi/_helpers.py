@@ -56,7 +56,7 @@ def _parameter_type(name, value, query_parameter_type=None, value_doc=""):
         if parameter_type is None:
             raise exceptions.ProgrammingError(
                 f"Encountered parameter {name} with "
-                f"{value_doc}value {value} of unexpected type."
+                f"{value_doc} value {value} of unexpected type."
             )
     return parameter_type
 

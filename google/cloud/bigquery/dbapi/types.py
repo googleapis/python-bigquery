@@ -43,7 +43,8 @@ def Binary(data):
     if isinstance(data, int):
         # This is not the conversion we're looking for, because it
         # will simply create a bytes object of the given size.
-        raise TypeError("cannot convert 'decimal.Decimal' object to binary")
+        raise TypeError("cannot convert `int` object to binary")
+
     try:
         return bytes(data)
     except TypeError:

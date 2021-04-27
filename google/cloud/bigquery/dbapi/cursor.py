@@ -218,6 +218,11 @@ class Cursor(object):
                 Sequence of many sets of parameter values.
         """
         if seq_of_parameters:
+            # There's no reason to format the line more than once, as
+            # the operation only barely depends on the parameters.  So
+            # we just use the first set of parameters. If there are
+            # different numbers or types of parameters, we'll error
+            # anyway.
             formatted_operation, parameter_types = _format_operation(
                 operation, seq_of_parameters[0]
             )

@@ -58,7 +58,7 @@ def test_binary_constructor(raw, expected):
     assert types.Binary(raw) == expected
 
 
-@pytest.mark.parametrize("bad", (42, 42,0, None))
+@pytest.mark.parametrize("bad", (42, 42.0, None))
 def test_invalid_binary_constructor(bad):
     with pytest.raises(TypeError):
         types.Binary(bad)

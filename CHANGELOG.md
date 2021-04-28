@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [2.14.1](https://www.github.com/googleapis/python-bigquery/compare/v2.14.0...v2.14.1) (2021-04-28)
+
+
+### Bug Fixes
+
+* The DB API Binary function accepts bytes data ([#630](https://www.github.com/googleapis/python-bigquery/issues/630)) ([4396e70](https://www.github.com/googleapis/python-bigquery/commit/4396e70771af6889d3242c37c5ff2e80241023a2))
+
 ## [2.14.0](https://www.github.com/googleapis/python-bigquery/compare/v2.13.1...v2.14.0) (2021-04-26)
 
 

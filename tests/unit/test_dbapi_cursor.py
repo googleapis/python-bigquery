@@ -787,6 +787,18 @@ class TestCursor(unittest.TestCase):
         ),
         (" %s %()s %(:int64)s ", (" %s %s %s ", [None, None, "int64"])),
         (" %%s %s %()s %(:int64)s ", (" %%s %s %s %s ", [None, None, "int64"])),
+        (
+            "values(%%%(foo:INT64)s, %(bar)s)",
+            ("values(%%%(foo)s, %(bar)s)", dict(foo="INT64")),
+        ),
+        (
+            "values(%%%%(foo:INT64)s, %(bar)s)",
+            ("values(%%%%(foo:INT64)s, %(bar)s)", dict()),
+        ),
+        (
+            "values(%%%%%(foo:INT64)s, %(bar)s)",
+            ("values(%%%%%(foo)s, %(bar)s)", dict(foo="INT64")),
+        ),
     ],
 )
 def test__extract_types(inp, expect):

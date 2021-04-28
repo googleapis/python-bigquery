@@ -479,7 +479,7 @@ def _format_operation(operation, parameters):
 
 
 def _extract_types(
-    operation, extra_type_sub=re.compile(r"(?<!%)%(?:\(([^:)]*)(?::(\w+))?\))?s").sub,
+    operation, extra_type_sub=re.compile(r"(%*)%(?:\(([^:)]*)(?::(\w+))?\))?s").sub
 ):
     """Remove type information from parameter placeholders.
 
@@ -492,7 +492,13 @@ def _extract_types(
 
     def repl(m):
         nonlocal parameter_types
-        name, type_ = m.groups()
+        prefix, name, type_ = m.groups()
+        if len(prefix) % 2:
+            # The prefix has an odd number of %s, the last of which
+            # escapes the % we're looking for, so we don't want to
+            # change anything.
+            return m.group(0)
+
         try:
             if name:
                 if not parameter_types:
@@ -510,12 +516,12 @@ def _extract_types(
                     if not isinstance(parameter_types, dict):
                         raise TypeError()
 
-                return f"%({name})s"
+                return f"{prefix}%({name})s"
             else:
                 if parameter_types is None:
                     parameter_types = []
                 parameter_types.append(type_)
-                return "%s"
+                return f"{prefix}%s"
         except (AttributeError, TypeError):
             raise exceptions.ProgrammingError(
                 f"{repr(operation)} mixes named and unamed parameters."

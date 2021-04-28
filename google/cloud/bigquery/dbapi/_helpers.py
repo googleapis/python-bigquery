@@ -20,30 +20,17 @@ import functools
 import numbers
 
 from google.cloud import bigquery
-from google.cloud.bigquery import table
+from google.cloud.bigquery import table, enums
 from google.cloud.bigquery.dbapi import exceptions
 
 
 _NUMERIC_SERVER_MIN = decimal.Decimal("-9.9999999999999999999999999999999999999E+28")
 _NUMERIC_SERVER_MAX = decimal.Decimal("9.9999999999999999999999999999999999999E+28")
-_BIGQUERY_SCALAR_TYPES = {
-    "BOOL",
-    "INT64",
-    "FLOAT64",
-    "NUMERIC",
-    "BIGNUMERIC",
-    "DECIMAL",
-    "BIGDECIMAL",
-    "STRING",
-    "BYTES",
-    "DATETIME",
-    "TIMESTAMP",
-    "DATE",
-    "TIME",
-}
+_BIGQUERY_SCALAR_TYPES = enums.SqlParameterScalarTypes.__dict__
 
 
-def _parameter_type(name, value, query_parameter_type=None, value_doc=""):
+def _parameter_type(
+    name, value, query_parameter_type=None, value_doc=""):
     if query_parameter_type:
         parameter_type = query_parameter_type.upper()
         if parameter_type not in _BIGQUERY_SCALAR_TYPES:

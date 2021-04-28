@@ -26,13 +26,15 @@ from google.cloud.bigquery.dbapi import exceptions
 
 _NUMERIC_SERVER_MIN = decimal.Decimal("-9.9999999999999999999999999999999999999E+28")
 _NUMERIC_SERVER_MAX = decimal.Decimal("9.9999999999999999999999999999999999999E+28")
-_BIGQUERY_SCALAR_TYPES = enums.SqlParameterScalarTypes.__dict__
 
 
 def _parameter_type(name, value, query_parameter_type=None, value_doc=""):
     if query_parameter_type:
-        parameter_type = query_parameter_type.upper()
-        if parameter_type not in _BIGQUERY_SCALAR_TYPES:
+        try:
+            parameter_type = getattr(
+                enums.SqlParameterScalarTypes, query_parameter_type.upper()
+            )._type
+        except AttributeError:
             raise exceptions.ProgrammingError(
                 f"The given parameter type, {query_parameter_type},"
                 f" for {name} is not a valid BigQuery scalar type."

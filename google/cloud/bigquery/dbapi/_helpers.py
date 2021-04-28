@@ -29,8 +29,7 @@ _NUMERIC_SERVER_MAX = decimal.Decimal("9.9999999999999999999999999999999999999E+
 _BIGQUERY_SCALAR_TYPES = enums.SqlParameterScalarTypes.__dict__
 
 
-def _parameter_type(
-    name, value, query_parameter_type=None, value_doc=""):
+def _parameter_type(name, value, query_parameter_type=None, value_doc=""):
     if query_parameter_type:
         parameter_type = query_parameter_type.upper()
         if parameter_type not in _BIGQUERY_SCALAR_TYPES:

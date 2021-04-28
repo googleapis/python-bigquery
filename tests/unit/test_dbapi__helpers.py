@@ -19,6 +19,7 @@ import operator as op
 import unittest
 
 import pytest
+
 try:
     import pyarrow
 except ImportError:  # pragma: NO COVER
@@ -341,10 +342,9 @@ class TestRaiseOnClosedDecorator(unittest.TestCase):
             instance.instance_method()
 
 
-VALID_BQ_TYPES = [name
-                  for name in enums.SqlParameterScalarTypes.__dict__
-                  if not name.startswith('_')
-                  ]
+VALID_BQ_TYPES = [
+    name for name in enums.SqlParameterScalarTypes.__dict__ if not name.startswith("_")
+]
 
 
 @pytest.mark.parametrize("type_", VALID_BQ_TYPES)
@@ -372,6 +372,7 @@ def test_scalar_to_query_parameter_honors_given_type_errors_on_invalid():
 @pytest.mark.parametrize("type_", VALID_BQ_TYPES)
 def test_array_to_query_parameter_honors_given_type(type_):
     from google.cloud import bigquery
+
     assert _helpers.array_to_query_parameter([1.23], None, type_) == (
         bigquery.ArrayQueryParameter(None, type_, [1.23])
     )

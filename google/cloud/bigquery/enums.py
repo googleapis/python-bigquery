@@ -203,10 +203,8 @@ class SqlTypeNames(str, enum.Enum):
     INT64 = "INTEGER"
     FLOAT = "FLOAT"
     FLOAT64 = "FLOAT"
-    NUMERIC = "NUMERIC"
-    BIGNUMERIC = "BIGNUMERIC"
-    DECIMAL = "DECIMAL"
-    BIGDECIMAL = "BIGDECIMAL"
+    DECIMAL = NUMERIC = "NUMERIC"
+    BIGDECIMAL = BIGNUMERIC = "BIGNUMERIC"
     BOOLEAN = "BOOLEAN"
     BOOL = "BOOLEAN"
     GEOGRAPHY = "GEOGRAPHY"  # NOTE: not available in legacy types
@@ -229,8 +227,8 @@ class SqlParameterScalarTypes:
     FLOAT64 = ScalarQueryParameterType("FLOAT64")
     NUMERIC = ScalarQueryParameterType("NUMERIC")
     BIGNUMERIC = ScalarQueryParameterType("BIGNUMERIC")
-    DECIMAL = ScalarQueryParameterType("DECIMAL")
-    BIGDECIMAL = ScalarQueryParameterType("BIGDECIMAL")
+    DECIMAL = ScalarQueryParameterType("NUMERIC")
+    BIGDECIMAL = ScalarQueryParameterType("BIGNUMERIC")
     BOOLEAN = ScalarQueryParameterType("BOOL")
     BOOL = ScalarQueryParameterType("BOOL")
     GEOGRAPHY = ScalarQueryParameterType("GEOGRAPHY")

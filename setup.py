@@ -49,8 +49,8 @@ extras = {
         "grpcio >= 1.32.0, < 2.0dev",
         "pyarrow >= 1.0.0, < 5.0dev",
     ],
-    "pandas": ["pandas>=0.23.0", "pyarrow >= 1.0.0, < 4.0dev"],
-    "bignumeric_type": ["pyarrow >= 3.0.0, < 4.0dev"],
+    "pandas": ["pandas>=0.23.0", "pyarrow >= 1.0.0, < 5.0dev"],
+    "bignumeric_type": ["pyarrow >= 3.0.0, < 5.0dev"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
         "opentelemetry-api >= 0.11b0",

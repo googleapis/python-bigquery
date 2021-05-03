@@ -98,6 +98,17 @@ class Test_ScalarQueryParameterType(unittest.TestCase):
             "ScalarQueryParameterType('BYTES', name='foo', description='this is foo')",
         )
 
+    def test_with_name_returns_copy_w_changed_name(self):
+        param_type = self._make_one("BOOLEAN", name=None, description="Some checkbox.")
+        modified_type = param_type.with_name("allow_emails")
+
+        self.assertIsNot(modified_type, param_type)  # Result is a copy.
+        self.assertEqual(modified_type.name, "allow_emails")
+
+        # The rest of the The rest of the fields should have been preserved.
+        self.assertEqual(modified_type._type, param_type._type)
+        self.assertEqual(modified_type.description, param_type.description)
+
 
 class Test_ArrayQueryParameterType(unittest.TestCase):
     @staticmethod

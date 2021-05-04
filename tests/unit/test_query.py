@@ -109,6 +109,15 @@ class Test_ScalarQueryParameterType(unittest.TestCase):
         self.assertEqual(modified_type._type, param_type._type)
         self.assertEqual(modified_type.description, param_type.description)
 
+    def test_with_name_clearing_the_value(self):
+        param_type = self._make_one(
+            "BOOLEAN", name="allow_emails", description="Some checkbox."
+        )
+        modified_type = param_type.with_name(None)
+
+        self.assertIsNone(modified_type.name)
+        self.assertEqual(param_type.name, "allow_emails")  # original unchanged
+
 
 class Test_ArrayQueryParameterType(unittest.TestCase):
     @staticmethod

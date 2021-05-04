@@ -16,7 +16,7 @@
 
 from collections import OrderedDict
 import copy
-from typing import Optional
+from typing import Union
 
 from google.cloud.bigquery.table import _parse_schema_resource
 from google.cloud.bigquery._helpers import _rows_from_json
@@ -120,11 +120,13 @@ class ScalarQueryParameterType(_AbstractQueryParameterType):
         # attributes in the API representation when needed. Here we omit them.
         return {"type": self._type}
 
-    def with_name(self, new_name: Optional[str]):
+    def with_name(self, new_name: Union[str, None]):
         """Return a copy of the instance with ``name`` set to ``new_name``.
 
         Args:
-            name (Optional[str]): The new name of the query parameter type.
+            name (Union[str, None]):
+                The new name of the query parameter type. If ``None``, the existing
+                name is cleared.
 
         Returns:
             google.cloud.bigquery.query.ScalarQueryParameterType:

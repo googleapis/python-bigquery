@@ -1264,7 +1264,7 @@ class Model(proto.Message):
             label_class_weights = proto.MapField(
                 proto.STRING,
                 proto.DOUBLE,
-                number=17
+                number=17,
             )
             user_column = proto.Field(
                 proto.STRING,
@@ -1635,7 +1635,7 @@ class Model(proto.Message):
     labels = proto.MapField(
         proto.STRING,
         proto.STRING,
-        number=15
+        number=15,
     )
     expiration_time = proto.Field(
         proto.INT64,

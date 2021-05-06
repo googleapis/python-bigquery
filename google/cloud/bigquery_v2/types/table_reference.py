@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 # Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 import proto  # type: ignore
 
 
@@ -26,6 +28,7 @@ __protobuf__ = proto.module(
 
 class TableReference(proto.Message):
     r"""
+
     Attributes:
         project_id (str):
             Required. The ID of the project containing
@@ -41,18 +44,11 @@ class TableReference(proto.Message):
             as ``sample_table$20190123``.
     """
 
-    project_id = proto.Field(
-        proto.STRING,
-        number=1,
-    )
-    dataset_id = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    table_id = proto.Field(
-        proto.STRING,
-        number=3,
-    )
+    project_id = proto.Field(proto.STRING, number=1)
+
+    dataset_id = proto.Field(proto.STRING, number=2)
+
+    table_id = proto.Field(proto.STRING, number=3)
 
 
 __all__ = tuple(sorted(__protobuf__.manifest))

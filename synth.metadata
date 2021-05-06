@@ -11,8 +11,8 @@
       "git": {
         "name": "googleapis",
         "remote": "https://github.com/googleapis/googleapis.git",
-        "sha": "4e825559e5ab242c4d1aafca19c83c4d1bac743e",
-        "internalRef": "370989216"
+        "sha": "5a04154e7c7c0e98e0e4085f6e2c67bd5bff6ff8",
+        "internalRef": "371362703"
       }
     }
   ],
@@ -89,7 +89,6 @@
     "docs/bigquery_v2/types.rst",
     "docs/conf.py",
     "google/cloud/bigquery_v2/__init__.py",
-    "google/cloud/bigquery_v2/gapic_metadata.json",
     "google/cloud/bigquery_v2/proto/encryption_config.proto",
     "google/cloud/bigquery_v2/proto/model.proto",
     "google/cloud/bigquery_v2/proto/model_reference.proto",
@@ -116,9 +115,6 @@
     "scripts/readme-gen/templates/install_deps.tmpl.rst",
     "scripts/readme-gen/templates/install_portaudio.tmpl.rst",
     "setup.cfg",
-    "testing/.gitignore",
-    "tests/__init__.py",
-    "tests/unit/__init__.py",
-    "tests/unit/gapic/__init__.py"
+    "testing/.gitignore"
   ]
 }

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 # Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import proto  # type: ignore
-
 
 from google.protobuf import wrappers_pb2 as wrappers  # type: ignore
 
@@ -31,7 +28,6 @@ __protobuf__ = proto.module(
 
 class EncryptionConfiguration(proto.Message):
     r"""
-
     Attributes:
         kms_key_name (google.protobuf.wrappers_pb2.StringValue):
             Optional. Describes the Cloud KMS encryption
@@ -41,7 +37,9 @@ class EncryptionConfiguration(proto.Message):
             this encryption key.
     """
 
-    kms_key_name = proto.Field(proto.MESSAGE, number=1,
+    kms_key_name = proto.Field(
+        proto.MESSAGE,
+        number=1,
         message=wrappers.StringValue,
     )
 

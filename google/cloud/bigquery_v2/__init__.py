@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 # Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +15,7 @@
 #
 
 
+
 from .types.encryption_config import EncryptionConfiguration
 from .types.model import DeleteModelRequest
 from .types.model import GetModelRequest
@@ -28,7 +28,6 @@ from .types.standard_sql import StandardSqlDataType
 from .types.standard_sql import StandardSqlField
 from .types.standard_sql import StandardSqlStructType
 from .types.table_reference import TableReference
-
 
 __all__ = (
     'DeleteModelRequest',

@@ -19,7 +19,10 @@ import proto  # type: ignore
 
 
 __protobuf__ = proto.module(
-    package="google.cloud.bigquery.v2", manifest={"TableReference",},
+    package='google.cloud.bigquery.v2',
+    manifest={
+        'TableReference',
+    },
 )
 
 

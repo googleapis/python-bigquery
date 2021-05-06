@@ -30,17 +30,17 @@ from .types.standard_sql import StandardSqlStructType
 from .types.table_reference import TableReference
 
 __all__ = (
-    
-    'EncryptionConfiguration',
     'DeleteModelRequest',
+    'EncryptionConfiguration',
     'GetModelRequest',
     'ListModelsRequest',
     'ListModelsResponse',
     'Model',
-    'PatchModelRequest',
     'ModelReference',
+    'PatchModelRequest',
     'StandardSqlDataType',
     'StandardSqlField',
     'StandardSqlStructType',
     'TableReference',
+
 )

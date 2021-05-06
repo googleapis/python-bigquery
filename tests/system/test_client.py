@@ -381,6 +381,65 @@ class TestBigQuery(unittest.TestCase):
         table2 = Config.CLIENT.update_table(table, ["schema"])
         self.assertEqual(policy_2, table2.schema[1].policy_tags)
 
+    def test_create_table_with_real_custom_policy(self):
+        from google.cloud.bigquery.schema import PolicyTagList
+        from google.cloud.datacatalog_v1beta1 import PolicyTagManagerClient
+        from google.cloud.datacatalog_v1beta1.types import PolicyTag
+        from google.cloud.datacatalog_v1beta1.types import Taxonomy
+
+        policy_tag_client = PolicyTagManagerClient()
+
+        new_taxonomy = Taxonomy(
+            display_name="Custom test taxonomy",
+            description="This taxonomy is ony used for a test.",
+            activated_policy_types=[Taxonomy.PolicyType.FINE_GRAINED_ACCESS_CONTROL],
+        )
+        taxonomy = policy_tag_client.create_taxonomy(
+            parent=Config.CLIENT.project, taxonomy=new_taxonomy
+        )
+        self.to_delete.insert(0, taxonomy)
+
+        parent_policy_tag = policy_tag_client.create_policy_tag(
+            parent=taxonomy.name,
+            policy_tag=PolicyTag(
+                display_name="Parent policy tag", parent_policy_tag=None
+            ),
+        )
+        child_policy_tag = policy_tag_client.create_policy_tag(
+            parent=taxonomy.name,
+            policy_tag=PolicyTag(
+                display_name="Child policy tag",
+                parent_policy_tag=parent_policy_tag.name,
+            ),
+        )
+        self.to_delete.insert(0, parent_policy_tag)
+        self.to_delete.insert(0, child_policy_tag)
+
+        dataset = self.temp_dataset(
+            _make_dataset_id("create_table_with_real_custom_policy")
+        )
+        table_id = "test_table"
+        policy_1 = PolicyTagList(names=[parent_policy_tag.name])
+        policy_2 = PolicyTagList(names=[child_policy_tag.name])
+
+        schema = [
+            bigquery.SchemaField(
+                "first_name", "STRING", mode="REQUIRED", policy_tags=policy_1
+            ),
+            bigquery.SchemaField(
+                "age", "INTEGER", mode="REQUIRED", policy_tags=policy_2
+            ),
+        ]
+        table_arg = Table(dataset.table(table_id), schema=schema)
+        self.assertFalse(_table_exists(table_arg))
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+        self.assertEqual(table.schema[0].policy_tags, [parent_policy_tag.name])
+        self.assertEqual(table.schema[1].policy_tags, [child_policy_tag.name])
+
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning
         from google.cloud.bigquery.table import TimePartitioningType

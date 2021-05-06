@@ -15,7 +15,9 @@
 # limitations under the License.
 #
 
-from .encryption_config import EncryptionConfiguration
+from .encryption_config import (
+    EncryptionConfiguration,
+)
 from .model import (
     DeleteModelRequest,
     GetModelRequest,
@@ -24,25 +26,29 @@ from .model import (
     Model,
     PatchModelRequest,
 )
-from .model_reference import ModelReference
+from .model_reference import (
+    ModelReference,
+)
 from .standard_sql import (
     StandardSqlDataType,
     StandardSqlField,
     StandardSqlStructType,
 )
-from .table_reference import TableReference
+from .table_reference import (
+    TableReference,
+)
 
 __all__ = (
-    "EncryptionConfiguration",
-    "DeleteModelRequest",
-    "GetModelRequest",
-    "ListModelsRequest",
-    "ListModelsResponse",
-    "Model",
-    "PatchModelRequest",
-    "ModelReference",
-    "StandardSqlDataType",
-    "StandardSqlField",
-    "StandardSqlStructType",
-    "TableReference",
+    'EncryptionConfiguration',
+    'DeleteModelRequest',
+    'GetModelRequest',
+    'ListModelsRequest',
+    'ListModelsResponse',
+    'Model',
+    'PatchModelRequest',
+    'ModelReference',
+    'StandardSqlDataType',
+    'StandardSqlField',
+    'StandardSqlStructType',
+    'TableReference',
 )

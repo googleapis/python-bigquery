@@ -19,8 +19,12 @@ import proto  # type: ignore
 
 
 __protobuf__ = proto.module(
-    package="google.cloud.bigquery.v2",
-    manifest={"StandardSqlDataType", "StandardSqlField", "StandardSqlStructType",},
+    package='google.cloud.bigquery.v2',
+    manifest={
+        'StandardSqlDataType',
+        'StandardSqlField',
+        'StandardSqlStructType',
+    },
 )
 
 
@@ -43,7 +47,6 @@ class StandardSqlDataType(proto.Message):
             The fields of this struct, in order, if type_kind =
             "STRUCT".
     """
-
     class TypeKind(proto.Enum):
         r""""""
         TYPE_KIND_UNSPECIFIED = 0
@@ -62,14 +65,16 @@ class StandardSqlDataType(proto.Message):
         ARRAY = 16
         STRUCT = 17
 
-    type_kind = proto.Field(proto.ENUM, number=1, enum=TypeKind,)
-
-    array_element_type = proto.Field(
-        proto.MESSAGE, number=2, oneof="sub_type", message="StandardSqlDataType",
+    type_kind = proto.Field(proto.ENUM, number=1,
+        enum=TypeKind,
     )
 
-    struct_type = proto.Field(
-        proto.MESSAGE, number=3, oneof="sub_type", message="StandardSqlStructType",
+    array_element_type = proto.Field(proto.MESSAGE, number=2, oneof='sub_type',
+        message='StandardSqlDataType',
+    )
+
+    struct_type = proto.Field(proto.MESSAGE, number=3, oneof='sub_type',
+        message='StandardSqlStructType',
     )
 
 
@@ -90,7 +95,9 @@ class StandardSqlField(proto.Message):
 
     name = proto.Field(proto.STRING, number=1)
 
-    type = proto.Field(proto.MESSAGE, number=2, message="StandardSqlDataType",)
+    type = proto.Field(proto.MESSAGE, number=2,
+        message='StandardSqlDataType',
+    )
 
 
 class StandardSqlStructType(proto.Message):
@@ -101,7 +108,9 @@ class StandardSqlStructType(proto.Message):
 
     """
 
-    fields = proto.RepeatedField(proto.MESSAGE, number=1, message="StandardSqlField",)
+    fields = proto.RepeatedField(proto.MESSAGE, number=1,
+        message='StandardSqlField',
+    )
 
 
 __all__ = tuple(sorted(__protobuf__.manifest))

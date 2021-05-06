@@ -31,16 +31,17 @@ from .types.table_reference import TableReference
 
 
 __all__ = (
-    "DeleteModelRequest",
-    "EncryptionConfiguration",
-    "GetModelRequest",
-    "ListModelsRequest",
-    "ListModelsResponse",
-    "Model",
-    "ModelReference",
-    "PatchModelRequest",
-    "StandardSqlDataType",
-    "StandardSqlField",
-    "StandardSqlStructType",
-    "TableReference",
+    'DeleteModelRequest',
+    'EncryptionConfiguration',
+    'GetModelRequest',
+    'ListModelsRequest',
+    'ListModelsResponse',
+    'Model',
+    'ModelReference',
+    'PatchModelRequest',
+    'StandardSqlDataType',
+    'StandardSqlField',
+    'StandardSqlStructType',
+    'TableReference',
+
 )

@@ -778,6 +778,12 @@ def _make_bqstorage_client(use_bqstorage_api, credentials, client_options):
         raise customized_error from err
 
     try:
+        bigquery._helpers._verify_bq_storage_version()
+    except bigquery.LegacyBigQueryStorageError as exc:
+        warnings.warn(str(exc))
+        return None
+
+    try:
         from google.api_core.gapic_v1 import client_info as gapic_client_info
     except ImportError as err:
         customized_error = ImportError(

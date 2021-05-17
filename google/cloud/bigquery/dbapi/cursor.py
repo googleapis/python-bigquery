@@ -29,6 +29,7 @@ else:
     _ARROW_COMPRESSION_SUPPORT = True
 
 from google.cloud.bigquery import job
+from google.cloud.bigquery._helpers import _verify_bq_storage_version
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
 import google.cloud.exceptions
@@ -279,6 +280,8 @@ class Cursor(object):
         # Hitting this code path with a BQ Storage client instance implies that
         # bigquery_storage can indeed be imported here without errors.
         from google.cloud import bigquery_storage
+
+        _verify_bq_storage_version()
 
         table_reference = self._query_job.destination
 

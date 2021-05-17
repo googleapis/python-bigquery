@@ -41,6 +41,7 @@ from google.api_core.page_iterator import HTTPIterator
 import google.cloud._helpers
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
@@ -1517,6 +1518,17 @@ class RowIterator(HTTPIterator):
                 "reverting to fetching data with the REST endpoint.",
                 stacklevel=2,
             )
+            return False
+
+        try:
+            from google.cloud import bigquery_storage  # noqa: F401
+        except ImportError:
+            return False
+
+        try:
+            _helpers._verify_bq_storage_version()
+        except LegacyBigQueryStorageError as exc:
+            warnings.warn(str(exc))
             return False
 
         return True

@@ -54,12 +54,14 @@ from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
+from google.cloud.bigquery._helpers import _verify_bq_storage_version
 from google.cloud.bigquery._helpers import _verify_job_config_type
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (
@@ -462,6 +464,12 @@ class Client(ClientWithProject):
                 "Cannot create BigQuery Storage client, the dependency "
                 "google-cloud-bigquery-storage is not installed."
             )
+            return None
+
+        try:
+            _verify_bq_storage_version()
+        except LegacyBigQueryStorageError as exc:
+            warnings.warn(str(exc))
             return None
 
         return bigquery_storage.BigQueryReadClient(credentials=self._credentials)

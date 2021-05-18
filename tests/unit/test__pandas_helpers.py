@@ -1331,6 +1331,33 @@ def test__download_table_bqstorage(
     assert queue_used.maxsize == expected_maxsize
 
 
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
+)
+def test__download_table_bqstorage_obsolete_version_error(module_under_test):
+    from google.cloud.bigquery import dataset
+    from google.cloud.bigquery import table
+    from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+
+    bqstorage_client = mock.create_autospec(
+        bigquery_storage.BigQueryReadClient, instance=True
+    )
+    table_ref = table.TableReference(
+        dataset.DatasetReference("project-x", "dataset-y"), "table-z",
+    )
+
+    patcher = mock.patch.object(
+        module_under_test,
+        "_verify_bq_storage_version",
+        side_effect=LegacyBigQueryStorageError,
+    )
+    with patcher, pytest.raises(LegacyBigQueryStorageError):
+        result_gen = module_under_test._download_table_bqstorage(
+            "some-project", table_ref, bqstorage_client
+        )
+        next(result_gen)
+
+
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_download_arrow_row_iterator_unknown_field_type(module_under_test):
     fake_page = api_core.page_iterator.Page(

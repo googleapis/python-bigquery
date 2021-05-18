@@ -348,6 +348,31 @@ def test__make_bqstorage_client_true_raises_import_error(missing_bq_storage):
 @pytest.mark.skipif(
     bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
 )
+def test__make_bqstorage_client_true_obsolete_dependency():
+    from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+
+    credentials_mock = mock.create_autospec(
+        google.auth.credentials.Credentials, instance=True
+    )
+
+    patcher = mock.patch(
+        "google.cloud.bigquery._helpers._verify_bq_storage_version",
+        side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+    )
+    with patcher, warnings.catch_warnings(record=True) as warned:
+        got = magics._make_bqstorage_client(True, credentials_mock, {})
+
+    assert got is None
+
+    matching_warnings = [
+        warning for warning in warned if "BQ Storage too old" in str(warning)
+    ]
+    assert matching_warnings, "Obsolete dependency warning not raised."
+
+
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
+)
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test__make_bqstorage_client_true_missing_gapic(missing_grpcio_lib):
     credentials_mock = mock.create_autospec(

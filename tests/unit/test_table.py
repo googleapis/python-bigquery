@@ -1768,6 +1768,27 @@ class TestRowIterator(unittest.TestCase):
             )
         )
 
+    def test__validate_bqstorage_returns_false_w_warning_if_obsolete_version(self):
+        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+
+        iterator = self._make_one(first_page_response=None)  # not cached
+
+        patcher = mock.patch(
+            "google.cloud.bigquery.table._helpers._verify_bq_storage_version",
+            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+        )
+        with patcher, warnings.catch_warnings(record=True) as warned:
+            result = iterator._validate_bqstorage(
+                bqstorage_client=None, create_bqstorage_client=True
+            )
+
+        self.assertFalse(result)
+
+        matching_warnings = [
+            warning for warning in warned if "BQ Storage too old" in str(warning)
+        ]
+        assert matching_warnings, "Obsolete dependency warning not raised."
+
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_to_arrow(self):
         from google.cloud.bigquery.schema import SchemaField

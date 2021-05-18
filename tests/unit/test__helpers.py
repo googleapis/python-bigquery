@@ -19,7 +19,13 @@ import unittest
 
 import mock
 
+try:
+    from google.cloud import bigquery_storage
+except ImportError:  # pragma: NO COVER
+    bigquery_storage = None
 
+
+@unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")
 class Test_verify_bq_storage_version(unittest.TestCase):
     def _call_fut(self):
         from google.cloud.bigquery._helpers import _verify_bq_storage_version

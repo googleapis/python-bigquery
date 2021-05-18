@@ -1768,6 +1768,9 @@ class TestRowIterator(unittest.TestCase):
             )
         )
 
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test__validate_bqstorage_returns_false_w_warning_if_obsolete_version(self):
         from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 

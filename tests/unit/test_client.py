@@ -861,6 +861,9 @@ class TestClient(unittest.TestCase):
         ]
         assert matching_warnings, "Missing dependency warning not raised."
 
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_create_bqstorage_client_obsolete_dependency(self):
         from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 

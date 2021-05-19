@@ -49,7 +49,7 @@ class Connection(object):
 
         if bqstorage_client is None:
             # A warning is already raised by the factory if instantiation fails.
-            bqstorage_client = client._create_bqstorage_client()
+            bqstorage_client = client._ensure_bqstorage_client()
             self._owns_bqstorage_client = bqstorage_client is not None
         else:
             self._owns_bqstorage_client = False

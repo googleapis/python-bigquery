@@ -2027,7 +2027,7 @@ class TestRowIterator(unittest.TestCase):
             and "REST" in str(warning)
         ]
         self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
-        mock_client._create_bqstorage_client.assert_not_called()
+        mock_client._ensure_bqstorage_client.assert_not_called()
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(
@@ -2123,7 +2123,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport = mock.create_autospec(
             big_query_read_grpc_transport.BigQueryReadGrpcTransport
         )
-        mock_client._create_bqstorage_client.return_value = bqstorage_client
+        mock_client._ensure_bqstorage_client.return_value = bqstorage_client
         session = bigquery_storage.types.ReadSession()
         bqstorage_client.create_read_session.return_value = session
         row_iterator = mut.RowIterator(
@@ -2138,11 +2138,11 @@ class TestRowIterator(unittest.TestCase):
             table=mut.TableReference.from_string("proj.dset.tbl"),
         )
         row_iterator.to_arrow(create_bqstorage_client=True)
-        mock_client._create_bqstorage_client.assert_called_once()
+        mock_client._ensure_bqstorage_client.assert_called_once()
         bqstorage_client._transport.grpc_channel.close.assert_called_once()
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_to_arrow_create_bqstorage_client_wo_bqstorage(self):
+    def test_to_arrow_ensure_bqstorage_client_wo_bqstorage(self):
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2157,14 +2157,14 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
 
         mock_client = _mock_client()
-        mock_client._create_bqstorage_client.return_value = None
+        mock_client._ensure_bqstorage_client.return_value = None
         row_iterator = self._make_one(mock_client, api_request, path, schema)
 
         tbl = row_iterator.to_arrow(create_bqstorage_client=True)
 
         # The client attempted to create a BQ Storage client, and even though
         # that was not possible, results were still returned without errors.
-        mock_client._create_bqstorage_client.assert_called_once()
+        mock_client._ensure_bqstorage_client.assert_called_once()
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 2)
 
@@ -2848,7 +2848,7 @@ class TestRowIterator(unittest.TestCase):
             and "REST" in str(warning)
         ]
         self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
-        mock_client._create_bqstorage_client.assert_not_called()
+        mock_client._ensure_bqstorage_client.assert_not_called()
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(
@@ -2863,7 +2863,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport = mock.create_autospec(
             big_query_read_grpc_transport.BigQueryReadGrpcTransport
         )
-        mock_client._create_bqstorage_client.return_value = bqstorage_client
+        mock_client._ensure_bqstorage_client.return_value = bqstorage_client
         session = bigquery_storage.types.ReadSession()
         bqstorage_client.create_read_session.return_value = session
         row_iterator = mut.RowIterator(
@@ -2878,7 +2878,7 @@ class TestRowIterator(unittest.TestCase):
             table=mut.TableReference.from_string("proj.dset.tbl"),
         )
         row_iterator.to_dataframe(create_bqstorage_client=True)
-        mock_client._create_bqstorage_client.assert_called_once()
+        mock_client._ensure_bqstorage_client.assert_called_once()
         bqstorage_client._transport.grpc_channel.close.assert_called_once()
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")

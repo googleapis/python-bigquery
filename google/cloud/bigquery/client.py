@@ -50,6 +50,13 @@ import google.cloud._helpers
 from google.cloud import exceptions  # pytype: disable=import-error
 from google.cloud.client import ClientWithProject  # pytype: disable=import-error
 
+try:
+    from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
+        DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
+    )
+except ImportError:
+    DEFAULT_BQSTORAGE_CLIENT_INFO = None
+
 from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
@@ -447,15 +454,38 @@ class Client(ClientWithProject):
         )
         return DatasetReference(project, dataset_id)
 
-    def _create_bqstorage_client(self):
+    def _ensure_bqstorage_client(
+        self,
+        bqstorage_client: Optional[
+            "google.cloud.bigquery_storage.BigQueryReadClient"
+        ] = None,
+        client_options: Optional[google.api_core.client_options.ClientOptions] = None,
+        client_info: Optional[
+            "google.api_core.gapic_v1.client_info.ClientInfo"
+        ] = DEFAULT_BQSTORAGE_CLIENT_INFO,
+    ) -> Optional["google.cloud.bigquery_storage.BigQueryReadClient"]:
         """Create a BigQuery Storage API client using this client's credentials.
 
-        If a client cannot be created due to missing dependencies, raise a
-        warning and return ``None``.
+        If a client cannot be created due to a missing or outdated dependency
+        `google-cloud-bigquery-storage`, raise a warning and return ``None``.
+
+        If the `bqstorage_client` argument is not ``None``, still perform the version
+        check and return the argument back to the caller if the check passes. If it
+        fails, raise a warning and return ``None``.
+
+        Args:
+            bqstorage_client:
+                An existing BigQuery Storage client instance to check for version
+                compatibility. If ``None``, a new instance is created and returned.
+            client_options:
+                Custom options used with a new BigQuery Storage client instance if one
+                is created.
+            client_info:
+                The client info used with a new BigQuery Storage client instance if one
+                is created.
 
         Returns:
-            Optional[google.cloud.bigquery_storage.BigQueryReadClient]:
-                A BigQuery Storage API client.
+            A BigQuery Storage API client.
         """
         try:
             from google.cloud import bigquery_storage
@@ -472,7 +502,14 @@ class Client(ClientWithProject):
             warnings.warn(str(exc))
             return None
 
-        return bigquery_storage.BigQueryReadClient(credentials=self._credentials)
+        if bqstorage_client is None:
+            bqstorage_client = bigquery_storage.BigQueryReadClient(
+                credentials=self._credentials,
+                client_options=client_options,
+                client_info=client_info,
+            )
+
+        return bqstorage_client
 
     def _dataset_from_arg(self, dataset):
         if isinstance(dataset, str):

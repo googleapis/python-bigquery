@@ -72,7 +72,7 @@ class TestCursor(unittest.TestCase):
         mock_client._default_query_job_config = default_query_job_config
 
         # Assure that the REST client gets used, not the BQ Storage client.
-        mock_client._create_bqstorage_client.return_value = None
+        mock_client._ensure_bqstorage_client.return_value = None
 
         return mock_client
 

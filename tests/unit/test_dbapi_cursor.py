@@ -365,7 +365,11 @@ class TestCursor(unittest.TestCase):
 
         row_data = [table.Row([1.1, 1.2], {"foo": 0, "bar": 1})]
 
+        def fake_ensure_bqstorage_client(bqstorage_client=None, **kwargs):
+            return bqstorage_client
+
         mock_client = self._mock_client(rows=row_data)
+        mock_client._ensure_bqstorage_client.side_effect = fake_ensure_bqstorage_client
         mock_bqstorage_client = self._mock_bqstorage_client(
             stream_count=1, rows=row_data,
         )
@@ -396,7 +400,11 @@ class TestCursor(unittest.TestCase):
         row_data = [table.Row([1.2, 1.1], {"bar": 1, "foo": 0})]
         bqstorage_streamed_rows = [{"bar": _to_pyarrow(1.2), "foo": _to_pyarrow(1.1)}]
 
+        def fake_ensure_bqstorage_client(bqstorage_client=None, **kwargs):
+            return bqstorage_client
+
         mock_client = self._mock_client(rows=row_data)
+        mock_client._ensure_bqstorage_client.side_effect = fake_ensure_bqstorage_client
         mock_bqstorage_client = self._mock_bqstorage_client(
             stream_count=1, rows=bqstorage_streamed_rows,
         )
@@ -429,39 +437,6 @@ class TestCursor(unittest.TestCase):
         expected_row_data = [[("foo", 1.1), ("bar", 1.2)]]
 
         self.assertEqual(sorted_row_data, expected_row_data)
-
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    def test_fetchall_w_obsolete_bqstorage_client_error_no_fallback(self):
-        from google.cloud.bigquery import dbapi
-        from google.cloud.bigquery import table
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
-        row_data = [table.Row([1.1, 1.2], {"foo": 0, "bar": 1})]
-
-        mock_client = self._mock_client(rows=[])
-        mock_bqstorage_client = self._mock_bqstorage_client(
-            stream_count=1, rows=row_data,
-        )
-
-        connection = dbapi.connect(
-            client=mock_client, bqstorage_client=mock_bqstorage_client,
-        )
-        cursor = connection.cursor()
-        cursor.execute("SELECT foo, bar FROM some_table")
-
-        patcher = mock.patch(
-            "google.cloud.bigquery.dbapi.cursor._verify_bq_storage_version",
-            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
-        )
-        with patcher, self.assertRaisesRegex(
-            LegacyBigQueryStorageError, "BQ Storage too old"
-        ):
-            cursor.fetchall()
-
-        # the default client was not used
-        mock_client.list_rows.assert_not_called()
 
     def test_execute_custom_job_id(self):
         from google.cloud.bigquery.dbapi import connect

@@ -77,6 +77,9 @@ class SchemaField(object):
         description=_DEFAULT_VALUE,
         fields=(),
         policy_tags=None,
+        precision=_DEFAULT_VALUE,
+        scale=_DEFAULT_VALUE,
+        maxLength=_DEFAULT_VALUE,
     ):
         self._properties = {
             "name": name,
@@ -86,6 +89,12 @@ class SchemaField(object):
             self._properties["mode"] = mode.upper()
         if description is not _DEFAULT_VALUE:
             self._properties["description"] = description
+        if precision is not _DEFAULT_VALUE:
+            self._properties["precision"] = precision
+        if scale is not _DEFAULT_VALUE:
+            self._properties["scale"] = scale
+        if maxLength is not _DEFAULT_VALUE:
+            self._properties["maxLength"] = maxLength
         self._fields = tuple(fields)
         self._policy_tags = policy_tags
 
@@ -147,6 +156,21 @@ class SchemaField(object):
     def description(self):
         """Optional[str]: description for the field."""
         return self._properties.get("description")
+
+    @property
+    def precision(self):
+        """Optional[str]: numeric precision for the field."""
+        return self._properties.get("precision")
+
+    @property
+    def scale(self):
+        """Optional[str]: numeric scale for the field."""
+        return self._properties.get("scale")
+
+    @property
+    def maxLength(self):
+        """Optional[str]: maximum string or bytes length for the field."""
+        return self._properties.get("maxLength")
 
     @property
     def fields(self):
@@ -259,6 +283,13 @@ class SchemaField(object):
         return "SchemaField{}".format(self._key())
 
 
+def _get_int(f, name):
+    v = f.get(name)
+    if v is not None:
+        v = int(v)
+    return v
+
+
 def _parse_schema_resource(info):
     """Parse a resource fragment into a schema field.
 
@@ -278,10 +309,23 @@ def _parse_schema_resource(info):
         field_type = r_field["type"]
         mode = r_field.get("mode", "NULLABLE")
         description = r_field.get("description")
+        precision = _get_int(r_field, "precision")
+        scale = _get_int(r_field, "scale")
+        maxLength = _get_int(r_field, "maxLength")
         sub_fields = _parse_schema_resource(r_field)
         policy_tags = PolicyTagList.from_api_repr(r_field.get("policyTags"))
         schema.append(
-            SchemaField(name, field_type, mode, description, sub_fields, policy_tags)
+            SchemaField(
+                name,
+                field_type,
+                mode,
+                description,
+                sub_fields,
+                policy_tags,
+                precision=precision,
+                scale=scale,
+                maxLength=maxLength,
+            )
         )
     return schema
 

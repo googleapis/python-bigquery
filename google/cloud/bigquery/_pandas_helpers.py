@@ -42,7 +42,6 @@ else:
     _ARROW_COMPRESSION_SUPPORT = True
 
 from google.cloud.bigquery import schema
-from google.cloud.bigquery._helpers import _verify_bq_storage_version
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -628,8 +627,6 @@ def _download_table_bqstorage(
     # Passing a BQ Storage client in implies that the BigQuery Storage library
     # is available and can be imported.
     from google.cloud import bigquery_storage
-
-    _verify_bq_storage_version()
 
     if "$" in table.table_id:
         raise ValueError(

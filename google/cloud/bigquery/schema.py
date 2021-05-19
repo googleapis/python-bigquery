@@ -215,9 +215,19 @@ class SchemaField(object):
         Returns:
             Tuple: The contents of this :class:`~google.cloud.bigquery.schema.SchemaField`.
         """
+        field_type = self.field_type.upper()
+        if field_type == 'STRING':
+            if self.maxLength is not None:
+                field_type = f"STRING({self.maxLength})"
+        elif field_type == 'NUMERIC':
+            if self.precision is not None:
+                if self.scale is not None:
+                    field_type = f"NUMERIC({self.precision}, {self.scale})"
+                else:
+                    field_type = f"NUMERIC({self.precision})"
         return (
             self.name,
-            self.field_type.upper(),
+            field_type,
             # Mode is always str, if not given it defaults to a str value
             self.mode.upper(),  # pytype: disable=attribute-error
             self.description,

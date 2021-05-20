@@ -24,6 +24,7 @@ import pytest
 import pytz
 
 import google.api_core.exceptions
+from test_utils.imports import maybe_fail_import
 
 try:
     from google.cloud import bigquery_storage
@@ -1767,6 +1768,24 @@ class TestRowIterator(unittest.TestCase):
                 bqstorage_client=None, create_bqstorage_client=True
             )
         )
+
+    def test__validate_bqstorage_returns_false_if_missing_dependency(self):
+        iterator = self._make_one(first_page_response=None)  # not cached
+
+        def fail_bqstorage_import(name, globals, locals, fromlist, level):
+            # NOTE: *very* simplified, assuming a straightforward absolute import
+            return "bigquery_storage" in name or (
+                fromlist is not None and "bigquery_storage" in fromlist
+            )
+
+        no_bqstorage = maybe_fail_import(predicate=fail_bqstorage_import)
+
+        with no_bqstorage:
+            result = iterator._validate_bqstorage(
+                bqstorage_client=None, create_bqstorage_client=True
+            )
+
+        self.assertFalse(result)
 
     @unittest.skipIf(
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"

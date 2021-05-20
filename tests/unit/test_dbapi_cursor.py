@@ -311,6 +311,7 @@ class TestCursor(unittest.TestCase):
         mock_bqstorage_client = self._mock_bqstorage_client(
             stream_count=1, rows=bqstorage_streamed_rows,
         )
+        mock_client._ensure_bqstorage_client.return_value = mock_bqstorage_client
 
         connection = dbapi.connect(
             client=mock_client, bqstorage_client=mock_bqstorage_client,
@@ -341,6 +342,7 @@ class TestCursor(unittest.TestCase):
 
         mock_client = self._mock_client(rows=[])
         mock_bqstorage_client = self._mock_bqstorage_client(stream_count=0)
+        mock_client._ensure_bqstorage_client.return_value = mock_bqstorage_client
 
         connection = dbapi.connect(
             client=mock_client, bqstorage_client=mock_bqstorage_client,

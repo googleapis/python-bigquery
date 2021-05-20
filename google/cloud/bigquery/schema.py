@@ -122,6 +122,9 @@ class SchemaField(object):
             description=description,
             name=api_repr["name"],
             policy_tags=PolicyTagList.from_api_repr(api_repr.get("policyTags")),
+            precision=_get_int(api_repr, "precision"),
+            scale=_get_int(api_repr, "scale"),
+            maxLength=_get_int(api_repr, "maxLength"),
         )
 
     @property
@@ -294,8 +297,8 @@ class SchemaField(object):
 
 
 def _get_int(f, name):
-    v = f.get(name)
-    if v is not None:
+    v = f.get(name, _DEFAULT_VALUE)
+    if v is not _DEFAULT_VALUE:
         v = int(v)
     return v
 
@@ -310,34 +313,7 @@ def _parse_schema_resource(info):
         Optional[Sequence[google.cloud.bigquery.schema.SchemaField`]:
             A list of parsed fields, or ``None`` if no "fields" key found.
     """
-    if "fields" not in info:
-        return ()
-
-    schema = []
-    for r_field in info["fields"]:
-        name = r_field["name"]
-        field_type = r_field["type"]
-        mode = r_field.get("mode", "NULLABLE")
-        description = r_field.get("description")
-        precision = _get_int(r_field, "precision")
-        scale = _get_int(r_field, "scale")
-        maxLength = _get_int(r_field, "maxLength")
-        sub_fields = _parse_schema_resource(r_field)
-        policy_tags = PolicyTagList.from_api_repr(r_field.get("policyTags"))
-        schema.append(
-            SchemaField(
-                name,
-                field_type,
-                mode,
-                description,
-                sub_fields,
-                policy_tags,
-                precision=precision,
-                scale=scale,
-                maxLength=maxLength,
-            )
-        )
-    return schema
+    return [SchemaField.from_api_repr(f) for f in info.get("fields", ())]
 
 
 def _build_schema_resource(fields):

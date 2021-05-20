@@ -15,6 +15,7 @@
 import unittest
 
 import mock
+import pytest
 
 
 class TestSchemaField(unittest.TestCase):
@@ -717,43 +718,54 @@ class TestPolicyTags(unittest.TestCase):
         self.assertNotEqual(set_one, set_two)
 
 
-def test_parse_numeric_plain():
+@pytest.mark.parametrize(
+    "api,expect",
+    [
+        (
+            dict(name='n', type='NUMERIC'),
+            ('n', 'NUMERIC', None, None, None),
+            ),
+        (
+            dict(name='n', type='NUMERIC', precision=9),
+            ('n', 'NUMERIC', 9, None, None),
+         ),
+        (
+            dict(name='n', type='NUMERIC', precision=9, scale=2),
+            ('n', 'NUMERIC', 9, 2, None),
+            ),
+        (
+            dict(name='n', type='STRING'),
+            ('n', 'STRING', None, None, None),
+            ),
+        (
+            dict(name='n', type='STRING', maxLength=9),
+            ('n', 'STRING', None, None, 9),
+            ),
+        ])
+def test_from_api_repr_parameterized(api, expect):
     from google.cloud.bigquery.schema import SchemaField
 
-    field = SchemaField.from_api_repr({"name": "n", "type": "NUMERIC"})
-    assert (field.name, field.field_type, field.precision, field.scale) == (
-        "n",
-        "NUMERIC",
-        None,
-        None,
-    )
+    field = SchemaField.from_api_repr(api)
+
+    assert ((field.name, field.field_type, field.precision, field.scale, field.maxLength)
+            == expect)
 
 
-def test_parse_numeric_parameterized():
+@pytest.mark.parametrize(
+    "field,api",
+    [
+        (dict(name='n', field_type='NUMERIC'),
+         dict(name='n', type='NUMERIC', mode='NULLABLE')),
+        (dict(name='n', field_type='NUMERIC', precision=9),
+         dict(name='n', type='NUMERIC', mode='NULLABLE', precision=9)),
+        (dict(name='n', field_type='NUMERIC', precision=9, scale=2),
+         dict(name='n', type='NUMERIC', mode='NULLABLE', precision=9, scale=2)),
+        (dict(name='n', field_type='STRING'),
+         dict(name='n', type='STRING', mode='NULLABLE')),
+        (dict(name='n', field_type='STRING', maxLength=9),
+         dict(name='n', type='STRING', mode='NULLABLE', maxLength=9)),
+        ])
+def test_to_api_repr_parameterized(field, api):
     from google.cloud.bigquery.schema import SchemaField
 
-    field = SchemaField.from_api_repr(
-        {"name": "n", "type": "NUMERIC", "precision": "10", "scale": "2"}
-    )
-    assert (field.name, field.field_type, field.precision, field.scale) == (
-        "n",
-        "NUMERIC",
-        10,
-        2,
-    )
-    field = SchemaField.from_api_repr(
-        {"name": "n", "type": "NUMERIC", "precision": "10"}
-    )
-    assert (field.name, field.field_type, field.precision, field.scale) == (
-        "n",
-        "NUMERIC",
-        10,
-        None,
-    )
-
-
-def test_parse_string_parameterized():
-    from google.cloud.bigquery.schema import SchemaField
-
-    field = SchemaField.from_api_repr({"name": "n", "type": "STRING", "maxLength": "2"})
-    assert (field.name, field.field_type, field.maxLength) == ("n", "STRING", 2)
+    assert SchemaField(**field).to_api_repr() == api

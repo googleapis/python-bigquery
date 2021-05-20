@@ -98,6 +98,13 @@ class SchemaField(object):
         self._fields = tuple(fields)
         self._policy_tags = policy_tags
 
+    @staticmethod
+    def __get_int(f, name):
+        v = f.get(name, _DEFAULT_VALUE)
+        if v is not _DEFAULT_VALUE:
+            v = int(v)
+        return v
+
     @classmethod
     def from_api_repr(cls, api_repr: dict) -> "SchemaField":
         """Return a ``SchemaField`` object deserialized from a dictionary.
@@ -122,9 +129,9 @@ class SchemaField(object):
             description=description,
             name=api_repr["name"],
             policy_tags=PolicyTagList.from_api_repr(api_repr.get("policyTags")),
-            precision=_get_int(api_repr, "precision"),
-            scale=_get_int(api_repr, "scale"),
-            maxLength=_get_int(api_repr, "maxLength"),
+            precision=cls.__get_int(api_repr, "precision"),
+            scale=cls.__get_int(api_repr, "scale"),
+            maxLength=cls.__get_int(api_repr, "maxLength"),
         )
 
     @property
@@ -294,13 +301,6 @@ class SchemaField(object):
 
     def __repr__(self):
         return "SchemaField{}".format(self._key())
-
-
-def _get_int(f, name):
-    v = f.get(name, _DEFAULT_VALUE)
-    if v is not _DEFAULT_VALUE:
-        v = int(v)
-    return v
 
 
 def _parse_schema_resource(info):

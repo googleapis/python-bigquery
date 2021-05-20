@@ -719,36 +719,53 @@ class TestPolicyTags(unittest.TestCase):
 
 
 @pytest.mark.parametrize(
-    "api,expect",
+    "api,expect,key2",
     [
         (
             dict(name='n', type='NUMERIC'),
             ('n', 'NUMERIC', None, None, None),
+            ('n', 'NUMERIC'),
             ),
         (
             dict(name='n', type='NUMERIC', precision=9),
             ('n', 'NUMERIC', 9, None, None),
+            ('n', 'NUMERIC(9)'),
          ),
         (
             dict(name='n', type='NUMERIC', precision=9, scale=2),
             ('n', 'NUMERIC', 9, 2, None),
+            ('n', 'NUMERIC(9, 2)'),
             ),
         (
             dict(name='n', type='STRING'),
             ('n', 'STRING', None, None, None),
+            ('n', 'STRING'),
             ),
         (
             dict(name='n', type='STRING', maxLength=9),
             ('n', 'STRING', None, None, 9),
+            ('n', 'STRING(9)'),
+            ),
+        (
+            dict(name='n', type='BYTES'),
+            ('n', 'BYTES', None, None, None),
+            ('n', 'BYTES'),
+            ),
+        (
+            dict(name='n', type='BYTES', maxLength=9),
+            ('n', 'BYTES', None, None, 9),
+            ('n', 'BYTES(9)'),
             ),
         ])
-def test_from_api_repr_parameterized(api, expect):
+def test_from_api_repr_parameterized(api, expect, key2):
     from google.cloud.bigquery.schema import SchemaField
 
     field = SchemaField.from_api_repr(api)
 
     assert ((field.name, field.field_type, field.precision, field.scale, field.maxLength)
             == expect)
+
+    assert field._key()[:2] == key2
 
 
 @pytest.mark.parametrize(
@@ -764,6 +781,10 @@ def test_from_api_repr_parameterized(api, expect):
          dict(name='n', type='STRING', mode='NULLABLE')),
         (dict(name='n', field_type='STRING', maxLength=9),
          dict(name='n', type='STRING', mode='NULLABLE', maxLength=9)),
+        (dict(name='n', field_type='BYTES'),
+         dict(name='n', type='BYTES', mode='NULLABLE')),
+        (dict(name='n', field_type='BYTES', maxLength=9),
+         dict(name='n', type='BYTES', mode='NULLABLE', maxLength=9)),
         ])
 def test_to_api_repr_parameterized(field, api):
     from google.cloud.bigquery.schema import SchemaField

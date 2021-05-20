@@ -67,6 +67,15 @@ class SchemaField(object):
 
         policy_tags (Optional[PolicyTagList]): The policy tag list for the field.
 
+        precision (Optional[int]):
+            Precison (number of digits) of fields with NUMERIC type.
+
+        scale (Optional[int]):
+            Scale (digits after decimal) of fields with NUMERIC type.
+
+        maxLength (Optional[int]):
+            Maximim length of fields with STRING or BYTES type.
+
     """
 
     def __init__(
@@ -169,17 +178,17 @@ class SchemaField(object):
 
     @property
     def precision(self):
-        """Optional[str]: numeric precision for the field."""
+        """Optional[int]: Precision (number of digits) for the NUMERIC field."""
         return self._properties.get("precision")
 
     @property
     def scale(self):
-        """Optional[str]: numeric scale for the field."""
+        """Optional[int]: Scale (digits after decimal) for the NUMERIC field."""
         return self._properties.get("scale")
 
     @property
     def maxLength(self):
-        """Optional[str]: maximum string or bytes length for the field."""
+        """Optional[int]: Maximum length for the STRING or BYTES field."""
         return self._properties.get("maxLength")
 
     @property

@@ -737,6 +737,21 @@ class TestPolicyTags(unittest.TestCase):
             ("n", "NUMERIC(9, 2)"),
         ),
         (
+            dict(name="n", type="BIGNUMERIC"),
+            ("n", "BIGNUMERIC", None, None, None),
+            ("n", "BIGNUMERIC"),
+        ),
+        (
+            dict(name="n", type="BIGNUMERIC", precision=40),
+            ("n", "BIGNUMERIC", 40, None, None),
+            ("n", "BIGNUMERIC(40)"),
+        ),
+        (
+            dict(name="n", type="BIGNUMERIC", precision=40, scale=2),
+            ("n", "BIGNUMERIC", 40, 2, None),
+            ("n", "BIGNUMERIC(40, 2)"),
+        ),
+        (
             dict(name="n", type="STRING"),
             ("n", "STRING", None, None, None),
             ("n", "STRING"),
@@ -788,6 +803,18 @@ def test_from_api_repr_parameterized(api, expect, key2):
         (
             dict(name="n", field_type="NUMERIC", precision=9, scale=2),
             dict(name="n", type="NUMERIC", mode="NULLABLE", precision=9, scale=2),
+        ),
+        (
+            dict(name="n", field_type="BIGNUMERIC"),
+            dict(name="n", type="BIGNUMERIC", mode="NULLABLE"),
+        ),
+        (
+            dict(name="n", field_type="BIGNUMERIC", precision=40),
+            dict(name="n", type="BIGNUMERIC", mode="NULLABLE", precision=40),
+        ),
+        (
+            dict(name="n", field_type="BIGNUMERIC", precision=40, scale=2),
+            dict(name="n", type="BIGNUMERIC", mode="NULLABLE", precision=40, scale=2),
         ),
         (
             dict(name="n", field_type="STRING"),

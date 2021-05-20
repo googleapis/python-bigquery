@@ -238,12 +238,12 @@ class SchemaField(object):
         if field_type == "STRING" or field_type == "BYTES":
             if self.maxLength is not None:
                 field_type = f"{field_type}({self.maxLength})"
-        elif field_type == "NUMERIC":
+        elif field_type.endswith("NUMERIC"):
             if self.precision is not None:
                 if self.scale is not None:
-                    field_type = f"NUMERIC({self.precision}, {self.scale})"
+                    field_type = f"{field_type}({self.precision}, {self.scale})"
                 else:
-                    field_type = f"NUMERIC({self.precision})"
+                    field_type = f"{field_type}({self.precision})"
         return (
             self.name,
             field_type,

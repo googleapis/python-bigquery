@@ -718,9 +718,9 @@ class TestPolicyTags(unittest.TestCase):
 
 
 def test_parse_numeric_plain():
-    from google.cloud.bigquery.schema import _parse_schema_resource
+    from google.cloud.bigquery.schema import SchemaField
 
-    [field] = _parse_schema_resource({"fields": [{"name": "n", "type": "NUMERIC"}]})
+    field = SchemaField.from_api_repr({"name": "n", "type": "NUMERIC"})
     assert (field.name, field.field_type, field.precision, field.scale) == (
         "n",
         "NUMERIC",
@@ -730,10 +730,10 @@ def test_parse_numeric_plain():
 
 
 def test_parse_numeric_parameterized():
-    from google.cloud.bigquery.schema import _parse_schema_resource
+    from google.cloud.bigquery.schema import SchemaField
 
-    [field] = _parse_schema_resource(
-        {"fields": [{"name": "n", "type": "NUMERIC", "precision": "10", "scale": "2"}]}
+    field = SchemaField.from_api_repr(
+        {"name": "n", "type": "NUMERIC", "precision": "10", "scale": "2"}
     )
     assert (field.name, field.field_type, field.precision, field.scale) == (
         "n",
@@ -741,8 +741,8 @@ def test_parse_numeric_parameterized():
         10,
         2,
     )
-    [field] = _parse_schema_resource(
-        {"fields": [{"name": "n", "type": "NUMERIC", "precision": "10"}]}
+    field = SchemaField.from_api_repr(
+        {"name": "n", "type": "NUMERIC", "precision": "10"}
     )
     assert (field.name, field.field_type, field.precision, field.scale) == (
         "n",
@@ -753,9 +753,7 @@ def test_parse_numeric_parameterized():
 
 
 def test_parse_string_parameterized():
-    from google.cloud.bigquery.schema import _parse_schema_resource
+    from google.cloud.bigquery.schema import SchemaField
 
-    [field] = _parse_schema_resource(
-        {"fields": [{"name": "n", "type": "STRING", "maxLength": "2"}]}
-    )
+    field = SchemaField.from_api_repr({"name": "n", "type": "STRING", "maxLength": "2"})
     assert (field.name, field.field_type, field.maxLength) == ("n", "STRING", 2)

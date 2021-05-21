@@ -783,7 +783,7 @@ def test_from_api_repr_parameterized(api, expect, key2):
         field.field_type,
         field.precision,
         field.scale,
-        field.maxLength,
+        field.max_length,
     ) == expect
 
     assert field._key()[:2] == key2
@@ -821,7 +821,7 @@ def test_from_api_repr_parameterized(api, expect, key2):
             dict(name="n", type="STRING", mode="NULLABLE"),
         ),
         (
-            dict(name="n", field_type="STRING", maxLength=9),
+            dict(name="n", field_type="STRING", max_length=9),
             dict(name="n", type="STRING", mode="NULLABLE", maxLength=9),
         ),
         (
@@ -829,7 +829,7 @@ def test_from_api_repr_parameterized(api, expect, key2):
             dict(name="n", type="BYTES", mode="NULLABLE"),
         ),
         (
-            dict(name="n", field_type="BYTES", maxLength=9),
+            dict(name="n", field_type="BYTES", max_length=9),
             dict(name="n", type="BYTES", mode="NULLABLE", maxLength=9),
         ),
     ],

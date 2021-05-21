@@ -73,7 +73,7 @@ class SchemaField(object):
         scale (Optional[int]):
             Scale (digits after decimal) of fields with NUMERIC or BIGNUMERIC type.
 
-        maxLength (Optional[int]):
+        max_length (Optional[int]):
             Maximim length of fields with STRING or BYTES type.
 
     """
@@ -88,7 +88,7 @@ class SchemaField(object):
         policy_tags=None,
         precision=_DEFAULT_VALUE,
         scale=_DEFAULT_VALUE,
-        maxLength=_DEFAULT_VALUE,
+        max_length=_DEFAULT_VALUE,
     ):
         self._properties = {
             "name": name,
@@ -102,8 +102,8 @@ class SchemaField(object):
             self._properties["precision"] = precision
         if scale is not _DEFAULT_VALUE:
             self._properties["scale"] = scale
-        if maxLength is not _DEFAULT_VALUE:
-            self._properties["maxLength"] = maxLength
+        if max_length is not _DEFAULT_VALUE:
+            self._properties["maxLength"] = max_length
         self._fields = tuple(fields)
         self._policy_tags = policy_tags
 
@@ -140,7 +140,7 @@ class SchemaField(object):
             policy_tags=PolicyTagList.from_api_repr(api_repr.get("policyTags")),
             precision=cls.__get_int(api_repr, "precision"),
             scale=cls.__get_int(api_repr, "scale"),
-            maxLength=cls.__get_int(api_repr, "maxLength"),
+            max_length=cls.__get_int(api_repr, "maxLength"),
         )
 
     @property
@@ -187,7 +187,7 @@ class SchemaField(object):
         return self._properties.get("scale")
 
     @property
-    def maxLength(self):
+    def max_length(self):
         """Optional[int]: Maximum length for the STRING or BYTES field."""
         return self._properties.get("maxLength")
 
@@ -236,8 +236,8 @@ class SchemaField(object):
         """
         field_type = self.field_type.upper()
         if field_type == "STRING" or field_type == "BYTES":
-            if self.maxLength is not None:
-                field_type = f"{field_type}({self.maxLength})"
+            if self.max_length is not None:
+                field_type = f"{field_type}({self.max_length})"
         elif field_type.endswith("NUMERIC"):
             if self.precision is not None:
                 if self.scale is not None:

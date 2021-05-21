@@ -68,10 +68,10 @@ class SchemaField(object):
         policy_tags (Optional[PolicyTagList]): The policy tag list for the field.
 
         precision (Optional[int]):
-            Precison (number of digits) of fields with NUMERIC type.
+            Precison (number of digits) of fields with NUMERIC or BIGNUMERIC type.
 
         scale (Optional[int]):
-            Scale (digits after decimal) of fields with NUMERIC type.
+            Scale (digits after decimal) of fields with NUMERIC or BIGNUMERIC type.
 
         maxLength (Optional[int]):
             Maximim length of fields with STRING or BYTES type.
@@ -108,8 +108,8 @@ class SchemaField(object):
         self._policy_tags = policy_tags
 
     @staticmethod
-    def __get_int(f, name):
-        v = f.get(name, _DEFAULT_VALUE)
+    def __get_int(api_repr, name):
+        v = api_repr.get(name, _DEFAULT_VALUE)
         if v is not _DEFAULT_VALUE:
             v = int(v)
         return v

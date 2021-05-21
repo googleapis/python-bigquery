@@ -2188,17 +2188,17 @@ class TestBigQuery(unittest.TestCase):
             ("b", "BYTES"),
             ("b9", "BYTES(9)"),
         )
+        self.to_delete.insert(0, Table(f"{client.project}.{table_id}"))
         client.query(
             "create table {} ({})".format(
                 table_id, ", ".join(" ".join(f) for f in fields)
             )
         ).result()
         table = client.get_table(table_id)
-        self.to_delete.insert(0, table)
         table_id2 = table_id + "2"
+        self.to_delete.insert(0, Table(f"{client.project}.{table_id2}"))
         client.create_table(Table(f"{client.project}.{table_id2}", table.schema))
         table2 = client.get_table(table_id2)
-        self.to_delete.insert(0, table2)
 
         self.assertEqual(tuple(s._key()[:2] for s in table2.schema), fields)
 

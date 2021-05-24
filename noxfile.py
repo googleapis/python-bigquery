@@ -214,6 +214,7 @@ def prerelease_deps(session):
     session.install("--pre", "grpcio", "pandas")
     session.install(
         "freezegun",
+        "google-cloud-datacatalog",
         "google-cloud-storage",
         "google-cloud-testutils",
         "IPython",

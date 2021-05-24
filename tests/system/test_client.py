@@ -383,9 +383,9 @@ class TestBigQuery(unittest.TestCase):
 
     def test_create_table_with_real_custom_policy(self):
         from google.cloud.bigquery.schema import PolicyTagList
-        from google.cloud.datacatalog_v1beta1 import PolicyTagManagerClient
-        from google.cloud.datacatalog_v1beta1.types import PolicyTag
-        from google.cloud.datacatalog_v1beta1.types import Taxonomy
+        from google.cloud.datacatalog_v1 import PolicyTagManagerClient
+        from google.cloud.datacatalog_v1.types import PolicyTag
+        from google.cloud.datacatalog_v1.types import Taxonomy
 
         policy_tag_client = PolicyTagManagerClient()
 

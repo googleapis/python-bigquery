@@ -77,11 +77,4 @@ class ParquetOptions:
             Dict[str, bool]:
                 A dictionary in the format used by the BigQuery API.
         """
-        result = {}
-
-        if self.enum_as_string is not None:
-            result["enumAsString"] = self.enum_as_string
-        if self.enable_list_inference is not None:
-            result["enableListInference"] = self.enable_list_inference
-
-        return result
+        return copy.deepcopy(self._properties)

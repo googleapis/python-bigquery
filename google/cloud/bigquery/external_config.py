@@ -27,6 +27,7 @@ from google.cloud.bigquery._helpers import _to_bytes
 from google.cloud.bigquery._helpers import _bytes_to_json
 from google.cloud.bigquery._helpers import _int_or_none
 from google.cloud.bigquery._helpers import _str_or_none
+from google.cloud.bigquery.format_options import ParquetOptions
 from google.cloud.bigquery.schema import SchemaField
 
 
@@ -52,6 +53,12 @@ class ExternalSourceFormat(object):
 
     DATASTORE_BACKUP = "DATASTORE_BACKUP"
     """Specifies datastore backup format"""
+
+    ORC = "ORC"
+    """Specifies ORC format."""
+
+    PARQUET = "PARQUET"
+    """Specifies Parquet format."""
 
     BIGTABLE = "BIGTABLE"
     """Specifies Bigtable format."""
@@ -540,7 +547,7 @@ class GoogleSheetsOptions(object):
         return config
 
 
-_OPTION_CLASSES = (BigtableOptions, CSVOptions, GoogleSheetsOptions)
+_OPTION_CLASSES = (BigtableOptions, CSVOptions, GoogleSheetsOptions, ParquetOptions)
 
 
 class HivePartitioningOptions(object):
@@ -783,6 +790,24 @@ class ExternalConfig(object):
         if value is not None:
             prop = {"fields": [field.to_api_repr() for field in value]}
         self._properties["schema"] = prop
+
+    @property
+    def parquet_options(self):
+        """Optional[google.cloud.bigquery.format_options.ParquetOptions]: Additional
+        properties to set if ``sourceFormat`` is set to PARQUET.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.parquet_options
+        """
+        prop = self._properties.get("parquetOptions")
+        if prop is not None:
+            prop = ParquetOptions.from_api_repr(prop)
+        return prop
+
+    @parquet_options.setter
+    def parquet_options(self, value):
+        prop = value.to_api_repr() if value is not None else None
+        self._properties["parquetOptions"] = prop
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.

@@ -799,15 +799,16 @@ class ExternalConfig(object):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.parquet_options
         """
-        prop = self._properties.get("parquetOptions")
-        if prop is not None:
-            prop = ParquetOptions.from_api_repr(prop)
-        return prop
+        if self.source_format != ExternalSourceFormat.PARQUET:
+            return None
+        return self._options
 
     @parquet_options.setter
     def parquet_options(self, value):
-        prop = value.to_api_repr() if value is not None else None
-        self._properties["parquetOptions"] = prop
+        if self.source_format != ExternalSourceFormat.PARQUET:
+            msg = f"Cannot set Parquet options, source format is {self.source_format}"
+            raise TypeError(msg)
+        self._options = value
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.

@@ -425,6 +425,57 @@ class TestExternalConfig(unittest.TestCase):
 
         self.assertEqual(got_resource, exp_resource)
 
+    def test_parquet_options_getter(self):
+        from google.cloud.bigquery.format_options import ParquetOptions
+
+        parquet_options = ParquetOptions.from_api_repr(
+            {"enumAsString": True, "enableListInference": False}
+        )
+        ec = external_config.ExternalConfig(
+            external_config.ExternalSourceFormat.PARQUET
+        )
+
+        self.assertIsNone(ec.parquet_options.enum_as_string)
+        self.assertIsNone(ec.parquet_options.enable_list_inference)
+
+        ec._options = parquet_options
+
+        self.assertTrue(ec.parquet_options.enum_as_string)
+        self.assertFalse(ec.parquet_options.enable_list_inference)
+
+        self.assertIs(ec.parquet_options, ec.options)
+
+    def test_parquet_options_getter_non_parquet_format(self):
+        ec = external_config.ExternalConfig(external_config.ExternalSourceFormat.CSV)
+        self.assertIsNone(ec.parquet_options)
+
+    def test_parquet_options_setter(self):
+        from google.cloud.bigquery.format_options import ParquetOptions
+
+        parquet_options = ParquetOptions.from_api_repr(
+            {"enumAsString": False, "enableListInference": True}
+        )
+        ec = external_config.ExternalConfig(
+            external_config.ExternalSourceFormat.PARQUET
+        )
+
+        ec.parquet_options = parquet_options
+
+        # Setting Parquet options should be reflected in the generic options attribute.
+        self.assertFalse(ec.options.enum_as_string)
+        self.assertTrue(ec.options.enable_list_inference)
+
+    def test_parquet_options_setter_non_parquet_format(self):
+        from google.cloud.bigquery.format_options import ParquetOptions
+
+        parquet_options = ParquetOptions.from_api_repr(
+            {"enumAsString": False, "enableListInference": True}
+        )
+        ec = external_config.ExternalConfig(external_config.ExternalSourceFormat.CSV)
+
+        with self.assertRaisesRegex(TypeError, "Cannot set.*source format is CSV"):
+            ec.parquet_options = parquet_options
+
     def test_from_api_repr_parquet(self):
         from google.cloud.bigquery.format_options import ParquetOptions
 

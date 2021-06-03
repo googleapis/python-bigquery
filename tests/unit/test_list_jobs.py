@@ -70,11 +70,7 @@ def test_list_jobs_defaults(client, PROJECT, DS_ID, extra, query):
         "configuration": {
             "copy": {
                 "sourceTables": [
-                    {
-                        "projectId": PROJECT,
-                        "datasetId": DS_ID,
-                        "tableId": SOURCE_TABLE,
-                    }
+                    {"projectId": PROJECT, "datasetId": DS_ID, "tableId": SOURCE_TABLE}
                 ],
                 "destinationTable": {
                     "projectId": PROJECT,
@@ -129,6 +125,7 @@ def test_list_jobs_defaults(client, PROJECT, DS_ID, extra, query):
         timeout=None,
     )
 
+
 def test_list_jobs_load_job_wo_sourceUris(client, PROJECT, DS_ID):
     from google.cloud.bigquery.job import LoadJob
 
@@ -177,6 +174,7 @@ def test_list_jobs_load_job_wo_sourceUris(client, PROJECT, DS_ID):
         timeout=None,
     )
 
+
 def test_list_jobs_explicit_missing(client, PROJECT):
     PATH = "projects/%s/jobs" % PROJECT
     DATA = {}
@@ -211,6 +209,7 @@ def test_list_jobs_explicit_missing(client, PROJECT):
         timeout=None,
     )
 
+
 def test_list_jobs_w_project(client, PROJECT):
     conn = client._connection = make_connection({})
 
@@ -223,6 +222,7 @@ def test_list_jobs_w_project(client, PROJECT):
         timeout=None,
     )
 
+
 def test_list_jobs_w_timeout(client, PROJECT):
     conn = client._connection = make_connection({})
 
@@ -234,6 +234,7 @@ def test_list_jobs_w_timeout(client, PROJECT):
         query_params={"projection": "full"},
         timeout=7.5,
     )
+
 
 def test_list_jobs_w_time_filter(client, PROJECT):
     conn = client._connection = make_connection({})
@@ -256,6 +257,7 @@ def test_list_jobs_w_time_filter(client, PROJECT):
         },
         timeout=None,
     )
+
 
 def test_list_jobs_w_parent_job_filter(client, PROJECT):
     from google.cloud.bigquery import job

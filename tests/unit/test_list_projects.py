@@ -10,7 +10,6 @@ from .helpers import make_connection
 def test_list_projects_defaults(client, PROJECT, extra, query):
     from google.cloud.bigquery.client import Project
 
-    PROJECT_1 = "PROJECT_ONE"
     PROJECT_2 = "PROJECT_TWO"
     TOKEN = "TOKEN"
     DATA = {
@@ -56,6 +55,7 @@ def test_list_projects_defaults(client, PROJECT, extra, query):
         method="GET", path="/projects", query_params=query, timeout=None
     )
 
+
 def test_list_projects_w_timeout(client):
     TOKEN = "TOKEN"
     DATA = {
@@ -76,6 +76,7 @@ def test_list_projects_w_timeout(client):
     conn.api_request.assert_called_once_with(
         method="GET", path="/projects", query_params={}, timeout=7.5
     )
+
 
 def test_list_projects_explicit_response_missing_projects_key(client):
     TOKEN = "TOKEN"

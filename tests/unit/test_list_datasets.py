@@ -20,19 +20,13 @@ def test_list_datasets_defaults(client, PROJECT, extra, query):
             {
                 "kind": "bigquery#dataset",
                 "id": "%s:%s" % (PROJECT, DATASET_1),
-                "datasetReference": {
-                    "datasetId": DATASET_1,
-                    "projectId": PROJECT,
-                },
+                "datasetReference": {"datasetId": DATASET_1, "projectId": PROJECT},
                 "friendlyName": None,
             },
             {
                 "kind": "bigquery#dataset",
                 "id": "%s:%s" % (PROJECT, DATASET_2),
-                "datasetReference": {
-                    "datasetId": DATASET_2,
-                    "projectId": PROJECT,
-                },
+                "datasetReference": {"datasetId": DATASET_2, "projectId": PROJECT},
                 "friendlyName": "Two",
             },
         ],
@@ -60,6 +54,7 @@ def test_list_datasets_defaults(client, PROJECT, extra, query):
         method="GET", path="/%s" % PATH, query_params=query, timeout=None
     )
 
+
 def test_list_datasets_w_project_and_timeout(client, PROJECT):
     conn = client._connection = make_connection({})
 
@@ -78,6 +73,7 @@ def test_list_datasets_w_project_and_timeout(client, PROJECT):
         query_params={},
         timeout=7.5,
     )
+
 
 def test_list_datasets_explicit_response_missing_datasets_key(client, PROJECT):
     PATH = "projects/%s/datasets" % PROJECT

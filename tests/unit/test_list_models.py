@@ -32,6 +32,7 @@ def test_list_models_empty_w_timeout(client, PROJECT, DS_ID):
         method="GET", path=path, query_params={}, timeout=7.5
     )
 
+
 @pytest.mark.parametrize(
     "extra,query", [({}, {}), (dict(page_size=42), dict(maxResults=42))]
 )

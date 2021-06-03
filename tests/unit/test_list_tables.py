@@ -160,9 +160,7 @@ def test_list_tables_wrong_type(client):
 
 
 @dataset_polymorphic
-def test_list_tables_page_size(
-    make_dataset, get_reference, client, PROJECT, DS_ID
-):
+def test_list_tables_page_size(make_dataset, get_reference, client, PROJECT, DS_ID):
     path = "/projects/{}/datasets/{}/tables".format(PROJECT, DS_ID)
     conn = client._connection = make_connection({})
 

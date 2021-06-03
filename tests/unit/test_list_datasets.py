@@ -4,7 +4,10 @@ import pytest
 from .helpers import make_connection
 
 
-def test_list_datasets_defaults(client, PROJECT):
+@pytest.mark.parametrize(
+    "extra,query", [({}, {}), (dict(page_size=42), dict(maxResults=42))]
+)
+def test_list_datasets_defaults(client, PROJECT, extra, query):
     from google.cloud.bigquery.dataset import DatasetListItem
 
     DATASET_1 = "dataset_one"
@@ -36,7 +39,7 @@ def test_list_datasets_defaults(client, PROJECT):
     }
     conn = client._connection = make_connection(DATA)
 
-    iterator = client.list_datasets()
+    iterator = client.list_datasets(**extra)
     with mock.patch(
         "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
     ) as final_attributes:
@@ -54,7 +57,7 @@ def test_list_datasets_defaults(client, PROJECT):
     assert token == TOKEN
 
     conn.api_request.assert_called_once_with(
-        method="GET", path="/%s" % PATH, query_params={}, timeout=None
+        method="GET", path="/%s" % PATH, query_params=query, timeout=None
     )
 
 def test_list_datasets_w_project_and_timeout(client, PROJECT):

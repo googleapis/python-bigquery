@@ -2122,6 +2122,7 @@ class Client(ClientWithProject):
         timeout: float = None,
         min_creation_time: datetime.datetime = None,
         max_creation_time: datetime.datetime = None,
+        page_size: int = None,
     ) -> page_iterator.Iterator:
         """List jobs for the project associated with this client.
 
@@ -2218,6 +2219,7 @@ class Client(ClientWithProject):
             page_token=page_token,
             max_results=max_results,
             extra_params=extra_params,
+            page_size=page_size,
         )
 
     def load_table_from_uri(

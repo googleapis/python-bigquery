@@ -6,7 +6,10 @@ import pytest
 from .helpers import make_connection
 
 
-def test_list_jobs_defaults(client, PROJECT, DS_ID):
+@pytest.mark.parametrize(
+    "extra,query", [({}, {}), (dict(page_size=42), dict(maxResults=42))]
+)
+def test_list_jobs_defaults(client, PROJECT, DS_ID, extra, query):
     from google.cloud.bigquery.job import CopyJob
     from google.cloud.bigquery.job import CreateDisposition
     from google.cloud.bigquery.job import ExtractJob
@@ -102,7 +105,7 @@ def test_list_jobs_defaults(client, PROJECT, DS_ID):
     }
     conn = client._connection = make_connection(DATA)
 
-    iterator = client.list_jobs()
+    iterator = client.list_jobs(**extra)
     with mock.patch(
         "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
     ) as final_attributes:
@@ -122,7 +125,7 @@ def test_list_jobs_defaults(client, PROJECT, DS_ID):
     conn.api_request.assert_called_once_with(
         method="GET",
         path="/%s" % PATH,
-        query_params={"projection": "full"},
+        query_params=dict({"projection": "full"}, **query),
         timeout=None,
     )
 

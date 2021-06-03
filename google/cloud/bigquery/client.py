@@ -1346,6 +1346,7 @@ class Client(ClientWithProject):
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
+        page_size: int = None,
     ) -> page_iterator.Iterator:
         """[Beta] List routines in the dataset.
 
@@ -1407,6 +1408,7 @@ class Client(ClientWithProject):
             items_key="routines",
             page_token=page_token,
             max_results=max_results,
+            page_size=page_size,
         )
         result.dataset = dataset
         return result

@@ -286,6 +286,7 @@ class Client(ClientWithProject):
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
+        page_size=None,
     ) -> page_iterator.Iterator:
         """List projects for the project associated with this client.
 
@@ -335,6 +336,7 @@ class Client(ClientWithProject):
             items_key="projects",
             page_token=page_token,
             max_results=max_results,
+            page_size=page_size,
         )
 
     def list_datasets(

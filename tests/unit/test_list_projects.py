@@ -5,8 +5,8 @@ from .helpers import make_connection
 
 
 @pytest.mark.parametrize(
-    "extra,query",
-    [({}, {})])
+    "extra,query", [({}, {}), (dict(page_size=42), dict(maxResults=42))]
+)
 def test_list_projects_defaults(client, PROJECT, extra, query):
     from google.cloud.bigquery.client import Project
 

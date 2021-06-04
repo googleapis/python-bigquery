@@ -295,8 +295,8 @@ class Client(ClientWithProject):
 
         Args:
             max_results (Optional[int]):
-                Maximum number of projects to return, If not passed,
-                defaults to a value set by the API.
+                Maximum number of projects to return.
+                Defaults to a value set by the API.
 
             page_token (Optional[str]):
                 Token representing a cursor into the projects. If not passed,
@@ -312,8 +312,8 @@ class Client(ClientWithProject):
                 before using ``retry``.
 
             page_size (Optional[int]):
-                Maximum number of projects to return in each page, If not passed,
-                defaults to a value set by the API.
+                Maximum number of projects to return in each page.
+                Defaults to a value set by the API.
 
         Returns:
             google.api_core.page_iterator.Iterator:
@@ -1299,7 +1299,7 @@ class Client(ClientWithProject):
                 to create a dataset reference from a string using
                 :func:`google.cloud.bigquery.dataset.DatasetReference.from_string`.
             max_results (Optional[int]):
-                Maximum number of models to return. If not passed, defaults to a
+                Maximum number of models to return. Defaults to a
                 value set by the API.
             page_token (Optional[str]):
                 Token representing a cursor into the models. If not passed,
@@ -1313,8 +1313,8 @@ class Client(ClientWithProject):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
             page_size (Optional[int]):
-                Maximum number of models to return per page. If not
-                passed, defaults to a value set by the API.
+                Maximum number of models to return per page.
+                Defaults to a value set by the API.
 
          Returns:
             google.api_core.page_iterator.Iterator:
@@ -1376,7 +1376,7 @@ class Client(ClientWithProject):
                 to create a dataset reference from a string using
                 :func:`google.cloud.bigquery.dataset.DatasetReference.from_string`.
             max_results (Optional[int]):
-                Maximum number of routines to return. If not passed, defaults
+                Maximum number of routines to return. Defaults
                 to a value set by the API.
             page_token (Optional[str]):
                 Token representing a cursor into the routines. If not passed,
@@ -1390,8 +1390,8 @@ class Client(ClientWithProject):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
             page_size (Optional[int]):
-                Maximum number of routines to return per page. If not
-                passed, defaults to a value set by the API.
+                Maximum number of routines to return per page.
+                Defaults to a value set by the API.
 
          Returns:
             google.api_core.page_iterator.Iterator:
@@ -1453,7 +1453,7 @@ class Client(ClientWithProject):
                 to create a dataset reference from a string using
                 :func:`google.cloud.bigquery.dataset.DatasetReference.from_string`.
             max_results (Optional[int]):
-                Maximum number of tables to return. If not passed, defaults
+                Maximum number of tables to return. Defaults
                 to a value set by the API.
             page_token (Optional[str]):
                 Token representing a cursor into the tables. If not passed,
@@ -1467,8 +1467,8 @@ class Client(ClientWithProject):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
             page_size (Optional[int]):
-                Maximum number of tables to return per page. If not
-                passed, defaults to a value set by the API.
+                Maximum number of tables to return per page.
+                Defaults to a value set by the API.
 
         Returns:
             google.api_core.page_iterator.Iterator:

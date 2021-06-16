@@ -68,6 +68,7 @@ from google.cloud.bigquery.table import Table
 from google.cloud._helpers import UTC
 from google.cloud.bigquery import dbapi, enums
 from google.cloud import storage
+from google.cloud.datacatalog_v1 import types as datacatalog_types
 
 from test_utils.retry import RetryErrors
 from test_utils.retry import RetryInstanceState
@@ -183,6 +184,10 @@ class TestBigQuery(unittest.TestCase):
                 retry_in_use(Config.CLIENT.delete_dataset)(doomed, delete_contents=True)
             elif isinstance(doomed, (Table, bigquery.TableReference)):
                 retry_in_use(Config.CLIENT.delete_table)(doomed)
+            elif isinstance(
+                doomed, (datacatalog_types.PolicyTag, datacatalog_types.Taxonomy)
+            ):
+                pass  # TODO: add logic
             else:
                 doomed.delete()
 
@@ -384,30 +389,31 @@ class TestBigQuery(unittest.TestCase):
     def test_create_table_with_real_custom_policy(self):
         from google.cloud.bigquery.schema import PolicyTagList
         from google.cloud.datacatalog_v1 import PolicyTagManagerClient
-        from google.cloud.datacatalog_v1.types import PolicyTag
-        from google.cloud.datacatalog_v1.types import Taxonomy
 
         policy_tag_client = PolicyTagManagerClient()
+        taxonomy_parent = f"projects/{Config.CLIENT.project}/locations/us"
 
-        new_taxonomy = Taxonomy(
+        new_taxonomy = datacatalog_types.Taxonomy(
             display_name="Custom test taxonomy",
             description="This taxonomy is ony used for a test.",
-            activated_policy_types=[Taxonomy.PolicyType.FINE_GRAINED_ACCESS_CONTROL],
+            activated_policy_types=[
+                datacatalog_types.Taxonomy.PolicyType.FINE_GRAINED_ACCESS_CONTROL
+            ],
         )
         taxonomy = policy_tag_client.create_taxonomy(
-            parent=Config.CLIENT.project, taxonomy=new_taxonomy
+            parent=taxonomy_parent, taxonomy=new_taxonomy
         )
         self.to_delete.insert(0, taxonomy)
 
         parent_policy_tag = policy_tag_client.create_policy_tag(
             parent=taxonomy.name,
-            policy_tag=PolicyTag(
+            policy_tag=datacatalog_types.PolicyTag(
                 display_name="Parent policy tag", parent_policy_tag=None
             ),
         )
         child_policy_tag = policy_tag_client.create_policy_tag(
             parent=taxonomy.name,
-            policy_tag=PolicyTag(
+            policy_tag=datacatalog_types.PolicyTag(
                 display_name="Child policy tag",
                 parent_policy_tag=parent_policy_tag.name,
             ),
@@ -437,8 +443,12 @@ class TestBigQuery(unittest.TestCase):
         self.to_delete.insert(0, table)
 
         self.assertTrue(_table_exists(table))
-        self.assertEqual(table.schema[0].policy_tags, [parent_policy_tag.name])
-        self.assertEqual(table.schema[1].policy_tags, [child_policy_tag.name])
+        self.assertCountEqual(
+            list(table.schema[0].policy_tags.names), [parent_policy_tag.name]
+        )
+        self.assertCountEqual(
+            list(table.schema[1].policy_tags.names), [child_policy_tag.name]
+        )
 
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning

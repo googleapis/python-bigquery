@@ -69,6 +69,7 @@ from google.cloud._helpers import UTC
 from google.cloud.bigquery import dbapi, enums
 from google.cloud import storage
 from google.cloud.datacatalog_v1 import types as datacatalog_types
+from google.cloud.datacatalog_v1 import PolicyTagManagerClient
 
 from test_utils.retry import RetryErrors
 from test_utils.retry import RetryInstanceState
@@ -168,6 +169,8 @@ class TestBigQuery(unittest.TestCase):
         self.to_delete = [dataset]
 
     def tearDown(self):
+        policy_tag_client = PolicyTagManagerClient()
+
         def _still_in_use(bad_request):
             return any(
                 error["reason"] == "resourceInUse" for error in bad_request._errors
@@ -184,10 +187,8 @@ class TestBigQuery(unittest.TestCase):
                 retry_in_use(Config.CLIENT.delete_dataset)(doomed, delete_contents=True)
             elif isinstance(doomed, (Table, bigquery.TableReference)):
                 retry_in_use(Config.CLIENT.delete_table)(doomed)
-            elif isinstance(
-                doomed, (datacatalog_types.PolicyTag, datacatalog_types.Taxonomy)
-            ):
-                pass  # TODO: add logic
+            elif isinstance(doomed, datacatalog_types.Taxonomy):
+                policy_tag_client.delete_taxonomy(name=doomed.name)
             else:
                 doomed.delete()
 
@@ -388,7 +389,6 @@ class TestBigQuery(unittest.TestCase):
 
     def test_create_table_with_real_custom_policy(self):
         from google.cloud.bigquery.schema import PolicyTagList
-        from google.cloud.datacatalog_v1 import PolicyTagManagerClient
 
         policy_tag_client = PolicyTagManagerClient()
         taxonomy_parent = f"projects/{Config.CLIENT.project}/locations/us"
@@ -400,6 +400,7 @@ class TestBigQuery(unittest.TestCase):
                 datacatalog_types.Taxonomy.PolicyType.FINE_GRAINED_ACCESS_CONTROL
             ],
         )
+
         taxonomy = policy_tag_client.create_taxonomy(
             parent=taxonomy_parent, taxonomy=new_taxonomy
         )
@@ -418,8 +419,6 @@ class TestBigQuery(unittest.TestCase):
                 parent_policy_tag=parent_policy_tag.name,
             ),
         )
-        self.to_delete.insert(0, parent_policy_tag)
-        self.to_delete.insert(0, child_policy_tag)
 
         dataset = self.temp_dataset(
             _make_dataset_id("create_table_with_real_custom_policy")

@@ -105,7 +105,11 @@ class SchemaField(object):
         if max_length is not _DEFAULT_VALUE:
             self._properties["maxLength"] = max_length
         self._fields = tuple(fields)
-        self._policy_tags = policy_tags
+
+        if policy_tags is None:
+            self._policy_tags = PolicyTagList()
+        else:
+            self._policy_tags = policy_tags
 
     @staticmethod
     def __get_int(api_repr, name):
@@ -201,7 +205,7 @@ class SchemaField(object):
 
     @property
     def policy_tags(self):
-        """Optional[google.cloud.bigquery.schema.PolicyTagList]: Policy tag list
+        """google.cloud.bigquery.schema.PolicyTagList: Policy tag list
         definition for this field.
         """
         return self._policy_tags
@@ -219,9 +223,8 @@ class SchemaField(object):
         if self.field_type.upper() in _STRUCT_TYPES:
             answer["fields"] = [f.to_api_repr() for f in self.fields]
 
-        # If this contains a policy tag definition, include that as well:
-        if self.policy_tags is not None:
-            answer["policyTags"] = self.policy_tags.to_api_repr()
+        # Also include policy tag definition, even if empty.
+        answer["policyTags"] = self.policy_tags.to_api_repr()
 
         # Done; return the serialized dictionary.
         return answer
@@ -251,7 +254,7 @@ class SchemaField(object):
             self.mode.upper(),  # pytype: disable=attribute-error
             self.description,
             self._fields,
-            self._policy_tags,
+            tuple(sorted(self._policy_tags.names)),
         )
 
     def to_standard_sql(self) -> types.StandardSqlField:

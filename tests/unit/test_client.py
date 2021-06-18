@@ -7718,18 +7718,21 @@ class TestClientUpload(object):
                 "description": "quarter",
                 "mode": "REQUIRED",
                 "name": "qtr",
+                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "sales representative",
                 "mode": "NULLABLE",
                 "name": "rep",
+                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "total sales",
                 "mode": "NULLABLE",
                 "name": "sales",
+                "policyTags": {"names": []},
                 "type": "FLOAT",
             },
         ]
@@ -7762,18 +7765,21 @@ class TestClientUpload(object):
                 "description": "quarter",
                 "mode": "REQUIRED",
                 "name": "qtr",
+                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "sales representative",
                 "mode": "NULLABLE",
                 "name": "rep",
+                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "total sales",
                 "mode": "NULLABLE",
                 "name": "sales",
+                "policyTags": {"names": []},
                 "type": "FLOAT",
             },
         ]

@@ -117,7 +117,6 @@ class TestSchemaField(unittest.TestCase):
                     "mode": "REQUIRED",
                     "name": "foo",
                     "type": record_type,
-                    "policyTags": {"names": []},
                 },
             )
 
@@ -649,7 +648,6 @@ class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
                 "name": "phone",
                 "type": "RECORD",
                 "mode": "REPEATED",
-                "policyTags": {"names": []},
                 "fields": [
                     {
                         "name": "type",

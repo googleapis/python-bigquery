@@ -107,7 +107,8 @@ class SchemaField(object):
         self._fields = tuple(fields)
 
         if policy_tags is None:
-            self._policy_tags = PolicyTagList()
+            is_record = field_type is not None and field_type.upper() in _STRUCT_TYPES
+            self._policy_tags = None if is_record else PolicyTagList()
         else:
             self._policy_tags = policy_tags
 
@@ -130,18 +131,24 @@ class SchemaField(object):
         Returns:
             google.cloud.biquery.schema.SchemaField: The ``SchemaField`` object.
         """
+        field_type = api_repr["type"].upper()
+
         # Handle optional properties with default values
         mode = api_repr.get("mode", "NULLABLE")
         description = api_repr.get("description", _DEFAULT_VALUE)
         fields = api_repr.get("fields", ())
 
+        policy_tags = PolicyTagList.from_api_repr(api_repr.get("policyTags"))
+        if policy_tags is None and field_type not in _STRUCT_TYPES:
+            policy_tags = PolicyTagList()
+
         return cls(
-            field_type=api_repr["type"].upper(),
+            field_type=field_type,
             fields=[cls.from_api_repr(f) for f in fields],
             mode=mode.upper(),
             description=description,
             name=api_repr["name"],
-            policy_tags=PolicyTagList.from_api_repr(api_repr.get("policyTags")),
+            policy_tags=policy_tags,
             precision=cls.__get_int(api_repr, "precision"),
             scale=cls.__get_int(api_repr, "scale"),
             max_length=cls.__get_int(api_repr, "maxLength"),
@@ -205,7 +212,7 @@ class SchemaField(object):
 
     @property
     def policy_tags(self):
-        """google.cloud.bigquery.schema.PolicyTagList: Policy tag list
+        """Optional[google.cloud.bigquery.schema.PolicyTagList]: Policy tag list
         definition for this field.
         """
         return self._policy_tags
@@ -222,9 +229,10 @@ class SchemaField(object):
         # add this to the serialized representation.
         if self.field_type.upper() in _STRUCT_TYPES:
             answer["fields"] = [f.to_api_repr() for f in self.fields]
-
-        # Also include policy tag definition, even if empty.
-        answer["policyTags"] = self.policy_tags.to_api_repr()
+        else:
+            # Explicitly include policy tag definition (we must not do it for RECORD
+            # fields, because those are not leaf fields).
+            answer["policyTags"] = self.policy_tags.to_api_repr()
 
         # Done; return the serialized dictionary.
         return answer
@@ -247,6 +255,11 @@ class SchemaField(object):
                     field_type = f"{field_type}({self.precision}, {self.scale})"
                 else:
                     field_type = f"{field_type}({self.precision})"
+
+        policy_tags = (
+            () if self._policy_tags is None else tuple(sorted(self._policy_tags.names))
+        )
+
         return (
             self.name,
             field_type,
@@ -254,7 +267,7 @@ class SchemaField(object):
             self.mode.upper(),  # pytype: disable=attribute-error
             self.description,
             self._fields,
-            tuple(sorted(self._policy_tags.names)),
+            policy_tags,
         )
 
     def to_standard_sql(self) -> types.StandardSqlField:

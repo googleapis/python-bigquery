@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [2.20.1](https://www.github.com/googleapis/python-bigquery/compare/v2.20.0...v2.20.1) (2021-06-20)
+
+
+### Documentation
+
+* omit mention of Python 2.7 in `CONTRIBUTING.rst` ([#706](https://www.github.com/googleapis/python-bigquery/issues/706)) ([27d6839](https://www.github.com/googleapis/python-bigquery/commit/27d6839ee8a40909e4199cfa0da8b6b64705b2e9))
+
 ## [2.20.0](https://www.github.com/googleapis/python-bigquery/compare/v2.19.0...v2.20.0) (2021-06-07)
 
 

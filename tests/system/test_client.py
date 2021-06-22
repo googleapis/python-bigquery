@@ -68,6 +68,8 @@ from google.cloud.bigquery.table import Table
 from google.cloud._helpers import UTC
 from google.cloud.bigquery import dbapi, enums
 from google.cloud import storage
+from google.cloud.datacatalog_v1 import types as datacatalog_types
+from google.cloud.datacatalog_v1 import PolicyTagManagerClient
 
 from test_utils.retry import RetryErrors
 from test_utils.retry import RetryInstanceState
@@ -167,6 +169,8 @@ class TestBigQuery(unittest.TestCase):
         self.to_delete = [dataset]
 
     def tearDown(self):
+        policy_tag_client = PolicyTagManagerClient()
+
         def _still_in_use(bad_request):
             return any(
                 error["reason"] == "resourceInUse" for error in bad_request._errors
@@ -183,6 +187,8 @@ class TestBigQuery(unittest.TestCase):
                 retry_in_use(Config.CLIENT.delete_dataset)(doomed, delete_contents=True)
             elif isinstance(doomed, (Table, bigquery.TableReference)):
                 retry_in_use(Config.CLIENT.delete_table)(doomed)
+            elif isinstance(doomed, datacatalog_types.Taxonomy):
+                policy_tag_client.delete_taxonomy(name=doomed.name)
             else:
                 doomed.delete()
 
@@ -380,6 +386,68 @@ class TestBigQuery(unittest.TestCase):
         table.schema = new_schema
         table2 = Config.CLIENT.update_table(table, ["schema"])
         self.assertEqual(policy_2, table2.schema[1].policy_tags)
+
+    def test_create_table_with_real_custom_policy(self):
+        from google.cloud.bigquery.schema import PolicyTagList
+
+        policy_tag_client = PolicyTagManagerClient()
+        taxonomy_parent = f"projects/{Config.CLIENT.project}/locations/us"
+
+        new_taxonomy = datacatalog_types.Taxonomy(
+            display_name="Custom test taxonomy",
+            description="This taxonomy is ony used for a test.",
+            activated_policy_types=[
+                datacatalog_types.Taxonomy.PolicyType.FINE_GRAINED_ACCESS_CONTROL
+            ],
+        )
+
+        taxonomy = policy_tag_client.create_taxonomy(
+            parent=taxonomy_parent, taxonomy=new_taxonomy
+        )
+        self.to_delete.insert(0, taxonomy)
+
+        parent_policy_tag = policy_tag_client.create_policy_tag(
+            parent=taxonomy.name,
+            policy_tag=datacatalog_types.PolicyTag(
+                display_name="Parent policy tag", parent_policy_tag=None
+            ),
+        )
+        child_policy_tag = policy_tag_client.create_policy_tag(
+            parent=taxonomy.name,
+            policy_tag=datacatalog_types.PolicyTag(
+                display_name="Child policy tag",
+                parent_policy_tag=parent_policy_tag.name,
+            ),
+        )
+
+        dataset = self.temp_dataset(
+            _make_dataset_id("create_table_with_real_custom_policy")
+        )
+        table_id = "test_table"
+        policy_1 = PolicyTagList(names=[parent_policy_tag.name])
+        policy_2 = PolicyTagList(names=[child_policy_tag.name])
+
+        schema = [
+            bigquery.SchemaField(
+                "first_name", "STRING", mode="REQUIRED", policy_tags=policy_1
+            ),
+            bigquery.SchemaField(
+                "age", "INTEGER", mode="REQUIRED", policy_tags=policy_2
+            ),
+        ]
+        table_arg = Table(dataset.table(table_id), schema=schema)
+        self.assertFalse(_table_exists(table_arg))
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+        self.assertCountEqual(
+            list(table.schema[0].policy_tags.names), [parent_policy_tag.name]
+        )
+        self.assertCountEqual(
+            list(table.schema[1].policy_tags.names), [child_policy_tag.name]
+        )
 
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning
@@ -584,6 +652,56 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(found.name, expected.name)
             self.assertEqual(found.field_type, expected.field_type)
             self.assertEqual(found.mode, expected.mode)
+
+    def test_unset_table_schema_attributes(self):
+        from google.cloud.bigquery.schema import PolicyTagList
+
+        dataset = self.temp_dataset(_make_dataset_id("unset_policy_tags"))
+        table_id = "test_table"
+        policy_tags = PolicyTagList(
+            names=[
+                "projects/{}/locations/us/taxonomies/1/policyTags/2".format(
+                    Config.CLIENT.project
+                ),
+            ]
+        )
+
+        schema = [
+            bigquery.SchemaField("full_name", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField(
+                "secret_int",
+                "INTEGER",
+                mode="REQUIRED",
+                description="This field is numeric",
+                policy_tags=policy_tags,
+            ),
+        ]
+        table_arg = Table(dataset.table(table_id), schema=schema)
+        self.assertFalse(_table_exists(table_arg))
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+        self.assertEqual(policy_tags, table.schema[1].policy_tags)
+
+        # Amend the schema to replace the policy tags
+        new_schema = table.schema[:]
+        old_field = table.schema[1]
+        new_schema[1] = bigquery.SchemaField(
+            name=old_field.name,
+            field_type=old_field.field_type,
+            mode=old_field.mode,
+            description=None,
+            fields=old_field.fields,
+            policy_tags=None,
+        )
+
+        table.schema = new_schema
+        updated_table = Config.CLIENT.update_table(table, ["schema"])
+
+        self.assertFalse(updated_table.schema[1].description)  # Empty string or None.
+        self.assertEqual(updated_table.schema[1].policy_tags.names, ())
 
     def test_update_table_clustering_configuration(self):
         dataset = self.temp_dataset(_make_dataset_id("update_table"))
@@ -1055,7 +1173,7 @@ class TestBigQuery(unittest.TestCase):
         job.result(timeout=100)
 
         self.to_delete.insert(0, destination)
-        got_bytes = retry_storage_errors(destination.download_as_string)()
+        got_bytes = retry_storage_errors(destination.download_as_bytes)()
         got = got_bytes.decode("utf-8")
         self.assertIn("Bharney Rhubble", got)
 
@@ -2110,15 +2228,11 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(tbl.num_rows, 1)
         self.assertEqual(tbl.num_columns, 3)
         # Columns may not appear in the requested order.
-        self.assertTrue(
-            pyarrow.types.is_float64(tbl.schema.field_by_name("float_col").type)
-        )
-        self.assertTrue(
-            pyarrow.types.is_string(tbl.schema.field_by_name("string_col").type)
-        )
-        record_col = tbl.schema.field_by_name("record_col").type
+        self.assertTrue(pyarrow.types.is_float64(tbl.schema.field("float_col").type))
+        self.assertTrue(pyarrow.types.is_string(tbl.schema.field("string_col").type))
+        record_col = tbl.schema.field("record_col").type
         self.assertTrue(pyarrow.types.is_struct(record_col))
-        self.assertEqual(record_col.num_children, 2)
+        self.assertEqual(record_col.num_fields, 2)
         self.assertEqual(record_col[0].name, "nested_string")
         self.assertTrue(pyarrow.types.is_string(record_col[0].type))
         self.assertEqual(record_col[1].name, "nested_repeated")

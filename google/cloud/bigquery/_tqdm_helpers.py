@@ -17,7 +17,7 @@
 import concurrent.futures
 import time
 import typing
-from typing import Any, Optional
+from typing import Optional
 import warnings
 
 try:
@@ -27,6 +27,7 @@ except ImportError:  # pragma: NO COVER
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     from google.cloud.bigquery import QueryJob
+    from google.cloud.bigquery.table import RowIterator
 
 _NO_TQDM_ERROR = (
     "A progress bar was requested, but there was an error loading the tqdm "
@@ -62,7 +63,7 @@ def wait_for_query(
     query_job: "QueryJob",
     progress_bar_type: Optional[str] = None,
     max_results: Optional[int] = None,
-) -> Any:
+) -> "RowIterator":
     """Return query result and display a progress bar while the query running, if tqdm is installed.
 
     Args:

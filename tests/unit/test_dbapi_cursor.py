@@ -809,6 +809,10 @@ class TestCursor(unittest.TestCase):
             "values(%%%%%(foo:INT64)s, %(bar)s)",
             ("values(%%%%%(foo)s, %(bar)s)", dict(foo="INT64")),
         ),
+        (
+            "values(%%%%%(foo:struct<x string, y int64>)s, %(bar)s)",
+            ("values(%%%%%(foo)s, %(bar)s)", dict(foo="struct<x string, y int64>")),
+        ),
     ],
 )
 def test__extract_types(inp, expect):

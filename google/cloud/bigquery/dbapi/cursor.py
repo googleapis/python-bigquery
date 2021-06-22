@@ -483,7 +483,17 @@ def _format_operation(operation, parameters):
 
 
 def _extract_types(
-    operation, extra_type_sub=re.compile(r"(%*)%(?:\(([^:)]*)(?::(\w+))?\))?s").sub
+    operation, extra_type_sub=re.compile(
+        r"""
+        (%*)          # Extra %s.  We'll dal with these in the replacement code
+        %             # Beginning of replacement, %s, %(...)s
+        (?:\(         # Begin of optional name and/or type
+        ([^:)]*)      # name
+        (?::([a-zA-Z0-9<>, ]+))? # type
+        \))?          # End of optional name and/or type
+        s             # End of replacement
+        """,
+        re.VERBOSE).sub
 ):
     """Remove type information from parameter placeholders.
 

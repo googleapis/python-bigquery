@@ -18,9 +18,10 @@ import datetime
 import decimal
 import functools
 import numbers
+import re
 
 from google.cloud import bigquery
-from google.cloud.bigquery import table, enums
+from google.cloud.bigquery import table, enums, query
 from google.cloud.bigquery.dbapi import exceptions
 
 
@@ -113,6 +114,135 @@ def array_to_query_parameter(value, name=None, query_parameter_type=None):
     return bigquery.ArrayQueryParameter(name, array_type, value)
 
 
+complex_query_parameter_parse = re.compile(
+    r"""
+    \s*
+    (ARRAY|STRUCT|RECORD)  # Type
+    \s*
+    <([A-Z0-9<> ,]+)>      # Subtype(s)
+    \s*$
+    """,
+    re.IGNORECASE | re.VERBOSE,
+    ).match
+parse_struct_field = re.compile(
+    r"""
+    (?:(\w+)\s+)    # field name
+    ([A-Z0-9<> ,]+)  # Field type
+    $""", re.VERBOSE | re.IGNORECASE).match
+
+
+def split_struct_fields(fields):
+    fields = fields.split(',')
+    while fields:
+        field = fields.pop(0)
+        while fields and field.count('<') != field.count('>'):
+            field += ',' + fields.pop(0)
+        yield field
+
+
+def complex_query_parameter_type(name: str, type_: str, base: str):
+    type_ = type_.strip()
+    if '<' not in type_:
+        try:
+            type_ = getattr(enums.SqlParameterScalarTypes, type_.upper())
+        except AttributeError:
+            raise exceptions.ProgrammingError(
+                f"Invalid scalar type, {type_}, in {base}")
+        if name:
+            type_ = type_.with_name(name)
+        return type_
+
+    m = complex_query_parameter_parse(type_)
+    if not m:
+        raise exceptions.ProgrammingError(f"Invalid parameter type, {type_}")
+    tname, sub = m.groups()
+    tname = tname.upper()
+    sub = sub.strip()
+    if tname == 'ARRAY':
+        return query.ArrayQueryParameterType(
+            complex_query_parameter_type(None, sub, base),
+            name=name)
+    else:
+        fields = []
+        for field_string in split_struct_fields(sub):
+            field_string = field_string.strip()
+            m = parse_struct_field(field_string)
+            if not m:
+                raise exceptions.ProgrammingError(
+                    f"Invalid struct field, {field_string}, in {base}")
+            field_name, field_type = m.groups()
+            fields.append(complex_query_parameter_type(
+                field_name, field_type, base))
+
+        return query.StructQueryParameterType(*fields, name=name)
+
+
+def complex_query_parameter(name, value, type_, base=None):
+    """
+    Construct a query parameter for a complex type (array or struct record)
+
+    or for a subtype, which may not be complex
+    """
+    type_ = type_.strip()
+    base = base or type_
+    if '>' not in type_:
+        try:
+            type_ = getattr(enums.SqlParameterScalarTypes, type_.upper())._type
+        except AttributeError:
+            raise exceptions.ProgrammingError(
+                f"The given parameter type, {type_},"
+                f" for {name} is not a valid BigQuery scalar type, in {base}."
+                )
+
+        return query.ScalarQueryParameter(name, type_, value)
+
+    m = complex_query_parameter_parse(type_)
+    if not m:
+        raise exceptions.ProgrammingError(f"Invalid parameter type, {type_}")
+    tname, sub = m.groups()
+    tname = tname.upper()
+    sub = sub.strip()
+    if tname == 'ARRAY':
+        if not array_like(value):
+            raise exceptions.ProgrammingError(
+                f"Array type with non-array-like value"
+                f" with type {type(value).__name__}")
+        array_type = complex_query_parameter_type(name, sub, base)
+        if isinstance(array_type, query.ArrayQueryParameterType):
+            raise exceptions.ProgrammingError(f"Array can't contain an array in {base}")
+        return query.ArrayQueryParameter(
+            name,
+            array_type,
+            [complex_query_parameter(None, v, sub, base)
+             for v in value] if '<' in sub else value,
+            )
+    else:
+        fields = []
+        if not isinstance(value, collections_abc.Mapping):
+            raise exceptions.ProgrammingError(
+                f"Non-mapping value for type {type_}")
+        value_keys = set(value)
+        for field_string in split_struct_fields(sub):
+            field_string = field_string.strip()
+            m = parse_struct_field(field_string)
+            if not m:
+                raise exceptions.ProgrammingError(
+                    f"Invalid struct field, {field_string}, in {base or type_}")
+            field_name, field_type = m.groups()
+            if field_name not in value:
+                raise exceptions.ProgrammingError(
+                    f"No field value for {field_name} in {type_}")
+            value_keys.remove(field_name)
+            fields.append(
+                complex_query_parameter(
+                    field_name, value[field_name], field_type, base)
+                )
+        if value_keys:
+            raise exceptions.ProgrammingError(f"Extra data keys for {type_}")
+
+        return query.StructQueryParameter(name, *fields)
+
+
 def to_query_parameters_list(parameters, parameter_types):
     """Converts a sequence of parameter values into query parameters.
 
@@ -129,7 +259,9 @@ def to_query_parameters_list(parameters, parameter_types):
     result = []
 
     for value, type_ in zip(parameters, parameter_types):
-        if isinstance(value, collections_abc.Mapping):
+        if type_ is not None and '<' in type_:
+            param = complex_query_parameter(None, value, type_)
+        elif isinstance(value, collections_abc.Mapping):
             raise NotImplementedError("STRUCT-like parameter values are not supported.")
         elif array_like(value):
             param = array_to_query_parameter(value, None, type_)
@@ -157,20 +289,21 @@ def to_query_parameters_dict(parameters, query_parameter_types):
     result = []
 
     for name, value in parameters.items():
-        if isinstance(value, collections_abc.Mapping):
+        query_parameter_type = query_parameter_types.get(name)
+        if query_parameter_type is not None and '<' in query_parameter_type:
+            param = complex_query_parameter(name, value, query_parameter_type)
+        elif isinstance(value, collections_abc.Mapping):
             raise NotImplementedError(
                 "STRUCT-like parameter values are not supported "
                 "(parameter {}).".format(name)
-            )
-        else:
-            query_parameter_type = query_parameter_types.get(name)
-            if array_like(value):
-                param = array_to_query_parameter(
-                    value, name=name, query_parameter_type=query_parameter_type
                 )
-            else:
-                param = scalar_to_query_parameter(
-                    value, name=name, query_parameter_type=query_parameter_type,
+        elif array_like(value):
+            param = array_to_query_parameter(
+                value, name=name, query_parameter_type=query_parameter_type
+                )
+        else:
+            param = scalar_to_query_parameter(
+                value, name=name, query_parameter_type=query_parameter_type,
                 )
 
         result.append(param)

@@ -483,7 +483,8 @@ def _format_operation(operation, parameters):
 
 
 def _extract_types(
-    operation, extra_type_sub=re.compile(
+    operation,
+    extra_type_sub=re.compile(
         r"""
         (%*)          # Extra %s.  We'll deal with these in the replacement code
 
@@ -507,7 +508,8 @@ def _extract_types(
 
         s             # End of replacement
         """,
-        re.VERBOSE).sub
+        re.VERBOSE,
+    ).sub,
 ):
     """Remove type information from parameter placeholders.
 

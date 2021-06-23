@@ -38,6 +38,7 @@ def dataset_id(bigquery_client):
     yield dataset_id
     bigquery_client.delete_dataset(dataset_id, delete_contents=True)
 
+
 @pytest.fixture
 def table_id(dataset_id):
     return f"{dataset_id}.table_{helpers.temp_suffix()}"

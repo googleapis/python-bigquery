@@ -37,7 +37,14 @@ colon, as in::
 
   insert into people (name, income) values (%(name:string)s, %(income:numeric)s)
 
-For unnamed parameters, use the named syntax with a type, but now
+For unnamed parameters, use the named syntax with a type, but no
 name, as in::
 
   insert into people (name, income) values (%(:string)s, %(:numeric)s)
+
+Providing type information is the *only* way to pass `struct` data::
+
+  cursor.execute(
+    "insert into points (point) values (%(:struct<x float64, y float64>)s)",
+    [{"x": 10, "y": 20}],
+    )

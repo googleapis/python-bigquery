@@ -19,6 +19,7 @@ import decimal
 import functools
 import numbers
 import re
+import typing
 
 from google.cloud import bigquery
 from google.cloud.bigquery import table, enums, query
@@ -156,7 +157,9 @@ def split_struct_fields(fields):
         yield field
 
 
-def complex_query_parameter_type(name: str, type_: str, base: str):
+def complex_query_parameter_type(
+    name: typing.Optional[str], type_: str, base: str
+):
     type_ = type_.strip()
     if "<" not in type_:
         # Scalar
@@ -176,7 +179,7 @@ def complex_query_parameter_type(name: str, type_: str, base: str):
     m = complex_query_parameter_parse(type_)
     if not m:
         raise exceptions.ProgrammingError(f"Invalid parameter type, {type_}")
-    tname, sub = m.groups()
+    tname, sub = m.group(1, 2)
     tname = tname.upper()
     sub = sub.strip()
     if tname == "ARRAY":
@@ -198,7 +201,9 @@ def complex_query_parameter_type(name: str, type_: str, base: str):
         return query.StructQueryParameterType(*fields, name=name)
 
 
-def complex_query_parameter(name, value, type_, base=None):
+def complex_query_parameter(
+    name: typing.Optional[str], value, type_: str, base: typing.Optional[str] = None
+):
     """
     Construct a query parameter for a complex type (array or struct record)
 
@@ -224,7 +229,7 @@ def complex_query_parameter(name, value, type_, base=None):
     m = complex_query_parameter_parse(type_)
     if not m:
         raise exceptions.ProgrammingError(f"Invalid parameter type, {type_}")
-    tname, sub = m.groups()
+    tname, sub = m.group(1, 2)
     tname = tname.upper()
     sub = sub.strip()
     if tname == "ARRAY":

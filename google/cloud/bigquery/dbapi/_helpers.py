@@ -157,9 +157,7 @@ def split_struct_fields(fields):
         yield field
 
 
-def complex_query_parameter_type(
-    name: typing.Optional[str], type_: str, base: str
-):
+def complex_query_parameter_type(name: typing.Optional[str], type_: str, base: str):
     type_ = type_.strip()
     if "<" not in type_:
         # Scalar

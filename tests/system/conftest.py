@@ -35,7 +35,6 @@ def bqstorage_client(bigquery_client):
 def dataset_id(bigquery_client):
     dataset_id = f"bqsystem_{helpers.temp_suffix()}"
     bigquery_client.create_dataset(dataset_id)
-    print("fix create dataset", dataset_id)
     yield dataset_id
     bigquery_client.delete_dataset(dataset_id, delete_contents=True)
 

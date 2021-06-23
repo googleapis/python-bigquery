@@ -813,6 +813,25 @@ class TestCursor(unittest.TestCase):
             "values(%%%%%(foo:struct<x string, y int64>)s, %(bar)s)",
             ("values(%%%%%(foo)s, %(bar)s)", dict(foo="struct<x string, y int64>")),
         ),
+        (
+            "values(%%%%%(foo:struct<x string(10), y int64>)s, %(bar)s)",
+            ("values(%%%%%(foo)s, %(bar)s)", dict(foo="struct<x string(10), y int64>")),
+        ),
+        (
+            "values(%(foo:struct<x string(10), y numeric(2, 9)>)s, %(bar)s)",
+            ("values(%(foo)s, %(bar)s)",
+             dict(foo="struct<x string(10), y numeric(2, 9)>")),
+        ),
+        (
+            "values(%(foo:struct<x string(10) , y numeric(2, 9)>)s, %(bar)s)",
+            ("values(%(foo)s, %(bar)s)",
+             dict(foo="struct<x string(10) , y numeric(2, 9)>")),
+        ),
+        (
+            "values(%(foo:string(10))s, %(bar)s)",
+            ("values(%(foo)s, %(bar)s)",
+             dict(foo="string(10)")),
+        ),
     ],
 )
 def test__extract_types(inp, expect):

@@ -395,11 +395,13 @@ def test_to_query_parameters_dict_w_types():
 
     assert sorted(
         _helpers.to_query_parameters(
-            dict(i=1, x=1.2, y=None, z=[]), dict(x="numeric", y="string", z="float64")
+            dict(i=1, x=1.2, y=None, q="hi", z=[]),
+            dict(x="numeric", y="string", q="string(9)", z="float64")
         ),
         key=lambda p: p.name,
     ) == [
         bigquery.ScalarQueryParameter("i", "INT64", 1),
+        bigquery.ScalarQueryParameter("q", "STRING", "hi"),
         bigquery.ScalarQueryParameter("x", "NUMERIC", 1.2),
         bigquery.ScalarQueryParameter("y", "STRING", None),
         bigquery.ArrayQueryParameter("z", "FLOAT64", []),
@@ -410,11 +412,12 @@ def test_to_query_parameters_list_w_types():
     from google.cloud import bigquery
 
     assert _helpers.to_query_parameters(
-        [1, 1.2, None, []], [None, "numeric", "string", "float64"]
+        [1, 1.2, None, 'hi', []], [None, "numeric", "string", "string(9)", "float64"]
     ) == [
         bigquery.ScalarQueryParameter(None, "INT64", 1),
         bigquery.ScalarQueryParameter(None, "NUMERIC", 1.2),
         bigquery.ScalarQueryParameter(None, "STRING", None),
+        bigquery.ScalarQueryParameter(None, "STRING", "hi"),
         bigquery.ArrayQueryParameter(None, "FLOAT64", []),
     ]
 
@@ -458,6 +461,39 @@ def test_to_query_parameters_list_w_types():
                'name': {'value': 'par'}}},
              }
          ),
+        (dict(name='par',
+              children=[
+                  dict(name='ch1', bdate=datetime.date(2021, 1, 1)),
+                  dict(name='ch2', bdate=datetime.date(2021, 1, 2)),
+                  ]),
+         'struct<name string(9), children array<struct<name string(9), bdate date>>>',
+         {
+             'parameterType':
+             {'structTypes':
+              [{'name': 'name',
+                'type': {'type': 'STRING'}},
+               {'name': 'children',
+                'type': {'arrayType': {'structTypes': [{'name': 'name',
+                                                        'type': {'type': 'STRING'}},
+                                                       {'name': 'bdate',
+                                                        'type': {'type': 'DATE'}}],
+                                       'type': 'STRUCT'},
+                         'type': 'ARRAY'}}],
+              'type': 'STRUCT'},
+             'parameterValue':
+             {'structValues':
+              {'children':
+               {'arrayValues': [{'structValues': {'bdate': {'value': '2021-01-01'},
+                                                  'name': {'value': 'ch1'}}},
+                                {'structValues': {'bdate': {'value': '2021-01-02'},
+                                                  'name': {'value': 'ch2'}}}]},
+               'name': {'value': 'par'}}},
+             }
+         ),
+        (['1', 'hi'], 'ARRAY<string(9)>',
+         {'parameterType': {'type': 'ARRAY', 'arrayType': {'type': 'STRING'}},
+          'parameterValue': {'arrayValues': [{'value': '1'}, {'value': 'hi'}]},
+          }),
         ])
 def test_complex_query_parameter_type(type_, value, expect):
     from google.cloud.bigquery.dbapi._helpers import complex_query_parameter

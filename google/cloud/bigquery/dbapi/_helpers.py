@@ -28,9 +28,20 @@ from google.cloud.bigquery.dbapi import exceptions
 _NUMERIC_SERVER_MIN = decimal.Decimal("-9.9999999999999999999999999999999999999E+28")
 _NUMERIC_SERVER_MAX = decimal.Decimal("9.9999999999999999999999999999999999999E+28")
 
+type_parameters_re = re.compile(r"""
+    \(
+    \s*[0-9]+\s*
+    (,
+    \s*[0-9]+\s*
+    )*
+    \)
+    """, re.VERBOSE)
+
 
 def _parameter_type(name, value, query_parameter_type=None, value_doc=""):
     if query_parameter_type:
+        # Strip type parameters
+        query_parameter_type = type_parameters_re.sub('', query_parameter_type)
         try:
             parameter_type = getattr(
                 enums.SqlParameterScalarTypes, query_parameter_type.upper()
@@ -119,7 +130,7 @@ complex_query_parameter_parse = re.compile(
     \s*
     (ARRAY|STRUCT|RECORD)  # Type
     \s*
-    <([A-Z0-9<> ,]+)>      # Subtype(s)
+    <([A-Z0-9<> ,()]+)>      # Subtype(s)
     \s*$
     """,
     re.IGNORECASE | re.VERBOSE,
@@ -127,7 +138,7 @@ complex_query_parameter_parse = re.compile(
 parse_struct_field = re.compile(
     r"""
     (?:(\w+)\s+)    # field name
-    ([A-Z0-9<> ,]+)  # Field type
+    ([A-Z0-9<> ,()]+)  # Field type
     $""", re.VERBOSE | re.IGNORECASE).match
 
 
@@ -143,6 +154,10 @@ def split_struct_fields(fields):
 def complex_query_parameter_type(name: str, type_: str, base: str):
     type_ = type_.strip()
     if '<' not in type_:
+        # Scalar
+
+        # Strip type parameters
+        type_ = type_parameters_re.sub('', type_).strip()
         try:
             type_ = getattr(enums.SqlParameterScalarTypes, type_.upper())
         except AttributeError:
@@ -186,6 +201,10 @@ def complex_query_parameter(name, value, type_, base=None):
     type_ = type_.strip()
     base = base or type_
     if '>' not in type_:
+        # Scalar
+
+        # Strip type parameters
+        type_ = type_parameters_re.sub('', type_).strip()
         try:
             type_ = getattr(enums.SqlParameterScalarTypes, type_.upper())._type
         except AttributeError:

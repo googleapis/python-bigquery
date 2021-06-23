@@ -485,12 +485,26 @@ def _format_operation(operation, parameters):
 def _extract_types(
     operation, extra_type_sub=re.compile(
         r"""
-        (%*)          # Extra %s.  We'll dal with these in the replacement code
+        (%*)          # Extra %s.  We'll deal with these in the replacement code
+
         %             # Beginning of replacement, %s, %(...)s
+
         (?:\(         # Begin of optional name and/or type
         ([^:)]*)      # name
-        (?::([a-zA-Z0-9<>, ]+))? # type
+        (?::          # ':' introduces type
+          (             # start of type group
+            [a-zA-Z0-9<>, ]+  # First part, no parens
+
+            (?:               # start sets of parens + non-paren text
+              \([0-9 ,]+\)      # comma-separated groups of digits in parens
+                                # (e.g. string(10))
+              (?=[, >)])        # Must be followed by ,>) or space
+              [a-zA-Z0-9<>, ]*  # Optional non-paren chars
+            )*                # Can be zero or more of parens and following text
+          )             # end of type group
+        )?            # close type clause ":type"
         \))?          # End of optional name and/or type
+
         s             # End of replacement
         """,
         re.VERBOSE).sub

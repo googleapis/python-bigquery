@@ -157,7 +157,7 @@ def split_struct_fields(fields):
         yield field
 
 
-def complex_query_parameter_type(name: typing.Optional[str], type_: str, base: str):
+def complex_query_parameter_type(name, type_, base):
     type_ = type_.strip()
     if "<" not in type_:
         # Scalar
@@ -199,9 +199,7 @@ def complex_query_parameter_type(name: typing.Optional[str], type_: str, base: s
         return query.StructQueryParameterType(*fields, name=name)
 
 
-def complex_query_parameter(
-    name: typing.Optional[str], value, type_: str, base: typing.Optional[str] = None
-):
+def complex_query_parameter(name, value, type_, base=None):
     """
     Construct a query parameter for a complex type (array or struct record)
 

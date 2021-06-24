@@ -81,6 +81,8 @@ from google.cloud.bigquery.routine import DeterminismLevel
 from google.cloud.bigquery.routine import Routine
 from google.cloud.bigquery.routine import RoutineArgument
 from google.cloud.bigquery.routine import RoutineReference
+from google.cloud.bigquery.routine import RoutineType
+from google.cloud.bigquery.routine import StandardSQLTableType
 from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery.table import PartitionRange
 from google.cloud.bigquery.table import RangePartitioning
@@ -130,6 +132,7 @@ __all__ = [
     "Routine",
     "RoutineArgument",
     "RoutineReference",
+    "StandardSQLTableType",
     # Shared helpers
     "SchemaField",
     "UDFResource",
@@ -152,6 +155,7 @@ __all__ = [
     "Encoding",
     "KeyResultStatementKind",
     "QueryPriority",
+    "RoutineType",
     "SchemaUpdateOption",
     "SourceFormat",
     "SqlTypeNames",

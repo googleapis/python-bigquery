@@ -16,11 +16,50 @@
 
 """Define resources for the BigQuery Routines API."""
 
+from typing import Any, Iterable, List
+
 from google.protobuf import json_format
 
 import google.cloud._helpers
 from google.cloud.bigquery import _helpers
 import google.cloud.bigquery_v2.types
+from google.cloud.bigquery_v2.types import StandardSqlField
+
+
+# Unlike related proto-plus classes from `bigquery_v2.types.standard_sql`, this class
+# is not auto-generated (tech debt), thus we need to define it manually.
+class StandardSQLTableType:
+    """Representation of a return type from a Table Valued Functions (TFV)."""
+
+    def __init__(self, columns: Iterable[StandardSqlField]):
+        self.columns = columns
+
+    @property
+    def columns(self) -> List[StandardSqlField]:
+        return list(self._columns)  # shallow copy
+
+    @columns.setter
+    def columns(self, value: Iterable[StandardSqlField]):
+        self._columns = list(value)
+
+    def __eq__(self, other: Any):
+        if not isinstance(other, StandardSQLTableType):
+            return NotImplemented
+        return self.columns == other.columns
+
+    __hash__ = None  # Python does this implicitly for us, but let's be explicit.
+
+
+class RoutineType:
+    """The fine-grained type of the routine.
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/routines#routinetype
+    """
+
+    ROUTINE_TYPE_UNSPECIFIED = "ROUTINE_TYPE_UNSPECIFIED"
+    SCALAR_FUNCTION = "SCALAR_FUNCTION"
+    PROCEDURE = "PROCEDURE"
+    TABLE_VALUED_FUNCTION = "TABLE_VALUED_FUNCTION"
 
 
 class Routine(object):

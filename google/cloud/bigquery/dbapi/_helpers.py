@@ -156,7 +156,7 @@ def _split_struct_fields(fields):
     #
     # only has 2 top-level fields.
     fields = fields.split(",")
-    fields = list(reversed(fields)) # in the off chance that there are very many
+    fields = list(reversed(fields))  # in the off chance that there are very many
     while fields:
         field = fields.pop()
         while fields and field.count("<") != field.count(">"):

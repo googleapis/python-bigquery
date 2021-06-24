@@ -148,16 +148,35 @@ parse_struct_field = re.compile(
 ).match
 
 
-def split_struct_fields(fields):
+def _split_struct_fields(fields):
+    # Split a string of struct fields.  They're defined by commas, but
+    # we have to avoid splitting on commas interbal to fields.  For
+    # example:
+    # name string, children array<struct<name string, bdate date>>
+    #
+    # only has 2 top-level fields.
     fields = fields.split(",")
+    fields = list(reversed(fields)) # in the off chance that there are very many
     while fields:
-        field = fields.pop(0)
+        field = fields.pop()
         while fields and field.count("<") != field.count(">"):
-            field += "," + fields.pop(0)
+            field += "," + fields.pop()
         yield field
 
 
 def complex_query_parameter_type(name: typing.Optional[str], type_: str, base: str):
+    """Construct a parameter type (`StructQueryParameterType`) for a complex type
+
+    or a non-complex type that's part of a complex type.
+
+    Examples:
+
+    array<struct<x float64, y float64>>
+
+    struct<name string, children array<struct<name string, bdate date>>>
+
+    This is used for computing array types.
+    """
     type_ = type_.strip()
     if "<" not in type_:
         # Scalar
@@ -186,7 +205,7 @@ def complex_query_parameter_type(name: typing.Optional[str], type_: str, base: s
         )
     else:
         fields = []
-        for field_string in split_struct_fields(sub):
+        for field_string in _split_struct_fields(sub):
             field_string = field_string.strip()
             m = parse_struct_field(field_string)
             if not m:
@@ -206,6 +225,13 @@ def complex_query_parameter(
     Construct a query parameter for a complex type (array or struct record)
 
     or for a subtype, which may not be complex
+
+    Examples:
+
+    array<struct<x float64, y float64>>
+
+    struct<name string, children array<struct<name string, bdate date>>>
+
     """
     type_ = type_.strip()
     base = base or type_
@@ -251,7 +277,7 @@ def complex_query_parameter(
         if not isinstance(value, collections_abc.Mapping):
             raise exceptions.ProgrammingError(f"Non-mapping value for type {type_}")
         value_keys = set(value)
-        for field_string in split_struct_fields(sub):
+        for field_string in _split_struct_fields(sub):
             field_string = field_string.strip()
             m = parse_struct_field(field_string)
             if not m:

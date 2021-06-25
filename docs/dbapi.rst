@@ -25,7 +25,7 @@ and using named parameters::
 Providing explicit type information
 -----------------------------------
 
-BigQuery requires type information for parameters.  The The BigQuery
+BigQuery requires type information for parameters.  The BigQuery
 DB-API can usually determine parameter types for parameters based on
 provided values.  Sometimes, however, types can't be determined (for
 example when `None` is passed) or are determined incorrectly (for

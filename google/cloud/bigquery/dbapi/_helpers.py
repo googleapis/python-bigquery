@@ -129,26 +129,17 @@ def array_to_query_parameter(value, name=None, query_parameter_type=None):
     return bigquery.ArrayQueryParameter(name, array_type, value)
 
 
-complex_query_parameter_parse = re.compile(
-    r"""
-    \s*
-    (ARRAY|STRUCT|RECORD)  # Type
-    \s*
-    <([A-Z0-9<> ,()]+)>      # Subtype(s)
-    \s*$
-    """,
-    re.IGNORECASE | re.VERBOSE,
-).match
-parse_struct_field = re.compile(
-    r"""
-    (?:(\w+)\s+)    # field name
-    ([A-Z0-9<> ,()]+)  # Field type
-    $""",
-    re.VERBOSE | re.IGNORECASE,
-).match
-
-
-def _split_struct_fields(fields):
+def _parse_struct_fields(
+    fields,
+    base,
+    parse_struct_field=re.compile(
+        r"""
+        (?:(\w+)\s+)    # field name
+        ([A-Z0-9<> ,()]+)  # Field type
+        $""",
+        re.VERBOSE | re.IGNORECASE,
+    ).match,
+):
     # Split a string of struct fields.  They're defined by commas, but
     # we have to avoid splitting on commas interbal to fields.  For
     # example:
@@ -161,7 +152,62 @@ def _split_struct_fields(fields):
         field = fields.pop()
         while fields and field.count("<") != field.count(">"):
             field += "," + fields.pop()
-        yield field
+
+        m = parse_struct_field(field.strip())
+        if not m:
+            raise exceptions.ProgrammingError(
+                f"Invalid struct field, {field}, in {base}"
+            )
+        yield m.group(1, 2)
+
+
+SCALAR, ARRAY, STRUCT = "sar"
+
+
+def _parse_type(
+    type_,
+    name,
+    base,
+    complex_query_parameter_parse=re.compile(
+        r"""
+        \s*
+        (ARRAY|STRUCT|RECORD)  # Type
+        \s*
+        <([A-Z0-9<> ,()]+)>      # Subtype(s)
+        \s*$
+        """,
+        re.IGNORECASE | re.VERBOSE,
+    ).match,
+):
+    if "<" not in type_:
+        # Scalar
+
+        # Strip type parameters
+        type_ = type_parameters_re.sub("", type_).strip()
+        try:
+            type_ = getattr(enums.SqlParameterScalarTypes, type_.upper())
+        except AttributeError:
+            raise exceptions.ProgrammingError(
+                f"The given parameter type, {type_},"
+                f"{' for ' + name if name else ''}"
+                f" is not a valid BigQuery scalar type, in {base}."
+            )
+        if name:
+            type_ = type_.with_name(name)
+        return SCALAR, type_
+
+    m = complex_query_parameter_parse(type_)
+    if not m:
+        raise exceptions.ProgrammingError(f"Invalid parameter type, {type_}")
+    tname, sub = m.group(1, 2)
+    if tname.upper() == "ARRAY":
+        sub_type = complex_query_parameter_type(None, sub, base)
+        if isinstance(sub_type, query.ArrayQueryParameterType):
+            raise exceptions.ProgrammingError(f"Array can't contain an array in {base}")
+        sub_type._complex__src = sub
+        return ARRAY, sub_type
+    else:
+        return STRUCT, _parse_struct_fields(sub, base)
 
 
 def complex_query_parameter_type(name: typing.Optional[str], type_: str, base: str):
@@ -177,45 +223,22 @@ def complex_query_parameter_type(name: typing.Optional[str], type_: str, base: s
 
     This is used for computing array types.
     """
-    type_ = type_.strip()
-    if "<" not in type_:
-        # Scalar
 
-        # Strip type parameters
-        type_ = type_parameters_re.sub("", type_).strip()
-        try:
-            type_ = getattr(enums.SqlParameterScalarTypes, type_.upper())
-        except AttributeError:
-            raise exceptions.ProgrammingError(
-                f"Invalid scalar type, {type_}, in {base}"
-            )
-        if name:
-            type_ = type_.with_name(name)
-        return type_
+    type_type, sub_type = _parse_type(type_, name, base)
+    if type_type == SCALAR:
+        type_ = sub_type
+    elif type_type == ARRAY:
+        type_ = query.ArrayQueryParameterType(sub_type, name=name)
+    elif type_type == STRUCT:
+        fields = [
+            complex_query_parameter_type(field_name, field_type, base)
+            for field_name, field_type in sub_type
+        ]
+        type_ = query.StructQueryParameterType(*fields, name=name)
+    else:  # pragma: NO COVER
+        raise AssertionError("Bad type_type", type_type)  # Can't happen :)
 
-    m = complex_query_parameter_parse(type_)
-    if not m:
-        raise exceptions.ProgrammingError(f"Invalid parameter type, {type_}")
-    tname, sub = m.group(1, 2)
-    tname = tname.upper()
-    sub = sub.strip()
-    if tname == "ARRAY":
-        return query.ArrayQueryParameterType(
-            complex_query_parameter_type(None, sub, base), name=name
-        )
-    else:
-        fields = []
-        for field_string in _split_struct_fields(sub):
-            field_string = field_string.strip()
-            m = parse_struct_field(field_string)
-            if not m:
-                raise exceptions.ProgrammingError(
-                    f"Invalid struct field, {field_string}, in {base}"
-                )
-            field_name, field_type = m.groups()
-            fields.append(complex_query_parameter_type(field_name, field_type, base))
-
-        return query.StructQueryParameterType(*fields, name=name)
+    return type_
 
 
 def complex_query_parameter(
@@ -233,58 +256,34 @@ def complex_query_parameter(
     struct<name string, children array<struct<name string, bdate date>>>
 
     """
-    type_ = type_.strip()
     base = base or type_
-    if ">" not in type_:
-        # Scalar
 
-        # Strip type parameters
-        type_ = type_parameters_re.sub("", type_).strip()
-        try:
-            type_ = getattr(enums.SqlParameterScalarTypes, type_.upper())._type
-        except AttributeError:
-            raise exceptions.ProgrammingError(
-                f"The given parameter type, {type_},"
-                f" for {name} is not a valid BigQuery scalar type, in {base}."
-            )
+    type_type, sub_type = _parse_type(type_, name, base)
 
-        return query.ScalarQueryParameter(name, type_, value)
-
-    m = complex_query_parameter_parse(type_)
-    if not m:
-        raise exceptions.ProgrammingError(f"Invalid parameter type, {type_}")
-    tname, sub = m.group(1, 2)
-    tname = tname.upper()
-    sub = sub.strip()
-    if tname == "ARRAY":
+    if type_type == SCALAR:
+        param = query.ScalarQueryParameter(name, sub_type._type, value)
+    elif type_type == ARRAY:
         if not array_like(value):
             raise exceptions.ProgrammingError(
                 f"Array type with non-array-like value"
                 f" with type {type(value).__name__}"
             )
-        array_type = complex_query_parameter_type(name, sub, base)
-        if isinstance(array_type, query.ArrayQueryParameterType):
-            raise exceptions.ProgrammingError(f"Array can't contain an array in {base}")
-        return query.ArrayQueryParameter(
+        param = query.ArrayQueryParameter(
             name,
-            array_type,
-            [complex_query_parameter(None, v, sub, base) for v in value]
-            if "<" in sub
-            else value,
+            sub_type,
+            value
+            if isinstance(sub_type, query.ScalarQueryParameterType)
+            else [
+                complex_query_parameter(None, v, sub_type._complex__src, base)
+                for v in value
+            ],
         )
-    else:
-        fields = []
+    elif type_type == STRUCT:
         if not isinstance(value, collections_abc.Mapping):
             raise exceptions.ProgrammingError(f"Non-mapping value for type {type_}")
         value_keys = set(value)
-        for field_string in _split_struct_fields(sub):
-            field_string = field_string.strip()
-            m = parse_struct_field(field_string)
-            if not m:
-                raise exceptions.ProgrammingError(
-                    f"Invalid struct field, {field_string}, in {base or type_}"
-                )
-            field_name, field_type = m.groups()
+        fields = []
+        for field_name, field_type in sub_type:
             if field_name not in value:
                 raise exceptions.ProgrammingError(
                     f"No field value for {field_name} in {type_}"
@@ -296,7 +295,11 @@ def complex_query_parameter(
         if value_keys:
             raise exceptions.ProgrammingError(f"Extra data keys for {type_}")
 
-        return query.StructQueryParameter(name, *fields)
+        param = query.StructQueryParameter(name, *fields)
+    else:  # pragma: NO COVER
+        raise AssertionError("Bad type_type", type_type)  # Can't happen :)
+
+    return param
 
 
 def to_query_parameters_list(parameters, parameter_types):

@@ -566,7 +566,12 @@ def test_complex_query_parameter_type(type_, value, expect):
 @pytest.mark.parametrize(
     "value,type_,expect",
     [
-        ([], "ARRAY<INT>", "Invalid scalar type, INT, in ARRAY<INT>"),
+        (
+            [],
+            "ARRAY<INT>",
+            "The given parameter type, INT,"
+            " is not a valid BigQuery scalar type, in ARRAY<INT>.",
+        ),
         ([], "x<INT>", "Invalid parameter type, x<INT>"),
         ({}, "struct<int>", "Invalid struct field, int, in struct<int>"),
         (

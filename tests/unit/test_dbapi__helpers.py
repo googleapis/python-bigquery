@@ -563,6 +563,10 @@ def test_complex_query_parameter_type(type_, value, expect):
     assert param == expect
 
 
+def _expected_error_match(expect):
+    return "^" + re.escape(expect) + "$"
+
+
 @pytest.mark.parametrize(
     "value,type_,expect",
     [
@@ -599,10 +603,9 @@ def test_complex_query_parameter_type_errors(type_, value, expect):
     from google.cloud.bigquery.dbapi import exceptions
 
     with pytest.raises(
-        exceptions.ProgrammingError, match="^" + re.escape(expect) + "$",
+        exceptions.ProgrammingError, match=_expected_error_match(expect),
     ):
         complex_query_parameter("test", value, type_)
-
 
 @pytest.mark.parametrize(
     "parameters,parameter_types,expect",
@@ -666,3 +669,25 @@ def test_to_query_parameters_complex_types(parameters, parameter_types, expect):
 
     result = [p.to_api_repr() for p in to_query_parameters(parameters, parameter_types)]
     assert result == expect
+
+def test_to_query_parameters_struct_error():
+    from google.cloud.bigquery.dbapi._helpers import to_query_parameters
+
+    with pytest.raises(
+        NotImplementedError,
+        match=_expected_error_match(
+            "STRUCT-like parameter values are not supported, "
+            "unless an explicit type is give in the parameter placeholder "
+            "(e.g. '%(:struct<...>)s').")
+        ):
+        to_query_parameters([dict(x=1)], [None])
+
+    with pytest.raises(
+        NotImplementedError,
+        match=_expected_error_match(
+            "STRUCT-like parameter values are not supported (parameter foo), "
+            "unless an explicit type is give in the parameter placeholder "
+            "(e.g. '%(foo:struct<...>)s').")
+        ):
+        to_query_parameters(dict(foo=dict(x=1)), {})
+

@@ -302,6 +302,24 @@ def complex_query_parameter(
     return param
 
 
+def _dispatch_parameter(type_, value, name=None):
+    if type_ is not None and "<" in type_:
+        param = complex_query_parameter(name, value, type_)
+    elif isinstance(value, collections_abc.Mapping):
+        raise NotImplementedError(
+            f"STRUCT-like parameter values are not supported"
+            f"{' (parameter ' + name + ')' if name else ''},"
+            f" unless an explicit type is give in the parameter placeholder"
+            f" (e.g. '%({name if name else ''}:struct<...>)s')."
+            )
+    elif array_like(value):
+        param = array_to_query_parameter(value, name, type_)
+    else:
+        param = scalar_to_query_parameter(value, name, type_)
+
+    return param
+
+
 def to_query_parameters_list(parameters, parameter_types):
     """Converts a sequence of parameter values into query parameters.
 
@@ -315,21 +333,9 @@ def to_query_parameters_list(parameters, parameter_types):
         List[google.cloud.bigquery.query._AbstractQueryParameter]:
             A list of query parameters.
     """
-    result = []
-
-    for value, type_ in zip(parameters, parameter_types):
-        if type_ is not None and "<" in type_:
-            param = complex_query_parameter(None, value, type_)
-        elif isinstance(value, collections_abc.Mapping):
-            raise NotImplementedError("STRUCT-like parameter values are not supported.")
-        elif array_like(value):
-            param = array_to_query_parameter(value, None, type_)
-        else:
-            param = scalar_to_query_parameter(value, None, type_)
-
-        result.append(param)
-
-    return result
+    return [_dispatch_parameter(type_, value)
+            for value, type_ in zip(parameters, parameter_types)
+            ]
 
 
 def to_query_parameters_dict(parameters, query_parameter_types):
@@ -345,29 +351,9 @@ def to_query_parameters_dict(parameters, query_parameter_types):
         List[google.cloud.bigquery.query._AbstractQueryParameter]:
             A list of named query parameters.
     """
-    result = []
-
-    for name, value in parameters.items():
-        query_parameter_type = query_parameter_types.get(name)
-        if query_parameter_type is not None and "<" in query_parameter_type:
-            param = complex_query_parameter(name, value, query_parameter_type)
-        elif isinstance(value, collections_abc.Mapping):
-            raise NotImplementedError(
-                "STRUCT-like parameter values are not supported "
-                "(parameter {}).".format(name)
-            )
-        elif array_like(value):
-            param = array_to_query_parameter(
-                value, name=name, query_parameter_type=query_parameter_type
-            )
-        else:
-            param = scalar_to_query_parameter(
-                value, name=name, query_parameter_type=query_parameter_type,
-            )
-
-        result.append(param)
-
-    return result
+    return [_dispatch_parameter(query_parameter_types.get(name), value, name)
+            for name, value in parameters.items()
+            ]
 
 
 def to_query_parameters(parameters, parameter_types):

@@ -735,6 +735,35 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_dataframe_to_json_generator(module_under_test):
+    utcnow = datetime.datetime.utcnow()
+    df_data = collections.OrderedDict(
+        [
+            ("a_series", [pandas.NA, 2, 3, 4]),
+            ("b_series", [0.1, float("NaN"), 0.3, 0.4]),
+            ("c_series", ["a", "b", pandas.NA, "d"]),
+            ("d_series", [utcnow, utcnow, utcnow, pandas.NaT]),
+            ("e_series", [True, False, True, None]),
+        ]
+    )
+    dataframe = pandas.DataFrame(
+        df_data, index=pandas.Index([4, 5, 6, 7], name="a_index")
+    )
+
+    dataframe = dataframe.astype({"a_series": pandas.Int64Dtype()})
+
+    rows = module_under_test.dataframe_to_json_generator(dataframe)
+    expected = [
+        {"b_series": 0.1, "c_series": "a", "d_series": utcnow, "e_series": True},
+        {"a_series": 2, "c_series": "b", "d_series": utcnow, "e_series": False},
+        {"a_series": 3, "b_series": 0.3, "d_series": utcnow, "e_series": True},
+        {"a_series": 4, "b_series": 0.4, "c_series": "d"},
+    ]
+    for row, expect in zip(rows, expected):
+        assert row == expect
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_list_columns_and_indexes_with_named_index(module_under_test):
     df_data = collections.OrderedDict(
         [

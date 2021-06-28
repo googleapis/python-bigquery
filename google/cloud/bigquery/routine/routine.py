@@ -87,6 +87,7 @@ class Routine(object):
         "modified": "lastModifiedTime",
         "reference": "routineReference",
         "return_type": "returnType",
+        "return_table_type": "returnTableType",
         "type_": "routineType",
         "description": "description",
         "determinism_level": "determinismLevel",
@@ -242,6 +243,35 @@ class Routine(object):
         else:
             resource = None
         self._properties[self._PROPERTY_TO_API_FIELD["return_type"]] = resource
+
+    @property
+    def return_table_type(self) -> StandardSQLTableType:
+        resource = self._properties.get(
+            self._PROPERTY_TO_API_FIELD["return_table_type"]
+        )
+        if not resource:
+            return resource
+
+        table_columns = (
+            StandardSqlField.wrap(
+                json_format.ParseDict(
+                    column_json, StandardSqlField()._pb, ignore_unknown_fields=True
+                )
+            )
+            for column_json in resource["columns"]
+        )
+        return StandardSQLTableType(columns=table_columns)
+
+    @return_table_type.setter
+    def return_table_type(self, value):
+        if not value:
+            resource = None
+        else:
+            resource = {
+                "columns": [json_format.MessageToDict(col._pb) for col in value.columns]
+            }
+
+        self._properties[self._PROPERTY_TO_API_FIELD["return_table_type"]] = resource
 
     @property
     def imported_libraries(self):

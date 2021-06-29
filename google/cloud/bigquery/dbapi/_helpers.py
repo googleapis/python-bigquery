@@ -141,7 +141,7 @@ def _parse_struct_fields(
     ).match,
 ):
     # Split a string of struct fields.  They're defined by commas, but
-    # we have to avoid splitting on commas interbal to fields.  For
+    # we have to avoid splitting on commas internal to fields.  For
     # example:
     # name string, children array<struct<name string, bdate date>>
     #

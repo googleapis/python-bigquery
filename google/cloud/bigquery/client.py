@@ -3350,7 +3350,7 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableReference, str],
         json_rows: Sequence[Dict],
-        row_ids: Union[Sequence[str], AutoRowIDs, None] = AutoRowIDs.GENERATE_UUID,
+        row_ids: Union[Iterable[str], AutoRowIDs, None] = AutoRowIDs.GENERATE_UUID,
         skip_invalid_rows: bool = None,
         ignore_unknown_values: bool = None,
         template_suffix: str = None,
@@ -3372,15 +3372,19 @@ class Client(ClientWithProject):
             json_rows (Sequence[Dict]):
                 Row data to be inserted. Keys must match the table schema fields
                 and values must be JSON-compatible representations.
-            row_ids (Union[Sequence[str], AutoRowIDs, None]):
+            row_ids (Union[Iterable[str], AutoRowIDs, None]):
                 Unique IDs, one per row being inserted. An ID can also be
                 ``None``, indicating that an explicit insert ID should **not**
                 be used for that row. If the argument is omitted altogether,
                 unique IDs are created automatically.
 
+                .. versionchanged:: 2.21.0
+                    Can also be an iterable, not just a sequence, or an
+                    :class:`AutoRowIDs` enum member.
+
                 .. deprecated:: 2.21.0
                     Passing ``None`` to explicitly request autogenerating insert IDs is
-                    deprecated, use :attr:`.AutoRowIDs.GENERATE_UUID` instead.
+                    deprecated, use :attr:`AutoRowIDs.GENERATE_UUID` instead.
 
             skip_invalid_rows (Optional[bool]):
                 Insert all valid rows of a request, even if invalid rows exist.
@@ -3429,7 +3433,14 @@ class Client(ClientWithProject):
             )
             row_ids = AutoRowIDs.GENERATE_UUID
 
-        for index, row in enumerate(json_rows):
+        if not isinstance(row_ids, AutoRowIDs):
+            try:
+                row_ids_iter = iter(row_ids)
+            except TypeError:
+                msg = "row_ids is neither an iterable nor an AutoRowIDs enum member"
+                raise TypeError(msg)
+
+        for i, row in enumerate(json_rows):
             info = {"json": row}
 
             if row_ids is AutoRowIDs.GENERATE_UUID:
@@ -3437,7 +3448,13 @@ class Client(ClientWithProject):
             elif row_ids is AutoRowIDs.DISABLED:
                 info["insertId"] = None
             else:
-                info["insertId"] = row_ids[index]
+                try:
+                    insert_id = next(row_ids_iter)
+                except StopIteration:
+                    msg = f"row_ids did not generate enough IDs, error at index {i}"
+                    raise ValueError(msg)
+                else:
+                    info["insertId"] = insert_id
 
             rows_info.append(info)
 

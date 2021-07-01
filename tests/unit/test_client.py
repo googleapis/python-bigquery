@@ -5544,8 +5544,8 @@ class TestClient(unittest.TestCase):
             timeout=None,
         )
 
-    def test_insert_rows_json_with_string_id(self):
-        rows = [{"col1": "val1"}]
+    def test_insert_rows_json_with_iterator_row_ids(self):
+        rows = [{"col1": "val1"}, {"col2": "val2"}, {"col3": "val3"}]
         creds = _make_credentials()
         http = object()
         client = self._make_one(
@@ -5553,19 +5553,54 @@ class TestClient(unittest.TestCase):
         )
         conn = client._connection = make_connection({})
 
-        with mock.patch("uuid.uuid4", side_effect=map(str, range(len(rows)))):
-            errors = client.insert_rows_json("proj.dset.tbl", rows)
+        row_ids_iter = map(str, itertools.count(42))
+        errors = client.insert_rows_json("proj.dset.tbl", rows, row_ids=row_ids_iter)
 
         self.assertEqual(len(errors), 0)
-        expected = {
-            "rows": [{"json": row, "insertId": str(i)} for i, row in enumerate(rows)]
+        expected_row_data = {
+            "rows": [
+                {"json": {"col1": "val1"}, "insertId": "42"},
+                {"json": {"col2": "val2"}, "insertId": "43"},
+                {"json": {"col3": "val3"}, "insertId": "44"},
+            ]
         }
         conn.api_request.assert_called_once_with(
             method="POST",
             path="/projects/proj/datasets/dset/tables/tbl/insertAll",
-            data=expected,
+            data=expected_row_data,
             timeout=None,
         )
+
+    def test_insert_rows_json_with_non_iterable_row_ids(self):
+        rows = [{"col1": "val1"}]
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(
+            project="default-project", credentials=creds, _http=http
+        )
+        client._connection = make_connection({})
+
+        with self.assertRaises(TypeError) as exc:
+            client.insert_rows_json("proj.dset.tbl", rows, row_ids=object())
+
+        err_msg = str(exc.exception)
+        self.assertIn("row_ids", err_msg)
+        self.assertIn("iterable", err_msg)
+
+    def test_insert_rows_json_with_too_few_row_ids(self):
+        rows = [{"col1": "val1"}, {"col2": "val2"}, {"col3": "val3"}]
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(
+            project="default-project", credentials=creds, _http=http
+        )
+        client._connection = make_connection({})
+
+        insert_ids = ["10", "20"]
+
+        error_msg_pattern = "row_ids did not generate enough IDs.*index 2"
+        with self.assertRaisesRegex(ValueError, error_msg_pattern):
+            client.insert_rows_json("proj.dset.tbl", rows, row_ids=insert_ids)
 
     def test_insert_rows_json_w_explicit_none_insert_ids(self):
         rows = [{"col1": "val1"}, {"col2": "val2"}]

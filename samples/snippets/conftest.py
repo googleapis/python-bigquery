@@ -71,5 +71,11 @@ def dataset_id(bigquery_client: bigquery.Client, project_id: str):
 
 
 @pytest.fixture
+def random_table_id(dataset_id):
+    random_table_id = resource_prefix() + "_random_table"
+    return "{}.{}".format(dataset_id, random_table_id)
+
+
+@pytest.fixture
 def bigquery_client_patch(monkeypatch, bigquery_client):
     monkeypatch.setattr(bigquery, "Client", lambda: bigquery_client)

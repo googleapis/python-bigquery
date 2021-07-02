@@ -278,6 +278,27 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("nullMarker", value)
 
     @property
+    def projection_fields(self):
+        """Optional[List[str]]: If
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.source_format` is set to
+        "DATASTORE_BACKUP", indicates which entity properties to load into
+        BigQuery from a Cloud Datastore backup.
+
+        Property names are case sensitive and must be top-level properties. If
+        no properties are specified, BigQuery loads all properties. If any
+        named property isn't found in the Cloud Datastore backup, an invalid
+        error is returned in the job result.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.projection_fields
+        """
+        return self._get_sub_prop("projectionFields")
+
+    @projection_fields.setter
+    def projection_fields(self, value):
+        self._set_sub_prop("projectionFields", value)
+
+    @property
     def quote_character(self):
         """Optional[str]: Character used to quote data sections (CSV only).
 

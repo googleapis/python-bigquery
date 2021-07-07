@@ -12,3 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .. import update_dataset_access
+from .. import revoke_dataset_access
+
+
+def test_revoke_dataset_access(capsys, dataset_id, entity_id):
+
+    update_dataset_access.update_dataset_access(dataset_id)
+    revoke_dataset_access.revoke_dataset_access(dataset_id, entity_id)
+
+    out, err = capsys.readouterr()
+    assert (
+        "Updated dataset '{}' with modified user permissions.".format(dataset_id) in out
+    )

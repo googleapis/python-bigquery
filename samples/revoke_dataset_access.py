@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def revoke_dataset_access(dataset_id):
+def revoke_dataset_access(dataset_id, entity_id):
 
     # [START bigquery_revoke_dataset_access]
     from google.cloud import bigquery
@@ -24,15 +24,13 @@ def revoke_dataset_access(dataset_id):
     # dataset_id = 'your-project.your_dataset'
 
     dataset = client.get_dataset(dataset_id)  # Make an API request.
-
-    entry = bigquery.AccessEntry(
-        role="READER",
-        entity_type="userByEmail",
-        entity_id="sample.bigquery.dev@gmail.com",
-    )
-
     entries = list(dataset.access_entries)
-    entries.append(entry)
+    
+    for entry in entries:
+        if entry.entity_id == entity_id:
+            entry.role = None
+            break
+
     dataset.access_entries = entries
 
     dataset = client.update_dataset(dataset, ["access_entries"])  # Make an API request.

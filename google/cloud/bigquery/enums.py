@@ -58,13 +58,13 @@ class DecimalTargetType:
     """
 
     NUMERIC = "NUMERIC"
-    """Depending on the order, decimal values could be converted to NUMERIC type."""
+    """Decimal values could be converted to NUMERIC type."""
 
     BIGNUMERIC = "BIGNUMERIC"
-    """Depending on the order, decimal values could be converted to BIGNUMERIC type."""
+    """Decimal values could be converted to BIGNUMERIC type."""
 
     STRING = "STRING"
-    """Depending on the order, decimal values could be converted to STRING type."""
+    """Decimal values could be converted to STRING type."""
 
 
 class CreateDisposition(object):

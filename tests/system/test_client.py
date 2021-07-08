@@ -394,7 +394,7 @@ class TestBigQuery(unittest.TestCase):
         taxonomy_parent = f"projects/{Config.CLIENT.project}/locations/us"
 
         new_taxonomy = datacatalog_types.Taxonomy(
-            display_name="Custom test taxonomy",
+            display_name=unique_resource_id("Custom test taxonomy"),
             description="This taxonomy is ony used for a test.",
             activated_policy_types=[
                 datacatalog_types.Taxonomy.PolicyType.FINE_GRAINED_ACCESS_CONTROL

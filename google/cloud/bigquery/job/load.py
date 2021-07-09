@@ -14,6 +14,8 @@
 
 """Classes for load jobs."""
 
+from typing import Optional, List
+
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.external_config import HivePartitioningOptions
 from google.cloud.bigquery.format_options import ParquetOptions
@@ -23,7 +25,6 @@ from google.cloud.bigquery.schema import _to_schema_fields
 from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import TimePartitioning
-
 from google.cloud.bigquery.job.base import _AsyncJob
 from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
@@ -278,7 +279,7 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("nullMarker", value)
 
     @property
-    def projection_fields(self):
+    def projection_fields(self) -> Optional[List[str]]:
         """Optional[List[str]]: If
         :attr:`google.cloud.bigquery.job.LoadJobConfig.source_format` is set to
         "DATASTORE_BACKUP", indicates which entity properties to load into

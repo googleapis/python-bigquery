@@ -692,6 +692,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         assert table.snapshot_definition is None
 
     def test_snapshot_definition_set(self):
+        from google.cloud._helpers import UTC
         from google.cloud.bigquery.table import SnapshotDefinition
 
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
@@ -714,7 +715,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
             "/projects/project_x/datasets/dataset_y/tables/table_z"
         )
         assert snapshot.snapshot_time == datetime.datetime(
-            2010, 9, 28, 10, 20, 30, 123000
+            2010, 9, 28, 10, 20, 30, 123000, tzinfo=UTC
         )
 
     def test_description_setter_bad_value(self):
@@ -1560,6 +1561,7 @@ class TestSnapshotDefinition:
         assert instance.snapshot_time is None
 
     def test_ctor_full_resource(self):
+        from google.cloud._helpers import UTC
         from google.cloud.bigquery.table import TableReference
 
         resource = {
@@ -1577,7 +1579,7 @@ class TestSnapshotDefinition:
         )
         assert instance.base_table_reference == expected_table_ref
 
-        expected_time = datetime.datetime(2005, 6, 7, 19, 35, 2, 123000)
+        expected_time = datetime.datetime(2005, 6, 7, 19, 35, 2, 123000, tzinfo=UTC)
         assert instance.snapshot_time == expected_time
 
 

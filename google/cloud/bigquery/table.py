@@ -1306,10 +1306,9 @@ class SnapshotDefinition:
 
         self.snapshot_time = None
         if "snapshotTime" in resource:
-            dt = google.cloud._helpers._rfc3339_to_datetime(resource["snapshotTime"])
-            # The helper returns a timezone *aware* datetime object (with UTC tzinfo),
-            # we need to make it naive.
-            self.snapshot_time = dt.replace(tzinfo=None)
+            self.snapshot_time = google.cloud._helpers._rfc3339_to_datetime(
+                resource["snapshotTime"]
+            )
 
 
 class Row(object):

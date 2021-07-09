@@ -28,6 +28,16 @@ class TestCopyJobConfig(_Base):
 
         return CopyJobConfig
 
+    def test_ctor_defaults(self):
+        from google.cloud.bigquery.job import OperationType
+
+        config = self._make_one()
+
+        assert config.create_disposition is None
+        assert config.write_disposition is None
+        assert config.destination_encryption_configuration is None
+        assert config.operation_type == OperationType.OPERATION_TYPE_UNSPECIFIED
+
     def test_ctor_w_properties(self):
         from google.cloud.bigquery.job import CreateDisposition
         from google.cloud.bigquery.job import OperationType
@@ -76,19 +86,21 @@ class TestCopyJobConfig(_Base):
             resource, {"copy": {"destinationEncryptionConfiguration": None}}
         )
 
-    def test_operation_type_unspecified(self):
+    def test_operation_type_setting_none(self):
         from google.cloud.bigquery.job import OperationType
 
-        config = self._make_one()
-        self.assertEqual(
-            config.operation_type, OperationType.OPERATION_TYPE_UNSPECIFIED
-        )
+        config = self._make_one(operation_type=OperationType.SNAPSHOT)
 
         # Setting it to None is the same as setting it to OPERATION_TYPE_UNSPECIFIED.
         config.operation_type = None
-        self.assertEqual(
-            config.operation_type, OperationType.OPERATION_TYPE_UNSPECIFIED
-        )
+        assert config.operation_type == OperationType.OPERATION_TYPE_UNSPECIFIED
+
+    def test_operation_type_setting_non_none(self):
+        from google.cloud.bigquery.job import OperationType
+
+        config = self._make_one(operation_type=None)
+        config.operation_type = OperationType.RESTORE
+        assert config.operation_type == OperationType.RESTORE
 
 
 class TestCopyJob(_Base):

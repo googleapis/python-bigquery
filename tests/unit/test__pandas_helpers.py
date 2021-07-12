@@ -19,6 +19,7 @@ import functools
 import operator
 import queue
 import warnings
+import pkg_resources
 
 import mock
 
@@ -46,6 +47,14 @@ try:
     from google.cloud import bigquery_storage
 except ImportError:  # pragma: NO COVER
     bigquery_storage = None
+
+PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
+
+if pandas is not None:
+    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
+else:
+    # Set to less than MIN version.
+    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
 
 
 skip_if_no_bignumeric = pytest.mark.skipif(
@@ -734,7 +743,10 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
     assert columns_and_indexes == expected
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+@pytest.mark.skipIf(
+    pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+    reason="Requires `pandas version >= 1.0.0` which introduces pandas.NA",
+)
 def test_dataframe_to_json_generator(module_under_test):
     utcnow = datetime.datetime.utcnow()
     df_data = collections.OrderedDict(

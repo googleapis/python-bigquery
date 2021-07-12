@@ -743,7 +743,7 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
     assert columns_and_indexes == expected
 
 
-@pytest.mark.skipIf(
+@pytest.mark.skipif(
     pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
     reason="Requires `pandas version >= 1.0.0` which introduces pandas.NA",
 )

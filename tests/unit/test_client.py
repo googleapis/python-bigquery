@@ -4617,6 +4617,65 @@ class TestClient(unittest.TestCase):
             },
         )
 
+    def test_query_job_rpc_fail_w_job_id_given(self):
+        from google.api_core.exceptions import GoogleAPICallError
+        from google.cloud.bigquery.job import QueryJob
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        job_create_error = GoogleAPICallError("Dubious oops.")
+        job_begin_patcher = mock.patch.object(
+            QueryJob, "_begin", side_effect=job_create_error
+        )
+        with job_begin_patcher:
+            with pytest.raises(GoogleAPICallError, match="Dubious oops."):
+                client.query("SELECT 1;", job_id="123")
+
+    def test_query_job_rpc_fail_w_random_id_job_create_indeed_failed(self):
+        from google.api_core.exceptions import GoogleAPICallError
+        from google.api_core.exceptions import NotFound
+        from google.cloud.bigquery.job import QueryJob
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        job_create_error = GoogleAPICallError("Dubious oops.")
+        job_begin_patcher = mock.patch.object(
+            QueryJob, "_begin", side_effect=job_create_error
+        )
+        get_job_patcher = mock.patch.object(
+            client, "get_job", side_effect=NotFound("no such job")
+        )
+
+        with job_begin_patcher, get_job_patcher:
+            # If get job request fails, the original exception should be raised.
+            with pytest.raises(GoogleAPICallError, match="Dubious oops."):
+                client.query("SELECT 1;", job_id=None)
+
+    def test_query_job_rpc_fail_w_random_id_job_create_succeeded(self):
+        from google.api_core.exceptions import GoogleAPICallError
+        from google.cloud.bigquery.job import QueryJob
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        job_create_error = GoogleAPICallError("Dubious oops.")
+        job_begin_patcher = mock.patch.object(
+            QueryJob, "_begin", side_effect=job_create_error
+        )
+        get_job_patcher = mock.patch.object(
+            client, "get_job", return_value=mock.sentinel.query_job
+        )
+
+        with job_begin_patcher, get_job_patcher:
+            result = client.query("SELECT 1;", job_id=None)
+
+        assert result is mock.sentinel.query_job
+
     def test_insert_rows_w_timeout(self):
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table

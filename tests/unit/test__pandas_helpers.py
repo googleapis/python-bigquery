@@ -771,8 +771,7 @@ def test_dataframe_to_json_generator(module_under_test):
         {"a_series": 3, "b_series": 0.3, "d_series": utcnow, "e_series": True},
         {"a_series": 4, "b_series": 0.4, "c_series": "d"},
     ]
-    for row, expect in zip(rows, expected):
-        assert row == expect
+    assert list(rows) == expected
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

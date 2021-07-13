@@ -595,6 +595,7 @@ def _download_table_bqstorage_stream(
 
     # Avoid deprecation warnings for passing in unnecessary read session.
     # https://github.com/googleapis/python-bigquery-storage/issues/229
+    _helpers._verify_bq_storage_version()
     if _helpers._IS_BQ_STORAGE_READ_SESSION_OPTIONAL:
         rowstream = reader.rows()
     else:

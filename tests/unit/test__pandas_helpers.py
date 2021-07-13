@@ -1321,6 +1321,7 @@ def test__download_table_bqstorage_stream_includes_read_session(
     import google.cloud.bigquery_storage_v1.reader
     import google.cloud.bigquery_storage_v1.types
 
+    monkeypatch.setattr(_helpers, "_HAS_VERIFIED_BQ_STORAGE", False)
     monkeypatch.setattr(bigquery_storage, "__version__", "2.5.0")
     bqstorage_client = mock.create_autospec(
         bigquery_storage.BigQueryReadClient, instance=True
@@ -1330,7 +1331,6 @@ def test__download_table_bqstorage_stream_includes_read_session(
     )
     bqstorage_client.read_rows.return_value = reader
     session = google.cloud.bigquery_storage_v1.types.ReadSession()
-    _helpers._verify_bq_storage_version()
 
     module_under_test._download_table_bqstorage_stream(
         module_under_test._DownloadState(),
@@ -1353,6 +1353,7 @@ def test__download_table_bqstorage_stream_omits_read_session(
     import google.cloud.bigquery_storage_v1.reader
     import google.cloud.bigquery_storage_v1.types
 
+    monkeypatch.setattr(_helpers, "_HAS_VERIFIED_BQ_STORAGE", False)
     monkeypatch.setattr(bigquery_storage, "__version__", "2.6.0")
     bqstorage_client = mock.create_autospec(
         bigquery_storage.BigQueryReadClient, instance=True
@@ -1362,7 +1363,6 @@ def test__download_table_bqstorage_stream_omits_read_session(
     )
     bqstorage_client.read_rows.return_value = reader
     session = google.cloud.bigquery_storage_v1.types.ReadSession()
-    _helpers._verify_bq_storage_version()
 
     module_under_test._download_table_bqstorage_stream(
         module_under_test._DownloadState(),

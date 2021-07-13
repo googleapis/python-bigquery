@@ -44,6 +44,7 @@ _PROJECT_PREFIX_PATTERN = re.compile(
 _MIN_BQ_STORAGE_VERSION = pkg_resources.parse_version("2.0.0")
 _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = pkg_resources.parse_version("2.6.0")
 _IS_BQ_STORAGE_READ_SESSION_OPTIONAL = False
+_HAS_VERIFIED_BQ_STORAGE = False
 
 
 def _verify_bq_storage_version():
@@ -56,7 +57,10 @@ def _verify_bq_storage_version():
     in setup.py, the the calling code can use this helper to verify the version
     compatibility at runtime.
     """
-    global _IS_BQ_STORAGE_READ_SESSION_OPTIONAL
+    global _IS_BQ_STORAGE_READ_SESSION_OPTIONAL, _HAS_VERIFIED_BQ_STORAGE
+
+    if _HAS_VERIFIED_BQ_STORAGE:
+        return
 
     from google.cloud import bigquery_storage
 
@@ -73,6 +77,8 @@ def _verify_bq_storage_version():
 
     if installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION:
         _IS_BQ_STORAGE_READ_SESSION_OPTIONAL = True
+
+    _HAS_VERIFIED_BQ_STORAGE = True
 
 
 def _not_null(value, field):

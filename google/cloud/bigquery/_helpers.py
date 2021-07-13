@@ -77,6 +77,10 @@ def _verify_bq_storage_version():
 
     if installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION:
         _IS_BQ_STORAGE_READ_SESSION_OPTIONAL = True
+    else:
+        # Defaults to False, but set it just in case we're mocking out the
+        # version in unit tests.
+        _IS_BQ_STORAGE_READ_SESSION_OPTIONAL = False
 
     _HAS_VERIFIED_BQ_STORAGE = True
 

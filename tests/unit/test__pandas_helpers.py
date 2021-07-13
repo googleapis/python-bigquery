@@ -46,6 +46,8 @@ from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
 try:
     from google.cloud import bigquery_storage
+
+    _helpers._verify_bq_storage_version()
 except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 
@@ -1346,6 +1348,9 @@ def test__download_table_bqstorage_stream_includes_read_session(
 
 @pytest.mark.skipif(
     bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
+)
+@pytest.mark.skipif(
+    not _helpers._IS_BQ_STORAGE_READ_SESSION_OPTIONAL, reason="read_session is required"
 )
 def test__download_table_bqstorage_stream_omits_read_session(
     monkeypatch, module_under_test

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import load_table_uri_firestore
+import load_table_uri_firestore
 
 
 def test_load_table_uri_firestore(capsys, random_table_id):

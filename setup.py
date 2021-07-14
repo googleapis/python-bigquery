@@ -32,24 +32,18 @@ dependencies = [
     "grpcio >= 1.38.1, < 2.0dev",  # https://github.com/googleapis/python-bigquery/issues/695
     "google-api-core[grpc] >= 1.29.0, < 3.0.0dev",
     "proto-plus >= 1.10.0",
+    "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
     "google-cloud-core >= 1.4.1, < 3.0dev",
     "google-resumable-media >= 0.6.0, < 3.0dev",
     "packaging >= 14.3",
     "protobuf >= 3.12.0",
+    "pyarrow >= 1.0.0, < 5.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]
 extras = {
-    "bqstorage": [
-        "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
-        # Due to an issue in pip's dependency resolver, the `grpc` extra is not
-        # installed, even though `google-cloud-bigquery-storage` specifies it
-        # as `google-api-core[grpc]`. We thus need to explicitly specify it here.
-        # See: https://github.com/googleapis/python-bigquery/issues/83 The
-        # grpc.Channel.close() method isn't added until 1.32.0.
-        # https://github.com/grpc/grpc/pull/15254
-        "grpcio >= 1.38.1, < 2.0dev",
-        "pyarrow >= 1.0.0, < 5.0dev",
-    ],
+    # Keep the no-op bqstorage extra for backward compatibility.
+    # See: https://github.com/googleapis/python-bigquery/issues/757
+    "bqstorage": [],
     "pandas": ["pandas>=0.23.0", "pyarrow >= 1.0.0, < 5.0dev"],
     "bignumeric_type": ["pyarrow >= 3.0.0, < 5.0dev"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],

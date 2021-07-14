@@ -7393,62 +7393,6 @@ class TestClientUpload(object):
         assert "unknown_col" in message
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_load_table_from_dataframe_w_partial_schema_missing_types(self):
-        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
-        from google.cloud.bigquery import job
-        from google.cloud.bigquery.schema import SchemaField
-
-        client = self._make_client()
-        df_data = collections.OrderedDict(
-            [
-                ("string_col", ["abc", "def", "ghi"]),
-                ("unknown_col", [b"jkl", None, b"mno"]),
-            ]
-        )
-        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
-        load_patch = mock.patch(
-            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
-        )
-        pyarrow_patch = mock.patch(
-            "google.cloud.bigquery._pandas_helpers.pyarrow", None
-        )
-
-        schema = (SchemaField("string_col", "STRING"),)
-        job_config = job.LoadJobConfig(schema=schema)
-        with pyarrow_patch, load_patch as load_table_from_file, warnings.catch_warnings(
-            record=True
-        ) as warned:
-            client.load_table_from_dataframe(
-                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
-            )
-
-        load_table_from_file.assert_called_once_with(
-            client,
-            mock.ANY,
-            self.TABLE_REF,
-            num_retries=_DEFAULT_NUM_RETRIES,
-            rewind=True,
-            size=mock.ANY,
-            job_id=mock.ANY,
-            job_id_prefix=None,
-            location=self.LOCATION,
-            project=None,
-            job_config=mock.ANY,
-            timeout=None,
-        )
-
-        assert warned  # there should be at least one warning
-        unknown_col_warnings = [
-            warning for warning in warned if "unknown_col" in str(warning)
-        ]
-        assert unknown_col_warnings
-        assert unknown_col_warnings[0].category == UserWarning
-
-        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
-        assert sent_config.source_format == job.SourceFormat.PARQUET
-        assert sent_config.schema is None
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_schema_arrow_custom_compression(self):
         from google.cloud.bigquery import job

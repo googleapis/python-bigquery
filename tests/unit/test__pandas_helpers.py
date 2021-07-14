@@ -29,13 +29,9 @@ try:
     import pandas.testing
 except ImportError:  # pragma: NO COVER
     pandas = None
-try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    # Mock out pyarrow when missing, because methods from pyarrow.types are
-    # used in test parameterization.
-    pyarrow = mock.Mock()
+
+import pyarrow
+import pyarrow.types
 import pytest
 import pytz
 
@@ -1042,14 +1038,6 @@ def test_dataframe_to_arrow_dict_sequence_schema(module_under_test):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_dataframe_to_parquet_without_pyarrow(module_under_test, monkeypatch):
-    monkeypatch.setattr(module_under_test, "pyarrow", None)
-    with pytest.raises(ValueError) as exc_context:
-        module_under_test.dataframe_to_parquet(pandas.DataFrame(), (), None)
-    assert "pyarrow is required" in str(exc_context.value)
-
-
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_dataframe_to_parquet_w_extra_fields(module_under_test, monkeypatch):
     with pytest.raises(ValueError) as exc_context:
@@ -1091,33 +1079,6 @@ def test_dataframe_to_parquet_compression_method(module_under_test):
     call_args = fake_write_table.call_args
     assert call_args is not None
     assert call_args.kwargs.get("compression") == "ZSTD"
-
-
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_dataframe_to_bq_schema_fallback_needed_wo_pyarrow(module_under_test):
-    dataframe = pandas.DataFrame(
-        data=[
-            {"id": 10, "status": u"FOO", "execution_date": datetime.date(2019, 5, 10)},
-            {"id": 20, "status": u"BAR", "created_at": datetime.date(2018, 9, 12)},
-        ]
-    )
-
-    no_pyarrow_patch = mock.patch(module_under_test.__name__ + ".pyarrow", None)
-
-    with no_pyarrow_patch, warnings.catch_warnings(record=True) as warned:
-        detected_schema = module_under_test.dataframe_to_bq_schema(
-            dataframe, bq_schema=[]
-        )
-
-    assert detected_schema is None
-
-    # a warning should also be issued
-    expected_warnings = [
-        warning for warning in warned if "could not determine" in str(warning).lower()
-    ]
-    assert len(expected_warnings) == 1
-    msg = str(expected_warnings[0])
-    assert "execution_date" in msg and "created_at" in msg
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

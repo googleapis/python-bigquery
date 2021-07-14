@@ -27,11 +27,8 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 
-try:
-    import pyarrow
-    import pyarrow.parquet
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+import pyarrow
+import pyarrow.parquet
 
 try:
     from google.cloud.bigquery_storage import ArrowSerializationOptions
@@ -104,63 +101,57 @@ def pyarrow_timestamp():
     return pyarrow.timestamp("us", tz="UTC")
 
 
-if pyarrow:
-    # This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
-    # When modifying it be sure to update it there as well.
-    BQ_TO_ARROW_SCALARS = {
-        "BOOL": pyarrow.bool_,
-        "BOOLEAN": pyarrow.bool_,
-        "BYTES": pyarrow.binary,
-        "DATE": pyarrow.date32,
-        "DATETIME": pyarrow_datetime,
-        "FLOAT": pyarrow.float64,
-        "FLOAT64": pyarrow.float64,
-        "GEOGRAPHY": pyarrow.string,
-        "INT64": pyarrow.int64,
-        "INTEGER": pyarrow.int64,
-        "NUMERIC": pyarrow_numeric,
-        "STRING": pyarrow.string,
-        "TIME": pyarrow_time,
-        "TIMESTAMP": pyarrow_timestamp,
-    }
-    ARROW_SCALAR_IDS_TO_BQ = {
-        # https://arrow.apache.org/docs/python/api/datatypes.html#type-classes
-        pyarrow.bool_().id: "BOOL",
-        pyarrow.int8().id: "INT64",
-        pyarrow.int16().id: "INT64",
-        pyarrow.int32().id: "INT64",
-        pyarrow.int64().id: "INT64",
-        pyarrow.uint8().id: "INT64",
-        pyarrow.uint16().id: "INT64",
-        pyarrow.uint32().id: "INT64",
-        pyarrow.uint64().id: "INT64",
-        pyarrow.float16().id: "FLOAT64",
-        pyarrow.float32().id: "FLOAT64",
-        pyarrow.float64().id: "FLOAT64",
-        pyarrow.time32("ms").id: "TIME",
-        pyarrow.time64("ns").id: "TIME",
-        pyarrow.timestamp("ns").id: "TIMESTAMP",
-        pyarrow.date32().id: "DATE",
-        pyarrow.date64().id: "DATETIME",  # because millisecond resolution
-        pyarrow.binary().id: "BYTES",
-        pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
-        # The exact scale and precision don't matter, see below.
-        pyarrow.decimal128(38, scale=9).id: "NUMERIC",
-    }
+# This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
+# When modifying it be sure to update it there as well.
+BQ_TO_ARROW_SCALARS = {
+    "BOOL": pyarrow.bool_,
+    "BOOLEAN": pyarrow.bool_,
+    "BYTES": pyarrow.binary,
+    "DATE": pyarrow.date32,
+    "DATETIME": pyarrow_datetime,
+    "FLOAT": pyarrow.float64,
+    "FLOAT64": pyarrow.float64,
+    "GEOGRAPHY": pyarrow.string,
+    "INT64": pyarrow.int64,
+    "INTEGER": pyarrow.int64,
+    "NUMERIC": pyarrow_numeric,
+    "STRING": pyarrow.string,
+    "TIME": pyarrow_time,
+    "TIMESTAMP": pyarrow_timestamp,
+}
+ARROW_SCALAR_IDS_TO_BQ = {
+    # https://arrow.apache.org/docs/python/api/datatypes.html#type-classes
+    pyarrow.bool_().id: "BOOL",
+    pyarrow.int8().id: "INT64",
+    pyarrow.int16().id: "INT64",
+    pyarrow.int32().id: "INT64",
+    pyarrow.int64().id: "INT64",
+    pyarrow.uint8().id: "INT64",
+    pyarrow.uint16().id: "INT64",
+    pyarrow.uint32().id: "INT64",
+    pyarrow.uint64().id: "INT64",
+    pyarrow.float16().id: "FLOAT64",
+    pyarrow.float32().id: "FLOAT64",
+    pyarrow.float64().id: "FLOAT64",
+    pyarrow.time32("ms").id: "TIME",
+    pyarrow.time64("ns").id: "TIME",
+    pyarrow.timestamp("ns").id: "TIMESTAMP",
+    pyarrow.date32().id: "DATE",
+    pyarrow.date64().id: "DATETIME",  # because millisecond resolution
+    pyarrow.binary().id: "BYTES",
+    pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
+    # The exact scale and precision don't matter, see below.
+    pyarrow.decimal128(38, scale=9).id: "NUMERIC",
+}
 
-    if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
-        BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
-        # The exact decimal's scale and precision are not important, as only
-        # the type ID matters, and it's the same for all decimal256 instances.
-        ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
-        _BIGNUMERIC_SUPPORT = True
-    else:
-        _BIGNUMERIC_SUPPORT = False
-
-else:  # pragma: NO COVER
-    BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
-    ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
-    _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
+if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
+    BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
+    # The exact decimal's scale and precision are not important, as only
+    # the type ID matters, and it's the same for all decimal256 instances.
+    ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
+    _BIGNUMERIC_SUPPORT = True
+else:
+    _BIGNUMERIC_SUPPORT = False
 
 
 def bq_to_arrow_struct_data_type(field):
@@ -344,13 +335,6 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     # If schema detection was not successful for all columns, also try with
     # pyarrow, if available.
     if unknown_type_fields:
-        if not pyarrow:
-            msg = u"Could not determine the type of columns: {}".format(
-                ", ".join(field.name for field in unknown_type_fields)
-            )
-            warnings.warn(msg)
-            return None  # We cannot detect the schema in full.
-
         # The augment_schema() helper itself will also issue unknown type
         # warnings if detection still fails for any of the fields.
         bq_schema_out = augment_schema(dataframe, bq_schema_out)
@@ -492,9 +476,6 @@ def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SN
             serializing method. Defaults to "SNAPPY".
             https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
     """
-    if pyarrow is None:
-        raise ValueError("pyarrow is required for BigQuery schema conversion.")
-
     bq_schema = schema._to_schema_fields(bq_schema)
     arrow_table = dataframe_to_arrow(dataframe, bq_schema)
     pyarrow.parquet.write_table(arrow_table, filepath, compression=parquet_compression)

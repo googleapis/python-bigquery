@@ -59,6 +59,7 @@ Job-Related Types
     job.CreateDisposition
     job.DestinationFormat
     job.Encoding
+    job.OperationType
     job.QueryPlanEntry
     job.QueryPlanEntryStep
     job.QueryPriority
@@ -90,6 +91,7 @@ Table
     table.RangePartitioning
     table.Row
     table.RowIterator
+    table.SnapshotDefinition
     table.Table
     table.TableListItem
     table.TableReference
@@ -173,10 +175,11 @@ Magics
 Enums
 =====
 
-.. autosummary::
-    :toctree: generated
+.. toctree::
+    :maxdepth: 2
 
-    enums.StandardSqlDataTypes
+    enums
+
 
 Encryption Configuration
 ========================

@@ -317,7 +317,7 @@ class LoadJobConfig(_JobConfig):
         return self._get_sub_prop("projectionFields")
 
     @projection_fields.setter
-    def projection_fields(self, value):
+    def projection_fields(self, value: Optional[List[str]]):
         self._set_sub_prop("projectionFields", value)
 
     @property

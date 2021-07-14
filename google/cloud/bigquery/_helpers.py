@@ -19,6 +19,7 @@ import datetime
 import decimal
 import math
 import re
+from typing import Union
 
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
@@ -50,11 +51,13 @@ class BQStorageVersions:
         self._installed_version = None
 
     @property
-    def installed_version(self) -> packaging.version.Version:
+    def installed_version(
+        self,
+    ) -> Union[packaging.version.LegacyVersion, packaging.version.Version]:
         if self._installed_version is None:
             from google.cloud import bigquery_storage
 
-            self._installed_version = packaging.version.Version(
+            self._installed_version = packaging.version.parse(
                 getattr(bigquery_storage, "__version__", "legacy")
             )
 

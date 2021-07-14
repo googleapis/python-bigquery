@@ -3225,11 +3225,10 @@ class Client(ClientWithProject):
 
         try:
             query_job._begin(retry=retry, timeout=timeout)
-        except core_exceptions.GoogleAPICallError as create_exc:
-            # Even if create job request fails, it is still possible that the job has
-            # actually been successfully created. We check this by trying to fetch it,
-            # but only if we created a random job ID ourselves (otherwise we might
-            # mistakenly fetch a job created by someone else).
+        except core_exceptions.Conflict as create_exc:
+            # The thought is if someone is providing their own job IDs and they get
+            # their job ID generation wrong, this could end up returning results for
+            # the wrong query. We thus only try to recover if job ID was not given.
             if job_id_given:
                 raise create_exc
 

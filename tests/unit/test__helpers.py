@@ -26,12 +26,12 @@ except ImportError:  # pragma: NO COVER
 
 
 @unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")
-class Test_verify_bq_storage_version(unittest.TestCase):
+class TestBQStorageVersions(unittest.TestCase):
     def _call_fut(self):
         from google.cloud.bigquery import _helpers
 
-        _helpers._HAS_VERIFIED_BQ_STORAGE = False
-        return _helpers._verify_bq_storage_version()
+        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
+        return _helpers.BQ_STORAGE_VERSIONS.verify_version()
 
     def test_raises_no_error_w_recent_bqstorage(self):
         from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError

@@ -47,7 +47,7 @@ from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 try:
     from google.cloud import bigquery_storage
 
-    _helpers._verify_bq_storage_version()
+    _helpers.BQ_STORAGE_VERSIONS.verify_version()
 except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 
@@ -1323,7 +1323,7 @@ def test__download_table_bqstorage_stream_includes_read_session(
     import google.cloud.bigquery_storage_v1.reader
     import google.cloud.bigquery_storage_v1.types
 
-    monkeypatch.setattr(_helpers, "_HAS_VERIFIED_BQ_STORAGE", False)
+    monkeypatch.setattr(_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None)
     monkeypatch.setattr(bigquery_storage, "__version__", "2.5.0")
     bqstorage_client = mock.create_autospec(
         bigquery_storage.BigQueryReadClient, instance=True
@@ -1350,7 +1350,8 @@ def test__download_table_bqstorage_stream_includes_read_session(
     bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 @pytest.mark.skipif(
-    not _helpers._IS_BQ_STORAGE_READ_SESSION_OPTIONAL, reason="read_session is required"
+    not _helpers.BQ_STORAGE_VERSIONS.is_read_session_optional,
+    reason="read_session is required",
 )
 def test__download_table_bqstorage_stream_omits_read_session(
     monkeypatch, module_under_test
@@ -1358,7 +1359,7 @@ def test__download_table_bqstorage_stream_omits_read_session(
     import google.cloud.bigquery_storage_v1.reader
     import google.cloud.bigquery_storage_v1.types
 
-    monkeypatch.setattr(_helpers, "_HAS_VERIFIED_BQ_STORAGE", False)
+    monkeypatch.setattr(_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None)
     monkeypatch.setattr(bigquery_storage, "__version__", "2.6.0")
     bqstorage_client = mock.create_autospec(
         bigquery_storage.BigQueryReadClient, instance=True

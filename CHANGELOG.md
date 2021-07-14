@@ -5,6 +5,18 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+### [2.21.1](https://www.github.com/googleapis/python-bigquery/compare/v2.21.0...v2.21.1) (2021-07-14)
+
+
+### Bug Fixes
+
+* avoid possible job already exists error ([#751](https://www.github.com/googleapis/python-bigquery/issues/751)) ([45b9308](https://www.github.com/googleapis/python-bigquery/commit/45b93089f5398740413104285cc8acfd5ebc9c08))
+
+
+### Dependencies
+
+* allow 2.x versions of `google-api-core`, `google-cloud-core`, `google-resumable-media` ([#770](https://www.github.com/googleapis/python-bigquery/issues/770)) ([87a09fa](https://www.github.com/googleapis/python-bigquery/commit/87a09fa3f2a9ab35728a1ac925f9d5f2e6616c65))
+
 ## [2.21.0](https://www.github.com/googleapis/python-bigquery/compare/v2.20.0...v2.21.0) (2021-07-12)
 
 

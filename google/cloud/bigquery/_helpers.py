@@ -26,7 +26,7 @@ from google.cloud._helpers import _datetime_from_microseconds
 from google.cloud._helpers import _RFC3339_MICROS
 from google.cloud._helpers import _RFC3339_NO_FRACTION
 from google.cloud._helpers import _to_bytes
-import pkg_resources
+import packaging.version
 
 from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 
@@ -41,8 +41,8 @@ _PROJECT_PREFIX_PATTERN = re.compile(
     re.VERBOSE,
 )
 
-_MIN_BQ_STORAGE_VERSION = pkg_resources.parse_version("2.0.0")
-_BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = pkg_resources.parse_version("2.6.0")
+_MIN_BQ_STORAGE_VERSION = packaging.version.Version("2.0.0")
+_BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
 
 
 class BQStorageVersions:
@@ -50,18 +50,18 @@ class BQStorageVersions:
         self._installed_version = None
 
     @property
-    def installed_version(self):
+    def installed_version(self) -> packaging.version.Version:
         if self._installed_version is None:
             from google.cloud import bigquery_storage
 
-            self._installed_version = pkg_resources.parse_version(
+            self._installed_version = packaging.version.Version(
                 getattr(bigquery_storage, "__version__", "legacy")
             )
 
         return self._installed_version
 
     @property
-    def is_read_session_optional(self):
+    def is_read_session_optional(self) -> bool:
         return self.installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION
 
     def verify_version(self):
@@ -73,6 +73,9 @@ class BQStorageVersions:
         Because `pip` can install an outdated version of this extra despite the constraints
         in setup.py, the the calling code can use this helper to verify the version
         compatibility at runtime.
+
+        Raises:
+            LegacyBigQueryStorageError: If google-cloud-bigquery-storage is outdated.
         """
         if self.installed_version < _MIN_BQ_STORAGE_VERSION:
             msg = (

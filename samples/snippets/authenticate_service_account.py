@@ -27,8 +27,7 @@ def main():
     # key_path = "path/to/service_account.json"
 
     credentials = service_account.Credentials.from_service_account_file(
-        key_path,
-        scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        key_path, scopes=["https://www.googleapis.com/auth/cloud-platform"],
     )
 
     # Alternatively, use service_account.Credentials.from_service_account_info()
@@ -36,10 +35,7 @@ def main():
     # TODO(developer): Set key_json to the content of the service account key file.
     # credentials = service_account.Credentials.from_service_account_info(key_json)
 
-    client = bigquery.Client(
-        credentials=credentials,
-        project=credentials.project_id,
-    )
+    client = bigquery.Client(credentials=credentials, project=credentials.project_id,)
     # [END bigquery_client_json_credentials]
     return client
 

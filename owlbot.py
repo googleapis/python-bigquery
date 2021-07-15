@@ -14,15 +14,12 @@
 
 """This script is used to synthesize generated parts of this library."""
 
-import pathlib
 import textwrap
 
 import synthtool as s
 from synthtool import gcp
 from synthtool.languages import python
 
-
-REPO_ROOT = pathlib.Path(__file__).parent.absolute()
 
 common = gcp.CommonTemplates()
 
@@ -163,5 +160,3 @@ s.replace(
 )
 
 s.shell.run(["nox", "-s", "blacken"], hide_output=False)
-for noxfile in REPO_ROOT.glob("samples/**/noxfile.py"):
-    s.shell.run(["nox", "-s", "blacken"], cwd=noxfile.parent, hide_output=False)

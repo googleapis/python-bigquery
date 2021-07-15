@@ -131,10 +131,7 @@ class DmlStats(typing.NamedTuple):
     """Number of updated rows. Populated by DML UPDATE and MERGE statements."""
 
     @classmethod
-    def from_api_repr(cls, stats: Optional[Dict[str, str]]) -> Optional["DmlStats"]:
-        if stats is None:
-            return None
-
+    def from_api_repr(cls, stats: Dict[str, str]) -> "DmlStats":
         # NOTE: The field order here must match the order of fields set at the
         # class level.
         api_fields = ("insertedRowCount", "deletedRowCount", "updatedRowCount")
@@ -1114,7 +1111,10 @@ class QueryJob(_AsyncJob):
     @property
     def dml_stats(self) -> Optional[DmlStats]:
         stats = self._job_statistics().get("dmlStats")
-        return DmlStats.from_api_repr(stats)
+        if stats is None:
+            return None
+        else:
+            return DmlStats.from_api_repr(stats)
 
     def _blocking_poll(self, timeout=None, **kwargs):
         self._done_timeout = timeout

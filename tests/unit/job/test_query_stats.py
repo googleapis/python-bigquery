@@ -31,11 +31,6 @@ class TestDmlStats:
         assert dml_stats.deleted_row_count == 0
         assert dml_stats.updated_row_count == 0
 
-    def test_from_api_repr_none(self):
-        klass = self._get_target_class()
-        result = klass.from_api_repr(None)
-        assert result is None
-
     def test_from_api_repr_partial_stats(self):
         klass = self._get_target_class()
         result = klass.from_api_repr({"deletedRowCount": "12"})

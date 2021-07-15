@@ -65,10 +65,7 @@ class BQStorageVersions:
 
     @property
     def is_read_session_optional(self) -> bool:
-        return (
-            self.installed_version is not None
-            and self.installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION
-        )
+        return self.installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION
 
     def verify_version(self):
         """Verify that a recent enough version of BigQuery Storage extra is

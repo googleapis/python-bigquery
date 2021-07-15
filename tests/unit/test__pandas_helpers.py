@@ -1347,11 +1347,9 @@ def test__download_table_bqstorage_stream_includes_read_session(
 
 
 @pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
-@pytest.mark.skipif(
-    not _helpers.BQ_STORAGE_VERSIONS.is_read_session_optional,
-    reason="read_session is required",
+    bigquery_storage is None
+    or not _helpers.BQ_STORAGE_VERSIONS.is_read_session_optional,
+    reason="Requires `google-cloud-bigquery-storage` >= 2.6.0",
 )
 def test__download_table_bqstorage_stream_omits_read_session(
     monkeypatch, module_under_test

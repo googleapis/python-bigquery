@@ -32,11 +32,6 @@ from typing import Any, BinaryIO, Dict, Iterable, Optional, Sequence, Tuple, Uni
 import uuid
 import warnings
 
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload
 from google.resumable_media.requests import ResumableUpload
@@ -2490,7 +2485,7 @@ class Client(ClientWithProject):
                 :attr:`~google.cloud.bigquery.job.LoadJobConfig.schema` with
                 column names matching those of the dataframe. The BigQuery
                 schema is used to determine the correct data type conversion.
-                Indexes are not loaded. Requires the :mod:`pyarrow` library.
+                Indexes are not loaded.
 
                 By default, this method uses the parquet source format. To
                 override this, supply a value for
@@ -2520,9 +2515,6 @@ class Client(ClientWithProject):
             google.cloud.bigquery.job.LoadJob: A new load job.
 
         Raises:
-            ValueError:
-                If a usable parquet engine cannot be found. This method
-                requires :mod:`pyarrow` to be installed.
             TypeError:
                 If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
                 class.
@@ -2549,10 +2541,6 @@ class Client(ClientWithProject):
                     job_config.source_format
                 )
             )
-
-        if pyarrow is None and job_config.source_format == job.SourceFormat.PARQUET:
-            # pyarrow is now the only supported  parquet engine.
-            raise ValueError("This method requires pyarrow to be installed")
 
         if location is None:
             location = self.location

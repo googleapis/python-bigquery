@@ -43,11 +43,8 @@ try:
 except ImportError:  # pragma: NO COVER
     fastavro = None
 
-try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+import pyarrow
+import pyarrow.types
 
 from google.api_core.exceptions import PreconditionFailed
 from google.api_core.exceptions import BadRequest
@@ -1639,7 +1636,6 @@ class TestBigQuery(unittest.TestCase):
     @unittest.skipIf(
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
@@ -2288,7 +2284,6 @@ class TestBigQuery(unittest.TestCase):
     def _fetch_dataframe(self, query):
         return Config.CLIENT.query(query).result().to_dataframe()
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )

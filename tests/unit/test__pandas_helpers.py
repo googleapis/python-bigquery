@@ -1340,7 +1340,7 @@ def test__download_table_bqstorage_stream_includes_read_session(
         session,
         google.cloud.bigquery_storage_v1.types.ReadStream(name="test"),
         queue.Queue(),
-        lambda item: item,
+        mock.Mock(),
     )
 
     reader.rows.assert_called_once_with(session)
@@ -1374,7 +1374,7 @@ def test__download_table_bqstorage_stream_omits_read_session(
         session,
         google.cloud.bigquery_storage_v1.types.ReadStream(name="test"),
         queue.Queue(),
-        lambda item: item,
+        mock.Mock(),
     )
 
     reader.rows.assert_called_once_with()

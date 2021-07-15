@@ -19,7 +19,6 @@ import datetime
 import decimal
 import math
 import re
-from typing import Union
 
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
@@ -47,24 +46,33 @@ _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
 
 
 class BQStorageVersions:
+    """Version comparisons for google-cloud-bigqueyr-storage package."""
+
     def __init__(self):
         self._installed_version = None
 
     @property
-    def installed_version(
-        self,
-    ) -> Union[packaging.version.LegacyVersion, packaging.version.Version]:
+    def installed_version(self) -> packaging.version.Version:
+        """Return the parsed version of google-cloud-bigquery-storage."""
         if self._installed_version is None:
             from google.cloud import bigquery_storage
 
             self._installed_version = packaging.version.parse(
-                getattr(bigquery_storage, "__version__", "legacy")
+                # Use 0.0.0, since it is earlier than any released version.
+                # Legacy versions also have the same property, but
+                # creating a LegacyVersion has been deprecated.
+                # https://github.com/pypa/packaging/issues/321
+                getattr(bigquery_storage, "__version__", "0.0.0")
             )
 
         return self._installed_version
 
     @property
     def is_read_session_optional(self) -> bool:
+        """True if read_session is optional to rows().
+
+        See: https://github.com/googleapis/python-bigquery-storage/pull/228
+        """
         return self.installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION
 
     def verify_version(self):

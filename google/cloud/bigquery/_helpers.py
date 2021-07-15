@@ -65,20 +65,26 @@ class BQStorageVersions:
 
     @property
     def is_read_session_optional(self) -> bool:
-        return self.installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION
+        return (
+            self.installed_version is not None
+            and self.installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION
+        )
 
     def verify_version(self):
-        """Verify that a recent enough version of BigQuery Storage extra is installed.
+        """Verify that a recent enough version of BigQuery Storage extra is
+        installed.
 
-        The function assumes that google-cloud-bigquery-storage extra is installed, and
-        should thus be used in places where this assumption holds.
+        The function assumes that google-cloud-bigquery-storage extra is
+        installed, and should thus be used in places where this assumption
+        holds.
 
-        Because `pip` can install an outdated version of this extra despite the constraints
-        in setup.py, the the calling code can use this helper to verify the version
-        compatibility at runtime.
+        Because `pip` can install an outdated version of this extra despite the
+        constraints in `setup.py`, the calling code can use this helper to
+        verify the version compatibility at runtime.
 
         Raises:
-            LegacyBigQueryStorageError: If google-cloud-bigquery-storage is outdated.
+            LegacyBigQueryStorageError:
+                If the google-cloud-bigquery-storage package is outdated.
         """
         if self.installed_version < _MIN_BQ_STORAGE_VERSION:
             msg = (

@@ -51,9 +51,14 @@ def dataset_id(bigquery_client: bigquery.Client, project_id: str):
 
 
 @pytest.fixture
-def random_table_id(dataset_id):
+def random_table_id(bigquery_client: bigquery.Client, project_id: str, dataset_id: str):
+    """Create a new table ID each time, so random_table_id can be used as
+    target for load jobs.
+    """
     random_table_id = prefixer.create_prefix() + "_random_table"
-    return "{}.{}".format(dataset_id, random_table_id)
+    full_table_id = f"{project_id}.{dataset_id}.{random_table_id}"
+    yield full_table_id
+    bigquery_client.delete_table(full_table_id, not_found_ok=True)
 
 
 @pytest.fixture

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 def revoke_dataset_access(dataset_id, entity_id):
 
     # [START bigquery_revoke_dataset_access]
@@ -25,7 +26,7 @@ def revoke_dataset_access(dataset_id, entity_id):
 
     dataset = client.get_dataset(dataset_id)  # Make an API request.
     entries = list(dataset.access_entries)
-    
+
     for entry in entries:
         if entry.entity_id == entity_id:
             entry.role = None

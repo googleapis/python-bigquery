@@ -30,10 +30,7 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+import pyarrow
 
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator
@@ -53,17 +50,12 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
     # they are not None, avoiding false "no attribute" errors.
     import pandas
-    import pyarrow
     from google.cloud import bigquery_storage
 
 
 _NO_PANDAS_ERROR = (
     "The pandas library is not installed, please install "
     "pandas to use the to_dataframe() function."
-)
-_NO_PYARROW_ERROR = (
-    "The pyarrow library is not installed, please install "
-    "pyarrow to use the to_arrow() function."
 )
 
 _TABLE_HAS_NO_SCHEMA = 'Table has no schema:  call "client.get_table()"'
@@ -1670,8 +1662,7 @@ class RowIterator(HTTPIterator):
                 A BigQuery Storage API client. If supplied, use the faster BigQuery
                 Storage API to fetch rows from BigQuery. This API is a billable API.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 This method only  exposes a subset of the capabilities of the
                 BigQuery Storage API.  For full access to all features
@@ -1692,14 +1683,8 @@ class RowIterator(HTTPIterator):
                 headers from the query results. The column headers are derived
                 from the destination table's schema.
 
-        Raises:
-            ValueError: If the :mod:`pyarrow` library cannot be imported.
-
         ..versionadded:: 1.17.0
         """
-        if pyarrow is None:
-            raise ValueError(_NO_PYARROW_ERROR)
-
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
             bqstorage_client = None
@@ -1754,8 +1739,7 @@ class RowIterator(HTTPIterator):
                 A BigQuery Storage API client. If supplied, use the faster
                 BigQuery Storage API to fetch rows from BigQuery.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 This method only exposes a subset of the capabilities of the
                 BigQuery Storage API. For full access to all features
@@ -1831,8 +1815,7 @@ class RowIterator(HTTPIterator):
                 A BigQuery Storage API client. If supplied, use the faster
                 BigQuery Storage API to fetch rows from BigQuery.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 This method only exposes a subset of the capabilities of the
                 BigQuery Storage API. For full access to all features
@@ -1974,8 +1957,6 @@ class _EmptyRowIterator(RowIterator):
         Returns:
             pyarrow.Table: An empty :class:`pyarrow.Table`.
         """
-        if pyarrow is None:
-            raise ValueError(_NO_PYARROW_ERROR)
         return pyarrow.Table.from_arrays(())
 
     def to_dataframe(

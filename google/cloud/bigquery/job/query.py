@@ -1373,8 +1373,7 @@ class QueryJob(_AsyncJob):
                 BigQuery Storage API to fetch rows from BigQuery. This API
                 is a billable API.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 Reading from a specific partition or snapshot is not
                 currently supported by this method.
@@ -1398,10 +1397,6 @@ class QueryJob(_AsyncJob):
                 A :class:`pyarrow.Table` populated with row data and column
                 headers from the query results. The column headers are derived
                 from the destination table's schema.
-
-        Raises:
-            ValueError:
-                If the :mod:`pyarrow` library cannot be imported.
 
         ..versionadded:: 1.17.0
         """

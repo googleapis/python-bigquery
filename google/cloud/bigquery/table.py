@@ -36,7 +36,6 @@ import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator
 
 import google.cloud._helpers
-from google.cloud import bigquery_storage
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
@@ -48,6 +47,8 @@ from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
+    from google.cloud import bigquery_storage
+
     # Unconditionally import optional dependencies again to tell pytype that
     # they are not None, avoiding false "no attribute" errors.
     import pandas
@@ -1628,7 +1629,7 @@ class RowIterator(HTTPIterator):
     def to_arrow(
         self,
         progress_bar_type: str = None,
-        bqstorage_client: Optional[bigquery_storage.BigQueryReadClient] = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         create_bqstorage_client: bool = True,
     ) -> "pyarrow.Table":
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
@@ -1723,7 +1724,7 @@ class RowIterator(HTTPIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client: Optional[bigquery_storage.BigQueryReadClient] = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,
     ) -> "pandas.DataFrame":
@@ -1797,7 +1798,7 @@ class RowIterator(HTTPIterator):
     # changes to job.QueryJob.to_dataframe()
     def to_dataframe(
         self,
-        bqstorage_client: Optional[bigquery_storage.BigQueryReadClient] = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
@@ -1978,7 +1979,7 @@ class _EmptyRowIterator(RowIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client: Optional[bigquery_storage.BigQueryReadClient] = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Optional[Dict[str, Any]] = None,
         max_queue_size: Optional[int] = None,
     ) -> Iterator["pandas.DataFrame"]:

@@ -40,12 +40,9 @@ from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
-try:
-    from google.cloud import bigquery_storage
+from google.cloud import bigquery_storage
 
-    _helpers.BQ_STORAGE_VERSIONS.verify_version()
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
+_helpers.BQ_STORAGE_VERSIONS.verify_version()
 
 PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
 
@@ -1275,9 +1272,6 @@ def test_dataframe_to_parquet_dict_sequence_schema(module_under_test):
     assert schema_arg == expected_schema_arg
 
 
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 def test__download_table_bqstorage_stream_includes_read_session(
     monkeypatch, module_under_test
 ):
@@ -1308,8 +1302,7 @@ def test__download_table_bqstorage_stream_includes_read_session(
 
 
 @pytest.mark.skipif(
-    bigquery_storage is None
-    or not _helpers.BQ_STORAGE_VERSIONS.is_read_session_optional,
+    not _helpers.BQ_STORAGE_VERSIONS.is_read_session_optional,
     reason="Requires `google-cloud-bigquery-storage` >= 2.6.0",
 )
 def test__download_table_bqstorage_stream_omits_read_session(
@@ -1348,9 +1341,6 @@ def test__download_table_bqstorage_stream_omits_read_session(
         (4, {}, 4, 4),  # default queue size
         (7, {"max_queue_size": None}, 7, 0),  # infinite queue size
     ],
-)
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 def test__download_table_bqstorage(
     module_under_test,

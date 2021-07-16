@@ -21,11 +21,6 @@ import unittest
 
 import pytest
 
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
 import google.cloud._helpers
 from google.cloud.bigquery import table, enums
 from google.cloud.bigquery.dbapi import _helpers
@@ -215,7 +210,6 @@ class TestToBqTableRows(unittest.TestCase):
         result = _helpers.to_bq_table_rows(rows_iterable)
         self.assertEqual(list(result), [])
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_non_empty_iterable(self):
         rows_iterable = [
             dict(

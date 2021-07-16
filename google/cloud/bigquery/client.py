@@ -45,12 +45,9 @@ import google.cloud._helpers
 from google.cloud import exceptions  # pytype: disable=import-error
 from google.cloud.client import ClientWithProject  # pytype: disable=import-error
 
-try:
-    from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
-        DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
-    )
-except ImportError:
-    DEFAULT_BQSTORAGE_CLIENT_INFO = None
+from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
+    DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
+)
 
 from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
@@ -472,7 +469,7 @@ class Client(ClientWithProject):
     ) -> Optional["google.cloud.bigquery_storage.BigQueryReadClient"]:
         """Create a BigQuery Storage API client using this client's credentials.
 
-        If a client cannot be created due to a missing or outdated dependency
+        If a client cannot be created due to an outdated dependency
         `google-cloud-bigquery-storage`, raise a warning and return ``None``.
 
         If the `bqstorage_client` argument is not ``None``, still perform the version
@@ -493,14 +490,7 @@ class Client(ClientWithProject):
         Returns:
             A BigQuery Storage API client.
         """
-        try:
-            from google.cloud import bigquery_storage
-        except ImportError:
-            warnings.warn(
-                "Cannot create BigQuery Storage client, the dependency "
-                "google-cloud-bigquery-storage is not installed."
-            )
-            return None
+        from google.cloud import bigquery_storage
 
         try:
             BQ_STORAGE_VERSIONS.verify_version()

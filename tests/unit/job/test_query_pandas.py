@@ -25,10 +25,8 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     pandas = None
 
-try:
-    from google.cloud import bigquery_storage
-except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage = None
+from google.cloud import bigquery_storage
+
 try:
     from tqdm import tqdm
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -81,9 +79,6 @@ def test__contains_order_by(query, expected):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 @pytest.mark.parametrize(
     "query",
     (
@@ -478,9 +473,6 @@ def test_to_dataframe_ddl_query():
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 def test_to_dataframe_bqstorage(table_read_options_kwarg):
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -531,9 +523,6 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 def test_to_dataframe_bqstorage_no_pyarrow_compression():
     from google.cloud.bigquery.job import QueryJob as target_class
 

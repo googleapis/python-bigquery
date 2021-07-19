@@ -167,10 +167,10 @@ def test_from_api_repr_tvf_function(target_class):
     from google.cloud.bigquery.routine import RoutineArgument
     from google.cloud.bigquery.routine import RoutineReference
     from google.cloud.bigquery.routine import RoutineType
-    from google.cloud.bigquery.routine import StandardSQLTableType
 
     StandardSqlDataType = bigquery_v2.types.StandardSqlDataType
     StandardSqlField = bigquery_v2.types.StandardSqlField
+    StandardSqlTableType = bigquery_v2.types.StandardSqlTableType
 
     creation_time = datetime.datetime(
         2010, 5, 19, 16, 0, 0, tzinfo=google.cloud._helpers.UTC
@@ -222,7 +222,7 @@ def test_from_api_repr_tvf_function(target_class):
     assert actual_routine.body == "SELECT x FROM UNNEST([1,2,3]) x WHERE x > a"
     assert actual_routine.language == "SQL"
     assert actual_routine.return_type is None
-    assert actual_routine.return_table_type == StandardSQLTableType(
+    assert actual_routine.return_table_type == StandardSqlTableType(
         columns=[
             StandardSqlField(
                 name="int_col",
@@ -460,12 +460,11 @@ def test_set_return_table_type_w_none(object_under_test):
 
 
 def test_set_return_table_type_w_not_none(object_under_test):
-    from google.cloud.bigquery.routine import StandardSQLTableType
-
     StandardSqlDataType = bigquery_v2.types.StandardSqlDataType
     StandardSqlField = bigquery_v2.types.StandardSqlField
+    StandardSqlTableType = bigquery_v2.types.StandardSqlTableType
 
-    table_type = StandardSQLTableType(
+    table_type = StandardSqlTableType(
         columns=[
             StandardSqlField(
                 name="int_col",

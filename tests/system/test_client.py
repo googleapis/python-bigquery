@@ -2230,10 +2230,10 @@ class TestBigQuery(unittest.TestCase):
 
     def test_create_tvf_routine(self):
         from google.cloud.bigquery import Routine, RoutineArgument, RoutineType
-        from google.cloud.bigquery import StandardSQLTableType
 
         StandardSqlDataType = bigquery_v2.types.StandardSqlDataType
         StandardSqlField = bigquery_v2.types.StandardSqlField
+        StandardSqlTableType = bigquery_v2.types.StandardSqlTableType
 
         INT64 = StandardSqlDataType.TypeKind.INT64
         STRING = StandardSqlDataType.TypeKind.STRING
@@ -2254,7 +2254,7 @@ class TestBigQuery(unittest.TestCase):
             WHERE int_col > threshold
             """
 
-        return_table_type = StandardSQLTableType(
+        return_table_type = StandardSqlTableType(
             columns=[
                 StandardSqlField(
                     name="int_col", type=StandardSqlDataType(type_kind=INT64),

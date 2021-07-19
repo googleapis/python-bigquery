@@ -16,38 +16,12 @@
 
 """Define resources for the BigQuery Routines API."""
 
-from typing import Any, Iterable, List
-
 from google.protobuf import json_format
 
 import google.cloud._helpers
 from google.cloud.bigquery import _helpers
 import google.cloud.bigquery_v2.types
-from google.cloud.bigquery_v2.types import StandardSqlField
-
-
-# Unlike related proto-plus classes from `bigquery_v2.types.standard_sql`, this class
-# is not auto-generated (tech debt), thus we need to define it manually.
-class StandardSQLTableType:
-    """Representation of a return type from a Table Valued Functions (TFV)."""
-
-    def __init__(self, columns: Iterable[StandardSqlField]):
-        self.columns = columns
-
-    @property
-    def columns(self) -> List[StandardSqlField]:
-        return list(self._columns)  # shallow copy
-
-    @columns.setter
-    def columns(self, value: Iterable[StandardSqlField]):
-        self._columns = list(value)
-
-    def __eq__(self, other: Any):
-        if not isinstance(other, StandardSQLTableType):
-            return NotImplemented
-        return self.columns == other.columns
-
-    __hash__ = None  # Python does this implicitly for us, but let's be explicit.
+from google.cloud.bigquery_v2.types import StandardSqlTableType
 
 
 class RoutineType:
@@ -245,22 +219,18 @@ class Routine(object):
         self._properties[self._PROPERTY_TO_API_FIELD["return_type"]] = resource
 
     @property
-    def return_table_type(self) -> StandardSQLTableType:
+    def return_table_type(self) -> StandardSqlTableType:
         resource = self._properties.get(
             self._PROPERTY_TO_API_FIELD["return_table_type"]
         )
         if not resource:
             return resource
 
-        table_columns = (
-            StandardSqlField.wrap(
-                json_format.ParseDict(
-                    column_json, StandardSqlField()._pb, ignore_unknown_fields=True
-                )
-            )
-            for column_json in resource["columns"]
+        output = google.cloud.bigquery_v2.types.StandardSqlTableType()
+        raw_protobuf = json_format.ParseDict(
+            resource, output._pb, ignore_unknown_fields=True
         )
-        return StandardSQLTableType(columns=table_columns)
+        return type(output).wrap(raw_protobuf)
 
     @return_table_type.setter
     def return_table_type(self, value):

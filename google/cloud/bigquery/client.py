@@ -53,7 +53,6 @@ from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
-from google.cloud.bigquery._helpers import BQ_STORAGE_VERSIONS
 from google.cloud.bigquery._helpers import _verify_job_config_type
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
@@ -61,7 +60,6 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.enums import AutoRowIDs
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (
@@ -469,17 +467,10 @@ class Client(ClientWithProject):
     ) -> Optional["google.cloud.bigquery_storage.BigQueryReadClient"]:
         """Create a BigQuery Storage API client using this client's credentials.
 
-        If a client cannot be created due to an outdated dependency
-        `google-cloud-bigquery-storage`, raise a warning and return ``None``.
-
-        If the `bqstorage_client` argument is not ``None``, still perform the version
-        check and return the argument back to the caller if the check passes. If it
-        fails, raise a warning and return ``None``.
-
         Args:
             bqstorage_client:
-                An existing BigQuery Storage client instance to check for version
-                compatibility. If ``None``, a new instance is created and returned.
+                An existing BigQuery Storage client instance. If ``None``, a new
+                instance is created and returned.
             client_options:
                 Custom options used with a new BigQuery Storage client instance if one
                 is created.
@@ -491,12 +482,6 @@ class Client(ClientWithProject):
             A BigQuery Storage API client.
         """
         from google.cloud import bigquery_storage
-
-        try:
-            BQ_STORAGE_VERSIONS.verify_version()
-        except LegacyBigQueryStorageError as exc:
-            warnings.warn(str(exc))
-            return None
 
         if bqstorage_client is None:
             bqstorage_client = bigquery_storage.BigQueryReadClient(

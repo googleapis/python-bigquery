@@ -42,7 +42,6 @@ from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
 from google.cloud import bigquery_storage
 
-_helpers.BQ_STORAGE_VERSIONS.verify_version()
 
 PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
 

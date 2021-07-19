@@ -18,4 +18,8 @@ class BigQueryError(Exception):
 
 
 class LegacyBigQueryStorageError(BigQueryError):
-    """Raised when too old a version of BigQuery Storage extra is detected at runtime."""
+    """Raised when too old a version of BigQuery Storage extra is detected at runtime.
+
+    .. deprecated:: 2.2.0
+       Not used anymore and will be removed in the future.
+    """

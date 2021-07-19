@@ -19,7 +19,7 @@ import requests.exceptions
 
 
 _RETRYABLE_REASONS = frozenset(
-    ["rateLimitExceeded", "backendError", "internalError", "badGateway"]
+    ["rateLimitExceeded", "backendError", "internalError", "badGateway", "timeout"]
 )
 
 _UNSTRUCTURED_RETRYABLE_TYPES = (

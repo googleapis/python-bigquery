@@ -28,6 +28,8 @@ class RoutineType:
     """The fine-grained type of the routine.
 
     https://cloud.google.com/bigquery/docs/reference/rest/v2/routines#routinetype
+
+    .. versionadded:: 2.22.0
     """
 
     ROUTINE_TYPE_UNSPECIFIED = "ROUTINE_TYPE_UNSPECIFIED"
@@ -220,6 +222,10 @@ class Routine(object):
 
     @property
     def return_table_type(self) -> StandardSqlTableType:
+        """The return type of a Table Valued Function (TVF) routine.
+
+        .. versionadded:: 2.22.0
+        """
         resource = self._properties.get(
             self._PROPERTY_TO_API_FIELD["return_table_type"]
         )

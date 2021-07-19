@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,4 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "2.21.0"
+import load_table_uri_firestore
+
+
+def test_load_table_uri_firestore(capsys, random_table_id):
+    load_table_uri_firestore.load_table_uri_firestore(random_table_id)
+    out, _ = capsys.readouterr()
+    assert "Loaded 50 rows." in out

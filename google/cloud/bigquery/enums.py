@@ -21,6 +21,13 @@ from google.cloud.bigquery_v2 import types as gapic_types
 from google.cloud.bigquery.query import ScalarQueryParameterType
 
 
+class AutoRowIDs(enum.Enum):
+    """How to handle automatic insert IDs when inserting rows as a stream."""
+
+    DISABLED = enum.auto()
+    GENERATE_UUID = enum.auto()
+
+
 class Compression(object):
     """The compression type to use for exported files. The default value is
     :attr:`NONE`.
@@ -40,6 +47,24 @@ class Compression(object):
 
     NONE = "NONE"
     """Specifies no compression."""
+
+
+class DecimalTargetType:
+    """The data types that could be used as a target type when converting decimal values.
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#DecimalTargetType
+
+    .. versionadded:: 2.21.0
+    """
+
+    NUMERIC = "NUMERIC"
+    """Decimal values could be converted to NUMERIC type."""
+
+    BIGNUMERIC = "BIGNUMERIC"
+    """Decimal values could be converted to BIGNUMERIC type."""
+
+    STRING = "STRING"
+    """Decimal values could be converted to STRING type."""
 
 
 class CreateDisposition(object):
@@ -166,9 +191,11 @@ _SQL_SCALAR_TYPES = frozenset(
         "DATE",
         "TIME",
         "DATETIME",
+        "INTERVAL",
         "GEOGRAPHY",
         "NUMERIC",
         "BIGNUMERIC",
+        "JSON",
     )
 )
 

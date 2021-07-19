@@ -25,11 +25,13 @@ from google.cloud.bigquery.job.base import ScriptStackFrame
 from google.cloud.bigquery.job.base import UnknownJob
 from google.cloud.bigquery.job.copy_ import CopyJob
 from google.cloud.bigquery.job.copy_ import CopyJobConfig
+from google.cloud.bigquery.job.copy_ import OperationType
 from google.cloud.bigquery.job.extract import ExtractJob
 from google.cloud.bigquery.job.extract import ExtractJobConfig
 from google.cloud.bigquery.job.load import LoadJob
 from google.cloud.bigquery.job.load import LoadJobConfig
 from google.cloud.bigquery.job.query import _contains_order_by
+from google.cloud.bigquery.job.query import DmlStats
 from google.cloud.bigquery.job.query import QueryJob
 from google.cloud.bigquery.job.query import QueryJobConfig
 from google.cloud.bigquery.job.query import QueryPlanEntry
@@ -59,11 +61,13 @@ __all__ = [
     "UnknownJob",
     "CopyJob",
     "CopyJobConfig",
+    "OperationType",
     "ExtractJob",
     "ExtractJobConfig",
     "LoadJob",
     "LoadJobConfig",
     "_contains_order_by",
+    "DmlStats",
     "QueryJob",
     "QueryJobConfig",
     "QueryPlanEntry",

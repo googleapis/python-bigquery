@@ -19,6 +19,7 @@ import functools
 import operator
 import queue
 import warnings
+import pkg_resources
 
 import mock
 
@@ -39,13 +40,24 @@ import pytest
 import pytz
 
 from google import api_core
+from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
 try:
     from google.cloud import bigquery_storage
+
+    _helpers.BQ_STORAGE_VERSIONS.verify_version()
 except ImportError:  # pragma: NO COVER
     bigquery_storage = None
+
+PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
+
+if pandas is not None:
+    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
+else:
+    # Set to less than MIN version.
+    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
 
 
 skip_if_no_bignumeric = pytest.mark.skipif(
@@ -734,6 +746,37 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
     assert columns_and_indexes == expected
 
 
+@pytest.mark.skipif(
+    pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+    reason="Requires `pandas version >= 1.0.0` which introduces pandas.NA",
+)
+def test_dataframe_to_json_generator(module_under_test):
+    utcnow = datetime.datetime.utcnow()
+    df_data = collections.OrderedDict(
+        [
+            ("a_series", [pandas.NA, 2, 3, 4]),
+            ("b_series", [0.1, float("NaN"), 0.3, 0.4]),
+            ("c_series", ["a", "b", pandas.NA, "d"]),
+            ("d_series", [utcnow, utcnow, utcnow, pandas.NaT]),
+            ("e_series", [True, False, True, None]),
+        ]
+    )
+    dataframe = pandas.DataFrame(
+        df_data, index=pandas.Index([4, 5, 6, 7], name="a_index")
+    )
+
+    dataframe = dataframe.astype({"a_series": pandas.Int64Dtype()})
+
+    rows = module_under_test.dataframe_to_json_generator(dataframe)
+    expected = [
+        {"b_series": 0.1, "c_series": "a", "d_series": utcnow, "e_series": True},
+        {"a_series": 2, "c_series": "b", "d_series": utcnow, "e_series": False},
+        {"a_series": 3, "b_series": 0.3, "d_series": utcnow, "e_series": True},
+        {"a_series": 4, "b_series": 0.4, "c_series": "d"},
+    ]
+    assert list(rows) == expected
+
+
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_list_columns_and_indexes_with_named_index(module_under_test):
     df_data = collections.OrderedDict(
@@ -1269,6 +1312,72 @@ def test_dataframe_to_parquet_dict_sequence_schema(module_under_test):
     ]
     schema_arg = fake_to_arrow.call_args.args[1]
     assert schema_arg == expected_schema_arg
+
+
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
+)
+def test__download_table_bqstorage_stream_includes_read_session(
+    monkeypatch, module_under_test
+):
+    import google.cloud.bigquery_storage_v1.reader
+    import google.cloud.bigquery_storage_v1.types
+
+    monkeypatch.setattr(_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None)
+    monkeypatch.setattr(bigquery_storage, "__version__", "2.5.0")
+    bqstorage_client = mock.create_autospec(
+        bigquery_storage.BigQueryReadClient, instance=True
+    )
+    reader = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsStream, instance=True
+    )
+    bqstorage_client.read_rows.return_value = reader
+    session = google.cloud.bigquery_storage_v1.types.ReadSession()
+
+    module_under_test._download_table_bqstorage_stream(
+        module_under_test._DownloadState(),
+        bqstorage_client,
+        session,
+        google.cloud.bigquery_storage_v1.types.ReadStream(name="test"),
+        queue.Queue(),
+        mock.Mock(),
+    )
+
+    reader.rows.assert_called_once_with(session)
+
+
+@pytest.mark.skipif(
+    bigquery_storage is None
+    or not _helpers.BQ_STORAGE_VERSIONS.is_read_session_optional,
+    reason="Requires `google-cloud-bigquery-storage` >= 2.6.0",
+)
+def test__download_table_bqstorage_stream_omits_read_session(
+    monkeypatch, module_under_test
+):
+    import google.cloud.bigquery_storage_v1.reader
+    import google.cloud.bigquery_storage_v1.types
+
+    monkeypatch.setattr(_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None)
+    monkeypatch.setattr(bigquery_storage, "__version__", "2.6.0")
+    bqstorage_client = mock.create_autospec(
+        bigquery_storage.BigQueryReadClient, instance=True
+    )
+    reader = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsStream, instance=True
+    )
+    bqstorage_client.read_rows.return_value = reader
+    session = google.cloud.bigquery_storage_v1.types.ReadSession()
+
+    module_under_test._download_table_bqstorage_stream(
+        module_under_test._DownloadState(),
+        bqstorage_client,
+        session,
+        google.cloud.bigquery_storage_v1.types.ReadStream(name="test"),
+        queue.Queue(),
+        mock.Mock(),
+    )
+
+    reader.rows.assert_called_once_with()
 
 
 @pytest.mark.parametrize(

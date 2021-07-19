@@ -394,7 +394,7 @@ class TestBigQuery(unittest.TestCase):
         taxonomy_parent = f"projects/{Config.CLIENT.project}/locations/us"
 
         new_taxonomy = datacatalog_types.Taxonomy(
-            display_name="Custom test taxonomy",
+            display_name="Custom test taxonomy" + unique_resource_id(),
             description="This taxonomy is ony used for a test.",
             activated_policy_types=[
                 datacatalog_types.Taxonomy.PolicyType.FINE_GRAINED_ACCESS_CONTROL
@@ -863,6 +863,60 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(
             sorted(row_tuples, key=by_wavelength), sorted(ROWS, key=by_wavelength)
         )
+
+    def test_load_table_from_local_parquet_file_decimal_types(self):
+        from google.cloud.bigquery.enums import DecimalTargetType
+        from google.cloud.bigquery.job import SourceFormat
+        from google.cloud.bigquery.job import WriteDisposition
+
+        TABLE_NAME = "test_table_parquet"
+
+        expected_rows = [
+            (decimal.Decimal("123.999999999999"),),
+            (decimal.Decimal("99999999999999999999999999.999999999999"),),
+        ]
+
+        dataset = self.temp_dataset(_make_dataset_id("load_local_parquet_then_dump"))
+        table_ref = dataset.table(TABLE_NAME)
+        table = Table(table_ref)
+        self.to_delete.insert(0, table)
+
+        job_config = bigquery.LoadJobConfig()
+        job_config.source_format = SourceFormat.PARQUET
+        job_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
+        job_config.decimal_target_types = [
+            DecimalTargetType.NUMERIC,
+            DecimalTargetType.BIGNUMERIC,
+            DecimalTargetType.STRING,
+        ]
+
+        with open(DATA_PATH / "numeric_38_12.parquet", "rb") as parquet_file:
+            job = Config.CLIENT.load_table_from_file(
+                parquet_file, table_ref, job_config=job_config
+            )
+
+        job.result(timeout=JOB_TIMEOUT)  # Retry until done.
+
+        self.assertEqual(job.output_rows, len(expected_rows))
+
+        table = Config.CLIENT.get_table(table)
+        rows = self._fetch_single_page(table)
+        row_tuples = [r.values() for r in rows]
+        self.assertEqual(sorted(row_tuples), sorted(expected_rows))
+
+        # Forcing the NUMERIC type, however, should result in an error.
+        job_config.decimal_target_types = [DecimalTargetType.NUMERIC]
+
+        with open(DATA_PATH / "numeric_38_12.parquet", "rb") as parquet_file:
+            job = Config.CLIENT.load_table_from_file(
+                parquet_file, table_ref, job_config=job_config
+            )
+
+        with self.assertRaises(BadRequest) as exc_info:
+            job.result(timeout=JOB_TIMEOUT)
+
+        exc_msg = str(exc_info.exception)
+        self.assertIn("out of valid NUMERIC range", exc_msg)
 
     def test_load_table_from_json_basic_use(self):
         table_schema = (
@@ -1466,6 +1520,62 @@ class TestBigQuery(unittest.TestCase):
                 stages_with_inputs = stages_with_inputs + 1
         self.assertGreater(stages_with_inputs, 0)
         self.assertGreater(len(plan), stages_with_inputs)
+
+    def test_dml_statistics(self):
+        table_schema = (
+            bigquery.SchemaField("foo", "STRING"),
+            bigquery.SchemaField("bar", "INTEGER"),
+        )
+
+        dataset_id = _make_dataset_id("bq_system_test")
+        self.temp_dataset(dataset_id)
+        table_id = "{}.{}.test_dml_statistics".format(Config.CLIENT.project, dataset_id)
+
+        # Create the table before loading so that the column order is deterministic.
+        table = helpers.retry_403(Config.CLIENT.create_table)(
+            Table(table_id, schema=table_schema)
+        )
+        self.to_delete.insert(0, table)
+
+        # Insert a few rows and check the stats.
+        sql = f"""
+            INSERT INTO `{table_id}`
+            VALUES ("one", 1), ("two", 2), ("three", 3), ("four", 4);
+        """
+        query_job = Config.CLIENT.query(sql)
+        query_job.result()
+
+        assert query_job.dml_stats is not None
+        assert query_job.dml_stats.inserted_row_count == 4
+        assert query_job.dml_stats.updated_row_count == 0
+        assert query_job.dml_stats.deleted_row_count == 0
+
+        # Update some of the rows.
+        sql = f"""
+            UPDATE `{table_id}`
+            SET bar = bar + 1
+            WHERE bar > 2;
+        """
+        query_job = Config.CLIENT.query(sql)
+        query_job.result()
+
+        assert query_job.dml_stats is not None
+        assert query_job.dml_stats.inserted_row_count == 0
+        assert query_job.dml_stats.updated_row_count == 2
+        assert query_job.dml_stats.deleted_row_count == 0
+
+        # Now delete a few rows and check the stats.
+        sql = f"""
+            DELETE FROM `{table_id}`
+            WHERE foo != "two";
+        """
+        query_job = Config.CLIENT.query(sql)
+        query_job.result()
+
+        assert query_job.dml_stats is not None
+        assert query_job.dml_stats.inserted_row_count == 0
+        assert query_job.dml_stats.updated_row_count == 0
+        assert query_job.dml_stats.deleted_row_count == 3
 
     def test_dbapi_w_standard_sql_types(self):
         for sql, expected in helpers.STANDARD_SQL_EXAMPLES:
@@ -2394,6 +2504,75 @@ class TestBigQuery(unittest.TestCase):
         table2 = client.get_table(table_id2)
 
         self.assertEqual(tuple(s._key()[:2] for s in table2.schema), fields)
+
+    def test_table_snapshots(self):
+        from google.cloud.bigquery import CopyJobConfig
+        from google.cloud.bigquery import OperationType
+
+        client = Config.CLIENT
+
+        source_table_path = f"{client.project}.{Config.DATASET}.test_table"
+        snapshot_table_path = f"{source_table_path}_snapshot"
+
+        # Create the table before loading so that the column order is predictable.
+        schema = [
+            bigquery.SchemaField("foo", "INTEGER"),
+            bigquery.SchemaField("bar", "STRING"),
+        ]
+        source_table = helpers.retry_403(Config.CLIENT.create_table)(
+            Table(source_table_path, schema=schema)
+        )
+        self.to_delete.insert(0, source_table)
+
+        # Populate the table with initial data.
+        rows = [{"foo": 1, "bar": "one"}, {"foo": 2, "bar": "two"}]
+        load_job = Config.CLIENT.load_table_from_json(rows, source_table)
+        load_job.result()
+
+        # Now create a snapshot before modifying the original table data.
+        copy_config = CopyJobConfig()
+        copy_config.operation_type = OperationType.SNAPSHOT
+
+        copy_job = client.copy_table(
+            sources=source_table_path,
+            destination=snapshot_table_path,
+            job_config=copy_config,
+        )
+        copy_job.result()
+
+        snapshot_table = client.get_table(snapshot_table_path)
+        self.to_delete.insert(0, snapshot_table)
+
+        # Modify data in original table.
+        sql = f'INSERT INTO `{source_table_path}`(foo, bar) VALUES (3, "three")'
+        query_job = client.query(sql)
+        query_job.result()
+
+        # List rows from the source table and compare them to rows from the snapshot.
+        rows_iter = client.list_rows(source_table_path)
+        rows = sorted(row.values() for row in rows_iter)
+        assert rows == [(1, "one"), (2, "two"), (3, "three")]
+
+        rows_iter = client.list_rows(snapshot_table_path)
+        rows = sorted(row.values() for row in rows_iter)
+        assert rows == [(1, "one"), (2, "two")]
+
+        # Now restore the table from the snapshot and it should again contain the old
+        # set of rows.
+        copy_config = CopyJobConfig()
+        copy_config.operation_type = OperationType.RESTORE
+        copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+
+        copy_job = client.copy_table(
+            sources=snapshot_table_path,
+            destination=source_table_path,
+            job_config=copy_config,
+        )
+        copy_job.result()
+
+        rows_iter = client.list_rows(source_table_path)
+        rows = sorted(row.values() for row in rows_iter)
+        assert rows == [(1, "one"), (2, "two")]
 
     def temp_dataset(self, dataset_id, location=None):
         project = Config.CLIENT.project

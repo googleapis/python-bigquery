@@ -1664,7 +1664,7 @@ class RowIterator(HTTPIterator):
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
-                ..versionadded:: 1.24.0
+                .. versionadded:: 1.24.0
 
         Returns:
             pyarrow.Table
@@ -1672,7 +1672,7 @@ class RowIterator(HTTPIterator):
                 headers from the query results. The column headers are derived
                 from the destination table's schema.
 
-        ..versionadded:: 1.17.0
+        .. versionadded:: 1.17.0
         """
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
@@ -1748,7 +1748,7 @@ class RowIterator(HTTPIterator):
                 created by the server. If ``max_queue_size`` is :data:`None`, the queue
                 size is infinite.
 
-                ..versionadded:: 2.14.0
+                .. versionadded:: 2.14.0
 
         Returns:
             pandas.DataFrame:
@@ -1833,7 +1833,7 @@ class RowIterator(HTTPIterator):
                   Use the :func:`tqdm.tqdm_gui` function to display a
                   progress bar as a graphical dialog box.
 
-                ..versionadded:: 1.11.0
+                .. versionadded:: 1.11.0
             create_bqstorage_client (Optional[bool]):
                 If ``True`` (default), create a BigQuery Storage API client
                 using the default API settings. The BigQuery Storage API
@@ -1842,13 +1842,13 @@ class RowIterator(HTTPIterator):
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
-                ..versionadded:: 1.24.0
+                .. versionadded:: 1.24.0
 
             date_as_object (Optional[bool]):
                 If ``True`` (default), cast dates to objects. If ``False``, convert
                 to datetime64[ns] dtype.
 
-                ..versionadded:: 1.26.0
+                .. versionadded:: 1.26.0
 
         Returns:
             pandas.DataFrame:
@@ -1978,7 +1978,7 @@ class _EmptyRowIterator(RowIterator):
     ) -> Iterator["pandas.DataFrame"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
-        ..versionadded:: 2.21.0
+        .. versionadded:: 2.21.0
 
         Args:
             bqstorage_client:

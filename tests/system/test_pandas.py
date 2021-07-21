@@ -792,3 +792,79 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
         dataframe = row_iterator.to_dataframe(bqstorage_client=bqstorage_client)
 
     assert len(dataframe.index) == 100
+
+
+def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table):
+    df = bigquery_client.list_rows(scalars_table).to_dataframe()
+
+    # timestamp_col: timestamp[us, tz=UTC]
+    # time_col: time64[us]
+    # float64_col: double
+    # datetime_col: timestamp[us]
+    #   -- field metadata --
+    #   ARROW:extension:name: 'google:sqlType:datetime'
+    # bignumeric_col: decimal256(76, 38)
+    # numeric_col: decimal128(38, 9)
+    # geography_col: string
+    #   -- field metadata --
+    #   ARROW:extension:name: 'google:sqlType:geography'
+    #   ARROW:extension:metadata: '{"encoding": "WKT"}'
+    # date_col: date32[day]
+    # string_col: string
+    # bool_col: bool
+    # bytes_col: binary
+    # int64_col: int64
+
+    assert df.dtypes is None
+
+    # timestamp_col     datetime64[ns, UTC]
+    # time_col                       object  <-- use Period?
+    # float64_col                   float64
+    # datetime_col           datetime64[ns]
+    # bignumeric_col                 object  <-- probably correct
+    # numeric_col                    object  <-- probably correct
+    # geography_col                  object  <-- https://github.com/googleapis/python-bigquery/issues/792
+    # date_col                       object  <-- per https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#overview, should be datetime64[ns] (where possible)
+    # string_col                     object
+    # bool_col                       object  <-- maybe should be "boolean" (added in pandas 1.0.0)
+    # bytes_col                      object
+    # int64_col                     float64  <-- https://github.com/googleapis/python-bigquery/issues/793
+
+
+def test_list_rows_nullable_scalars_extreme_dtypes(
+    bigquery_client, scalars_extreme_table
+):
+    df = bigquery_client.list_rows(scalars_extreme_table).to_dataframe()
+
+    # timestamp_col: timestamp[us, tz=UTC]
+    # time_col: time64[us]
+    # float64_col: double
+    # datetime_col: timestamp[us]
+    #   -- field metadata --
+    #   ARROW:extension:name: 'google:sqlType:datetime'
+    # bignumeric_col: decimal256(76, 38)
+    # numeric_col: decimal128(38, 9)
+    # geography_col: string
+    #   -- field metadata --
+    #   ARROW:extension:name: 'google:sqlType:geography'
+    #   ARROW:extension:metadata: '{"encoding": "WKT"}'
+    # date_col: date32[day]
+    # string_col: string
+    # bool_col: bool
+    # bytes_col: binary
+    # int64_col: int64
+
+    assert df.dtypes is None
+
+    # timestamp_col      object
+    # time_col           object
+    # float64_col       float64
+    # datetime_col       object  <-- correct, since extreme values are out-of-bounds
+    # bignumeric_col     object
+    # numeric_col        object
+    # geography_col      object
+    # date_col           object
+    # string_col         object
+    # bool_col           object
+    # bytes_col          object
+    # int64_col         float64

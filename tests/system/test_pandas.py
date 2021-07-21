@@ -27,12 +27,10 @@ import pytz
 
 from google.cloud import bigquery
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
+from google.cloud import bigquery_storage
 from . import helpers
 
 
-bigquery_storage = pytest.importorskip(
-    "google.cloud.bigquery_storage", minversion="2.0.0"
-)
 pandas = pytest.importorskip("pandas", minversion="0.23.0")
 
 

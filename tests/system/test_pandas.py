@@ -34,7 +34,6 @@ bigquery_storage = pytest.importorskip(
     "google.cloud.bigquery_storage", minversion="2.0.0"
 )
 pandas = pytest.importorskip("pandas", minversion="0.23.0")
-pyarrow = pytest.importorskip("pyarrow", minversion="1.0.0")
 
 
 PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version

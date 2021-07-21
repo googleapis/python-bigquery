@@ -43,15 +43,14 @@ dependencies = [
     "google-resumable-media >= 0.6.0, < 3.0dev",
     "packaging >= 14.3",
     "protobuf >= 3.12.0",
-    "pyarrow >= 1.0.0, < 5.0dev",
+    "pyarrow >= 3.0.0, < 5.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]
 extras = {
     # Keep the no-op bqstorage extra for backward compatibility.
     # See: https://github.com/googleapis/python-bigquery/issues/757
     "bqstorage": [],
-    "pandas": ["pandas>=0.23.0", "pyarrow >= 1.0.0, < 5.0dev"],
-    "bignumeric_type": ["pyarrow >= 3.0.0, < 5.0dev"],
+    "pandas": ["pandas>=0.23.0"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
         "opentelemetry-api >= 0.11b0",
@@ -63,11 +62,6 @@ extras = {
 all_extras = []
 
 for extra in extras:
-    # Exclude this extra from all to avoid overly strict dependencies on core
-    # libraries such as pyarrow.
-    # https://github.com/googleapis/python-bigquery/issues/563
-    if extra in {"bignumeric_type"}:
-        continue
     all_extras.extend(extras[extra])
 
 extras["all"] = all_extras

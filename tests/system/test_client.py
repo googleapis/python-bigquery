@@ -2520,9 +2520,7 @@ def test_parameterized_types_round_trip(dataset_id):
         ("b9", "BYTES(9)"),
     )
     client.query(
-        "create table {} ({})".format(
-            table_id, ", ".join(" ".join(f) for f in fields)
-        )
+        "create table {} ({})".format(table_id, ", ".join(" ".join(f) for f in fields))
     ).result()
     table = client.get_table(table_id)
     table_id2 = table_id + "2"
@@ -2565,8 +2563,6 @@ def test_table_snapshots(dataset_id):
         job_config=copy_config,
     )
     copy_job.result()
-
-    snapshot_table = client.get_table(snapshot_table_path)
 
     # Modify data in original table.
     sql = f'INSERT INTO `{source_table_path}`(foo, bar) VALUES (3, "three")'

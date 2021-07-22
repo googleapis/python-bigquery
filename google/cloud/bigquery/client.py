@@ -2572,7 +2572,6 @@ class Client(ClientWithProject):
         try:
 
             if job_config.source_format == job.SourceFormat.PARQUET:
-
                 if job_config.schema:
                     if parquet_compression == "snappy":  # adjust the default value
                         parquet_compression = parquet_compression.upper()

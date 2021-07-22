@@ -795,7 +795,9 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
 
 
 def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table):
-    df = bigquery_client.list_rows(scalars_table).to_dataframe()
+    df = bigquery_client.list_rows(
+        scalars_table
+    ).to_dataframe()  # dtypes={"int64_col": "Int64"})
 
     # timestamp_col: timestamp[us, tz=UTC]
     # time_col: time64[us]
@@ -815,7 +817,12 @@ def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table):
     # bytes_col: binary
     # int64_col: int64
 
-    assert df.dtypes is None
+    assert df.dtypes["datetime_col"].name == "datetime64[ns]"
+    assert df.dtypes["timestamp_col"].name == "datetime64[ns, UTC]"
+    assert df.dtypes["float64_col"].name == "float64"
+    assert df.dtypes["bool_col"].name == "boolean"
+    assert df.dtypes["date_col"].name == "datetime64[ns]"
+    assert df.dtypes["int64_col"].name == "Int64"
 
     # timestamp_col     datetime64[ns, UTC]
     # time_col                       object  <-- use Period?
@@ -854,8 +861,6 @@ def test_list_rows_nullable_scalars_extreme_dtypes(
     # bytes_col: binary
     # int64_col: int64
 
-    assert df.dtypes is None
-
     # timestamp_col      object
     # time_col           object
     # float64_col       float64
@@ -868,3 +873,16 @@ def test_list_rows_nullable_scalars_extreme_dtypes(
     # bool_col           object
     # bytes_col          object
     # int64_col         float64
+
+    # Extreme values are out-of-bounds for pandas datetime64 values, which use
+    # nanosecond precision.  Values before 1677-09-21 and after 2262-04-11 must
+    # be represented with object.
+    # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timestamp-limitations
+    assert df.dtypes["date_col"].name == "object"
+    assert df.dtypes["datetime_col"].name == "object"
+    assert df.dtypes["timestamp_col"].name == "object"
+
+    # These pandas dtypes can handle the same ranges as BigQuery.
+    assert df.dtypes["float64_col"].name == "float64"
+    assert df.dtypes["bool_col"].name == "boolean"
+    assert df.dtypes["int64_col"].name == "Int64"

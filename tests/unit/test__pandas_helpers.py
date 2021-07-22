@@ -1212,6 +1212,8 @@ def test_augment_schema_type_detection_fails(module_under_test):
 
 
 def test_dataframe_to_parquet_dict_sequence_schema(module_under_test):
+    pandas = pytest.importorskip("pandas")
+
     dict_schema = [
         {"name": "field01", "type": "STRING", "mode": "REQUIRED"},
         {"name": "field02", "type": "BOOL", "mode": "NULLABLE"},

@@ -538,6 +538,8 @@ def test_bigquery_magic_clears_display_in_verbose_mode():
 
 @pytest.mark.usefixtures("ipython_interactive")
 def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
+    pandas = pytest.importorskip("pandas")
+
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
     mock_credentials = mock.create_autospec(
@@ -599,6 +601,8 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
 
 @pytest.mark.usefixtures("ipython_interactive")
 def test_bigquery_magic_with_rest_client_requested(monkeypatch):
+    pandas = pytest.importorskip("pandas")
+
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
     mock_credentials = mock.create_autospec(

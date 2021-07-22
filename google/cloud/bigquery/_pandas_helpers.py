@@ -20,8 +20,6 @@ import logging
 import queue
 import warnings
 
-from packaging import version
-
 try:
     import pandas
 except ImportError:  # pragma: NO COVER
@@ -104,6 +102,7 @@ def pyarrow_timestamp():
 # This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
 # When modifying it be sure to update it there as well.
 BQ_TO_ARROW_SCALARS = {
+    "BIGNUMERIC": pyarrow_bignumeric,
     "BOOL": pyarrow.bool_,
     "BOOLEAN": pyarrow.bool_,
     "BYTES": pyarrow.binary,
@@ -142,16 +141,10 @@ ARROW_SCALAR_IDS_TO_BQ = {
     pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
     # The exact scale and precision don't matter, see below.
     pyarrow.decimal128(38, scale=9).id: "NUMERIC",
-}
-
-if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
-    BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
     # The exact decimal's scale and precision are not important, as only
     # the type ID matters, and it's the same for all decimal256 instances.
-    ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
-    _BIGNUMERIC_SUPPORT = True
-else:
-    _BIGNUMERIC_SUPPORT = False
+    pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
+}
 
 
 def bq_to_arrow_struct_data_type(field):

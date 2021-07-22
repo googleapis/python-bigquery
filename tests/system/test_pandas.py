@@ -26,7 +26,6 @@ import pytest
 import pytz
 
 from google.cloud import bigquery
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 from google.cloud import bigquery_storage
 from . import helpers
 
@@ -181,12 +180,11 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         bigquery.SchemaField("geo_col", "GEOGRAPHY"),
         bigquery.SchemaField("int_col", "INTEGER"),
         bigquery.SchemaField("num_col", "NUMERIC"),
+        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
     )
-    if _BIGNUMERIC_SUPPORT:
-        scalars_schema += (bigquery.SchemaField("bignum_col", "BIGNUMERIC"),)
 
     table_schema = scalars_schema + (
         # TODO: Array columns can't be read due to NULLABLE versus REPEATED
@@ -208,12 +206,11 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         ("geo_col", nulls),
         ("int_col", nulls),
         ("num_col", nulls),
+        ("bignum_col", nulls),
         ("str_col", nulls),
         ("time_col", nulls),
         ("ts_col", nulls),
     ]
-    if _BIGNUMERIC_SUPPORT:
-        df_data.append(("bignum_col", nulls))
     df_data = collections.OrderedDict(df_data)
     dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
 
@@ -289,12 +286,11 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         bigquery.SchemaField("geo_col", "GEOGRAPHY"),
         bigquery.SchemaField("int_col", "INTEGER"),
         bigquery.SchemaField("num_col", "NUMERIC"),
+        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
     )
-    if _BIGNUMERIC_SUPPORT:
-        scalars_schema += (bigquery.SchemaField("bignum_col", "BIGNUMERIC"),)
 
     table_schema = scalars_schema + (
         # TODO: Array columns can't be read due to NULLABLE versus REPEATED
@@ -332,6 +328,14 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
                 decimal.Decimal("99999999999999999999999999999.999999999"),
             ],
         ),
+        (
+            "bignum_col",
+            [
+                decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
+                None,
+                decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
+            ],
+        ),
         ("str_col", ["abc", None, "def"]),
         (
             "time_col",
@@ -346,17 +350,7 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
             ],
         ),
     ]
-    if _BIGNUMERIC_SUPPORT:
-        df_data.append(
-            (
-                "bignum_col",
-                [
-                    decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
-                    None,
-                    decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
-                ],
-            )
-        )
+
     df_data = collections.OrderedDict(df_data)
     dataframe = pandas.DataFrame(df_data, dtype="object", columns=df_data.keys())
 

@@ -19,7 +19,6 @@ import unittest
 import warnings
 
 import mock
-import pkg_resources
 import pyarrow
 import pyarrow.types
 import pytest
@@ -43,10 +42,6 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
 from google.cloud.bigquery.dataset import DatasetReference
-
-
-PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
-PYARROW_TIMESTAMP_VERSION = pkg_resources.parse_version("2.0.0")
 
 
 def _mock_client():
@@ -2501,9 +2496,7 @@ class TestRowIterator(unittest.TestCase):
 
         df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
-        tzinfo = None
-        if PYARROW_VERSION >= PYARROW_TIMESTAMP_VERSION:
-            tzinfo = datetime.timezone.utc
+        tzinfo = datetime.timezone.utc
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 2)  # verify the number of rows

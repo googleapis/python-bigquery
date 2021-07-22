@@ -6929,6 +6929,65 @@ class TestClientUpload(object):
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_load_table_from_dataframe_w_automatic_schema_detection_fails(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+
+        client = self._make_client()
+
+        df_data = [
+            [[{"name": "n1.1", "value": 1.1}, {"name": "n1.2", "value": 1.2}]],
+            [[{"name": "n2.1", "value": 2.1}, {"name": "n2.2", "value": 2.2}]],
+        ]
+        dataframe = pandas.DataFrame(df_data, columns=["col_record_list"])
+
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+
+        with load_patch as load_table_from_file, get_table_patch:
+            with warnings.catch_warnings(record=True) as warned:
+                client.load_table_from_dataframe(
+                    dataframe, self.TABLE_REF, location=self.LOCATION
+                )
+
+        # There should be a warning that schema detection failed.
+        expected_warnings = [
+            warning
+            for warning in warned
+            if "schema could not be detected" in str(warning).lower()
+        ]
+        assert len(expected_warnings) == 1
+        assert issubclass(
+            expected_warnings[0].category,
+            (DeprecationWarning, PendingDeprecationWarning),
+        )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=None,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert sent_config.schema is None
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_load_table_from_dataframe_w_index_and_auto_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job

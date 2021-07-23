@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,8 +36,6 @@ def revoke_dataset_access(dataset_id, entity_id):
 
     dataset = client.update_dataset(dataset, ["access_entries"])  # Make an API request.
 
-    full_dataset_id = "{}.{}".format(dataset.project, dataset.dataset_id)
-    print(
-        "Updated dataset '{}' with modified user permissions.".format(full_dataset_id)
-    )
+    full_dataset_id = f"{dataset.project}.{dataset.dataset_id}"
+    print(f"Updated dataset '{full_dataset_id}' with modified user permissions.")
     # [END bigquery_revoke_dataset_access]

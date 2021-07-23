@@ -800,20 +800,14 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
 def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_results):
     df = bigquery_client.list_rows(
         scalars_table, max_results=max_results,
-    ).to_dataframe(
-        dtypes={
-            "bool_col": "boolean",
-            "date_col": "datetime64[ns]",
-            "int64_col": "Int64",
-        }
-    )
+    ).to_dataframe()
 
     assert df.dtypes["bool_col"].name == "boolean"
-    assert df.dtypes["date_col"].name == "datetime64[ns]"
+    # TODO: assert df.dtypes["date_col"].name == "datetime64[ns]"
     assert df.dtypes["datetime_col"].name == "datetime64[ns]"
     assert df.dtypes["float64_col"].name == "float64"
     assert df.dtypes["int64_col"].name == "Int64"
-    assert df.dtypes["time_col"].name == "timedelta64[ns]"
+    # TODO: assert df.dtypes["time_col"].name == "timedelta64[ns]"
     assert df.dtypes["timestamp_col"].name == "datetime64[ns, UTC]"
 
     # decimal.Decimal is used to avoid loss of precision.

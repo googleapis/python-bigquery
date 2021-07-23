@@ -1906,6 +1906,14 @@ class RowIterator(HTTPIterator):
             create_bqstorage_client=create_bqstorage_client,
         )
 
+        # Let the user-defined dtypes override the default ones.
+        # https://stackoverflow.com/a/26853961/101923
+        # TODO: test that this actually doesn't override
+        default_dtypes = _pandas_helpers.bq_schema_to_nullsafe_pandas_dtypes(
+            self.schema
+        )
+        dtypes = {**default_dtypes, **dtypes}
+
         # When converting timestamp values to nanosecond precision, the result
         # can be out of pyarrow bounds. To avoid the error when converting to
         # Pandas, we set the timestamp_as_object parameter to True, if necessary.
@@ -1930,6 +1938,8 @@ class RowIterator(HTTPIterator):
 
         for column in dtypes:
             df[column] = pandas.Series(df[column], dtype=dtypes[column])
+
+        # TODO: convert TIME columns, maybe TIMESTAMP too? Only if dtypes was not set.
 
         return df
 

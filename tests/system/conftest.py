@@ -21,35 +21,8 @@ from google.cloud import bigquery
 from google.cloud.bigquery import enums
 from . import helpers
 
-prefixer = test_utils.prefixer.Prefixer("python-bigquery", "tests/system")
-
-
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_datasets(bigquery_client: bigquery.Client):
-    for dataset in bigquery_client.list_datasets():
-        if prefixer.should_cleanup(dataset.dataset_id):
-            bigquery_client.delete_dataset(
-                dataset, delete_contents=True, not_found_ok=True
-            )
-
 
 prefixer = test_utils.prefixer.Prefixer("python-bigquery", "tests/system")
-
-
-DATA_DIR = pathlib.Path(__file__).parent.parent / "data"
-
-
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_datasets(bigquery_client: bigquery.Client):
-    for dataset in bigquery_client.list_datasets():
-        if prefixer.should_cleanup(dataset.dataset_id):
-            bigquery_client.delete_dataset(
-                dataset, delete_contents=True, not_found_ok=True
-            )
-
-
-prefixer = test_utils.prefixer.Prefixer("python-bigquery", "tests/system")
-
 
 DATA_DIR = pathlib.Path(__file__).parent.parent / "data"
 

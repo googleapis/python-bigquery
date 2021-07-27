@@ -33,7 +33,6 @@ def revoke_dataset_access(dataset_id, entity_id):
     # Construct a BigQuery client object.
     client = bigquery.Client()
 
-
     dataset = client.get_dataset(dataset_id)  # Make an API request.
     entries = list(dataset.access_entries)
 

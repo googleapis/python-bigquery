@@ -27,18 +27,10 @@ import itertools
 import json
 import math
 import os
-import packaging.version
 import tempfile
 from typing import Any, BinaryIO, Dict, Iterable, Optional, Sequence, Tuple, Union
 import uuid
 import warnings
-
-try:
-    import pyarrow
-
-    _PYARROW_VERSION = packaging.version.parse(pyarrow.__version__)
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
 
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload
@@ -53,18 +45,14 @@ import google.cloud._helpers
 from google.cloud import exceptions  # pytype: disable=import-error
 from google.cloud.client import ClientWithProject  # pytype: disable=import-error
 
-try:
-    from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
-        DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
-    )
-except ImportError:
-    DEFAULT_BQSTORAGE_CLIENT_INFO = None
+from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
+    DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
+)
 
 from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
-from google.cloud.bigquery._helpers import BQ_STORAGE_VERSIONS
 from google.cloud.bigquery._helpers import _verify_job_config_type
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
@@ -72,7 +60,6 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.enums import AutoRowIDs
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (
@@ -120,9 +107,6 @@ _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
 # connection timeout before data can be downloaded.
 # https://github.com/googleapis/python-bigquery/issues/438
 _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
-
-# https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
-_PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
 
 
 class Project(object):
@@ -483,17 +467,10 @@ class Client(ClientWithProject):
     ) -> Optional["google.cloud.bigquery_storage.BigQueryReadClient"]:
         """Create a BigQuery Storage API client using this client's credentials.
 
-        If a client cannot be created due to a missing or outdated dependency
-        `google-cloud-bigquery-storage`, raise a warning and return ``None``.
-
-        If the `bqstorage_client` argument is not ``None``, still perform the version
-        check and return the argument back to the caller if the check passes. If it
-        fails, raise a warning and return ``None``.
-
         Args:
             bqstorage_client:
-                An existing BigQuery Storage client instance to check for version
-                compatibility. If ``None``, a new instance is created and returned.
+                An existing BigQuery Storage client instance. If ``None``, a new
+                instance is created and returned.
             client_options:
                 Custom options used with a new BigQuery Storage client instance if one
                 is created.
@@ -504,20 +481,7 @@ class Client(ClientWithProject):
         Returns:
             A BigQuery Storage API client.
         """
-        try:
-            from google.cloud import bigquery_storage
-        except ImportError:
-            warnings.warn(
-                "Cannot create BigQuery Storage client, the dependency "
-                "google-cloud-bigquery-storage is not installed."
-            )
-            return None
-
-        try:
-            BQ_STORAGE_VERSIONS.verify_version()
-        except LegacyBigQueryStorageError as exc:
-            warnings.warn(str(exc))
-            return None
+        from google.cloud import bigquery_storage
 
         if bqstorage_client is None:
             bqstorage_client = bigquery_storage.BigQueryReadClient(
@@ -2496,7 +2460,7 @@ class Client(ClientWithProject):
                 :attr:`~google.cloud.bigquery.job.LoadJobConfig.schema` with
                 column names matching those of the dataframe. The BigQuery
                 schema is used to determine the correct data type conversion.
-                Indexes are not loaded. Requires the :mod:`pyarrow` library.
+                Indexes are not loaded.
 
                 By default, this method uses the parquet source format. To
                 override this, supply a value for
@@ -2526,9 +2490,6 @@ class Client(ClientWithProject):
             google.cloud.bigquery.job.LoadJob: A new load job.
 
         Raises:
-            ValueError:
-                If a usable parquet engine cannot be found. This method
-                requires :mod:`pyarrow` to be installed.
             TypeError:
                 If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
                 class.
@@ -2555,10 +2516,6 @@ class Client(ClientWithProject):
                     job_config.source_format
                 )
             )
-
-        if pyarrow is None and job_config.source_format == job.SourceFormat.PARQUET:
-            # pyarrow is now the only supported  parquet engine.
-            raise ValueError("This method requires pyarrow to be installed")
 
         if location is None:
             location = self.location
@@ -2615,16 +2572,6 @@ class Client(ClientWithProject):
         try:
 
             if job_config.source_format == job.SourceFormat.PARQUET:
-                if _PYARROW_VERSION in _PYARROW_BAD_VERSIONS:
-                    msg = (
-                        "Loading dataframe data in PARQUET format with pyarrow "
-                        f"{_PYARROW_VERSION} can result in data corruption. It is "
-                        "therefore *strongly* advised to use a different pyarrow "
-                        "version or a different source format. "
-                        "See: https://github.com/googleapis/python-bigquery/issues/781"
-                    )
-                    warnings.warn(msg, category=RuntimeWarning)
-
                 if job_config.schema:
                     if parquet_compression == "snappy":  # adjust the default value
                         parquet_compression = parquet_compression.upper()

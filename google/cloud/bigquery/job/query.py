@@ -1342,7 +1342,7 @@ class QueryJob(_AsyncJob):
     def to_arrow(
         self,
         progress_bar_type: str = None,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         create_bqstorage_client: bool = True,
         max_results: Optional[int] = None,
     ) -> "pyarrow.Table":
@@ -1373,8 +1373,7 @@ class QueryJob(_AsyncJob):
                 BigQuery Storage API to fetch rows from BigQuery. This API
                 is a billable API.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 Reading from a specific partition or snapshot is not
                 currently supported by this method.
@@ -1399,10 +1398,6 @@ class QueryJob(_AsyncJob):
                 headers from the query results. The column headers are derived
                 from the destination table's schema.
 
-        Raises:
-            ValueError:
-                If the :mod:`pyarrow` library cannot be imported.
-
         .. versionadded:: 1.17.0
         """
         query_result = wait_for_query(self, progress_bar_type, max_results=max_results)
@@ -1417,7 +1412,7 @@ class QueryJob(_AsyncJob):
     # that should only exist here in the QueryJob method.
     def to_dataframe(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,

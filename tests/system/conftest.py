@@ -24,7 +24,6 @@ from . import helpers
 
 prefixer = test_utils.prefixer.Prefixer("python-bigquery", "tests/system")
 
-
 DATA_DIR = pathlib.Path(__file__).parent.parent / "data"
 
 
@@ -39,8 +38,6 @@ def cleanup_datasets(bigquery_client: bigquery.Client):
 
 @pytest.fixture(scope="session")
 def bigquery_client():
-    from google.cloud import bigquery
-
     return bigquery.Client()
 
 
@@ -57,13 +54,11 @@ def bqstorage_client(bigquery_client):
 
 
 @pytest.fixture(scope="session")
-def dataset_id(bigquery_client: bigquery.Client, project_id: str):
+def dataset_id(bigquery_client):
     dataset_id = prefixer.create_prefix()
-    full_dataset_id = f"{project_id}.{dataset_id}"
-    dataset = bigquery.Dataset(full_dataset_id)
-    bigquery_client.create_dataset(dataset)
+    bigquery_client.create_dataset(dataset_id)
     yield dataset_id
-    bigquery_client.delete_dataset(dataset, delete_contents=True, not_found_ok=True)
+    bigquery_client.delete_dataset(dataset_id, delete_contents=True, not_found_ok=True)
 
 
 @pytest.fixture

@@ -17,20 +17,16 @@ import copy
 import json
 
 import mock
+import pyarrow
 import pytest
 
 try:
     import pandas
 except (ImportError, AttributeError):  # pragma: NO COVER
     pandas = None
-try:
-    import pyarrow
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pyarrow = None
-try:
-    from google.cloud import bigquery_storage
-except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage = None
+
+from google.cloud import bigquery_storage
+
 try:
     from tqdm import tqdm
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -83,9 +79,6 @@ def test__contains_order_by(query, expected):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 @pytest.mark.parametrize(
     "query",
     (
@@ -151,7 +144,6 @@ def test_to_dataframe_bqstorage_preserve_order(query, table_read_options_kwarg):
     )
 
 
-@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 def test_to_arrow():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -238,7 +230,6 @@ def test_to_arrow():
     ]
 
 
-@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 def test_to_arrow_max_results_no_progress_bar():
     from google.cloud.bigquery import table
     from google.cloud.bigquery.job import QueryJob as target_class
@@ -273,7 +264,6 @@ def test_to_arrow_max_results_no_progress_bar():
     assert tbl.num_rows == 2
 
 
-@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
 def test_to_arrow_w_tqdm_w_query_plan():
     from google.cloud.bigquery import table
@@ -330,7 +320,6 @@ def test_to_arrow_w_tqdm_w_query_plan():
     )
 
 
-@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
 def test_to_arrow_w_tqdm_w_pending_status():
     from google.cloud.bigquery import table
@@ -383,7 +372,6 @@ def test_to_arrow_w_tqdm_w_pending_status():
     )
 
 
-@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
 def test_to_arrow_w_tqdm_wo_query_plan():
     from google.cloud.bigquery import table
@@ -485,9 +473,6 @@ def test_to_dataframe_ddl_query():
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 def test_to_dataframe_bqstorage(table_read_options_kwarg):
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -538,9 +523,6 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 def test_to_dataframe_bqstorage_no_pyarrow_compression():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -643,7 +625,6 @@ def test_to_dataframe_column_dtypes():
     assert df.date.dtype.name == "object"
 
 
-@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_to_dataframe_column_date_dtypes():
     from google.cloud.bigquery.job import QueryJob as target_class

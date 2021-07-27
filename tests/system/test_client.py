@@ -30,24 +30,15 @@ from typing import Optional
 import psutil
 import pytest
 
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 from . import helpers
-
-try:
-    from google.cloud import bigquery_storage
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
 
 try:
     import fastavro  # to parse BQ storage client results
 except ImportError:  # pragma: NO COVER
     fastavro = None
 
-try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+import pyarrow
+import pyarrow.types
 
 from google.api_core.exceptions import PreconditionFailed
 from google.api_core.exceptions import BadRequest
@@ -63,10 +54,10 @@ from google.cloud import bigquery
 from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery.table import Table
 from google.cloud._helpers import UTC
 from google.cloud.bigquery import dbapi, enums
+from google.cloud import bigquery_storage
 from google.cloud import storage
 from google.cloud.datacatalog_v1 import types as datacatalog_types
 from google.cloud.datacatalog_v1 import PolicyTagManagerClient
@@ -154,7 +145,6 @@ class Config(object):
 
     CLIENT: Optional[bigquery.Client] = None
     CURSOR = None
-    DATASET = None
 
 
 def setUpModule():
@@ -164,9 +154,7 @@ def setUpModule():
 
 class TestBigQuery(unittest.TestCase):
     def setUp(self):
-        Config.DATASET = _make_dataset_id("bq_system_tests")
-        dataset = Config.CLIENT.create_dataset(Config.DATASET)
-        self.to_delete = [dataset]
+        self.to_delete = []
 
     def tearDown(self):
         policy_tag_client = PolicyTagManagerClient()
@@ -505,22 +493,6 @@ class TestBigQuery(unittest.TestCase):
         helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         with self.assertRaises(exceptions.BadRequest):
             Config.CLIENT.delete_dataset(dataset)
-
-    def test_delete_job_metadata(self):
-        dataset_id = _make_dataset_id("us_east1")
-        self.temp_dataset(dataset_id, location="us-east1")
-        full_table_id = f"{Config.CLIENT.project}.{dataset_id}.test_delete_job_metadata"
-        table = Table(full_table_id, schema=[SchemaField("col", "STRING")])
-        Config.CLIENT.create_table(table)
-        query_job: bigquery.QueryJob = Config.CLIENT.query(
-            f"SELECT COUNT(*) FROM `{full_table_id}`", location="us-east1",
-        )
-        query_job.result()
-        self.assertIsNotNone(Config.CLIENT.get_job(query_job))
-
-        Config.CLIENT.delete_job_metadata(query_job)
-        with self.assertRaises(NotFound):
-            Config.CLIENT.get_job(query_job)
 
     def test_get_table_w_public_dataset(self):
         public = "bigquery-public-data"
@@ -1622,24 +1594,6 @@ class TestBigQuery(unittest.TestCase):
         row_tuples = [r.values() for r in rows]
         self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
 
-    def test_dbapi_create_view(self):
-
-        query = """
-        CREATE VIEW {}.dbapi_create_view
-        AS SELECT name, SUM(number) AS total
-        FROM `bigquery-public-data.usa_names.usa_1910_2013`
-        GROUP BY name;
-        """.format(
-            Config.DATASET
-        )
-
-        Config.CURSOR.execute(query)
-        self.assertEqual(Config.CURSOR.rowcount, 0, "expected 0 rows")
-
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
@@ -1698,9 +1652,6 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertEqual(list(rows), [])
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_dbapi_connection_does_not_leak_sockets(self):
         current_process = psutil.Process()
         conn_count_start = len(current_process.connections())
@@ -1904,6 +1855,11 @@ class TestBigQuery(unittest.TestCase):
                 "query_parameters": [pi_numeric_param],
             },
             {
+                "sql": "SELECT @bignum_param",
+                "expected": bignum,
+                "query_parameters": [bignum_param],
+            },
+            {
                 "sql": "SELECT @truthy",
                 "expected": truthy,
                 "query_parameters": [truthy_param],
@@ -1973,14 +1929,6 @@ class TestBigQuery(unittest.TestCase):
                 "query_parameters": [with_friends_param],
             },
         ]
-        if _BIGNUMERIC_SUPPORT:
-            examples.append(
-                {
-                    "sql": "SELECT @bignum_param",
-                    "expected": bignum,
-                    "query_parameters": [bignum_param],
-                }
-            )
 
         for example in examples:
             jconfig = QueryJobConfig()
@@ -2367,10 +2315,6 @@ class TestBigQuery(unittest.TestCase):
     def _fetch_dataframe(self, query):
         return Config.CLIENT.query(query).result().to_dataframe()
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_nested_table_to_arrow(self):
         from google.cloud.bigquery.job import SourceFormat
         from google.cloud.bigquery.job import WriteDisposition
@@ -2476,104 +2420,6 @@ class TestBigQuery(unittest.TestCase):
         page = next(pages)
         self.assertEqual(page.num_items, num_last_page)
 
-    def test_parameterized_types_round_trip(self):
-        client = Config.CLIENT
-        table_id = f"{Config.DATASET}.test_parameterized_types_round_trip"
-        fields = (
-            ("n", "NUMERIC"),
-            ("n9", "NUMERIC(9)"),
-            ("n92", "NUMERIC(9, 2)"),
-            ("bn", "BIGNUMERIC"),
-            ("bn9", "BIGNUMERIC(38)"),
-            ("bn92", "BIGNUMERIC(38, 22)"),
-            ("s", "STRING"),
-            ("s9", "STRING(9)"),
-            ("b", "BYTES"),
-            ("b9", "BYTES(9)"),
-        )
-        self.to_delete.insert(0, Table(f"{client.project}.{table_id}"))
-        client.query(
-            "create table {} ({})".format(
-                table_id, ", ".join(" ".join(f) for f in fields)
-            )
-        ).result()
-        table = client.get_table(table_id)
-        table_id2 = table_id + "2"
-        self.to_delete.insert(0, Table(f"{client.project}.{table_id2}"))
-        client.create_table(Table(f"{client.project}.{table_id2}", table.schema))
-        table2 = client.get_table(table_id2)
-
-        self.assertEqual(tuple(s._key()[:2] for s in table2.schema), fields)
-
-    def test_table_snapshots(self):
-        from google.cloud.bigquery import CopyJobConfig
-        from google.cloud.bigquery import OperationType
-
-        client = Config.CLIENT
-
-        source_table_path = f"{client.project}.{Config.DATASET}.test_table"
-        snapshot_table_path = f"{source_table_path}_snapshot"
-
-        # Create the table before loading so that the column order is predictable.
-        schema = [
-            bigquery.SchemaField("foo", "INTEGER"),
-            bigquery.SchemaField("bar", "STRING"),
-        ]
-        source_table = helpers.retry_403(Config.CLIENT.create_table)(
-            Table(source_table_path, schema=schema)
-        )
-        self.to_delete.insert(0, source_table)
-
-        # Populate the table with initial data.
-        rows = [{"foo": 1, "bar": "one"}, {"foo": 2, "bar": "two"}]
-        load_job = Config.CLIENT.load_table_from_json(rows, source_table)
-        load_job.result()
-
-        # Now create a snapshot before modifying the original table data.
-        copy_config = CopyJobConfig()
-        copy_config.operation_type = OperationType.SNAPSHOT
-
-        copy_job = client.copy_table(
-            sources=source_table_path,
-            destination=snapshot_table_path,
-            job_config=copy_config,
-        )
-        copy_job.result()
-
-        snapshot_table = client.get_table(snapshot_table_path)
-        self.to_delete.insert(0, snapshot_table)
-
-        # Modify data in original table.
-        sql = f'INSERT INTO `{source_table_path}`(foo, bar) VALUES (3, "three")'
-        query_job = client.query(sql)
-        query_job.result()
-
-        # List rows from the source table and compare them to rows from the snapshot.
-        rows_iter = client.list_rows(source_table_path)
-        rows = sorted(row.values() for row in rows_iter)
-        assert rows == [(1, "one"), (2, "two"), (3, "three")]
-
-        rows_iter = client.list_rows(snapshot_table_path)
-        rows = sorted(row.values() for row in rows_iter)
-        assert rows == [(1, "one"), (2, "two")]
-
-        # Now restore the table from the snapshot and it should again contain the old
-        # set of rows.
-        copy_config = CopyJobConfig()
-        copy_config.operation_type = OperationType.RESTORE
-        copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-
-        copy_job = client.copy_table(
-            sources=snapshot_table_path,
-            destination=source_table_path,
-            job_config=copy_config,
-        )
-        copy_job.result()
-
-        rows_iter = client.list_rows(source_table_path)
-        rows = sorted(row.values() for row in rows_iter)
-        assert rows == [(1, "one"), (2, "two")]
-
     def temp_dataset(self, dataset_id, location=None):
         project = Config.CLIENT.project
         dataset_ref = bigquery.DatasetReference(project, dataset_id)
@@ -2604,3 +2450,108 @@ def _table_exists(t):
         return True
     except NotFound:
         return False
+
+
+def test_dbapi_create_view(dataset_id):
+
+    query = f"""
+    CREATE VIEW {dataset_id}.dbapi_create_view
+    AS SELECT name, SUM(number) AS total
+    FROM `bigquery-public-data.usa_names.usa_1910_2013`
+    GROUP BY name;
+    """
+
+    Config.CURSOR.execute(query)
+    assert Config.CURSOR.rowcount == 0, "expected 0 rows"
+
+
+def test_parameterized_types_round_trip(dataset_id):
+    client = Config.CLIENT
+    table_id = f"{dataset_id}.test_parameterized_types_round_trip"
+    fields = (
+        ("n", "NUMERIC"),
+        ("n9", "NUMERIC(9)"),
+        ("n92", "NUMERIC(9, 2)"),
+        ("bn", "BIGNUMERIC"),
+        ("bn9", "BIGNUMERIC(38)"),
+        ("bn92", "BIGNUMERIC(38, 22)"),
+        ("s", "STRING"),
+        ("s9", "STRING(9)"),
+        ("b", "BYTES"),
+        ("b9", "BYTES(9)"),
+    )
+    client.query(
+        "create table {} ({})".format(table_id, ", ".join(" ".join(f) for f in fields))
+    ).result()
+    table = client.get_table(table_id)
+    table_id2 = table_id + "2"
+    client.create_table(Table(f"{client.project}.{table_id2}", table.schema))
+    table2 = client.get_table(table_id2)
+
+    assert tuple(s._key()[:2] for s in table2.schema) == fields
+
+
+def test_table_snapshots(dataset_id):
+    from google.cloud.bigquery import CopyJobConfig
+    from google.cloud.bigquery import OperationType
+
+    client = Config.CLIENT
+
+    source_table_path = f"{client.project}.{dataset_id}.test_table"
+    snapshot_table_path = f"{source_table_path}_snapshot"
+
+    # Create the table before loading so that the column order is predictable.
+    schema = [
+        bigquery.SchemaField("foo", "INTEGER"),
+        bigquery.SchemaField("bar", "STRING"),
+    ]
+    source_table = helpers.retry_403(Config.CLIENT.create_table)(
+        Table(source_table_path, schema=schema)
+    )
+
+    # Populate the table with initial data.
+    rows = [{"foo": 1, "bar": "one"}, {"foo": 2, "bar": "two"}]
+    load_job = Config.CLIENT.load_table_from_json(rows, source_table)
+    load_job.result()
+
+    # Now create a snapshot before modifying the original table data.
+    copy_config = CopyJobConfig()
+    copy_config.operation_type = OperationType.SNAPSHOT
+
+    copy_job = client.copy_table(
+        sources=source_table_path,
+        destination=snapshot_table_path,
+        job_config=copy_config,
+    )
+    copy_job.result()
+
+    # Modify data in original table.
+    sql = f'INSERT INTO `{source_table_path}`(foo, bar) VALUES (3, "three")'
+    query_job = client.query(sql)
+    query_job.result()
+
+    # List rows from the source table and compare them to rows from the snapshot.
+    rows_iter = client.list_rows(source_table_path)
+    rows = sorted(row.values() for row in rows_iter)
+    assert rows == [(1, "one"), (2, "two"), (3, "three")]
+
+    rows_iter = client.list_rows(snapshot_table_path)
+    rows = sorted(row.values() for row in rows_iter)
+    assert rows == [(1, "one"), (2, "two")]
+
+    # Now restore the table from the snapshot and it should again contain the old
+    # set of rows.
+    copy_config = CopyJobConfig()
+    copy_config.operation_type = OperationType.RESTORE
+    copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+
+    copy_job = client.copy_table(
+        sources=snapshot_table_path,
+        destination=source_table_path,
+        job_config=copy_config,
+    )
+    copy_job.result()
+
+    rows_iter = client.list_rows(source_table_path)
+    rows = sorted(row.values() for row in rows_iter)
+    assert rows == [(1, "one"), (2, "two")]

@@ -1594,20 +1594,6 @@ class TestBigQuery(unittest.TestCase):
         row_tuples = [r.values() for r in rows]
         self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
 
-    def test_dbapi_create_view(self):
-
-        query = """
-        CREATE VIEW {}.dbapi_create_view
-        AS SELECT name, SUM(number) AS total
-        FROM `bigquery-public-data.usa_names.usa_1910_2013`
-        GROUP BY name;
-        """.format(
-            Config.DATASET
-        )
-
-        Config.CURSOR.execute(query)
-        self.assertEqual(Config.CURSOR.rowcount, 0, "expected 0 rows")
-
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials

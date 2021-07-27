@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +13,12 @@
 # limitations under the License.
 
 from . import update_dataset_access
-from . import revoke_dataset_access
 
 
-def test_revoke_dataset_access(capsys, dataset_id, entity_id):
+def test_update_dataset_access(capsys, dataset_id):
 
     update_dataset_access.update_dataset_access(dataset_id)
-    revoke_dataset_access.revoke_dataset_access(dataset_id, entity_id)
-
     out, err = capsys.readouterr()
-    assert f"Updated dataset '{dataset_id}' with modified user permissions." in out
+    assert (
+        "Updated dataset '{}' with modified user permissions.".format(dataset_id) in out
+    )

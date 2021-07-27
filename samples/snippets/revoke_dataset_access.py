@@ -44,7 +44,11 @@ def revoke_dataset_access(dataset_id, entity_id):
 
     dataset.access_entries = entries
 
-    dataset = client.update_dataset(dataset, ["access_entries"])  # Make an API request.
+    dataset = client.update_dataset(
+        dataset,
+        # Update just the `access_entries` property of the dataset.
+        ["access_entries"],
+    )  # Make an API request.
 
     full_dataset_id = f"{dataset.project}.{dataset.dataset_id}"
     print(f"Updated dataset '{full_dataset_id}' with modified user permissions.")

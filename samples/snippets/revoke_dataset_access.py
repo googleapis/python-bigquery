@@ -13,7 +13,19 @@
 # limitations under the License.
 
 
-def revoke_dataset_access(your_dataset_id, your_entity_id):
+def revoke_dataset_access(dataset_id, entity_id):
+    original_dataset_id = dataset_id
+    original_entity_id = entity_id
+    # [START bigquery_revoke_dataset_access]
+    # TODO(developer): Set the dataset ID to the dataset where you are revoking access.
+    dataset_id = "your_dataset_id"
+
+    # TODO(developer): Set the entity ID of the email or group from whom you are revoking access.
+    entity_id = "user-or-group-to-remove@example.com"
+
+    # [END bigquery_revoke_dataset_access]
+    dataset_id = original_dataset_id
+    entity_id = original_entity_id
 
     # [START bigquery_revoke_dataset_access]
     from google.cloud import bigquery
@@ -21,17 +33,6 @@ def revoke_dataset_access(your_dataset_id, your_entity_id):
     # Construct a BigQuery client object.
     client = bigquery.Client()
 
-    original_your_dataset_id = your_dataset_id
-    original_your_entity_id = your_entity_id
-    # [START bigquery_revoke_dataset_access_read_session]
-    your_dataset_id = "dataset-for-read-session"
-    your_entity_id = "entity-for-read-session"
-    # [END bigquery_revoke_dataset_access_read_session]
-    your_dataset_id = original_your_dataset_id
-    your_entity_id = original_your_entity_id
-
-    dataset_id = your_dataset_id
-    entity_id = your_entity_id
 
     dataset = client.get_dataset(dataset_id)  # Make an API request.
     entries = list(dataset.access_entries)

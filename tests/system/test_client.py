@@ -30,24 +30,15 @@ from typing import Optional
 import psutil
 import pytest
 
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 from . import helpers
-
-try:
-    from google.cloud import bigquery_storage
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
 
 try:
     import fastavro  # to parse BQ storage client results
 except ImportError:  # pragma: NO COVER
     fastavro = None
 
-try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+import pyarrow
+import pyarrow.types
 
 from google.api_core.exceptions import PreconditionFailed
 from google.api_core.exceptions import BadRequest
@@ -66,6 +57,7 @@ from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.table import Table
 from google.cloud._helpers import UTC
 from google.cloud.bigquery import dbapi, enums
+from google.cloud import bigquery_storage
 from google.cloud import storage
 from google.cloud.datacatalog_v1 import types as datacatalog_types
 from google.cloud.datacatalog_v1 import PolicyTagManagerClient
@@ -1602,10 +1594,6 @@ class TestBigQuery(unittest.TestCase):
         row_tuples = [r.values() for r in rows]
         self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
@@ -1664,9 +1652,6 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertEqual(list(rows), [])
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_dbapi_connection_does_not_leak_sockets(self):
         current_process = psutil.Process()
         conn_count_start = len(current_process.connections())
@@ -1870,6 +1855,11 @@ class TestBigQuery(unittest.TestCase):
                 "query_parameters": [pi_numeric_param],
             },
             {
+                "sql": "SELECT @bignum_param",
+                "expected": bignum,
+                "query_parameters": [bignum_param],
+            },
+            {
                 "sql": "SELECT @truthy",
                 "expected": truthy,
                 "query_parameters": [truthy_param],
@@ -1939,14 +1929,6 @@ class TestBigQuery(unittest.TestCase):
                 "query_parameters": [with_friends_param],
             },
         ]
-        if _BIGNUMERIC_SUPPORT:
-            examples.append(
-                {
-                    "sql": "SELECT @bignum_param",
-                    "expected": bignum,
-                    "query_parameters": [bignum_param],
-                }
-            )
 
         for example in examples:
             jconfig = QueryJobConfig()
@@ -2333,10 +2315,6 @@ class TestBigQuery(unittest.TestCase):
     def _fetch_dataframe(self, query):
         return Config.CLIENT.query(query).result().to_dataframe()
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_nested_table_to_arrow(self):
         from google.cloud.bigquery.job import SourceFormat
         from google.cloud.bigquery.job import WriteDisposition

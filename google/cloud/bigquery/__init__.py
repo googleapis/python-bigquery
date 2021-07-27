@@ -42,7 +42,6 @@ from google.cloud.bigquery.enums import DecimalTargetType
 from google.cloud.bigquery.enums import KeyResultStatementKind
 from google.cloud.bigquery.enums import SqlTypeNames
 from google.cloud.bigquery.enums import StandardSqlDataTypes
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.external_config import BigtableOptions
 from google.cloud.bigquery.external_config import BigtableColumnFamily
@@ -171,8 +170,6 @@ __all__ = [
     "WriteDisposition",
     # EncryptionConfiguration
     "EncryptionConfiguration",
-    # Custom exceptions
-    "LegacyBigQueryStorageError",
 ]
 
 

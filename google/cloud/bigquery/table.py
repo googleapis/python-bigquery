@@ -30,10 +30,7 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+import pyarrow
 
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator
@@ -41,7 +38,6 @@ from google.api_core.page_iterator import HTTPIterator
 import google.cloud._helpers
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
@@ -50,20 +46,16 @@ from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
+    from google.cloud import bigquery_storage
+
     # Unconditionally import optional dependencies again to tell pytype that
     # they are not None, avoiding false "no attribute" errors.
     import pandas
-    import pyarrow
-    from google.cloud import bigquery_storage
 
 
 _NO_PANDAS_ERROR = (
     "The pandas library is not installed, please install "
     "pandas to use the to_dataframe() function."
-)
-_NO_PYARROW_ERROR = (
-    "The pyarrow library is not installed, please install "
-    "pyarrow to use the to_arrow() function."
 )
 
 _TABLE_HAS_NO_SCHEMA = 'Table has no schema:  call "client.get_table()"'
@@ -1554,17 +1546,6 @@ class RowIterator(HTTPIterator):
         if self.max_results is not None:
             return False
 
-        try:
-            from google.cloud import bigquery_storage  # noqa: F401
-        except ImportError:
-            return False
-
-        try:
-            _helpers.BQ_STORAGE_VERSIONS.verify_version()
-        except LegacyBigQueryStorageError as exc:
-            warnings.warn(str(exc))
-            return False
-
         return True
 
     def _get_next_page_response(self):
@@ -1655,7 +1636,7 @@ class RowIterator(HTTPIterator):
     def to_arrow(
         self,
         progress_bar_type: str = None,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         create_bqstorage_client: bool = True,
     ) -> "pyarrow.Table":
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
@@ -1684,8 +1665,7 @@ class RowIterator(HTTPIterator):
                 A BigQuery Storage API client. If supplied, use the faster BigQuery
                 Storage API to fetch rows from BigQuery. This API is a billable API.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 This method only  exposes a subset of the capabilities of the
                 BigQuery Storage API.  For full access to all features
@@ -1706,14 +1686,8 @@ class RowIterator(HTTPIterator):
                 headers from the query results. The column headers are derived
                 from the destination table's schema.
 
-        Raises:
-            ValueError: If the :mod:`pyarrow` library cannot be imported.
-
         .. versionadded:: 1.17.0
         """
-        if pyarrow is None:
-            raise ValueError(_NO_PYARROW_ERROR)
-
         self._maybe_warn_max_results(bqstorage_client)
 
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
@@ -1759,7 +1733,7 @@ class RowIterator(HTTPIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,
     ) -> "pandas.DataFrame":
@@ -1770,8 +1744,7 @@ class RowIterator(HTTPIterator):
                 A BigQuery Storage API client. If supplied, use the faster
                 BigQuery Storage API to fetch rows from BigQuery.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 This method only exposes a subset of the capabilities of the
                 BigQuery Storage API. For full access to all features
@@ -1836,7 +1809,7 @@ class RowIterator(HTTPIterator):
     # changes to job.QueryJob.to_dataframe()
     def to_dataframe(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
@@ -1849,8 +1822,7 @@ class RowIterator(HTTPIterator):
                 A BigQuery Storage API client. If supplied, use the faster
                 BigQuery Storage API to fetch rows from BigQuery.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 This method only exposes a subset of the capabilities of the
                 BigQuery Storage API. For full access to all features
@@ -1904,9 +1876,7 @@ class RowIterator(HTTPIterator):
 
         Raises:
             ValueError:
-                If the :mod:`pandas` library cannot be imported, or the
-                :mod:`google.cloud.bigquery_storage_v1` module is
-                required but cannot be imported.
+                If the :mod:`pandas` library cannot be imported.
 
         """
         if pandas is None:
@@ -1994,8 +1964,6 @@ class _EmptyRowIterator(RowIterator):
         Returns:
             pyarrow.Table: An empty :class:`pyarrow.Table`.
         """
-        if pyarrow is None:
-            raise ValueError(_NO_PYARROW_ERROR)
         return pyarrow.Table.from_arrays(())
 
     def to_dataframe(

@@ -27,7 +27,6 @@ import unittest
 import warnings
 
 import mock
-import packaging
 import requests
 import pytest
 import pytz
@@ -47,22 +46,14 @@ try:
     )
 except (ImportError, AttributeError):  # pragma: NO COVER
     opentelemetry = None
-try:
-    import pyarrow
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pyarrow = None
 
 import google.api_core.exceptions
 from google.api_core import client_info
 import google.cloud._helpers
+from google.cloud import bigquery_storage
 from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import DatasetReference
 
-try:
-    from google.cloud import bigquery_storage
-except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage = None
-from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
 
 PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
@@ -605,9 +596,6 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_ensure_bqstorage_client_creating_new_instance(self):
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client_instance = object()
@@ -630,55 +618,6 @@ class TestClient(unittest.TestCase):
             client_info=mock.sentinel.client_info,
         )
 
-    def test_ensure_bqstorage_client_missing_dependency(self):
-        creds = _make_credentials()
-        client = self._make_one(project=self.PROJECT, credentials=creds)
-
-        def fail_bqstorage_import(name, globals, locals, fromlist, level):
-            # NOTE: *very* simplified, assuming a straightforward absolute import
-            return "bigquery_storage" in name or (
-                fromlist is not None and "bigquery_storage" in fromlist
-            )
-
-        no_bqstorage = maybe_fail_import(predicate=fail_bqstorage_import)
-
-        with no_bqstorage, warnings.catch_warnings(record=True) as warned:
-            bqstorage_client = client._ensure_bqstorage_client()
-
-        self.assertIsNone(bqstorage_client)
-        matching_warnings = [
-            warning
-            for warning in warned
-            if "not installed" in str(warning)
-            and "google-cloud-bigquery-storage" in str(warning)
-        ]
-        assert matching_warnings, "Missing dependency warning not raised."
-
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    def test_ensure_bqstorage_client_obsolete_dependency(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
-        creds = _make_credentials()
-        client = self._make_one(project=self.PROJECT, credentials=creds)
-
-        patcher = mock.patch(
-            "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
-            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
-        )
-        with patcher, warnings.catch_warnings(record=True) as warned:
-            bqstorage_client = client._ensure_bqstorage_client()
-
-        self.assertIsNone(bqstorage_client)
-        matching_warnings = [
-            warning for warning in warned if "BQ Storage too old" in str(warning)
-        ]
-        assert matching_warnings, "Obsolete dependency warning not raised."
-
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_ensure_bqstorage_client_existing_client_check_passes(self):
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
@@ -689,29 +628,6 @@ class TestClient(unittest.TestCase):
         )
 
         self.assertIs(bqstorage_client, mock_storage_client)
-
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    def test_ensure_bqstorage_client_existing_client_check_fails(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
-        creds = _make_credentials()
-        client = self._make_one(project=self.PROJECT, credentials=creds)
-        mock_storage_client = mock.sentinel.mock_storage_client
-
-        patcher = mock.patch(
-            "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
-            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
-        )
-        with patcher, warnings.catch_warnings(record=True) as warned:
-            bqstorage_client = client._ensure_bqstorage_client(mock_storage_client)
-
-        self.assertIsNone(bqstorage_client)
-        matching_warnings = [
-            warning for warning in warned if "BQ Storage too old" in str(warning)
-        ]
-        assert matching_warnings, "Obsolete dependency warning not raised."
 
     def test_create_routine_w_minimal_resource(self):
         from google.cloud.bigquery.routine import Routine
@@ -6679,7 +6595,6 @@ class TestClientUpload(object):
         assert "Expected an instance of LoadJobConfig" in err_msg
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -6766,7 +6681,6 @@ class TestClientUpload(object):
             assert "description" not in field
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_client_location(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -6811,7 +6725,6 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_custom_job_config_wihtout_source_format(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -6866,7 +6779,6 @@ class TestClientUpload(object):
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_custom_job_config_w_source_format(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -6922,7 +6834,6 @@ class TestClientUpload(object):
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_custom_job_config_w_wrong_source_format(self):
         from google.cloud.bigquery import job
 
@@ -6942,7 +6853,6 @@ class TestClientUpload(object):
         assert "Got unexpected source_format:" in str(exc.value)
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_automatic_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -7019,7 +6929,65 @@ class TestClientUpload(object):
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_automatic_schema_detection_fails(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+
+        client = self._make_client()
+
+        df_data = [
+            [[{"name": "n1.1", "value": 1.1}, {"name": "n1.2", "value": 1.2}]],
+            [[{"name": "n2.1", "value": 2.1}, {"name": "n2.2", "value": 2.2}]],
+        ]
+        dataframe = pandas.DataFrame(df_data, columns=["col_record_list"])
+
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+
+        with load_patch as load_table_from_file, get_table_patch:
+            with warnings.catch_warnings(record=True) as warned:
+                client.load_table_from_dataframe(
+                    dataframe, self.TABLE_REF, location=self.LOCATION
+                )
+
+        # There should be a warning that schema detection failed.
+        expected_warnings = [
+            warning
+            for warning in warned
+            if "schema could not be detected" in str(warning).lower()
+        ]
+        assert len(expected_warnings) == 1
+        assert issubclass(
+            expected_warnings[0].category,
+            (DeprecationWarning, PendingDeprecationWarning),
+        )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=None,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert sent_config.schema is None
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_load_table_from_dataframe_w_index_and_auto_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -7081,7 +7049,6 @@ class TestClientUpload(object):
         assert sent_schema == expected_sent_schema
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_unknown_table(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
 
@@ -7120,7 +7087,6 @@ class TestClientUpload(object):
         pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
         "Only `pandas version >=1.0.0` supported",
     )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -7168,7 +7134,6 @@ class TestClientUpload(object):
         pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
         "Only `pandas version >=1.0.0` supported",
     )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -7213,7 +7178,6 @@ class TestClientUpload(object):
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_struct_fields(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -7273,7 +7237,6 @@ class TestClientUpload(object):
         assert sent_config.schema == schema
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_partial_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -7357,7 +7320,6 @@ class TestClientUpload(object):
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_partial_schema_extra_types(self):
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7394,63 +7356,6 @@ class TestClientUpload(object):
         assert "unknown_col" in message
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_load_table_from_dataframe_w_partial_schema_missing_types(self):
-        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
-        from google.cloud.bigquery import job
-        from google.cloud.bigquery.schema import SchemaField
-
-        client = self._make_client()
-        df_data = collections.OrderedDict(
-            [
-                ("string_col", ["abc", "def", "ghi"]),
-                ("unknown_col", [b"jkl", None, b"mno"]),
-            ]
-        )
-        dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
-        load_patch = mock.patch(
-            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
-        )
-        pyarrow_patch = mock.patch(
-            "google.cloud.bigquery._pandas_helpers.pyarrow", None
-        )
-
-        schema = (SchemaField("string_col", "STRING"),)
-        job_config = job.LoadJobConfig(schema=schema)
-        with pyarrow_patch, load_patch as load_table_from_file, warnings.catch_warnings(
-            record=True
-        ) as warned:
-            client.load_table_from_dataframe(
-                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
-            )
-
-        load_table_from_file.assert_called_once_with(
-            client,
-            mock.ANY,
-            self.TABLE_REF,
-            num_retries=_DEFAULT_NUM_RETRIES,
-            rewind=True,
-            size=mock.ANY,
-            job_id=mock.ANY,
-            job_id_prefix=None,
-            location=self.LOCATION,
-            project=None,
-            job_config=mock.ANY,
-            timeout=None,
-        )
-
-        assert warned  # there should be at least one warning
-        unknown_col_warnings = [
-            warning for warning in warned if "unknown_col" in str(warning)
-        ]
-        assert unknown_col_warnings
-        assert unknown_col_warnings[0].category == UserWarning
-
-        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
-        assert sent_config.source_format == job.SourceFormat.PARQUET
-        assert sent_config.schema is None
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_schema_arrow_custom_compression(self):
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7483,72 +7388,6 @@ class TestClientUpload(object):
         assert call_args.kwargs.get("parquet_compression") == "LZ4"
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    def test_load_table_from_dataframe_wo_pyarrow_raises_error(self):
-        client = self._make_client()
-        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
-        dataframe = pandas.DataFrame(records)
-
-        get_table_patch = mock.patch(
-            "google.cloud.bigquery.client.Client.get_table",
-            autospec=True,
-            side_effect=google.api_core.exceptions.NotFound("Table not found"),
-        )
-        load_patch = mock.patch(
-            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
-        )
-        pyarrow_patch = mock.patch("google.cloud.bigquery.client.pyarrow", None)
-        to_parquet_patch = mock.patch.object(
-            dataframe, "to_parquet", wraps=dataframe.to_parquet
-        )
-
-        with load_patch, get_table_patch, pyarrow_patch, to_parquet_patch:
-            with pytest.raises(ValueError):
-                client.load_table_from_dataframe(
-                    dataframe,
-                    self.TABLE_REF,
-                    location=self.LOCATION,
-                    parquet_compression="gzip",
-                )
-
-    def test_load_table_from_dataframe_w_bad_pyarrow_issues_warning(self):
-        pytest.importorskip("pandas", reason="Requires `pandas`")
-        pytest.importorskip("pyarrow", reason="Requires `pyarrow`")
-
-        client = self._make_client()
-        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
-        dataframe = pandas.DataFrame(records)
-
-        pyarrow_version_patch = mock.patch(
-            "google.cloud.bigquery.client._PYARROW_VERSION",
-            packaging.version.parse("2.0.0"),  # A known bad version of pyarrow.
-        )
-        get_table_patch = mock.patch(
-            "google.cloud.bigquery.client.Client.get_table",
-            autospec=True,
-            side_effect=google.api_core.exceptions.NotFound("Table not found"),
-        )
-        load_patch = mock.patch(
-            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
-        )
-
-        with load_patch, get_table_patch, pyarrow_version_patch:
-            with warnings.catch_warnings(record=True) as warned:
-                client.load_table_from_dataframe(
-                    dataframe, self.TABLE_REF, location=self.LOCATION,
-                )
-
-        expected_warnings = [
-            warning for warning in warned if "pyarrow" in str(warning).lower()
-        ]
-        assert len(expected_warnings) == 1
-        assert issubclass(expected_warnings[0].category, RuntimeWarning)
-        msg = str(expected_warnings[0].message)
-        assert "pyarrow 2.0.0" in msg
-        assert "data corruption" in msg
-
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nulls(self):
         """Test that a DataFrame with null columns can be uploaded if a
         BigQuery schema is specified.

@@ -1307,6 +1307,21 @@ class QueryJob(_AsyncJob):
             # set the self._query_results cache.
             self._reload_query_results(retry=retry, timeout=timeout)
         except exceptions.GoogleAPICallError as exc:
+            if retry is not None:
+                retry_do_query = getattr(self, 'retry_do_query', None)
+                if retry_do_query is not None:
+                    print('RETRY', id(retry), 'IN RESULT', self.job_id, self.query)
+                    @retry
+                    def retry_query_and_result():
+                        job = retry_do_query()
+                        self._properties["jobReference"] = (
+                            job._properties["jobReference"])
+                        result = job.result()
+                        self._query_results = job._query_results
+                        return result
+
+                    return retry_query_and_result()
+
             exc.message += self._format_for_exception(self.query, self.job_id)
             exc.query_job = self
             raise

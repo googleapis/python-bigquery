@@ -3206,15 +3206,13 @@ class Client(ClientWithProject):
                 class.
         """
         job_id_given = job_id is not None
-        job_id = _make_job_id(job_id, job_id_prefix)
+        job_id_save = job_id
 
         if project is None:
             project = self.project
 
         if location is None:
             location = self.location
-
-        job_config = copy.deepcopy(job_config)
 
         if self._default_query_job_config:
             if job_config:
@@ -3225,6 +3223,8 @@ class Client(ClientWithProject):
                 # that is in the default,
                 # should be filled in with the default
                 # the incoming therefore has precedence
+                #
+                # Note that _fill_from_default doesn't mutate the receiver
                 job_config = job_config._fill_from_default(
                     self._default_query_job_config
                 )
@@ -3233,34 +3233,53 @@ class Client(ClientWithProject):
                     self._default_query_job_config,
                     google.cloud.bigquery.job.QueryJobConfig,
                 )
-                job_config = copy.deepcopy(self._default_query_job_config)
+                job_config = self._default_query_job_config
 
-        job_ref = job._JobReference(job_id, project=project, location=location)
-        query_job = job.QueryJob(job_ref, query, client=self, job_config=job_config)
+        # Note that we haven't modified the original job_config (or
+        # _default_query_job_config) up to this point.
+        job_config_save = job_config
 
-        try:
-            query_job._begin(retry=retry, timeout=timeout)
-        except core_exceptions.Conflict as create_exc:
-            # The thought is if someone is providing their own job IDs and they get
-            # their job ID generation wrong, this could end up returning results for
-            # the wrong query. We thus only try to recover if job ID was not given.
-            if job_id_given:
-                raise create_exc
+        def do_query():
+            # Make a copy now, so that original doesn't get changed by the process
+            # below and to facilitate retry
+            job_config = copy.deepcopy(job_config_save)
+
+            job_id = _make_job_id(job_id_save, job_id_prefix)
+            job_ref = job._JobReference(job_id, project=project, location=location)
+            query_job = job.QueryJob(job_ref, query, client=self, job_config=job_config)
 
             try:
-                query_job = self.get_job(
-                    job_id,
-                    project=project,
-                    location=location,
-                    retry=retry,
-                    timeout=timeout,
-                )
-            except core_exceptions.GoogleAPIError:  # (includes RetryError)
-                raise create_exc
+                query_job._begin(retry=retry, timeout=timeout)
+            except core_exceptions.Conflict as create_exc:
+                # The thought is if someone is providing their own job IDs and they get
+                # their job ID generation wrong, this could end up returning results for
+                # the wrong query. We thus only try to recover if job ID was not given.
+                if job_id_given:
+                    raise create_exc
+
+                try:
+                    query_job = self.get_job(
+                        job_id,
+                        project=project,
+                        location=location,
+                        retry=retry,
+                        timeout=timeout,
+                    )
+                except core_exceptions.GoogleAPIError:  # (includes RetryError)
+                    raise create_exc
+                else:
+                    return query_job
             else:
                 return query_job
+
+        if job_id_given:
+            # Can't retry (at this level)
+            future = do_query()
         else:
-            return query_job
+            future = retry(do_query)()
+            future.retry_do_query = do_query # in case we have to retry later
+
+        return future
 
     def insert_rows(
         self,

@@ -137,6 +137,7 @@ Query
 
     query.ArrayQueryParameter
     query.ScalarQueryParameter
+    query.ScalarQueryParameterType
     query.StructQueryParameter
     query.UDFResource
 

@@ -254,6 +254,7 @@ class SqlTypeNames(str, enum.Enum):
     DATE = "DATE"
     TIME = "TIME"
     DATETIME = "DATETIME"
+    INTERVAL = "INTERVAL"  # NOTE: not available in legacy types
 
 
 class SqlParameterScalarTypes:
@@ -276,6 +277,7 @@ class SqlParameterScalarTypes:
     DATE = ScalarQueryParameterType("DATE")
     TIME = ScalarQueryParameterType("TIME")
     DATETIME = ScalarQueryParameterType("DATETIME")
+    INTERVAL = ScalarQueryParameterType("INTERVAL")
 
 
 class WriteDisposition(object):

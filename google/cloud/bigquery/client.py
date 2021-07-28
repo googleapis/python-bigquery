@@ -3272,11 +3272,11 @@ class Client(ClientWithProject):
             else:
                 return query_job
 
-        if job_id_given:
-            # Can't retry (at this level)
-            future = do_query()
-        else:
-            future = retry(do_query)()
+        future = do_query()
+        # The future might be in a failed state now, but if it's
+        # unrecoverable, we'll find out when we ask for it's result, at which
+        # point, we may retry.
+        if not job_id_given:
             future.retry_do_query = do_query # in case we have to retry later
 
         return future

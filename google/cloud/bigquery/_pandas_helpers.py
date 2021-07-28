@@ -59,6 +59,8 @@ _BQ_TO_PANDAS_DTYPE_NULLSAFE = {
     "FLOAT64": "float64",
     "INT64": "Int64",
     "INTEGER": "Int64",
+    "INTERVAL": "timedelta64[ns]",  # TODO: What happens when an interval is outside of ns range?
+    "TIME": "timedelta64[ns]",
 }
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",

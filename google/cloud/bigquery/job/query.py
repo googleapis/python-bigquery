@@ -1300,28 +1300,38 @@ class QueryJob(_AsyncJob):
                 If the job did not complete in the given timeout.
         """
         try:
-            super(QueryJob, self).result(retry=retry, timeout=timeout)
+            retry_do_query = getattr(self, 'retry_do_query', None)
+            first = True
+            sub_retry = retry if retry_do_query is None else None
+            def do_get_result():
+                nonlocal first
 
-            # Since the job could already be "done" (e.g. got a finished job
-            # via client.get_job), the superclass call to done() might not
-            # set the self._query_results cache.
-            self._reload_query_results(retry=retry, timeout=timeout)
+                if first:
+                    first = False
+                else:
+                    # Note that we won't get here if retry_do_query is
+                    # None, because we won't use a retry.
+
+                    # The orinal job is failed. Create a new one.
+                    job = retry_do_query()
+
+                    # Become the new job:
+                    self.__dict__.clear()
+                    self.__dict__.update(job.__dict__)
+
+                super(QueryJob, self).result(retry=sub_retry, timeout=timeout)
+
+                # Since the job could already be "done" (e.g. got a finished job
+                # via client.get_job), the superclass call to done() might not
+                # set the self._query_results cache.
+                self._reload_query_results(retry=sub_retry, timeout=timeout)
+
+            if retry is not None and retry_do_query is not None:
+                do_get_result = retry(do_get_result)
+
+            do_get_result()
+
         except exceptions.GoogleAPICallError as exc:
-            if retry is not None:
-                retry_do_query = getattr(self, 'retry_do_query', None)
-                if retry_do_query is not None:
-                    print('RETRY', id(retry), 'IN RESULT', self.job_id, self.query)
-                    @retry
-                    def retry_query_and_result():
-                        job = retry_do_query()
-                        self._properties["jobReference"] = (
-                            job._properties["jobReference"])
-                        result = job.result()
-                        self._query_results = job._query_results
-                        return result
-
-                    return retry_query_and_result()
-
             exc.message += self._format_for_exception(self.query, self.job_id)
             exc.query_job = self
             raise

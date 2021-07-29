@@ -27,6 +27,7 @@ import unittest
 import uuid
 from typing import Optional
 
+from dateutil import relativedelta
 import psutil
 import pytest
 
@@ -1852,6 +1853,18 @@ class TestBigQuery(unittest.TestCase):
         rectangle_param = StructQueryParameter(
             "rectangle", top_left_param, bottom_right_param
         )
+        interval_value = relativedelta.relativedelta(
+            years=123,
+            months=7,
+            days=-21,
+            hours=48,
+            minutes=24,
+            seconds=12,
+            microseconds=6,
+        )
+        interval_param = ScalarQueryParameter(
+            "interval_param", enums.SqlParameterScalarTypes.INTERVAL, interval_value
+        )
         examples = [
             {
                 "sql": "SELECT @question",
@@ -1937,6 +1950,11 @@ class TestBigQuery(unittest.TestCase):
                 "sql": "SELECT ?",
                 "expected": {"friends": [phred_name, bharney_name]},
                 "query_parameters": [with_friends_param],
+            },
+            {
+                "sql": "SELECT @interval_param",
+                "expected": [interval_value],
+                "query_parameters": [interval_param],
             },
         ]
         if _BIGNUMERIC_SUPPORT:

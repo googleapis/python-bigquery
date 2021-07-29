@@ -273,7 +273,6 @@ class SqlParameterScalarTypes:
     GEOGRAPHY = ScalarQueryParameterType("GEOGRAPHY")
     INT64 = ScalarQueryParameterType("INT64")
     INTEGER = ScalarQueryParameterType("INT64")
-    INTERVAL = ScalarQueryParameterType("INTERVAL")
     NUMERIC = ScalarQueryParameterType("NUMERIC")
     STRING = ScalarQueryParameterType("STRING")
     TIME = ScalarQueryParameterType("TIME")

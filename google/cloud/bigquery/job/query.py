@@ -1315,6 +1315,10 @@ class QueryJob(_AsyncJob):
                     # The orinal job is failed. Create a new one.
                     job = retry_do_query()
 
+                    # If it's already failed, we might as well stop:
+                    if job.done() and job.exception() is not None:
+                        raise job.exception()
+
                     # Become the new job:
                     self.__dict__.clear()
                     self.__dict__.update(job.__dict__)

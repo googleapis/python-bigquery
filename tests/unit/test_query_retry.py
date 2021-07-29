@@ -115,10 +115,9 @@ def test_retry_failed_jobs_after_retry_failed(sleep, datetime_helpers, client):
 
     def api_request(method, path, query_params=None, data=None, **kw):
         calls = sleep.mock_calls
-        if calls:
-            datetime_helpers.utcnow.return_value += datetime.timedelta(
-                seconds=calls[-1][1][0]
-            )
+        datetime_helpers.utcnow.return_value += datetime.timedelta(
+            seconds=calls[-1][1][0]
+        )
         response = responses.pop(0)
         if data:
             response["jobReference"] = data["jobReference"]

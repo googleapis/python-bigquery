@@ -56,9 +56,49 @@ def test_interval_from_json_w_none_required(mut):
         ("0-0 0 -0:0:1", relativedelta(seconds=-1)),
         # SELECT (INTERVAL -1 SECOND) / 1000000
         ("0-0 0 -0:0:0.000001", relativedelta(microseconds=-1)),
-        # TODO: Test with multiple digits
-        # TODO: Test with mixed +/-
-        # TODO: Test with fraction that is not microseconds (maybe milliseconds?)
+        # Test with multiple digits in each section.
+        (
+            "32-11 45 67:16:23.987654",
+            relativedelta(
+                years=32,
+                months=11,
+                days=45,
+                hours=67,
+                minutes=16,
+                seconds=23,
+                microseconds=987654,
+            ),
+        ),
+        (
+            "-32-11 -45 -67:16:23.987654",
+            relativedelta(
+                years=-32,
+                months=-11,
+                days=-45,
+                hours=-67,
+                minutes=-16,
+                seconds=-23,
+                microseconds=-987654,
+            ),
+        ),
+        # Test with mixed +/- sections.
+        (
+            "9999-9 -999999 9999999:59:59.999999",
+            relativedelta(
+                years=9999,
+                months=9,
+                days=-999999,
+                hours=9999999,
+                minutes=59,
+                seconds=59,
+                microseconds=999999,
+            ),
+        ),
+        # Test with fraction that is not microseconds.
+        ("0-0 0 0:0:0.1", relativedelta(microseconds=100000)),
+        ("0-0 0 0:0:0.12", relativedelta(microseconds=120000)),
+        ("0-0 0 0:0:0.123", relativedelta(microseconds=123000)),
+        ("0-0 0 0:0:0.1234", relativedelta(microseconds=123400)),
     ),
 )
 def test_w_string_values(mut, value, expected):

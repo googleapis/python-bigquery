@@ -36,12 +36,9 @@ def revoke_dataset_access(dataset_id, entity_id):
     dataset = client.get_dataset(dataset_id)  # Make an API request.
     entries = list(dataset.access_entries)
 
-    for entry in entries:
-        if entry.entity_id == entity_id:
-            entry.role = None
-            break
-
-    dataset.access_entries = entries
+    dataset.access_entries = entries.filter(
+        lambda entry: entry.entity_id != entity_id, entries
+    )
 
     dataset = client.update_dataset(
         dataset,
@@ -50,5 +47,5 @@ def revoke_dataset_access(dataset_id, entity_id):
     )  # Make an API request.
 
     full_dataset_id = f"{dataset.project}.{dataset.dataset_id}"
-    print(f"Updated dataset '{full_dataset_id}' with modified user permissions.")
+    print(f"Revoked dataset access for '{entity_id}' to ' dataset '{full_dataset_id}.'")
     # [END bigquery_revoke_dataset_access]

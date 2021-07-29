@@ -14,12 +14,30 @@
 
 from . import update_dataset_access
 from . import revoke_dataset_access
+from google.cloud import bigquery
+from functools import reduce
 
 
-def test_revoke_dataset_access(capsys, dataset_id, entity_id):
-
+def test_revoke_dataset_access(
+    capsys, dataset_id, entity_id, bigquery_client: bigquery.Client
+):
     update_dataset_access.update_dataset_access(dataset_id)
+    updated_dataset = bigquery_client.get_dataset(dataset_id)
+    updated_dataset_entries = list(updated_dataset.access_entries)
     revoke_dataset_access.revoke_dataset_access(dataset_id, entity_id)
+    revoked_dataset = bigquery_client.get_dataset(dataset_id)
+    revoked_dataset_entries = list(revoked_dataset.access_entries)
 
+    full_dataset_id = f"{updated_dataset.project}.{updated_dataset.dataset_id}"
     out, err = capsys.readouterr()
-    assert f"Updated dataset '{dataset_id}' with modified user permissions." in out
+    assert (
+        f"Revoked dataset access for '{entity_id}' to ' dataset '{full_dataset_id}.'"
+        in out
+    )
+    assert len(revoked_dataset_entries) == len(updated_dataset_entries) - 1
+    assert (
+        reduce(
+            lambda entry: bool(entry.entity_id == entity_id), revoked_dataset_entries
+        )
+        == False
+    )

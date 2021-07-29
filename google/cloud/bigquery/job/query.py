@@ -1323,6 +1323,11 @@ class QueryJob(_AsyncJob):
                     self.__dict__.clear()
                     self.__dict__.update(job.__dict__)
 
+                    # This shouldn't be necessary, because once we have a good
+                    # job, it should stay good,and we shouldn't have to retry.
+                    # But let's be paranoid. :)
+                    self.retry_do_query = retry_do_query
+
                 super(QueryJob, self).result(retry=sub_retry, timeout=timeout)
 
                 # Since the job could already be "done" (e.g. got a finished job

@@ -3277,7 +3277,7 @@ class Client(ClientWithProject):
         # unrecoverable, we'll find out when we ask for it's result, at which
         # point, we may retry.
         if not job_id_given:
-            future.retry_do_query = do_query # in case we have to retry later
+            future.retry_do_query = do_query  # in case we have to retry later
 
         return future
 

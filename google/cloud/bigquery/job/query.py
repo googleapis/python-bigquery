@@ -1300,9 +1300,10 @@ class QueryJob(_AsyncJob):
                 If the job did not complete in the given timeout.
         """
         try:
-            retry_do_query = getattr(self, 'retry_do_query', None)
+            retry_do_query = getattr(self, "retry_do_query", None)
             first = True
             sub_retry = retry if retry_do_query is None else None
+
             def do_get_result():
                 nonlocal first
 

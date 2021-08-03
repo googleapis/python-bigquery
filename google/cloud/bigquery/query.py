@@ -16,11 +16,7 @@
 
 from collections import OrderedDict
 import copy
-import datetime
-import decimal
-from typing import Optional, Union
-
-import dateutil.relativedelta
+from typing import Union
 
 from google.cloud.bigquery.table import _parse_schema_resource
 from google.cloud.bigquery._helpers import _rows_from_json
@@ -333,41 +329,18 @@ class ScalarQueryParameter(_AbstractQueryParameter):
             Parameter name, used via ``@foo`` syntax.  If None, the
             parameter can only be addressed via position (``?``).
 
-        type_ (Union[str, google.cloud.bigquery.query.ScalarQueryParameterType]):
-            Name of parameter type. See
-            :class:`google.cloud.bigquery.enums.SqlTypeNames` and
-            :class:`google.cloud.bigquery.enums.SqlParameterScalarTypes` for
-            supported types.
+        type_ (str):
+            Name of parameter type.  One of 'STRING', 'INT64',
+            'FLOAT64', 'NUMERIC', 'BIGNUMERIC', 'BOOL', 'TIMESTAMP', 'DATETIME', or
+            'DATE'.
 
-        value (Union[ \
-            str, int, float, dateutil.relativedelta.relativedelta, \
-            decimal.Decimal, bool, datetime.datetime, datetime.date \
-        ]):
+        value (Union[str, int, float, decimal.Decimal, bool, datetime.datetime, datetime.date]):
             The scalar parameter value.
     """
 
-    def __init__(
-        self,
-        name: Optional[str],
-        type_: Optional[Union[str, ScalarQueryParameterType]],
-        value: Optional[
-            Union[
-                str,
-                int,
-                float,
-                dateutil.relativedelta.relativedelta,
-                decimal.Decimal,
-                bool,
-                datetime.datetime,
-                datetime.date,
-            ]
-        ],
-    ):
+    def __init__(self, name, type_, value):
         self.name = name
-        if isinstance(type_, ScalarQueryParameterType):
-            self.type_ = type_._type
-        else:
-            self.type_ = type_
+        self.type_ = type_
         self.value = value
 
     @classmethod

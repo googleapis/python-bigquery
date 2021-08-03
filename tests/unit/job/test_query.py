@@ -128,6 +128,18 @@ class TestQueryJob(_Base):
         else:
             assert job.dml_stats is None
 
+    def _verify_transaction_info_resource_properties(self, job, resource):
+        resource_stats = resource.get("statistics", {})
+
+        if "transactionInfo" in resource_stats:
+            resource_transaction_info = resource_stats["transactionInfo"]
+            job_transaction_info = job.transaction_info
+            assert job_transaction_info.transaction_id == resource_transaction_info.get(
+                "transactionId"
+            )
+        else:
+            assert job.transaction_info is None
+
     def _verify_configuration_properties(self, job, configuration):
         if "dryRun" in configuration:
             self.assertEqual(job.dry_run, configuration["dryRun"])
@@ -137,6 +149,7 @@ class TestQueryJob(_Base):
     def _verifyResourceProperties(self, job, resource):
         self._verifyReadonlyResourceProperties(job, resource)
         self._verify_dml_stats_resource_properties(job, resource)
+        self._verify_transaction_info_resource_properties(job, resource)
 
         configuration = resource.get("configuration", {})
         self._verify_configuration_properties(job, configuration)
@@ -230,6 +243,7 @@ class TestQueryJob(_Base):
         self.assertIsNone(job.time_partitioning)
         self.assertIsNone(job.clustering_fields)
         self.assertIsNone(job.schema_update_options)
+        self.assertIsNone(job.transaction_info)
 
     def test_ctor_w_udf_resources(self):
         from google.cloud.bigquery.job import QueryJobConfig
@@ -317,6 +331,22 @@ class TestQueryJob(_Base):
                     "dmlStats": {"insertedRowCount": "15", "updatedRowCount": "2"},
                 },
             },
+        }
+        klass = self._get_target_class()
+
+        job = klass.from_api_repr(RESOURCE, client=client)
+
+        self.assertIs(job._client, client)
+        self._verifyResourceProperties(job, RESOURCE)
+
+    def test_from_api_repr_with_transaction_info(self):
+        self._setUpConstants()
+        client = _make_client(project=self.PROJECT)
+        RESOURCE = {
+            "id": self.JOB_ID,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "configuration": {"query": {"query": self.QUERY}},
+            "statistics": {"transactionInfo": {"transactionId": "1a2b-3c4d"}},
         }
         klass = self._get_target_class()
 
@@ -878,6 +908,20 @@ class TestQueryJob(_Base):
         query_stats["dmlStats"] = {"insertedRowCount": "35"}
         assert isinstance(job.dml_stats, DmlStats)
         assert job.dml_stats.inserted_row_count == 35
+
+    def test_transaction_info(self):
+        from google.cloud.bigquery.job.query import TransactionInfo
+
+        client = _make_client(project=self.PROJECT)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+        assert job.transaction_info is None
+
+        statistics = job._properties["statistics"] = {}
+        assert job.transaction_info is None
+
+        statistics["transactionInfo"] = {"transactionId": "123-abc-xyz"}
+        assert isinstance(job.transaction_info, TransactionInfo)
+        assert job.transaction_info.transaction_id == "123-abc-xyz"
 
     def test_result(self):
         from google.cloud.bigquery.table import RowIterator

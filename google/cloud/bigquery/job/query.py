@@ -143,6 +143,20 @@ class DmlStats(typing.NamedTuple):
         return cls(*args)
 
 
+class TransactionInfo(typing.NamedTuple):
+    """[Alpha] Information of a multi-statement transaction.
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#TransactionInfo
+    """
+
+    transaction_id: str
+    """Output only. ID of the transaction."""
+
+    @classmethod
+    def from_api_repr(cls, transaction_info: Dict[str, str]) -> "TransactionInfo":
+        return cls(transaction_info["transactionId"])
+
+
 class ScriptOptions:
     """Options controlling the execution of scripts.
 
@@ -1115,6 +1129,16 @@ class QueryJob(_AsyncJob):
             return None
         else:
             return DmlStats.from_api_repr(stats)
+
+    @property
+    def transaction_info(self) -> Optional[TransactionInfo]:
+        """Information of the multi-statement transaction if this job is part of one.
+        """
+        info = self._properties.get("statistics", {}).get("transactionInfo")
+        if info is None:
+            return None
+        else:
+            return TransactionInfo.from_api_repr(info)
 
     def _blocking_poll(self, timeout=None, **kwargs):
         self._done_timeout = timeout

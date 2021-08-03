@@ -3951,16 +3951,15 @@ class TestRowIterator(unittest.TestCase):
             (("name", "STRING"), ("g", "GEOGRAPHY"))
         )
         bqstorage_client = object()
-        dtypes = dict(xxx=numpy.dtype('int64'))
-        progress_bar_type = 'normal'
+        dtypes = dict(xxx=numpy.dtype("int64"))
+        progress_bar_type = "normal"
         create_bqstorage_client = False
         date_as_object = False
-        geography_column = 'g'
+        geography_column = "g"
 
         to_dataframe.return_value = pandas.DataFrame(
-            dict(name=["foo"],
-                 g=[shapely.wkt.loads('point(0 0)')],
-                 ))
+            dict(name=["foo"], g=[shapely.wkt.loads("point(0 0)")],)
+        )
 
         df = row_iterator.to_geodataframe(
             bqstorage_client=bqstorage_client,
@@ -3969,7 +3968,7 @@ class TestRowIterator(unittest.TestCase):
             create_bqstorage_client=create_bqstorage_client,
             date_as_object=date_as_object,
             geography_column=geography_column,
-            )
+        )
 
         to_dataframe.assert_called_once_with(
             bqstorage_client,
@@ -3977,7 +3976,8 @@ class TestRowIterator(unittest.TestCase):
             progress_bar_type,
             create_bqstorage_client,
             date_as_object,
-            geography_as_object=True)
+            geography_as_object=True,
+        )
 
         self.assertIsInstance(df, geopandas.GeoDataFrame)
         self.assertEqual(len(df), 1)  # verify the number of rows
@@ -3987,9 +3987,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertIsInstance(df.g, geopandas.GeoSeries)
         self.assertEqual(list(map(str, df.area)), ["0.0"])
         self.assertEqual(list(map(str, df.g.area)), ["0.0"])
-        self.assertEqual(
-            [v.__class__.__name__ for v in df.g], ["Point"]
-        )
+        self.assertEqual([v.__class__.__name__ for v in df.g], ["Point"])
 
 
 class TestPartitionRange(unittest.TestCase):

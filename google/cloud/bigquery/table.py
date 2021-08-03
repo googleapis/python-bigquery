@@ -2086,7 +2086,7 @@ class RowIterator(HTTPIterator):
         if geography_column:
             if geography_column not in geography_columns:
                 raise ValueError(
-                    f"The given geography column, {geography_column} doesn't name"
+                    f"The given geography column, {geography_column}, doesn't name"
                     f" a GEOGRAPHY column in the result."
                 )
         elif len(geography_columns) == 1:

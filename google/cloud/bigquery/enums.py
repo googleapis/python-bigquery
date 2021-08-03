@@ -191,6 +191,7 @@ _SQL_SCALAR_TYPES = frozenset(
         "DATE",
         "TIME",
         "DATETIME",
+        "INTERVAL",
         "GEOGRAPHY",
         "NUMERIC",
         "BIGNUMERIC",

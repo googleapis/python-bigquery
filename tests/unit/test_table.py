@@ -3934,6 +3934,62 @@ class TestRowIterator(unittest.TestCase):
             list(map(str, geopandas.GeoSeries(df.geog2).area)), ["0.0", "0.0", "0.0"]
         )
 
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    @mock.patch("google.cloud.bigquery.table.RowIterator.to_dataframe")
+    def test_rowiterator_to_geodataframe_delegation(self, to_dataframe):
+        """
+        RowIterator.to_geodataframe just delegates to RowIterator.to_dataframe.
+
+        This test just demonstrates that. We don't need to test all the
+        variations, which are tested for to_dataframe.
+        """
+        import numpy
+        import shapely
+
+        row_iterator = self._make_one_from_data(
+            (("name", "STRING"), ("g", "GEOGRAPHY"))
+        )
+        bqstorage_client = object()
+        dtypes = dict(xxx=numpy.dtype('int64'))
+        progress_bar_type = 'normal'
+        create_bqstorage_client = False
+        date_as_object = False
+        geography_column = 'g'
+
+        to_dataframe.return_value = pandas.DataFrame(
+            dict(name=["foo"],
+                 g=[shapely.wkt.loads('point(0 0)')],
+                 ))
+
+        df = row_iterator.to_geodataframe(
+            bqstorage_client=bqstorage_client,
+            dtypes=dtypes,
+            progress_bar_type=progress_bar_type,
+            create_bqstorage_client=create_bqstorage_client,
+            date_as_object=date_as_object,
+            geography_column=geography_column,
+            )
+
+        to_dataframe.assert_called_once_with(
+            bqstorage_client,
+            dtypes,
+            progress_bar_type,
+            create_bqstorage_client,
+            date_as_object,
+            geography_as_object=True)
+
+        self.assertIsInstance(df, geopandas.GeoDataFrame)
+        self.assertEqual(len(df), 1)  # verify the number of rows
+        self.assertEqual(list(df), ["name", "g"])  # verify the column names
+        self.assertEqual(df.name.dtype.name, "object")
+        self.assertEqual(df.g.dtype.name, "geometry")
+        self.assertIsInstance(df.g, geopandas.GeoSeries)
+        self.assertEqual(list(map(str, df.area)), ["0.0"])
+        self.assertEqual(list(map(str, df.g.area)), ["0.0"])
+        self.assertEqual(
+            [v.__class__.__name__ for v in df.g], ["Point"]
+        )
+
 
 class TestPartitionRange(unittest.TestCase):
     def _get_target_class(self):

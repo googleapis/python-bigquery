@@ -925,3 +925,48 @@ def test_to_geodataframe():
         "NoneType",
     ]  # float because nan
     assert isinstance(df.geog, geopandas.GeoSeries)
+
+
+@pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
+@mock.patch("google.cloud.bigquery.job.query.wait_for_query")
+def test_query_job_to_geodataframe_delegation(wait_for_query):
+    """
+    QueryJob.to_geodataframe just delegates to RowIterator.to_geodataframe.
+
+    This test just demonstrates that. We don't need to test all the
+    variations, which are tested for RowIterator.
+    """
+    import numpy
+    job = _make_job()
+    bqstorage_client = object()
+    dtypes = dict(xxx=numpy.dtype('int64'))
+    progress_bar_type = 'normal'
+    create_bqstorage_client = False
+    date_as_object = False
+    max_results = 42
+    geography_column = 'g'
+
+    df = job.to_geodataframe(
+        bqstorage_client=bqstorage_client,
+        dtypes=dtypes,
+        progress_bar_type=progress_bar_type,
+        create_bqstorage_client=create_bqstorage_client,
+        date_as_object=date_as_object,
+        max_results=max_results,
+        geography_column=geography_column,
+        )
+
+    wait_for_query.assert_called_once_with(
+        job, progress_bar_type, max_results=max_results
+    )
+    row_iterator = wait_for_query.return_value
+    row_iterator.to_geodataframe.assert_called_once_with(
+        bqstorage_client=bqstorage_client,
+        dtypes=dtypes,
+        progress_bar_type=progress_bar_type,
+        create_bqstorage_client=create_bqstorage_client,
+        date_as_object=date_as_object,
+        geography_column=geography_column,
+        )
+    assert df is row_iterator.to_geodataframe.return_value
+

@@ -832,18 +832,18 @@ def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
 
 def test_to_geodataframe(bigquery_client, dataset_id):
     bigquery_client.query(
-        f"create table {dataset_id}.lake (name string, geog geography)"
+        f"create table {dataset_id}.geolake (name string, geog geography)"
     ).result()
     bigquery_client.query(
         f"""
-        insert into {dataset_id}.lake (name, geog) values
+        insert into {dataset_id}.geolake (name, geog) values
         ('foo', st_geogfromtext('point(0 0)')),
         ('bar', st_geogfromtext('polygon((0 0, 1 1, 1 0, 0 0))')),
         ('baz', null)
         """
     ).result()
     df = bigquery_client.query(
-        f"select * from {dataset_id}.lake order by name"
+        f"select * from {dataset_id}.geolake order by name"
     ).to_geodataframe()
     assert [v.__class__.__name__ for v in df["geog"]] == [
         "Polygon",

@@ -35,7 +35,7 @@ try:
 except ImportError:
     geopandas = None
 else:
-    CRS = 'EPSG:4326'
+    CRS = "EPSG:4326"
 
 try:
     from shapely import wkt
@@ -1983,7 +1983,7 @@ class RowIterator(HTTPIterator):
 
         if geography_as_object:
             for field in self.schema:
-                if field.field_type.upper() == 'GEOGRAPHY':
+                if field.field_type.upper() == "GEOGRAPHY":
                     df[field.name] = df[field.name].dropna().apply(wkt.loads)
 
         return df
@@ -2075,24 +2075,28 @@ class RowIterator(HTTPIterator):
         geography_columns = set(
             field.name
             for field in self.schema
-            if field.field_type.upper() == 'GEOGRAPHY'
+            if field.field_type.upper() == "GEOGRAPHY"
         )
         if not geography_columns:
-            raise TypeError("There must be at least one GEOGRAPHY column"
-                            " to create a GeoDataFrame")
+            raise TypeError(
+                "There must be at least one GEOGRAPHY column"
+                " to create a GeoDataFrame"
+            )
 
         if geography_column:
             if geography_column not in geography_columns:
                 raise ValueError(
                     f"The given geography column, {geography_column} doesn't name"
-                    f" a GEOGRAPHY column in the result.")
+                    f" a GEOGRAPHY column in the result."
+                )
         elif len(geography_columns) == 1:
             [geography_column] = geography_columns
         else:
             raise ValueError(
                 "There is more than one GEOGRAPHY column in the result. "
                 "The geography_column argument must be used to specify which "
-                "one to use to create a GeoDataFrame")
+                "one to use to create a GeoDataFrame"
+            )
 
         df = self.to_dataframe(
             bqstorage_client,
@@ -2101,7 +2105,7 @@ class RowIterator(HTTPIterator):
             create_bqstorage_client,
             date_as_object,
             geography_as_object=True,
-            )
+        )
 
         return geopandas.GeoDataFrame(df, crs=CRS, geometry=geography_column)
 

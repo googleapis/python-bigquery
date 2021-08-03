@@ -443,17 +443,11 @@ def _make_job(schema=(), rows=()):
         "totalRows": str(len(rows)),
         "schema": {
             "fields": [
-                dict(name=field[0], type=field[1], mode=field[2])
-                for field in schema
-                ]
+                dict(name=field[0], type=field[1], mode=field[2]) for field in schema
+            ]
         },
     }
-    tabledata_resource = {
-        "rows": [
-            {"f": [{"v": v} for v in row]}
-            for row in rows
-            ]
-    }
+    tabledata_resource = {"rows": [{"f": [{"v": v} for v in row]} for row in rows]}
     done_resource = copy.deepcopy(begun_resource)
     done_resource["status"] = {"state": "DONE"}
     connection = _make_connection(
@@ -467,11 +461,13 @@ def _make_job(schema=(), rows=()):
 def test_to_dataframe():
     job = _make_job(
         (("name", "STRING", "NULLABLE"), ("age", "INTEGER", "NULLABLE")),
-        (("Phred Phlyntstone", "32"),
-         ("Bharney Rhubble", "33"),
-         ("Wylma Phlyntstone", "29"),
-         ("Bhettye Rhubble", "27"),
-         ))
+        (
+            ("Phred Phlyntstone", "32"),
+            ("Bharney Rhubble", "33"),
+            ("Wylma Phlyntstone", "29"),
+            ("Bhettye Rhubble", "27"),
+        ),
+    )
     df = job.to_dataframe(create_bqstorage_client=False)
 
     assert isinstance(df, pandas.DataFrame)
@@ -890,32 +886,42 @@ def test_to_dataframe_w_tqdm_max_results():
 def test_to_dataframe_geography_as_object():
     job = _make_job(
         (("name", "STRING", "NULLABLE"), ("geog", "GEOGRAPHY", "NULLABLE")),
-        (("Phred Phlyntstone", "Point(0 0)"),
-         ("Bharney Rhubble", "Point(0 1)"),
-         ("Wylma Phlyntstone", None),
-         ))
+        (
+            ("Phred Phlyntstone", "Point(0 0)"),
+            ("Bharney Rhubble", "Point(0 1)"),
+            ("Wylma Phlyntstone", None),
+        ),
+    )
     df = job.to_dataframe(create_bqstorage_client=False, geography_as_object=True)
 
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 3  # verify the number of rows
     assert list(df) == ["name", "geog"]  # verify the column names
     assert [v.__class__.__name__ for v in df.geog] == [
-        'Point', 'Point', 'float']  # float because nan
+        "Point",
+        "Point",
+        "float",
+    ]  # float because nan
 
 
 @pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
 def test_to_geodataframe():
     job = _make_job(
         (("name", "STRING", "NULLABLE"), ("geog", "GEOGRAPHY", "NULLABLE")),
-        (("Phred Phlyntstone", "Point(0 0)"),
-         ("Bharney Rhubble", "Point(0 1)"),
-         ("Wylma Phlyntstone", None),
-         ))
+        (
+            ("Phred Phlyntstone", "Point(0 0)"),
+            ("Bharney Rhubble", "Point(0 1)"),
+            ("Wylma Phlyntstone", None),
+        ),
+    )
     df = job.to_geodataframe(create_bqstorage_client=False)
 
     assert isinstance(df, geopandas.GeoDataFrame)
     assert len(df) == 3  # verify the number of rows
     assert list(df) == ["name", "geog"]  # verify the column names
     assert [v.__class__.__name__ for v in df.geog] == [
-        'Point', 'Point', 'NoneType']  # float because nan
+        "Point",
+        "Point",
+        "NoneType",
+    ]  # float because nan
     assert isinstance(df.geog, geopandas.GeoSeries)

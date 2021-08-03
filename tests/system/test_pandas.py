@@ -817,17 +817,17 @@ def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
         ('bar', st_geogfromtext('point(0 1)')),
         ('baz', null)
         """
-        ).result()
-    df = (bigquery_client
-          .query(f"select * from {dataset_id}.lake order by name")
-          .to_dataframe(geography_as_object=True)
-          )
+    ).result()
+    df = bigquery_client.query(
+        f"select * from {dataset_id}.lake order by name"
+    ).to_dataframe(geography_as_object=True)
     assert str(df) == (
-        '  name         geog\n'
-        '0  bar  POINT (0 1)\n'
-        '1  baz          NaN\n'
-        '2  foo  POINT (0 0)')
-    assert [v.__class__.__name__ for v in df['geog']] == ['Point', 'float', 'Point']
+        "  name         geog\n"
+        "0  bar  POINT (0 1)\n"
+        "1  baz          NaN\n"
+        "2  foo  POINT (0 0)"
+    )
+    assert [v.__class__.__name__ for v in df["geog"]] == ["Point", "float", "Point"]
 
 
 def test_to_geodataframe(bigquery_client, dataset_id):
@@ -841,19 +841,20 @@ def test_to_geodataframe(bigquery_client, dataset_id):
         ('bar', st_geogfromtext('polygon((0 0, 1 1, 1 0, 0 0))')),
         ('baz', null)
         """
-        ).result()
-    df = (bigquery_client
-          .query(f"select * from {dataset_id}.lake order by name")
-          .to_geodataframe()
-          )
-    assert [v.__class__.__name__ for v in df['geog']] == [
-        'Polygon', 'NoneType', 'Point']
-    assert df.__class__.__name__ == 'GeoDataFrame'
-    assert df['geog'].__class__.__name__ == 'GeoSeries'
-    assert list(map(str, df['geog'])) == [
-        'POLYGON ((1 0, 1 1, 0 0, 1 0))', 'None', 'POINT (0 0)']
-    assert str(df.area) == (
-        '0    0.5\n'
-        '1    NaN\n'
-        '2    0.0\n'
-        'dtype: float64')
+    ).result()
+    df = bigquery_client.query(
+        f"select * from {dataset_id}.lake order by name"
+    ).to_geodataframe()
+    assert [v.__class__.__name__ for v in df["geog"]] == [
+        "Polygon",
+        "NoneType",
+        "Point",
+    ]
+    assert df.__class__.__name__ == "GeoDataFrame"
+    assert df["geog"].__class__.__name__ == "GeoSeries"
+    assert list(map(str, df["geog"])) == [
+        "POLYGON ((1 0, 1 1, 0 0, 1 0))",
+        "None",
+        "POINT (0 0)",
+    ]
+    assert str(df.area) == ("0    0.5\n" "1    NaN\n" "2    0.0\n" "dtype: float64")

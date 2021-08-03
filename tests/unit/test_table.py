@@ -1716,11 +1716,9 @@ class TestRowIterator(unittest.TestCase):
 
     def _make_one_from_data(self, schema=(), rows=()):
         from google.cloud.bigquery.schema import SchemaField
+
         schema = [SchemaField(*a) for a in schema]
-        rows = [
-            {"f": [{"v": v} for v in row]}
-            for row in rows
-            ]
+        rows = [{"f": [{"v": v} for v in row]} for row in rows]
 
         path = "/foo"
         api_request = mock.Mock(return_value={"rows": rows})
@@ -3026,7 +3024,6 @@ class TestRowIterator(unittest.TestCase):
             # No can do if no shapely
             self._make_one_from_data().to_dataframe(geography_as_object=True)
 
-
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_max_results_w_bqstorage_warning(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -3788,10 +3785,12 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_geography_as_object(self):
         row_iterator = self._make_one_from_data(
             (("name", "STRING"), ("geog", "GEOGRAPHY")),
-            (("foo", "Point(0 0)"),
-             ("bar", None),
-             ("baz", "Polygon((0 0, 0 1, 1 0, 0 0))"),
-             ))
+            (
+                ("foo", "Point(0 0)"),
+                ("bar", None),
+                ("baz", "Polygon((0 0, 0 1, 1 0, 0 0))"),
+            ),
+        )
         df = row_iterator.to_dataframe(
             create_bqstorage_client=False, geography_as_object=True,
         )
@@ -3801,8 +3800,9 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.name.dtype.name, "object")
         self.assertEqual(df.geog.dtype.name, "object")
         self.assertIsInstance(df.geog, pandas.Series)
-        self.assertEqual([v.__class__.__name__ for v in df.geog],
-                         ['Point', 'float', 'Polygon'])
+        self.assertEqual(
+            [v.__class__.__name__ for v in df.geog], ["Point", "float", "Polygon"]
+        )
 
     @mock.patch("google.cloud.bigquery.table.geopandas", new=None)
     def test_to_geodataframe_error_if_geopandas_is_none(self):
@@ -3814,10 +3814,12 @@ class TestRowIterator(unittest.TestCase):
     def test_to_geodataframe(self):
         row_iterator = self._make_one_from_data(
             (("name", "STRING"), ("geog", "GEOGRAPHY")),
-            (("foo", "Point(0 0)"),
-             ("bar", None),
-             ("baz", "Polygon((0 0, 0 1, 1 0, 0 0))"),
-             ))
+            (
+                ("foo", "Point(0 0)"),
+                ("bar", None),
+                ("baz", "Polygon((0 0, 0 1, 1 0, 0 0))"),
+            ),
+        )
         df = row_iterator.to_geodataframe(create_bqstorage_client=False)
         self.assertIsInstance(df, geopandas.GeoDataFrame)
         self.assertEqual(len(df), 3)  # verify the number of rows
@@ -3825,22 +3827,22 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.name.dtype.name, "object")
         self.assertEqual(df.geog.dtype.name, "geometry")
         self.assertIsInstance(df.geog, geopandas.GeoSeries)
-        self.assertEqual(list(map(str, df.area)), ['0.0', 'nan', '0.5'])
-        self.assertEqual(list(map(str, df.geog.area)), ['0.0', 'nan', '0.5'])
+        self.assertEqual(list(map(str, df.area)), ["0.0", "nan", "0.5"])
+        self.assertEqual(list(map(str, df.geog.area)), ["0.0", "nan", "0.5"])
 
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")
     def test_to_geodataframe_ambiguous_geog(self):
         row_iterator = self._make_one_from_data(
-            (("name", "STRING"), ("geog", "GEOGRAPHY"), ("geog2", "GEOGRAPHY")),
-            ())
+            (("name", "STRING"), ("geog", "GEOGRAPHY"), ("geog2", "GEOGRAPHY")), ()
+        )
         with self.assertRaises(ValueError):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
 
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")
     def test_to_geodataframe_no_geog(self):
         row_iterator = self._make_one_from_data(
-            (("name", "STRING"), ("geog", "STRING")),
-            ())
+            (("name", "STRING"), ("geog", "STRING")), ()
+        )
         with self.assertRaises(TypeError):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
 
@@ -3848,12 +3850,14 @@ class TestRowIterator(unittest.TestCase):
     def test_to_geodataframe_w_geography_column(self):
         row_iterator = self._make_one_from_data(
             (("name", "STRING"), ("geog", "GEOGRAPHY"), ("geog2", "GEOGRAPHY")),
-            (("foo", "Point(0 0)", "Point(1 1)"),
-             ("bar", None, "Point(2 2)"),
-             ("baz", "Polygon((0 0, 0 1, 1 0, 0 0))", "Point(3 3)"),
-             ))
+            (
+                ("foo", "Point(0 0)", "Point(1 1)"),
+                ("bar", None, "Point(2 2)"),
+                ("baz", "Polygon((0 0, 0 1, 1 0, 0 0))", "Point(3 3)"),
+            ),
+        )
         df = row_iterator.to_geodataframe(
-            create_bqstorage_client=False, geography_column='geog'
+            create_bqstorage_client=False, geography_column="geog"
         )
         self.assertIsInstance(df, geopandas.GeoDataFrame)
         self.assertEqual(len(df), 3)  # verify the number of rows
@@ -3862,18 +3866,21 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.geog.dtype.name, "geometry")
         self.assertEqual(df.geog2.dtype.name, "object")
         self.assertIsInstance(df.geog, geopandas.GeoSeries)
-        self.assertEqual(list(map(str, df.area)), ['0.0', 'nan', '0.5'])
-        self.assertEqual(list(map(str, df.geog.area)), ['0.0', 'nan', '0.5'])
-        self.assertEqual([v.__class__.__name__ for v in df.geog],
-                         ['Point', 'NoneType', 'Polygon'])
+        self.assertEqual(list(map(str, df.area)), ["0.0", "nan", "0.5"])
+        self.assertEqual(list(map(str, df.geog.area)), ["0.0", "nan", "0.5"])
+        self.assertEqual(
+            [v.__class__.__name__ for v in df.geog], ["Point", "NoneType", "Polygon"]
+        )
 
         # Geog2 isn't a GeoSeries, but it contains geomentries:
         self.assertIsInstance(df.geog2, pandas.Series)
-        self.assertEqual([v.__class__.__name__ for v in df.geog2],
-                         ['Point', 'Point', 'Point'])
+        self.assertEqual(
+            [v.__class__.__name__ for v in df.geog2], ["Point", "Point", "Point"]
+        )
         # and can easily be converted to a GeoSeries
-        self.assertEqual(list(map(str, geopandas.GeoSeries(df.geog2).area)),
-                         ['0.0', '0.0', '0.0'])
+        self.assertEqual(
+            list(map(str, geopandas.GeoSeries(df.geog2).area)), ["0.0", "0.0", "0.0"]
+        )
 
 
 class TestPartitionRange(unittest.TestCase):

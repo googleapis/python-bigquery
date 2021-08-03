@@ -1671,6 +1671,18 @@ class Test_EmptyRowIterator(unittest.TestCase):
         self.assertEqual(len(df), 0)  # Verify the number of rows.
         self.assertEqual(len(df.columns), 0)
 
+    @mock.patch("google.cloud.bigquery.table.geopandas", new=None)
+    def test_to_geodataframe_if_geopandas_is_none(self):
+        row_iterator = self._make_one()
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "The geopandas library is not installed, please install "
+                "geopandas to use the to_geodataframe() function."
+                ),
+        ):
+            row_iterator.to_geodataframe(create_bqstorage_client=False)
+
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")
     def test_to_geodataframe(self):
         row_iterator = self._make_one()
@@ -3853,6 +3865,20 @@ class TestRowIterator(unittest.TestCase):
                 "one to use to create a GeoDataFrame"),
         ):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
+
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    def test_to_geodataframe_bad_geography_column(self):
+        row_iterator = self._make_one_from_data(
+            (("name", "STRING"), ("geog", "GEOGRAPHY"), ("geog2", "GEOGRAPHY")), ()
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "The given geography column, xxx, doesn't name"
+                " a GEOGRAPHY column in the result."),
+        ):
+            row_iterator.to_geodataframe(create_bqstorage_client=False,
+                                         geography_column="xxx")
 
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")
     def test_to_geodataframe_no_geog(self):

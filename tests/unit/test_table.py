@@ -14,6 +14,7 @@
 
 import datetime
 import logging
+import re
 import time
 import types
 import unittest
@@ -3020,8 +3021,13 @@ class TestRowIterator(unittest.TestCase):
 
     @mock.patch("google.cloud.bigquery.table.wkt", new=None)
     def test_to_dataframe_error_if_shapely_wkt_is_none(self):
-        with self.assertRaises(ValueError):
-            # No can do if no shapely
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "The shapely library is not installed, please install "
+                "shapely to use the geography_as_object option."
+                ),
+        ):
             self._make_one_from_data().to_dataframe(geography_as_object=True)
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
@@ -3806,8 +3812,12 @@ class TestRowIterator(unittest.TestCase):
 
     @mock.patch("google.cloud.bigquery.table.geopandas", new=None)
     def test_to_geodataframe_error_if_geopandas_is_none(self):
-        with self.assertRaises(ValueError):
-            # No can do if no shapely
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "The geopandas library is not installed, please install "
+                "geopandas to use the to_geodataframe() function."),
+        ):
             self._make_one_from_data().to_geodataframe()
 
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")
@@ -3835,7 +3845,13 @@ class TestRowIterator(unittest.TestCase):
         row_iterator = self._make_one_from_data(
             (("name", "STRING"), ("geog", "GEOGRAPHY"), ("geog2", "GEOGRAPHY")), ()
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "There is more than one GEOGRAPHY column in the result. "
+                "The geography_column argument must be used to specify which "
+                "one to use to create a GeoDataFrame"),
+        ):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
 
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")
@@ -3843,7 +3859,11 @@ class TestRowIterator(unittest.TestCase):
         row_iterator = self._make_one_from_data(
             (("name", "STRING"), ("geog", "STRING")), ()
         )
-        with self.assertRaises(TypeError):
+        with self.assertRaisesRegex(
+            TypeError,
+            re.escape("There must be at least one GEOGRAPHY column"
+                      " to create a GeoDataFrame"),
+        ):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
 
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")

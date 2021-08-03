@@ -804,3 +804,56 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
         dataframe = row_iterator.to_dataframe(bqstorage_client=bqstorage_client)
 
     assert len(dataframe.index) == 100
+
+
+def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
+    bigquery_client.query(
+        f"create table {dataset_id}.lake (name string, geog geography)"
+    ).result()
+    bigquery_client.query(
+        f"""
+        insert into {dataset_id}.lake (name, geog) values
+        ('foo', st_geogfromtext('point(0 0)')),
+        ('bar', st_geogfromtext('point(0 1)')),
+        ('baz', null)
+        """
+        ).result()
+    df = (bigquery_client
+          .query(f"select * from {dataset_id}.lake order by name")
+          .to_dataframe(geography_as_object=True)
+          )
+    assert str(df) == (
+        '  name         geog\n'
+        '0  bar  POINT (0 1)\n'
+        '1  baz          NaN\n'
+        '2  foo  POINT (0 0)')
+    assert [v.__class__.__name__ for v in df['geog']] == ['Point', 'float', 'Point']
+
+
+def test_to_geodataframe(bigquery_client, dataset_id):
+    bigquery_client.query(
+        f"create table {dataset_id}.lake (name string, geog geography)"
+    ).result()
+    bigquery_client.query(
+        f"""
+        insert into {dataset_id}.lake (name, geog) values
+        ('foo', st_geogfromtext('point(0 0)')),
+        ('bar', st_geogfromtext('polygon((0 0, 1 1, 1 0, 0 0))')),
+        ('baz', null)
+        """
+        ).result()
+    df = (bigquery_client
+          .query(f"select * from {dataset_id}.lake order by name")
+          .to_geodataframe()
+          )
+    assert [v.__class__.__name__ for v in df['geog']] == [
+        'Polygon', 'NoneType', 'Point']
+    assert df.__class__.__name__ == 'GeoDataFrame'
+    assert df['geog'].__class__.__name__ == 'GeoSeries'
+    assert list(map(str, df['geog'])) == [
+        'POLYGON ((1 0, 1 1, 0 0, 1 0))', 'None', 'POINT (0 0)']
+    assert str(df.area) == (
+        '0    0.5\n'
+        '1    NaN\n'
+        '2    0.0\n'
+        'dtype: float64')

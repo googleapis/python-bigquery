@@ -3031,6 +3031,7 @@ class TestRowIterator(unittest.TestCase):
         with self.assertRaises(ValueError):
             row_iterator.to_dataframe()
 
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     @mock.patch("google.cloud.bigquery.table.wkt", new=None)
     def test_to_dataframe_error_if_shapely_wkt_is_none(self):
         with self.assertRaisesRegex(

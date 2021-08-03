@@ -1679,7 +1679,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
             re.escape(
                 "The geopandas library is not installed, please install "
                 "geopandas to use the to_geodataframe() function."
-                ),
+            ),
         ):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
 
@@ -3038,7 +3038,7 @@ class TestRowIterator(unittest.TestCase):
             re.escape(
                 "The shapely library is not installed, please install "
                 "shapely to use the geography_as_object option."
-                ),
+            ),
         ):
             self._make_one_from_data().to_dataframe(geography_as_object=True)
 
@@ -3828,7 +3828,8 @@ class TestRowIterator(unittest.TestCase):
             ValueError,
             re.escape(
                 "The geopandas library is not installed, please install "
-                "geopandas to use the to_geodataframe() function."),
+                "geopandas to use the to_geodataframe() function."
+            ),
         ):
             self._make_one_from_data().to_geodataframe()
 
@@ -3862,7 +3863,8 @@ class TestRowIterator(unittest.TestCase):
             re.escape(
                 "There is more than one GEOGRAPHY column in the result. "
                 "The geography_column argument must be used to specify which "
-                "one to use to create a GeoDataFrame"),
+                "one to use to create a GeoDataFrame"
+            ),
         ):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
 
@@ -3875,10 +3877,12 @@ class TestRowIterator(unittest.TestCase):
             ValueError,
             re.escape(
                 "The given geography column, xxx, doesn't name"
-                " a GEOGRAPHY column in the result."),
+                " a GEOGRAPHY column in the result."
+            ),
         ):
-            row_iterator.to_geodataframe(create_bqstorage_client=False,
-                                         geography_column="xxx")
+            row_iterator.to_geodataframe(
+                create_bqstorage_client=False, geography_column="xxx"
+            )
 
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")
     def test_to_geodataframe_no_geog(self):
@@ -3887,8 +3891,10 @@ class TestRowIterator(unittest.TestCase):
         )
         with self.assertRaisesRegex(
             TypeError,
-            re.escape("There must be at least one GEOGRAPHY column"
-                      " to create a GeoDataFrame"),
+            re.escape(
+                "There must be at least one GEOGRAPHY column"
+                " to create a GeoDataFrame"
+            ),
         ):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
 

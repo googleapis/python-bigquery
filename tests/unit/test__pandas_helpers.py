@@ -36,6 +36,11 @@ except ImportError:  # pragma: NO COVER
     # Mock out pyarrow when missing, because methods from pyarrow.types are
     # used in test parameterization.
     pyarrow = mock.Mock()
+try:
+    import geopandas
+except ImportError:  # pragma: NO COVER
+    geopandas = None
+
 import pytest
 import pytz
 
@@ -1173,6 +1178,26 @@ def test_dataframe_to_bq_schema_pyarrow_fallback_fails(module_under_test):
     ]
     assert len(expected_warnings) == 1
     assert "struct_field" in str(expected_warnings[0])
+
+
+@pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
+def test_dataframe_to_bq_schema_geography(module_under_test):
+    from shapely import wkt
+
+    df = geopandas.GeoDataFrame(
+        pandas.DataFrame(
+            dict(name=['foo', 'bar'],
+                 geo1=[None, None],
+                 geo2=[None, wkt.loads('Point(1 1)')])
+            ),
+        geometry='geo1',
+        )
+    bq_schema = module_under_test.dataframe_to_bq_schema(df, [])
+    assert bq_schema == (
+        schema.SchemaField('name', 'STRING'),
+        schema.SchemaField('geo1', 'GEOGRAPHY'),
+        schema.SchemaField('geo2', 'GEOGRAPHY'),
+    )
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

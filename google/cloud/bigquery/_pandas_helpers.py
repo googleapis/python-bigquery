@@ -28,6 +28,11 @@ except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
+    from shapely.geometry.base import BaseGeometry
+except ImportError:  # pragma: NO COVER
+    BaseGeometry = type(None)
+
+try:
     import pyarrow
     import pyarrow.parquet
 except ImportError:  # pragma: NO COVER
@@ -71,6 +76,7 @@ _PANDAS_DTYPE_TO_BQ = {
     "uint8": "INTEGER",
     "uint16": "INTEGER",
     "uint32": "INTEGER",
+    "geometry": "GEOGRAPHY",
 }
 
 
@@ -328,6 +334,15 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
         # Otherwise, try to automatically determine the type based on the
         # pandas dtype.
         bq_type = _PANDAS_DTYPE_TO_BQ.get(dtype.name)
+        if bq_type is None:
+            column_data = dataframe[column]
+            first_valid_index = column_data.first_valid_index()
+            if first_valid_index is not None:
+                sample_data = column_data.at[first_valid_index]
+                if (isinstance(sample_data, BaseGeometry)
+                    and not sample_data is None  # Paranoia
+                ):
+                    bq_type = 'GEOGRAPHY'
         bq_field = schema.SchemaField(column, bq_type)
         bq_schema_out.append(bq_field)
 

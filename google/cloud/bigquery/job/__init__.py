@@ -22,6 +22,7 @@ from google.cloud.bigquery.job.base import _JobReference
 from google.cloud.bigquery.job.base import ReservationUsage
 from google.cloud.bigquery.job.base import ScriptStatistics
 from google.cloud.bigquery.job.base import ScriptStackFrame
+from google.cloud.bigquery.job.base import TransactionInfo
 from google.cloud.bigquery.job.base import UnknownJob
 from google.cloud.bigquery.job.copy_ import CopyJob
 from google.cloud.bigquery.job.copy_ import CopyJobConfig
@@ -38,7 +39,6 @@ from google.cloud.bigquery.job.query import QueryPlanEntry
 from google.cloud.bigquery.job.query import QueryPlanEntryStep
 from google.cloud.bigquery.job.query import ScriptOptions
 from google.cloud.bigquery.job.query import TimelineEntry
-from google.cloud.bigquery.job.query import TransactionInfo
 from google.cloud.bigquery.enums import Compression
 from google.cloud.bigquery.enums import CreateDisposition
 from google.cloud.bigquery.enums import DestinationFormat

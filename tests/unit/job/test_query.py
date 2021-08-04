@@ -243,7 +243,6 @@ class TestQueryJob(_Base):
         self.assertIsNone(job.time_partitioning)
         self.assertIsNone(job.clustering_fields)
         self.assertIsNone(job.schema_update_options)
-        self.assertIsNone(job.transaction_info)
 
     def test_ctor_w_udf_resources(self):
         from google.cloud.bigquery.job import QueryJobConfig
@@ -908,20 +907,6 @@ class TestQueryJob(_Base):
         query_stats["dmlStats"] = {"insertedRowCount": "35"}
         assert isinstance(job.dml_stats, DmlStats)
         assert job.dml_stats.inserted_row_count == 35
-
-    def test_transaction_info(self):
-        from google.cloud.bigquery.job.query import TransactionInfo
-
-        client = _make_client(project=self.PROJECT)
-        job = self._make_one(self.JOB_ID, self.QUERY, client)
-        assert job.transaction_info is None
-
-        statistics = job._properties["statistics"] = {}
-        assert job.transaction_info is None
-
-        statistics["transactionInfo"] = {"transactionId": "123-abc-xyz"}
-        assert isinstance(job.transaction_info, TransactionInfo)
-        assert job.transaction_info.transaction_id == "123-abc-xyz"
 
     def test_result(self):
         from google.cloud.bigquery.table import RowIterator

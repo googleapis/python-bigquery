@@ -38,9 +38,11 @@ else:
     CRS = "EPSG:4326"
 
 try:
-    from shapely import wkt
+    import shapely.geos
 except ImportError:
-    wkt = None
+    shapely = None
+else:
+    _read_wkt = shapely.geos.WKTReader(shapely.geos.lgeos).read
 
 try:
     import pyarrow
@@ -1941,7 +1943,7 @@ class RowIterator(HTTPIterator):
         """
         if pandas is None:
             raise ValueError(_NO_PANDAS_ERROR)
-        if geography_as_object and wkt is None:
+        if geography_as_object and shapely is None:
             raise ValueError(_NO_SHAPELY_ERROR)
 
         if dtypes is None:
@@ -1987,7 +1989,7 @@ class RowIterator(HTTPIterator):
         if geography_as_object:
             for field in self.schema:
                 if field.field_type.upper() == "GEOGRAPHY":
-                    df[field.name] = df[field.name].dropna().apply(wkt.loads)
+                    df[field.name] = df[field.name].dropna().apply(_read_wkt)
 
         return df
 

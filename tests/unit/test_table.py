@@ -3032,8 +3032,8 @@ class TestRowIterator(unittest.TestCase):
             row_iterator.to_dataframe()
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @mock.patch("google.cloud.bigquery.table.wkt", new=None)
-    def test_to_dataframe_error_if_shapely_wkt_is_none(self):
+    @mock.patch("google.cloud.bigquery.table.shapely", new=None)
+    def test_to_dataframe_error_if_shapely_is_none(self):
         with self.assertRaisesRegex(
             ValueError,
             re.escape(
@@ -3945,7 +3945,7 @@ class TestRowIterator(unittest.TestCase):
         variations, which are tested for to_dataframe.
         """
         import numpy
-        import shapely
+        from shapely import wkt
 
         row_iterator = self._make_one_from_data(
             (("name", "STRING"), ("g", "GEOGRAPHY"))
@@ -3958,7 +3958,7 @@ class TestRowIterator(unittest.TestCase):
         geography_column = "g"
 
         to_dataframe.return_value = pandas.DataFrame(
-            dict(name=["foo"], g=[shapely.wkt.loads("point(0 0)")],)
+            dict(name=["foo"], g=[wkt.loads("point(0 0)")],)
         )
 
         df = row_iterator.to_geodataframe(

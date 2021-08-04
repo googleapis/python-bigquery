@@ -937,7 +937,8 @@ def test_load_dataframe_w_wkb(bigquery_client, dataset_id):
 
     table_id = f"{dataset_id}.lake_from_wkb"
     # We create the table first, to inform the interpretation of the wkb data
-    bigquery_client.query(f"create table {table_id} (name string, geo GEOGRAPHY)")
+    bigquery_client.query(
+        f"create table {table_id} (name string, geo GEOGRAPHY)").result()
     bigquery_client.load_table_from_dataframe(df, table_id).result()
 
     table = bigquery_client.get_table(table_id)

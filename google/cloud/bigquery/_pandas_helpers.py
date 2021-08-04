@@ -35,13 +35,18 @@ except ImportError:  # pragma: NO COVER
     _BaseGeometry = type(None)
 else:
     if pandas is not None:
+
         def _to_wkb():
             from shapely.geos import WKBWriter, lgeos
+
             write = WKBWriter(lgeos).write
             notnull = pandas.notnull
+
             def _to_wkb(v):
                 return write(v) if notnull(v) else v
+
             return _to_wkb
+
         _to_wkb = _to_wkb()
 
 try:
@@ -142,7 +147,6 @@ if pyarrow:
         "STRING": pyarrow.string,
         "TIME": pyarrow_time,
         "TIMESTAMP": pyarrow_timestamp,
-        "GEOGRAPHY": pyarrow.string,  # Unless we have ninary data
     }
     ARROW_SCALAR_IDS_TO_BQ = {
         # https://arrow.apache.org/docs/python/api/datatypes.html#type-classes
@@ -255,17 +259,17 @@ def bq_to_arrow_schema(bq_schema):
 
 
 def bq_to_arrow_array(series, bq_field):
-    if bq_field.field_type.upper() == 'GEOGRAPHY':
+    if bq_field.field_type.upper() == "GEOGRAPHY":
         arrow_type = None
         first = _first_valid(series)
         if first is not None:
-            if series.dtype.name == 'geometry' or isinstance(first, _BaseGeometry):
+            if series.dtype.name == "geometry" or isinstance(first, _BaseGeometry):
                 arrow_type = pyarrow.binary()
                 # Convert shapey geometry to WKB binary format:
                 series = series.apply(_to_wkb)
             elif isinstance(first, bytes):
                 arrow_type = pyarrow.binary()
-        elif series.dtype.name == 'geometry':
+        elif series.dtype.name == "geometry":
             # We have a GeoSeries containing all nulls, convert it to a pandas series
             series = pandas.Series(numpy.array(series))
 
@@ -331,6 +335,7 @@ def _first_valid(series):
     if first_valid_index is not None:
         return series.at[first_valid_index]
 
+
 def dataframe_to_bq_schema(dataframe, bq_schema):
     """Convert a pandas DataFrame schema to a BigQuery schema.
 
@@ -373,10 +378,11 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
         bq_type = _PANDAS_DTYPE_TO_BQ.get(dtype.name)
         if bq_type is None:
             sample_data = _first_valid(dataframe[column])
-            if (isinstance(sample_data, _BaseGeometry)
-                and not sample_data is None  # Paranoia
-                ):
-                bq_type = 'GEOGRAPHY'
+            if (
+                isinstance(sample_data, _BaseGeometry)
+                and sample_data is not None  # Paranoia
+            ):
+                bq_type = "GEOGRAPHY"
         bq_field = schema.SchemaField(column, bq_type)
         bq_schema_out.append(bq_field)
 

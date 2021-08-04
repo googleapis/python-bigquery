@@ -611,7 +611,7 @@ def test_bq_to_arrow_array_w_geography_dtype(module_under_test):
 
     bq_field = schema.SchemaField("field_name", "GEOGRAPHY")
 
-    series = geopandas.GeoSeries([None, wkt.loads('point(0 0)')])
+    series = geopandas.GeoSeries([None, wkt.loads("point(0 0)")])
     array = module_under_test.bq_to_arrow_array(series, bq_field)
     # The result is binary, because we use wkb format
     assert array.type == pyarrow.binary()
@@ -631,7 +631,7 @@ def test_bq_to_arrow_array_w_geography_type_shapely_data(module_under_test):
 
     bq_field = schema.SchemaField("field_name", "GEOGRAPHY")
 
-    series = pandas.Series([None, wkt.loads('point(0 0)')])
+    series = pandas.Series([None, wkt.loads("point(0 0)")])
     array = module_under_test.bq_to_arrow_array(series, bq_field)
     # The result is binary, because we use wkb format
     assert array.type == pyarrow.binary()
@@ -651,7 +651,7 @@ def test_bq_to_arrow_array_w_geography_type_wkb_data(module_under_test):
 
     bq_field = schema.SchemaField("field_name", "GEOGRAPHY")
 
-    series = pandas.Series([None, wkb.dumps(wkt.loads('point(0 0)'))])
+    series = pandas.Series([None, wkb.dumps(wkt.loads("point(0 0)"))])
     array = module_under_test.bq_to_arrow_array(series, bq_field)
     # The result is binary, because we use wkb format
     assert array.type == pyarrow.binary()
@@ -1240,17 +1240,19 @@ def test_dataframe_to_bq_schema_geography(module_under_test):
 
     df = geopandas.GeoDataFrame(
         pandas.DataFrame(
-            dict(name=['foo', 'bar'],
-                 geo1=[None, None],
-                 geo2=[None, wkt.loads('Point(1 1)')])
-            ),
-        geometry='geo1',
-        )
+            dict(
+                name=["foo", "bar"],
+                geo1=[None, None],
+                geo2=[None, wkt.loads("Point(1 1)")],
+            )
+        ),
+        geometry="geo1",
+    )
     bq_schema = module_under_test.dataframe_to_bq_schema(df, [])
     assert bq_schema == (
-        schema.SchemaField('name', 'STRING'),
-        schema.SchemaField('geo1', 'GEOGRAPHY'),
-        schema.SchemaField('geo2', 'GEOGRAPHY'),
+        schema.SchemaField("name", "STRING"),
+        schema.SchemaField("geo1", "GEOGRAPHY"),
+        schema.SchemaField("geo2", "GEOGRAPHY"),
     )
 
 
@@ -1664,11 +1666,14 @@ def test_bq_to_arrow_field_type_override(module_under_test):
     # decision based on data contents, because GEOGRAPHY data can be
     # stored as either text or binary.
 
-    assert module_under_test.bq_to_arrow_field(
-        schema.SchemaField('g', 'GEOGRAPHY')
-        ).type == pyarrow.string()
+    assert (
+        module_under_test.bq_to_arrow_field(schema.SchemaField("g", "GEOGRAPHY")).type
+        == pyarrow.string()
+    )
 
-    assert module_under_test.bq_to_arrow_field(
-        schema.SchemaField('g', 'GEOGRAPHY'),
-        pyarrow.binary(),
-        ).type == pyarrow.binary()
+    assert (
+        module_under_test.bq_to_arrow_field(
+            schema.SchemaField("g", "GEOGRAPHY"), pyarrow.binary(),
+        ).type
+        == pyarrow.binary()
+    )

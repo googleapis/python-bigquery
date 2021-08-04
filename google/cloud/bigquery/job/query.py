@@ -53,6 +53,7 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Assumption: type checks are only used by library developers and CI environments
     # that have all optional dependencies installed, thus no conditional imports.
     import pandas
+    import geopandas
     import pyarrow
     from google.api_core import retry as retries
     from google.cloud import bigquery_storage

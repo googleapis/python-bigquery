@@ -1475,13 +1475,27 @@ class QueryJob(_AsyncJob):
 
                 .. versionadded:: 2.21.0
 
+            geography_as_object (Optional[bool]):
+                If ``True``, convert GEOGRAPHY data to :mod:`shapely`
+                geometry objects.  If ``False`` (default), don't cast
+                geography data to :mod:`shapely` geometry objects.
+
+                .. versionadded:: 2.24.0
+
         Returns:
-            A :class:`~pandas.DataFrame` populated with row data and column
-            headers from the query results. The column headers are derived
-            from the destination table's schema.
+            `pandas.DataFrame`:
+                A :class:`~pandas.DataFrame` populated with row data
+                and column headers from the query results. The column
+                headers are derived from the destination table's
+                schema.
 
         Raises:
-            ValueError: If the `pandas` library cannot be imported.
+            ValueError:
+                If the :mod:`pandas` library cannot be imported, or
+                the :mod:`google.cloud.bigquery_storage_v1` module is
+                required but cannot be imported.  Also if
+                `geography_as_object` is `True`, but the
+                :mod:`shapely` library cannot be imported.
         """
         query_result = wait_for_query(self, progress_bar_type, max_results=max_results)
         return query_result.to_dataframe(
@@ -1505,8 +1519,8 @@ class QueryJob(_AsyncJob):
         date_as_object: bool = True,
         max_results: Optional[int] = None,
         geography_column: Optional[str] = None,
-    ) -> "pandas.DataFrame":
-        """Return a pandas DataFrame from a QueryJob
+    ) -> "geopandas.GeoDataFrame":
+        """Return a GeoPandas GeoDataFrame from a QueryJob
 
         Args:
             bqstorage_client (Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]):
@@ -1557,17 +1571,25 @@ class QueryJob(_AsyncJob):
                 .. versionadded:: 2.21.0
 
             geography_column (Optional[str]):
-                If there are more than one GEOGRAPHY columns, which one to use
-                to construct a geopandas GeoDataFrame.  This option can be ommitted
-                if there's only one GEOGRAPHY column.
+                If there are more than one GEOGRAPHY column,
+                identifies which one to use to construct a GeoPandas
+                GeoDataFrame.  This option can be ommitted if there's
+                only one GEOGRAPHY column.
 
         Returns:
-            A :class:`~pandas.DataFrame` populated with row data and column
-            headers from the query results. The column headers are derived
-            from the destination table's schema.
+            `geopandas.GeoDataFrame`:
+                A :class:`geopandas.GeoDataFrame` populated with row
+                data and column headers from the query results. The
+                column headers are derived from the destination
+                table's schema.
 
         Raises:
-            ValueError: If the `pandas` library cannot be imported.
+            ValueError:
+               If the :mod:`geopandas` library cannot be imported, or the
+                :mod:`google.cloud.bigquery_storage_v1` module is
+                required but cannot be imported.
+
+        .. versionadded:: 2.24.0
         """
         query_result = wait_for_query(self, progress_bar_type, max_results=max_results)
         return query_result.to_geodataframe(

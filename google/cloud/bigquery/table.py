@@ -1918,22 +1918,25 @@ class RowIterator(HTTPIterator):
                 .. versionadded:: 1.26.0
 
             geography_as_object (Optional[bool]):
-                If ``True``, convert geography data to shapely objects.
-                If ``False`` (default), don't cast geography data to shapely objects.
+                If ``True``, convert GEOGRAPHY data to :mod:`shapely`
+                geometry objects. If ``False`` (default), don't cast
+                geography data to :mod:`shapely` geometry objects.
 
-                .. versionadded:: ???
+                .. versionadded:: 2.24.0
 
         Returns:
-            pandas.DataFrame:
+            `pandas.DataFrame`:
                 A :class:`~pandas.DataFrame` populated with row data and column
                 headers from the query results. The column headers are derived
                 from the destination table's schema.
 
         Raises:
             ValueError:
-                If the :mod:`pandas` library cannot be imported, or the
-                :mod:`google.cloud.bigquery_storage_v1` module is
-                required but cannot be imported.
+                If the :mod:`pandas` library cannot be imported, or
+                the :mod:`google.cloud.bigquery_storage_v1` module is
+                required but cannot be imported.  Also if
+                `geography_as_object` is `True`, but the
+                :mod:`shapely` library cannot be imported.
 
         """
         if pandas is None:
@@ -1998,8 +2001,8 @@ class RowIterator(HTTPIterator):
         create_bqstorage_client: bool = True,
         date_as_object: bool = True,
         geography_column: Optional[str] = None,
-    ) -> "pandas.DataFrame":
-        """Create a pandas DataFrame by loading all pages of a query.
+    ) -> "geopandas.GeoDataFrame":
+        """Create a GeoPandas GeoDataFrame by loading all pages of a query.
 
         Args:
             bqstorage_client (Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]):
@@ -2049,25 +2052,25 @@ class RowIterator(HTTPIterator):
                 to datetime64[ns] dtype.
 
             geography_column (Optional[str]):
-                If there are more than one GEOGRAPHY columns, which one to use
-                to construct a geopandas GeoDataFrame.  This option can be ommitted
-                if there's only one GEOGRAPHY column.
+                If there are more than one GEOGRAPHY column,
+                identifies which one to use to construct a geopandas
+                GeoDataFrame.  This option can be ommitted if there's
+                only one GEOGRAPHY column.
 
         Returns:
-            geopandas.GeoDataFrame:
-                A :class:`~pandas.DataFrame` populated with row data and column
-                headers from the query results. The column headers are derived
-                from the destination table's schema.
+            `geopandas.GeoDataFrame`:
+                A :class:`geopandas.GeoDataFrame` populated with row
+                data and column headers from the query results. The
+                column headers are derived from the destination
+                table's schema.
 
         Raises:
             ValueError:
-                If the :mod:`pandas` library cannot be imported, or the
+                If the :mod:`geopandas` library cannot be imported, or the
                 :mod:`google.cloud.bigquery_storage_v1` module is
                 required but cannot be imported.
 
-
-        .. versionadded:: ???
-
+        .. versionadded:: 2.24.0
         """
         if geopandas is None:
             raise ValueError(_NO_GEOPANDAS_ERROR)

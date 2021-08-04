@@ -1300,7 +1300,7 @@ class QueryJob(_AsyncJob):
                 If the job did not complete in the given timeout.
         """
         try:
-            retry_do_query = getattr(self, "retry_do_query", None)
+            retry_do_query = getattr(self, "_retry_do_query", None)
             first = True
             sub_retry = retry if retry_do_query is None else None
 
@@ -1327,7 +1327,7 @@ class QueryJob(_AsyncJob):
                     # This shouldn't be necessary, because once we have a good
                     # job, it should stay good,and we shouldn't have to retry.
                     # But let's be paranoid. :)
-                    self.retry_do_query = retry_do_query
+                    self._retry_do_query = retry_do_query
 
                 super(QueryJob, self).result(retry=sub_retry, timeout=timeout)
 

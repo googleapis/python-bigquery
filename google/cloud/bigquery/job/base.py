@@ -93,6 +93,8 @@ class TransactionInfo(typing.NamedTuple):
     """[Alpha] Information of a multi-statement transaction.
 
     https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#TransactionInfo
+
+    .. versionadded:: 2.24.0
     """
 
     transaction_id: str
@@ -354,6 +356,8 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
     @property
     def transaction_info(self) -> Optional[TransactionInfo]:
         """Information of the multi-statement transaction if this job is part of one.
+
+        .. versionadded:: 2.24.0
         """
         info = self._properties.get("statistics", {}).get("transactionInfo")
         if info is None:

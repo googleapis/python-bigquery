@@ -807,6 +807,7 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
 
 
 def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
+    pytest.importorskip("shapely")
     bigquery_client.query(
         f"create table {dataset_id}.lake (name string, geog geography)"
     ).result()
@@ -831,6 +832,7 @@ def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
 
 
 def test_to_geodataframe(bigquery_client, dataset_id):
+    pytest.importorskip("geopandas")
     bigquery_client.query(
         f"create table {dataset_id}.geolake (name string, geog geography)"
     ).result()
@@ -858,3 +860,92 @@ def test_to_geodataframe(bigquery_client, dataset_id):
         "POINT (0 0)",
     ]
     assert str(df.area) == ("0    0.5\n" "1    NaN\n" "2    0.0\n" "dtype: float64")
+
+
+def test_load_geodataframe(bigquery_client, dataset_id):
+    geopandas = pytest.importorskip("geopandas")
+    import pandas
+    from shapely import wkt
+    from google.cloud.bigquery.schema import SchemaField
+
+    df = geopandas.GeoDataFrame(
+        pandas.DataFrame(
+            dict(name=['foo', 'bar'],
+                 geo1=[None, None],
+                 geo2=[None, wkt.loads('Point(1 1)')])
+            ),
+        geometry='geo1',
+        )
+
+    table_id = f"{dataset_id}.lake_from_gp"
+    bigquery_client.load_table_from_dataframe(df, table_id).result()
+
+    table = bigquery_client.get_table(table_id)
+    assert table.schema == [
+        SchemaField('name', 'STRING', 'NULLABLE'),
+        SchemaField('geo1', 'GEOGRAPHY', 'NULLABLE'),
+        SchemaField('geo2', 'GEOGRAPHY', 'NULLABLE'),
+    ]
+    assert sorted(map(list, bigquery_client.list_rows(table_id))) == [
+        ['bar', None, 'POINT(1 1)'],
+        ['foo', None, None],
+    ]
+
+
+def test_load_dataframe_w_shapely(bigquery_client, dataset_id):
+    pandas = pytest.importorskip("pandas")
+    wkt = pytest.importorskip("shapely.wkt")
+    from google.cloud.bigquery.schema import SchemaField
+
+    df = pandas.DataFrame(
+            dict(name=['foo', 'bar'],
+                 geo=[None, wkt.loads('Point(1 1)')])
+            )
+
+    table_id = f"{dataset_id}.lake_from_shapes"
+    bigquery_client.load_table_from_dataframe(df, table_id).result()
+
+    table = bigquery_client.get_table(table_id)
+    assert table.schema == [
+        SchemaField('name', 'STRING', 'NULLABLE'),
+        SchemaField('geo', 'GEOGRAPHY', 'NULLABLE'),
+    ]
+    assert sorted(map(list, bigquery_client.list_rows(table_id))) == [
+        ['bar', 'POINT(1 1)'],
+        ['foo', None],
+    ]
+
+    bigquery_client.load_table_from_dataframe(df, table_id).result()
+    assert sorted(map(list, bigquery_client.list_rows(table_id))) == [
+        ['bar', 'POINT(1 1)'],
+        ['bar', 'POINT(1 1)'],
+        ['foo', None],
+        ['foo', None],
+    ]
+
+
+def test_load_dataframe_w_wkb(bigquery_client, dataset_id):
+    pandas = pytest.importorskip("pandas")
+    wkt = pytest.importorskip("shapely.wkt")
+    from shapely import wkb
+    from google.cloud.bigquery.schema import SchemaField
+
+    df = pandas.DataFrame(
+            dict(name=['foo', 'bar'],
+                 geo=[None, wkb.dumps(wkt.loads('Point(1 1)'))])
+            )
+
+    table_id = f"{dataset_id}.lake_from_wkb"
+    # We create the table first, to inform the interpretation of the wkb data
+    bigquery_client.query(f"create table {table_id} (name string, geo GEOGRAPHY)")
+    bigquery_client.load_table_from_dataframe(df, table_id).result()
+
+    table = bigquery_client.get_table(table_id)
+    assert table.schema == [
+        SchemaField('name', 'STRING', 'NULLABLE'),
+        SchemaField('geo', 'GEOGRAPHY', 'NULLABLE'),
+    ]
+    assert sorted(map(list, bigquery_client.list_rows(table_id))) == [
+        ['bar', 'POINT(1 1)'],
+        ['foo', None],
+    ]

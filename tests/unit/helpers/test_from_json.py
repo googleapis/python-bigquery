@@ -47,20 +47,43 @@ def test_interval_from_json_w_invalid_format(mut):
 @pytest.mark.parametrize(
     ("value", "expected"),
     (
-        # SELECT INTERVAL -1 YEAR
+        ("0-0 0 0:0:0", relativedelta()),
+        # SELECT INTERVAL X YEAR
+        ("-10000-0 0 0:0:0", relativedelta(years=-10000)),
         ("-1-0 0 0:0:0", relativedelta(years=-1)),
-        # SELECT INTERVAL -1 MONTH
+        ("1-0 0 0:0:0", relativedelta(years=1)),
+        ("10000-0 0 0:0:0", relativedelta(years=10000)),
+        # SELECT INTERVAL X MONTH
+        ("-0-11 0 0:0:0", relativedelta(months=-11)),
         ("-0-1 0 0:0:0", relativedelta(months=-1)),
-        # SELECT INTERVAL -1 DAY
+        ("0-1 0 0:0:0", relativedelta(months=1)),
+        ("0-11 0 0:0:0", relativedelta(months=11)),
+        # SELECT INTERVAL X DAY
+        ("0-0 -3660000 0:0:0", relativedelta(days=-3660000)),
         ("0-0 -1 0:0:0", relativedelta(days=-1)),
-        # SELECT INTERVAL -1 HOUR
+        ("0-0 1 0:0:0", relativedelta(days=1)),
+        ("0-0 3660000 0:0:0", relativedelta(days=3660000)),
+        # SELECT INTERVAL X HOUR
+        ("0-0 0 -87840000:0:0", relativedelta(hours=-87840000)),
         ("0-0 0 -1:0:0", relativedelta(hours=-1)),
-        # SELECT INTERVAL -1 MINUTE
+        ("0-0 0 1:0:0", relativedelta(hours=1)),
+        ("0-0 0 87840000:0:0", relativedelta(hours=87840000)),
+        # SELECT INTERVAL X MINUTE
+        ("0-0 0 -0:59:0", relativedelta(minutes=-59)),
         ("0-0 0 -0:1:0", relativedelta(minutes=-1)),
-        # SELECT INTERVAL -1 SECOND
+        ("0-0 0 0:1:0", relativedelta(minutes=1)),
+        ("0-0 0 0:59:0", relativedelta(minutes=59)),
+        # SELECT INTERVAL X SECOND
+        ("0-0 0 -0:0:59", relativedelta(seconds=-59)),
         ("0-0 0 -0:0:1", relativedelta(seconds=-1)),
+        ("0-0 0 0:0:1", relativedelta(seconds=1)),
+        ("0-0 0 0:0:59", relativedelta(seconds=59)),
         # SELECT (INTERVAL -1 SECOND) / 1000000
         ("0-0 0 -0:0:0.000001", relativedelta(microseconds=-1)),
+        ("0-0 0 -0:0:59.999999", relativedelta(seconds=-59, microseconds=-999999)),
+        ("0-0 0 -0:0:59.999", relativedelta(seconds=-59, microseconds=-999000)),
+        ("0-0 0 0:0:59.999", relativedelta(seconds=59, microseconds=999000)),
+        ("0-0 0 0:0:59.999999", relativedelta(seconds=59, microseconds=999999)),
         # Test with multiple digits in each section.
         (
             "32-11 45 67:16:23.987654",

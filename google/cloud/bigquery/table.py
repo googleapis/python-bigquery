@@ -2208,7 +2208,7 @@ class _EmptyRowIterator(RowIterator):
         """
         if geopandas is None:
             raise ValueError(_NO_GEOPANDAS_ERROR)
-        return geopandas.GeoDataFrame()
+        return geopandas.GeoDataFrame(crs=CRS)
 
     def to_dataframe_iterable(
         self,

@@ -1689,6 +1689,8 @@ class Test_EmptyRowIterator(unittest.TestCase):
         df = row_iterator.to_geodataframe(create_bqstorage_client=False)
         self.assertIsInstance(df, geopandas.GeoDataFrame)
         self.assertEqual(len(df), 0)  # verify the number of rows
+        self.assertEqual(df.crs.srs, 'EPSG:4326')
+        self.assertEqual(df.crs.name, 'WGS 84')
 
 
 class TestRowIterator(unittest.TestCase):
@@ -3853,6 +3855,10 @@ class TestRowIterator(unittest.TestCase):
         self.assertIsInstance(df.geog, geopandas.GeoSeries)
         self.assertEqual(list(map(str, df.area)), ["0.0", "nan", "0.5"])
         self.assertEqual(list(map(str, df.geog.area)), ["0.0", "nan", "0.5"])
+        self.assertEqual(df.crs.srs, 'EPSG:4326')
+        self.assertEqual(df.crs.name, 'WGS 84')
+        self.assertEqual(df.geog.crs.srs, 'EPSG:4326')
+        self.assertEqual(df.geog.crs.name, 'WGS 84')
 
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")
     def test_to_geodataframe_ambiguous_geog(self):

@@ -26,7 +26,7 @@ from google.cloud.bigquery._helpers import _QUERY_PARAMS_FROM_JSON
 from google.cloud.bigquery._helpers import _SCALAR_VALUE_TO_JSON_PARAM
 
 
-_SCALAR_VALUE_TYPES = Optional[
+_SCALAR_VALUE_TYPE = Optional[
     Union[str, int, float, decimal.Decimal, bool, datetime.datetime, datetime.date]
 ]
 
@@ -350,7 +350,7 @@ class ScalarQueryParameter(_AbstractQueryParameter):
         self,
         name: Optional[str],
         type_: Optional[Union[str, ScalarQueryParameterType]],
-        value: _SCALAR_VALUE_TYPES,
+        value: _SCALAR_VALUE_TYPE,
     ):
         self.name = name
         if isinstance(type_, ScalarQueryParameterType):
@@ -361,7 +361,7 @@ class ScalarQueryParameter(_AbstractQueryParameter):
 
     @classmethod
     def positional(
-        cls, type_: Union[str, ScalarQueryParameterType], value: _SCALAR_VALUE_TYPES
+        cls, type_: Union[str, ScalarQueryParameterType], value: _SCALAR_VALUE_TYPE
     ) -> "ScalarQueryParameter":
         """Factory for positional paramater.
 

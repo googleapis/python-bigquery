@@ -67,6 +67,7 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
     # they are not None, avoiding false "no attribute" errors.
     import pandas
+    import geopandas
     import pyarrow
     from google.cloud import bigquery_storage
 

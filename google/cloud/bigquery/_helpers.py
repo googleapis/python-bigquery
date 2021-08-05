@@ -43,7 +43,7 @@ _PROJECT_PREFIX_PATTERN = re.compile(
     re.VERBOSE,
 )
 
-# BigQuery sends data in "canonical format"
+# BigQuery sends INTERVAL data in "canonical format"
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#interval_type
 _INTERVAL_PATTERN = re.compile(
     r"(?P<calendar_sign>-?)(?P<years>[0-9]+)-(?P<months>[0-9]+) "
@@ -51,8 +51,6 @@ _INTERVAL_PATTERN = re.compile(
     r"(?P<time_sign>-?)(?P<hours>[0-9]+):(?P<minutes>[0-9]+):"
     r"(?P<seconds>[0-9]+)\.?(?P<fraction>[0-9]+)?$"
 )
-
-# TODO: BigQuery receives data in ISO 8601 duration format
 
 _MIN_BQ_STORAGE_VERSION = packaging.version.Version("2.0.0")
 _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
@@ -136,6 +134,9 @@ def _interval_from_json(
         raise TypeError(f"got {value} for REQUIRED field: {repr(field)}")
 
     parsed = _INTERVAL_PATTERN.match(value)
+    if parsed is None:
+        raise ValueError(f"got interval: '{value}' with unexpected format")
+
     calendar_sign = -1 if parsed.group("calendar_sign") == "-" else 1
     years = calendar_sign * int(parsed.group("years"))
     months = calendar_sign * int(parsed.group("months"))

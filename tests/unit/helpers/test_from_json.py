@@ -39,6 +39,11 @@ def test_interval_from_json_w_none_required(mut):
         mut._interval_from_json(None, create_field(mode="REQUIRED"))
 
 
+def test_interval_from_json_w_invalid_format(mut):
+    with pytest.raises(ValueError, match="NOT_AN_INTERVAL"):
+        mut._interval_from_json("NOT_AN_INTERVAL", create_field())
+
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     (

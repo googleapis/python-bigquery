@@ -5,6 +5,20 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+### [2.23.2](https://www.github.com/googleapis/python-bigquery/compare/v2.23.1...v2.23.2) (2021-07-29)
+
+
+### Dependencies
+
+* expand pyarrow pins to support 5.x releases ([#833](https://www.github.com/googleapis/python-bigquery/issues/833)) ([80e3a61](https://www.github.com/googleapis/python-bigquery/commit/80e3a61c60419fb19b70b664c6415cd01ba82f5b))
+
+### [2.23.1](https://www.github.com/googleapis/python-bigquery/compare/v2.23.0...v2.23.1) (2021-07-28)
+
+
+### Bug Fixes
+
+* `insert_rows()` accepts float column values as strings again ([#824](https://www.github.com/googleapis/python-bigquery/issues/824)) ([d9378af](https://www.github.com/googleapis/python-bigquery/commit/d9378af13add879118a1d004529b811f72c325d6))
+
 ## [2.23.0](https://www.github.com/googleapis/python-bigquery/compare/v2.22.1...v2.23.0) (2021-07-27)
 
 

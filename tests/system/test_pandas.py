@@ -860,10 +860,10 @@ def test_to_geodataframe(bigquery_client, dataset_id):
         "POINT (0 0)",
     ]
     assert str(df.area) == ("0    0.5\n" "1    NaN\n" "2    0.0\n" "dtype: float64")
-    assert df.crs.srs == 'EPSG:4326'
-    assert df.crs.name == 'WGS 84'
-    assert df.geog.crs.srs == 'EPSG:4326'
-    assert df.geog.crs.name == 'WGS 84'
+    assert df.crs.srs == "EPSG:4326"
+    assert df.crs.name == "WGS 84"
+    assert df.geog.crs.srs == "EPSG:4326"
+    assert df.geog.crs.name == "WGS 84"
 
 
 def test_load_geodataframe(bigquery_client, dataset_id):

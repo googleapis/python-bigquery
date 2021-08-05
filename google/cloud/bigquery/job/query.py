@@ -1302,7 +1302,7 @@ class QueryJob(_AsyncJob):
         try:
             retry_do_query = getattr(self, "_retry_do_query", None)
             first = True
-            sub_retry = retry if retry_do_query is None else None
+            sub_retry = retry if retry_do_query is None else DEFAULT_RETRY
 
             def do_get_result():
                 nonlocal first

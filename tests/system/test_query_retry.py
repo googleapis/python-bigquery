@@ -45,7 +45,7 @@ def test_query_retry_539(bigquery_client, dataset_id):
 
     @thread
     def create_table():
-        time.sleep(1)
+        time.sleep(1)  # Give the first attempt time to fail.
         with contextlib.closing(google.cloud.bigquery.Client()) as client:
             client.query(f"create table {table_name} (id int64)")
 

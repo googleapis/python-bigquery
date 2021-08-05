@@ -34,7 +34,7 @@ try:
 except ImportError:  # pragma: NO COVER
     _BaseGeometry = type(None)
 else:
-    if pandas is not None:
+    if pandas is not None:  # pragma: NO COVER
 
         def _to_wkb():
             from shapely.geos import WKBWriter, lgeos

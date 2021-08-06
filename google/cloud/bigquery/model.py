@@ -23,7 +23,7 @@ from google.protobuf import json_format
 import google.cloud._helpers
 from google.api_core import datetime_helpers
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery_v2 import types
+from google.cloud.bigquery import types
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 

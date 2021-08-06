@@ -17,7 +17,7 @@
 import collections
 from typing import Optional
 
-from google.cloud.bigquery_v2 import types
+from google.cloud.bigquery import types
 
 
 _DEFAULT_VALUE = object()
@@ -286,11 +286,7 @@ class SchemaField(object):
         )
 
     def to_standard_sql(self) -> types.StandardSqlField:
-        """Return the field as the standard SQL field representation object.
-
-        Returns:
-            An instance of :class:`~google.cloud.bigquery_v2.types.StandardSqlField`.
-        """
+        """Return the field as the standard SQL field representation object."""
         sql_type = types.StandardSqlDataType()
 
         if self.mode == "REPEATED":
@@ -306,7 +302,9 @@ class SchemaField(object):
                 self.field_type,
                 types.StandardSqlDataType.TypeKind.TYPE_KIND_UNSPECIFIED,
             )
-            sql_type.array_element_type.type_kind = array_element_type
+            sql_type.array_element_type = types.StandardSqlDataType(
+                type_kind=array_element_type
+            )
 
             # ARRAY cannot directly contain other arrays, only scalar types and STRUCTs
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#array-type
@@ -314,16 +312,15 @@ class SchemaField(object):
                 array_element_type
                 == types.StandardSqlDataType.TypeKind.STRUCT  # noqa: E721
             ):
-                sql_type.array_element_type.struct_type.fields.extend(
-                    field.to_standard_sql() for field in self.fields
+                sql_type.array_element_type.struct_type = types.StandardSqlStructType(
+                    fields=(field.to_standard_sql() for field in self.fields)
                 )
-
         elif (
             sql_type.type_kind
             == types.StandardSqlDataType.TypeKind.STRUCT  # noqa: E721
         ):
-            sql_type.struct_type.fields.extend(
-                field.to_standard_sql() for field in self.fields
+            sql_type.struct_type = types.StandardSqlStructType(
+                fields=(field.to_standard_sql() for field in self.fields)
             )
 
         return types.StandardSqlField(name=self.name, type=sql_type)

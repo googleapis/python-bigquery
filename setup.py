@@ -29,6 +29,7 @@ description = "Google BigQuery API client library"
 # 'Development Status :: 5 - Production/Stable'
 release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
+    "dataclasses >= 0.8, < 1.0; python_version < '3.7'",  # Until we drop Python 3.6 support.
     "grpcio >= 1.38.1, < 2.0dev",  # https://github.com/googleapis/python-bigquery/issues/695
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed

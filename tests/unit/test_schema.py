@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from google.cloud.bigquery.types.standard_sql import StandardSqlStructType
 from google.cloud.bigquery.schema import PolicyTagList
 import unittest
 
@@ -28,7 +29,7 @@ class TestSchemaField(unittest.TestCase):
 
     @staticmethod
     def _get_standard_sql_data_type_class():
-        from google.cloud.bigquery_v2 import types
+        from google.cloud.bigquery import types
 
         return types.StandardSqlDataType
 
@@ -224,7 +225,7 @@ class TestSchemaField(unittest.TestCase):
             self.assertEqual(standard_field.type.type_kind, standard_type)
 
     def test_to_standard_sql_struct_type(self):
-        from google.cloud.bigquery_v2 import types
+        from google.cloud.bigquery import types
 
         # Expected result object:
         #
@@ -267,10 +268,13 @@ class TestSchemaField(unittest.TestCase):
 
         # level 1 fields
         sub_field_struct = types.StandardSqlField(
-            name="last_used", type=sql_type(type_kind=sql_type.TypeKind.STRUCT)
-        )
-        sub_field_struct.type.struct_type.fields.extend(
-            [sub_sub_field_date, sub_sub_field_time]
+            name="last_used",
+            type=sql_type(
+                type_kind=sql_type.TypeKind.STRUCT,
+                struct_type=types.StandardSqlStructType(
+                    fields=[sub_sub_field_date, sub_sub_field_time]
+                ),
+            ),
         )
         sub_field_bytes = types.StandardSqlField(
             name="image_content", type=sql_type(type_kind=sql_type.TypeKind.BYTES)
@@ -278,10 +282,13 @@ class TestSchemaField(unittest.TestCase):
 
         # level 0 (top level)
         expected_result = types.StandardSqlField(
-            name="image_usage", type=sql_type(type_kind=sql_type.TypeKind.STRUCT)
-        )
-        expected_result.type.struct_type.fields.extend(
-            [sub_field_bytes, sub_field_struct]
+            name="image_usage",
+            type=sql_type(
+                type_kind=sql_type.TypeKind.STRUCT,
+                struct_type=types.StandardSqlStructType(
+                    fields=[sub_field_bytes, sub_field_struct]
+                ),
+            ),
         )
 
         # construct legacy SchemaField object
@@ -300,13 +307,15 @@ class TestSchemaField(unittest.TestCase):
             self.assertEqual(standard_field, expected_result)
 
     def test_to_standard_sql_array_type_simple(self):
-        from google.cloud.bigquery_v2 import types
+        from google.cloud.bigquery import types
 
         sql_type = self._get_standard_sql_data_type_class()
 
         # construct expected result object
-        expected_sql_type = sql_type(type_kind=sql_type.TypeKind.ARRAY)
-        expected_sql_type.array_element_type.type_kind = sql_type.TypeKind.INT64
+        expected_sql_type = sql_type(
+            type_kind=sql_type.TypeKind.ARRAY,
+            array_element_type=sql_type(type_kind=sql_type.TypeKind.INT64),
+        )
         expected_result = types.StandardSqlField(
             name="valid_numbers", type=expected_sql_type
         )
@@ -318,7 +327,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(standard_field, expected_result)
 
     def test_to_standard_sql_array_type_struct(self):
-        from google.cloud.bigquery_v2 import types
+        from google.cloud.bigquery import types
 
         sql_type = self._get_standard_sql_data_type_class()
 
@@ -330,9 +339,12 @@ class TestSchemaField(unittest.TestCase):
             name="age", type=sql_type(type_kind=sql_type.TypeKind.INT64)
         )
         person_struct = types.StandardSqlField(
-            name="person_info", type=sql_type(type_kind=sql_type.TypeKind.STRUCT)
+            name="person_info",
+            type=sql_type(
+                type_kind=sql_type.TypeKind.STRUCT,
+                struct_type=StandardSqlStructType(fields=[name_field, age_field]),
+            ),
         )
-        person_struct.type.struct_type.fields.extend([name_field, age_field])
 
         # define expected result - an ARRAY of person structs
         expected_sql_type = sql_type(

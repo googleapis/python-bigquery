@@ -49,8 +49,8 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 import google.api_core.exceptions
 from google.api_core import client_info
 import google.cloud._helpers
+from google.cloud import bigquery
 from google.cloud import bigquery_storage
-from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import DatasetReference
 
 from tests.unit.helpers import make_connection
@@ -1859,8 +1859,8 @@ class TestClient(unittest.TestCase):
         routine.arguments = [
             RoutineArgument(
                 name="x",
-                data_type=bigquery_v2.types.StandardSqlDataType(
-                    type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.INT64
+                data_type=bigquery.types.StandardSqlDataType(
+                    type_kind=bigquery.types.StandardSqlDataType.TypeKind.INT64
                 ),
             )
         ]

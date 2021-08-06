@@ -51,7 +51,6 @@ from google.api_core.exceptions import ServiceUnavailable
 from google.api_core.exceptions import TooManyRequests
 from google.api_core.iam import Policy
 from google.cloud import bigquery
-from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.table import Table
@@ -2181,8 +2180,8 @@ class TestBigQuery(unittest.TestCase):
     def test_create_routine(self):
         routine_name = "test_routine"
         dataset = self.temp_dataset(_make_dataset_id("create_routine"))
-        float64_type = bigquery_v2.types.StandardSqlDataType(
-            type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.FLOAT64
+        float64_type = bigquery.types.StandardSqlDataType(
+            type_kind=bigquery.types.StandardSqlDataType.TypeKind.FLOAT64
         )
         routine = bigquery.Routine(
             dataset.routine(routine_name),
@@ -2196,8 +2195,8 @@ class TestBigQuery(unittest.TestCase):
         routine.arguments = [
             bigquery.RoutineArgument(
                 name="arr",
-                data_type=bigquery_v2.types.StandardSqlDataType(
-                    type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.ARRAY,
+                data_type=bigquery.types.StandardSqlDataType(
+                    type_kind=bigquery.types.StandardSqlDataType.TypeKind.ARRAY,
                     array_element_type=float64_type,
                 ),
             )
@@ -2218,9 +2217,9 @@ class TestBigQuery(unittest.TestCase):
     def test_create_tvf_routine(self):
         from google.cloud.bigquery import Routine, RoutineArgument, RoutineType
 
-        StandardSqlDataType = bigquery_v2.types.StandardSqlDataType
-        StandardSqlField = bigquery_v2.types.StandardSqlField
-        StandardSqlTableType = bigquery_v2.types.StandardSqlTableType
+        StandardSqlDataType = bigquery.types.StandardSqlDataType
+        StandardSqlField = bigquery.types.StandardSqlField
+        StandardSqlTableType = bigquery.types.StandardSqlTableType
 
         INT64 = StandardSqlDataType.TypeKind.INT64
         STRING = StandardSqlDataType.TypeKind.STRING

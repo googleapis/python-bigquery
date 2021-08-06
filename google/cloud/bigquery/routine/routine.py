@@ -20,8 +20,8 @@ from google.protobuf import json_format
 
 import google.cloud._helpers
 from google.cloud.bigquery import _helpers
-import google.cloud.bigquery_v2.types
-from google.cloud.bigquery_v2.types import StandardSqlTableType
+from google.cloud.bigquery.types import StandardSqlDataType
+from google.cloud.bigquery.types import StandardSqlTableType
 
 
 class RoutineType:
@@ -190,7 +190,7 @@ class Routine(object):
 
     @property
     def return_type(self):
-        """google.cloud.bigquery_v2.types.StandardSqlDataType: Return type of
+        """google.cloud.bigquery.types.StandardSqlDataType: Return type of
         the routine.
 
         If absent, the return type is inferred from
@@ -206,7 +206,7 @@ class Routine(object):
         if not resource:
             return resource
 
-        output = google.cloud.bigquery_v2.types.StandardSqlDataType()
+        output = StandardSqlDataType()
         raw_protobuf = json_format.ParseDict(
             resource, output._pb, ignore_unknown_fields=True
         )
@@ -232,7 +232,7 @@ class Routine(object):
         if not resource:
             return resource
 
-        output = google.cloud.bigquery_v2.types.StandardSqlTableType()
+        output = StandardSqlTableType()
         raw_protobuf = json_format.ParseDict(
             resource, output._pb, ignore_unknown_fields=True
         )
@@ -407,7 +407,7 @@ class RoutineArgument(object):
 
     @property
     def data_type(self):
-        """Optional[google.cloud.bigquery_v2.types.StandardSqlDataType]: Type
+        """Optional[google.cloud.bigquery.types.StandardSqlDataType]: Type
         of a variable, e.g., a function argument.
 
         See:
@@ -417,7 +417,7 @@ class RoutineArgument(object):
         if not resource:
             return resource
 
-        output = google.cloud.bigquery_v2.types.StandardSqlDataType()
+        output = StandardSqlDataType()
         raw_protobuf = json_format.ParseDict(
             resource, output._pb, ignore_unknown_fields=True
         )

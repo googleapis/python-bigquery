@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
-
 import enum
-import itertools
 
-from google.cloud.bigquery_v2 import types as gapic_types
+from google.cloud.bigquery import types
 from google.cloud.bigquery.query import ScalarQueryParameterType
 
 
@@ -203,28 +200,17 @@ _SQL_NONSCALAR_TYPES = frozenset(("TYPE_KIND_UNSPECIFIED", "ARRAY", "STRUCT"))
 
 
 def _make_sql_scalars_enum():
-    """Create an enum based on a gapic enum containing only SQL scalar types."""
+    """Create an enum based on the types enum containing only SQL scalar types."""
 
     new_enum = enum.Enum(
         "StandardSqlDataTypes",
         (
             (member.name, member.value)
-            for member in gapic_types.StandardSqlDataType.TypeKind
+            for member in types.StandardSqlDataType.TypeKind
             if member.name in _SQL_SCALAR_TYPES
         ),
     )
-
-    # make sure the docstring for the new enum is also correct
-    orig_doc = gapic_types.StandardSqlDataType.TypeKind.__doc__
-    skip_pattern = re.compile(
-        "|".join(_SQL_NONSCALAR_TYPES)
-        + "|because a JSON object"  # the second description line of STRUCT member
-    )
-
-    new_doc = "\n".join(
-        itertools.filterfalse(skip_pattern.search, orig_doc.splitlines())
-    )
-    new_enum.__doc__ = "An Enum of scalar SQL types.\n" + new_doc
+    new_enum.__doc__ = types.StandardSqlDataType.__doc__
 
     return new_enum
 

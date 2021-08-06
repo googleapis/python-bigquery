@@ -15,6 +15,7 @@
 import datetime
 import logging
 import time
+import types
 import unittest
 import warnings
 
@@ -1839,6 +1840,15 @@ class TestRowIterator(unittest.TestCase):
             )
         )
 
+    def test__validate_bqstorage_returns_false_if_max_results_set(self):
+        iterator = self._make_one(
+            max_results=10, first_page_response=None  # not cached
+        )
+        result = iterator._validate_bqstorage(
+            bqstorage_client=None, create_bqstorage_client=True
+        )
+        self.assertFalse(result)
+
     def test_to_arrow(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -2032,7 +2042,47 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(child_field.type.value_type[0].name, "name")
         self.assertEqual(child_field.type.value_type[1].name, "age")
 
-    def test_to_arrow_max_results_w_create_bqstorage_warning(self):
+    def test_to_arrow_max_results_w_explicit_bqstorage_client_warning(self):
+        from google.cloud.bigquery.schema import SchemaField
+
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        mock_client = _mock_client()
+        mock_bqstorage_client = mock.sentinel.bq_storage_client
+
+        row_iterator = self._make_one(
+            client=mock_client,
+            api_request=api_request,
+            path=path,
+            schema=schema,
+            max_results=42,
+        )
+
+        with warnings.catch_warnings(record=True) as warned:
+            row_iterator.to_arrow(bqstorage_client=mock_bqstorage_client)
+
+        matches = [
+            warning
+            for warning in warned
+            if warning.category is UserWarning
+            and "cannot use bqstorage_client" in str(warning).lower()
+            and "REST" in str(warning)
+        ]
+        self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
+        self.assertIn(
+            __file__, str(matches[0]), msg="Warning emitted with incorrect stacklevel"
+        )
+        mock_client._ensure_bqstorage_client.assert_not_called()
+
+    def test_to_arrow_max_results_w_create_bqstorage_client_no_warning(self):
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2065,7 +2115,7 @@ class TestRowIterator(unittest.TestCase):
             and "cannot use bqstorage_client" in str(warning).lower()
             and "REST" in str(warning)
         ]
-        self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
+        self.assertFalse(matches)
         mock_client._ensure_bqstorage_client.assert_not_called()
 
     def test_to_arrow_w_bqstorage(self):
@@ -2285,7 +2335,6 @@ class TestRowIterator(unittest.TestCase):
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_iterable(self):
         from google.cloud.bigquery.schema import SchemaField
-        import types
 
         schema = [
             SchemaField("name", "STRING", mode="REQUIRED"),
@@ -2328,7 +2377,6 @@ class TestRowIterator(unittest.TestCase):
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_iterable_with_dtypes(self):
         from google.cloud.bigquery.schema import SchemaField
-        import types
 
         schema = [
             SchemaField("name", "STRING", mode="REQUIRED"),
@@ -2435,6 +2483,57 @@ class TestRowIterator(unittest.TestCase):
 
         # Don't close the client if it was passed in.
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_to_dataframe_iterable_w_bqstorage_max_results_warning(self):
+        from google.cloud.bigquery import schema
+        from google.cloud.bigquery import table as mut
+
+        bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+
+        iterator_schema = [
+            schema.SchemaField("name", "STRING", mode="REQUIRED"),
+            schema.SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        path = "/foo"
+        api_request = mock.Mock(
+            side_effect=[
+                {
+                    "rows": [{"f": [{"v": "Bengt"}, {"v": "32"}]}],
+                    "pageToken": "NEXTPAGE",
+                },
+                {"rows": [{"f": [{"v": "Sven"}, {"v": "33"}]}]},
+            ]
+        )
+        row_iterator = mut.RowIterator(
+            _mock_client(),
+            api_request,
+            path,
+            iterator_schema,
+            table=mut.TableReference.from_string("proj.dset.tbl"),
+            selected_fields=iterator_schema,
+            max_results=25,
+        )
+
+        with warnings.catch_warnings(record=True) as warned:
+            dfs = row_iterator.to_dataframe_iterable(bqstorage_client=bqstorage_client)
+
+        # Was a warning emitted?
+        matches = [
+            warning
+            for warning in warned
+            if warning.category is UserWarning
+            and "cannot use bqstorage_client" in str(warning).lower()
+            and "REST" in str(warning)
+        ]
+        assert len(matches) == 1, "User warning was not emitted."
+        assert __file__ in str(matches[0]), "Warning emitted with incorrect stacklevel"
+
+        # Basic check of what we got as a result.
+        dataframes = list(dfs)
+        assert len(dataframes) == 2
+        assert isinstance(dataframes[0], pandas.DataFrame)
+        assert isinstance(dataframes[1], pandas.DataFrame)
 
     @mock.patch("google.cloud.bigquery.table.pandas", new=None)
     def test_to_dataframe_iterable_error_if_pandas_is_none(self):
@@ -2831,7 +2930,48 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    def test_to_dataframe_max_results_w_create_bqstorage_warning(self):
+    def test_to_dataframe_max_results_w_explicit_bqstorage_client_warning(self):
+        from google.cloud.bigquery.schema import SchemaField
+
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        mock_client = _mock_client()
+        mock_bqstorage_client = mock.sentinel.bq_storage_client
+
+        row_iterator = self._make_one(
+            client=mock_client,
+            api_request=api_request,
+            path=path,
+            schema=schema,
+            max_results=42,
+        )
+
+        with warnings.catch_warnings(record=True) as warned:
+            row_iterator.to_dataframe(bqstorage_client=mock_bqstorage_client)
+
+        matches = [
+            warning
+            for warning in warned
+            if warning.category is UserWarning
+            and "cannot use bqstorage_client" in str(warning).lower()
+            and "REST" in str(warning)
+        ]
+        self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
+        self.assertIn(
+            __file__, str(matches[0]), msg="Warning emitted with incorrect stacklevel"
+        )
+        mock_client._ensure_bqstorage_client.assert_not_called()
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_to_dataframe_max_results_w_create_bqstorage_client_no_warning(self):
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2864,7 +3004,7 @@ class TestRowIterator(unittest.TestCase):
             and "cannot use bqstorage_client" in str(warning).lower()
             and "REST" in str(warning)
         ]
-        self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
+        self.assertFalse(matches)
         mock_client._ensure_bqstorage_client.assert_not_called()
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")

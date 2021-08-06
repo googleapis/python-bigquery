@@ -43,7 +43,7 @@ dependencies = [
     "google-resumable-media >= 0.6.0, < 3.0dev",
     "packaging >= 14.3",
     "protobuf >= 3.12.0",
-    "pyarrow >= 3.0.0, < 5.0dev",
+    "pyarrow >= 3.0.0, < 6.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]
 extras = {

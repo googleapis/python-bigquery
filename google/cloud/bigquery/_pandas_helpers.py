@@ -43,11 +43,6 @@ from google.cloud.bigquery import schema
 
 _LOGGER = logging.getLogger(__name__)
 
-_NO_BQSTORAGE_ERROR = (
-    "The google-cloud-bigquery-storage library is not installed, "
-    "please install google-cloud-bigquery-storage to use bqstorage features."
-)
-
 _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seconds.
 
 _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage downloads
@@ -59,8 +54,6 @@ _BQ_TO_PANDAS_DTYPE_NULLSAFE = {
     "FLOAT64": "float64",
     "INT64": "Int64",
     "INTEGER": "Int64",
-    "INTERVAL": "timedelta64[ns]",  # TODO: What happens when an interval is outside of ns range?
-    "TIME": "timedelta64[ns]",
 }
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",

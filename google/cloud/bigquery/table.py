@@ -1924,12 +1924,12 @@ class RowIterator(HTTPIterator):
 
         extra_kwargs = {"timestamp_as_object": timestamp_as_object}
 
-        df = record_batch.to_pandas(date_as_object=date_as_object, **extra_kwargs)
+        df = record_batch.to_pandas(
+            date_as_object=date_as_object, integer_object_nulls=True, **extra_kwargs
+        )
 
         for column in dtypes:
             df[column] = pandas.Series(df[column], dtype=dtypes[column])
-
-        # TODO: convert TIME columns, maybe TIMESTAMP too? Only if dtypes was not set.
 
         return df
 

@@ -567,7 +567,7 @@ def test_query_results_to_dataframe(bigquery_client):
     for _, row in df.iterrows():
         for col in column_names:
             # all the schema fields are nullable, so None is acceptable
-            if not row[col] is None:
+            if not pandas.isna(row[col]):
                 assert isinstance(row[col], exp_datatypes[col])
 
 
@@ -597,7 +597,7 @@ def test_query_results_to_dataframe_w_bqstorage(bigquery_client):
     for index, row in df.iterrows():
         for col in column_names:
             # all the schema fields are nullable, so None is acceptable
-            if not row[col] is None:
+            if not pandas.isna(row[col]):
                 assert isinstance(row[col], exp_datatypes[col])
 
 
@@ -806,12 +806,19 @@ def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_r
     ).to_dataframe()
 
     assert df.dtypes["bool_col"].name == "boolean"
-    # TODO: assert df.dtypes["date_col"].name == "datetime64[ns]"
     assert df.dtypes["datetime_col"].name == "datetime64[ns]"
     assert df.dtypes["float64_col"].name == "float64"
     assert df.dtypes["int64_col"].name == "Int64"
-    # TODO: assert df.dtypes["time_col"].name == "timedelta64[ns]"
     assert df.dtypes["timestamp_col"].name == "datetime64[ns, UTC]"
+
+    # object is used by default, but we can use "datetime64[ns]" automatically
+    # when data is within the supported range.
+    # https://github.com/googleapis/python-bigquery/issues/861
+    assert df.dtypes["date_col"].name == "object"
+
+    # object is used by default, but we can use "timedelta64[ns]" automatically
+    # https://github.com/googleapis/python-bigquery/issues/862
+    assert df.dtypes["time_col"].name == "object"
 
     # decimal.Decimal is used to avoid loss of precision.
     assert df.dtypes["bignumeric_col"].name == "object"
@@ -844,7 +851,10 @@ def test_list_rows_nullable_scalars_extreme_dtypes(
     assert df.dtypes["bool_col"].name == "boolean"
     assert df.dtypes["float64_col"].name == "float64"
     assert df.dtypes["int64_col"].name == "Int64"
-    assert df.dtypes["time_col"].name == "timedelta64[ns]"
+
+    # object is used by default, but we can use "timedelta64[ns]" automatically
+    # https://github.com/googleapis/python-bigquery/issues/862
+    assert df.dtypes["time_col"].name == "object"
 
     # decimal.Decimal is used to avoid loss of precision.
     assert df.dtypes["numeric_col"].name == "object"

@@ -14,12 +14,12 @@ First, ensure that the :mod:`pandas` library is installed by running:
 
    pip install --upgrade pandas
 
-Alternatively, you can install the BigQuery python client library with
+Alternatively, you can install the BigQuery Python client library with
 :mod:`pandas` by running:
 
 .. code-block:: bash
 
-   pip install --upgrade google-cloud-bigquery[pandas]
+   pip install --upgrade 'google-cloud-bigquery[pandas]'
 
 To retrieve query results as a :class:`pandas.DataFrame`:
 
@@ -36,6 +36,27 @@ To retrieve table rows as a :class:`pandas.DataFrame`:
    :dedent: 4
    :start-after: [START bigquery_list_rows_dataframe]
    :end-before: [END bigquery_list_rows_dataframe]
+
+The following data types are used when creating a pandas DataFrame.
+
+.. list-table:: Pandas Data Type Mapping
+   :header-rows: 1
+
+   * - BigQuery
+     - pandas
+     - Notes
+   * - BOOL
+     - boolean
+     -
+   * - DATETIME
+     - datetime64[ns], object
+     - object is used when there are values not representable in pandas
+   * - FLOAT64
+     - float64
+     -
+   * - INT64
+     - Int64
+     -
 
 Load a Pandas DataFrame to a BigQuery Table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

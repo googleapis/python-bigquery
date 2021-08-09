@@ -3163,6 +3163,7 @@ class Client(ClientWithProject):
         project: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
+        job_retry: retries.Retry = None,
     ) -> job.QueryJob:
         """Run a SQL query.
 
@@ -3192,20 +3193,45 @@ class Client(ClientWithProject):
                 Project ID of the project of where to run the job. Defaults
                 to the client's project.
             retry (Optional[google.api_core.retry.Retry]):
-                How to retry the RPC.
+                How to retry the RPC.  This only applies to making RPC
+                calls.  It isn't used to retry failed jobs.  This has
+                a reasonable default that should only be overridden
+                with care.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
+            job_retry (Optional[google.api_core.retry.Retry]):
+                How to retry failed jobs.  The default retries
+                rate-limit-exceeded errors.
+
+                Not all jobs can be retried.  If `job_id` is provided,
+                then the job returned by the query will not be
+                retryable, and an exception will be raised if
+                `job_retry` is also provided.
+
+                Note that the errors aren't detected until `result()`
+                is called on the job returned. The `job_retry`
+                specified here becomes the default `job_retry` for
+                `result()`, where it can also be specified.
 
         Returns:
             google.cloud.bigquery.job.QueryJob: A new query job instance.
 
         Raises:
             TypeError:
-                If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.QueryJobConfig`
-                class.
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.QueryJobConfig`
+                class, or if both `job_id` and `job_retry` are
+                provided.
         """
         job_id_given = job_id is not None
+        if job_id_given and job_retry is not None:
+            raise TypeError(
+                "`job_retry` was provided, but the returned job is"
+                " not retryable, because a custom `job_id` was"
+                " provided."
+            )
+
         job_id_save = job_id
 
         if project is None:
@@ -3278,6 +3304,7 @@ class Client(ClientWithProject):
         # point, we may retry.
         if not job_id_given:
             future._retry_do_query = do_query  # in case we have to retry later
+            future._job_retry = job_retry
 
         return future
 

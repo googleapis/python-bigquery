@@ -16,7 +16,9 @@ import contextlib
 import threading
 import time
 
+import google.api_core.exceptions
 import google.cloud.bigquery
+import pytest
 
 
 def thread(func):
@@ -25,9 +27,10 @@ def thread(func):
     return thread
 
 
-def test_query_retry_539(bigquery_client, dataset_id):
+@pytest.mark.parametrize("job_retry_on_query", [True, False])
+def test_query_retry_539(bigquery_client, dataset_id, job_retry_on_query):
     """
-    Test semantic retry
+    Test job_retry
 
     See: https://github.com/googleapis/python-bigquery/issues/539
     """
@@ -35,7 +38,15 @@ def test_query_retry_539(bigquery_client, dataset_id):
     from google.api_core.retry import if_exception_type, Retry
 
     table_name = f"{dataset_id}.t539"
-    job = bigquery_client.query(f"select count(*) from {table_name}")
+
+    # Without a custom retry, we fail:
+    with pytest.raises(google.api_core.exceptions.NotFound):
+        bigquery_client.query(f"select count(*) from {table_name}").result()
+
+    retry_notfound = Retry(predicate=if_exception_type(exceptions.NotFound))
+
+    job_retry = dict(job_retry=retry_notfound) if job_retry_on_query else {}
+    job = bigquery_client.query(f"select count(*) from {table_name}", **job_retry)
     job_id = job.job_id
 
     # We can already know that the job failed, but we're not supposed
@@ -45,12 +56,12 @@ def test_query_retry_539(bigquery_client, dataset_id):
 
     @thread
     def create_table():
-        time.sleep(1)  # Give the first attempt time to fail.
+        time.sleep(1)  # Give the first retry attempt time to fail.
         with contextlib.closing(google.cloud.bigquery.Client()) as client:
-            client.query(f"create table {table_name} (id int64)")
+            client.query(f"create table {table_name} (id int64)").result()
 
-    retry_policy = Retry(predicate=if_exception_type(exceptions.NotFound))
-    [[count]] = list(job.result(retry=retry_policy))
+    job_retry = {} if job_retry_on_query else dict(job_retry=retry_notfound)
+    [[count]] = list(job.result(**job_retry))
     assert count == 0
 
     # The job was retried, and thus got a new job id
@@ -58,3 +69,4 @@ def test_query_retry_539(bigquery_client, dataset_id):
 
     # Make sure we don't leave a thread behind:
     create_table.join()
+    bigquery_client.query(f"drop table {table_name}").result()

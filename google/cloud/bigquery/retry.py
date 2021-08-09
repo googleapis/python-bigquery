@@ -56,3 +56,15 @@ To modify the default retry behavior, call a ``with_XXX`` method
 on ``DEFAULT_RETRY``. For example, to change the deadline to 30 seconds,
 pass ``retry=bigquery.DEFAULT_RETRY.with_deadline(30)``.
 """
+
+
+@retry.Retry
+def DEFAULT_JOB_RETRY(exc):
+    """
+    The default job retry object.
+    """
+    if not hasattr(exc, "errors") or len(exc.errors) == 0:
+        return False
+
+    reason = exc.errors[0]["reason"]
+    return reason == "rateLimitExceeded"

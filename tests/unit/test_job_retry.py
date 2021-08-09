@@ -13,21 +13,46 @@
 # limitations under the License.
 
 import datetime
+import re
 
 import mock
 import pytest
 
 import google.api_core.exceptions
+import google.api_core.retry
 
 from .helpers import make_connection
 
 
+# With job_retry_on_query, we're testing 4 scenarios:
+# - No `job_retry` passed, retry on default rateLimitExceeded.
+# - Pass NotFound retry to `query`.
+# - Pass NotFound retry to `result`.
+# - Pass NotFound retry to both, with the value passed to `result` overriding.
+@pytest.mark.parametrize("job_retry_on_query", [None, "Query", "Result", "Both"])
 @mock.patch("time.sleep")
-def test_retry_failed_jobs(sleep, client):
+def test_retry_failed_jobs(sleep, client, job_retry_on_query):
     """
     Test retry of job failures, as opposed to API-invocation failures.
     """
-    err = dict(reason="rateLimitExceeded")
+
+    retry_notfound = google.api_core.retry.Retry(
+        predicate=google.api_core.retry.if_exception_type(
+            google.api_core.exceptions.NotFound
+        )
+    )
+    retry_badrequest = google.api_core.retry.Retry(
+        predicate=google.api_core.retry.if_exception_type(
+            google.api_core.exceptions.BadRequest
+        )
+    )
+
+    if job_retry_on_query is None:
+        reason = "rateLimitExceeded"
+    else:
+        reason = "notFound"
+
+    err = dict(reason=reason)
     responses = [
         dict(status=dict(state="DONE", errors=[err], errorResult=err)),
         dict(status=dict(state="DONE", errors=[err], errorResult=err)),
@@ -49,10 +74,22 @@ def test_retry_failed_jobs(sleep, client):
     conn = client._connection = make_connection()
     conn.api_request.side_effect = api_request
 
-    job = client.query("select 1")
+    if job_retry_on_query == "Query":
+        job_retry = dict(job_retry=retry_notfound)
+    elif job_retry_on_query == "Both":
+        # This will be overridden in `result`
+        job_retry = dict(job_retry=retry_badrequest)
+    else:
+        job_retry = {}
+    job = client.query("select 1", **job_retry)
 
     orig_job_id = job.job_id
-    result = job.result()
+    job_retry = (
+        dict(job_retry=retry_notfound)
+        if job_retry_on_query in ("Result", "Both")
+        else {}
+    )
+    result = job.result(**job_retry)
     assert result.total_rows == 1
     assert not responses  # We made all the calls we expected to.
 
@@ -146,3 +183,29 @@ def test_retry_failed_jobs_after_retry_failed(sleep, datetime_helpers, client):
     assert result.total_rows == 1
     assert not responses  # We made all the calls we expected to.
     assert job.job_id != orig_job_id
+
+
+def test_raises_on_job_retry_on_query_with_non_retryable_jobs(client):
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "`job_retry` was provided, but the returned job is"
+            " not retryable, because a custom `job_id` was"
+            " provided."
+        ),
+    ):
+        client.query("select 42", job_id=42, job_retry=google.api_core.retry.Retry())
+
+
+def test_raises_on_job_retry_on_result_with_non_retryable_jobs(client):
+    client._connection = make_connection({})
+    job = client.query("select 42", job_id=42)
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "`job_retry` was provided, but this job is"
+            " not retryable, because a custom `job_id` was"
+            " provided to the query that created this job."
+        ),
+    ):
+        job.result(job_retry=google.api_core.retry.Retry())

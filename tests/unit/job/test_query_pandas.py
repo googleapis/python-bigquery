@@ -20,11 +20,6 @@ import mock
 import pyarrow
 import pytest
 
-try:
-    import pandas
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pandas = None
-
 from google.cloud import bigquery_storage
 
 try:
@@ -35,6 +30,8 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 from .helpers import _make_client
 from .helpers import _make_connection
 from .helpers import _make_job_resource
+
+pandas = pytest.importorskip("pandas")
 
 
 @pytest.fixture
@@ -78,7 +75,6 @@ def test__contains_order_by(query, expected):
         assert not mut._contains_order_by(query)
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.parametrize(
     "query",
     (
@@ -413,7 +409,6 @@ def test_to_arrow_w_tqdm_wo_query_plan():
     result_patch_tqdm.assert_called()
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_to_dataframe():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -452,7 +447,6 @@ def test_to_dataframe():
     assert list(df) == ["name", "age"]  # verify the column names
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_to_dataframe_ddl_query():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -472,7 +466,6 @@ def test_to_dataframe_ddl_query():
     assert len(df) == 0
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_to_dataframe_bqstorage(table_read_options_kwarg):
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -522,7 +515,6 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
     )
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_to_dataframe_bqstorage_no_pyarrow_compression():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -565,7 +557,6 @@ def test_to_dataframe_bqstorage_no_pyarrow_compression():
     )
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_to_dataframe_column_dtypes():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -617,15 +608,14 @@ def test_to_dataframe_column_dtypes():
     assert list(df) == exp_columns  # verify the column names
 
     assert df.start_timestamp.dtype.name == "datetime64[ns, UTC]"
-    assert df.seconds.dtype.name == "int64"
+    assert df.seconds.dtype.name == "Int64"
     assert df.miles.dtype.name == "float64"
     assert df.km.dtype.name == "float16"
     assert df.payment_type.dtype.name == "object"
-    assert df.complete.dtype.name == "bool"
+    assert df.complete.dtype.name == "boolean"
     assert df.date.dtype.name == "object"
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_to_dataframe_column_date_dtypes():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -657,7 +647,6 @@ def test_to_dataframe_column_date_dtypes():
     assert df.date.dtype.name == "datetime64[ns]"
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
 @mock.patch("tqdm.tqdm")
 def test_to_dataframe_with_progress_bar(tqdm_mock):
@@ -685,7 +674,6 @@ def test_to_dataframe_with_progress_bar(tqdm_mock):
     tqdm_mock.assert_called()
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
 def test_to_dataframe_w_tqdm_pending():
     from google.cloud.bigquery import table
@@ -741,7 +729,6 @@ def test_to_dataframe_w_tqdm_pending():
     )
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
 def test_to_dataframe_w_tqdm():
     from google.cloud.bigquery import table
@@ -801,7 +788,6 @@ def test_to_dataframe_w_tqdm():
     )
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
 def test_to_dataframe_w_tqdm_max_results():
     from google.cloud.bigquery import table

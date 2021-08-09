@@ -2578,7 +2578,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(len(df), 4)  # verify the number of rows
         self.assertEqual(list(df), ["name", "age"])  # verify the column names
         self.assertEqual(df.name.dtype.name, "object")
-        self.assertEqual(df.age.dtype.name, "int64")
+        self.assertEqual(df.age.dtype.name, "Int64")
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_timestamp_out_of_pyarrow_bounds(self):
@@ -2821,7 +2821,7 @@ class TestRowIterator(unittest.TestCase):
                 self.assertTrue(row.isnull().all())
             else:
                 self.assertIsInstance(row.start_timestamp, pandas.Timestamp)
-                self.assertIsInstance(row.seconds, float)
+                self.assertIsInstance(row.seconds, int)
                 self.assertIsInstance(row.payment_type, str)
                 self.assertIsInstance(row.complete, bool)
                 self.assertIsInstance(row.date, datetime.date)
@@ -2867,11 +2867,11 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(list(df), exp_columns)  # verify the column names
 
         self.assertEqual(df.start_timestamp.dtype.name, "datetime64[ns, UTC]")
-        self.assertEqual(df.seconds.dtype.name, "int64")
+        self.assertEqual(df.seconds.dtype.name, "Int64")
         self.assertEqual(df.miles.dtype.name, "float64")
         self.assertEqual(df.km.dtype.name, "float16")
         self.assertEqual(df.payment_type.dtype.name, "object")
-        self.assertEqual(df.complete.dtype.name, "bool")
+        self.assertEqual(df.complete.dtype.name, "boolean")
         self.assertEqual(df.date.dtype.name, "object")
 
     @mock.patch("google.cloud.bigquery.table.pandas", new=None)

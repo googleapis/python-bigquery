@@ -1895,13 +1895,12 @@ class RowIterator(HTTPIterator):
             bqstorage_client=bqstorage_client,
             create_bqstorage_client=create_bqstorage_client,
         )
-
-        # Let the user-defined dtypes override the default ones.
-        # https://stackoverflow.com/a/26853961/101923
-        # TODO: test that this actually doesn't override
         default_dtypes = _pandas_helpers.bq_schema_to_nullsafe_pandas_dtypes(
             self.schema
         )
+
+        # Let the user-defined dtypes override the default ones.
+        # https://stackoverflow.com/a/26853961/101923
         dtypes = {**default_dtypes, **dtypes}
 
         # When converting timestamp values to nanosecond precision, the result

@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import decimal
 from unittest import mock
 
+import pyarrow
 import pytest
 
 from google.cloud import bigquery
@@ -31,31 +33,35 @@ def class_under_test():
     return RowIterator
 
 
-def test_to_dataframe_defaults_to_nullable_dtypes(class_under_test):
+def test_to_dataframe_defaults_to_nullable_dtypes(monkeypatch, class_under_test):
+    arrow_schema = pyarrow.schema(
+        [pyarrow.field("bignumeric_col", pyarrow.decimal256(76, scale=38))]
+    )
+    arrow_table = pyarrow.Table.from_pydict(
+        {"bignumeric_col": [decimal.Decimal("123.456")]}, schema=arrow_schema,
+    )
+
     nullable_schema = [
-        bigquery.SchemaField("date_col", "DATE"),
-        bigquery.SchemaField("datetime_col", "DATETIME"),
-        bigquery.SchemaField("float_col", "FLOAT"),
-        bigquery.SchemaField("float64_col", "FLOAT64"),
-        bigquery.SchemaField("integer_col", "INTEGER"),
-        bigquery.SchemaField("int64_col", "INT64"),
-        bigquery.SchemaField(
-            "time_col", "TIME"
-        ),  # TODO: use timedelta64 dtype for this?
-        bigquery.SchemaField("timestamp_col", "TIMESTAMP"),
+        bigquery.SchemaField("bignumeric_col", "BIGNUMERIC"),
+        # bigquery.SchemaField("date_col", "DATE"),
+        # bigquery.SchemaField("datetime_col", "DATETIME"),
+        # bigquery.SchemaField("float_col", "FLOAT"),
+        # bigquery.SchemaField("float64_col", "FLOAT64"),
+        # bigquery.SchemaField("integer_col", "INTEGER"),
+        # bigquery.SchemaField("int64_col", "INT64"),
+        # bigquery.SchemaField( "time_col", "TIME"),
+        # bigquery.SchemaField("timestamp_col", "TIMESTAMP"),
     ]
     mock_client = mock.create_autospec(bigquery.Client)
     mock_client.project = "test-proj"
     mock_api_request = mock.Mock()
-    rows = class_under_test(mock_client, mock_api_request, TEST_PATH, nullable_schema,)
-    rows.to_dataframe()  # TODO: if we are always using BQ Storage API for
-    # to_dataframe, maybe wait to implement until after required?
-    # TODO: behavior is based on schema (and data rows)
-    assert False
+    mock_to_arrow = mock.Mock()
+    mock_to_arrow.return_value = arrow_table
+    rows = class_under_test(mock_client, mock_api_request, TEST_PATH, nullable_schema)
+    monkeypatch.setattr(rows, "to_arrow", mock_to_arrow)
+    rows.to_dataframe()
 
-
-def test_to_dataframe_bqstorage_defaults_to_nullable_dtypes(class_under_test):
-    # TODO: behavior is based on schema (and data rows)
+    # TODO: check dtypes, check values
     assert False
 
 

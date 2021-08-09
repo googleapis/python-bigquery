@@ -47,6 +47,7 @@ _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seco
 
 _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage downloads
 
+# If you update the default dtypes, also update the docs at docs/usage/pandas.rst.
 _BQ_TO_PANDAS_DTYPE_NULLSAFE = {
     "BOOL": "boolean",
     "BOOLEAN": "boolean",
@@ -227,8 +228,6 @@ def bq_schema_to_nullsafe_pandas_dtypes(bq_schema: Sequence[schema.SchemaField])
     Only returns default dtypes which are safe to have NULL values. This
     includes Int64, which has pandas.NA values and does not result in
     loss-of-precision.
-
-    # TODO: document dtype mapping.
 
     Returns:
         Dict[str, str]: mapping from column names to dtypes

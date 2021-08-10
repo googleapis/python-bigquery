@@ -581,6 +581,59 @@ class TestTable(unittest.TestCase, _SchemaBase):
         with self.assertRaises(ValueError):
             getattr(table, "num_rows")
 
+    def test__eq__wrong_type(self):
+        table = self._make_one("project_foo.dataset_bar.table_baz")
+
+        class TableWannabe:
+            pass
+
+        not_a_table = TableWannabe()
+        not_a_table._properties = table._properties
+
+        assert table != not_a_table  # Can't fake it.
+
+    def test__eq__same_table_basic(self):
+        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
+        table_2 = self._make_one("project_foo.dataset_bar.table_baz")
+        assert table_1 == table_2
+
+    def test__eq__same_table_multiple_properties(self):
+        from google.cloud.bigquery import SchemaField
+
+        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
+        table_1.require_partition_filter = True
+        table_1.labels = {"first": "one", "second": "two"}
+
+        table_1.schema = [
+            SchemaField("name", "STRING", "REQUIRED"),
+            SchemaField("age", "INTEGER", "NULLABLE"),
+        ]
+
+        table_2 = self._make_one("project_foo.dataset_bar.table_baz")
+        table_2.require_partition_filter = True
+        table_2.labels = {"first": "one", "second": "two"}
+        table_2.schema = [
+            SchemaField("name", "STRING", "REQUIRED"),
+            SchemaField("age", "INTEGER", "NULLABLE"),
+        ]
+
+        assert table_1 == table_2
+
+    def test__eq__same_table_property_different(self):
+        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
+        table_1.description = "This is table baz"
+
+        table_2 = self._make_one("project_foo.dataset_bar.table_baz")
+        table_2.description = "This is also table baz"
+
+        assert table_1 != table_2
+
+    def test__eq__different_table(self):
+        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
+        table_2 = self._make_one("project_foo.dataset_bar.table_baz_2")
+
+        assert table_1 != table_2
+
     def test_schema_setter_non_sequence(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)

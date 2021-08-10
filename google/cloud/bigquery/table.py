@@ -1011,6 +1011,13 @@ class Table(object):
         """Generate a resource for ``update``."""
         return _helpers._build_resource_from_properties(self, filter_fields)
 
+    def __eq__(self, other):
+        if not isinstance(other, Table):
+            return NotImplemented
+        return self._properties == other._properties
+
+    __hash__ = None
+
     def __repr__(self):
         return "Table({})".format(repr(self.reference))
 

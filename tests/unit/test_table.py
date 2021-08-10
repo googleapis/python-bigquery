@@ -588,7 +588,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
             pass
 
         not_a_table = TableWannabe()
-        not_a_table._properties = table._properties
+        not_a_table.path = table.path
 
         assert table != not_a_table  # Can't fake it.
 
@@ -626,7 +626,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table_2 = self._make_one("project_foo.dataset_bar.table_baz")
         table_2.description = "This is also table baz"
 
-        assert table_1 != table_2
+        assert table_1 == table_2  # Still equal, only table reference is important.
 
     def test__eq__different_table(self):
         table_1 = self._make_one("project_foo.dataset_bar.table_baz")

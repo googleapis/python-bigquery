@@ -86,7 +86,7 @@ from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.model import _model_arg_to_model_ref
 from google.cloud.bigquery.query import _QueryResults
-from google.cloud.bigquery.retry import DEFAULT_RETRY
+from google.cloud.bigquery.retry import DEFAULT_RETRY, DEFAULT_JOB_RETRY
 from google.cloud.bigquery.routine import Routine
 from google.cloud.bigquery.routine import RoutineReference
 from google.cloud.bigquery.schema import SchemaField
@@ -3163,7 +3163,7 @@ class Client(ClientWithProject):
         project: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = None,
-        job_retry: retries.Retry = None,
+        job_retry: retries.Retry = DEFAULT_JOB_RETRY,
     ) -> job.QueryJob:
         """Run a SQL query.
 
@@ -3202,17 +3202,19 @@ class Client(ClientWithProject):
                 before using ``retry``.
             job_retry (Optional[google.api_core.retry.Retry]):
                 How to retry failed jobs.  The default retries
-                rate-limit-exceeded errors.
+                rate-limit-exceeded errors.  Passing ``None`` disables
+                job retry.
 
-                Not all jobs can be retried.  If `job_id` is provided,
-                then the job returned by the query will not be
-                retryable, and an exception will be raised if
-                `job_retry` is also provided.
+                Not all jobs can be retried.  If ``job_id`` is
+                provided, then the job returned by the query will not
+                be retryable, and an exception will be raised if a
+                non-``None`` (and non-default) value for ``job_retry``
+                is also provided.
 
-                Note that the errors aren't detected until `result()`
-                is called on the job returned. The `job_retry`
-                specified here becomes the default `job_retry` for
-                `result()`, where it can also be specified.
+                Note that errors aren't detected until ``result()`` is
+                called on the job returned. The ``job_retry``
+                specified here becomes the default ``job_retry`` for
+                ``result()``, where it can also be specified.
 
         Returns:
             google.cloud.bigquery.job.QueryJob: A new query job instance.
@@ -3221,11 +3223,15 @@ class Client(ClientWithProject):
             TypeError:
                 If ``job_config`` is not an instance of
                 :class:`~google.cloud.bigquery.job.QueryJobConfig`
-                class, or if both `job_id` and `job_retry` are
-                provided.
+                class, or if both ``job_id`` and non-``None`` non-default
+                ``job_retry`` are provided.
         """
         job_id_given = job_id is not None
-        if job_id_given and job_retry is not None:
+        if (
+            job_id_given
+            and job_retry is not None
+            and job_retry is not DEFAULT_JOB_RETRY
+        ):
             raise TypeError(
                 "`job_retry` was provided, but the returned job is"
                 " not retryable, because a custom `job_id` was"

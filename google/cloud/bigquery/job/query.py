@@ -1260,7 +1260,7 @@ class QueryJob(_AsyncJob):
         retry: "retries.Retry" = DEFAULT_RETRY,
         timeout: float = None,
         start_index: int = None,
-        job_retry: "retries.Retry" = None,
+        job_retry: "retries.Retry" = DEFAULT_JOB_RETRY,
     ) -> Union["RowIterator", _EmptyRowIterator]:
         """Start the job and wait for it to complete and get the result.
 
@@ -1287,13 +1287,14 @@ class QueryJob(_AsyncJob):
                 The zero-based index of the starting row to read.
             job_retry (Optional[google.api_core.retry.Retry]):
                 How to retry failed jobs.  The default retries
-                rate-limit-exceeded errors.
+                rate-limit-exceeded errors. Passing ``None`` disables
+                job retry.
 
-                Not all jobs can be retried.  If `job_id` was provided
-                to the query that created this job, then the job
-                returned by the query will not be retryable, and an
-                exception will be raised if `job_retry` is also
-                provided.
+                Not all jobs can be retried.  If ``job_id`` was
+                provided to the query that created this job, then the
+                job returned by the query will not be retryable, and
+                an exception will be raised if non-``None``
+                non-default ``job_retry`` is also provided.
 
         Returns:
             google.cloud.bigquery.table.RowIterator:
@@ -1313,17 +1314,16 @@ class QueryJob(_AsyncJob):
             concurrent.futures.TimeoutError:
                 If the job did not complete in the given timeout.
             TypeError:
-                If `job_retry` is provided and the job is not retryable.
+                If Non-``None`` and non-default ``job_retry`` is
+                provided and the job is not retryable.
         """
         try:
             retry_do_query = getattr(self, "_retry_do_query", None)
             if retry_do_query is not None:
-                if job_retry is None:
-                    job_retry = getattr(self, "_job_retry", None)
-                    if job_retry is None:
-                        job_retry = DEFAULT_JOB_RETRY
+                if job_retry is DEFAULT_JOB_RETRY:
+                    job_retry = self._job_retry
             else:
-                if job_retry is not None:
+                if job_retry is not None and job_retry is not DEFAULT_JOB_RETRY:
                     raise TypeError(
                         "`job_retry` was provided, but this job is"
                         " not retryable, because a custom `job_id` was"
@@ -1356,6 +1356,7 @@ class QueryJob(_AsyncJob):
                     # job, it should stay good,and we shouldn't have to retry.
                     # But let's be paranoid. :)
                     self._retry_do_query = retry_do_query
+                    self._job_retry = job_retry
 
                 super(QueryJob, self).result(retry=retry, timeout=timeout)
 
@@ -1364,7 +1365,7 @@ class QueryJob(_AsyncJob):
                 # set the self._query_results cache.
                 self._reload_query_results(retry=retry, timeout=timeout)
 
-            if retry_do_query is not None:
+            if retry_do_query is not None and job_retry is not None:
                 do_get_result = job_retry(do_get_result)
 
             do_get_result()

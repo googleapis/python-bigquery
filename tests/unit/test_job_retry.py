@@ -28,7 +28,7 @@ from .helpers import make_connection
 # - No `job_retry` passed, retry on default rateLimitExceeded.
 # - Pass NotFound retry to `query`.
 # - Pass NotFound retry to `result`.
-# - Pass NotFound retry to both, with the value passed to `result` overriding.
+# - Pass BadRequest retry to query, with the value passed to `result` overriding.
 @pytest.mark.parametrize("job_retry_on_query", [None, "Query", "Result", "Both"])
 @mock.patch("time.sleep")
 def test_retry_failed_jobs(sleep, client, job_retry_on_query):
@@ -119,6 +119,40 @@ def test_retry_failed_jobs(sleep, client, job_retry_on_query):
     # We wouldn't (and didn't) fail, because we're dealing with a successful job.
     # So the job id hasn't changed.
     assert job.job_id == orig_job_id
+
+
+# With job_retry_on_query, we're testing 4 scenarios:
+# - Pass None retry to `query`.
+# - Pass None retry to `result`.
+@pytest.mark.parametrize("job_retry_on_query", ["Query", "Result"])
+@mock.patch("time.sleep")
+def test_disable_retry_failed_jobs(sleep, client, job_retry_on_query):
+    """
+    Test retry of job failures, as opposed to API-invocation failures.
+    """
+    err = dict(reason="rateLimitExceeded")
+    responses = [dict(status=dict(state="DONE", errors=[err], errorResult=err)),] * 3
+
+    def api_request(method, path, query_params=None, data=None, **kw):
+        response = responses.pop(0)
+        response["jobReference"] = data["jobReference"]
+        return response
+
+    conn = client._connection = make_connection()
+    conn.api_request.side_effect = api_request
+
+    if job_retry_on_query == "Query":
+        job_retry = dict(job_retry=None)
+    else:
+        job_retry = {}
+    job = client.query("select 1", **job_retry)
+
+    orig_job_id = job.job_id
+    job_retry = dict(job_retry=None) if job_retry_on_query == "Result" else {}
+    with pytest.raises(google.api_core.exceptions.Forbidden):
+        job.result(**job_retry)
+
+    assert len(sleep.mock_calls) == 0
 
 
 @mock.patch("google.api_core.retry.datetime_helpers")

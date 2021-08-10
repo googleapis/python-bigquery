@@ -32,6 +32,8 @@ _UNSTRUCTURED_RETRYABLE_TYPES = (
     auth_exceptions.TransportError,
 )
 
+_DEFAULT_JOB_DEADLINE = 60.0 * 10.0  # seconds
+
 
 def _should_retry(exc):
     """Predicate for determining when to retry.
@@ -58,13 +60,17 @@ pass ``retry=bigquery.DEFAULT_RETRY.with_deadline(30)``.
 """
 
 
-@retry.Retry
-def DEFAULT_JOB_RETRY(exc):
-    """
-    The default job retry object.
-    """
+def _job_should_retry(exc):
     if not hasattr(exc, "errors") or len(exc.errors) == 0:
         return False
 
     reason = exc.errors[0]["reason"]
     return reason == "rateLimitExceeded"
+
+
+DEFAULT_JOB_RETRY = retry.Retry(
+    predicate=_job_should_retry, deadline=_DEFAULT_JOB_DEADLINE
+)
+"""
+The default job retry object.
+"""

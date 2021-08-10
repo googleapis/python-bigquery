@@ -131,7 +131,7 @@ def test_disable_retry_failed_jobs(sleep, client, job_retry_on_query):
     Test retry of job failures, as opposed to API-invocation failures.
     """
     err = dict(reason="rateLimitExceeded")
-    responses = [dict(status=dict(state="DONE", errors=[err], errorResult=err)),] * 3
+    responses = [dict(status=dict(state="DONE", errors=[err], errorResult=err))] * 3
 
     def api_request(method, path, query_params=None, data=None, **kw):
         response = responses.pop(0)
@@ -152,6 +152,7 @@ def test_disable_retry_failed_jobs(sleep, client, job_retry_on_query):
     with pytest.raises(google.api_core.exceptions.Forbidden):
         job.result(**job_retry)
 
+    assert job.job_id == orig_job_id
     assert len(sleep.mock_calls) == 0
 
 

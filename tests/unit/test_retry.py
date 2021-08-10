@@ -101,3 +101,9 @@ def test_DEFAULT_JOB_RETRY_predicate():
     assert DEFAULT_JOB_RETRY._predicate(
         ClientError("fail", errors=[dict(reason="rateLimitExceeded")])
     )
+
+
+def test_DEFAULT_JOB_RETRY_deadline():
+    from google.cloud.bigquery.retry import DEFAULT_JOB_RETRY
+
+    assert DEFAULT_JOB_RETRY._deadline == 600

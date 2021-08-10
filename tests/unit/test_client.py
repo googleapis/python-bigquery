@@ -7781,7 +7781,8 @@ class TestClientUpload(object):
 
         client = self._make_client()
 
-        json_row = {"emoji": "\U0001F3E6"}
+        emoji = "\U0001F3E6"
+        json_row = {"emoji": emoji}
         json_rows = [
             json_row
         ]
@@ -7810,7 +7811,8 @@ class TestClientUpload(object):
         sent_data_file = load_table_from_file.mock_calls[0][1][1]
 
         # make sure json_row's unicode characters are only encoded one time
-        assert sent_data_file.getvalue() == json.dumps(json_row, ensure_ascii=False).encode()
+        expected_bytes = b'{"emoji": "' + emoji.encode("utf8") + b'"}'
+        assert sent_data_file.getvalue() == expected_bytes
 
     # Low-level tests
 

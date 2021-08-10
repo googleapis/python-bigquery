@@ -588,7 +588,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
             pass
 
         not_a_table = TableWannabe()
-        not_a_table.path = table.path
+        not_a_table._properties = table._properties
 
         assert table != not_a_table  # Can't fake it.
 

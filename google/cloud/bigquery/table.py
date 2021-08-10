@@ -1014,7 +1014,7 @@ class Table(object):
     def __eq__(self, other):
         if not isinstance(other, Table):
             return NotImplemented
-        return self.path == other.path
+        return self._properties["tableReference"] == other._properties["tableReference"]
 
     __hash__ = None
 

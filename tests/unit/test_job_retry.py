@@ -191,10 +191,11 @@ def test_retry_failed_jobs_after_retry_failed(sleep, datetime_helpers, client):
 
     # We failed because we couldn't succeed after 120 seconds.
     # But we can try again:
+    err2 = dict(reason="backendError")  # We also retry on this
     responses = [
+        dict(status=dict(state="DONE", errors=[err2], errorResult=err2)),
         dict(status=dict(state="DONE", errors=[err], errorResult=err)),
-        dict(status=dict(state="DONE", errors=[err], errorResult=err)),
-        dict(status=dict(state="DONE", errors=[err], errorResult=err)),
+        dict(status=dict(state="DONE", errors=[err2], errorResult=err2)),
         dict(status=dict(state="DONE")),
         dict(rows=[{"f": [{"v": "1"}]}], totalRows="1"),
     ]

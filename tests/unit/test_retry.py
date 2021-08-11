@@ -101,6 +101,9 @@ def test_DEFAULT_JOB_RETRY_predicate():
     assert DEFAULT_JOB_RETRY._predicate(
         ClientError("fail", errors=[dict(reason="rateLimitExceeded")])
     )
+    assert DEFAULT_JOB_RETRY._predicate(
+        ClientError("fail", errors=[dict(reason="backendError")])
+    )
 
 
 def test_DEFAULT_JOB_RETRY_deadline():

@@ -59,13 +59,15 @@ on ``DEFAULT_RETRY``. For example, to change the deadline to 30 seconds,
 pass ``retry=bigquery.DEFAULT_RETRY.with_deadline(30)``.
 """
 
+job_retry_reasons = "rateLimitExceeded", "backendError"
+
 
 def _job_should_retry(exc):
     if not hasattr(exc, "errors") or len(exc.errors) == 0:
         return False
 
     reason = exc.errors[0]["reason"]
-    return reason == "rateLimitExceeded"
+    return reason in job_retry_reasons
 
 
 DEFAULT_JOB_RETRY = retry.Retry(

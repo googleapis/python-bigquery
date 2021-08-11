@@ -255,9 +255,16 @@ class TableReference(object):
         return (self._project, self._dataset_id, self._table_id)
 
     def __eq__(self, other):
-        if not isinstance(other, TableReference):
+        if isinstance(other, (Table, TableListItem)):
+            return (
+                self.project == other.project
+                and self.dataset_id == other.dataset_id
+                and self.table_id == other.table_id
+            )
+        elif isinstance(other, TableReference):
+            return self._key() == other._key()
+        else:
             return NotImplemented
-        return self._key() == other._key()
 
     def __ne__(self, other):
         return not self == other
@@ -1012,9 +1019,19 @@ class Table(object):
         return _helpers._build_resource_from_properties(self, filter_fields)
 
     def __eq__(self, other):
-        if not isinstance(other, Table):
+        if isinstance(other, Table):
+            return (
+                self._properties["tableReference"]
+                == other._properties["tableReference"]
+            )
+        elif isinstance(other, (TableReference, TableListItem)):
+            return (
+                self.project == other.project
+                and self.dataset_id == other.dataset_id
+                and self.table_id == other.table_id
+            )
+        else:
             return NotImplemented
-        return self._properties["tableReference"] == other._properties["tableReference"]
 
     def __hash__(self):
         return hash((self.project, self.dataset_id, self.table_id))
@@ -1236,6 +1253,19 @@ class TableListItem(object):
             Dict[str, object]: Table represented as an API resource
         """
         return copy.deepcopy(self._properties)
+
+    def __eq__(self, other):
+        if isinstance(other, (Table, TableReference, TableListItem)):
+            return (
+                self.project == other.project
+                and self.dataset_id == other.dataset_id
+                and self.table_id == other.table_id
+            )
+        else:
+            return NotImplemented
+
+    def __hash__(self):
+        return hash((self.project, self.dataset_id, self.table_id))
 
 
 def _row_from_mapping(mapping, schema):

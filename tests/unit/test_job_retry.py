@@ -186,7 +186,7 @@ def test_retry_failed_jobs_after_retry_failed(sleep, datetime_helpers, client):
     with pytest.raises(google.api_core.exceptions.RetryError):
         job.result()
 
-    # We never fot a successful job, so the job id never changed:
+    # We never got a successful job, so the job id never changed:
     assert job.job_id == orig_job_id
 
     # We failed because we couldn't succeed after 120 seconds.

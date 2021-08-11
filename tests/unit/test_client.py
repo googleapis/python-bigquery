@@ -7782,9 +7782,7 @@ class TestClientUpload(object):
 
         emoji = "\U0001F3E6"
         json_row = {"emoji": emoji}
-        json_rows = [
-            json_row
-        ]
+        json_rows = [json_row]
 
         load_patch = mock.patch(
             "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True

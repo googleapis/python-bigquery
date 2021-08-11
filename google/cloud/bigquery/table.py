@@ -1016,7 +1016,8 @@ class Table(object):
             return NotImplemented
         return self._properties["tableReference"] == other._properties["tableReference"]
 
-    __hash__ = None
+    def __hash__(self):
+        return hash((self.project, self.dataset_id, self.table_id))
 
     def __repr__(self):
         return "Table({})".format(repr(self.reference))

@@ -634,6 +634,15 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
         assert table_1 != table_2
 
+    def test_hashable(self):
+        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
+        table_1.description = "This is a table"
+
+        table_1b = self._make_one("project_foo.dataset_bar.table_baz")
+        table_1b.description = "Metadata is irrelevant for hashes"
+
+        assert hash(table_1) == hash(table_1b)
+
     def test_schema_setter_non_sequence(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)

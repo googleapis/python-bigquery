@@ -34,7 +34,7 @@ def class_under_test():
     return RowIterator
 
 
-def test_to_dataframe_defaults_to_nullable_dtypes(monkeypatch, class_under_test):
+def test_to_dataframe_nullable_scalars(monkeypatch, class_under_test):
     # See tests/system/test_arrow.py for the actual types we get from the API.
     arrow_schema = pyarrow.schema(
         [
@@ -134,7 +134,9 @@ def test_to_dataframe_defaults_to_nullable_dtypes(monkeypatch, class_under_test)
     assert df["timestamp_col"][0] == pandas.to_datetime("2021-08-09 13:30:44.123456Z")
 
 
-def test_to_dataframe_overrides_nullable_dtypes(monkeypatch, class_under_test):
+def test_to_dataframe_nullable_scalars_with_custom_dtypes(
+    monkeypatch, class_under_test
+):
     """Passing in explicit dtypes is merged with default behavior."""
     arrow_schema = pyarrow.schema(
         [
@@ -164,3 +166,27 @@ def test_to_dataframe_overrides_nullable_dtypes(monkeypatch, class_under_test):
 
     assert df.dtypes["other_int_col"].name == "int8"
     assert df["other_int_col"][0] == -7
+
+
+def test_to_dataframe_arrays(monkeypatch, class_under_test):
+    arrow_schema = pyarrow.schema(
+        [pyarrow.field("int64_repeated", pyarrow.list_(pyarrow.int64()))]
+    )
+    arrow_table = pyarrow.Table.from_pydict(
+        {"int64_repeated": [[-1, 0, 2]]}, schema=arrow_schema,
+    )
+
+    nullable_schema = [
+        bigquery.SchemaField("int64_repeated", "INT64", mode="REPEATED"),
+    ]
+    mock_client = mock.create_autospec(bigquery.Client)
+    mock_client.project = "test-proj"
+    mock_api_request = mock.Mock()
+    mock_to_arrow = mock.Mock()
+    mock_to_arrow.return_value = arrow_table
+    rows = class_under_test(mock_client, mock_api_request, TEST_PATH, nullable_schema)
+    monkeypatch.setattr(rows, "to_arrow", mock_to_arrow)
+    df = rows.to_dataframe()
+
+    assert df.dtypes["int64_repeated"].name == "object"
+    assert tuple(df["int64_repeated"][0]) == (-1, 0, 2)

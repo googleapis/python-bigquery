@@ -7777,7 +7777,6 @@ class TestClientUpload(object):
 
     def test_load_table_from_json_unicode_emoji_data_case(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
-        from google.cloud.bigquery import job
 
         client = self._make_client()
 

@@ -97,9 +97,7 @@ templated_files = common.py_library(
     samples=True,
     microgenerator=True,
     split_system_tests=True,
-    intersphinx_dependencies=[
-        ("dateutil", "https://dateutil.readthedocs.io/en/latest/")
-    ],
+    intersphinx_dependencies={"dateutil": "https://dateutil.readthedocs.io/en/latest/"},
 )
 
 # BigQuery has a custom multiprocessing note

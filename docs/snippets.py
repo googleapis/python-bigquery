@@ -374,7 +374,9 @@ def test_update_table_expiration(client, to_delete):
     assert table.expires is None
 
     # set table to expire 5 days from now
-    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=5)
+    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+        days=5
+    )
     table.expires = expiration
     table = client.update_table(table, ["expires"])  # API request
 

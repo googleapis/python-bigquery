@@ -349,7 +349,9 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
             [
                 datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
                 None,
-                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc),
+                datetime.datetime(
+                    9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc
+                ),
             ],
         ),
     ]

@@ -457,7 +457,9 @@ def test_bq_to_arrow_data_type_w_struct_unknown_subfield(module_under_test):
             [
                 datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
                 None,
-                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc),
+                datetime.datetime(
+                    9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc
+                ),
                 datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
             ],
         ),

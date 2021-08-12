@@ -913,7 +913,9 @@ class TestTable(unittest.TestCase, _SchemaBase):
         }
         self.assertEqual(
             table.mview_last_refresh_time,
-            datetime.datetime(2020, 11, 30, 15, 57, 22, 496000, tzinfo=datetime.timezone.utc),
+            datetime.datetime(
+                2020, 11, 30, 15, 57, 22, 496000, tzinfo=datetime.timezone.utc
+            ),
         )
 
     def test_mview_enable_refresh(self):

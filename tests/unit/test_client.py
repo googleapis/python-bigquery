@@ -5017,16 +5017,24 @@ class TestClient(unittest.TestCase):
                     (
                         12,
                         [
-                            datetime.datetime(2018, 12, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
-                            datetime.datetime(2018, 12, 1, 13, 0, 0, tzinfo=datetime.timezone.utc),
+                            datetime.datetime(
+                                2018, 12, 1, 12, 0, 0, tzinfo=datetime.timezone.utc
+                            ),
+                            datetime.datetime(
+                                2018, 12, 1, 13, 0, 0, tzinfo=datetime.timezone.utc
+                            ),
                         ],
                         [1.25, 2.5],
                     ),
                     {
                         "score": 13,
                         "times": [
-                            datetime.datetime(2018, 12, 2, 12, 0, 0, tzinfo=datetime.timezone.utc),
-                            datetime.datetime(2018, 12, 2, 13, 0, 0, tzinfo=datetime.timezone.utc),
+                            datetime.datetime(
+                                2018, 12, 2, 12, 0, 0, tzinfo=datetime.timezone.utc
+                            ),
+                            datetime.datetime(
+                                2018, 12, 2, 13, 0, 0, tzinfo=datetime.timezone.utc
+                            ),
                         ],
                         "distances": [-1.25, -2.5],
                     },

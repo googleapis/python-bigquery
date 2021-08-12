@@ -1829,7 +1829,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(updated_model.expires, model.expires)
 
         # ETag becomes If-Match header.
-        model._proto.etag = "etag"
+        model._properties["etag"] = "etag"
         client.update_model(model, [])
         req = conn.api_request.call_args
         self.assertEqual(req[1]["headers"]["If-Match"], "etag")

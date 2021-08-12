@@ -22,7 +22,6 @@ import warnings
 import mock
 import pkg_resources
 import pytest
-import pytz
 
 import google.api_core.exceptions
 from test_utils.imports import maybe_fail_import
@@ -914,7 +913,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         }
         self.assertEqual(
             table.mview_last_refresh_time,
-            datetime.datetime(2020, 11, 30, 15, 57, 22, 496000, tzinfo=pytz.utc),
+            datetime.datetime(2020, 11, 30, 15, 57, 22, 496000, tzinfo=datetime.timezone.utc),
         )
 
     def test_mview_enable_refresh(self):

@@ -24,7 +24,6 @@ import operator
 import google.api_core.retry
 import pkg_resources
 import pytest
-import pytz
 
 from google.cloud import bigquery
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
@@ -64,7 +63,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
                         datetime.datetime(2012, 3, 14, 15, 16),
                     ],
                     dtype="datetime64[ns]",
-                ).dt.tz_localize(pytz.utc),
+                ).dt.tz_localize(datetime.timezone.utc),
             ),
             (
                 "dt_col",
@@ -348,9 +347,9 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         (
             "ts_col",
             [
-                datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+                datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
                 None,
-                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=pytz.utc),
+                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc),
             ],
         ),
     ]
@@ -484,10 +483,10 @@ def test_load_table_from_dataframe_w_explicit_schema_source_format_csv(
             (
                 "ts_col",
                 [
-                    datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+                    datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
                     None,
                     datetime.datetime(
-                        9999, 12, 31, 23, 59, 59, 999999, tzinfo=pytz.utc
+                        9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc
                     ),
                 ],
             ),

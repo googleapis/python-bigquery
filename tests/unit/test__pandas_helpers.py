@@ -37,7 +37,6 @@ except ImportError:  # pragma: NO COVER
     # used in test parameterization.
     pyarrow = mock.Mock()
 import pytest
-import pytz
 
 from google import api_core
 from google.cloud.bigquery import _helpers
@@ -456,10 +455,10 @@ def test_bq_to_arrow_data_type_w_struct_unknown_subfield(module_under_test):
         (
             "TIMESTAMP",
             [
-                datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+                datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
                 None,
-                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=pytz.utc),
-                datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc),
+                datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
             ],
         ),
         (
@@ -960,8 +959,8 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         "field09": [True, False],
         "field10": [False, True],
         "field11": [
-            datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
-            datetime.datetime(2012, 12, 21, 9, 7, 42, tzinfo=pytz.utc),
+            datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2012, 12, 21, 9, 7, 42, tzinfo=datetime.timezone.utc),
         ],
         "field12": [datetime.date(9999, 12, 31), datetime.date(1970, 1, 1)],
         "field13": [datetime.time(23, 59, 59, 999999), datetime.time(12, 0, 0)],

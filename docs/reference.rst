@@ -68,6 +68,7 @@ Job-Related Types
     job.SourceFormat
     job.WriteDisposition
     job.SchemaUpdateOption
+    job.TransactionInfo
 
 
 Dataset
@@ -137,6 +138,7 @@ Query
 
     query.ArrayQueryParameter
     query.ScalarQueryParameter
+    query.ScalarQueryParameterType
     query.StructQueryParameter
     query.UDFResource
 

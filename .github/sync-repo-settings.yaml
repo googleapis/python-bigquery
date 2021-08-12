@@ -3,7 +3,20 @@
 branchProtectionRules:
 # Identifies the protection rule pattern. Name of the branch to be protected.
 # Defaults to `master`
-- pattern: '{master,v3}'
+- pattern: master
+  requiresCodeOwnerReviews: true
+  requiresStrictStatusChecks: true
+  requiredStatusCheckContexts:
+    - 'Kokoro'
+    - 'Kokoro snippets-3.8'
+    - 'cla/google'
+    - 'Samples - Lint'
+    - 'Samples - Python 3.6'
+    - 'Samples - Python 3.7'
+    - 'Samples - Python 3.8'
+- pattern: v3
+  requiresCodeOwnerReviews: true
+  requiresStrictStatusChecks: true
   requiredStatusCheckContexts:
     - 'Kokoro'
     - 'Kokoro snippets-3.8'

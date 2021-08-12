@@ -21,7 +21,8 @@
   },
   {
     "mode": "NULLABLE",
-    "name": "datetime_col", "type": "DATETIME"
+    "name": "datetime_col",
+    "type": "DATETIME"
   },
   {
     "mode": "NULLABLE",

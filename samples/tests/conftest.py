@@ -20,7 +20,6 @@ import mock
 import pytest
 
 from google.cloud import bigquery
-from google.cloud import bigquery_v2
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -125,8 +124,8 @@ def routine_id(client, dataset_id):
     routine.arguments = [
         bigquery.RoutineArgument(
             name="x",
-            data_type=bigquery_v2.types.StandardSqlDataType(
-                type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.INT64
+            data_type=bigquery.types.StandardSqlDataType(
+                type_kind=bigquery.types.StandardSqlDataType.TypeKind.INT64
             ),
         )
     ]

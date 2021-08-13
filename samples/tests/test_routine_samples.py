@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from google.cloud import bigquery
-from google.cloud import bigquery_v2
 
 
 def test_create_routine(capsys, random_routine_id):
@@ -38,22 +37,22 @@ def test_create_routine_ddl(capsys, random_routine_id, client):
     expected_arguments = [
         bigquery.RoutineArgument(
             name="arr",
-            data_type=bigquery_v2.types.StandardSqlDataType(
-                type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.ARRAY,
-                array_element_type=bigquery_v2.types.StandardSqlDataType(
-                    type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.STRUCT,
-                    struct_type=bigquery_v2.types.StandardSqlStructType(
+            data_type=bigquery.types.StandardSqlDataType(
+                type_kind=bigquery.types.StandardSqlDataType.TypeKind.ARRAY,
+                array_element_type=bigquery.types.StandardSqlDataType(
+                    type_kind=bigquery.types.StandardSqlDataType.TypeKind.STRUCT,
+                    struct_type=bigquery.types.StandardSqlStructType(
                         fields=[
-                            bigquery_v2.types.StandardSqlField(
+                            bigquery.types.StandardSqlField(
                                 name="name",
-                                type=bigquery_v2.types.StandardSqlDataType(
-                                    type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.STRING
+                                type=bigquery.types.StandardSqlDataType(
+                                    type_kind=bigquery.types.StandardSqlDataType.TypeKind.STRING
                                 ),
                             ),
-                            bigquery_v2.types.StandardSqlField(
+                            bigquery.types.StandardSqlField(
                                 name="val",
-                                type=bigquery_v2.types.StandardSqlDataType(
-                                    type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.INT64
+                                type=bigquery.types.StandardSqlDataType(
+                                    type_kind=bigquery.types.StandardSqlDataType.TypeKind.INT64
                                 ),
                             ),
                         ]

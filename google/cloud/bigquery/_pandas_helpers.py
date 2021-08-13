@@ -150,12 +150,10 @@ if pyarrow:
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
         pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
     }
-    _BIGNUMERIC_SUPPORT = True
 
 else:  # pragma: NO COVER
     BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
     ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
-    _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
 
 
 def bq_to_arrow_struct_data_type(field):

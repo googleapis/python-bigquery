@@ -41,7 +41,6 @@ import pytest
 from google import api_core
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
 try:
     from google.cloud import bigquery_storage
@@ -57,11 +56,6 @@ if pandas is not None:
 else:
     # Set to less than MIN version.
     PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
-
-
-skip_if_no_bignumeric = pytest.mark.skipif(
-    not _BIGNUMERIC_SUPPORT, reason="BIGNUMERIC support requires pyarrow>=3.0.0",
-)
 
 
 @pytest.fixture
@@ -152,9 +146,7 @@ def test_all_():
         ("FLOAT", "NULLABLE", pyarrow.types.is_float64),
         ("FLOAT64", "NULLABLE", pyarrow.types.is_float64),
         ("NUMERIC", "NULLABLE", is_numeric),
-        pytest.param(
-            "BIGNUMERIC", "NULLABLE", is_bignumeric, marks=skip_if_no_bignumeric,
-        ),
+        ("BIGNUMERIC", "NULLABLE", is_bignumeric),
         ("BOOLEAN", "NULLABLE", pyarrow.types.is_boolean),
         ("BOOL", "NULLABLE", pyarrow.types.is_boolean),
         ("TIMESTAMP", "NULLABLE", is_timestamp),
@@ -233,11 +225,10 @@ def test_all_():
             "REPEATED",
             all_(pyarrow.types.is_list, lambda type_: is_numeric(type_.value_type)),
         ),
-        pytest.param(
+        (
             "BIGNUMERIC",
             "REPEATED",
             all_(pyarrow.types.is_list, lambda type_: is_bignumeric(type_.value_type)),
-            marks=skip_if_no_bignumeric,
         ),
         (
             "BOOLEAN",
@@ -311,6 +302,7 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         schema.SchemaField("field05", "FLOAT"),
         schema.SchemaField("field06", "FLOAT64"),
         schema.SchemaField("field07", "NUMERIC"),
+        schema.SchemaField("field08", "BIGNUMERIC"),
         schema.SchemaField("field09", "BOOLEAN"),
         schema.SchemaField("field10", "BOOL"),
         schema.SchemaField("field11", "TIMESTAMP"),
@@ -319,9 +311,6 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         schema.SchemaField("field14", "DATETIME"),
         schema.SchemaField("field15", "GEOGRAPHY"),
     )
-
-    if _BIGNUMERIC_SUPPORT:
-        fields += (schema.SchemaField("field08", "BIGNUMERIC"),)
 
     field = schema.SchemaField("ignored_name", bq_type, mode="NULLABLE", fields=fields)
     actual = module_under_test.bq_to_arrow_data_type(field)
@@ -334,6 +323,7 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         pyarrow.field("field05", pyarrow.float64()),
         pyarrow.field("field06", pyarrow.float64()),
         pyarrow.field("field07", module_under_test.pyarrow_numeric()),
+        pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),
         pyarrow.field("field09", pyarrow.bool_()),
         pyarrow.field("field10", pyarrow.bool_()),
         pyarrow.field("field11", module_under_test.pyarrow_timestamp()),
@@ -342,8 +332,6 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         pyarrow.field("field14", module_under_test.pyarrow_datetime()),
         pyarrow.field("field15", pyarrow.string()),
     )
-    if _BIGNUMERIC_SUPPORT:
-        expected += (pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),)
     expected = pyarrow.struct(expected)
 
     assert pyarrow.types.is_struct(actual)
@@ -362,6 +350,7 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         schema.SchemaField("field05", "FLOAT"),
         schema.SchemaField("field06", "FLOAT64"),
         schema.SchemaField("field07", "NUMERIC"),
+        schema.SchemaField("field08", "BIGNUMERIC"),
         schema.SchemaField("field09", "BOOLEAN"),
         schema.SchemaField("field10", "BOOL"),
         schema.SchemaField("field11", "TIMESTAMP"),
@@ -370,9 +359,6 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         schema.SchemaField("field14", "DATETIME"),
         schema.SchemaField("field15", "GEOGRAPHY"),
     )
-
-    if _BIGNUMERIC_SUPPORT:
-        fields += (schema.SchemaField("field08", "BIGNUMERIC"),)
 
     field = schema.SchemaField("ignored_name", bq_type, mode="REPEATED", fields=fields)
     actual = module_under_test.bq_to_arrow_data_type(field)
@@ -385,6 +371,7 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         pyarrow.field("field05", pyarrow.float64()),
         pyarrow.field("field06", pyarrow.float64()),
         pyarrow.field("field07", module_under_test.pyarrow_numeric()),
+        pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),
         pyarrow.field("field09", pyarrow.bool_()),
         pyarrow.field("field10", pyarrow.bool_()),
         pyarrow.field("field11", module_under_test.pyarrow_timestamp()),
@@ -393,8 +380,6 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         pyarrow.field("field14", module_under_test.pyarrow_datetime()),
         pyarrow.field("field15", pyarrow.string()),
     )
-    if _BIGNUMERIC_SUPPORT:
-        expected += (pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),)
     expected_value_type = pyarrow.struct(expected)
 
     assert pyarrow.types.is_list(actual)
@@ -440,7 +425,7 @@ def test_bq_to_arrow_data_type_w_struct_unknown_subfield(module_under_test):
                 decimal.Decimal("999.123456789"),
             ],
         ),
-        pytest.param(
+        (
             "BIGNUMERIC",
             [
                 decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
@@ -448,7 +433,6 @@ def test_bq_to_arrow_data_type_w_struct_unknown_subfield(module_under_test):
                 decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
                 decimal.Decimal("3.141592653589793238462643383279"),
             ],
-            marks=skip_if_no_bignumeric,
         ),
         ("BOOLEAN", [True, None, False, None]),
         ("BOOL", [False, None, True, None]),
@@ -939,6 +923,7 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         schema.SchemaField("field05", "FLOAT", mode="REQUIRED"),
         schema.SchemaField("field06", "FLOAT64", mode="REQUIRED"),
         schema.SchemaField("field07", "NUMERIC", mode="REQUIRED"),
+        schema.SchemaField("field08", "BIGNUMERIC", mode="REQUIRED"),
         schema.SchemaField("field09", "BOOLEAN", mode="REQUIRED"),
         schema.SchemaField("field10", "BOOL", mode="REQUIRED"),
         schema.SchemaField("field11", "TIMESTAMP", mode="REQUIRED"),
@@ -947,8 +932,6 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         schema.SchemaField("field14", "DATETIME", mode="REQUIRED"),
         schema.SchemaField("field15", "GEOGRAPHY", mode="REQUIRED"),
     )
-    if _BIGNUMERIC_SUPPORT:
-        bq_schema += (schema.SchemaField("field08", "BIGNUMERIC", mode="REQUIRED"),)
 
     data = {
         "field01": ["hello", "world"],
@@ -958,6 +941,10 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         "field05": [1.25, 9.75],
         "field06": [-1.75, -3.5],
         "field07": [decimal.Decimal("1.2345"), decimal.Decimal("6.7891")],
+        "field08": [
+            decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
+            decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
+        ],
         "field09": [True, False],
         "field10": [False, True],
         "field11": [
@@ -972,11 +959,6 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         ],
         "field15": ["POINT(30 10)", "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))"],
     }
-    if _BIGNUMERIC_SUPPORT:
-        data["field08"] = [
-            decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
-            decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
-        ]
     dataframe = pandas.DataFrame(data)
 
     arrow_table = module_under_test.dataframe_to_arrow(dataframe, bq_schema)
@@ -1211,11 +1193,8 @@ def test_augment_schema_type_detection_succeeds(module_under_test):
         schema.SchemaField("bytes_field", field_type=None, mode="NULLABLE"),
         schema.SchemaField("string_field", field_type=None, mode="NULLABLE"),
         schema.SchemaField("numeric_field", field_type=None, mode="NULLABLE"),
+        schema.SchemaField("bignumeric_field", field_type=None, mode="NULLABLE"),
     )
-    if _BIGNUMERIC_SUPPORT:
-        current_schema += (
-            schema.SchemaField("bignumeric_field", field_type=None, mode="NULLABLE"),
-        )
 
     with warnings.catch_warnings(record=True) as warned:
         augmented_schema = module_under_test.augment_schema(dataframe, current_schema)
@@ -1237,13 +1216,10 @@ def test_augment_schema_type_detection_succeeds(module_under_test):
         schema.SchemaField("bytes_field", field_type="BYTES", mode="NULLABLE"),
         schema.SchemaField("string_field", field_type="STRING", mode="NULLABLE"),
         schema.SchemaField("numeric_field", field_type="NUMERIC", mode="NULLABLE"),
+        schema.SchemaField(
+            "bignumeric_field", field_type="BIGNUMERIC", mode="NULLABLE"
+        ),
     )
-    if _BIGNUMERIC_SUPPORT:
-        expected_schema += (
-            schema.SchemaField(
-                "bignumeric_field", field_type="BIGNUMERIC", mode="NULLABLE"
-            ),
-        )
 
     by_name = operator.attrgetter("name")
     assert sorted(augmented_schema, key=by_name) == sorted(expected_schema, key=by_name)

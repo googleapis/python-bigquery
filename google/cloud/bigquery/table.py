@@ -20,7 +20,6 @@ import copy
 import datetime
 import functools
 import operator
-import pytz
 import typing
 from typing import Any, Dict, Iterable, Iterator, Optional, Tuple
 import warnings
@@ -1728,6 +1727,8 @@ class RowIterator(HTTPIterator):
         """
         self._maybe_warn_max_results(bqstorage_client)
 
+        self._maybe_warn_max_results(bqstorage_client)
+
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
             bqstorage_client = None
@@ -1939,7 +1940,7 @@ class RowIterator(HTTPIterator):
         # Pandas, we set the timestamp_as_object parameter to True, if necessary.
         types_to_check = {
             pyarrow.timestamp("us"),
-            pyarrow.timestamp("us", tz=pytz.UTC),
+            pyarrow.timestamp("us", tz=datetime.timezone.utc),
         }
 
         for column in record_batch:

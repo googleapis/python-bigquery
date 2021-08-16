@@ -23,7 +23,6 @@ import mock
 import pyarrow
 import pyarrow.types
 import pytest
-import pytz
 
 import google.api_core.exceptions
 
@@ -898,7 +897,9 @@ class TestTable(unittest.TestCase, _SchemaBase):
         }
         self.assertEqual(
             table.mview_last_refresh_time,
-            datetime.datetime(2020, 11, 30, 15, 57, 22, 496000, tzinfo=pytz.utc),
+            datetime.datetime(
+                2020, 11, 30, 15, 57, 22, 496000, tzinfo=datetime.timezone.utc
+            ),
         )
 
     def test_mview_enable_refresh(self):
@@ -2779,7 +2780,6 @@ class TestRowIterator(unittest.TestCase):
         df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
         tzinfo = datetime.timezone.utc
-
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 2)  # verify the number of rows
         self.assertEqual(list(df.columns), ["some_timestamp"])

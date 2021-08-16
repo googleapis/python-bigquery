@@ -57,7 +57,7 @@ extras = {
         "pyarrow >= 1.0.0, < 6.0dev",
     ],
     "pandas": ["pandas>=0.24.2", "pyarrow >= 1.0.0, < 6.0dev"],
-    "geopandas": ["geopandas>=0.9.0, <1.0dev", "shapely>=1.6.0, <2.0dev"],
+    "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
     "bignumeric_type": ["pyarrow >= 3.0.0, < 6.0dev"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [

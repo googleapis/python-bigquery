@@ -567,7 +567,7 @@ def test_query_results_to_dataframe(bigquery_client):
     for _, row in df.iterrows():
         for col in column_names:
             # all the schema fields are nullable, so None is acceptable
-            if not row[col] is None:
+            if not pandas.isna(row[col]):
                 assert isinstance(row[col], exp_datatypes[col])
 
 
@@ -597,7 +597,7 @@ def test_query_results_to_dataframe_w_bqstorage(bigquery_client):
     for index, row in df.iterrows():
         for col in column_names:
             # all the schema fields are nullable, so None is acceptable
-            if not row[col] is None:
+            if not pandas.isna(row[col]):
                 assert isinstance(row[col], exp_datatypes[col])
 
 
@@ -795,3 +795,71 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
         dataframe = row_iterator.to_dataframe(bqstorage_client=bqstorage_client)
 
     assert len(dataframe.index) == 100
+
+
+@pytest.mark.parametrize(
+    ("max_results",), ((None,), (10,),)  # Use BQ Storage API.  # Use REST API.
+)
+def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_results):
+    df = bigquery_client.list_rows(
+        scalars_table, max_results=max_results,
+    ).to_dataframe()
+
+    assert df.dtypes["bool_col"].name == "boolean"
+    assert df.dtypes["datetime_col"].name == "datetime64[ns]"
+    assert df.dtypes["float64_col"].name == "float64"
+    assert df.dtypes["int64_col"].name == "Int64"
+    assert df.dtypes["timestamp_col"].name == "datetime64[ns, UTC]"
+
+    # object is used by default, but we can use "datetime64[ns]" automatically
+    # when data is within the supported range.
+    # https://github.com/googleapis/python-bigquery/issues/861
+    assert df.dtypes["date_col"].name == "object"
+
+    # object is used by default, but we can use "timedelta64[ns]" automatically
+    # https://github.com/googleapis/python-bigquery/issues/862
+    assert df.dtypes["time_col"].name == "object"
+
+    # decimal.Decimal is used to avoid loss of precision.
+    assert df.dtypes["bignumeric_col"].name == "object"
+    assert df.dtypes["numeric_col"].name == "object"
+
+    # pandas uses Python string and bytes objects.
+    assert df.dtypes["bytes_col"].name == "object"
+    assert df.dtypes["string_col"].name == "object"
+
+
+@pytest.mark.parametrize(
+    ("max_results",), ((None,), (10,),)  # Use BQ Storage API.  # Use REST API.
+)
+def test_list_rows_nullable_scalars_extreme_dtypes(
+    bigquery_client, scalars_extreme_table, max_results
+):
+    df = bigquery_client.list_rows(
+        scalars_extreme_table, max_results=max_results
+    ).to_dataframe()
+
+    # Extreme values are out-of-bounds for pandas datetime64 values, which use
+    # nanosecond precision.  Values before 1677-09-21 and after 2262-04-11 must
+    # be represented with object.
+    # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timestamp-limitations
+    assert df.dtypes["date_col"].name == "object"
+    assert df.dtypes["datetime_col"].name == "object"
+    assert df.dtypes["timestamp_col"].name == "object"
+
+    # These pandas dtypes can handle the same ranges as BigQuery.
+    assert df.dtypes["bool_col"].name == "boolean"
+    assert df.dtypes["float64_col"].name == "float64"
+    assert df.dtypes["int64_col"].name == "Int64"
+
+    # object is used by default, but we can use "timedelta64[ns]" automatically
+    # https://github.com/googleapis/python-bigquery/issues/862
+    assert df.dtypes["time_col"].name == "object"
+
+    # decimal.Decimal is used to avoid loss of precision.
+    assert df.dtypes["numeric_col"].name == "object"
+    assert df.dtypes["bignumeric_col"].name == "object"
+
+    # pandas uses Python string and bytes objects.
+    assert df.dtypes["bytes_col"].name == "object"
+    assert df.dtypes["string_col"].name == "object"

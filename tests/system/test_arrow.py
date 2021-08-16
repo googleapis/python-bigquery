@@ -14,11 +14,8 @@
 
 """System tests for Arrow connector."""
 
+import pyarrow
 import pytest
-
-pyarrow = pytest.importorskip(
-    "pyarrow", minversion="3.0.0"
-)  # Needs decimal256 for BIGNUMERIC columns.
 
 
 @pytest.mark.parametrize(

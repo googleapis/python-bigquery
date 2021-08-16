@@ -66,7 +66,7 @@ As of version 1.3.0, you can use the
 to load data from a :class:`pandas.DataFrame` to a
 :class:`~google.cloud.bigquery.table.Table`. To use this function, in addition
 to :mod:`pandas`, you will need to install the :mod:`pyarrow` library. You can
-install the BigQuery python client library with :mod:`pandas` and
+install the BigQuery Python client library with :mod:`pandas` and
 :mod:`pyarrow` by running:
 
 .. code-block:: bash

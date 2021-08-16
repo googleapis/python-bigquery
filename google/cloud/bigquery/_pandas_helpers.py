@@ -18,7 +18,7 @@ import concurrent.futures
 import functools
 import logging
 import queue
-from typing import Sequence
+from typing import Dict, Sequence
 import warnings
 
 try:
@@ -222,7 +222,9 @@ def bq_to_arrow_schema(bq_schema):
     return pyarrow.schema(arrow_fields)
 
 
-def bq_schema_to_nullsafe_pandas_dtypes(bq_schema: Sequence[schema.SchemaField]):
+def bq_schema_to_nullsafe_pandas_dtypes(
+    bq_schema: Sequence[schema.SchemaField],
+) -> Dict[str, str]:
     """Return the default dtypes to use for columns in a BigQuery schema.
 
     Only returns default dtypes which are safe to have NULL values. This
@@ -230,7 +232,7 @@ def bq_schema_to_nullsafe_pandas_dtypes(bq_schema: Sequence[schema.SchemaField])
     loss-of-precision.
 
     Returns:
-        Dict[str, str]: mapping from column names to dtypes
+        A mapping from column names to pandas dtypes.
     """
     dtypes = {}
     for bq_field in bq_schema:

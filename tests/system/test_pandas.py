@@ -26,6 +26,7 @@ import pkg_resources
 import pytest
 
 from google.cloud import bigquery
+from google.cloud.bigquery import enums
 from google.cloud import bigquery_storage
 
 from . import helpers
@@ -802,8 +803,25 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
     ("max_results",), ((None,), (10,),)  # Use BQ Storage API.  # Use REST API.
 )
 def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_results):
+    # TODO(GH#836): Avoid INTERVAL columns until they are supported by the
+    # BigQuery Storage API and pyarrow.
+    schema = [
+        bigquery.SchemaField("bool_col", enums.SqlTypeNames.BOOLEAN),
+        bigquery.SchemaField("bignumeric_col", enums.SqlTypeNames.BIGNUMERIC),
+        bigquery.SchemaField("bytes_col", enums.SqlTypeNames.BYTES),
+        bigquery.SchemaField("date_col", enums.SqlTypeNames.DATE),
+        bigquery.SchemaField("datetime_col", enums.SqlTypeNames.DATETIME),
+        bigquery.SchemaField("float64_col", enums.SqlTypeNames.FLOAT64),
+        bigquery.SchemaField("geography_col", enums.SqlTypeNames.GEOGRAPHY),
+        bigquery.SchemaField("int64_col", enums.SqlTypeNames.INT64),
+        bigquery.SchemaField("numeric_col", enums.SqlTypeNames.NUMERIC),
+        bigquery.SchemaField("string_col", enums.SqlTypeNames.STRING),
+        bigquery.SchemaField("time_col", enums.SqlTypeNames.TIME),
+        bigquery.SchemaField("timestamp_col", enums.SqlTypeNames.TIMESTAMP),
+    ]
+
     df = bigquery_client.list_rows(
-        scalars_table, max_results=max_results,
+        scalars_table, max_results=max_results, selected_fields=schema,
     ).to_dataframe()
 
     assert df.dtypes["bool_col"].name == "boolean"
@@ -836,8 +854,25 @@ def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_r
 def test_list_rows_nullable_scalars_extreme_dtypes(
     bigquery_client, scalars_extreme_table, max_results
 ):
+    # TODO(GH#836): Avoid INTERVAL columns until they are supported by the
+    # BigQuery Storage API and pyarrow.
+    schema = [
+        bigquery.SchemaField("bool_col", enums.SqlTypeNames.BOOLEAN),
+        bigquery.SchemaField("bignumeric_col", enums.SqlTypeNames.BIGNUMERIC),
+        bigquery.SchemaField("bytes_col", enums.SqlTypeNames.BYTES),
+        bigquery.SchemaField("date_col", enums.SqlTypeNames.DATE),
+        bigquery.SchemaField("datetime_col", enums.SqlTypeNames.DATETIME),
+        bigquery.SchemaField("float64_col", enums.SqlTypeNames.FLOAT64),
+        bigquery.SchemaField("geography_col", enums.SqlTypeNames.GEOGRAPHY),
+        bigquery.SchemaField("int64_col", enums.SqlTypeNames.INT64),
+        bigquery.SchemaField("numeric_col", enums.SqlTypeNames.NUMERIC),
+        bigquery.SchemaField("string_col", enums.SqlTypeNames.STRING),
+        bigquery.SchemaField("time_col", enums.SqlTypeNames.TIME),
+        bigquery.SchemaField("timestamp_col", enums.SqlTypeNames.TIMESTAMP),
+    ]
+
     df = bigquery_client.list_rows(
-        scalars_extreme_table, max_results=max_results
+        scalars_extreme_table, max_results=max_results, selected_fields=schema,
     ).to_dataframe()
 
     # Extreme values are out-of-bounds for pandas datetime64 values, which use

@@ -18,6 +18,7 @@ import concurrent.futures
 import functools
 import logging
 import queue
+from typing import Dict, Sequence
 import warnings
 
 try:
@@ -42,15 +43,19 @@ from google.cloud.bigquery import schema
 
 _LOGGER = logging.getLogger(__name__)
 
-_NO_BQSTORAGE_ERROR = (
-    "The google-cloud-bigquery-storage library is not installed, "
-    "please install google-cloud-bigquery-storage to use bqstorage features."
-)
-
 _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seconds.
 
 _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage downloads
 
+# If you update the default dtypes, also update the docs at docs/usage/pandas.rst.
+_BQ_TO_PANDAS_DTYPE_NULLSAFE = {
+    "BOOL": "boolean",
+    "BOOLEAN": "boolean",
+    "FLOAT": "float64",
+    "FLOAT64": "float64",
+    "INT64": "Int64",
+    "INTEGER": "Int64",
+}
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
     "datetime64[ns, UTC]": "TIMESTAMP",
@@ -215,6 +220,28 @@ def bq_to_arrow_schema(bq_schema):
             return None
         arrow_fields.append(arrow_field)
     return pyarrow.schema(arrow_fields)
+
+
+def bq_schema_to_nullsafe_pandas_dtypes(
+    bq_schema: Sequence[schema.SchemaField],
+) -> Dict[str, str]:
+    """Return the default dtypes to use for columns in a BigQuery schema.
+
+    Only returns default dtypes which are safe to have NULL values. This
+    includes Int64, which has pandas.NA values and does not result in
+    loss-of-precision.
+
+    Returns:
+        A mapping from column names to pandas dtypes.
+    """
+    dtypes = {}
+    for bq_field in bq_schema:
+        if bq_field.mode.upper() not in {"NULLABLE", "REQUIRED"}:
+            continue
+        field_type = bq_field.field_type.upper()
+        if field_type in _BQ_TO_PANDAS_DTYPE_NULLSAFE:
+            dtypes[bq_field.name] = _BQ_TO_PANDAS_DTYPE_NULLSAFE[field_type]
+    return dtypes
 
 
 def bq_to_arrow_array(series, bq_field):

@@ -50,7 +50,7 @@ extras = {
     # Keep the no-op bqstorage extra for backward compatibility.
     # See: https://github.com/googleapis/python-bigquery/issues/757
     "bqstorage": [],
-    "pandas": ["pandas>=0.23.0"],
+    "pandas": ["pandas>=1.0.0"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
         "opentelemetry-api >= 0.11b0",

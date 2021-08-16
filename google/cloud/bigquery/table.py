@@ -35,7 +35,7 @@ try:
 except ImportError:
     geopandas = None
 else:
-    CRS = "EPSG:4326"
+    _COORDINATE_REFERENCE_SYSTEM = "EPSG:4326"
 
 try:
     import shapely.geos
@@ -2113,7 +2113,9 @@ class RowIterator(HTTPIterator):
             geography_as_object=True,
         )
 
-        return geopandas.GeoDataFrame(df, crs=CRS, geometry=geography_column)
+        return geopandas.GeoDataFrame(
+            df, crs=_COORDINATE_REFERENCE_SYSTEM, geometry=geography_column
+        )
 
 
 class _EmptyRowIterator(RowIterator):
@@ -2208,7 +2210,7 @@ class _EmptyRowIterator(RowIterator):
         """
         if geopandas is None:
             raise ValueError(_NO_GEOPANDAS_ERROR)
-        return geopandas.GeoDataFrame(crs=CRS)
+        return geopandas.GeoDataFrame(crs=_COORDINATE_REFERENCE_SYSTEM)
 
     def to_dataframe_iterable(
         self,

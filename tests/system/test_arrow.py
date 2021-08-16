@@ -47,8 +47,8 @@ def test_list_rows_nullable_scalars_dtypes(
     if scalars_table_name == "scalars_extreme_table":
         table_id = scalars_extreme_table
 
-    # Avoid INTERVAL columns until they are supported by the BigQuery Storage
-    # API and pyarrow.
+    # TODO(GH#836): Avoid INTERVAL columns until they are supported by the
+    # BigQuery Storage API and pyarrow.
     schema = [
         bigquery.SchemaField("bool_col", enums.SqlTypeNames.BOOLEAN),
         bigquery.SchemaField("bignumeric_col", enums.SqlTypeNames.BIGNUMERIC),

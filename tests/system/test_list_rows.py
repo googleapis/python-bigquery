@@ -56,10 +56,8 @@ def test_list_rows_page_size(bigquery_client: bigquery.Client, table_id: str):
 
 
 def test_list_rows_scalars(bigquery_client: bigquery.Client, scalars_table: str):
-    rows = list(
-        sorted(
-            bigquery_client.list_rows(scalars_table), key=lambda row: row["rowindex"]
-        )
+    rows = sorted(
+        bigquery_client.list_rows(scalars_table), key=lambda row: row["rowindex"]
     )
     row = rows[0]
     assert row["bool_col"]  # True
@@ -91,11 +89,9 @@ def test_list_rows_scalars(bigquery_client: bigquery.Client, scalars_table: str)
 def test_list_rows_scalars_extreme(
     bigquery_client: bigquery.Client, scalars_extreme_table: str
 ):
-    rows = list(
-        sorted(
-            bigquery_client.list_rows(scalars_extreme_table),
-            key=lambda row: row["rowindex"],
-        )
+    rows = sorted(
+        bigquery_client.list_rows(scalars_extreme_table),
+        key=lambda row: row["rowindex"],
     )
     row = rows[0]
     assert row["bool_col"]  # True
@@ -107,12 +103,8 @@ def test_list_rows_scalars_extreme(
     assert row["interval_col"] == relativedelta.relativedelta(
         years=-10000, days=-3660000, hours=-87840000
     )
-    assert row["numeric_col"] == decimal.Decimal(
-        "9.9999999999999999999999999999999999999E+28"
-    )
-    assert row["bignumeric_col"] == decimal.Decimal(
-        "9.999999999999999999999999999999999999999999999999999999999999999999999999999E+37"
-    )
+    assert row["numeric_col"] == decimal.Decimal(f"9.{'9' * 37}E+28")
+    assert row["bignumeric_col"] == decimal.Decimal(f"9.{'9' * 75}E+37")
     assert row["float64_col"] == float("Inf")
     assert row["string_col"] == "Hello, World"
     assert row["time_col"] == datetime.time(23, 59, 59, 999999)

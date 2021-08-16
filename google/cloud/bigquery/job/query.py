@@ -1484,7 +1484,7 @@ class QueryJob(_AsyncJob):
                 .. versionadded:: 2.24.0
 
         Returns:
-            `pandas.DataFrame`:
+            pandas.DataFrame:
                 A :class:`~pandas.DataFrame` populated with row data
                 and column headers from the query results. The column
                 headers are derived from the destination table's
@@ -1578,7 +1578,7 @@ class QueryJob(_AsyncJob):
                 only one GEOGRAPHY column.
 
         Returns:
-            `geopandas.GeoDataFrame`:
+            geopandas.GeoDataFrame:
                 A :class:`geopandas.GeoDataFrame` populated with row
                 data and column headers from the query results. The
                 column headers are derived from the destination

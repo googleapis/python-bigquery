@@ -1966,7 +1966,7 @@ class RowIterator(HTTPIterator):
                 .. versionadded:: 2.24.0
 
         Returns:
-            `pandas.DataFrame`:
+            pandas.DataFrame:
                 A :class:`~pandas.DataFrame` populated with row data and column
                 headers from the query results. The column headers are derived
                 from the destination table's schema.
@@ -2099,7 +2099,7 @@ class RowIterator(HTTPIterator):
                 only one GEOGRAPHY column.
 
         Returns:
-            `geopandas.GeoDataFrame`:
+            geopandas.GeoDataFrame:
                 A :class:`geopandas.GeoDataFrame` populated with row
                 data and column headers from the query results. The
                 column headers are derived from the destination

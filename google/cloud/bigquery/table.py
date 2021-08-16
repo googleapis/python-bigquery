@@ -1726,9 +1726,6 @@ class RowIterator(HTTPIterator):
         .. versionadded:: 1.17.0
         """
         self._maybe_warn_max_results(bqstorage_client)
-
-        self._maybe_warn_max_results(bqstorage_client)
-
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
             bqstorage_client = None

@@ -886,7 +886,6 @@ def test_load_geodataframe(bigquery_client, dataset_id):
 
 
 def test_load_dataframe_w_shapely(bigquery_client, dataset_id):
-    pandas = pytest.importorskip("pandas")
     wkt = pytest.importorskip("shapely.wkt")
     from google.cloud.bigquery.schema import SchemaField
 
@@ -917,7 +916,6 @@ def test_load_dataframe_w_shapely(bigquery_client, dataset_id):
 
 
 def test_load_dataframe_w_wkb(bigquery_client, dataset_id):
-    pandas = pytest.importorskip("pandas")
     wkt = pytest.importorskip("shapely.wkt")
     from shapely import wkb
     from google.cloud.bigquery.schema import SchemaField

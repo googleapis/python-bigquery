@@ -801,7 +801,7 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
 
 
 def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
-    pytest.importorskip("shapely")
+    wkt = pytest.importorskip("shapely.wkt")
     bigquery_client.query(
         f"create table {dataset_id}.lake (name string, geog geography)"
     ).result()
@@ -816,17 +816,15 @@ def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
     df = bigquery_client.query(
         f"select * from {dataset_id}.lake order by name"
     ).to_dataframe(geography_as_object=True)
-    assert str(df) == (
-        "  name         geog\n"
-        "0  bar  POINT (0 1)\n"
-        "1  baz          NaN\n"
-        "2  foo  POINT (0 0)"
-    )
-    assert [v.__class__.__name__ for v in df["geog"]] == ["Point", "float", "Point"]
+    assert list(df['name']) == ['bar', 'baz', 'foo']
+    assert df['geog'][0] == wkt.loads('point(0 1)')
+    assert pandas.isna(df['geog'][1])
+    assert df['geog'][2] == wkt.loads('point(0 0)')
 
 
 def test_to_geodataframe(bigquery_client, dataset_id):
-    pytest.importorskip("geopandas")
+    geopandas = pytest.importorskip("geopandas")
+    from shapely import wkt
     bigquery_client.query(
         f"create table {dataset_id}.geolake (name string, geog geography)"
     ).result()
@@ -834,26 +832,21 @@ def test_to_geodataframe(bigquery_client, dataset_id):
         f"""
         insert into {dataset_id}.geolake (name, geog) values
         ('foo', st_geogfromtext('point(0 0)')),
-        ('bar', st_geogfromtext('polygon((0 0, 1 1, 1 0, 0 0))')),
+        ('bar', st_geogfromtext('polygon((0 0, 1 0, 1 1, 0 0))')),
         ('baz', null)
         """
     ).result()
     df = bigquery_client.query(
         f"select * from {dataset_id}.geolake order by name"
     ).to_geodataframe()
-    assert [v.__class__.__name__ for v in df["geog"]] == [
-        "Polygon",
-        "NoneType",
-        "Point",
-    ]
-    assert df.__class__.__name__ == "GeoDataFrame"
-    assert df["geog"].__class__.__name__ == "GeoSeries"
-    assert list(map(str, df["geog"])) == [
-        "POLYGON ((1 0, 1 1, 0 0, 1 0))",
-        "None",
-        "POINT (0 0)",
-    ]
-    assert str(df.area) == ("0    0.5\n" "1    NaN\n" "2    0.0\n" "dtype: float64")
+    assert df["geog"][0] == wkt.loads('polygon((0 0, 1 0, 1 1, 0 0))')
+    assert pandas.isna(df['geog'][1])
+    assert df["geog"][2] == wkt.loads('point(0 0)')
+    assert isinstance(df, geopandas.GeoDataFrame)
+    assert isinstance(df["geog"], geopandas.GeoSeries)
+    assert df.area[0] == 0.5
+    assert pandas.isna(df.area[1])
+    assert df.area[2] == 0.0
     assert df.crs.srs == "EPSG:4326"
     assert df.crs.name == "WGS 84"
     assert df.geog.crs.srs == "EPSG:4326"

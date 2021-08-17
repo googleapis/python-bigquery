@@ -28,8 +28,10 @@ else:
     import numpy
 
 try:
+    # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
     from shapely.geometry.base import BaseGeometry as _BaseGeometry
 except ImportError:  # pragma: NO COVER
+    # No shapely, use NoneType for _BaseGeometry as a placeholder.
     _BaseGeometry = type(None)
 else:
     if pandas is not None:  # pragma: NO COVER

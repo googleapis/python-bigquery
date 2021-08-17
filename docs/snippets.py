@@ -31,10 +31,6 @@ try:
 except (ImportError, AttributeError):
     pandas = None
 try:
-    import geopandas
-except (ImportError, AttributeError):
-    geopandas = None
-try:
     import pyarrow
 except (ImportError, AttributeError):
     pyarrow = None
@@ -937,26 +933,6 @@ def test_list_rows_as_dataframe(client):
     assert isinstance(df, pandas.DataFrame)
     assert len(list(df)) == len(table.schema)  # verify the number of columns
     assert len(df) == table.num_rows  # verify the number of rows
-
-
-@pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
-def test_query_results_as_geodataframe(client):
-    # [START bigquery_query_results_geodataframe]
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-
-    sql = """
-        SELECT created_date, complaint_description,
-               ST_GEOGPOINT(longitude, latitude) as location
-        FROM bigquery-public-data.austin_311.311_service_requests
-        LIMIT 10
-    """
-
-    df = client.query(sql).to_geodataframe()
-    # [END bigquery_query_results_geodataframe]
-    assert isinstance(df, geopandas.GeoDataFrame)
-    assert len(list(df)) == 3  # verify the number of columns
-    assert len(df) == 10  # verify the number of rows
 
 
 if __name__ == "__main__":

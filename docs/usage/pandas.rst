@@ -45,7 +45,7 @@ Retrieve BigQuery GEOGRAPHY data as a GeoPandas GeoDataFrame
 capabilities to Pandas.  To retrieve query results containing
 GEOGRAPHY data as a :class:`geopandas.GeoDataFrame`:
 
-.. literalinclude:: ../snippets.py
+.. literalinclude:: ../samples/geography/to_geodataframe.py
    :language: python
    :dedent: 4
    :start-after: [START bigquery_query_results_geodataframe]

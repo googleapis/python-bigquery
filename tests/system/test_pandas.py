@@ -816,15 +816,16 @@ def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
     df = bigquery_client.query(
         f"select * from {dataset_id}.lake order by name"
     ).to_dataframe(geography_as_object=True)
-    assert list(df['name']) == ['bar', 'baz', 'foo']
-    assert df['geog'][0] == wkt.loads('point(0 1)')
-    assert pandas.isna(df['geog'][1])
-    assert df['geog'][2] == wkt.loads('point(0 0)')
+    assert list(df["name"]) == ["bar", "baz", "foo"]
+    assert df["geog"][0] == wkt.loads("point(0 1)")
+    assert pandas.isna(df["geog"][1])
+    assert df["geog"][2] == wkt.loads("point(0 0)")
 
 
 def test_to_geodataframe(bigquery_client, dataset_id):
     geopandas = pytest.importorskip("geopandas")
     from shapely import wkt
+
     bigquery_client.query(
         f"create table {dataset_id}.geolake (name string, geog geography)"
     ).result()
@@ -839,9 +840,9 @@ def test_to_geodataframe(bigquery_client, dataset_id):
     df = bigquery_client.query(
         f"select * from {dataset_id}.geolake order by name"
     ).to_geodataframe()
-    assert df["geog"][0] == wkt.loads('polygon((0 0, 1 0, 1 1, 0 0))')
-    assert pandas.isna(df['geog'][1])
-    assert df["geog"][2] == wkt.loads('point(0 0)')
+    assert df["geog"][0] == wkt.loads("polygon((0 0, 1 0, 1 1, 0 0))")
+    assert pandas.isna(df["geog"][1])
+    assert df["geog"][2] == wkt.loads("point(0 0)")
     assert isinstance(df, geopandas.GeoDataFrame)
     assert isinstance(df["geog"], geopandas.GeoSeries)
     assert df.area[0] == 0.5

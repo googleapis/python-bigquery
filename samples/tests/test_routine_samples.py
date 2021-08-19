@@ -82,7 +82,7 @@ def test_get_routine(capsys, routine_id):
     assert "Type: 'SCALAR_FUNCTION'" in out
     assert "Language: 'SQL'" in out
     assert "Name: 'x'" in out
-    assert "Type: 'type_kind: INT64\n'" in out
+    assert "type_kind=<TypeKind.INT64: 'INT64'>" in out
 
 
 def test_delete_routine(capsys, routine_id):

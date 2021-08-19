@@ -16,7 +16,7 @@
 
 """Define resources for the BigQuery Routines API."""
 
-from google.protobuf import json_format
+from typing import Optional
 
 import google.cloud._helpers
 from google.cloud.bigquery import _helpers
@@ -206,16 +206,12 @@ class Routine(object):
         if not resource:
             return resource
 
-        output = StandardSqlDataType()
-        raw_protobuf = json_format.ParseDict(
-            resource, output._pb, ignore_unknown_fields=True
-        )
-        return type(output).wrap(raw_protobuf)
+        return StandardSqlDataType.from_api_repr(resource)
 
     @return_type.setter
-    def return_type(self, value):
+    def return_type(self, value: StandardSqlDataType):
         if value:
-            resource = json_format.MessageToDict(value._pb)
+            resource = value.to_api_repr()
         else:
             resource = None
         self._properties[self._PROPERTY_TO_API_FIELD["return_type"]] = resource
@@ -232,20 +228,14 @@ class Routine(object):
         if not resource:
             return resource
 
-        output = StandardSqlTableType()
-        raw_protobuf = json_format.ParseDict(
-            resource, output._pb, ignore_unknown_fields=True
-        )
-        return type(output).wrap(raw_protobuf)
+        return StandardSqlTableType.from_api_repr(resource)
 
     @return_table_type.setter
-    def return_table_type(self, value):
+    def return_table_type(self, value: Optional[StandardSqlTableType]):
         if not value:
             resource = None
         else:
-            resource = {
-                "columns": [json_format.MessageToDict(col._pb) for col in value.columns]
-            }
+            resource = value.to_api_repr()
 
         self._properties[self._PROPERTY_TO_API_FIELD["return_table_type"]] = resource
 
@@ -417,16 +407,12 @@ class RoutineArgument(object):
         if not resource:
             return resource
 
-        output = StandardSqlDataType()
-        raw_protobuf = json_format.ParseDict(
-            resource, output._pb, ignore_unknown_fields=True
-        )
-        return type(output).wrap(raw_protobuf)
+        return StandardSqlDataType.from_api_repr(resource)
 
     @data_type.setter
     def data_type(self, value):
         if value:
-            resource = json_format.MessageToDict(value._pb)
+            resource = value.to_api_repr()
         else:
             resource = None
         self._properties[self._PROPERTY_TO_API_FIELD["data_type"]] = resource

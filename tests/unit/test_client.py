@@ -2606,8 +2606,6 @@ class TestClient(unittest.TestCase):
         }
         conn = client._connection = make_connection(RESOURCE)
         client.create_job(job_config=job_config)
-        if "query" in job_config:
-            _helpers._del_sub_prop(job_config, ["query", "destinationTable"])
 
         conn.api_request.assert_called_once_with(
             method="POST",
@@ -2732,7 +2730,7 @@ class TestClient(unittest.TestCase):
         }
         data_without_destination = {
             "jobReference": {"projectId": self.PROJECT, "jobId": mock.ANY},
-            "configuration": {"query": {"query": query, "useLegacySql": False}},
+            "configuration": configuration,
         }
 
         creds = _make_credentials()

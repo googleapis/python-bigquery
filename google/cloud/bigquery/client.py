@@ -1937,7 +1937,6 @@ class Client(ClientWithProject):
             )
         elif "query" in job_config:
             copy_config = copy.deepcopy(job_config)
-            _del_sub_prop(copy_config, ["query", "destinationTable"])
             query_job_config = google.cloud.bigquery.job.QueryJobConfig.from_api_repr(
                 copy_config
             )

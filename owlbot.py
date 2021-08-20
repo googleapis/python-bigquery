@@ -24,48 +24,6 @@ common = gcp.CommonTemplates()
 default_version = "v2"
 
 for library in s.get_staging_dirs(default_version):
-    # Do not expose ModelServiceClient and ModelServiceAsyncClient, as there
-    # is no public API endpoint for the models service.
-    s.replace(
-        library / f"google/cloud/bigquery_{library.name}/__init__.py",
-        r"from \.services\.model_service import ModelServiceClient",
-        "",
-    )
-
-    s.replace(
-        library / f"google/cloud/bigquery_{library.name}/__init__.py",
-        r"from \.services\.model_service import ModelServiceAsyncClient",
-        "",
-    )
-
-    s.replace(
-        library / f"google/cloud/bigquery_{library.name}/__init__.py",
-        r"""["']ModelServiceClient["'],""",
-        "",
-    )
-
-    s.replace(
-        library / f"google/cloud/bigquery_{library.name}/__init__.py",
-        r"""["']ModelServiceAsyncClient["'],""",
-        "",
-    )
-
-    # Adjust Model docstring so that Sphinx does not think that "predicted_" is
-    # a reference to something, issuing a false warning.
-    s.replace(
-        library / f"google/cloud/bigquery_{library.name}/types/model.py",
-        r'will have a "predicted_"',
-        "will have a `predicted_`",
-    )
-
-    # Avoid breaking change due to change in field renames.
-    # https://github.com/googleapis/python-bigquery/issues/319
-    s.replace(
-        library / f"google/cloud/bigquery_{library.name}/types/standard_sql.py",
-        r"type_ ",
-        "type ",
-    )
-
     s.move(
         library,
         excludes=[
@@ -80,9 +38,9 @@ for library in s.get_staging_dirs(default_version):
             f"scripts/fixup_bigquery_{library.name}_keywords.py",
             "google/cloud/bigquery/__init__.py",
             "google/cloud/bigquery/py.typed",
-            # There are no public API endpoints for the generated ModelServiceClient,
-            # thus there's no point in generating it and its tests.
-            f"google/cloud/bigquery_{library.name}/services/**",
+            # The library does not use any protos (it implements its own type classes),
+            # thus omit the generated code altogether.
+            f"google/cloud/bigquery_{library.name}/**",
             f"tests/unit/gapic/bigquery_{library.name}/**",
         ],
     )

@@ -49,7 +49,6 @@ from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
     DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
 )
 
-from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
@@ -1937,7 +1936,6 @@ class Client(ClientWithProject):
             )
         elif "query" in job_config:
             copy_config = copy.deepcopy(job_config)
-            _del_sub_prop(copy_config, ["query", "destinationTable"])
             query_job_config = google.cloud.bigquery.job.QueryJobConfig.from_api_repr(
                 copy_config
             )

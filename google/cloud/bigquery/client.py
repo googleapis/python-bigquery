@@ -1936,9 +1936,9 @@ class Client(ClientWithProject):
             )
         elif "query" in job_config:
             query_job_config = google.cloud.bigquery.job.QueryJobConfig.from_api_repr(
-                copy.deepcopy(job_config)
+                job_config
             )
-            query = _get_sub_prop(copy_config, ["query", "query"])
+            query = _get_sub_prop(job_config, ["query", "query"])
             return self.query(
                 query, job_config=query_job_config, retry=retry, timeout=timeout
             )

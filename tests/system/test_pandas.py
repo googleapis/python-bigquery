@@ -798,3 +798,43 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
         dataframe = row_iterator.to_dataframe(bqstorage_client=bqstorage_client)
 
     assert len(dataframe.index) == 100
+
+
+def test_upload_time_and_datetime(bigquery_client, dataset_id):
+    df = pandas.DataFrame(
+        dict(dt=[datetime.datetime(2020, 1, 8, 8, 0, 0),
+                 datetime.datetime(
+                     2020, 1, 8, 8, 0, 0,
+                     tzinfo=datetime.timezone(datetime.timedelta(hours=-7))),
+                 ],
+             t=[datetime.time(0, 0, 10, 100001), None],
+    ))
+    table = f"{dataset_id}.test_upload_time_and_datetime"
+    bigquery_client.load_table_from_dataframe(df, table).result()
+    data = list(map(list, bigquery_client.list_rows(table)))
+    assert data == [
+        [datetime.datetime(2020, 1, 8, 8, 0, tzinfo=datetime.timezone.utc),
+         datetime.time(0, 0, 10, 100001),
+         ],
+        [datetime.datetime(2020, 1, 8, 15, 0, tzinfo=datetime.timezone.utc),
+         None,
+         ],
+    ]
+
+    from google.cloud.bigquery import job, schema
+
+    table = f"{dataset_id}.test_upload_time_and_datetime_dt"
+    config = job.LoadJobConfig(
+        schema=[schema.SchemaField('dt', 'DATETIME'),
+                schema.SchemaField('t', 'TIME')])
+
+    bigquery_client.load_table_from_dataframe(df, table, job_config=config).result()
+    data = list(map(list, bigquery_client.list_rows(table)))
+    assert data == [
+        [datetime.datetime(2020, 1, 8, 8, 0),
+         datetime.time(0, 0, 10, 100001),
+         ],
+        [datetime.datetime(2020, 1, 8, 15, 0),
+         None,
+         ],
+    ]

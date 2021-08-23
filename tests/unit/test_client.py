@@ -3897,7 +3897,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
         self.assertIsInstance(req["data"]["jobReference"]["jobId"], str)
-        self.assertIsNone(req["timeout"])
+        self.assertEqual(req["timeout"], DEFAULT_TIMEOUT)
 
         # Check the job resource.
         self.assertIsInstance(job, ExtractJob)
@@ -3942,7 +3942,7 @@ class TestClient(unittest.TestCase):
         _, req = conn.api_request.call_args
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
-        self.assertIsNone(req["timeout"])
+        self.assertEqual(req["timeout"], DEFAULT_TIMEOUT)
 
         # Check the job resource.
         self.assertIsInstance(job, ExtractJob)
@@ -4112,7 +4112,7 @@ class TestClient(unittest.TestCase):
         _, req = conn.api_request.call_args
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
-        self.assertIsNone(req["timeout"])
+        self.assertEqual(req["timeout"], DEFAULT_TIMEOUT)
         sent = req["data"]
         self.assertIsInstance(sent["jobReference"]["jobId"], str)
         sent_config = sent["configuration"]["query"]
@@ -4574,7 +4574,7 @@ class TestClient(unittest.TestCase):
         _, req = conn.api_request.call_args
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
-        self.assertIsNone(req["timeout"])
+        self.assertEqual(req["timeout"], DEFAULT_TIMEOUT)
         sent = req["data"]
         self.assertIsInstance(sent["jobReference"]["jobId"], str)
         sent_config = sent["configuration"]["query"]
@@ -4630,7 +4630,7 @@ class TestClient(unittest.TestCase):
         _, req = conn.api_request.call_args
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/projects/PROJECT/jobs")
-        self.assertIsNone(req["timeout"])
+        self.assertEqual(req["timeout"], DEFAULT_TIMEOUT)
         sent = req["data"]
         self.assertEqual(sent["jobReference"]["jobId"], JOB)
         sent_config = sent["configuration"]["query"]
@@ -4822,7 +4822,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/%s" % PATH)
         self.assertEqual(req["data"], SENT)
-        self.assertIsNone(req["timeout"])
+        self.assertEqual(req["timeout"], DEFAULT_TIMEOUT)
 
     def test_insert_rows_w_list_of_dictionaries(self):
         import datetime
@@ -6441,7 +6441,7 @@ class TestClientUpload(object):
             file_obj,
             self.EXPECTED_CONFIGURATION,
             _DEFAULT_NUM_RETRIES,
-            None,
+            DEFAULT_TIMEOUT,
             project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
         )
 
@@ -6474,7 +6474,7 @@ class TestClientUpload(object):
             file_obj,
             expected_resource,
             _DEFAULT_NUM_RETRIES,
-            None,
+            DEFAULT_TIMEOUT,
             project="other-project",
         )
 
@@ -6508,7 +6508,7 @@ class TestClientUpload(object):
             file_obj,
             expected_resource,
             _DEFAULT_NUM_RETRIES,
-            None,
+            DEFAULT_TIMEOUT,
             project="other-project",
         )
 
@@ -6570,7 +6570,7 @@ class TestClientUpload(object):
             file_obj,
             expected_config,
             _DEFAULT_NUM_RETRIES,
-            None,
+            DEFAULT_TIMEOUT,
             project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
         )
 
@@ -6599,7 +6599,7 @@ class TestClientUpload(object):
             self.EXPECTED_CONFIGURATION,
             file_obj_size,
             _DEFAULT_NUM_RETRIES,
-            None,
+            DEFAULT_TIMEOUT,
             project=self.PROJECT,
         )
 
@@ -6624,7 +6624,7 @@ class TestClientUpload(object):
             file_obj,
             self.EXPECTED_CONFIGURATION,
             num_retries,
-            None,
+            DEFAULT_TIMEOUT,
             project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
         )
 
@@ -6661,7 +6661,7 @@ class TestClientUpload(object):
             gzip_file,
             self.EXPECTED_CONFIGURATION,
             _DEFAULT_NUM_RETRIES,
-            None,
+            DEFAULT_TIMEOUT,
             project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
         )
 

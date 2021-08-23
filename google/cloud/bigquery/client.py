@@ -1935,9 +1935,8 @@ class Client(ClientWithProject):
                 source_type=source_type,
             )
         elif "query" in job_config:
-            copy_config = copy.deepcopy(job_config)
             query_job_config = google.cloud.bigquery.job.QueryJobConfig.from_api_repr(
-                copy_config
+                copy.deepcopy(job_config)
             )
             query = _get_sub_prop(copy_config, ["query", "query"])
             return self.query(

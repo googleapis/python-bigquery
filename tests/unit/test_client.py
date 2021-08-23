@@ -2594,8 +2594,6 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_with(method="DELETE", path=path, timeout=None)
 
     def _create_job_helper(self, job_config):
-        from google.cloud.bigquery import _helpers
-
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)

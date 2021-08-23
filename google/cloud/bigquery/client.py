@@ -49,7 +49,6 @@ from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
     DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
 )
 
-from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none

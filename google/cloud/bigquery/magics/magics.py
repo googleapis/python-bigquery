@@ -672,8 +672,7 @@ def _cell_magic(line, query):
                 return
 
             result = rows.to_dataframe(
-                bqstorage_client=bqstorage_client,
-                create_bqstorage_client=use_bqstorage_api,
+                bqstorage_client=bqstorage_client, create_bqstorage_client=False,
             )
             if args.destination_var:
                 IPython.get_ipython().push({args.destination_var: result})
@@ -738,7 +737,7 @@ def _cell_magic(line, query):
         else:
             result = query_job.to_dataframe(
                 bqstorage_client=bqstorage_client,
-                create_bqstorage_client=use_bqstorage_api,
+                create_bqstorage_client=False,
                 progress_bar_type=progress_bar,
             )
 

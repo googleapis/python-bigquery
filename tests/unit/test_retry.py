@@ -55,8 +55,16 @@ class Test_should_retry(unittest.TestCase):
         exc = requests.exceptions.ChunkedEncodingError()
         self.assertTrue(self._call_fut(exc))
 
-    def test_w_unstructured_requests_timeout(self):
+    def test_w_unstructured_requests_connecttimeout(self):
+        exc = requests.exceptions.ConnectTimeout()
+        self.assertTrue(self._call_fut(exc))
+
+    def test_w_unstructured_requests_readtimeout(self):
         exc = requests.exceptions.ReadTimeout()
+        self.assertTrue(self._call_fut(exc))
+
+    def test_w_unstructured_requests_timeout(self):
+        exc = requests.exceptions.Timeout()
         self.assertTrue(self._call_fut(exc))
 
     def test_w_auth_transporterror(self):

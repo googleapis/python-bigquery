@@ -29,7 +29,7 @@ _UNSTRUCTURED_RETRYABLE_TYPES = (
     exceptions.BadGateway,
     requests.exceptions.ChunkedEncodingError,
     requests.exceptions.ConnectionError,
-    requests.exceptions.ReadTimeout,
+    requests.exceptions.Timeout,
     auth_exceptions.TransportError,
 )
 

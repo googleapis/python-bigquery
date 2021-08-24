@@ -24,7 +24,7 @@ importlib-metadata==4.6.4
 libcst==0.3.20
 munch==2.5.0
 mypy-extensions==0.4.3
-numpy==1.19.5
+numpy==1.21.2
 packaging==21.0
 pandas==1.1.5
 proto-plus==1.19.0

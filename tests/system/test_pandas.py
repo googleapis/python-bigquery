@@ -840,7 +840,8 @@ def test_upload_time_and_datetime_56(bigquery_client, dataset_id):
         [datetime.datetime(2020, 1, 8, 8, 0), datetime.time(0, 0, 10, 100001)],
         [datetime.datetime(2020, 1, 8, 15, 0), None],
     ]
-      
+
+
 def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
     wkt = pytest.importorskip("shapely.wkt")
     bigquery_client.query(

@@ -279,8 +279,6 @@ def test_load_table_from_dataframe_w_required(bigquery_client, dataset_id):
 
 def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id):
     # Schema with all scalar types.
-    # TODO: Uploading DATETIME columns currently fails, thus that field type
-    #       is temporarily  removed from the test.
     # See:
     #       https://github.com/googleapis/python-bigquery/issues/61
     #       https://issuetracker.google.com/issues/151765076
@@ -288,7 +286,7 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         bigquery.SchemaField("bool_col", "BOOLEAN"),
         bigquery.SchemaField("bytes_col", "BYTES"),
         bigquery.SchemaField("date_col", "DATE"),
-        # bigquery.SchemaField("dt_col", "DATETIME"),
+        bigquery.SchemaField("dt_col", "DATETIME"),
         bigquery.SchemaField("float_col", "FLOAT"),
         bigquery.SchemaField("geo_col", "GEOGRAPHY"),
         bigquery.SchemaField("int_col", "INTEGER"),
@@ -313,14 +311,14 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         ("bool_col", [True, None, False]),
         ("bytes_col", [b"abc", None, b"def"]),
         ("date_col", [datetime.date(1, 1, 1), None, datetime.date(9999, 12, 31)]),
-        # (
-        #     "dt_col",
-        #     [
-        #         datetime.datetime(1, 1, 1, 0, 0, 0),
-        #         None,
-        #         datetime.datetime(9999, 12, 31, 23, 59, 59, 999999),
-        #     ],
-        # ),
+        (
+            "dt_col",
+            [
+                datetime.datetime(1, 1, 1, 0, 0, 0),
+                None,
+                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999),
+            ],
+        ),
         ("float_col", [float("-inf"), float("nan"), float("inf")]),
         (
             "geo_col",
@@ -800,7 +798,7 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
     assert len(dataframe.index) == 100
 
 
-def test_upload_time_and_datetime(bigquery_client, dataset_id):
+def test_upload_time_and_datetime_56(bigquery_client, dataset_id):
     df = pandas.DataFrame(
         dict(
             dt=[

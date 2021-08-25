@@ -1,10 +1,10 @@
-# Copyright 2020 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,4 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "2.25.1"
+import pytest
+
+from .to_geodataframe import get_austin_service_requests_as_geography
+
+
+def test_get_austin_service_requests_as_geography():
+    geopandas = pytest.importorskip("geopandas")
+    df = get_austin_service_requests_as_geography()
+    assert isinstance(df, geopandas.GeoDataFrame)
+    assert len(list(df)) == 3  # verify the number of columns
+    assert len(df) == 10  # verify the number of rows

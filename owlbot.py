@@ -97,7 +97,11 @@ templated_files = common.py_library(
     samples=True,
     microgenerator=True,
     split_system_tests=True,
-    intersphinx_dependencies={"dateutil": "https://dateutil.readthedocs.io/en/latest/"},
+    intersphinx_dependencies={
+        "dateutil": "https://dateutil.readthedocs.io/en/latest/",
+        "geopandas": "https://geopandas.org/",
+        "pandas": "http://pandas.pydata.org/pandas-docs/dev",
+    },
 )
 
 # BigQuery has a custom multiprocessing note
@@ -110,6 +114,10 @@ s.move(
         # Include custom SNIPPETS_TESTS job for performance.
         # https://github.com/googleapis/python-bigquery/issues/191
         ".kokoro/presubmit/presubmit.cfg",
+        # Group all renovate PRs together. If this works well, remove this and
+        # update the shared templates (possibly with configuration option to
+        # py_library.)
+        "renovate.json",
     ],
 )
 

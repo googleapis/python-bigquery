@@ -744,23 +744,34 @@ class Client(ClientWithProject):
             return self.get_table(table.reference, retry=retry)
 
     def _call_api(
-        self, retry, span_name=None, span_attributes=None, job_ref=None, **kwargs
+        self,
+        retry,
+        span_name=None,
+        span_attributes=None,
+        job_ref=None,
+        headers: Optional[Dict[str, str]]=None,
+        **kwargs
     ):
         timeout = kwargs.get("timeout")
         if timeout is not None:
-            headers = kwargs.setdefault("headers", {})
             if headers is None:
-                kwargs["headers"] = headers = {}
+                headers = {}
             headers[TIMEOUT_HEADER] = str(timeout)
 
+        if headers:
+            kwargs['headers'] = headers
+
         call = functools.partial(self._connection.api_request, **kwargs)
+
         if retry:
             call = retry(call)
+
         if span_name is not None:
             with create_span(
                 name=span_name, attributes=span_attributes, client=self, job_ref=job_ref
             ):
                 return call()
+
         return call()
 
     def get_dataset(

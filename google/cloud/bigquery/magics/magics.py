@@ -561,6 +561,23 @@ def _create_dataset_if_necessary(client, dataset_id):
         "Defaults to use tqdm. Install the ``tqdm`` package to use this feature."
     ),
 )
+@magic_arguments.argument(
+    "--send_bqml_job",
+    type=str,
+    default=None,
+    help=(
+        "TODO"
+    ),
+)
+@magic_arguments.argument(
+    "--bqml_job_status",
+    nargs="job_id",
+    type=str,
+    default=None,
+    help=(
+        "TODO"
+    ),
+)
 def _cell_magic(line, query):
     """Underlying function for bigquery cell magic
 

@@ -131,6 +131,8 @@ _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 # https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
 _PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
 
+TIMEOUT_HEADER = "X-Server-Timeout"
+
 
 class Project(object):
     """Wrapper for resource describing a BigQuery project.
@@ -744,6 +746,13 @@ class Client(ClientWithProject):
     def _call_api(
         self, retry, span_name=None, span_attributes=None, job_ref=None, **kwargs
     ):
+        timeout = kwargs.get("timeout")
+        if timeout is not None:
+            headers = kwargs.setdefault("headers", {})
+            if headers is None:
+                kwargs["headers"] = headers = {}
+            headers[TIMEOUT_HEADER] = str(timeout)
+
         call = functools.partial(self._connection.api_request, **kwargs)
         if retry:
             call = retry(call)

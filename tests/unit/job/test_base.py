@@ -21,6 +21,8 @@ import google.api_core.retry
 import mock
 import pytest
 
+from ..helpers import api_call
+
 from .helpers import _make_client
 from .helpers import _make_connection
 from .helpers import _make_retriable_exception
@@ -824,8 +826,8 @@ class Test_AsyncJob(unittest.TestCase):
         self.assertEqual(
             fake_api_request.call_args_list,
             [
-                mock.call(method="POST", path=api_path, query_params={}, timeout=7.5),
-                mock.call(
+                api_call(method="POST", path=api_path, query_params={}, timeout=7.5),
+                api_call(
                     method="POST", path=api_path, query_params={}, timeout=7.5
                 ),  # was retried once
             ],
@@ -941,13 +943,13 @@ class Test_AsyncJob(unittest.TestCase):
 
         self.assertIs(job.result(), job)
 
-        begin_call = mock.call(
+        begin_call = api_call(
             method="POST",
             path=f"/projects/{self.PROJECT}/jobs",
             data={"jobReference": {"jobId": self.JOB_ID, "projectId": self.PROJECT}},
             timeout=None,
         )
-        reload_call = mock.call(
+        reload_call = api_call(
             method="GET",
             path=f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}",
             query_params={"location": "US"},
@@ -985,7 +987,7 @@ class Test_AsyncJob(unittest.TestCase):
         )
         self.assertIs(job.result(retry=custom_retry), job)
 
-        begin_call = mock.call(
+        begin_call = api_call(
             method="POST",
             path=f"/projects/{self.PROJECT}/jobs",
             data={
@@ -997,7 +999,7 @@ class Test_AsyncJob(unittest.TestCase):
             },
             timeout=None,
         )
-        reload_call = mock.call(
+        reload_call = api_call(
             method="GET",
             path=f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}",
             query_params={"location": "EU"},

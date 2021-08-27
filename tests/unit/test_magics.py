@@ -33,7 +33,7 @@ from google.cloud.bigquery import job
 from google.cloud.bigquery import table
 from google.cloud.bigquery.magics import magics
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
-from tests.unit.helpers import make_connection
+from tests.unit.helpers import api_call, make_connection
 from test_utils.imports import maybe_fail_import
 
 
@@ -182,17 +182,17 @@ def test_context_with_default_connection():
     # Check that query actually starts the job.
     conn.assert_called()
     list_rows.assert_called()
-    begin_call = mock.call(
+    begin_call = api_call(
         method="POST",
         path="/projects/project-from-env/jobs",
         data=mock.ANY,
         timeout=DEFAULT_TIMEOUT,
     )
-    query_results_call = mock.call(
+    query_results_call = api_call(
         method="GET",
         path=f"/projects/{PROJECT_ID}/queries/{JOB_ID}",
         query_params=mock.ANY,
-        timeout=mock.ANY,
+        timeout=120,
     )
     default_conn.api_request.assert_has_calls([begin_call, query_results_call])
 
@@ -246,17 +246,17 @@ def test_context_with_custom_connection():
 
     list_rows.assert_called()
     default_conn.api_request.assert_not_called()
-    begin_call = mock.call(
+    begin_call = api_call(
         method="POST",
         path="/projects/project-from-env/jobs",
         data=mock.ANY,
         timeout=DEFAULT_TIMEOUT,
     )
-    query_results_call = mock.call(
+    query_results_call = api_call(
         method="GET",
         path=f"/projects/{PROJECT_ID}/queries/{JOB_ID}",
         query_params=mock.ANY,
-        timeout=mock.ANY,
+        timeout=120,
     )
     context_conn.api_request.assert_has_calls([begin_call, query_results_call])
 

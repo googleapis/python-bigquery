@@ -56,6 +56,7 @@ from google.api_core import client_info
 import google.cloud._helpers
 from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery.client import TIMEOUT_HEADER
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 
 try:
@@ -63,7 +64,7 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     bigquery_storage = None
 from test_utils.imports import maybe_fail_import
-from tests.unit.helpers import make_connection
+from tests.unit.helpers import api_call, make_connection
 
 PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
 
@@ -469,8 +470,8 @@ class TestClient(unittest.TestCase):
         self.assertEqual(
             fake_api_request.call_args_list,
             [
-                mock.call(method="GET", path=api_path, timeout=7.5),
-                mock.call(method="GET", path=api_path, timeout=7.5),  # was retried once
+                api_call(method="GET", path=api_path, timeout=7.5),
+                api_call(method="GET", path=api_path, timeout=7.5),  # was retried once
             ],
         )
 
@@ -846,12 +847,13 @@ class TestClient(unittest.TestCase):
         self.assertEqual(actual_routine.routine_id, "minimal_routine")
         conn.api_request.assert_has_calls(
             [
-                mock.call(
+                api_call(
                     method="POST", path=path, data=resource, timeout=DEFAULT_TIMEOUT,
                 ),
-                mock.call(
+                api_call(
                     method="GET",
-                    path="/projects/test-routine-project/datasets/test_routines/routines/minimal_routine",
+                    path="/projects/test-routine-project/datasets/"
+                    "test_routines/routines/minimal_routine",
                     timeout=DEFAULT_TIMEOUT,
                 ),
             ]
@@ -1313,7 +1315,7 @@ class TestClient(unittest.TestCase):
 
         conn.api_request.assert_has_calls(
             [
-                mock.call(
+                api_call(
                     method="POST",
                     path=post_path,
                     data={
@@ -1326,7 +1328,7 @@ class TestClient(unittest.TestCase):
                     },
                     timeout=DEFAULT_TIMEOUT,
                 ),
-                mock.call(method="GET", path=get_path, timeout=DEFAULT_TIMEOUT),
+                api_call(method="GET", path=get_path, timeout=DEFAULT_TIMEOUT),
             ]
         )
 
@@ -1506,6 +1508,7 @@ class TestClient(unittest.TestCase):
                 "X-Goog-API-Client": expected_user_agent,
                 "Accept-Encoding": "gzip",
                 "User-Agent": expected_user_agent,
+                TIMEOUT_HEADER: str(DEFAULT_TIMEOUT),
             },
             data=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
@@ -2855,7 +2858,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(len(fake_api_request.call_args_list), 2)  # was retried once
         self.assertEqual(
             fake_api_request.call_args_list[1],
-            mock.call(
+            api_call(
                 method="POST",
                 path="/projects/PROJECT/jobs",
                 data=data_without_destination,
@@ -5373,7 +5376,7 @@ class TestClient(unittest.TestCase):
         for call, expected_data in itertools.zip_longest(
             actual_calls, EXPECTED_SENT_DATA
         ):
-            expected_call = mock.call(
+            expected_call = api_call(
                 method="POST", path=API_PATH, data=expected_data, timeout=7.5
             )
             assert call == expected_call
@@ -5441,7 +5444,7 @@ class TestClient(unittest.TestCase):
         for call, expected_data in itertools.zip_longest(
             actual_calls, EXPECTED_SENT_DATA
         ):
-            expected_call = mock.call(
+            expected_call = api_call(
                 method="POST", path=API_PATH, data=expected_data, timeout=7.5
             )
             assert call == expected_call
@@ -5488,7 +5491,7 @@ class TestClient(unittest.TestCase):
                 }
             ]
         }
-        expected_call = mock.call(
+        expected_call = api_call(
             method="POST",
             path=API_PATH,
             data=EXPECTED_SENT_DATA,
@@ -5544,7 +5547,7 @@ class TestClient(unittest.TestCase):
 
         actual_calls = conn.api_request.call_args_list
         assert len(actual_calls) == 1
-        assert actual_calls[0] == mock.call(
+        assert actual_calls[0] == api_call(
             method="POST",
             path=API_PATH,
             data=EXPECTED_SENT_DATA,
@@ -5964,7 +5967,7 @@ class TestClient(unittest.TestCase):
 
         conn.api_request.assert_has_calls(
             [
-                mock.call(
+                api_call(
                     method="GET",
                     path="/%s" % PATH,
                     query_params={
@@ -5974,7 +5977,7 @@ class TestClient(unittest.TestCase):
                     },
                     timeout=DEFAULT_TIMEOUT,
                 ),
-                mock.call(
+                api_call(
                     method="GET",
                     path="/%s" % PATH,
                     query_params={

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from google.cloud.bigquery.dataset import Dataset, DatasetReference
-from .helpers import make_connection, dataset_polymorphic, make_client
+from .helpers import api_call, dataset_polymorphic, make_client, make_connection
 import google.cloud.bigquery.dataset
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 import mock
@@ -349,7 +349,7 @@ def test_create_dataset_alreadyexists_w_exists_ok_true(PROJECT, DS_ID, LOCATION)
 
     conn.api_request.assert_has_calls(
         [
-            mock.call(
+            api_call(
                 method="POST",
                 path=post_path,
                 data={
@@ -359,6 +359,6 @@ def test_create_dataset_alreadyexists_w_exists_ok_true(PROJECT, DS_ID, LOCATION)
                 },
                 timeout=DEFAULT_TIMEOUT,
             ),
-            mock.call(method="GET", path=get_path, timeout=DEFAULT_TIMEOUT),
+            api_call(method="GET", path=get_path, timeout=DEFAULT_TIMEOUT),
         ]
     )

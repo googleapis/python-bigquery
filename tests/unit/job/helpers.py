@@ -17,6 +17,8 @@ import unittest
 import mock
 from google.api_core import exceptions
 
+from ..helpers import make_connection as _make_connection
+
 
 def _make_credentials():
     import google.auth.credentials
@@ -33,15 +35,6 @@ def _make_client(project="test-project", connection=None):
     client = Client(project=project, credentials=_make_credentials(), _http=object())
     client._connection = connection
     return client
-
-
-def _make_connection(*responses):
-    import google.cloud.bigquery._http
-    from google.cloud.exceptions import NotFound
-
-    mock_conn = mock.create_autospec(google.cloud.bigquery._http.Connection)
-    mock_conn.api_request.side_effect = list(responses) + [NotFound("miss")]
-    return mock_conn
 
 
 def _make_retriable_exception():

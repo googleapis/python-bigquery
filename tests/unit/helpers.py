@@ -18,6 +18,38 @@ import mock
 import pytest
 
 
+def add_header_assertion_to_kwargs(kwargs):
+    timeout = kwargs.get("timeout")
+    if timeout is not None:
+        headers = kwargs.setdefault("headers", {})
+        if headers is None:
+            kwargs["headers"] = headers = {}
+        headers[google.cloud.bigquery.client.TIMEOUT_HEADER] = str(kwargs["timeout"])
+
+    return kwargs
+
+
+def add_header_assertion(mock, name):
+    """
+    Modify assert_called_with-ish assertions to add timeout headers
+
+    if there's a timeout
+    """
+    orig = getattr(mock, name)
+
+    def repl(*args, **kw):
+        return orig(*args, **add_header_assertion_to_kwargs(kw))
+
+    setattr(mock, name, repl)
+
+
+def api_call(*args, **kw):
+    """
+    Replacement for mock.call that adds a timeout header, if necessary
+    """
+    return mock.call(*args, **add_header_assertion_to_kwargs(kw))
+
+
 def make_connection(*responses):
     import google.cloud.bigquery._http
     import mock
@@ -26,6 +58,9 @@ def make_connection(*responses):
     mock_conn = mock.create_autospec(google.cloud.bigquery._http.Connection)
     mock_conn.user_agent = "testing 1.2.3"
     mock_conn.api_request.side_effect = list(responses) + [NotFound("miss")]
+    for name in "assert_called_with", "assert_called_once_with":
+        add_header_assertion(mock_conn.api_request, name)
+
     mock_conn.API_BASE_URL = "https://bigquery.googleapis.com"
     mock_conn.get_api_base_url_for_mtls = mock.Mock(return_value=mock_conn.API_BASE_URL)
     return mock_conn

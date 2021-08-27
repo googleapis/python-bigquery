@@ -38,6 +38,7 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
+from google.cloud.bigquery.enums import DecimalTargetType
 from google.cloud.bigquery.enums import KeyResultStatementKind
 from google.cloud.bigquery.enums import SqlTypeNames
 from google.cloud.bigquery.enums import StandardSqlDataTypes
@@ -55,11 +56,13 @@ from google.cloud.bigquery.job import CopyJob
 from google.cloud.bigquery.job import CopyJobConfig
 from google.cloud.bigquery.job import CreateDisposition
 from google.cloud.bigquery.job import DestinationFormat
+from google.cloud.bigquery.job import DmlStats
 from google.cloud.bigquery.job import Encoding
 from google.cloud.bigquery.job import ExtractJob
 from google.cloud.bigquery.job import ExtractJobConfig
 from google.cloud.bigquery.job import LoadJob
 from google.cloud.bigquery.job import LoadJobConfig
+from google.cloud.bigquery.job import OperationType
 from google.cloud.bigquery.job import QueryJob
 from google.cloud.bigquery.job import QueryJobConfig
 from google.cloud.bigquery.job import QueryPriority
@@ -67,6 +70,7 @@ from google.cloud.bigquery.job import SchemaUpdateOption
 from google.cloud.bigquery.job import ScriptOptions
 from google.cloud.bigquery.job import SourceFormat
 from google.cloud.bigquery.job import UnknownJob
+from google.cloud.bigquery.job import TransactionInfo
 from google.cloud.bigquery.job import WriteDisposition
 from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference
@@ -82,10 +86,12 @@ from google.cloud.bigquery.routine import DeterminismLevel
 from google.cloud.bigquery.routine import Routine
 from google.cloud.bigquery.routine import RoutineArgument
 from google.cloud.bigquery.routine import RoutineReference
+from google.cloud.bigquery.routine import RoutineType
 from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery.table import PartitionRange
 from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import Row
+from google.cloud.bigquery.table import SnapshotDefinition
 from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import TimePartitioningType
@@ -114,6 +120,7 @@ __all__ = [
     "PartitionRange",
     "RangePartitioning",
     "Row",
+    "SnapshotDefinition",
     "TimePartitioning",
     "TimePartitioningType",
     # Jobs
@@ -138,22 +145,27 @@ __all__ = [
     "BigtableOptions",
     "BigtableColumnFamily",
     "BigtableColumn",
+    "DmlStats",
     "CSVOptions",
     "GoogleSheetsOptions",
     "ParquetOptions",
     "ScriptOptions",
+    "TransactionInfo",
     "DEFAULT_RETRY",
     # Enum Constants
     "enums",
     "AutoRowIDs",
     "Compression",
     "CreateDisposition",
+    "DecimalTargetType",
     "DestinationFormat",
     "DeterminismLevel",
     "ExternalSourceFormat",
     "Encoding",
     "KeyResultStatementKind",
+    "OperationType",
     "QueryPriority",
+    "RoutineType",
     "SchemaUpdateOption",
     "SourceFormat",
     "SqlTypeNames",

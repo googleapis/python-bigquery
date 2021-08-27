@@ -14,6 +14,8 @@
 
 """Classes for load jobs."""
 
+from typing import FrozenSet, List, Iterable, Optional
+
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.external_config import HivePartitioningOptions
 from google.cloud.bigquery.format_options import ParquetOptions
@@ -23,7 +25,6 @@ from google.cloud.bigquery.schema import _to_schema_fields
 from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import TimePartitioning
-
 from google.cloud.bigquery.job.base import _AsyncJob
 from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
@@ -122,6 +123,27 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("createDisposition", value)
 
     @property
+    def decimal_target_types(self) -> Optional[FrozenSet[str]]:
+        """Possible SQL data types to which the source decimal values are converted.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.decimal_target_types
+
+        .. versionadded:: 2.21.0
+        """
+        prop = self._get_sub_prop("decimalTargetTypes")
+        if prop is not None:
+            prop = frozenset(prop)
+        return prop
+
+    @decimal_target_types.setter
+    def decimal_target_types(self, value: Optional[Iterable[str]]):
+        if value is not None:
+            self._set_sub_prop("decimalTargetTypes", list(value))
+        else:
+            self._del_sub_prop("decimalTargetTypes")
+
+    @property
     def destination_encryption_configuration(self):
         """Optional[google.cloud.bigquery.encryption_configuration.EncryptionConfiguration]: Custom
         encryption configuration for the destination table.
@@ -148,7 +170,7 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def destination_table_description(self):
-        """Optional[str]: Name given to destination table.
+        """Optional[str]: Description of the destination table.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#DestinationTableProperties.FIELDS.description
@@ -276,6 +298,27 @@ class LoadJobConfig(_JobConfig):
     @null_marker.setter
     def null_marker(self, value):
         self._set_sub_prop("nullMarker", value)
+
+    @property
+    def projection_fields(self) -> Optional[List[str]]:
+        """Optional[List[str]]: If
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.source_format` is set to
+        "DATASTORE_BACKUP", indicates which entity properties to load into
+        BigQuery from a Cloud Datastore backup.
+
+        Property names are case sensitive and must be top-level properties. If
+        no properties are specified, BigQuery loads all properties. If any
+        named property isn't found in the Cloud Datastore backup, an invalid
+        error is returned in the job result.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.projection_fields
+        """
+        return self._get_sub_prop("projectionFields")
+
+    @projection_fields.setter
+    def projection_fields(self, value: Optional[List[str]]):
+        self._set_sub_prop("projectionFields", value)
 
     @property
     def quote_character(self):

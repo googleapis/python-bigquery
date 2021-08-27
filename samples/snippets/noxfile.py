@@ -28,8 +28,9 @@ import nox
 # WARNING - WARNING - WARNING - WARNING - WARNING
 # WARNING - WARNING - WARNING - WARNING - WARNING
 
-# Copy `noxfile_config.py` to your directory and modify it instead.
+BLACK_VERSION = "black==19.10b0"
 
+# Copy `noxfile_config.py` to your directory and modify it instead.
 
 # `TEST_CONFIG` dict is a configuration hook that allows users to
 # modify the test configurations. The values here should be in sync
@@ -38,7 +39,7 @@ import nox
 
 TEST_CONFIG = {
     # You can opt out from the test for specific Python versions.
-    "ignored_versions": ["2.7"],
+    "ignored_versions": [],
     # Old samples are opted out of enforcing Python type hints
     # All new samples should feature them
     "enforce_type_hints": False,
@@ -85,15 +86,18 @@ def get_pytest_env_vars() -> Dict[str, str]:
 
 
 # DO NOT EDIT - automatically generated.
-# All versions used to tested samples.
-ALL_VERSIONS = ["2.7", "3.6", "3.7", "3.8", "3.9"]
+# All versions used to test samples.
+ALL_VERSIONS = ["3.6", "3.7", "3.8", "3.9"]
 
 # Any default versions that should be ignored.
 IGNORED_VERSIONS = TEST_CONFIG["ignored_versions"]
 
 TESTED_VERSIONS = sorted([v for v in ALL_VERSIONS if v not in IGNORED_VERSIONS])
 
-INSTALL_LIBRARY_FROM_SOURCE = bool(os.environ.get("INSTALL_LIBRARY_FROM_SOURCE", False))
+INSTALL_LIBRARY_FROM_SOURCE = os.environ.get("INSTALL_LIBRARY_FROM_SOURCE", False) in (
+    "True",
+    "true",
+)
 #
 # Style Checks
 #
@@ -159,7 +163,7 @@ def lint(session: nox.sessions.Session) -> None:
 
 @nox.session
 def blacken(session: nox.sessions.Session) -> None:
-    session.install("black")
+    session.install(BLACK_VERSION)
     python_files = [path for path in os.listdir(".") if path.endswith(".py")]
 
     session.run("black", *python_files)

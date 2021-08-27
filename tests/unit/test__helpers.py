@@ -26,11 +26,17 @@ except ImportError:  # pragma: NO COVER
 
 
 @unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")
-class Test_verify_bq_storage_version(unittest.TestCase):
-    def _call_fut(self):
-        from google.cloud.bigquery._helpers import _verify_bq_storage_version
+class TestBQStorageVersions(unittest.TestCase):
+    def _object_under_test(self):
+        from google.cloud.bigquery import _helpers
 
-        return _verify_bq_storage_version()
+        return _helpers.BQStorageVersions()
+
+    def _call_fut(self):
+        from google.cloud.bigquery import _helpers
+
+        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
+        return _helpers.BQ_STORAGE_VERSIONS.verify_version()
 
     def test_raises_no_error_w_recent_bqstorage(self):
         from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
@@ -53,9 +59,34 @@ class Test_verify_bq_storage_version(unittest.TestCase):
 
         with mock.patch("google.cloud.bigquery_storage", autospec=True) as fake_module:
             del fake_module.__version__
-            error_pattern = r"version found: legacy"
+            error_pattern = r"version found: 0.0.0"
             with self.assertRaisesRegex(LegacyBigQueryStorageError, error_pattern):
                 self._call_fut()
+
+    def test_installed_version_returns_cached(self):
+        versions = self._object_under_test()
+        versions._installed_version = object()
+        assert versions.installed_version is versions._installed_version
+
+    def test_installed_version_returns_parsed_version(self):
+        versions = self._object_under_test()
+
+        with mock.patch("google.cloud.bigquery_storage.__version__", new="1.2.3"):
+            version = versions.installed_version
+
+        assert version.major == 1
+        assert version.minor == 2
+        assert version.micro == 3
+
+    def test_is_read_session_optional_true(self):
+        versions = self._object_under_test()
+        with mock.patch("google.cloud.bigquery_storage.__version__", new="2.6.0"):
+            assert versions.is_read_session_optional
+
+    def test_is_read_session_optional_false(self):
+        versions = self._object_under_test()
+        with mock.patch("google.cloud.bigquery_storage.__version__", new="2.5.0"):
+            assert not versions.is_read_session_optional
 
 
 class Test_not_null(unittest.TestCase):
@@ -659,19 +690,43 @@ class Test_float_to_json(unittest.TestCase):
     def test_w_none(self):
         self.assertEqual(self._call_fut(None), None)
 
+    def test_w_non_numeric(self):
+        with self.assertRaises(TypeError):
+            self._call_fut(object())
+
+    def test_w_integer(self):
+        result = self._call_fut(123)
+        self.assertIsInstance(result, float)
+        self.assertEqual(result, 123.0)
+
     def test_w_float(self):
         self.assertEqual(self._call_fut(1.23), 1.23)
 
+    def test_w_float_as_string(self):
+        self.assertEqual(self._call_fut("1.23"), 1.23)
+
     def test_w_nan(self):
         result = self._call_fut(float("nan"))
+        self.assertEqual(result.lower(), "nan")
+
+    def test_w_nan_as_string(self):
+        result = self._call_fut("NaN")
         self.assertEqual(result.lower(), "nan")
 
     def test_w_infinity(self):
         result = self._call_fut(float("inf"))
         self.assertEqual(result.lower(), "inf")
 
+    def test_w_infinity_as_string(self):
+        result = self._call_fut("inf")
+        self.assertEqual(result.lower(), "inf")
+
     def test_w_negative_infinity(self):
         result = self._call_fut(float("-inf"))
+        self.assertEqual(result.lower(), "-inf")
+
+    def test_w_negative_infinity_as_string(self):
+        result = self._call_fut("-inf")
         self.assertEqual(result.lower(), "-inf")
 
 

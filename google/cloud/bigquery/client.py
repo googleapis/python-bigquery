@@ -749,8 +749,8 @@ class Client(ClientWithProject):
         span_name=None,
         span_attributes=None,
         job_ref=None,
-        headers: Optional[Dict[str, str]]=None,
-        **kwargs
+        headers: Optional[Dict[str, str]] = None,
+        **kwargs,
     ):
         timeout = kwargs.get("timeout")
         if timeout is not None:
@@ -759,7 +759,7 @@ class Client(ClientWithProject):
             headers[TIMEOUT_HEADER] = str(timeout)
 
         if headers:
-            kwargs['headers'] = headers
+            kwargs["headers"] = headers
 
         call = functools.partial(self._connection.api_request, **kwargs)
 

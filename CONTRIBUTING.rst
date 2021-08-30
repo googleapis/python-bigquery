@@ -50,9 +50,9 @@ You'll have to create a development environment using a Git checkout:
    # Configure remotes such that you can pull changes from the googleapis/python-bigquery
    # repository into your local repository.
    $ git remote add upstream git@github.com:googleapis/python-bigquery.git
-   # fetch and merge changes from upstream into master
+   # fetch and merge changes from upstream into main
    $ git fetch upstream
-   $ git merge upstream/master
+   $ git merge upstream/main
 
 Now your local repo is set up such that you will push changes to your GitHub
 repo, from which you can submit a pull request.
@@ -110,12 +110,12 @@ Coding Style
   variables::
 
    export GOOGLE_CLOUD_TESTING_REMOTE="upstream"
-   export GOOGLE_CLOUD_TESTING_BRANCH="master"
+   export GOOGLE_CLOUD_TESTING_BRANCH="main"
 
   By doing this, you are specifying the location of the most up-to-date
   version of ``python-bigquery``. The the suggested remote name ``upstream``
   should point to the official ``googleapis`` checkout and the
-  the branch should be the main branch on that remote (``master``).
+  the branch should be the main branch on that remote (``main``).
 
 - This repository contains configuration for the
   `pre-commit <https://pre-commit.com/>`__ tool, which automates checking
@@ -177,6 +177,30 @@ Build the docs via:
 
    $ nox -s docs
 
+*************************
+Samples and code snippets
+*************************
+
+Code samples and snippets live in the `samples/` catalogue. Feel free to
+provide more examples, but make sure to write tests for those examples.
+Each folder containing example code requires its own `noxfile.py` script
+which automates testing. If you decide to create a new folder, you can
+base it on the `samples/snippets` folder (providing `noxfile.py` and
+the requirements files).
+
+The tests will run against a real Google Cloud Project, so you should
+configure them just like the System Tests.
+
+- To run sample tests, you can execute::
+
+   # Run all tests in a folder
+   $ cd samples/snippets
+   $ nox -s py-3.8
+
+   # Run a single sample test
+   $ cd samples/snippets
+   $ nox -s py-3.8 -- -k <name of test>
+
 ********************************************
 Note About ``README`` as it pertains to PyPI
 ********************************************
@@ -185,7 +209,7 @@ The `description on PyPI`_ for the project comes directly from the
 ``README``. Due to the reStructuredText (``rst``) parser used by
 PyPI, relative links which will work on GitHub (e.g. ``CONTRIBUTING.rst``
 instead of
-``https://github.com/googleapis/python-bigquery/blob/master/CONTRIBUTING.rst``)
+``https://github.com/googleapis/python-bigquery/blob/main/CONTRIBUTING.rst``)
 may cause problems creating links or rendering the description.
 
 .. _description on PyPI: https://pypi.org/project/google-cloud-bigquery
@@ -210,7 +234,7 @@ We support:
 
 Supported versions can be found in our ``noxfile.py`` `config`_.
 
-.. _config: https://github.com/googleapis/python-bigquery/blob/master/noxfile.py
+.. _config: https://github.com/googleapis/python-bigquery/blob/main/noxfile.py
 
 
 We also explicitly decided to support Python 3 beginning with version 3.6.

@@ -58,7 +58,9 @@ Job-Related Types
     job.Compression
     job.CreateDisposition
     job.DestinationFormat
+    job.DmlStats
     job.Encoding
+    job.OperationType
     job.QueryPlanEntry
     job.QueryPlanEntryStep
     job.QueryPriority
@@ -66,6 +68,7 @@ Job-Related Types
     job.SourceFormat
     job.WriteDisposition
     job.SchemaUpdateOption
+    job.TransactionInfo
 
 
 Dataset
@@ -90,6 +93,7 @@ Table
     table.RangePartitioning
     table.Row
     table.RowIterator
+    table.SnapshotDefinition
     table.Table
     table.TableListItem
     table.TableReference
@@ -115,6 +119,7 @@ Routine
     routine.Routine
     routine.RoutineArgument
     routine.RoutineReference
+    routine.RoutineType
 
 Schema
 ======
@@ -133,6 +138,7 @@ Query
 
     query.ArrayQueryParameter
     query.ScalarQueryParameter
+    query.ScalarQueryParameterType
     query.StructQueryParameter
     query.UDFResource
 
@@ -173,10 +179,11 @@ Magics
 Enums
 =====
 
-.. autosummary::
-    :toctree: generated
+.. toctree::
+    :maxdepth: 2
 
-    enums.StandardSqlDataTypes
+    enums
+
 
 Encryption Configuration
 ========================

@@ -21,12 +21,11 @@ import json
 import io
 import operator
 
+import google.api_core.retry
 import pkg_resources
 import pytest
-import pytz
 
 from google.cloud import bigquery
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 from . import helpers
 
 
@@ -39,6 +38,10 @@ pyarrow = pytest.importorskip("pyarrow", minversion="1.0.0")
 
 PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 PANDAS_INT64_VERSION = pkg_resources.parse_version("1.0.0")
+
+
+class MissingDataError(Exception):
+    pass
 
 
 def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_id):
@@ -59,7 +62,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
                         datetime.datetime(2012, 3, 14, 15, 16),
                     ],
                     dtype="datetime64[ns]",
-                ).dt.tz_localize(pytz.utc),
+                ).dt.tz_localize(datetime.timezone.utc),
             ),
             (
                 "dt_col",
@@ -184,12 +187,11 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         bigquery.SchemaField("geo_col", "GEOGRAPHY"),
         bigquery.SchemaField("int_col", "INTEGER"),
         bigquery.SchemaField("num_col", "NUMERIC"),
+        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
     )
-    if _BIGNUMERIC_SUPPORT:
-        scalars_schema += (bigquery.SchemaField("bignum_col", "BIGNUMERIC"),)
 
     table_schema = scalars_schema + (
         # TODO: Array columns can't be read due to NULLABLE versus REPEATED
@@ -211,12 +213,11 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         ("geo_col", nulls),
         ("int_col", nulls),
         ("num_col", nulls),
+        ("bignum_col", nulls),
         ("str_col", nulls),
         ("time_col", nulls),
         ("ts_col", nulls),
     ]
-    if _BIGNUMERIC_SUPPORT:
-        df_data.append(("bignum_col", nulls))
     df_data = collections.OrderedDict(df_data)
     dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
 
@@ -278,8 +279,6 @@ def test_load_table_from_dataframe_w_required(bigquery_client, dataset_id):
 
 def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id):
     # Schema with all scalar types.
-    # TODO: Uploading DATETIME columns currently fails, thus that field type
-    #       is temporarily  removed from the test.
     # See:
     #       https://github.com/googleapis/python-bigquery/issues/61
     #       https://issuetracker.google.com/issues/151765076
@@ -287,17 +286,16 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         bigquery.SchemaField("bool_col", "BOOLEAN"),
         bigquery.SchemaField("bytes_col", "BYTES"),
         bigquery.SchemaField("date_col", "DATE"),
-        # bigquery.SchemaField("dt_col", "DATETIME"),
+        bigquery.SchemaField("dt_col", "DATETIME"),
         bigquery.SchemaField("float_col", "FLOAT"),
         bigquery.SchemaField("geo_col", "GEOGRAPHY"),
         bigquery.SchemaField("int_col", "INTEGER"),
         bigquery.SchemaField("num_col", "NUMERIC"),
+        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
     )
-    if _BIGNUMERIC_SUPPORT:
-        scalars_schema += (bigquery.SchemaField("bignum_col", "BIGNUMERIC"),)
 
     table_schema = scalars_schema + (
         # TODO: Array columns can't be read due to NULLABLE versus REPEATED
@@ -313,14 +311,14 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         ("bool_col", [True, None, False]),
         ("bytes_col", [b"abc", None, b"def"]),
         ("date_col", [datetime.date(1, 1, 1), None, datetime.date(9999, 12, 31)]),
-        # (
-        #     "dt_col",
-        #     [
-        #         datetime.datetime(1, 1, 1, 0, 0, 0),
-        #         None,
-        #         datetime.datetime(9999, 12, 31, 23, 59, 59, 999999),
-        #     ],
-        # ),
+        (
+            "dt_col",
+            [
+                datetime.datetime(1, 1, 1, 0, 0, 0),
+                None,
+                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999),
+            ],
+        ),
         ("float_col", [float("-inf"), float("nan"), float("inf")]),
         (
             "geo_col",
@@ -335,6 +333,14 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
                 decimal.Decimal("99999999999999999999999999999.999999999"),
             ],
         ),
+        (
+            "bignum_col",
+            [
+                decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
+                None,
+                decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
+            ],
+        ),
         ("str_col", ["abc", None, "def"]),
         (
             "time_col",
@@ -343,23 +349,14 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         (
             "ts_col",
             [
-                datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+                datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
                 None,
-                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=pytz.utc),
+                datetime.datetime(
+                    9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc
+                ),
             ],
         ),
     ]
-    if _BIGNUMERIC_SUPPORT:
-        df_data.append(
-            (
-                "bignum_col",
-                [
-                    decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
-                    None,
-                    decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
-                ],
-            )
-        )
     df_data = collections.OrderedDict(df_data)
     dataframe = pandas.DataFrame(df_data, dtype="object", columns=df_data.keys())
 
@@ -479,10 +476,10 @@ def test_load_table_from_dataframe_w_explicit_schema_source_format_csv(
             (
                 "ts_col",
                 [
-                    datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+                    datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
                     None,
                     datetime.datetime(
-                        9999, 12, 31, 23, 59, 59, 999999, tzinfo=pytz.utc
+                        9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc
                     ),
                 ],
             ),
@@ -666,19 +663,6 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
     )
     for errors in chunk_errors:
         assert not errors
-
-    # Use query to fetch rows instead of listing directly from the table so
-    # that we get values from the streaming buffer.
-    rows = list(
-        bigquery_client.query(
-            "SELECT * FROM `{}.{}.{}`".format(
-                table.project, table.dataset_id, table.table_id
-            )
-        )
-    )
-
-    sorted_rows = sorted(rows, key=operator.attrgetter("int_col"))
-    row_tuples = [r.values() for r in sorted_rows]
     expected = [
         # Pandas often represents NULL values as NaN. Convert to None for
         # easier comparison.
@@ -686,7 +670,27 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
         for data_row in dataframe.itertuples(index=False)
     ]
 
-    assert len(row_tuples) == len(expected)
+    # Use query to fetch rows instead of listing directly from the table so
+    # that we get values from the streaming buffer "within a few seconds".
+    # https://cloud.google.com/bigquery/streaming-data-into-bigquery#dataavailability
+    @google.api_core.retry.Retry(
+        predicate=google.api_core.retry.if_exception_type(MissingDataError)
+    )
+    def get_rows():
+        rows = list(
+            bigquery_client.query(
+                "SELECT * FROM `{}.{}.{}`".format(
+                    table.project, table.dataset_id, table.table_id
+                )
+            )
+        )
+        if len(rows) != len(expected):
+            raise MissingDataError()
+        return rows
+
+    rows = get_rows()
+    sorted_rows = sorted(rows, key=operator.attrgetter("int_col"))
+    row_tuples = [r.values() for r in sorted_rows]
 
     for row, expected_row in zip(row_tuples, expected):
         assert (
@@ -792,3 +796,190 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
         dataframe = row_iterator.to_dataframe(bqstorage_client=bqstorage_client)
 
     assert len(dataframe.index) == 100
+
+
+def test_upload_time_and_datetime_56(bigquery_client, dataset_id):
+    df = pandas.DataFrame(
+        dict(
+            dt=[
+                datetime.datetime(2020, 1, 8, 8, 0, 0),
+                datetime.datetime(
+                    2020,
+                    1,
+                    8,
+                    8,
+                    0,
+                    0,
+                    tzinfo=datetime.timezone(datetime.timedelta(hours=-7)),
+                ),
+            ],
+            t=[datetime.time(0, 0, 10, 100001), None],
+        )
+    )
+    table = f"{dataset_id}.test_upload_time_and_datetime"
+    bigquery_client.load_table_from_dataframe(df, table).result()
+    data = list(map(list, bigquery_client.list_rows(table)))
+    assert data == [
+        [
+            datetime.datetime(2020, 1, 8, 8, 0, tzinfo=datetime.timezone.utc),
+            datetime.time(0, 0, 10, 100001),
+        ],
+        [datetime.datetime(2020, 1, 8, 15, 0, tzinfo=datetime.timezone.utc), None],
+    ]
+
+    from google.cloud.bigquery import job, schema
+
+    table = f"{dataset_id}.test_upload_time_and_datetime_dt"
+    config = job.LoadJobConfig(
+        schema=[schema.SchemaField("dt", "DATETIME"), schema.SchemaField("t", "TIME")]
+    )
+
+    bigquery_client.load_table_from_dataframe(df, table, job_config=config).result()
+    data = list(map(list, bigquery_client.list_rows(table)))
+    assert data == [
+        [datetime.datetime(2020, 1, 8, 8, 0), datetime.time(0, 0, 10, 100001)],
+        [datetime.datetime(2020, 1, 8, 15, 0), None],
+    ]
+
+
+def test_to_dataframe_geography_as_objects(bigquery_client, dataset_id):
+    wkt = pytest.importorskip("shapely.wkt")
+    bigquery_client.query(
+        f"create table {dataset_id}.lake (name string, geog geography)"
+    ).result()
+    bigquery_client.query(
+        f"""
+        insert into {dataset_id}.lake (name, geog) values
+        ('foo', st_geogfromtext('point(0 0)')),
+        ('bar', st_geogfromtext('point(0 1)')),
+        ('baz', null)
+        """
+    ).result()
+    df = bigquery_client.query(
+        f"select * from {dataset_id}.lake order by name"
+    ).to_dataframe(geography_as_object=True)
+    assert list(df["name"]) == ["bar", "baz", "foo"]
+    assert df["geog"][0] == wkt.loads("point(0 1)")
+    assert pandas.isna(df["geog"][1])
+    assert df["geog"][2] == wkt.loads("point(0 0)")
+
+
+def test_to_geodataframe(bigquery_client, dataset_id):
+    geopandas = pytest.importorskip("geopandas")
+    from shapely import wkt
+
+    bigquery_client.query(
+        f"create table {dataset_id}.geolake (name string, geog geography)"
+    ).result()
+    bigquery_client.query(
+        f"""
+        insert into {dataset_id}.geolake (name, geog) values
+        ('foo', st_geogfromtext('point(0 0)')),
+        ('bar', st_geogfromtext('polygon((0 0, 1 0, 1 1, 0 0))')),
+        ('baz', null)
+        """
+    ).result()
+    df = bigquery_client.query(
+        f"select * from {dataset_id}.geolake order by name"
+    ).to_geodataframe()
+    assert df["geog"][0] == wkt.loads("polygon((0 0, 1 0, 1 1, 0 0))")
+    assert pandas.isna(df["geog"][1])
+    assert df["geog"][2] == wkt.loads("point(0 0)")
+    assert isinstance(df, geopandas.GeoDataFrame)
+    assert isinstance(df["geog"], geopandas.GeoSeries)
+    assert df.area[0] == 0.5
+    assert pandas.isna(df.area[1])
+    assert df.area[2] == 0.0
+    assert df.crs.srs == "EPSG:4326"
+    assert df.crs.name == "WGS 84"
+    assert df.geog.crs.srs == "EPSG:4326"
+    assert df.geog.crs.name == "WGS 84"
+
+
+def test_load_geodataframe(bigquery_client, dataset_id):
+    geopandas = pytest.importorskip("geopandas")
+    import pandas
+    from shapely import wkt
+    from google.cloud.bigquery.schema import SchemaField
+
+    df = geopandas.GeoDataFrame(
+        pandas.DataFrame(
+            dict(
+                name=["foo", "bar"],
+                geo1=[None, None],
+                geo2=[None, wkt.loads("Point(1 1)")],
+            )
+        ),
+        geometry="geo1",
+    )
+
+    table_id = f"{dataset_id}.lake_from_gp"
+    bigquery_client.load_table_from_dataframe(df, table_id).result()
+
+    table = bigquery_client.get_table(table_id)
+    assert table.schema == [
+        SchemaField("name", "STRING", "NULLABLE"),
+        SchemaField("geo1", "GEOGRAPHY", "NULLABLE"),
+        SchemaField("geo2", "GEOGRAPHY", "NULLABLE"),
+    ]
+    assert sorted(map(list, bigquery_client.list_rows(table_id))) == [
+        ["bar", None, "POINT(1 1)"],
+        ["foo", None, None],
+    ]
+
+
+def test_load_dataframe_w_shapely(bigquery_client, dataset_id):
+    wkt = pytest.importorskip("shapely.wkt")
+    from google.cloud.bigquery.schema import SchemaField
+
+    df = pandas.DataFrame(
+        dict(name=["foo", "bar"], geo=[None, wkt.loads("Point(1 1)")])
+    )
+
+    table_id = f"{dataset_id}.lake_from_shapes"
+    bigquery_client.load_table_from_dataframe(df, table_id).result()
+
+    table = bigquery_client.get_table(table_id)
+    assert table.schema == [
+        SchemaField("name", "STRING", "NULLABLE"),
+        SchemaField("geo", "GEOGRAPHY", "NULLABLE"),
+    ]
+    assert sorted(map(list, bigquery_client.list_rows(table_id))) == [
+        ["bar", "POINT(1 1)"],
+        ["foo", None],
+    ]
+
+    bigquery_client.load_table_from_dataframe(df, table_id).result()
+    assert sorted(map(list, bigquery_client.list_rows(table_id))) == [
+        ["bar", "POINT(1 1)"],
+        ["bar", "POINT(1 1)"],
+        ["foo", None],
+        ["foo", None],
+    ]
+
+
+def test_load_dataframe_w_wkb(bigquery_client, dataset_id):
+    wkt = pytest.importorskip("shapely.wkt")
+    from shapely import wkb
+    from google.cloud.bigquery.schema import SchemaField
+
+    df = pandas.DataFrame(
+        dict(name=["foo", "bar"], geo=[None, wkb.dumps(wkt.loads("Point(1 1)"))])
+    )
+
+    table_id = f"{dataset_id}.lake_from_wkb"
+    # We create the table first, to inform the interpretation of the wkb data
+    bigquery_client.query(
+        f"create table {table_id} (name string, geo GEOGRAPHY)"
+    ).result()
+    bigquery_client.load_table_from_dataframe(df, table_id).result()
+
+    table = bigquery_client.get_table(table_id)
+    assert table.schema == [
+        SchemaField("name", "STRING", "NULLABLE"),
+        SchemaField("geo", "GEOGRAPHY", "NULLABLE"),
+    ]
+    assert sorted(map(list, bigquery_client.list_rows(table_id))) == [
+        ["bar", "POINT(1 1)"],
+        ["foo", None],
+    ]

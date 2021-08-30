@@ -30,10 +30,16 @@ description = "Google BigQuery API client library"
 release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
     "grpcio >= 1.38.1, < 2.0dev",  # https://github.com/googleapis/python-bigquery/issues/695
-    "google-api-core[grpc] >= 1.29.0, < 2.0.0dev",
+    # NOTE: Maintainers, please do not require google-api-core>=2.x.x
+    # Until this issue is closed
+    # https://github.com/googleapis/google-cloud-python/issues/10566
+    "google-api-core[grpc] >= 1.29.0, <3.0.0dev",
     "proto-plus >= 1.10.0",
-    "google-cloud-core >= 1.4.1, < 2.0dev",
-    "google-resumable-media >= 0.6.0, < 2.0dev",
+    # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
+    # Until this issue is closed
+    # https://github.com/googleapis/google-cloud-python/issues/10566
+    "google-cloud-core >= 1.4.1, <3.0.0dev",
+    "google-resumable-media >= 0.6.0, < 3.0dev",
     "packaging >= 14.3",
     "protobuf >= 3.12.0",
     "requests >= 2.18.0, < 3.0.0dev",
@@ -48,10 +54,11 @@ extras = {
         # grpc.Channel.close() method isn't added until 1.32.0.
         # https://github.com/grpc/grpc/pull/15254
         "grpcio >= 1.38.1, < 2.0dev",
-        "pyarrow >= 1.0.0, < 5.0dev",
+        "pyarrow >= 3.0.0, < 6.0dev",
     ],
-    "pandas": ["pandas>=0.23.0", "pyarrow >= 1.0.0, < 5.0dev"],
-    "bignumeric_type": ["pyarrow >= 3.0.0, < 5.0dev"],
+    "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
+    "pandas": ["pandas>=0.23.0", "pyarrow >= 3.0.0, < 6.0dev"],
+    "bignumeric_type": ["pyarrow >= 3.0.0, < 6.0dev"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
         "opentelemetry-api >= 0.11b0",

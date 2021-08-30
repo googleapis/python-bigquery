@@ -27,9 +27,13 @@ _UNSTRUCTURED_RETRYABLE_TYPES = (
     exceptions.TooManyRequests,
     exceptions.InternalServerError,
     exceptions.BadGateway,
+    requests.exceptions.ChunkedEncodingError,
     requests.exceptions.ConnectionError,
+    requests.exceptions.Timeout,
     auth_exceptions.TransportError,
 )
+
+_DEFAULT_JOB_DEADLINE = 60.0 * 10.0  # seconds
 
 
 def _should_retry(exc):
@@ -46,7 +50,7 @@ def _should_retry(exc):
     return reason in _RETRYABLE_REASONS
 
 
-DEFAULT_RETRY = retry.Retry(predicate=_should_retry)
+DEFAULT_RETRY = retry.Retry(predicate=_should_retry, deadline=600.0)
 """The default retry object.
 
 Any method with a ``retry`` parameter will be retried automatically,
@@ -54,4 +58,29 @@ with reasonable defaults. To disable retry, pass ``retry=None``.
 To modify the default retry behavior, call a ``with_XXX`` method
 on ``DEFAULT_RETRY``. For example, to change the deadline to 30 seconds,
 pass ``retry=bigquery.DEFAULT_RETRY.with_deadline(30)``.
+"""
+
+DEFAULT_TIMEOUT = 5.0 * 60.0
+"""The default API timeout.
+
+This is the time to wait per request. To adjust the total wait time, set a
+deadline on the retry object.
+"""
+
+job_retry_reasons = "rateLimitExceeded", "backendError"
+
+
+def _job_should_retry(exc):
+    if not hasattr(exc, "errors") or len(exc.errors) == 0:
+        return False
+
+    reason = exc.errors[0]["reason"]
+    return reason in job_retry_reasons
+
+
+DEFAULT_JOB_RETRY = retry.Retry(
+    predicate=_job_should_retry, deadline=_DEFAULT_JOB_DEADLINE
+)
+"""
+The default job retry object.
 """

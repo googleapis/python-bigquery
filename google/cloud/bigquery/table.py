@@ -20,7 +20,6 @@ import copy
 import datetime
 import functools
 import operator
-import pytz
 import typing
 from typing import Any, Dict, Iterable, Iterator, Optional, Tuple
 import warnings
@@ -29,6 +28,20 @@ try:
     import pandas
 except ImportError:  # pragma: NO COVER
     pandas = None
+
+try:
+    import geopandas
+except ImportError:
+    geopandas = None
+else:
+    _COORDINATE_REFERENCE_SYSTEM = "EPSG:4326"
+
+try:
+    import shapely.geos
+except ImportError:
+    shapely = None
+else:
+    _read_wkt = shapely.geos.WKTReader(shapely.geos.lgeos).read
 
 try:
     import pyarrow
@@ -53,6 +66,7 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
     # they are not None, avoiding false "no attribute" errors.
     import pandas
+    import geopandas
     import pyarrow
     from google.cloud import bigquery_storage
 
@@ -60,6 +74,14 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
 _NO_PANDAS_ERROR = (
     "The pandas library is not installed, please install "
     "pandas to use the to_dataframe() function."
+)
+_NO_GEOPANDAS_ERROR = (
+    "The geopandas library is not installed, please install "
+    "geopandas to use the to_geodataframe() function."
+)
+_NO_SHAPELY_ERROR = (
+    "The shapely library is not installed, please install "
+    "shapely to use the geography_as_object option."
 )
 _NO_PYARROW_ERROR = (
     "The pyarrow library is not installed, please install "
@@ -255,9 +277,16 @@ class TableReference(object):
         return (self._project, self._dataset_id, self._table_id)
 
     def __eq__(self, other):
-        if not isinstance(other, TableReference):
+        if isinstance(other, (Table, TableListItem)):
+            return (
+                self.project == other.project
+                and self.dataset_id == other.dataset_id
+                and self.table_id == other.table_id
+            )
+        elif isinstance(other, TableReference):
+            return self._key() == other._key()
+        else:
             return NotImplemented
-        return self._key() == other._key()
 
     def __ne__(self, other):
         return not self == other
@@ -321,6 +350,7 @@ class Table(object):
         "range_partitioning": "rangePartitioning",
         "time_partitioning": "timePartitioning",
         "schema": "schema",
+        "snapshot_definition": "snapshotDefinition",
         "streaming_buffer": "streamingBuffer",
         "self_link": "selfLink",
         "table_id": ["tableReference", "tableId"],
@@ -910,6 +940,19 @@ class Table(object):
             self._PROPERTY_TO_API_FIELD["external_data_configuration"]
         ] = api_repr
 
+    @property
+    def snapshot_definition(self) -> Optional["SnapshotDefinition"]:
+        """Information about the snapshot. This value is set via snapshot creation.
+
+        See: https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Table.FIELDS.snapshot_definition
+        """
+        snapshot_info = self._properties.get(
+            self._PROPERTY_TO_API_FIELD["snapshot_definition"]
+        )
+        if snapshot_info is not None:
+            snapshot_info = SnapshotDefinition(snapshot_info)
+        return snapshot_info
+
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":
         """Construct a table from fully-qualified table ID.
@@ -996,6 +1039,24 @@ class Table(object):
     def _build_resource(self, filter_fields):
         """Generate a resource for ``update``."""
         return _helpers._build_resource_from_properties(self, filter_fields)
+
+    def __eq__(self, other):
+        if isinstance(other, Table):
+            return (
+                self._properties["tableReference"]
+                == other._properties["tableReference"]
+            )
+        elif isinstance(other, (TableReference, TableListItem)):
+            return (
+                self.project == other.project
+                and self.dataset_id == other.dataset_id
+                and self.table_id == other.table_id
+            )
+        else:
+            return NotImplemented
+
+    def __hash__(self):
+        return hash((self.project, self.dataset_id, self.table_id))
 
     def __repr__(self):
         return "Table({})".format(repr(self.reference))
@@ -1215,6 +1276,19 @@ class TableListItem(object):
         """
         return copy.deepcopy(self._properties)
 
+    def __eq__(self, other):
+        if isinstance(other, (Table, TableReference, TableListItem)):
+            return (
+                self.project == other.project
+                and self.dataset_id == other.dataset_id
+                and self.table_id == other.table_id
+            )
+        else:
+            return NotImplemented
+
+    def __hash__(self):
+        return hash((self.project, self.dataset_id, self.table_id))
+
 
 def _row_from_mapping(mapping, schema):
     """Convert a mapping to a row tuple using the schema.
@@ -1271,6 +1345,29 @@ class StreamingBuffer(object):
         if "oldestEntryTime" in resource:
             self.oldest_entry_time = google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * int(resource["oldestEntryTime"])
+            )
+
+
+class SnapshotDefinition:
+    """Information about base table and snapshot time of the snapshot.
+
+    See https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#snapshotdefinition
+
+    Args:
+        resource: Snapshot definition representation returned from the API.
+    """
+
+    def __init__(self, resource: Dict[str, Any]):
+        self.base_table_reference = None
+        if "baseTableReference" in resource:
+            self.base_table_reference = TableReference.from_api_repr(
+                resource["baseTableReference"]
+            )
+
+        self.snapshot_time = None
+        if "snapshotTime" in resource:
+            self.snapshot_time = google.cloud._helpers._rfc3339_to_datetime(
+                resource["snapshotTime"]
             )
 
 
@@ -1515,11 +1612,6 @@ class RowIterator(HTTPIterator):
             return False
 
         if self.max_results is not None:
-            warnings.warn(
-                "Cannot use bqstorage_client if max_results is set, "
-                "reverting to fetching data with the REST endpoint.",
-                stacklevel=2,
-            )
             return False
 
         try:
@@ -1528,7 +1620,7 @@ class RowIterator(HTTPIterator):
             return False
 
         try:
-            _helpers._verify_bq_storage_version()
+            _helpers.BQ_STORAGE_VERSIONS.verify_version()
         except LegacyBigQueryStorageError as exc:
             warnings.warn(str(exc))
             return False
@@ -1566,6 +1658,25 @@ class RowIterator(HTTPIterator):
     def total_rows(self):
         """int: The total number of rows in the table."""
         return self._total_rows
+
+    def _maybe_warn_max_results(
+        self, bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"],
+    ):
+        """Issue a warning if BQ Storage client is not ``None`` with ``max_results`` set.
+
+        This helper method should be used directly in the relevant top-level public
+        methods, so that the warning is issued for the correct line in user code.
+
+        Args:
+            bqstorage_client:
+                The BigQuery Storage client intended to use for downloading result rows.
+        """
+        if bqstorage_client is not None and self.max_results is not None:
+            warnings.warn(
+                "Cannot use bqstorage_client if max_results is set, "
+                "reverting to fetching data with the REST endpoint.",
+                stacklevel=3,
+            )
 
     def _to_page_iterable(
         self, bqstorage_download, tabledata_list_download, bqstorage_client=None
@@ -1647,7 +1758,7 @@ class RowIterator(HTTPIterator):
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
-                ..versionadded:: 1.24.0
+                .. versionadded:: 1.24.0
 
         Returns:
             pyarrow.Table
@@ -1658,10 +1769,12 @@ class RowIterator(HTTPIterator):
         Raises:
             ValueError: If the :mod:`pyarrow` library cannot be imported.
 
-        ..versionadded:: 1.17.0
+        .. versionadded:: 1.17.0
         """
         if pyarrow is None:
             raise ValueError(_NO_PYARROW_ERROR)
+
+        self._maybe_warn_max_results(bqstorage_client)
 
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
@@ -1738,7 +1851,7 @@ class RowIterator(HTTPIterator):
                 created by the server. If ``max_queue_size`` is :data:`None`, the queue
                 size is infinite.
 
-                ..versionadded:: 2.14.0
+                .. versionadded:: 2.14.0
 
         Returns:
             pandas.DataFrame:
@@ -1752,6 +1865,8 @@ class RowIterator(HTTPIterator):
             raise ValueError(_NO_PANDAS_ERROR)
         if dtypes is None:
             dtypes = {}
+
+        self._maybe_warn_max_results(bqstorage_client)
 
         column_names = [field.name for field in self._schema]
         bqstorage_download = functools.partial(
@@ -1786,6 +1901,7 @@ class RowIterator(HTTPIterator):
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
         date_as_object: bool = True,
+        geography_as_object: bool = False,
     ) -> "pandas.DataFrame":
         """Create a pandas DataFrame by loading all pages of a query.
 
@@ -1824,7 +1940,7 @@ class RowIterator(HTTPIterator):
                   Use the :func:`tqdm.tqdm_gui` function to display a
                   progress bar as a graphical dialog box.
 
-                ..versionadded:: 1.11.0
+                .. versionadded:: 1.11.0
             create_bqstorage_client (Optional[bool]):
                 If ``True`` (default), create a BigQuery Storage API client
                 using the default API settings. The BigQuery Storage API
@@ -1833,13 +1949,20 @@ class RowIterator(HTTPIterator):
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
-                ..versionadded:: 1.24.0
+                .. versionadded:: 1.24.0
 
             date_as_object (Optional[bool]):
                 If ``True`` (default), cast dates to objects. If ``False``, convert
                 to datetime64[ns] dtype.
 
-                ..versionadded:: 1.26.0
+                .. versionadded:: 1.26.0
+
+            geography_as_object (Optional[bool]):
+                If ``True``, convert GEOGRAPHY data to :mod:`shapely`
+                geometry objects. If ``False`` (default), don't cast
+                geography data to :mod:`shapely` geometry objects.
+
+                .. versionadded:: 2.24.0
 
         Returns:
             pandas.DataFrame:
@@ -1849,15 +1972,22 @@ class RowIterator(HTTPIterator):
 
         Raises:
             ValueError:
-                If the :mod:`pandas` library cannot be imported, or the
-                :mod:`google.cloud.bigquery_storage_v1` module is
-                required but cannot be imported.
+                If the :mod:`pandas` library cannot be imported, or
+                the :mod:`google.cloud.bigquery_storage_v1` module is
+                required but cannot be imported.  Also if
+                `geography_as_object` is `True`, but the
+                :mod:`shapely` library cannot be imported.
 
         """
         if pandas is None:
             raise ValueError(_NO_PANDAS_ERROR)
+        if geography_as_object and shapely is None:
+            raise ValueError(_NO_SHAPELY_ERROR)
+
         if dtypes is None:
             dtypes = {}
+
+        self._maybe_warn_max_results(bqstorage_client)
 
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
@@ -1874,7 +2004,7 @@ class RowIterator(HTTPIterator):
         # Pandas, we set the timestamp_as_object parameter to True, if necessary.
         types_to_check = {
             pyarrow.timestamp("us"),
-            pyarrow.timestamp("us", tz=pytz.UTC),
+            pyarrow.timestamp("us", tz=datetime.timezone.utc),
         }
 
         for column in record_batch:
@@ -1894,7 +2024,135 @@ class RowIterator(HTTPIterator):
         for column in dtypes:
             df[column] = pandas.Series(df[column], dtype=dtypes[column])
 
+        if geography_as_object:
+            for field in self.schema:
+                if field.field_type.upper() == "GEOGRAPHY":
+                    df[field.name] = df[field.name].dropna().apply(_read_wkt)
+
         return df
+
+    # If changing the signature of this method, make sure to apply the same
+    # changes to job.QueryJob.to_geodataframe()
+    def to_geodataframe(
+        self,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        dtypes: Dict[str, Any] = None,
+        progress_bar_type: str = None,
+        create_bqstorage_client: bool = True,
+        date_as_object: bool = True,
+        geography_column: Optional[str] = None,
+    ) -> "geopandas.GeoDataFrame":
+        """Create a GeoPandas GeoDataFrame by loading all pages of a query.
+
+        Args:
+            bqstorage_client (Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]):
+                A BigQuery Storage API client. If supplied, use the faster
+                BigQuery Storage API to fetch rows from BigQuery.
+
+                This method requires the ``pyarrow`` and
+                ``google-cloud-bigquery-storage`` libraries.
+
+                This method only exposes a subset of the capabilities of the
+                BigQuery Storage API. For full access to all features
+                (projections, filters, snapshots) use the Storage API directly.
+
+            dtypes (Optional[Map[str, Union[str, pandas.Series.dtype]]]):
+                A dictionary of column names pandas ``dtype``s. The provided
+                ``dtype`` is used when constructing the series for the column
+                specified. Otherwise, the default pandas behavior is used.
+            progress_bar_type (Optional[str]):
+                If set, use the `tqdm <https://tqdm.github.io/>`_ library to
+                display a progress bar while the data downloads. Install the
+                ``tqdm`` package to use this feature.
+
+                Possible values of ``progress_bar_type`` include:
+
+                ``None``
+                  No progress bar.
+                ``'tqdm'``
+                  Use the :func:`tqdm.tqdm` function to print a progress bar
+                  to :data:`sys.stderr`.
+                ``'tqdm_notebook'``
+                  Use the :func:`tqdm.tqdm_notebook` function to display a
+                  progress bar as a Jupyter notebook widget.
+                ``'tqdm_gui'``
+                  Use the :func:`tqdm.tqdm_gui` function to display a
+                  progress bar as a graphical dialog box.
+
+            create_bqstorage_client (Optional[bool]):
+                If ``True`` (default), create a BigQuery Storage API client
+                using the default API settings. The BigQuery Storage API
+                is a faster way to fetch rows from BigQuery. See the
+                ``bqstorage_client`` parameter for more information.
+
+                This argument does nothing if ``bqstorage_client`` is supplied.
+
+            date_as_object (Optional[bool]):
+                If ``True`` (default), cast dates to objects. If ``False``, convert
+                to datetime64[ns] dtype.
+
+            geography_column (Optional[str]):
+                If there are more than one GEOGRAPHY column,
+                identifies which one to use to construct a geopandas
+                GeoDataFrame.  This option can be ommitted if there's
+                only one GEOGRAPHY column.
+
+        Returns:
+            geopandas.GeoDataFrame:
+                A :class:`geopandas.GeoDataFrame` populated with row
+                data and column headers from the query results. The
+                column headers are derived from the destination
+                table's schema.
+
+        Raises:
+            ValueError:
+                If the :mod:`geopandas` library cannot be imported, or the
+                :mod:`google.cloud.bigquery_storage_v1` module is
+                required but cannot be imported.
+
+        .. versionadded:: 2.24.0
+        """
+        if geopandas is None:
+            raise ValueError(_NO_GEOPANDAS_ERROR)
+
+        geography_columns = set(
+            field.name
+            for field in self.schema
+            if field.field_type.upper() == "GEOGRAPHY"
+        )
+        if not geography_columns:
+            raise TypeError(
+                "There must be at least one GEOGRAPHY column"
+                " to create a GeoDataFrame"
+            )
+
+        if geography_column:
+            if geography_column not in geography_columns:
+                raise ValueError(
+                    f"The given geography column, {geography_column}, doesn't name"
+                    f" a GEOGRAPHY column in the result."
+                )
+        elif len(geography_columns) == 1:
+            [geography_column] = geography_columns
+        else:
+            raise ValueError(
+                "There is more than one GEOGRAPHY column in the result. "
+                "The geography_column argument must be used to specify which "
+                "one to use to create a GeoDataFrame"
+            )
+
+        df = self.to_dataframe(
+            bqstorage_client,
+            dtypes,
+            progress_bar_type,
+            create_bqstorage_client,
+            date_as_object,
+            geography_as_object=True,
+        )
+
+        return geopandas.GeoDataFrame(
+            df, crs=_COORDINATE_REFERENCE_SYSTEM, geometry=geography_column
+        )
 
 
 class _EmptyRowIterator(RowIterator):
@@ -1948,6 +2206,7 @@ class _EmptyRowIterator(RowIterator):
         progress_bar_type=None,
         create_bqstorage_client=True,
         date_as_object=True,
+        geography_as_object=False,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
 
@@ -1965,6 +2224,31 @@ class _EmptyRowIterator(RowIterator):
             raise ValueError(_NO_PANDAS_ERROR)
         return pandas.DataFrame()
 
+    def to_geodataframe(
+        self,
+        bqstorage_client=None,
+        dtypes=None,
+        progress_bar_type=None,
+        create_bqstorage_client=True,
+        date_as_object=True,
+        geography_column: Optional[str] = None,
+    ) -> "pandas.DataFrame":
+        """Create an empty dataframe.
+
+        Args:
+            bqstorage_client (Any): Ignored. Added for compatibility with RowIterator.
+            dtypes (Any): Ignored. Added for compatibility with RowIterator.
+            progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
+            create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
+            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
+
+        Returns:
+            pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
+        """
+        if geopandas is None:
+            raise ValueError(_NO_GEOPANDAS_ERROR)
+        return geopandas.GeoDataFrame(crs=_COORDINATE_REFERENCE_SYSTEM)
+
     def to_dataframe_iterable(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
@@ -1973,7 +2257,7 @@ class _EmptyRowIterator(RowIterator):
     ) -> Iterator["pandas.DataFrame"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
-        ..versionadded:: 2.21.0
+        .. versionadded:: 2.21.0
 
         Args:
             bqstorage_client:

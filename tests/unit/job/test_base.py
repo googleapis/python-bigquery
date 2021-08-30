@@ -227,6 +227,20 @@ class Test_AsyncJob(unittest.TestCase):
         self.assertEqual(stack_frame.end_column, 14)
         self.assertEqual(stack_frame.text, "QUERY TEXT")
 
+    def test_transaction_info(self):
+        from google.cloud.bigquery.job.base import TransactionInfo
+
+        client = _make_client(project=self.PROJECT)
+        job = self._make_one(self.JOB_ID, client)
+        assert job.transaction_info is None
+
+        statistics = job._properties["statistics"] = {}
+        assert job.transaction_info is None
+
+        statistics["transactionInfo"] = {"transactionId": "123-abc-xyz"}
+        assert isinstance(job.transaction_info, TransactionInfo)
+        assert job.transaction_info.transaction_id == "123-abc-xyz"
+
     def test_num_child_jobs(self):
         client = _make_client(project=self.PROJECT)
         job = self._make_one(self.JOB_ID, client)
@@ -281,11 +295,11 @@ class Test_AsyncJob(unittest.TestCase):
     @staticmethod
     def _datetime_and_millis():
         import datetime
-        import pytz
         from google.cloud._helpers import _millis
 
         now = datetime.datetime.utcnow().replace(
-            microsecond=123000, tzinfo=pytz.UTC  # stats timestamps have ms precision
+            microsecond=123000,
+            tzinfo=datetime.timezone.utc,  # stats timestamps have ms precision
         )
         return now, _millis(now)
 

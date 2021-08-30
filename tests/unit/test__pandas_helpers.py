@@ -19,6 +19,7 @@ import functools
 import operator
 import queue
 import warnings
+import pkg_resources
 
 import mock
 
@@ -35,22 +36,31 @@ except ImportError:  # pragma: NO COVER
     # Mock out pyarrow when missing, because methods from pyarrow.types are
     # used in test parameterization.
     pyarrow = mock.Mock()
+try:
+    import geopandas
+except ImportError:  # pragma: NO COVER
+    geopandas = None
+
 import pytest
-import pytz
 
 from google import api_core
+from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
 try:
     from google.cloud import bigquery_storage
+
+    _helpers.BQ_STORAGE_VERSIONS.verify_version()
 except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 
+PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
 
-skip_if_no_bignumeric = pytest.mark.skipif(
-    not _BIGNUMERIC_SUPPORT, reason="BIGNUMERIC support requires pyarrow>=3.0.0",
-)
+if pandas is not None:
+    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
+else:
+    # Set to less than MIN version.
+    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
 
 
 @pytest.fixture
@@ -141,9 +151,7 @@ def test_all_():
         ("FLOAT", "NULLABLE", pyarrow.types.is_float64),
         ("FLOAT64", "NULLABLE", pyarrow.types.is_float64),
         ("NUMERIC", "NULLABLE", is_numeric),
-        pytest.param(
-            "BIGNUMERIC", "NULLABLE", is_bignumeric, marks=skip_if_no_bignumeric,
-        ),
+        ("BIGNUMERIC", "NULLABLE", is_bignumeric),
         ("BOOLEAN", "NULLABLE", pyarrow.types.is_boolean),
         ("BOOL", "NULLABLE", pyarrow.types.is_boolean),
         ("TIMESTAMP", "NULLABLE", is_timestamp),
@@ -222,11 +230,10 @@ def test_all_():
             "REPEATED",
             all_(pyarrow.types.is_list, lambda type_: is_numeric(type_.value_type)),
         ),
-        pytest.param(
+        (
             "BIGNUMERIC",
             "REPEATED",
             all_(pyarrow.types.is_list, lambda type_: is_bignumeric(type_.value_type)),
-            marks=skip_if_no_bignumeric,
         ),
         (
             "BOOLEAN",
@@ -300,6 +307,7 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         schema.SchemaField("field05", "FLOAT"),
         schema.SchemaField("field06", "FLOAT64"),
         schema.SchemaField("field07", "NUMERIC"),
+        schema.SchemaField("field08", "BIGNUMERIC"),
         schema.SchemaField("field09", "BOOLEAN"),
         schema.SchemaField("field10", "BOOL"),
         schema.SchemaField("field11", "TIMESTAMP"),
@@ -308,9 +316,6 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         schema.SchemaField("field14", "DATETIME"),
         schema.SchemaField("field15", "GEOGRAPHY"),
     )
-
-    if _BIGNUMERIC_SUPPORT:
-        fields += (schema.SchemaField("field08", "BIGNUMERIC"),)
 
     field = schema.SchemaField("ignored_name", bq_type, mode="NULLABLE", fields=fields)
     actual = module_under_test.bq_to_arrow_data_type(field)
@@ -323,6 +328,7 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         pyarrow.field("field05", pyarrow.float64()),
         pyarrow.field("field06", pyarrow.float64()),
         pyarrow.field("field07", module_under_test.pyarrow_numeric()),
+        pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),
         pyarrow.field("field09", pyarrow.bool_()),
         pyarrow.field("field10", pyarrow.bool_()),
         pyarrow.field("field11", module_under_test.pyarrow_timestamp()),
@@ -331,8 +337,6 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         pyarrow.field("field14", module_under_test.pyarrow_datetime()),
         pyarrow.field("field15", pyarrow.string()),
     )
-    if _BIGNUMERIC_SUPPORT:
-        expected += (pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),)
     expected = pyarrow.struct(expected)
 
     assert pyarrow.types.is_struct(actual)
@@ -351,6 +355,7 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         schema.SchemaField("field05", "FLOAT"),
         schema.SchemaField("field06", "FLOAT64"),
         schema.SchemaField("field07", "NUMERIC"),
+        schema.SchemaField("field08", "BIGNUMERIC"),
         schema.SchemaField("field09", "BOOLEAN"),
         schema.SchemaField("field10", "BOOL"),
         schema.SchemaField("field11", "TIMESTAMP"),
@@ -359,9 +364,6 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         schema.SchemaField("field14", "DATETIME"),
         schema.SchemaField("field15", "GEOGRAPHY"),
     )
-
-    if _BIGNUMERIC_SUPPORT:
-        fields += (schema.SchemaField("field08", "BIGNUMERIC"),)
 
     field = schema.SchemaField("ignored_name", bq_type, mode="REPEATED", fields=fields)
     actual = module_under_test.bq_to_arrow_data_type(field)
@@ -374,6 +376,7 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         pyarrow.field("field05", pyarrow.float64()),
         pyarrow.field("field06", pyarrow.float64()),
         pyarrow.field("field07", module_under_test.pyarrow_numeric()),
+        pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),
         pyarrow.field("field09", pyarrow.bool_()),
         pyarrow.field("field10", pyarrow.bool_()),
         pyarrow.field("field11", module_under_test.pyarrow_timestamp()),
@@ -382,8 +385,6 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         pyarrow.field("field14", module_under_test.pyarrow_datetime()),
         pyarrow.field("field15", pyarrow.string()),
     )
-    if _BIGNUMERIC_SUPPORT:
-        expected += (pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),)
     expected_value_type = pyarrow.struct(expected)
 
     assert pyarrow.types.is_list(actual)
@@ -429,7 +430,7 @@ def test_bq_to_arrow_data_type_w_struct_unknown_subfield(module_under_test):
                 decimal.Decimal("999.123456789"),
             ],
         ),
-        pytest.param(
+        (
             "BIGNUMERIC",
             [
                 decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
@@ -437,17 +438,18 @@ def test_bq_to_arrow_data_type_w_struct_unknown_subfield(module_under_test):
                 decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
                 decimal.Decimal("3.141592653589793238462643383279"),
             ],
-            marks=skip_if_no_bignumeric,
         ),
         ("BOOLEAN", [True, None, False, None]),
         ("BOOL", [False, None, True, None]),
         (
             "TIMESTAMP",
             [
-                datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+                datetime.datetime(1, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
                 None,
-                datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=pytz.utc),
-                datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+                datetime.datetime(
+                    9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc
+                ),
+                datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
             ],
         ),
         (
@@ -585,6 +587,60 @@ def test_bq_to_arrow_array_w_special_floats(module_under_test):
     assert roundtrip[1] is None
     assert roundtrip[2] == float("inf")
     assert roundtrip[3] is None
+
+
+@pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+def test_bq_to_arrow_array_w_geography_dtype(module_under_test):
+    from shapely import wkb, wkt
+
+    bq_field = schema.SchemaField("field_name", "GEOGRAPHY")
+
+    series = geopandas.GeoSeries([None, wkt.loads("point(0 0)")])
+    array = module_under_test.bq_to_arrow_array(series, bq_field)
+    # The result is binary, because we use wkb format
+    assert array.type == pyarrow.binary()
+    assert array.to_pylist() == [None, wkb.dumps(series[1])]
+
+    # All na:
+    series = geopandas.GeoSeries([None, None])
+    array = module_under_test.bq_to_arrow_array(series, bq_field)
+    assert array.type == pyarrow.string()
+    assert array.to_pylist() == list(series)
+
+
+@pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+def test_bq_to_arrow_array_w_geography_type_shapely_data(module_under_test):
+    from shapely import wkb, wkt
+
+    bq_field = schema.SchemaField("field_name", "GEOGRAPHY")
+
+    series = pandas.Series([None, wkt.loads("point(0 0)")])
+    array = module_under_test.bq_to_arrow_array(series, bq_field)
+    # The result is binary, because we use wkb format
+    assert array.type == pyarrow.binary()
+    assert array.to_pylist() == [None, wkb.dumps(series[1])]
+
+    # All na:
+    series = pandas.Series([None, None])
+    array = module_under_test.bq_to_arrow_array(series, bq_field)
+    assert array.type == pyarrow.string()
+    assert array.to_pylist() == list(series)
+
+
+@pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+def test_bq_to_arrow_array_w_geography_type_wkb_data(module_under_test):
+    from shapely import wkb, wkt
+
+    bq_field = schema.SchemaField("field_name", "GEOGRAPHY")
+
+    series = pandas.Series([None, wkb.dumps(wkt.loads("point(0 0)"))])
+    array = module_under_test.bq_to_arrow_array(series, bq_field)
+    # The result is binary, because we use wkb format
+    assert array.type == pyarrow.binary()
+    assert array.to_pylist() == list(series)
 
 
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
@@ -732,6 +788,37 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
         ("c_series", pandas.api.types.pandas_dtype("object")),
     ]
     assert columns_and_indexes == expected
+
+
+@pytest.mark.skipif(
+    pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+    reason="Requires `pandas version >= 1.0.0` which introduces pandas.NA",
+)
+def test_dataframe_to_json_generator(module_under_test):
+    utcnow = datetime.datetime.utcnow()
+    df_data = collections.OrderedDict(
+        [
+            ("a_series", [pandas.NA, 2, 3, 4]),
+            ("b_series", [0.1, float("NaN"), 0.3, 0.4]),
+            ("c_series", ["a", "b", pandas.NA, "d"]),
+            ("d_series", [utcnow, utcnow, utcnow, pandas.NaT]),
+            ("e_series", [True, False, True, None]),
+        ]
+    )
+    dataframe = pandas.DataFrame(
+        df_data, index=pandas.Index([4, 5, 6, 7], name="a_index")
+    )
+
+    dataframe = dataframe.astype({"a_series": pandas.Int64Dtype()})
+
+    rows = module_under_test.dataframe_to_json_generator(dataframe)
+    expected = [
+        {"b_series": 0.1, "c_series": "a", "d_series": utcnow, "e_series": True},
+        {"a_series": 2, "c_series": "b", "d_series": utcnow, "e_series": False},
+        {"a_series": 3, "b_series": 0.3, "d_series": utcnow, "e_series": True},
+        {"a_series": 4, "b_series": 0.4, "c_series": "d"},
+    ]
+    assert list(rows) == expected
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
@@ -895,6 +982,7 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         schema.SchemaField("field05", "FLOAT", mode="REQUIRED"),
         schema.SchemaField("field06", "FLOAT64", mode="REQUIRED"),
         schema.SchemaField("field07", "NUMERIC", mode="REQUIRED"),
+        schema.SchemaField("field08", "BIGNUMERIC", mode="REQUIRED"),
         schema.SchemaField("field09", "BOOLEAN", mode="REQUIRED"),
         schema.SchemaField("field10", "BOOL", mode="REQUIRED"),
         schema.SchemaField("field11", "TIMESTAMP", mode="REQUIRED"),
@@ -903,8 +991,6 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         schema.SchemaField("field14", "DATETIME", mode="REQUIRED"),
         schema.SchemaField("field15", "GEOGRAPHY", mode="REQUIRED"),
     )
-    if _BIGNUMERIC_SUPPORT:
-        bq_schema += (schema.SchemaField("field08", "BIGNUMERIC", mode="REQUIRED"),)
 
     data = {
         "field01": ["hello", "world"],
@@ -914,11 +1000,15 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         "field05": [1.25, 9.75],
         "field06": [-1.75, -3.5],
         "field07": [decimal.Decimal("1.2345"), decimal.Decimal("6.7891")],
+        "field08": [
+            decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
+            decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
+        ],
         "field09": [True, False],
         "field10": [False, True],
         "field11": [
-            datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
-            datetime.datetime(2012, 12, 21, 9, 7, 42, tzinfo=pytz.utc),
+            datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2012, 12, 21, 9, 7, 42, tzinfo=datetime.timezone.utc),
         ],
         "field12": [datetime.date(9999, 12, 31), datetime.date(1970, 1, 1)],
         "field13": [datetime.time(23, 59, 59, 999999), datetime.time(12, 0, 0)],
@@ -928,11 +1018,6 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         ],
         "field15": ["POINT(30 10)", "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))"],
     }
-    if _BIGNUMERIC_SUPPORT:
-        data["field08"] = [
-            decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
-            decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
-        ]
     dataframe = pandas.DataFrame(data)
 
     arrow_table = module_under_test.dataframe_to_arrow(dataframe, bq_schema)
@@ -1132,6 +1217,28 @@ def test_dataframe_to_bq_schema_pyarrow_fallback_fails(module_under_test):
     assert "struct_field" in str(expected_warnings[0])
 
 
+@pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
+def test_dataframe_to_bq_schema_geography(module_under_test):
+    from shapely import wkt
+
+    df = geopandas.GeoDataFrame(
+        pandas.DataFrame(
+            dict(
+                name=["foo", "bar"],
+                geo1=[None, None],
+                geo2=[None, wkt.loads("Point(1 1)")],
+            )
+        ),
+        geometry="geo1",
+    )
+    bq_schema = module_under_test.dataframe_to_bq_schema(df, [])
+    assert bq_schema == (
+        schema.SchemaField("name", "STRING"),
+        schema.SchemaField("geo1", "GEOGRAPHY"),
+        schema.SchemaField("geo2", "GEOGRAPHY"),
+    )
+
+
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_augment_schema_type_detection_succeeds(module_under_test):
@@ -1167,11 +1274,8 @@ def test_augment_schema_type_detection_succeeds(module_under_test):
         schema.SchemaField("bytes_field", field_type=None, mode="NULLABLE"),
         schema.SchemaField("string_field", field_type=None, mode="NULLABLE"),
         schema.SchemaField("numeric_field", field_type=None, mode="NULLABLE"),
+        schema.SchemaField("bignumeric_field", field_type=None, mode="NULLABLE"),
     )
-    if _BIGNUMERIC_SUPPORT:
-        current_schema += (
-            schema.SchemaField("bignumeric_field", field_type=None, mode="NULLABLE"),
-        )
 
     with warnings.catch_warnings(record=True) as warned:
         augmented_schema = module_under_test.augment_schema(dataframe, current_schema)
@@ -1193,13 +1297,10 @@ def test_augment_schema_type_detection_succeeds(module_under_test):
         schema.SchemaField("bytes_field", field_type="BYTES", mode="NULLABLE"),
         schema.SchemaField("string_field", field_type="STRING", mode="NULLABLE"),
         schema.SchemaField("numeric_field", field_type="NUMERIC", mode="NULLABLE"),
+        schema.SchemaField(
+            "bignumeric_field", field_type="BIGNUMERIC", mode="NULLABLE"
+        ),
     )
-    if _BIGNUMERIC_SUPPORT:
-        expected_schema += (
-            schema.SchemaField(
-                "bignumeric_field", field_type="BIGNUMERIC", mode="NULLABLE"
-            ),
-        )
 
     by_name = operator.attrgetter("name")
     assert sorted(augmented_schema, key=by_name) == sorted(expected_schema, key=by_name)
@@ -1269,6 +1370,72 @@ def test_dataframe_to_parquet_dict_sequence_schema(module_under_test):
     ]
     schema_arg = fake_to_arrow.call_args.args[1]
     assert schema_arg == expected_schema_arg
+
+
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
+)
+def test__download_table_bqstorage_stream_includes_read_session(
+    monkeypatch, module_under_test
+):
+    import google.cloud.bigquery_storage_v1.reader
+    import google.cloud.bigquery_storage_v1.types
+
+    monkeypatch.setattr(_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None)
+    monkeypatch.setattr(bigquery_storage, "__version__", "2.5.0")
+    bqstorage_client = mock.create_autospec(
+        bigquery_storage.BigQueryReadClient, instance=True
+    )
+    reader = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsStream, instance=True
+    )
+    bqstorage_client.read_rows.return_value = reader
+    session = google.cloud.bigquery_storage_v1.types.ReadSession()
+
+    module_under_test._download_table_bqstorage_stream(
+        module_under_test._DownloadState(),
+        bqstorage_client,
+        session,
+        google.cloud.bigquery_storage_v1.types.ReadStream(name="test"),
+        queue.Queue(),
+        mock.Mock(),
+    )
+
+    reader.rows.assert_called_once_with(session)
+
+
+@pytest.mark.skipif(
+    bigquery_storage is None
+    or not _helpers.BQ_STORAGE_VERSIONS.is_read_session_optional,
+    reason="Requires `google-cloud-bigquery-storage` >= 2.6.0",
+)
+def test__download_table_bqstorage_stream_omits_read_session(
+    monkeypatch, module_under_test
+):
+    import google.cloud.bigquery_storage_v1.reader
+    import google.cloud.bigquery_storage_v1.types
+
+    monkeypatch.setattr(_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None)
+    monkeypatch.setattr(bigquery_storage, "__version__", "2.6.0")
+    bqstorage_client = mock.create_autospec(
+        bigquery_storage.BigQueryReadClient, instance=True
+    )
+    reader = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsStream, instance=True
+    )
+    bqstorage_client.read_rows.return_value = reader
+    session = google.cloud.bigquery_storage_v1.types.ReadSession()
+
+    module_under_test._download_table_bqstorage_stream(
+        module_under_test._DownloadState(),
+        bqstorage_client,
+        session,
+        google.cloud.bigquery_storage_v1.types.ReadStream(name="test"),
+        queue.Queue(),
+        mock.Mock(),
+    )
+
+    reader.rows.assert_called_once_with()
 
 
 @pytest.mark.parametrize(
@@ -1468,3 +1635,22 @@ def test_download_dataframe_row_iterator_dict_sequence_schema(module_under_test)
 def test_table_data_listpage_to_dataframe_skips_stop_iteration(module_under_test):
     dataframe = module_under_test._row_iterator_page_to_dataframe([], [], {})
     assert isinstance(dataframe, pandas.DataFrame)
+
+
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+def test_bq_to_arrow_field_type_override(module_under_test):
+    # When loading pandas data, we may need to override the type
+    # decision based on data contents, because GEOGRAPHY data can be
+    # stored as either text or binary.
+
+    assert (
+        module_under_test.bq_to_arrow_field(schema.SchemaField("g", "GEOGRAPHY")).type
+        == pyarrow.string()
+    )
+
+    assert (
+        module_under_test.bq_to_arrow_field(
+            schema.SchemaField("g", "GEOGRAPHY"), pyarrow.binary(),
+        ).type
+        == pyarrow.binary()
+    )

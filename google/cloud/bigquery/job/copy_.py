@@ -14,6 +14,8 @@
 
 """Classes for copy jobs."""
 
+from typing import Optional
+
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.table import TableReference
@@ -21,6 +23,25 @@ from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.job.base import _AsyncJob
 from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
+
+
+class OperationType:
+    """Different operation types supported in table copy job.
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#operationtype
+    """
+
+    OPERATION_TYPE_UNSPECIFIED = "OPERATION_TYPE_UNSPECIFIED"
+    """Unspecified operation type."""
+
+    COPY = "COPY"
+    """The source and destination table have the same table type."""
+
+    SNAPSHOT = "SNAPSHOT"
+    """The source table type is TABLE and the destination table type is SNAPSHOT."""
+
+    RESTORE = "RESTORE"
+    """The source table type is SNAPSHOT and the destination table type is TABLE."""
 
 
 class CopyJobConfig(_JobConfig):
@@ -84,6 +105,23 @@ class CopyJobConfig(_JobConfig):
         if value is not None:
             api_repr = value.to_api_repr()
         self._set_sub_prop("destinationEncryptionConfiguration", api_repr)
+
+    @property
+    def operation_type(self) -> str:
+        """The operation to perform with this copy job.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationTableCopy.FIELDS.operation_type
+        """
+        return self._get_sub_prop(
+            "operationType", OperationType.OPERATION_TYPE_UNSPECIFIED
+        )
+
+    @operation_type.setter
+    def operation_type(self, value: Optional[str]):
+        if value is None:
+            value = OperationType.OPERATION_TYPE_UNSPECIFIED
+        self._set_sub_prop("operationType", value)
 
 
 class CopyJob(_AsyncJob):
@@ -202,7 +240,7 @@ class CopyJob(_AsyncJob):
     def from_api_repr(cls, resource, client):
         """Factory: construct a job given its API representation
 
-        .. note:
+        .. note::
 
            This method assumes that the project found in the resource matches
            the client's project.

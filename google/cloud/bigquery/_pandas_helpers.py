@@ -20,12 +20,40 @@ import logging
 import queue
 import warnings
 
-from packaging import version
-
 try:
     import pandas
 except ImportError:  # pragma: NO COVER
     pandas = None
+else:
+    import numpy
+
+try:
+    # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
+    from shapely.geometry.base import BaseGeometry as _BaseGeometry
+except ImportError:  # pragma: NO COVER
+    # No shapely, use NoneType for _BaseGeometry as a placeholder.
+    _BaseGeometry = type(None)
+else:
+    if pandas is not None:  # pragma: NO COVER
+
+        def _to_wkb():
+            # Create a closure that:
+            # - Adds a not-null check. This allows the returned function to
+            #   be used directly with apply, unlike `shapely.wkb.dumps`.
+            # - Avoid extra work done by `shapely.wkb.dumps` that we don't need.
+            # - Caches the WKBWriter (and write method lookup :) )
+            # - Avoids adding WKBWriter, lgeos, and notnull to the module namespace.
+            from shapely.geos import WKBWriter, lgeos
+
+            write = WKBWriter(lgeos).write
+            notnull = pandas.notnull
+
+            def _to_wkb(v):
+                return write(v) if notnull(v) else v
+
+            return _to_wkb
+
+        _to_wkb = _to_wkb()
 
 try:
     import pyarrow
@@ -41,6 +69,7 @@ else:
     # Having BQ Storage available implies that pyarrow >=1.0.0 is available, too.
     _ARROW_COMPRESSION_SUPPORT = True
 
+from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
 
 
@@ -70,6 +99,7 @@ _PANDAS_DTYPE_TO_BQ = {
     "uint8": "INTEGER",
     "uint16": "INTEGER",
     "uint32": "INTEGER",
+    "geometry": "GEOGRAPHY",
 }
 
 
@@ -92,6 +122,8 @@ def pyarrow_numeric():
 
 
 def pyarrow_bignumeric():
+    # 77th digit is partial.
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
     return pyarrow.decimal256(76, 38)
 
 
@@ -107,6 +139,7 @@ if pyarrow:
     # This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
     # When modifying it be sure to update it there as well.
     BQ_TO_ARROW_SCALARS = {
+        "BIGNUMERIC": pyarrow_bignumeric,
         "BOOL": pyarrow.bool_,
         "BOOLEAN": pyarrow.bool_,
         "BYTES": pyarrow.binary,
@@ -143,23 +176,15 @@ if pyarrow:
         pyarrow.date64().id: "DATETIME",  # because millisecond resolution
         pyarrow.binary().id: "BYTES",
         pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
-        # The exact scale and precision don't matter, see below.
-        pyarrow.decimal128(38, scale=9).id: "NUMERIC",
-    }
-
-    if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
-        BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
         # The exact decimal's scale and precision are not important, as only
         # the type ID matters, and it's the same for all decimal256 instances.
-        ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
-        _BIGNUMERIC_SUPPORT = True
-    else:
-        _BIGNUMERIC_SUPPORT = False
+        pyarrow.decimal128(38, scale=9).id: "NUMERIC",
+        pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
+    }
 
 else:  # pragma: NO COVER
     BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
     ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
-    _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
 
 
 def bq_to_arrow_struct_data_type(field):
@@ -199,14 +224,16 @@ def bq_to_arrow_data_type(field):
     return data_type_constructor()
 
 
-def bq_to_arrow_field(bq_field):
+def bq_to_arrow_field(bq_field, array_type=None):
     """Return the Arrow field, corresponding to a given BigQuery column.
 
     Returns:
         None: if the Arrow type cannot be determined.
     """
     arrow_type = bq_to_arrow_data_type(bq_field)
-    if arrow_type:
+    if arrow_type is not None:
+        if array_type is not None:
+            arrow_type = array_type  # For GEOGRAPHY, at least initially
         is_nullable = bq_field.mode.upper() == "NULLABLE"
         return pyarrow.field(bq_field.name, arrow_type, nullable=is_nullable)
 
@@ -231,7 +258,24 @@ def bq_to_arrow_schema(bq_schema):
 
 
 def bq_to_arrow_array(series, bq_field):
-    arrow_type = bq_to_arrow_data_type(bq_field)
+    if bq_field.field_type.upper() == "GEOGRAPHY":
+        arrow_type = None
+        first = _first_valid(series)
+        if first is not None:
+            if series.dtype.name == "geometry" or isinstance(first, _BaseGeometry):
+                arrow_type = pyarrow.binary()
+                # Convert shapey geometry to WKB binary format:
+                series = series.apply(_to_wkb)
+            elif isinstance(first, bytes):
+                arrow_type = pyarrow.binary()
+        elif series.dtype.name == "geometry":
+            # We have a GeoSeries containing all nulls, convert it to a pandas series
+            series = pandas.Series(numpy.array(series))
+
+        if arrow_type is None:
+            arrow_type = bq_to_arrow_data_type(bq_field)
+    else:
+        arrow_type = bq_to_arrow_data_type(bq_field)
 
     field_type_upper = bq_field.field_type.upper() if bq_field.field_type else ""
 
@@ -285,6 +329,12 @@ def list_columns_and_indexes(dataframe):
     return columns_and_indexes
 
 
+def _first_valid(series):
+    first_valid_index = series.first_valid_index()
+    if first_valid_index is not None:
+        return series.at[first_valid_index]
+
+
 def dataframe_to_bq_schema(dataframe, bq_schema):
     """Convert a pandas DataFrame schema to a BigQuery schema.
 
@@ -325,6 +375,13 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
         # Otherwise, try to automatically determine the type based on the
         # pandas dtype.
         bq_type = _PANDAS_DTYPE_TO_BQ.get(dtype.name)
+        if bq_type is None:
+            sample_data = _first_valid(dataframe[column])
+            if (
+                isinstance(sample_data, _BaseGeometry)
+                and sample_data is not None  # Paranoia
+            ):
+                bq_type = "GEOGRAPHY"
         bq_field = schema.SchemaField(column, bq_type)
         bq_schema_out.append(bq_field)
 
@@ -456,11 +513,11 @@ def dataframe_to_arrow(dataframe, bq_schema):
     arrow_names = []
     arrow_fields = []
     for bq_field in bq_schema:
-        arrow_fields.append(bq_to_arrow_field(bq_field))
         arrow_names.append(bq_field.name)
         arrow_arrays.append(
             bq_to_arrow_array(get_column_or_index(dataframe, bq_field.name), bq_field)
         )
+        arrow_fields.append(bq_to_arrow_field(bq_field, arrow_arrays[-1].type))
 
     if all((field is not None for field in arrow_fields)):
         return pyarrow.Table.from_arrays(
@@ -590,7 +647,14 @@ def _bqstorage_page_to_dataframe(column_names, dtypes, page):
 def _download_table_bqstorage_stream(
     download_state, bqstorage_client, session, stream, worker_queue, page_to_item
 ):
-    rowstream = bqstorage_client.read_rows(stream.name).rows(session)
+    reader = bqstorage_client.read_rows(stream.name)
+
+    # Avoid deprecation warnings for passing in unnecessary read session.
+    # https://github.com/googleapis/python-bigquery-storage/issues/229
+    if _helpers.BQ_STORAGE_VERSIONS.is_read_session_optional:
+        rowstream = reader.rows()
+    else:
+        rowstream = reader.rows(session)
 
     for page in rowstream.pages:
         if download_state.done:
@@ -780,7 +844,7 @@ def dataframe_to_json_generator(dataframe):
         output = {}
         for column, value in zip(dataframe.columns, row):
             # Omit NaN values.
-            if value != value:
+            if pandas.isna(value):
                 continue
             output[column] = value
         yield output

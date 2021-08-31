@@ -23,7 +23,7 @@ from typing import Any, Dict, Optional, Sequence, Union
 import google.cloud._helpers
 from google.api_core import datetime_helpers
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery import types
+from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 
@@ -155,7 +155,7 @@ class Model:
         return self._properties.get("trainingRuns", [])
 
     @property
-    def feature_columns(self) -> Sequence[types.StandardSqlField]:
+    def feature_columns(self) -> Sequence[standard_sql.StandardSqlField]:
         """Input feature columns that were used to train this model.
 
         Read-only.
@@ -163,7 +163,7 @@ class Model:
         return self._properties.get("featureColumns", [])
 
     @property
-    def label_columns(self) -> Sequence[types.StandardSqlField]:
+    def label_columns(self) -> Sequence[standard_sql.StandardSqlField]:
         """Label columns that were used to train this model.
 
         The output of the model will have a ``predicted_`` prefix to these columns.

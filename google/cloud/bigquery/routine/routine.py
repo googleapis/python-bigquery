@@ -20,8 +20,8 @@ from typing import Optional
 
 import google.cloud._helpers
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery.types import StandardSqlDataType
-from google.cloud.bigquery.types import StandardSqlTableType
+from google.cloud.bigquery.standard_sql import StandardSqlDataType
+from google.cloud.bigquery.standard_sql import StandardSqlTableType
 
 
 class RoutineType:
@@ -190,7 +190,7 @@ class Routine(object):
 
     @property
     def return_type(self):
-        """google.cloud.bigquery.types.StandardSqlDataType: Return type of
+        """google.cloud.bigquery.StandardSqlDataType: Return type of
         the routine.
 
         If absent, the return type is inferred from
@@ -397,7 +397,7 @@ class RoutineArgument(object):
 
     @property
     def data_type(self):
-        """Optional[google.cloud.bigquery.types.StandardSqlDataType]: Type
+        """Optional[google.cloud.bigquery.StandardSqlDataType]: Type
         of a variable, e.g., a function argument.
 
         See:

@@ -37,22 +37,22 @@ def test_create_routine_ddl(capsys, random_routine_id, client):
     expected_arguments = [
         bigquery.RoutineArgument(
             name="arr",
-            data_type=bigquery.types.StandardSqlDataType(
-                type_kind=bigquery.types.StandardSqlDataType.TypeKind.ARRAY,
-                array_element_type=bigquery.types.StandardSqlDataType(
-                    type_kind=bigquery.types.StandardSqlDataType.TypeKind.STRUCT,
-                    struct_type=bigquery.types.StandardSqlStructType(
+            data_type=bigquery.StandardSqlDataType(
+                type_kind=bigquery.StandardSqlDataType.TypeKind.ARRAY,
+                array_element_type=bigquery.StandardSqlDataType(
+                    type_kind=bigquery.StandardSqlDataType.TypeKind.STRUCT,
+                    struct_type=bigquery.StandardSqlStructType(
                         fields=[
-                            bigquery.types.StandardSqlField(
+                            bigquery.StandardSqlField(
                                 name="name",
-                                type=bigquery.types.StandardSqlDataType(
-                                    type_kind=bigquery.types.StandardSqlDataType.TypeKind.STRING
+                                type=bigquery.StandardSqlDataType(
+                                    type_kind=bigquery.StandardSqlDataType.TypeKind.STRING
                                 ),
                             ),
-                            bigquery.types.StandardSqlField(
+                            bigquery.StandardSqlField(
                                 name="val",
-                                type=bigquery.types.StandardSqlDataType(
-                                    type_kind=bigquery.types.StandardSqlDataType.TypeKind.INT64
+                                type=bigquery.StandardSqlDataType(
+                                    type_kind=bigquery.StandardSqlDataType.TypeKind.INT64
                                 ),
                             ),
                         ]

@@ -87,6 +87,10 @@ from google.cloud.bigquery.routine import RoutineArgument
 from google.cloud.bigquery.routine import RoutineReference
 from google.cloud.bigquery.routine import RoutineType
 from google.cloud.bigquery.schema import SchemaField
+from google.cloud.bigquery.standard_sql import StandardSqlDataType
+from google.cloud.bigquery.standard_sql import StandardSqlField
+from google.cloud.bigquery.standard_sql import StandardSqlStructType
+from google.cloud.bigquery.standard_sql import StandardSqlTableType
 from google.cloud.bigquery.table import PartitionRange
 from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import Row
@@ -151,6 +155,11 @@ __all__ = [
     "ScriptOptions",
     "TransactionInfo",
     "DEFAULT_RETRY",
+    # Standard SQL types
+    "StandardSqlDataType",
+    "StandardSqlField",
+    "StandardSqlStructType",
+    "StandardSqlTableType",
     # Enum Constants
     "enums",
     "AutoRowIDs",

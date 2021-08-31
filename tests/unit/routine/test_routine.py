@@ -61,15 +61,15 @@ def test_ctor_w_properties(target_class):
     arguments = [
         RoutineArgument(
             name="x",
-            data_type=bigquery.types.StandardSqlDataType(
-                type_kind=bigquery.types.StandardSqlDataType.TypeKind.INT64
+            data_type=bigquery.standard_sql.StandardSqlDataType(
+                type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
             ),
         )
     ]
     body = "x * 3"
     language = "SQL"
-    return_type = bigquery.types.StandardSqlDataType(
-        type_kind=bigquery.types.StandardSqlDataType.TypeKind.INT64
+    return_type = bigquery.standard_sql.StandardSqlDataType(
+        type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
     )
     type_ = "SCALAR_FUNCTION"
     description = "A routine description."
@@ -145,15 +145,15 @@ def test_from_api_repr(target_class):
     assert actual_routine.arguments == [
         RoutineArgument(
             name="x",
-            data_type=bigquery.types.StandardSqlDataType(
-                type_kind=bigquery.types.StandardSqlDataType.TypeKind.INT64
+            data_type=bigquery.standard_sql.StandardSqlDataType(
+                type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
             ),
         )
     ]
     assert actual_routine.body == "42"
     assert actual_routine.language == "SQL"
-    assert actual_routine.return_type == bigquery.types.StandardSqlDataType(
-        type_kind=bigquery.types.StandardSqlDataType.TypeKind.INT64
+    assert actual_routine.return_type == bigquery.standard_sql.StandardSqlDataType(
+        type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
     )
     assert actual_routine.return_table_type is None
     assert actual_routine.type_ == "SCALAR_FUNCTION"
@@ -167,9 +167,9 @@ def test_from_api_repr_tvf_function(target_class):
     from google.cloud.bigquery.routine import RoutineReference
     from google.cloud.bigquery.routine import RoutineType
 
-    StandardSqlDataType = bigquery.types.StandardSqlDataType
-    StandardSqlField = bigquery.types.StandardSqlField
-    StandardSqlTableType = bigquery.types.StandardSqlTableType
+    StandardSqlDataType = bigquery.standard_sql.StandardSqlDataType
+    StandardSqlField = bigquery.standard_sql.StandardSqlField
+    StandardSqlTableType = bigquery.standard_sql.StandardSqlTableType
 
     creation_time = datetime.datetime(
         2010, 5, 19, 16, 0, 0, tzinfo=google.cloud._helpers.UTC
@@ -459,9 +459,9 @@ def test_set_return_table_type_w_none(object_under_test):
 
 
 def test_set_return_table_type_w_not_none(object_under_test):
-    StandardSqlDataType = bigquery.types.StandardSqlDataType
-    StandardSqlField = bigquery.types.StandardSqlField
-    StandardSqlTableType = bigquery.types.StandardSqlTableType
+    StandardSqlDataType = bigquery.standard_sql.StandardSqlDataType
+    StandardSqlField = bigquery.standard_sql.StandardSqlField
+    StandardSqlTableType = bigquery.standard_sql.StandardSqlTableType
 
     table_type = StandardSqlTableType(
         columns=[

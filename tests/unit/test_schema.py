@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from google.cloud.bigquery.types.standard_sql import StandardSqlStructType
+from google.cloud.bigquery.standard_sql import StandardSqlStructType
 from google.cloud.bigquery.schema import PolicyTagList
 import unittest
 
@@ -29,9 +29,9 @@ class TestSchemaField(unittest.TestCase):
 
     @staticmethod
     def _get_standard_sql_data_type_class():
-        from google.cloud.bigquery import types
+        from google.cloud.bigquery import standard_sql
 
-        return types.StandardSqlDataType
+        return standard_sql.StandardSqlDataType
 
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)
@@ -225,7 +225,7 @@ class TestSchemaField(unittest.TestCase):
             self.assertEqual(standard_field.type.type_kind, standard_type)
 
     def test_to_standard_sql_struct_type(self):
-        from google.cloud.bigquery import types
+        from google.cloud.bigquery import standard_sql
 
         # Expected result object:
         #
@@ -259,33 +259,33 @@ class TestSchemaField(unittest.TestCase):
         sql_type = self._get_standard_sql_data_type_class()
 
         # level 2 fields
-        sub_sub_field_date = types.StandardSqlField(
+        sub_sub_field_date = standard_sql.StandardSqlField(
             name="date_field", type=sql_type(type_kind=sql_type.TypeKind.DATE)
         )
-        sub_sub_field_time = types.StandardSqlField(
+        sub_sub_field_time = standard_sql.StandardSqlField(
             name="time_field", type=sql_type(type_kind=sql_type.TypeKind.TIME)
         )
 
         # level 1 fields
-        sub_field_struct = types.StandardSqlField(
+        sub_field_struct = standard_sql.StandardSqlField(
             name="last_used",
             type=sql_type(
                 type_kind=sql_type.TypeKind.STRUCT,
-                struct_type=types.StandardSqlStructType(
+                struct_type=standard_sql.StandardSqlStructType(
                     fields=[sub_sub_field_date, sub_sub_field_time]
                 ),
             ),
         )
-        sub_field_bytes = types.StandardSqlField(
+        sub_field_bytes = standard_sql.StandardSqlField(
             name="image_content", type=sql_type(type_kind=sql_type.TypeKind.BYTES)
         )
 
         # level 0 (top level)
-        expected_result = types.StandardSqlField(
+        expected_result = standard_sql.StandardSqlField(
             name="image_usage",
             type=sql_type(
                 type_kind=sql_type.TypeKind.STRUCT,
-                struct_type=types.StandardSqlStructType(
+                struct_type=standard_sql.StandardSqlStructType(
                     fields=[sub_field_bytes, sub_field_struct]
                 ),
             ),
@@ -307,7 +307,7 @@ class TestSchemaField(unittest.TestCase):
             self.assertEqual(standard_field, expected_result)
 
     def test_to_standard_sql_array_type_simple(self):
-        from google.cloud.bigquery import types
+        from google.cloud.bigquery import standard_sql
 
         sql_type = self._get_standard_sql_data_type_class()
 
@@ -316,7 +316,7 @@ class TestSchemaField(unittest.TestCase):
             type_kind=sql_type.TypeKind.ARRAY,
             array_element_type=sql_type(type_kind=sql_type.TypeKind.INT64),
         )
-        expected_result = types.StandardSqlField(
+        expected_result = standard_sql.StandardSqlField(
             name="valid_numbers", type=expected_sql_type
         )
 
@@ -327,18 +327,18 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(standard_field, expected_result)
 
     def test_to_standard_sql_array_type_struct(self):
-        from google.cloud.bigquery import types
+        from google.cloud.bigquery import standard_sql
 
         sql_type = self._get_standard_sql_data_type_class()
 
         # define person STRUCT
-        name_field = types.StandardSqlField(
+        name_field = standard_sql.StandardSqlField(
             name="name", type=sql_type(type_kind=sql_type.TypeKind.STRING)
         )
-        age_field = types.StandardSqlField(
+        age_field = standard_sql.StandardSqlField(
             name="age", type=sql_type(type_kind=sql_type.TypeKind.INT64)
         )
-        person_struct = types.StandardSqlField(
+        person_struct = standard_sql.StandardSqlField(
             name="person_info",
             type=sql_type(
                 type_kind=sql_type.TypeKind.STRUCT,
@@ -350,7 +350,7 @@ class TestSchemaField(unittest.TestCase):
         expected_sql_type = sql_type(
             type_kind=sql_type.TypeKind.ARRAY, array_element_type=person_struct.type
         )
-        expected_result = types.StandardSqlField(
+        expected_result = standard_sql.StandardSqlField(
             name="known_people", type=expected_sql_type
         )
 

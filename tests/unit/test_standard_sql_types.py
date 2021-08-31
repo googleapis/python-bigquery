@@ -18,7 +18,7 @@ import pytest
 class TestStandardSqlDataType:
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.types.standard_sql import StandardSqlDataType
+        from google.cloud.bigquery.standard_sql import StandardSqlDataType
 
         return StandardSqlDataType
 
@@ -26,8 +26,8 @@ class TestStandardSqlDataType:
         return self._get_target_class()(*args, **kw)
 
     def test_ctor_w_both_array_element_and_struct_types(self):
-        from google.cloud.bigquery.types.standard_sql import StandardSqlField
-        from google.cloud.bigquery.types.standard_sql import StandardSqlStructType
+        from google.cloud.bigquery.standard_sql import StandardSqlField
+        from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         StandardSqlDataType = self._get_target_class()
         TypeKind = StandardSqlDataType.TypeKind
@@ -97,8 +97,8 @@ class TestStandardSqlDataType:
         assert result == {"typeKind": "STRUCT", "structType": None}
 
     def test_to_api_repr_struct_type_w_field_types(self):
-        from google.cloud.bigquery.types.standard_sql import StandardSqlField
-        from google.cloud.bigquery.types.standard_sql import StandardSqlStructType
+        from google.cloud.bigquery.standard_sql import StandardSqlField
+        from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         StandardSqlDataType = self._get_target_class()
         TypeKind = StandardSqlDataType.TypeKind
@@ -201,8 +201,8 @@ class TestStandardSqlDataType:
         assert result == expected
 
     def test_from_api_repr_struct_type_nested(self):
-        from google.cloud.bigquery.types.standard_sql import StandardSqlField
-        from google.cloud.bigquery.types.standard_sql import StandardSqlStructType
+        from google.cloud.bigquery.standard_sql import StandardSqlField
+        from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         klass = self._get_target_class()
         TypeKind = klass.TypeKind
@@ -255,7 +255,7 @@ class TestStandardSqlDataType:
         assert result == expected
 
     def test_from_api_repr_struct_type_missing_struct_info(self):
-        from google.cloud.bigquery.types.standard_sql import StandardSqlStructType
+        from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         klass = self._get_target_class()
         resource = {"typeKind": "STRUCT"}
@@ -270,8 +270,8 @@ class TestStandardSqlDataType:
         assert result == expected
 
     def test_from_api_repr_struct_type_incomplete_field_info(self):
-        from google.cloud.bigquery.types.standard_sql import StandardSqlField
-        from google.cloud.bigquery.types.standard_sql import StandardSqlStructType
+        from google.cloud.bigquery.standard_sql import StandardSqlField
+        from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         klass = self._get_target_class()
         TypeKind = klass.TypeKind
@@ -303,7 +303,7 @@ class TestStandardSqlDataType:
 class TestStandardSqlTableType:
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.types.standard_sql import StandardSqlTableType
+        from google.cloud.bigquery.standard_sql import StandardSqlTableType
 
         return StandardSqlTableType
 
@@ -311,7 +311,7 @@ class TestStandardSqlTableType:
         return self._get_target_class()(*args, **kw)
 
     def test_columns_shallow_copy(self):
-        from google.cloud.bigquery.types.standard_sql import StandardSqlField
+        from google.cloud.bigquery.standard_sql import StandardSqlField
 
         columns = [
             StandardSqlField("foo"),
@@ -331,7 +331,7 @@ class TestStandardSqlTableType:
         assert result == {"columns": []}
 
     def test_to_api_repr_with_columns(self):
-        from google.cloud.bigquery.types.standard_sql import StandardSqlField
+        from google.cloud.bigquery.standard_sql import StandardSqlField
 
         columns = [StandardSqlField("foo"), StandardSqlField("bar")]
         instance = self._make_one(columns=columns)
@@ -349,8 +349,8 @@ class TestStandardSqlTableType:
         assert result.columns == []
 
     def test_from_api_repr_with_incomplete_columns(self):
-        from google.cloud.bigquery.types.standard_sql import StandardSqlDataType
-        from google.cloud.bigquery.types.standard_sql import StandardSqlField
+        from google.cloud.bigquery.standard_sql import StandardSqlDataType
+        from google.cloud.bigquery.standard_sql import StandardSqlField
 
         resource = {
             "columns": [

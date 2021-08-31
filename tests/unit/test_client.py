@@ -1859,8 +1859,8 @@ class TestClient(unittest.TestCase):
         routine.arguments = [
             RoutineArgument(
                 name="x",
-                data_type=bigquery.types.StandardSqlDataType(
-                    type_kind=bigquery.types.StandardSqlDataType.TypeKind.INT64
+                data_type=bigquery.standard_sql.StandardSqlDataType(
+                    type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
                 ),
             )
         ]

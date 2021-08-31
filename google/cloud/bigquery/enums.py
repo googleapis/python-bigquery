@@ -14,7 +14,7 @@
 
 import enum
 
-from google.cloud.bigquery import types
+from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.query import ScalarQueryParameterType
 
 
@@ -206,11 +206,11 @@ def _make_sql_scalars_enum():
         "StandardSqlDataTypes",
         (
             (member.name, member.value)
-            for member in types.StandardSqlDataType.TypeKind
+            for member in standard_sql.StandardSqlDataType.TypeKind
             if member.name in _SQL_SCALAR_TYPES
         ),
     )
-    new_enum.__doc__ = types.StandardSqlDataType.__doc__
+    new_enum.__doc__ = standard_sql.StandardSqlDataType.__doc__
 
     return new_enum
 

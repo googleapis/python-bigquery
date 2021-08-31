@@ -202,4 +202,4 @@ Helper SQL type classes.
 .. toctree::
     :maxdepth: 2
 
-    bigquery/types
+    bigquery/standard_sql

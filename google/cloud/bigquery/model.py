@@ -274,9 +274,6 @@ class Model:
             start_time = datetime_helpers.from_microseconds(1e3 * float(start_time))
             training_run["startTime"] = datetime_helpers.to_rfc3339(start_time)
 
-        # NOTE: No check for invalid model types, unlike before when a protobuf model
-        # did the enum validations - but we don't have that generated enum anymore.
-
         return this
 
     def _build_resource(self, filter_fields):

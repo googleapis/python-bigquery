@@ -144,7 +144,7 @@ class PyarrowVersions:
         """
         try:
             import pyarrow
-        except ImportError as exc:
+        except ImportError as exc:  # pragma: NO COVER
             if raise_if_error:
                 raise LegacyPyarrowError(
                     f"pyarrow package not found. Install pyarrow version >= {_MIN_PYARROW_VERSION}."

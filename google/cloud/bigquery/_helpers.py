@@ -19,8 +19,7 @@ import datetime
 import decimal
 import math
 import re
-from types import ModuleType
-from typing import Optional, Union
+from typing import Union
 
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
@@ -127,7 +126,7 @@ class PyarrowVersions:
 
         return self._installed_version
 
-    def try_import(self, raise_if_error: bool = False) -> Optional[ModuleType]:
+    def try_import(self, raise_if_error: bool = False):
         """Verify that a recent enough version of pyarrow extra is
         installed.
 
@@ -138,9 +137,12 @@ class PyarrowVersions:
         constraints in `setup.py`, the calling code can use this helper to
         verify the version compatibility at runtime.
 
+        Returns:
+            The ``pyarrow`` module or ``None``.
+
         Raises:
             LegacyPyarrowError:
-                If the pyarrow package is outdated.
+                If the pyarrow package is outdated and ``raise_if_error`` is ``True``.
         """
         try:
             import pyarrow

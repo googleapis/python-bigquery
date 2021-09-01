@@ -19,7 +19,7 @@ import datetime
 import decimal
 import math
 import re
-from typing import Union
+from typing import Any, Union
 
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
@@ -126,7 +126,7 @@ class PyarrowVersions:
 
         return self._installed_version
 
-    def try_import(self, raise_if_error: bool = False):
+    def try_import(self, raise_if_error: bool = False) -> Any:
         """Verify that a recent enough version of pyarrow extra is
         installed.
 

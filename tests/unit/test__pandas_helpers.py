@@ -30,13 +30,6 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    # Mock out pyarrow when missing, because methods from pyarrow.types are
-    # used in test parameterization.
-    pyarrow = mock.Mock()
-try:
     import geopandas
 except ImportError:  # pragma: NO COVER
     geopandas = None
@@ -46,6 +39,15 @@ import pytest
 from google import api_core
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
+
+
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+if pyarrow:
+    import pyarrow.types
+else:  # pragma: NO COVER
+    # Mock out pyarrow when missing, because methods from pyarrow.types are
+    # used in test parameterization.
+    pyarrow = mock.Mock()
 
 try:
     from google.cloud import bigquery_storage

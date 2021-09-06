@@ -13,8 +13,9 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-import enum
 from typing import Any, Dict, Iterable, Optional
+
+from google.cloud.bigquery.enums import StandardSqlTypeNames
 
 
 @dataclass
@@ -44,29 +45,9 @@ class StandardSqlDataType:
         }
     """
 
-    class TypeKind(str, enum.Enum):
-        def _generate_next_value_(name, start, count, last_values):
-            return name
-
-        TYPE_KIND_UNSPECIFIED = enum.auto()
-        INT64 = enum.auto()
-        BOOL = enum.auto()
-        FLOAT64 = enum.auto()
-        STRING = enum.auto()
-        BYTES = enum.auto()
-        TIMESTAMP = enum.auto()
-        DATE = enum.auto()
-        TIME = enum.auto()
-        DATETIME = enum.auto()
-        INTERVAL = enum.auto()
-        GEOGRAPHY = enum.auto()
-        NUMERIC = enum.auto()
-        BIGNUMERIC = enum.auto()
-        JSON = enum.auto()
-        ARRAY = enum.auto()
-        STRUCT = enum.auto()
-
-    type_kind: Optional[TypeKind] = TypeKind.TYPE_KIND_UNSPECIFIED
+    type_kind: Optional[
+        StandardSqlTypeNames
+    ] = StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED
     """The top level type of this field. Can be any standard SQL data type,
         e.g. INT64, DATE, ARRAY.
     """
@@ -87,19 +68,19 @@ class StandardSqlDataType:
         """Construct the API resource representation of this SQL data type."""
 
         if not self.type_kind:
-            type_kind = self.TypeKind.TYPE_KIND_UNSPECIFIED.value
+            type_kind = StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED.value
         else:
             type_kind = self.type_kind.value
 
         result = {"typeKind": type_kind}
 
-        if self.type_kind == self.TypeKind.ARRAY:
+        if self.type_kind == StandardSqlTypeNames.ARRAY:
             if not self.array_element_type:
                 array_type = None
             else:
                 array_type = self.array_element_type.to_api_repr()
             result["arrayElementType"] = array_type
-        elif self.type_kind == self.TypeKind.STRUCT:
+        elif self.type_kind == StandardSqlTypeNames.STRUCT:
             if not self.struct_type:
                 struct_type = None
             else:
@@ -112,11 +93,13 @@ class StandardSqlDataType:
     def from_api_repr(cls, resource: Dict[str, Any]):
         """Construct an SQL data type instance given its API representation."""
         type_kind = resource.get("typeKind")
-        if type_kind not in cls.TypeKind.__members__:
-            type_kind = cls.TypeKind.TYPE_KIND_UNSPECIFIED
+        if type_kind not in StandardSqlTypeNames.__members__:
+            type_kind = StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED
         else:
             # Convert string to an enum member.
-            type_kind = cls.TypeKind[type_kind]  # pytype: disable=missing-parameter
+            type_kind = StandardSqlTypeNames[  # pytype: disable=missing-parameter
+                type_kind
+            ]
 
         array_element_type = None
         if type_kind == cls.type_kind.ARRAY:
@@ -124,7 +107,7 @@ class StandardSqlDataType:
             array_element_type = cls.from_api_repr(element_type)
 
         struct_type = None
-        if type_kind == cls.TypeKind.STRUCT:
+        if type_kind == StandardSqlTypeNames.STRUCT:
             struct_info = resource.get("structType", {})
             struct_type = StandardSqlStructType.from_api_repr(struct_info)
 

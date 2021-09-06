@@ -38,21 +38,21 @@ def test_create_routine_ddl(capsys, random_routine_id, client):
         bigquery.RoutineArgument(
             name="arr",
             data_type=bigquery.StandardSqlDataType(
-                type_kind=bigquery.StandardSqlDataType.TypeKind.ARRAY,
+                type_kind=bigquery.StandardSqlDataTypeNames.ARRAY,
                 array_element_type=bigquery.StandardSqlDataType(
-                    type_kind=bigquery.StandardSqlDataType.TypeKind.STRUCT,
+                    type_kind=bigquery.StandardSqlDataTypeNames.STRUCT,
                     struct_type=bigquery.StandardSqlStructType(
                         fields=[
                             bigquery.StandardSqlField(
                                 name="name",
                                 type=bigquery.StandardSqlDataType(
-                                    type_kind=bigquery.StandardSqlDataType.TypeKind.STRING
+                                    type_kind=bigquery.StandardSqlDataTypeNames.STRING
                                 ),
                             ),
                             bigquery.StandardSqlField(
                                 name="val",
                                 type=bigquery.StandardSqlDataType(
-                                    type_kind=bigquery.StandardSqlDataType.TypeKind.INT64
+                                    type_kind=bigquery.StandardSqlDataTypeNames.INT64
                                 ),
                             ),
                         ]
@@ -82,7 +82,7 @@ def test_get_routine(capsys, routine_id):
     assert "Type: 'SCALAR_FUNCTION'" in out
     assert "Language: 'SQL'" in out
     assert "Name: 'x'" in out
-    assert "type_kind=<TypeKind.INT64: 'INT64'>" in out
+    assert "type_kind=<StandardSqlTypeNames.INT64: 'INT64'>" in out
 
 
 def test_delete_routine(capsys, routine_id):

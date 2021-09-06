@@ -14,6 +14,8 @@
 
 import pytest
 
+from google.cloud import bigquery
+
 
 class TestStandardSqlDataType:
     @staticmethod
@@ -30,27 +32,26 @@ class TestStandardSqlDataType:
         from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         StandardSqlDataType = self._get_target_class()
-        TypeKind = StandardSqlDataType.TypeKind
+        TypeNames = bigquery.StandardSqlTypeNames
 
-        array_element_type = StandardSqlDataType(TypeKind.INT64)
+        array_element_type = StandardSqlDataType(TypeNames.INT64)
         struct_type = StandardSqlStructType(
             fields=[
-                StandardSqlField("name", StandardSqlDataType(TypeKind.STRING)),
-                StandardSqlField("age", StandardSqlDataType(TypeKind.INT64)),
+                StandardSqlField("name", StandardSqlDataType(TypeNames.STRING)),
+                StandardSqlField("age", StandardSqlDataType(TypeNames.INT64)),
             ]
         )
 
         with pytest.raises(ValueError, match=r".*mutally exclusive.*"):
             self._make_one(
-                type_kind=TypeKind.TYPE_KIND_UNSPECIFIED,
+                type_kind=TypeNames.TYPE_KIND_UNSPECIFIED,
                 array_element_type=array_element_type,
                 struct_type=struct_type,
             )
 
     def test_ctor_default_type_kind(self):
-        TypeKind = self._get_target_class().TypeKind
         instance = self._make_one()
-        assert instance.type_kind == TypeKind.TYPE_KIND_UNSPECIFIED
+        assert instance.type_kind == bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED
 
     def test_to_api_repr_no_type_set(self):
         instance = self._make_one()
@@ -61,16 +62,16 @@ class TestStandardSqlDataType:
         assert result == {"typeKind": "TYPE_KIND_UNSPECIFIED"}
 
     def test_to_api_repr_scalar_type(self):
-        TypeKind = self._get_target_class().TypeKind
-        instance = self._make_one(TypeKind.FLOAT64)
+        instance = self._make_one(bigquery.StandardSqlTypeNames.FLOAT64)
 
         result = instance.to_api_repr()
 
         assert result == {"typeKind": "FLOAT64"}
 
     def test_to_api_repr_array_type_element_type_missing(self):
-        TypeKind = self._get_target_class().TypeKind
-        instance = self._make_one(TypeKind.ARRAY, array_element_type=None)
+        instance = self._make_one(
+            bigquery.StandardSqlTypeNames.ARRAY, array_element_type=None
+        )
 
         result = instance.to_api_repr()
 
@@ -78,10 +79,12 @@ class TestStandardSqlDataType:
         assert result == expected
 
     def test_to_api_repr_array_type_w_element_type(self):
-        TypeKind = self._get_target_class().TypeKind
-
-        array_element_type = self._make_one(type_kind=TypeKind.BOOL)
-        instance = self._make_one(TypeKind.ARRAY, array_element_type=array_element_type)
+        array_element_type = self._make_one(
+            type_kind=bigquery.StandardSqlTypeNames.BOOL
+        )
+        instance = self._make_one(
+            bigquery.StandardSqlTypeNames.ARRAY, array_element_type=array_element_type
+        )
 
         result = instance.to_api_repr()
 
@@ -89,8 +92,9 @@ class TestStandardSqlDataType:
         assert result == expected
 
     def test_to_api_repr_struct_type_field_types_missing(self):
-        TypeKind = self._get_target_class().TypeKind
-        instance = self._make_one(TypeKind.STRUCT, struct_type=None)
+        instance = self._make_one(
+            bigquery.StandardSqlTypeNames.STRUCT, struct_type=None
+        )
 
         result = instance.to_api_repr()
 
@@ -101,28 +105,28 @@ class TestStandardSqlDataType:
         from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         StandardSqlDataType = self._get_target_class()
-        TypeKind = StandardSqlDataType.TypeKind
+        TypeNames = bigquery.StandardSqlTypeNames
 
         person_type = StandardSqlStructType(
             fields=[
-                StandardSqlField("name", StandardSqlDataType(TypeKind.STRING)),
-                StandardSqlField("age", StandardSqlDataType(TypeKind.INT64)),
+                StandardSqlField("name", StandardSqlDataType(TypeNames.STRING)),
+                StandardSqlField("age", StandardSqlDataType(TypeNames.INT64)),
             ]
         )
         employee_type = StandardSqlStructType(
             fields=[
-                StandardSqlField("job_title", StandardSqlDataType(TypeKind.STRING)),
-                StandardSqlField("salary", StandardSqlDataType(TypeKind.FLOAT64)),
+                StandardSqlField("job_title", StandardSqlDataType(TypeNames.STRING)),
+                StandardSqlField("salary", StandardSqlDataType(TypeNames.FLOAT64)),
                 StandardSqlField(
                     "employee_info",
                     StandardSqlDataType(
-                        type_kind=TypeKind.STRUCT, struct_type=person_type,
+                        type_kind=TypeNames.STRUCT, struct_type=person_type,
                     ),
                 ),
             ]
         )
 
-        instance = self._make_one(TypeKind.STRUCT, struct_type=employee_type)
+        instance = self._make_one(TypeNames.STRUCT, struct_type=employee_type)
         result = instance.to_api_repr()
 
         expected = {
@@ -153,7 +157,7 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource={})
 
         expected = klass(
-            type_kind=klass.TypeKind.TYPE_KIND_UNSPECIFIED,
+            type_kind=bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
             array_element_type=None,
             struct_type=None,
         )
@@ -166,7 +170,9 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=klass.TypeKind.DATE, array_element_type=None, struct_type=None,
+            type_kind=bigquery.StandardSqlTypeNames.DATE,
+            array_element_type=None,
+            struct_type=None,
         )
         assert result == expected
 
@@ -177,8 +183,8 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=klass.TypeKind.ARRAY,
-            array_element_type=klass(type_kind=klass.TypeKind.BYTES),
+            type_kind=bigquery.StandardSqlTypeNames.ARRAY,
+            array_element_type=klass(type_kind=bigquery.StandardSqlTypeNames.BYTES),
             struct_type=None,
         )
         assert result == expected
@@ -190,9 +196,9 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=klass.TypeKind.ARRAY,
+            type_kind=bigquery.StandardSqlTypeNames.ARRAY,
             array_element_type=klass(
-                type_kind=klass.TypeKind.TYPE_KIND_UNSPECIFIED,
+                type_kind=bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
                 array_element_type=None,
                 struct_type=None,
             ),
@@ -205,7 +211,7 @@ class TestStandardSqlDataType:
         from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         klass = self._get_target_class()
-        TypeKind = klass.TypeKind
+        TypeNames = bigquery.StandardSqlTypeNames
 
         resource = {
             "typeKind": "STRUCT",
@@ -232,19 +238,19 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=TypeKind.STRUCT,
+            type_kind=TypeNames.STRUCT,
             struct_type=StandardSqlStructType(
                 fields=[
-                    StandardSqlField("job_title", klass(TypeKind.STRING)),
-                    StandardSqlField("salary", klass(TypeKind.FLOAT64)),
+                    StandardSqlField("job_title", klass(TypeNames.STRING)),
+                    StandardSqlField("salary", klass(TypeNames.FLOAT64)),
                     StandardSqlField(
                         "employee_info",
                         klass(
-                            type_kind=TypeKind.STRUCT,
+                            type_kind=TypeNames.STRUCT,
                             struct_type=StandardSqlStructType(
                                 fields=[
-                                    StandardSqlField("name", klass(TypeKind.STRING)),
-                                    StandardSqlField("age", klass(TypeKind.INT64)),
+                                    StandardSqlField("name", klass(TypeNames.STRING)),
+                                    StandardSqlField("age", klass(TypeNames.INT64)),
                                 ]
                             ),
                         ),
@@ -263,7 +269,7 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=klass.TypeKind.STRUCT,
+            type_kind=bigquery.StandardSqlTypeNames.STRUCT,
             array_element_type=None,
             struct_type=StandardSqlStructType(fields=[]),
         )
@@ -274,7 +280,7 @@ class TestStandardSqlDataType:
         from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         klass = self._get_target_class()
-        TypeKind = klass.TypeKind
+        TypeNames = bigquery.StandardSqlTypeNames
 
         resource = {
             "typeKind": "STRUCT",
@@ -289,11 +295,11 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=TypeKind.STRUCT,
+            type_kind=TypeNames.STRUCT,
             struct_type=StandardSqlStructType(
                 fields=[
-                    StandardSqlField(None, klass(TypeKind.STRING)),
-                    StandardSqlField("salary", klass(TypeKind.TYPE_KIND_UNSPECIFIED)),
+                    StandardSqlField(None, klass(TypeNames.STRING)),
+                    StandardSqlField("salary", klass(TypeNames.TYPE_KIND_UNSPECIFIED)),
                 ]
             ),
         )
@@ -365,14 +371,14 @@ class TestStandardSqlTableType:
 
         expected = StandardSqlField(
             name=None,
-            type=StandardSqlDataType(type_kind=StandardSqlDataType.TypeKind.BOOL),
+            type=StandardSqlDataType(type_kind=bigquery.StandardSqlTypeNames.BOOL),
         )
         assert result.columns[0] == expected
 
         expected = StandardSqlField(
             name="bar",
             type=StandardSqlDataType(
-                type_kind=StandardSqlDataType.TypeKind.TYPE_KIND_UNSPECIFIED
+                type_kind=bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED
             ),
         )
         assert result.columns[1] == expected

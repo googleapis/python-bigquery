@@ -339,7 +339,7 @@ class ScalarQueryParameter(_AbstractQueryParameter):
         type_:
             Name of parameter type. See
             :class:`google.cloud.bigquery.enums.SqlTypeNames` and
-            :class:`google.cloud.bigquery.enums.SqlParameterScalarTypes` for
+            :class:`google.cloud.bigquery.query.SqlParameterScalarTypes` for
             supported types.
 
         value:
@@ -748,6 +748,28 @@ class StructQueryParameter(_AbstractQueryParameter):
 
     def __repr__(self):
         return "StructQueryParameter{}".format(self._key())
+
+
+class SqlParameterScalarTypes:
+    """Supported scalar SQL query parameter types as type objects."""
+
+    BOOL = ScalarQueryParameterType("BOOL")
+    BOOLEAN = ScalarQueryParameterType("BOOL")
+    BIGDECIMAL = ScalarQueryParameterType("BIGNUMERIC")
+    BIGNUMERIC = ScalarQueryParameterType("BIGNUMERIC")
+    BYTES = ScalarQueryParameterType("BYTES")
+    DATE = ScalarQueryParameterType("DATE")
+    DATETIME = ScalarQueryParameterType("DATETIME")
+    DECIMAL = ScalarQueryParameterType("NUMERIC")
+    FLOAT = ScalarQueryParameterType("FLOAT64")
+    FLOAT64 = ScalarQueryParameterType("FLOAT64")
+    GEOGRAPHY = ScalarQueryParameterType("GEOGRAPHY")
+    INT64 = ScalarQueryParameterType("INT64")
+    INTEGER = ScalarQueryParameterType("INT64")
+    NUMERIC = ScalarQueryParameterType("NUMERIC")
+    STRING = ScalarQueryParameterType("STRING")
+    TIME = ScalarQueryParameterType("TIME")
+    TIMESTAMP = ScalarQueryParameterType("TIMESTAMP")
 
 
 class _QueryResults(object):

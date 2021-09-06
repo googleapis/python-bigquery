@@ -2181,7 +2181,7 @@ class TestBigQuery(unittest.TestCase):
         routine_name = "test_routine"
         dataset = self.temp_dataset(_make_dataset_id("create_routine"))
         float64_type = bigquery.StandardSqlDataType(
-            type_kind=bigquery.StandardSqlDataType.TypeKind.FLOAT64
+            type_kind=bigquery.StandardSqlTypeNames.FLOAT64
         )
         routine = bigquery.Routine(
             dataset.routine(routine_name),
@@ -2196,7 +2196,7 @@ class TestBigQuery(unittest.TestCase):
             bigquery.RoutineArgument(
                 name="arr",
                 data_type=bigquery.StandardSqlDataType(
-                    type_kind=bigquery.StandardSqlDataType.TypeKind.ARRAY,
+                    type_kind=bigquery.StandardSqlTypeNames.ARRAY,
                     array_element_type=float64_type,
                 ),
             )
@@ -2215,14 +2215,19 @@ class TestBigQuery(unittest.TestCase):
         assert rows[0].max_value == 100.0
 
     def test_create_tvf_routine(self):
-        from google.cloud.bigquery import Routine, RoutineArgument, RoutineType
+        from google.cloud.bigquery import (
+            Routine,
+            RoutineArgument,
+            RoutineType,
+            StandardSqlTypeNames,
+        )
 
         StandardSqlDataType = bigquery.StandardSqlDataType
         StandardSqlField = bigquery.StandardSqlField
         StandardSqlTableType = bigquery.StandardSqlTableType
 
-        INT64 = StandardSqlDataType.TypeKind.INT64
-        STRING = StandardSqlDataType.TypeKind.STRING
+        INT64 = StandardSqlTypeNames.INT64
+        STRING = StandardSqlTypeNames.STRING
 
         client = Config.CLIENT
 

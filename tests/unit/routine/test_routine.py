@@ -62,14 +62,14 @@ def test_ctor_w_properties(target_class):
         RoutineArgument(
             name="x",
             data_type=bigquery.standard_sql.StandardSqlDataType(
-                type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
+                type_kind=bigquery.StandardSqlTypeNames.INT64
             ),
         )
     ]
     body = "x * 3"
     language = "SQL"
     return_type = bigquery.standard_sql.StandardSqlDataType(
-        type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
+        type_kind=bigquery.StandardSqlTypeNames.INT64
     )
     type_ = "SCALAR_FUNCTION"
     description = "A routine description."
@@ -146,14 +146,14 @@ def test_from_api_repr(target_class):
         RoutineArgument(
             name="x",
             data_type=bigquery.standard_sql.StandardSqlDataType(
-                type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
+                type_kind=bigquery.StandardSqlTypeNames.INT64
             ),
         )
     ]
     assert actual_routine.body == "42"
     assert actual_routine.language == "SQL"
     assert actual_routine.return_type == bigquery.standard_sql.StandardSqlDataType(
-        type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
+        type_kind=bigquery.StandardSqlTypeNames.INT64
     )
     assert actual_routine.return_table_type is None
     assert actual_routine.type_ == "SCALAR_FUNCTION"
@@ -215,7 +215,9 @@ def test_from_api_repr_tvf_function(target_class):
     assert actual_routine.arguments == [
         RoutineArgument(
             name="a",
-            data_type=StandardSqlDataType(type_kind=StandardSqlDataType.TypeKind.INT64),
+            data_type=StandardSqlDataType(
+                type_kind=bigquery.StandardSqlTypeNames.INT64
+            ),
         )
     ]
     assert actual_routine.body == "SELECT x FROM UNNEST([1,2,3]) x WHERE x > a"
@@ -225,7 +227,7 @@ def test_from_api_repr_tvf_function(target_class):
         columns=[
             StandardSqlField(
                 name="int_col",
-                type=StandardSqlDataType(type_kind=StandardSqlDataType.TypeKind.INT64),
+                type=StandardSqlDataType(type_kind=bigquery.StandardSqlTypeNames.INT64),
             )
         ]
     )
@@ -467,11 +469,13 @@ def test_set_return_table_type_w_not_none(object_under_test):
         columns=[
             StandardSqlField(
                 name="int_col",
-                type=StandardSqlDataType(type_kind=StandardSqlDataType.TypeKind.INT64),
+                type=StandardSqlDataType(type_kind=bigquery.StandardSqlTypeNames.INT64),
             ),
             StandardSqlField(
                 name="str_col",
-                type=StandardSqlDataType(type_kind=StandardSqlDataType.TypeKind.STRING),
+                type=StandardSqlDataType(
+                    type_kind=bigquery.StandardSqlTypeNames.STRING
+                ),
             ),
         ]
     )

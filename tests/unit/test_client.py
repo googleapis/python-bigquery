@@ -1860,7 +1860,7 @@ class TestClient(unittest.TestCase):
             RoutineArgument(
                 name="x",
                 data_type=bigquery.standard_sql.StandardSqlDataType(
-                    type_kind=bigquery.standard_sql.StandardSqlDataType.TypeKind.INT64
+                    type_kind=bigquery.StandardSqlTypeNames.INT64
                 ),
             )
         ]

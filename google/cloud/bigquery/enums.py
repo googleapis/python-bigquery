@@ -14,9 +14,6 @@
 
 import enum
 
-from google.cloud.bigquery import standard_sql
-from google.cloud.bigquery.query import ScalarQueryParameterType
-
 
 class AutoRowIDs(enum.Enum):
     """How to handle automatic insert IDs when inserting rows as a stream."""
@@ -177,6 +174,29 @@ class KeyResultStatementKind:
     FIRST_SELECT = "FIRST_SELECT"
 
 
+class StandardSqlTypeNames(str, enum.Enum):
+    def _generate_next_value_(name, start, count, last_values):
+        return name
+
+    TYPE_KIND_UNSPECIFIED = enum.auto()
+    INT64 = enum.auto()
+    BOOL = enum.auto()
+    FLOAT64 = enum.auto()
+    STRING = enum.auto()
+    BYTES = enum.auto()
+    TIMESTAMP = enum.auto()
+    DATE = enum.auto()
+    TIME = enum.auto()
+    DATETIME = enum.auto()
+    INTERVAL = enum.auto()
+    GEOGRAPHY = enum.auto()
+    NUMERIC = enum.auto()
+    BIGNUMERIC = enum.auto()
+    JSON = enum.auto()
+    ARRAY = enum.auto()
+    STRUCT = enum.auto()
+
+
 _SQL_SCALAR_TYPES = frozenset(
     (
         "INT64",
@@ -206,11 +226,11 @@ def _make_sql_scalars_enum():
         "StandardSqlDataTypes",
         (
             (member.name, member.value)
-            for member in standard_sql.StandardSqlDataType.TypeKind
+            for member in StandardSqlTypeNames
             if member.name in _SQL_SCALAR_TYPES
         ),
     )
-    new_enum.__doc__ = standard_sql.StandardSqlDataType.__doc__
+    new_enum.__doc__ = "Scalar standard SQL types."
 
     return new_enum
 
@@ -240,28 +260,6 @@ class SqlTypeNames(str, enum.Enum):
     DATE = "DATE"
     TIME = "TIME"
     DATETIME = "DATETIME"
-
-
-class SqlParameterScalarTypes:
-    """Supported scalar SQL query parameter types as type objects."""
-
-    BOOL = ScalarQueryParameterType("BOOL")
-    BOOLEAN = ScalarQueryParameterType("BOOL")
-    BIGDECIMAL = ScalarQueryParameterType("BIGNUMERIC")
-    BIGNUMERIC = ScalarQueryParameterType("BIGNUMERIC")
-    BYTES = ScalarQueryParameterType("BYTES")
-    DATE = ScalarQueryParameterType("DATE")
-    DATETIME = ScalarQueryParameterType("DATETIME")
-    DECIMAL = ScalarQueryParameterType("NUMERIC")
-    FLOAT = ScalarQueryParameterType("FLOAT64")
-    FLOAT64 = ScalarQueryParameterType("FLOAT64")
-    GEOGRAPHY = ScalarQueryParameterType("GEOGRAPHY")
-    INT64 = ScalarQueryParameterType("INT64")
-    INTEGER = ScalarQueryParameterType("INT64")
-    NUMERIC = ScalarQueryParameterType("NUMERIC")
-    STRING = ScalarQueryParameterType("STRING")
-    TIME = ScalarQueryParameterType("TIME")
-    TIMESTAMP = ScalarQueryParameterType("TIMESTAMP")
 
 
 class WriteDisposition(object):

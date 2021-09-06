@@ -22,7 +22,7 @@ import unittest
 import pytest
 
 import google.cloud._helpers
-from google.cloud.bigquery import table, enums
+from google.cloud.bigquery import query, table
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
 from tests.unit.helpers import _to_pyarrow
@@ -338,8 +338,8 @@ class TestRaiseOnClosedDecorator(unittest.TestCase):
 
 
 VALID_BQ_TYPES = [
-    (name, getattr(enums.SqlParameterScalarTypes, name)._type)
-    for name in dir(enums.SqlParameterScalarTypes)
+    (name, getattr(query.SqlParameterScalarTypes, name)._type)
+    for name in dir(query.SqlParameterScalarTypes)
     if not name.startswith("_")
 ]
 

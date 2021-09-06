@@ -224,7 +224,7 @@ def _make_sql_scalars_enum():
 
     new_enum = enum.Enum(
         "StandardSqlDataTypes",
-        (
+        (  # pytype: disable=missing-parameter
             (member.name, member.value)
             for member in StandardSqlTypeNames
             if member.name in _SQL_SCALAR_TYPES

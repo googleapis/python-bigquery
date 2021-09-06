@@ -94,9 +94,16 @@ def unit(session):
     default(session)
 
 
-@nox.session(python=UNIT_TEST_PYTHON_VERSIONS[-1])
+@nox.session(python=[UNIT_TEST_PYTHON_VERSIONS[0], UNIT_TEST_PYTHON_VERSIONS[-1]])
 def unit_noextras(session):
     """Run the unit test suite."""
+
+    # Install optional dependencies that are out-of-date.
+    # https://github.com/googleapis/python-bigquery/issues/933
+    # There is no pyarrow 1.0.0 package for Python 3.9.
+    if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
+        session.install("pyarrow==1.0.0")
+
     default(session, install_extras=False)
 
 
@@ -159,10 +166,6 @@ def snippets(session):
     # Check the value of `RUN_SNIPPETS_TESTS` env var. It defaults to true.
     if os.environ.get("RUN_SNIPPETS_TESTS", "true") == "false":
         session.skip("RUN_SNIPPETS_TESTS is set to false, skipping")
-
-    # Sanity check: Only run snippets tests if the environment variable is set.
-    if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):
-        session.skip("Credentials must be set via environment variable.")
 
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"

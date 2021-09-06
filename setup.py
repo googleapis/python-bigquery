@@ -51,6 +51,7 @@ extras = {
     # See: https://github.com/googleapis/python-bigquery/issues/757
     "bqstorage": [],
     "pandas": ["pandas>=1.0.0"],
+    "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
         "opentelemetry-api >= 0.11b0",

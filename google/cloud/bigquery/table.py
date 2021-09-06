@@ -1810,7 +1810,7 @@ class RowIterator(HTTPIterator):
             if owns_bqstorage_client:
                 bqstorage_client._transport.grpc_channel.close()
 
-        if record_batches:
+        if record_batches and bqstorage_client is not None:
             return pyarrow.Table.from_batches(record_batches)
         else:
             # No records, use schema based on BigQuery schema.

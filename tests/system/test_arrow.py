@@ -149,17 +149,23 @@ def test_arrow_extension_types_same_for_storage_and_REST_APIs_894(
             f"insert into {test_table_name} ({names}) values ({values})"
         ).result()
     at = dataset_client.query(f"select * from {test_table_name}").result().to_arrow()
-    smd = {at.field(i).name: at.field(i).metadata for i in range(at.num_columns)}
+    storage_api_metadata = {
+        at.field(i).name: at.field(i).metadata for i in range(at.num_columns)
+    }
     at = (
         dataset_client.query(f"select * from {test_table_name}")
         .result()
         .to_arrow(create_bqstorage_client=False)
     )
-    rmd = {at.field(i).name: at.field(i).metadata for i in range(at.num_columns)}
+    rest_api_metadata = {
+        at.field(i).name: at.field(i).metadata for i in range(at.num_columns)
+    }
 
-    assert rmd == smd
-    assert rmd["adatetime"] == {b"ARROW:extension:name": b"google:sqlType:datetime"}
-    assert rmd["ageography"] == {
+    assert rest_api_metadata == storage_api_metadata
+    assert rest_api_metadata["adatetime"] == {
+        b"ARROW:extension:name": b"google:sqlType:datetime"
+    }
+    assert rest_api_metadata["ageography"] == {
         b"ARROW:extension:name": b"google:sqlType:geography",
         b"ARROW:extension:metadata": b'{"encoding": "WKT"}',
     }

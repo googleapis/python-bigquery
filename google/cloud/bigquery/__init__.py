@@ -41,7 +41,6 @@ from google.cloud.bigquery.enums import AutoRowIDs
 from google.cloud.bigquery.enums import DecimalTargetType
 from google.cloud.bigquery.enums import KeyResultStatementKind
 from google.cloud.bigquery.enums import SqlTypeNames
-from google.cloud.bigquery.enums import StandardSqlScalarTypes
 from google.cloud.bigquery.enums import StandardSqlTypeNames
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.external_config import BigtableOptions
@@ -180,7 +179,6 @@ __all__ = [
     "SchemaUpdateOption",
     "SourceFormat",
     "SqlTypeNames",
-    "StandardSqlScalarTypes",
     "StandardSqlTypeNames",
     "WriteDisposition",
     # EncryptionConfiguration

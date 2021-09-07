@@ -197,47 +197,6 @@ class StandardSqlTypeNames(str, enum.Enum):
     STRUCT = enum.auto()
 
 
-_SQL_SCALAR_TYPES = frozenset(
-    (
-        "INT64",
-        "BOOL",
-        "FLOAT64",
-        "STRING",
-        "BYTES",
-        "TIMESTAMP",
-        "DATE",
-        "TIME",
-        "DATETIME",
-        "INTERVAL",
-        "GEOGRAPHY",
-        "NUMERIC",
-        "BIGNUMERIC",
-        "JSON",
-    )
-)
-
-_SQL_NONSCALAR_TYPES = frozenset(("TYPE_KIND_UNSPECIFIED", "ARRAY", "STRUCT"))
-
-
-def _make_sql_scalars_enum():
-    """Create an enum based on the types enum containing only SQL scalar types."""
-
-    new_enum = enum.Enum(
-        "StandardSqlScalarTypes",
-        (  # pytype: disable=missing-parameter
-            (member.name, member.value)
-            for member in StandardSqlTypeNames
-            if member.name in _SQL_SCALAR_TYPES
-        ),
-    )
-    new_enum.__doc__ = "Scalar standard SQL types."
-
-    return new_enum
-
-
-StandardSqlScalarTypes = _make_sql_scalars_enum()
-
-
 # See also: https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
 # and https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
 class SqlTypeNames(str, enum.Enum):

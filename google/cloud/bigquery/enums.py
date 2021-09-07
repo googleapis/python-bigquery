@@ -223,7 +223,7 @@ def _make_sql_scalars_enum():
     """Create an enum based on the types enum containing only SQL scalar types."""
 
     new_enum = enum.Enum(
-        "StandardSqlDataTypes",
+        "StandardSqlScalarTypes",
         (  # pytype: disable=missing-parameter
             (member.name, member.value)
             for member in StandardSqlTypeNames
@@ -235,7 +235,7 @@ def _make_sql_scalars_enum():
     return new_enum
 
 
-StandardSqlDataTypes = _make_sql_scalars_enum()
+StandardSqlScalarTypes = _make_sql_scalars_enum()
 
 
 # See also: https://cloud.google.com/bigquery/data-types#legacy_sql_data_types

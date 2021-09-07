@@ -24,9 +24,9 @@ def module_under_test():
 
 @pytest.fixture
 def enum_under_test():
-    from google.cloud.bigquery.enums import StandardSqlDataTypes
+    from google.cloud.bigquery.enums import StandardSqlScalarTypes
 
-    return StandardSqlDataTypes
+    return StandardSqlScalarTypes
 
 
 @pytest.fixture

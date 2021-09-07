@@ -125,7 +125,7 @@ def routine_id(client, dataset_id):
         bigquery.RoutineArgument(
             name="x",
             data_type=bigquery.StandardSqlDataType(
-                type_kind=bigquery.StandardSqlDataTypeNames.INT64
+                type_kind=bigquery.StandardSqlTypeNames.INT64
             ),
         )
     ]

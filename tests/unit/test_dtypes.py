@@ -21,20 +21,22 @@ np = pytest.importorskip("numpy")
 
 
 SAMPLE_RAW_VALUES = dict(
-    date=(datetime.date(2021, 2, 2), '2021-2-3'),
+    date=(datetime.date(2021, 2, 2), "2021-2-3"),
     time=(datetime.time(1, 2, 2), "1:2:3.5"),
 )
 SAMPLE_VALUES = dict(
-    date=(datetime.date(2021, 2, 2),
-          datetime.date(2021, 2, 3),
-          datetime.date(2021, 2, 4),
-          datetime.date(2021, 2, 5),
-          ),
-    time=(datetime.time(1, 2, 2),
-          datetime.time(1, 2, 3, 500000),
-          datetime.time(1, 2, 4, 500000),
-          datetime.time(1, 2, 5, 500000),
-          ),
+    date=(
+        datetime.date(2021, 2, 2),
+        datetime.date(2021, 2, 3),
+        datetime.date(2021, 2, 4),
+        datetime.date(2021, 2, 5),
+    ),
+    time=(
+        datetime.time(1, 2, 2),
+        datetime.time(1, 2, 3, 500000),
+        datetime.time(1, 2, 4, 500000),
+        datetime.time(1, 2, 5, 500000),
+    ),
 )
 SAMPLE_DT_VALUES = dict(
     date=(
@@ -42,26 +44,27 @@ SAMPLE_DT_VALUES = dict(
         "2021-02-03T00:00:00.000000",
         "2021-02-04T00:00:00.000000",
         "2021-02-05T00:00:00.000000",
-        ),
+    ),
     time=(
         "1970-01-01T01:02:02.000000",
         "1970-01-01T01:02:03.500000",
         "1970-01-01T01:02:04.500000",
         "1970-01-01T01:02:05.500000",
-        )
+    ),
 )
 
 
 def _cls(dtype):
     from google.cloud.bigquery import dtypes
-    return getattr(dtypes, dtype.capitalize() + 'Array')
+
+    return getattr(dtypes, dtype.capitalize() + "Array")
 
 
 def _make_one(dtype):
     return _cls(dtype)._from_sequence(SAMPLE_RAW_VALUES[dtype])
 
 
-@pytest.mark.parametrize("dtype", ['date', 'time'])
+@pytest.mark.parametrize("dtype", ["date", "time"])
 def test_array_construction(dtype):
     a = _make_one(dtype)
     sample_values = SAMPLE_VALUES[dtype]
@@ -71,12 +74,11 @@ def test_array_construction(dtype):
     # implementation details:
     assert a.nbytes == 16
     assert np.array_equal(
-        a._ndarray,
-        np.array(SAMPLE_DT_VALUES[dtype][:2], dtype="datetime64[us]"),
+        a._ndarray, np.array(SAMPLE_DT_VALUES[dtype][:2], dtype="datetime64[us]"),
     )
 
 
-@pytest.mark.parametrize("dtype", ['date', 'time'])
+@pytest.mark.parametrize("dtype", ["date", "time"])
 def test_time_series_construction(dtype):
     sample_values = SAMPLE_VALUES[dtype]
     s = pd.Series(SAMPLE_RAW_VALUES[dtype][:2], dtype=dtype)
@@ -86,7 +88,7 @@ def test_time_series_construction(dtype):
     assert isinstance(s.array, _cls(dtype))
 
 
-@pytest.mark.parametrize("dtype", ['date', 'time'])
+@pytest.mark.parametrize("dtype", ["date", "time"])
 @pytest.mark.parametrize(
     "left,op,right,expected",
     [
@@ -164,7 +166,7 @@ def test_timearray_comparisons(
                 complements[op](left, np.array(bad_items))
 
 
-@pytest.mark.parametrize("dtype", ['date', 'time'])
+@pytest.mark.parametrize("dtype", ["date", "time"])
 def test_timearray_slicing(dtype):
     a = _make_one(dtype)
     b = a[:]
@@ -185,7 +187,7 @@ def test_timearray_slicing(dtype):
     assert np.array_equal(s[:1].array, cls._from_sequence([sample_values[0]]))
 
 
-@pytest.mark.parametrize("dtype", ['date', 'time'])
+@pytest.mark.parametrize("dtype", ["date", "time"])
 def test_item_assignment(dtype):
     a = _make_one(dtype)
     sample_values = SAMPLE_VALUES[dtype]

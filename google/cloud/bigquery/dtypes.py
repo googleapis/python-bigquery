@@ -57,7 +57,6 @@ class TimeDtype(pandas.core.dtypes.base.ExtensionDtype):
 class TimeArray(
     pandas.core.arraylike.OpsMixin,
     pandas.core.arrays._mixins.NDArrayBackedExtensionArray,
-    # pandas.core.arrays.datetimelike.TimelikeOps,
 ):
     """
     Pandas array type containing time data
@@ -71,7 +70,7 @@ class TimeArray(
         values = pandas.core.construction.extract_array(values, extract_numpy=True)
         if copy:
             values = values.copy()
-        NDArrayBacked.__init__(self, values=values, dtype=values.dtype)
+        super().__init__(values=values, dtype=values.dtype)
 
     @classmethod
     def _from_sequence(

@@ -163,7 +163,11 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
         if dtype is not None:
             assert dtype.__class__ is cls.dtype.__class__
 
-        array = numpy.array([cls._datetime(scalar) for scalar in scalars], "M8[us]")
+        array = numpy.array(
+            [None if scalar is None else cls._datetime(scalar)
+             for scalar in scalars],
+            "M8[us]",
+            )
         return cls(array)
 
     def _cmp_method(self, other, op):
@@ -218,6 +222,8 @@ class TimeArray(_BaseArray):
             raise TypeError("Invalid value type", scalar)
 
     def _box_func(self, x):
+        if pandas.isnull(x):
+            return None
         return x.astype(datetime.datetime).time()
 
 
@@ -254,4 +260,6 @@ class DateArray(_BaseArray):
             raise TypeError("Invalid value type", scalar)
 
     def _box_func(self, x):
+        if pandas.isnull(x):
+            return None
         return x.astype(datetime.datetime).date()

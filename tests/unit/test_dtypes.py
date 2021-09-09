@@ -21,8 +21,8 @@ np = pytest.importorskip("numpy")
 
 
 SAMPLE_RAW_VALUES = dict(
-    date=(datetime.date(2021, 2, 2), "2021-2-3"),
-    time=(datetime.time(1, 2, 2), "1:2:3.5"),
+    date=(datetime.date(2021, 2, 2), "2021-2-3", None),
+    time=(datetime.time(1, 2, 2), "1:2:3.5", None),
 )
 SAMPLE_VALUES = dict(
     date=(
@@ -65,16 +65,19 @@ def _make_one(dtype):
 
 
 @pytest.mark.parametrize("dtype", ["date", "time"])
-def test_array_construction(dtype):
+def test_array_construction2(dtype):
     a = _make_one(dtype)
     sample_values = SAMPLE_VALUES[dtype]
-    assert len(a) == 2
+    assert len(a) == 3
     assert a[0], a[1] == sample_values[:2]
+    assert a[2] is None
 
     # implementation details:
-    assert a.nbytes == 16
+    assert a.nbytes == 24
     assert np.array_equal(
-        a._ndarray, np.array(SAMPLE_DT_VALUES[dtype][:2], dtype="datetime64[us]"),
+        a._ndarray == np.array(SAMPLE_DT_VALUES[dtype][:2] + ('NaT', ),
+                               dtype="datetime64[us]"),
+        [True, True, False],
     )
 
 
@@ -87,10 +90,11 @@ def test_array_construction_bad_vaue_type(dtype):
 @pytest.mark.parametrize("dtype", ["date", "time"])
 def test_time_series_construction(dtype):
     sample_values = SAMPLE_VALUES[dtype]
-    s = pd.Series(SAMPLE_RAW_VALUES[dtype][:2], dtype=dtype)
-    assert len(s) == 2
+    s = pd.Series(SAMPLE_RAW_VALUES[dtype], dtype=dtype)
+    assert len(s) == 3
     assert s[0], s[1] == sample_values[:2]
-    assert s.nbytes == 16
+    assert s[2] is None
+    assert s.nbytes == 24
     assert isinstance(s.array, _cls(dtype))
 
 
@@ -186,7 +190,8 @@ def test_timearray_slicing(dtype):
 
     # Assignment works:
     a[:1] = cls._from_sequence([sample_values[2]])
-    assert np.array_equal(a, cls._from_sequence([sample_values[2], sample_values[1]]))
+    assert np.array_equal(
+        a[:2], cls._from_sequence([sample_values[2], sample_values[1]]))
 
     # Series also work:
     s = pd.Series(SAMPLE_RAW_VALUES[dtype], dtype=dtype)
@@ -195,7 +200,7 @@ def test_timearray_slicing(dtype):
 
 @pytest.mark.parametrize("dtype", ["date", "time"])
 def test_item_assignment(dtype):
-    a = _make_one(dtype)
+    a = _make_one(dtype)[:2]
     sample_values = SAMPLE_VALUES[dtype]
     cls = _cls(dtype)
     a[0] = sample_values[2]

@@ -137,6 +137,7 @@ class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
 #
 ###########################################################################
 
+
 class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
     na_value = NaT
     kind = "o"
@@ -151,7 +152,6 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
 
 
 class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
-
     def __init__(self, values, dtype=None, copy: bool = False):
         values = extract_array(values, extract_numpy=True)
         if copy:
@@ -163,9 +163,7 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
         if dtype is not None:
             assert dtype.__class__ is cls.dtype.__class__
 
-        array = numpy.array(
-            [cls._datetime(scalar) for scalar in scalars], "M8[us]"
-        )
+        array = numpy.array([cls._datetime(scalar) for scalar in scalars], "M8[us]")
         return cls(array)
 
     def _cmp_method(self, other, op):
@@ -204,7 +202,6 @@ class TimeArray(_BaseArray):
 
     dtype = TimeDtype()
     _epoch = datetime.datetime(1970, 1, 1)
-
 
     @classmethod
     def _datetime(cls, scalar):

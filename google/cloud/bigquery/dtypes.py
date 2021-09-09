@@ -214,6 +214,8 @@ class TimeArray(_BaseArray):
             return datetime.datetime(
                 1970, 1, 1, int(h), int(m), int(s), int(us * 1000000)
             )
+        else:
+            raise TypeError("Invalid value type", scalar)
 
     def _box_func(self, x):
         return x.astype(datetime.datetime).time()
@@ -248,6 +250,8 @@ class DateArray(_BaseArray):
         elif isinstance(scalar, str):
             # iso string
             return datetime.datetime(*map(int, scalar.split("-")))
+        else:
+            raise TypeError("Invalid value type", scalar)
 
     def _box_func(self, x):
         return x.astype(datetime.datetime).date()

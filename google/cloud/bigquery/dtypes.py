@@ -16,7 +16,6 @@ import datetime
 import operator
 
 import numpy
-import packaging.version
 from pandas._libs import NaT
 import pandas.core.dtypes.base
 import pandas.core.dtypes.dtypes
@@ -27,6 +26,7 @@ import pandas.core.dtypes.generic
 # To support old pandas versions, we provide forward ported
 # versions. These versions are simpler and, in some cases, less featureful
 # than the versions in the later versions of pandas.
+
 
 def import_default(module_name, default=None):
     if default is None:
@@ -45,8 +45,10 @@ def import_default(module_name, default=None):
 def extract_array(
     obj,
     extract_numpy=False,
-    series_or_index=(pandas.core.dtypes.generic.ABCSeries,
-                     pandas.core.dtypes.generic.ABCSeries),
+    series_or_index=(
+        pandas.core.dtypes.generic.ABCSeries,
+        pandas.core.dtypes.generic.ABCSeries,
+    ),
     ABCRangeIndex=pandas.core.dtypes.generic.ABCRangeIndex,
     ABCPandasArray=pandas.core.dtypes.generic.ABCPandasArray,
 ):
@@ -63,7 +65,6 @@ def extract_array(
 
 @import_default("pandas.core.arraylike")
 class OpsMixin:
-
     def _cmp_method(self, other, op):
         return NotImplemented
 
@@ -84,6 +85,7 @@ class OpsMixin:
 
     def __ge__(self, other):
         return self._cmp_method(other, operator.ge)
+
 
 @import_default("pandas.core.arrays._mixins")
 class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
@@ -131,6 +133,7 @@ class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
     def repeat(self, n):
         return self.__class__(self._ndarray.repeat(n), self._dtype)
 
+
 #
 ###########################################################################
 
@@ -168,8 +171,9 @@ class TimeDtype(pandas.core.dtypes.base.ExtensionDtype):
     def construct_from_string(cls, name):
         if name != cls.name:
             raise TypeError()
-        
+
         return cls()
+
 
 class TimeArray(OpsMixin, NDArrayBackedExtensionArray):
     """
@@ -187,7 +191,7 @@ class TimeArray(OpsMixin, NDArrayBackedExtensionArray):
         super().__init__(values=values, dtype=values.dtype)
 
     @classmethod
-    def _from_sequence( cls, scalars, *, dtype = None, copy=False):
+    def _from_sequence(cls, scalars, *, dtype=None, copy=False):
         if dtype is not None:
             assert isinstance(dtype, TimeDtype)
         array = numpy.array(

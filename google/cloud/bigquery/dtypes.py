@@ -137,35 +137,10 @@ class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
 #
 ###########################################################################
 
-_epoch = datetime.datetime(1970, 1, 1)
-
-
-@pandas.core.dtypes.dtypes.register_extension_dtype
-class TimeDtype(pandas.core.dtypes.base.ExtensionDtype):
-    """
-    Extension dtype for time data.
-    """
-
-    name = "time"
+class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
     na_value = NaT
     kind = "o"
     names = None
-    type = datetime.time
-
-    def construct_array_type(self):
-        return TimeArray
-
-    @staticmethod
-    def _datetime(scalar):
-        if isinstance(scalar, datetime.time):
-            return datetime.datetime.combine(_epoch, scalar)
-        elif isinstance(scalar, str):
-            # iso string
-            h, m, s = map(float, scalar.split(":"))
-            s, us = divmod(s, 1)
-            return datetime.datetime(
-                1970, 1, 1, int(h), int(m), int(s), int(us * 1000000)
-            )
 
     @classmethod
     def construct_from_string(cls, name):
@@ -175,14 +150,7 @@ class TimeDtype(pandas.core.dtypes.base.ExtensionDtype):
         return cls()
 
 
-class TimeArray(OpsMixin, NDArrayBackedExtensionArray):
-    """
-    Pandas array type containing time data
-    """
-
-    # Data stre stored as datetime64 values with a date of Jan 1, 1970
-
-    dtype = TimeDtype()
+class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
 
     def __init__(self, values, dtype=None, copy: bool = False):
         values = extract_array(values, extract_numpy=True)
@@ -193,23 +161,96 @@ class TimeArray(OpsMixin, NDArrayBackedExtensionArray):
     @classmethod
     def _from_sequence(cls, scalars, *, dtype=None, copy=False):
         if dtype is not None:
-            assert isinstance(dtype, TimeDtype)
+            assert dtype.__class__ is cls.dtype.__class__
+
         array = numpy.array(
-            [TimeDtype._datetime(scalar) for scalar in scalars], "M8[us]"
+            [cls._datetime(scalar) for scalar in scalars], "M8[us]"
         )
-        return TimeArray(array)
-
-    def _box_func(self, x):
-        return x.astype(datetime.datetime).time()
-
-    def __setitem__(self, key, value):
-        if isinstance(key, slice):
-            value = [datetime.datetime.combine(_epoch, v) for v in value]
-        else:
-            value = datetime.datetime.combine(_epoch, value)
-        return super().__setitem__(key, value)
+        return cls(array)
 
     def _cmp_method(self, other, op):
         if type(other) != type(self):
             return NotImplemented
         return op(self._ndarray, other._ndarray)
+
+    def __setitem__(self, key, value):
+        if isinstance(key, slice):
+            _datetime = self._datetime
+            value = [_datetime(v) for v in value]
+        else:
+            value = self._datetime(value)
+        return super().__setitem__(key, value)
+
+
+@pandas.core.dtypes.dtypes.register_extension_dtype
+class TimeDtype(_BaseDtype):
+    """
+    Extension dtype for time data.
+    """
+
+    name = "time"
+    type = datetime.time
+
+    def construct_array_type(self):
+        return TimeArray
+
+
+class TimeArray(_BaseArray):
+    """
+    Pandas array type containing time data
+    """
+
+    # Data are stored as datetime64 values with a date of Jan 1, 1970
+
+    dtype = TimeDtype()
+    _epoch = datetime.datetime(1970, 1, 1)
+
+
+    @classmethod
+    def _datetime(cls, scalar):
+        if isinstance(scalar, datetime.time):
+            return datetime.datetime.combine(cls._epoch, scalar)
+        elif isinstance(scalar, str):
+            # iso string
+            h, m, s = map(float, scalar.split(":"))
+            s, us = divmod(s, 1)
+            return datetime.datetime(
+                1970, 1, 1, int(h), int(m), int(s), int(us * 1000000)
+            )
+
+    def _box_func(self, x):
+        return x.astype(datetime.datetime).time()
+
+
+@pandas.core.dtypes.dtypes.register_extension_dtype
+class DateDtype(_BaseDtype):
+    """
+    Extension dtype for time data.
+    """
+
+    name = "date"
+    type = datetime.date
+
+    def construct_array_type(self):
+        return DateArray
+
+
+class DateArray(_BaseArray):
+    """
+    Pandas array type containing date data
+    """
+
+    # Data are stored as datetime64 values with a date of Jan 1, 1970
+
+    dtype = DateDtype()
+
+    @staticmethod
+    def _datetime(scalar):
+        if isinstance(scalar, datetime.date):
+            return datetime.datetime(scalar.year, scalar.month, scalar.day)
+        elif isinstance(scalar, str):
+            # iso string
+            return datetime.datetime(*map(int, scalar.split("-")))
+
+    def _box_func(self, x):
+        return x.astype(datetime.datetime).date()

@@ -20,58 +20,86 @@ pd = pytest.importorskip("pandas")
 np = pytest.importorskip("numpy")
 
 
-def _make_one():
-    from google.cloud.bigquery.dtypes import TimeArray
+SAMPLE_RAW_VALUES = dict(
+    date=(datetime.date(2021, 2, 2), '2021-2-3'),
+    time=(datetime.time(1, 2, 2), "1:2:3.5"),
+)
+SAMPLE_VALUES = dict(
+    date=(datetime.date(2021, 2, 2),
+          datetime.date(2021, 2, 3),
+          datetime.date(2021, 2, 4),
+          datetime.date(2021, 2, 5),
+          ),
+    time=(datetime.time(1, 2, 2),
+          datetime.time(1, 2, 3, 500000),
+          datetime.time(1, 2, 4, 500000),
+          datetime.time(1, 2, 5, 500000),
+          ),
+)
+SAMPLE_DT_VALUES = dict(
+    date=(
+        "2021-02-02T00:00:00.000000",
+        "2021-02-03T00:00:00.000000",
+        "2021-02-04T00:00:00.000000",
+        "2021-02-05T00:00:00.000000",
+        ),
+    time=(
+        "1970-01-01T01:02:02.000000",
+        "1970-01-01T01:02:03.500000",
+        "1970-01-01T01:02:04.500000",
+        "1970-01-01T01:02:05.500000",
+        )
+)
 
-    return TimeArray._from_sequence((datetime.time(15, 39, 42), "1:2:3.5"))
+
+def _cls(dtype):
+    from google.cloud.bigquery import dtypes
+    return getattr(dtypes, dtype.capitalize() + 'Array')
 
 
-@pytest.fixture
-def TimeArray():
-    from google.cloud.bigquery.dtypes import TimeArray
-
-    return TimeArray
+def _make_one(dtype):
+    return _cls(dtype)._from_sequence(SAMPLE_RAW_VALUES[dtype])
 
 
-def test_timearray_construction():
-    a = _make_one()
+@pytest.mark.parametrize("dtype", ['date', 'time'])
+def test_array_construction(dtype):
+    a = _make_one(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
     assert len(a) == 2
-    assert a[0] == datetime.time(15, 39, 42)
-    assert a[1] == datetime.time(1, 2, 3, 500000)
+    assert a[0], a[1] == sample_values[:2]
 
     # implementation details:
     assert a.nbytes == 16
     assert np.array_equal(
         a._ndarray,
-        np.array(
-            ["1970-01-01T15:39:42.000000", "1970-01-01T01:02:03.500000"],
-            dtype="datetime64[us]",
-        ),
+        np.array(SAMPLE_DT_VALUES[dtype][:2], dtype="datetime64[us]"),
     )
 
 
-def test_time_series_construction(TimeArray):
-    s = pd.Series([datetime.time(15, 39, 42), "1:2:3.5"], dtype="time")
+@pytest.mark.parametrize("dtype", ['date', 'time'])
+def test_time_series_construction(dtype):
+    sample_values = SAMPLE_VALUES[dtype]
+    s = pd.Series(SAMPLE_RAW_VALUES[dtype][:2], dtype=dtype)
     assert len(s) == 2
-    assert s[0] == datetime.time(15, 39, 42)
-    assert s[1] == datetime.time(1, 2, 3, 500000)
+    assert s[0], s[1] == sample_values[:2]
     assert s.nbytes == 16
-    assert isinstance(s.array, TimeArray)
+    assert isinstance(s.array, _cls(dtype))
 
 
+@pytest.mark.parametrize("dtype", ['date', 'time'])
 @pytest.mark.parametrize(
     "left,op,right,expected",
     [
-        (["1:2:3.5", "15:39:42"], "==", ["1:2:3.5", "15:39:42"], [True, True]),
-        (["1:2:3.5", "15:39:43"], "==", ["1:2:3.5", "15:39:42"], [True, False]),
-        (["1:2:3.5", "15:39:43"], "<=", ["1:2:3.5", "15:39:42"], [True, False]),
-        (["1:2:3.5", "15:39:41"], "<=", ["1:2:3.5", "15:39:42"], [True, True]),
-        (["1:2:3.5", "15:39:43"], ">=", ["1:2:3.5", "15:39:42"], [True, True]),
-        (["1:2:3.5", "15:39:41"], ">=", ["1:2:3.5", "15:39:42"], [True, False]),
+        ([1, 2], "==", [1, 2], [True, True]),
+        ([1, 2], "==", [1, 3], [True, False]),
+        ([1, 3], "<=", [1, 2], [True, False]),
+        ([1, 2], "<=", [1, 3], [True, True]),
+        ([1, 3], ">=", [1, 2], [True, True]),
+        ([1, 2], ">=", [1, 3], [True, False]),
     ],
 )
 def test_timearray_comparisons(
-    TimeArray,
+    dtype,
     left,
     op,
     right,
@@ -87,8 +115,11 @@ def test_timearray_comparisons(
         "<=": (lambda a, b: a > b),
     },
 ):
-    left = TimeArray._from_sequence(left)
-    right = TimeArray._from_sequence(right)
+    sample_values = SAMPLE_VALUES[dtype]
+    left = [sample_values[index] for index in left]
+    right = [sample_values[index] for index in right]
+    left = _cls(dtype)._from_sequence(left)
+    right = _cls(dtype)._from_sequence(right)
     right_obs = np.array(list(right))
     expected = np.array(expected)
     for r in right, right_obs:
@@ -133,25 +164,31 @@ def test_timearray_comparisons(
                 complements[op](left, np.array(bad_items))
 
 
-def test_timearray_slicing(TimeArray):
-    a = _make_one()
+@pytest.mark.parametrize("dtype", ['date', 'time'])
+def test_timearray_slicing(dtype):
+    a = _make_one(dtype)
     b = a[:]
     assert b is not a
     assert b.__class__ == a.__class__
     assert np.array_equal(b, a)
 
-    assert np.array_equal(a[:1], TimeArray._from_sequence(["15:39:42"]))
+    sample_values = SAMPLE_VALUES[dtype]
+    cls = _cls(dtype)
+    assert np.array_equal(a[:1], cls._from_sequence(sample_values[:1]))
 
     # Assignment works:
-    a[:1] = TimeArray._from_sequence(["0:0:0"])
-    assert np.array_equal(a, TimeArray._from_sequence(["0:0:0", "1:2:3.5"]))
+    a[:1] = cls._from_sequence([sample_values[2]])
+    assert np.array_equal(a, cls._from_sequence([sample_values[2], sample_values[1]]))
 
     # Series also work:
-    s = pd.Series(["1:2:3.5", "15:39:42"], dtype="time")
-    assert np.array_equal(s[:1].array, TimeArray._from_sequence(["1:2:3.5"]))
+    s = pd.Series(SAMPLE_RAW_VALUES[dtype], dtype=dtype)
+    assert np.array_equal(s[:1].array, cls._from_sequence([sample_values[0]]))
 
 
-def test_item_assignment(TimeArray):
-    a = _make_one()
-    a[0] = datetime.time(0, 0, 0)
-    assert np.array_equal(a, TimeArray._from_sequence(["0:0:0", "1:2:3.5"]))
+@pytest.mark.parametrize("dtype", ['date', 'time'])
+def test_item_assignment(dtype):
+    a = _make_one(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    cls = _cls(dtype)
+    a[0] = sample_values[2]
+    assert np.array_equal(a, cls._from_sequence([sample_values[2], sample_values[1]]))

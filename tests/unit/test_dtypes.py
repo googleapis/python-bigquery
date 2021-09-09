@@ -16,7 +16,7 @@ import datetime
 
 import pytest
 
-pd = pytest.importorskip("pandas", "1.3.0")
+pd = pytest.importorskip("pandas")
 np = pytest.importorskip("numpy")
 
 

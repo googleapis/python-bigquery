@@ -102,6 +102,21 @@ class TestEncryptionConfiguration(unittest.TestCase):
         self.assertEqual(encryption_config.kms_key_name, self.KMS_KEY_NAME)
 
 
+class TestTableBase:
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import TableBase
+
+        return TableBase
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_ctor_defaults(self):
+        instance = self._make_one()
+        assert instance._properties == {}
+
+
 class TestTableReference(unittest.TestCase):
     @staticmethod
     def _get_target_class():

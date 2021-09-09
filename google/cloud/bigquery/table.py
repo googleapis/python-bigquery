@@ -136,6 +136,9 @@ class TableBase:
         "table_id": ["tableReference", "tableId"],
     }
 
+    def __init__(self):
+        self._properties = {}
+
     @property
     def project(self) -> str:
         """Project bound to the table."""

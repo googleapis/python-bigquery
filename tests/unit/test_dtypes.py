@@ -79,6 +79,12 @@ def test_array_construction(dtype):
 
 
 @pytest.mark.parametrize("dtype", ["date", "time"])
+def test_array_construction_bad_vaue_type(dtype):
+    with pytest.raises(TypeError, match="Invalid value type"):
+        _cls(dtype)._from_sequence([42])
+
+
+@pytest.mark.parametrize("dtype", ["date", "time"])
 def test_time_series_construction(dtype):
     sample_values = SAMPLE_VALUES[dtype]
     s = pd.Series(SAMPLE_RAW_VALUES[dtype][:2], dtype=dtype)

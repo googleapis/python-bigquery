@@ -5,6 +5,7 @@
 #
 # e.g., if setup.py has "foo >= 1.14.0, < 2.0.0dev",
 # Then this file should have foo==1.14.0
+geopandas==0.9.0
 google-api-core==1.29.0
 google-cloud-bigquery-storage==2.0.0
 google-cloud-core==1.4.1
@@ -18,5 +19,6 @@ proto-plus==1.10.0
 protobuf==3.12.0
 pyarrow==3.0.0
 requests==2.18.0
+Shapely==1.6.0
 six==1.13.0
 tqdm==4.7.4

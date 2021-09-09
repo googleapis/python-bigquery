@@ -21,6 +21,12 @@ import mock
 
 
 class TestBQStorageVersions(unittest.TestCase):
+    def tearDown(self):
+        from google.cloud.bigquery import _helpers
+
+        # Reset any cached versions since it may not match reality.
+        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
+
     def _object_under_test(self):
         from google.cloud.bigquery import _helpers
 
@@ -50,6 +56,34 @@ class TestBQStorageVersions(unittest.TestCase):
         versions = self._object_under_test()
         with mock.patch("google.cloud.bigquery_storage.__version__", new="2.5.0"):
             assert not versions.is_read_session_optional
+
+
+class TestPyarrowVersions(unittest.TestCase):
+    def tearDown(self):
+        from google.cloud.bigquery import _helpers
+
+        # Reset any cached versions since it may not match reality.
+        _helpers.PYARROW_VERSIONS._installed_version = None
+
+    def _object_under_test(self):
+        from google.cloud.bigquery import _helpers
+
+        return _helpers.PyarrowVersions()
+
+    def test_installed_version_returns_cached(self):
+        versions = self._object_under_test()
+        versions._installed_version = object()
+        assert versions.installed_version is versions._installed_version
+
+    def test_installed_version_returns_parsed_version(self):
+        versions = self._object_under_test()
+
+        with mock.patch("pyarrow.__version__", new="1.2.3"):
+            version = versions.installed_version
+
+        assert version.major == 1
+        assert version.minor == 2
+        assert version.micro == 3
 
 
 class Test_not_null(unittest.TestCase):

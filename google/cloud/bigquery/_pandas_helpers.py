@@ -56,12 +56,6 @@ else:
         _to_wkb = _to_wkb()
 
 try:
-    import pyarrow
-    import pyarrow.parquet
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
-try:
     from google.cloud.bigquery_storage import ArrowSerializationOptions
 except ImportError:
     _ARROW_COMPRESSION_SUPPORT = False
@@ -73,12 +67,10 @@ from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
 
 
-_LOGGER = logging.getLogger(__name__)
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
-_NO_BQSTORAGE_ERROR = (
-    "The google-cloud-bigquery-storage library is not installed, "
-    "please install google-cloud-bigquery-storage to use bqstorage features."
-)
+
+_LOGGER = logging.getLogger(__name__)
 
 _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seconds.
 
@@ -181,6 +173,13 @@ if pyarrow:
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
         pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
     }
+    BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {
+        "GEOGRAPHY": {
+            b"ARROW:extension:name": b"google:sqlType:geography",
+            b"ARROW:extension:metadata": b'{"encoding": "WKT"}',
+        },
+        "DATETIME": {b"ARROW:extension:name": b"google:sqlType:datetime"},
+    }
 
 else:  # pragma: NO COVER
     BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
@@ -235,7 +234,12 @@ def bq_to_arrow_field(bq_field, array_type=None):
         if array_type is not None:
             arrow_type = array_type  # For GEOGRAPHY, at least initially
         is_nullable = bq_field.mode.upper() == "NULLABLE"
-        return pyarrow.field(bq_field.name, arrow_type, nullable=is_nullable)
+        metadata = BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA.get(
+            bq_field.field_type.upper() if bq_field.field_type else ""
+        )
+        return pyarrow.field(
+            bq_field.name, arrow_type, nullable=is_nullable, metadata=metadata
+        )
 
     warnings.warn("Unable to determine type for field '{}'.".format(bq_field.name))
     return None
@@ -548,8 +552,9 @@ def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SN
             serializing method. Defaults to "SNAPPY".
             https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
     """
-    if pyarrow is None:
-        raise ValueError("pyarrow is required for BigQuery schema conversion.")
+    pyarrow = _helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
+
+    import pyarrow.parquet
 
     bq_schema = schema._to_schema_fields(bq_schema)
     arrow_table = dataframe_to_arrow(dataframe, bq_schema)
@@ -844,7 +849,13 @@ def dataframe_to_json_generator(dataframe):
         output = {}
         for column, value in zip(dataframe.columns, row):
             # Omit NaN values.
-            if pandas.isna(value):
+            is_nan = pandas.isna(value)
+
+            # isna() can also return an array-like of bools, but the latter's boolean
+            # value is ambiguous, hence an extra check. An array-like value is *not*
+            # considered a NaN, however.
+            if isinstance(is_nan, bool) and is_nan:
                 continue
             output[column] = value
+
         yield output

@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import pathlib
 import os
+import re
 import shutil
 
 import nox
@@ -212,16 +213,30 @@ def prerelease_deps(session):
     # PyArrow prerelease packages are published to an alternative PyPI host.
     # https://arrow.apache.org/docs/python/install.html#installing-nightly-packages
     session.install(
-        "--extra-index-url", "https://pypi.fury.io/arrow-nightlies/", "--pre", "pyarrow"
+        "--extra-index-url",
+        "https://pypi.fury.io/arrow-nightlies/",
+        "--prefer-binary",
+        "--pre",
+        "--upgrade",
+        "pyarrow",
     )
     session.install(
+        "--extra-index-url",
+        "https://pypi.anaconda.org/scipy-wheels-nightly/simple",
+        "--prefer-binary",
         "--pre",
+        "--upgrade",
+        "pandas",
+    )
+
+    session.install(
+        "--pre",
+        "--upgrade",
         "google-api-core",
         "google-cloud-bigquery-storage",
         "google-cloud-core",
         "google-resumable-media",
         "grpcio",
-        "pandas",
     )
     session.install(
         "freezegun",
@@ -234,7 +249,22 @@ def prerelease_deps(session):
         "pytest",
         "pytest-cov",
     )
-    session.install("-e", ".[all]")
+
+    with open(
+        CURRENT_DIRECTORY / "testing" / "constraints-3.6.txt", encoding="utf-8"
+    ) as constraints_file:
+        constraints_text = constraints_file.read()
+    constraints_text = re.sub(r"==\S+", "\n", constraints_text)
+    deps = [
+        line.strip()
+        for line in constraints_text.split("\n")
+        if line.strip() and line[0] != "#"
+    ]
+
+    # We use --no-deps to ensure that pre-release versions aren't overwritten
+    # by the version ranges in setup.py.
+    session.install(*deps)
+    session.install("--no-deps", "-e", ".[all]")
 
     # Print out prerelease package versions.
     session.run("python", "-c", "import grpc; print(grpc.__version__)")

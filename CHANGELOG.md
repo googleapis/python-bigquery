@@ -5,6 +5,13 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+### [2.26.1](https://www.github.com/googleapis/python-bigquery/compare/v2.26.0...v2.26.1) (2021-09-10)
+
+
+### Bug Fixes
+
+* Arrow extension-type metadata was not set when calling the REST API or when there are no rows ([#946](https://www.github.com/googleapis/python-bigquery/issues/946)) ([864383b](https://www.github.com/googleapis/python-bigquery/commit/864383bc01636b3774f7da194587b8b7edd0383d))
+
 ## [2.26.0](https://www.github.com/googleapis/python-bigquery/compare/v2.25.2...v2.26.0) (2021-09-01)
 
 

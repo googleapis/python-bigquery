@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import update_dataset_access
-from . import revoke_dataset_access
 from google.cloud import bigquery
-from functools import reduce
+
+from . import revoke_dataset_access
+from . import update_dataset_access
 
 
 def test_revoke_dataset_access(
@@ -35,9 +35,8 @@ def test_revoke_dataset_access(
         in out
     )
     assert len(revoked_dataset_entries) == len(updated_dataset_entries) - 1
-    assert (
-        reduce(
-            lambda entry: bool(entry.entity_id == entity_id), revoked_dataset_entries
-        )
-        == False
-    )
+    is_revoked = 0
+    for entry in revoke_dataset_access:
+        if entry.entity_id == entity_id:
+            is_revoked += 1
+    assert is_revoked == 0

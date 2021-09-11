@@ -66,15 +66,17 @@ def _make_one(dtype):
 
 @pytest.mark.parametrize("dtype", ["date", "time"])
 @pytest.mark.parametrize(
-    "factory_method", [None, '_from_sequence', '_from_sequence_of_strings'])
+    "factory_method", [None, "_from_sequence", "_from_sequence_of_strings"]
+)
 def test_array_construction(dtype, factory_method):
     sample_raw_values = SAMPLE_RAW_VALUES[dtype]
     factory = _cls(dtype)
     if factory_method:
         factory = getattr(factory, factory_method)
         if factory_method == "_from_sequence_of_strings":
-            sample_raw_values = [str(v) if v is not None else v
-                                 for v in sample_raw_values]
+            sample_raw_values = [
+                str(v) if v is not None else v for v in sample_raw_values
+            ]
     a = factory(sample_raw_values)
     assert len(a) == 3
     sample_values = SAMPLE_VALUES[dtype]
@@ -84,8 +86,8 @@ def test_array_construction(dtype, factory_method):
     # implementation details:
     assert a.nbytes == 24
     assert np.array_equal(
-        a._ndarray == np.array(SAMPLE_DT_VALUES[dtype][:2] + ('NaT', ),
-                               dtype="datetime64[us]"),
+        a._ndarray
+        == np.array(SAMPLE_DT_VALUES[dtype][:2] + ("NaT",), dtype="datetime64[us]"),
         [True, True, False],
     )
 
@@ -200,7 +202,8 @@ def test_timearray_slicing(dtype):
     # Assignment works:
     a[:1] = cls._from_sequence([sample_values[2]])
     assert np.array_equal(
-        a[:2], cls._from_sequence([sample_values[2], sample_values[1]]))
+        a[:2], cls._from_sequence([sample_values[2], sample_values[1]])
+    )
 
     # Series also work:
     s = pd.Series(SAMPLE_RAW_VALUES[dtype], dtype=dtype)
@@ -221,7 +224,8 @@ def test_repeat(dtype):
     cls = _cls(dtype)
     sample_values = SAMPLE_VALUES[dtype]
     a = cls._from_sequence(sample_values).repeat(3)
-    assert list(a) == sorted(sample_values*3)
+    assert list(a) == sorted(sample_values * 3)
+
 
 @pytest.mark.parametrize("dtype", ["date", "time"])
 def test_copy(dtype):

@@ -65,10 +65,19 @@ def _make_one(dtype):
 
 
 @pytest.mark.parametrize("dtype", ["date", "time"])
-def test_array_construction2(dtype):
-    a = _make_one(dtype)
-    sample_values = SAMPLE_VALUES[dtype]
+@pytest.mark.parametrize(
+    "factory_method", [None, '_from_sequence', '_from_sequence_of_strings'])
+def test_array_construction(dtype, factory_method):
+    sample_raw_values = SAMPLE_RAW_VALUES[dtype]
+    factory = _cls(dtype)
+    if factory_method:
+        factory = getattr(factory, factory_method)
+        if factory_method == "_from_sequence_of_strings":
+            sample_raw_values = [str(v) if v is not None else v
+                                 for v in sample_raw_values]
+    a = factory(sample_raw_values)
     assert len(a) == 3
+    sample_values = SAMPLE_VALUES[dtype]
     assert a[0], a[1] == sample_values[:2]
     assert a[2] is None
 

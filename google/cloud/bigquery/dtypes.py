@@ -43,7 +43,6 @@ def import_default(module_name, default=None):
 
 @import_default("pandas.core.arraylike")
 class OpsMixin:
-
     def __eq__(self, other):
         return self._cmp_method(other, operator.eq)
 
@@ -128,9 +127,10 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
 
 
 class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
-
     def __init__(self, values, dtype=None, copy: bool = False):
-        if not (isinstance(values, numpy.ndarray) and values.dtype == numpy.dtype('<M8[us]')):
+        if not (
+            isinstance(values, numpy.ndarray) and values.dtype == numpy.dtype("<M8[us]")
+        ):
             values = self.__ndarray(values)
         elif copy:
             values = values.copy()
@@ -140,10 +140,9 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
     @classmethod
     def __ndarray(cls, scalars):
         return numpy.array(
-            [None if scalar is None else cls._datetime(scalar)
-             for scalar in scalars],
+            [None if scalar is None else cls._datetime(scalar) for scalar in scalars],
             "M8[us]",
-            )
+        )
 
     @classmethod
     def _from_sequence(cls, scalars, *, dtype=None, copy=False):

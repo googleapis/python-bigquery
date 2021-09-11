@@ -41,32 +41,8 @@ def import_default(module_name, default=None):
     return getattr(module, name, default)
 
 
-@import_default("pandas.core.construction")
-def extract_array(
-    obj,
-    extract_numpy=False,
-    series_or_index=(
-        pandas.core.dtypes.generic.ABCSeries,
-        pandas.core.dtypes.generic.ABCSeries,
-    ),
-    ABCRangeIndex=pandas.core.dtypes.generic.ABCRangeIndex,
-    ABCPandasArray=pandas.core.dtypes.generic.ABCPandasArray,
-):
-    if isinstance(obj, series_or_index):
-        if isinstance(obj, ABCRangeIndex):
-            return obj
-        obj = obj.array
-
-    if extract_numpy and isinstance(obj, ABCPandasArray):
-        obj = obj.to_numpy()
-
-    return obj
-
-
 @import_default("pandas.core.arraylike")
 class OpsMixin:
-    def _cmp_method(self, other, op):
-        return NotImplemented
 
     def __eq__(self, other):
         return self._cmp_method(other, operator.eq)
@@ -152,23 +128,30 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
 
 
 class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
+
     def __init__(self, values, dtype=None, copy: bool = False):
-        values = extract_array(values, extract_numpy=True)
-        if copy:
+        if not (isinstance(values, numpy.ndarray) and values.dtype == numpy.dtype('<M8[us]')):
+            values = self.__ndarray(values)
+        elif copy:
             values = values.copy()
+
         super().__init__(values=values, dtype=values.dtype)
+
+    @classmethod
+    def __ndarray(cls, scalars):
+        return numpy.array(
+            [None if scalar is None else cls._datetime(scalar)
+             for scalar in scalars],
+            "M8[us]",
+            )
 
     @classmethod
     def _from_sequence(cls, scalars, *, dtype=None, copy=False):
         if dtype is not None:
             assert dtype.__class__ is cls.dtype.__class__
+        return cls(cls.__ndarray(scalars))
 
-        array = numpy.array(
-            [None if scalar is None else cls._datetime(scalar)
-             for scalar in scalars],
-            "M8[us]",
-            )
-        return cls(array)
+    _from_sequence_of_strings = _from_sequence
 
     def _cmp_method(self, other, op):
         if type(other) != type(self):

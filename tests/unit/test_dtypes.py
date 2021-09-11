@@ -79,6 +79,8 @@ def test_array_construction(dtype, factory_method):
             ]
     a = factory(sample_raw_values)
     assert len(a) == 3
+    assert a.size == 3
+    assert a.shape == (3, )
     sample_values = SAMPLE_VALUES[dtype]
     assert a[0], a[1] == sample_values[:2]
     assert a[2] is None

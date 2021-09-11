@@ -205,3 +205,21 @@ def test_item_assignment(dtype):
     cls = _cls(dtype)
     a[0] = sample_values[2]
     assert np.array_equal(a, cls._from_sequence([sample_values[2], sample_values[1]]))
+
+
+@pytest.mark.parametrize("dtype", ["date", "time"])
+def test_repeat(dtype):
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    a = cls._from_sequence(sample_values).repeat(3)
+    assert list(a) == sorted(sample_values*3)
+
+@pytest.mark.parametrize("dtype", ["date", "time"])
+def test_copy(dtype):
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    a = cls._from_sequence(sample_values)
+    b = a.copy()
+    assert b is not a
+    assert b._ndarray is not a._ndarray
+    assert np.array_equal(b, a)

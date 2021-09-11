@@ -562,23 +562,23 @@ def _create_dataset_if_necessary(client, dataset_id):
     ),
 )
 @magic_arguments.argument(
-    "--send_bqml_job",
+    "--send_bqml_job", #send_job not bqml specific
+    action="store_true",
     type=str,
-    default=None,
+    default=False,
     help=(
         "TODO"
     ),
 )
 @magic_arguments.argument(
-    "--bqml_job_status",
-    nargs="job_id",
-    type=str,
+    "--bqml_job_status", #check_job_status
+    type=str, #[project:"project, job_id:"job_id", location:"location",] #check
     default=None,
     help=(
         "TODO"
     ),
 )
-def _cell_magic(line, query):
+def _cell_magic(line, cell_body):
     """Underlying function for bigquery cell magic
 
     Note:
@@ -587,7 +587,7 @@ def _cell_magic(line, query):
 
     Args:
         line (str): "%%bigquery" followed by arguments as required
-        query (str): SQL query to run
+        cell_body (str): SQL query or other command to run TODO
 
     Returns:
         pandas.DataFrame: the query results.
@@ -764,6 +764,58 @@ def _cell_magic(line, query):
             return result
     finally:
         close_transports()
+    
+    if args.send_bqml_job:
+        client = bigquery.Client(
+            project=project,
+            credentials=context.credentials,
+            default_query_job_config=context.default_query_job_config,
+            client_info=client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
+            client_options=bigquery_client_options,
+        )
+        #cache credentials? 
+        bqml_job_config = bigquery.job.query.QueryJobConfig(
+            [
+                job_id= # what was passed in magic line.nargs?
+            ]
+        )
+
+        bqml_job = client.query(query, bqml_job_config)
+        if bqml_job.done(timeout: 5000):
+            # add time out parameter
+            # return bqml_job.result()?
+            print("something")
+        else:
+            print("TODO: say job has been sent and restate job_id")
+        # return job_id? how would this be stored elegantly in a variable?
+        # only use id as set by user so it's easy to retrieve?
+        """
+        job_id = `some_id`
+        %%bigquery --send_bqml_job job_id
+        `SQL`
+        """
+
+    if args.bqml_job_status is not None:
+        client = bigquery.Client(
+            project=project,
+            credentials=context.credentials,
+            default_query_job_config=context.default_query_job_config,
+            client_info=client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
+            client_options=bigquery_client_options,
+        )
+        job_id = args.job_id #something
+        bqml_job = client.get_job(job_id)
+        if bqml_job.running():
+            print("TODO but Job with id job_id is still running, check again later")
+        else:
+            if bqml_job.done():
+                bqml_job.reload()
+                print("TODO")
+                # return job.results()? 
+            else:
+                # send failed job codes? would this also be a valid return value of job.results/reload()?
+
+        
 
 
 def _split_args_line(line):

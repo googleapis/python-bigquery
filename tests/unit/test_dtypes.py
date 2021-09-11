@@ -223,3 +223,13 @@ def test_copy(dtype):
     assert b is not a
     assert b._ndarray is not a._ndarray
     assert np.array_equal(b, a)
+
+
+@pytest.mark.parametrize("dtype", ["date", "time"])
+def test_from_ndarray_copy(dtype):
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    a = cls._from_sequence(sample_values)
+    b = cls(a._ndarray, copy=True)
+    assert b._ndarray is not a._ndarray
+    assert np.array_equal(b, a)

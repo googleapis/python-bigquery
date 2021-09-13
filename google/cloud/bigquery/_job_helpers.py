@@ -30,6 +30,9 @@ else:
     Client = None
 
 
+_TIMEOUT_BUFFER_SECS = 0.1
+
+
 def make_job_id(job_id, prefix=None):
     """Construct an ID for a new job.
 
@@ -105,5 +108,66 @@ def query_jobs_insert(
     if not job_id_given:
         future._retry_do_query = do_query  # in case we have to retry later
         future._job_retry = job_retry
+
+    return future
+
+
+def query_jobs_query(
+    client: Client,
+    query: str,
+    job_config: job.QueryJobConfig,
+    location: str,
+    project: str,
+    retry: retries.Retry,
+    timeout: float,
+    job_retry: retries.Retry,
+):
+    # TODO: Validate that destination is not set.
+
+    request_body = {}
+    job_config_resource = job_config.to_api_repr()
+
+    # Transform from Job resource to QueryRequest resource.
+    # Most of the keys in job.configuration.query are in common
+    request_body.update(job_config_resource["configuration"]["query"])
+    request_body["location"] = location
+    request_body["labels"] = job_config.labels
+    request_body["dryRun"] = job_config.dry_run
+
+    # Subtract a buffer for context switching, network latency, etc.
+    request_body["timeoutMs"] = max(0, int(1000 * (timeout - _TIMEOUT_BUFFER_SECS)))
+
+    def do_query():
+        request_body["requestId"] = make_job_id(None)
+        # job_ref = job._JobReference(job_id, project=project, location=location)
+        # query_job = job.QueryJob(job_ref, query, client=client, job_config=job_config)
+
+        # query_job._begin(retry=retry, timeout=timeout)
+        client._call_api(retry)
+
+        path = f"/projects/{project}/queries"
+
+        # jobs.insert is idempotent because we ensure that every new
+        # job has an ID.
+        span_attributes = {"path": path}
+        api_response = client._call_api(
+            retry,
+            span_name="BigQuery.query",
+            span_attributes=span_attributes,
+            method="POST",
+            path=path,
+            data=request_body,
+            timeout=timeout,
+        )
+        # TODO: make query job out of api_response
+        return api_response
+
+    future = do_query()
+
+    # The future might be in a failed state now, but if it's
+    # unrecoverable, we'll find out when we ask for it's result, at which
+    # point, we may retry.
+    future._retry_do_query = do_query  # in case we have to retry later
+    future._job_retry = job_retry
 
     return future

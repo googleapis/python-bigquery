@@ -174,6 +174,9 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
             value = self._datetime(value)
         return super().__setitem__(key, value)
 
+    def _from_factorized(self, unique, original):
+        return self.__class__(unique)
+
 
 @pandas.core.dtypes.dtypes.register_extension_dtype
 class TimeDtype(_BaseDtype):

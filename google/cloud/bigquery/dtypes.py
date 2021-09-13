@@ -16,6 +16,7 @@ import datetime
 import operator
 
 import numpy
+import packaging.version
 from pandas._libs import NaT
 import pandas.core.dtypes.base
 import pandas.core.dtypes.dtypes
@@ -117,6 +118,9 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
     na_value = NaT
     kind = "o"
     names = None
+    if packaging.version.parse(pandas.__version__) >= packaging.version.parse("1.3"):
+        # Enables some_series.dt.cool_attribute :)
+        dtype = numpy.datetime64
 
     @classmethod
     def construct_from_string(cls, name):

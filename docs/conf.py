@@ -76,8 +76,8 @@ source_suffix = [".rst", ".md"]
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
-# The master toctree document.
-master_doc = "index"
+# The root toctree document.
+root_doc = "index"
 
 # General information about the project.
 project = "google-cloud-bigquery"
@@ -280,7 +280,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (
-        master_doc,
+        root_doc,
         "google-cloud-bigquery.tex",
         "google-cloud-bigquery Documentation",
         author,
@@ -315,7 +315,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (
-        master_doc,
+        root_doc,
         "google-cloud-bigquery",
         "google-cloud-bigquery Documentation",
         [author],
@@ -334,7 +334,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc,
+        root_doc,
         "google-cloud-bigquery",
         "google-cloud-bigquery Documentation",
         author,
@@ -363,6 +363,8 @@ intersphinx_mapping = {
     "google-auth": ("https://googleapis.dev/python/google-auth/latest/", None),
     "google.api_core": ("https://googleapis.dev/python/google-api-core/latest/", None,),
     "grpc": ("https://grpc.github.io/grpc/python/", None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/dev", None),
+    "geopandas": ("https://geopandas.org/", None),
 }
 
 

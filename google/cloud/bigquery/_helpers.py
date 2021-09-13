@@ -74,7 +74,31 @@ class BQStorageVersions:
         return self.installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION
 
 
+class PyarrowVersions:
+    """Version comparisons for pyarrow package."""
+
+    def __init__(self):
+        self._installed_version = None
+
+    @property
+    def installed_version(self) -> packaging.version.Version:
+        """Return the parsed version of pyarrow."""
+        if self._installed_version is None:
+            import pyarrow
+
+            self._installed_version = packaging.version.parse(
+                # Use 0.0.0, since it is earlier than any released version.
+                # Legacy versions also have the same property, but
+                # creating a LegacyVersion has been deprecated.
+                # https://github.com/pypa/packaging/issues/321
+                getattr(pyarrow, "__version__", "0.0.0")
+            )
+
+        return self._installed_version
+
+
 BQ_STORAGE_VERSIONS = BQStorageVersions()
+PYARROW_VERSIONS = PyarrowVersions()
 
 
 def _not_null(value, field):

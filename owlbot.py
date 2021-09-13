@@ -51,7 +51,14 @@ s.remove_staging_dirs()
 # Add templated files
 # ----------------------------------------------------------------------------
 templated_files = common.py_library(
-    cov_level=100, samples=True, microgenerator=True, split_system_tests=True,
+    cov_level=100,
+    samples=True,
+    microgenerator=True,
+    split_system_tests=True,
+    intersphinx_dependencies={
+        "pandas": "http://pandas.pydata.org/pandas-docs/dev",
+        "geopandas": "https://geopandas.org/",
+    },
 )
 
 # BigQuery has a custom multiprocessing note
@@ -64,6 +71,10 @@ s.move(
         # Include custom SNIPPETS_TESTS job for performance.
         # https://github.com/googleapis/python-bigquery/issues/191
         ".kokoro/presubmit/presubmit.cfg",
+        # Group all renovate PRs together. If this works well, remove this and
+        # update the shared templates (possibly with configuration option to
+        # py_library.)
+        "renovate.json",
     ],
 )
 

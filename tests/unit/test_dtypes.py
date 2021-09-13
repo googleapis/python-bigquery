@@ -254,7 +254,8 @@ def test_from_ndarray_copy(dtype):
 
 @pytest.mark.skipif(
     # TODO: Can we make this work for Pandas 1.1 and later?
-    pandas_release < (1, 3), reason="The .dt attribute was added in Pandas 1.1",
+    pandas_release < (1, 3),
+    reason="The .dt attribute was added in Pandas 1.1",
 )
 def test_dt_date_and_time_functions():
     dates = [datetime.date(2020, 1, 1), datetime.date(2021, 3, 31)]
@@ -289,3 +290,12 @@ def test_dt_date_and_time_functions():
     # nanoseconds are distinct and BQ and Python time are only microsecond
     assert list(s.dt.nanosecond) == [0, 0]
     assert list(s.dt.time) == times
+
+
+@pytest.mark.parametrize("dtype", ["date", "time"])
+def test__from_factorized(dtype):
+    sample_values = SAMPLE_VALUES[dtype]
+    a = _cls(dtype)(sample_values * 2)
+    codes, b = a.factorize()
+    assert b.__class__ is a.__class__
+    assert [b[code] for code in codes] == list(a)

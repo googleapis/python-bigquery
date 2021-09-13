@@ -22,6 +22,8 @@ import pandas.core.dtypes.base
 import pandas.core.dtypes.dtypes
 import pandas.core.dtypes.generic
 
+pandas_release = packaging.version.parse(pandas.__version__).release
+
 
 ###########################################################################
 # To support old pandas versions, we provide forward ported
@@ -29,9 +31,12 @@ import pandas.core.dtypes.generic
 # than the versions in the later versions of pandas.
 
 
-def import_default(module_name, default=None):
+def import_default(module_name, force=False, default=None):
     if default is None:
-        return lambda func: import_default(module_name, func)
+        return lambda func: import_default(module_name, force, func)
+
+    if force:
+        return default
 
     name = default.__name__
     try:
@@ -63,7 +68,7 @@ class OpsMixin:
         return self._cmp_method(other, operator.ge)
 
 
-@import_default("pandas.core.arrays._mixins")
+@import_default("pandas.core.arrays._mixins", pandas_release < (1, 3))
 class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
 
     ndim = 1
@@ -118,8 +123,8 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
     na_value = NaT
     kind = "o"
     names = None
-    if packaging.version.parse(pandas.__version__) >= packaging.version.parse("1.3"):
-        # Enables some_series.dt.cool_attribute :)
+    if pandas_release >= (1, 3):
+        # Enables series `dt` special properties :)
         dtype = numpy.datetime64
 
     @classmethod

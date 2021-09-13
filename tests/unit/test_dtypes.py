@@ -20,6 +20,7 @@ import pytest
 pd = pytest.importorskip("pandas")
 np = pytest.importorskip("numpy")
 
+pandas_release = packaging.version.parse(pd.__version__).release
 
 SAMPLE_RAW_VALUES = dict(
     date=(datetime.date(2021, 2, 2), "2021-2-3", None),
@@ -252,9 +253,8 @@ def test_from_ndarray_copy(dtype):
 
 
 @pytest.mark.skipif(
-    packaging.version.parse(pd.__version__) < packaging.version.parse("1.3"),
-    reason="The .dt attribute doesn't work properly for the BigQuery data and time types"  # TODO, can we make this work for 1.1 and 1.2?
-    " before Pandas 1.3.",
+    # TODO: Can we make this work for Pandas 1.1 and later?
+    pandas_release < (1, 3), reason="The .dt attribute was added in Pandas 1.1",
 )
 def test_dt_date_and_time_functions():
     dates = [datetime.date(2020, 1, 1), datetime.date(2021, 3, 31)]

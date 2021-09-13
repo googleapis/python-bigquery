@@ -250,15 +250,23 @@ def prerelease_deps(session):
         "pytest-cov",
     )
 
+    # Because we test minimum dependency versions on the minimum Python
+    # version, the first version we test with in the unit tests sessions has a
+    # constraints file containing all dependencies and extras.
     with open(
-        CURRENT_DIRECTORY / "testing" / "constraints-3.6.txt", encoding="utf-8"
+        CURRENT_DIRECTORY
+        / "testing"
+        / f"constraints-{UNIT_TEST_PYTHON_VERSIONS[0]}.txt",
+        encoding="utf-8",
     ) as constraints_file:
         constraints_text = constraints_file.read()
-    constraints_text = re.sub(r"==\S+", "\n", constraints_text)
+
+    # Ignore leading whitespace and comment lines.
     deps = [
-        line.strip()
-        for line in constraints_text.split("\n")
-        if line.strip() and line[0] != "#"
+        match.group(1)
+        for match in re.finditer(
+            r"^\s*(\S+)(?===\S+)", constraints_text, flags=re.MULTILINE
+        )
     ]
 
     # We use --no-deps to ensure that pre-release versions aren't overwritten

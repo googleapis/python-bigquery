@@ -60,7 +60,8 @@ for_date_and_time = pytest.mark.parametrize("dtype", ["date", "time"])
 
 @pytest.fixture(autouse=True)
 def register_dtype():
-    import google.cloud.bigquery.dtypes
+    import google.cloud.bigquery.dtypes  # noqa
+
 
 def _cls(dtype):
     from google.cloud.bigquery import dtypes

@@ -153,7 +153,6 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
 
 
 class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
-
     def __init__(self, values, dtype=None, copy: bool = False):
         if not (
             isinstance(values, numpy.ndarray) and values.dtype == numpy.dtype("<M8[ns]")

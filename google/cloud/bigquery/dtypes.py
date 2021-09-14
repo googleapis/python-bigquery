@@ -14,10 +14,12 @@
 
 import datetime
 import operator
+from typing import Any, Sequence
 
 import numpy
 import packaging.version
 from pandas._libs import NaT
+import pandas.core.algorithms
 import pandas.core.dtypes.base
 import pandas.core.dtypes.dtypes
 import pandas.core.dtypes.generic
@@ -114,7 +116,6 @@ class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
     def repeat(self, n):
         return self.__class__(self._ndarray.repeat(n), self._dtype)
 
-
 #
 ###########################################################################
 
@@ -179,6 +180,40 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
 
     def isna(self):
         return pandas.isna(self._ndarray)
+
+    def _validate_scalar(self, value):
+        if pandas.isna(value):
+            return None
+
+        if not isinstance(value, self.dtype.type):
+            raise ValueError(value)
+
+        return value
+
+    def take(
+        self,
+        indices: Sequence[int],
+        *,
+        allow_fill: bool = False,
+        fill_value: Any = None,
+    ):
+        indices = numpy.asarray(indices, dtype=numpy.intp)
+        data = self._ndarray
+        if allow_fill:
+            fill_value = self._validate_scalar(fill_value)
+            fill_value = (
+                numpy.datetime64() if fill_value is None
+                else numpy.datetime64(self._datetime(fill_value))
+            )
+            if (indices < -1).any():
+                raise ValueError(
+                    "take called with negative indexes other than -1,"
+                    " when a fill value is provided.")
+        out = data.take(indices)
+        if allow_fill:
+            out[indices == -1] = fill_value
+
+        return self.__class__(out)
 
 
 @pandas.core.dtypes.dtypes.register_extension_dtype

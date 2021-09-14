@@ -19,8 +19,10 @@ from typing import Any, Sequence
 import numpy
 import packaging.version
 from pandas._libs import NaT
+from pandas._libs.lib import is_integer
 import pandas.core.algorithms
 import pandas.core.dtypes.base
+from pandas.core.dtypes.common import is_list_like
 import pandas.core.dtypes.dtypes
 import pandas.core.dtypes.generic
 
@@ -74,7 +76,6 @@ class OpsMixin:
 class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
 
     ndim = 1
-    from pandas._libs.lib import is_integer as __is_integer
 
     def __init__(self, values, dtype):
         assert isinstance(values, numpy.ndarray)
@@ -88,7 +89,7 @@ class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
 
     def __getitem__(self, index):
         value = self._ndarray[index]
-        if self.__is_integer(index):
+        if is_integer(index):
             return self._box_func(value)
         return self.__class__(value, self._dtype)
 
@@ -183,10 +184,10 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
         return op(self._ndarray, other._ndarray)
 
     def __setitem__(self, key, value):
-        if isinstance(key, slice):
+        if is_list_like(value):
             _datetime = self._datetime
             value = [_datetime(v) for v in value]
-        else:
+        elif not pandas.isna(value):
             value = self._datetime(value)
         return super().__setitem__(key, value)
 

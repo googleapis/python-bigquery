@@ -194,6 +194,16 @@ def test_timearray_comparisons(
 
 
 @for_date_and_time
+def test___getitem___arrayindex(dtype):
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    assert np.array_equal(
+        cls(sample_values)[[1, 3]],
+        cls([sample_values[1], sample_values[3]]),
+    )
+
+
+@for_date_and_time
 def test_timearray_slicing(dtype):
     a = _make_one(dtype)
     b = a[:]
@@ -223,6 +233,17 @@ def test_item_assignment(dtype):
     cls = _cls(dtype)
     a[0] = sample_values[2]
     assert np.array_equal(a, cls._from_sequence([sample_values[2], sample_values[1]]))
+
+
+@for_date_and_time
+def test_array_assignment(dtype):
+    a = _make_one(dtype)
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    a[a.isna()] = sample_values[3]
+    assert np.array_equal(a, cls([sample_values[i] for i in (0, 1, 3)]))
+    a[[0, 2]] = sample_values[2]
+    assert np.array_equal(a, cls([sample_values[i] for i in (2, 1, 2)]))
 
 
 @for_date_and_time
@@ -363,15 +384,34 @@ def test__concat_same_type_via_concat(dtype):
 
 
 @for_date_and_time
-def test___getitem___arrayindex(dtype):
-    cls = _cls(dtype)
-    sample_values = SAMPLE_VALUES[dtype]
-    assert np.array_equal(
-        cls(sample_values)[[1, 3]],
-        cls([sample_values[1], sample_values[3]]),
-    )
-
-
-@for_date_and_time
 def test_dropna(dtype):
     assert np.array_equal(_make_one(dtype).dropna(), _make_one(dtype)[:2])
+
+
+@pytest.mark.parametrize(
+    "value, meth, limit, expect",
+    [
+        (1, None, None, [0, 1, 1, 3]),
+        ([0, 2, 1, 0], None, None, [0, 2, 1, 3]),
+        (None, 'backfill', None, [0, 3, 3, 3]),
+        (None, 'bfill', None, [0, 3, 3, 3]),
+        (None, 'pad', None, [0, 0, 0, 3]),
+        (None, 'ffill', None, [0, 0, 0, 3]),
+        (None, 'backfill', 1, [0, None, 3, 3]),
+        (None, 'bfill', 1, [0, None, 3, 3]),
+        (None, 'pad', 1, [0, 0, None, 3]),
+        (None, 'ffill', 1, [0, 0, None, 3]),
+        ]
+)
+@for_date_and_time
+def test_fillna(dtype, value, meth, limit, expect):
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    a = cls([sample_values[0], None, None, sample_values[3]])
+    if isinstance(value, list):
+        value = cls([sample_values[i] for i in value])
+    elif value is not None:
+        value = sample_values[value]
+    expect = cls([None if i is None else sample_values[i]
+                  for i in expect])
+    assert np.array_equal(a.fillna(value, meth, limit), expect)

@@ -74,6 +74,7 @@ class OpsMixin:
 class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
 
     ndim = 1
+    from pandas._libs.lib import is_integer as __is_integer
 
     def __init__(self, values, dtype):
         assert isinstance(values, numpy.ndarray)
@@ -87,10 +88,9 @@ class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
 
     def __getitem__(self, index):
         value = self._ndarray[index]
-        if isinstance(index, slice):
-            return self.__class__(value, self._dtype)
-        else:
+        if self.__is_integer(index):
             return self._box_func(value)
+        return self.__class__(value, self._dtype)
 
     def __setitem__(self, index, value):
         self._ndarray[index] = value
@@ -151,6 +151,7 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
 
 
 class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
+
     def __init__(self, values, dtype=None, copy: bool = False):
         if not (
             isinstance(values, numpy.ndarray) and values.dtype == numpy.dtype("<M8[us]")

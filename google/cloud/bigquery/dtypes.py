@@ -177,6 +177,9 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
     def _from_factorized(self, unique, original):
         return self.__class__(unique)
 
+    def isna(self):
+        return pandas.isna(self._ndarray)
+
 
 @pandas.core.dtypes.dtypes.register_extension_dtype
 class TimeDtype(_BaseDtype):

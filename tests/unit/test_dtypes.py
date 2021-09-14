@@ -55,6 +55,8 @@ SAMPLE_DT_VALUES = dict(
     ),
 )
 
+for_date_and_time = pytest.mark.parametrize("dtype", ["date", "time"])
+
 
 def _cls(dtype):
     from google.cloud.bigquery import dtypes
@@ -66,7 +68,7 @@ def _make_one(dtype):
     return _cls(dtype)._from_sequence(SAMPLE_RAW_VALUES[dtype])
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 @pytest.mark.parametrize(
     "factory_method", [None, "_from_sequence", "_from_sequence_of_strings"]
 )
@@ -96,13 +98,13 @@ def test_array_construction(dtype, factory_method):
     )
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 def test_array_construction_bad_vaue_type(dtype):
     with pytest.raises(TypeError, match="Invalid value type"):
         _cls(dtype)._from_sequence([42])
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 def test_time_series_construction(dtype):
     sample_values = SAMPLE_VALUES[dtype]
     s = pd.Series(SAMPLE_RAW_VALUES[dtype], dtype=dtype)
@@ -113,7 +115,7 @@ def test_time_series_construction(dtype):
     assert isinstance(s.array, _cls(dtype))
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 @pytest.mark.parametrize(
     "left,op,right,expected",
     [
@@ -191,7 +193,7 @@ def test_timearray_comparisons(
                 complements[op](left, np.array(bad_items))
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 def test_timearray_slicing(dtype):
     a = _make_one(dtype)
     b = a[:]
@@ -214,7 +216,7 @@ def test_timearray_slicing(dtype):
     assert np.array_equal(s[:1].array, cls._from_sequence([sample_values[0]]))
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 def test_item_assignment(dtype):
     a = _make_one(dtype)[:2]
     sample_values = SAMPLE_VALUES[dtype]
@@ -223,7 +225,7 @@ def test_item_assignment(dtype):
     assert np.array_equal(a, cls._from_sequence([sample_values[2], sample_values[1]]))
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 def test_repeat(dtype):
     cls = _cls(dtype)
     sample_values = SAMPLE_VALUES[dtype]
@@ -231,7 +233,7 @@ def test_repeat(dtype):
     assert list(a) == sorted(sample_values * 3)
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 def test_copy(dtype):
     cls = _cls(dtype)
     sample_values = SAMPLE_VALUES[dtype]
@@ -242,7 +244,7 @@ def test_copy(dtype):
     assert np.array_equal(b, a)
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 def test_from_ndarray_copy(dtype):
     cls = _cls(dtype)
     sample_values = SAMPLE_VALUES[dtype]
@@ -292,7 +294,7 @@ def test_dt_date_and_time_functions():
     assert list(s.dt.time) == times
 
 
-@pytest.mark.parametrize("dtype", ["date", "time"])
+@for_date_and_time
 def test__from_factorized(dtype):
     sample_values = SAMPLE_VALUES[dtype]
     a = _cls(dtype)(sample_values * 2)

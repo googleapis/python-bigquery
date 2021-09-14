@@ -425,3 +425,10 @@ def test_unique(dtype):
         cls(sample_values * 3).unique(),
         cls(sample_values),
         )
+
+
+@for_date_and_time
+def test_argsort(dtype):
+    sample_values = SAMPLE_VALUES[dtype]
+    s = pd.Series(sample_values * 2, dtype=dtype).argsort()
+    assert list(s) == [0, 4, 1, 5, 2, 6, 3, 7]

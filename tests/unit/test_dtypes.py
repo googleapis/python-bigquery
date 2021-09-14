@@ -360,3 +360,18 @@ def test__concat_same_type_via_concat(dtype):
     s1 = pd.Series(sample_values[:2], dtype=dtype)
     s2 = pd.Series(sample_values[2:], dtype=dtype)
     assert tuple(pd.concat((s1, s2))) == sample_values
+
+
+@for_date_and_time
+def test___getitem___arrayindex(dtype):
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    assert np.array_equal(
+        cls(sample_values)[[1, 3]],
+        cls([sample_values[1], sample_values[3]]),
+    )
+
+
+@for_date_and_time
+def test_dropna(dtype):
+    assert np.array_equal(_make_one(dtype).dropna(), _make_one(dtype)[:2])

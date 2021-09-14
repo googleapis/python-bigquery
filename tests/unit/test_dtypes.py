@@ -301,3 +301,9 @@ def test__from_factorized(dtype):
     codes, b = a.factorize()
     assert b.__class__ is a.__class__
     assert [b[code] for code in codes] == list(a)
+
+
+@for_date_and_time
+def test_isna(dtype):
+    a = _make_one(dtype)
+    assert list(a.isna()) == [False, False, True]

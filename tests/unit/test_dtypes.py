@@ -307,3 +307,48 @@ def test__from_factorized(dtype):
 def test_isna(dtype):
     a = _make_one(dtype)
     assert list(a.isna()) == [False, False, True]
+
+
+@for_date_and_time
+def test__validate_scalar_invalid(dtype):
+    with pytest.raises(ValueError):
+        _make_one(dtype)._validate_scalar("bad")
+
+
+@for_date_and_time
+@pytest.mark.parametrize(
+    "allow_fill, fill_value",
+    [
+        (False, None),
+        (True, None),
+        (True, pd._libs.NaT if pd else None),
+        (True, np.NaN if pd else None), (True, 42)])
+def test_take(dtype, allow_fill, fill_value):
+    sample_values = SAMPLE_VALUES[dtype]
+    a = _cls(dtype)(sample_values)
+    if allow_fill:
+        if fill_value == 42:
+            fill_value = expected_fill = (
+                datetime.date(1971, 4, 2) if dtype == 'date'
+                else datetime.time(0, 42, 42, 424242))
+        else:
+            expected_fill = None
+        b = a.take([1, -1, 3], allow_fill=True, fill_value=fill_value)
+        expect = [sample_values[1], expected_fill, sample_values[3]]
+    else:
+        b = a.take([1, -4, 3])
+        expect = [sample_values[1], sample_values[-4], sample_values[3]]
+
+    assert list(b) == expect
+
+
+@for_date_and_time
+def test_take_bad_index(dtype):
+    # When allow_fill is set, negative indexes < -1 raise ValueError.
+    # This is based on testing with an integer series/array.
+    # The documentation isn't clear on this at all.
+    sample_values = SAMPLE_VALUES[dtype]
+    a = _cls(dtype)(sample_values)
+    with pytest.raises(ValueError):
+        a.take([1, -2, 3], allow_fill=True, fill_value=None)
+

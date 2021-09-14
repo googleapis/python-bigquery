@@ -131,6 +131,7 @@ class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
         new_values = numpy.concatenate(new_values, axis=axis)
         return to_concat[0]._from_backing_data(new_values)  # type: ignore[arg-type]
 
+
 #
 ###########################################################################
 
@@ -152,7 +153,6 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
 
 
 class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
-
     def __init__(self, values, dtype=None, copy: bool = False):
         if not (
             isinstance(values, numpy.ndarray) and values.dtype == numpy.dtype("<M8[us]")
@@ -218,13 +218,15 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
         if allow_fill:
             fill_value = self._validate_scalar(fill_value)
             fill_value = (
-                numpy.datetime64() if fill_value is None
+                numpy.datetime64()
+                if fill_value is None
                 else numpy.datetime64(self._datetime(fill_value))
             )
             if (indices < -1).any():
                 raise ValueError(
                     "take called with negative indexes other than -1,"
-                    " when a fill value is provided.")
+                    " when a fill value is provided."
+                )
         out = data.take(indices)
         if allow_fill:
             out[indices == -1] = fill_value

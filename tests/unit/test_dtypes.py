@@ -198,8 +198,7 @@ def test___getitem___arrayindex(dtype):
     cls = _cls(dtype)
     sample_values = SAMPLE_VALUES[dtype]
     assert np.array_equal(
-        cls(sample_values)[[1, 3]],
-        cls([sample_values[1], sample_values[3]]),
+        cls(sample_values)[[1, 3]], cls([sample_values[1], sample_values[3]]),
     )
 
 
@@ -343,15 +342,20 @@ def test__validate_scalar_invalid(dtype):
         (False, None),
         (True, None),
         (True, pd._libs.NaT if pd else None),
-        (True, np.NaN if pd else None), (True, 42)])
+        (True, np.NaN if pd else None),
+        (True, 42),
+    ],
+)
 def test_take(dtype, allow_fill, fill_value):
     sample_values = SAMPLE_VALUES[dtype]
     a = _cls(dtype)(sample_values)
     if allow_fill:
         if fill_value == 42:
             fill_value = expected_fill = (
-                datetime.date(1971, 4, 2) if dtype == 'date'
-                else datetime.time(0, 42, 42, 424242))
+                datetime.date(1971, 4, 2)
+                if dtype == "date"
+                else datetime.time(0, 42, 42, 424242)
+            )
         else:
             expected_fill = None
         b = a.take([1, -1, 3], allow_fill=True, fill_value=fill_value)
@@ -376,7 +380,6 @@ def test_take_bad_index(dtype):
 
 @for_date_and_time
 def test__concat_same_type_via_concat(dtype):
-    cls = _cls(dtype)
     sample_values = SAMPLE_VALUES[dtype]
     s1 = pd.Series(sample_values[:2], dtype=dtype)
     s2 = pd.Series(sample_values[2:], dtype=dtype)
@@ -393,15 +396,15 @@ def test_dropna(dtype):
     [
         (1, None, None, [0, 1, 1, 3]),
         ([0, 2, 1, 0], None, None, [0, 2, 1, 3]),
-        (None, 'backfill', None, [0, 3, 3, 3]),
-        (None, 'bfill', None, [0, 3, 3, 3]),
-        (None, 'pad', None, [0, 0, 0, 3]),
-        (None, 'ffill', None, [0, 0, 0, 3]),
-        (None, 'backfill', 1, [0, None, 3, 3]),
-        (None, 'bfill', 1, [0, None, 3, 3]),
-        (None, 'pad', 1, [0, 0, None, 3]),
-        (None, 'ffill', 1, [0, 0, None, 3]),
-        ]
+        (None, "backfill", None, [0, 3, 3, 3]),
+        (None, "bfill", None, [0, 3, 3, 3]),
+        (None, "pad", None, [0, 0, 0, 3]),
+        (None, "ffill", None, [0, 0, 0, 3]),
+        (None, "backfill", 1, [0, None, 3, 3]),
+        (None, "bfill", 1, [0, None, 3, 3]),
+        (None, "pad", 1, [0, 0, None, 3]),
+        (None, "ffill", 1, [0, 0, None, 3]),
+    ],
 )
 @for_date_and_time
 def test_fillna(dtype, value, meth, limit, expect):
@@ -412,8 +415,7 @@ def test_fillna(dtype, value, meth, limit, expect):
         value = cls([sample_values[i] for i in value])
     elif value is not None:
         value = sample_values[value]
-    expect = cls([None if i is None else sample_values[i]
-                  for i in expect])
+    expect = cls([None if i is None else sample_values[i] for i in expect])
     assert np.array_equal(a.fillna(value, meth, limit), expect)
 
 
@@ -421,10 +423,7 @@ def test_fillna(dtype, value, meth, limit, expect):
 def test_unique(dtype):
     cls = _cls(dtype)
     sample_values = SAMPLE_VALUES[dtype]
-    assert np.array_equal(
-        cls(sample_values * 3).unique(),
-        cls(sample_values),
-        )
+    assert np.array_equal(cls(sample_values * 3).unique(), cls(sample_values),)
 
 
 @for_date_and_time

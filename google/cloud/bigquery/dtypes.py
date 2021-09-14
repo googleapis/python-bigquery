@@ -231,6 +231,10 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
 
         return self.__class__(out)
 
+    # TODO: provide implementations of dropna, fillna, unique,
+    # factorize, argsort, searchsoeted for better performance over
+    # abstract implementations.
+
 
 @pandas.core.dtypes.dtypes.register_extension_dtype
 class TimeDtype(_BaseDtype):

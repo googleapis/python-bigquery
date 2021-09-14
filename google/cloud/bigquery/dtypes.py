@@ -153,9 +153,10 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
 
 
 class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
+
     def __init__(self, values, dtype=None, copy: bool = False):
         if not (
-            isinstance(values, numpy.ndarray) and values.dtype == numpy.dtype("<M8[us]")
+            isinstance(values, numpy.ndarray) and values.dtype == numpy.dtype("<M8[ns]")
         ):
             values = self.__ndarray(values)
         elif copy:
@@ -167,7 +168,7 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
     def __ndarray(cls, scalars):
         return numpy.array(
             [None if scalar is None else cls._datetime(scalar) for scalar in scalars],
-            "M8[us]",
+            "M8[ns]",
         )
 
     @classmethod
@@ -278,7 +279,7 @@ class TimeArray(_BaseArray):
     def _box_func(self, x):
         if pandas.isnull(x):
             return None
-        return x.astype(datetime.datetime).time()
+        return x.astype("<M8[us]").astype(datetime.datetime).time()
 
 
 @pandas.core.dtypes.dtypes.register_extension_dtype
@@ -316,4 +317,4 @@ class DateArray(_BaseArray):
     def _box_func(self, x):
         if pandas.isnull(x):
             return None
-        return x.astype(datetime.datetime).date()
+        return x.astype("<M8[us]").astype(datetime.datetime).date()

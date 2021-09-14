@@ -58,6 +58,10 @@ SAMPLE_DT_VALUES = dict(
 for_date_and_time = pytest.mark.parametrize("dtype", ["date", "time"])
 
 
+@pytest.fixture(autouse=True)
+def register_dtype():
+    import google.cloud.bigquery.dtypes
+
 def _cls(dtype):
     from google.cloud.bigquery import dtypes
 

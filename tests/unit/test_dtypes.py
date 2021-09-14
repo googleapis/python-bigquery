@@ -415,3 +415,13 @@ def test_fillna(dtype, value, meth, limit, expect):
     expect = cls([None if i is None else sample_values[i]
                   for i in expect])
     assert np.array_equal(a.fillna(value, meth, limit), expect)
+
+
+@for_date_and_time
+def test_unique(dtype):
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    assert np.array_equal(
+        cls(sample_values * 3).unique(),
+        cls(sample_values),
+        )

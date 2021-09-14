@@ -352,3 +352,11 @@ def test_take_bad_index(dtype):
     with pytest.raises(ValueError):
         a.take([1, -2, 3], allow_fill=True, fill_value=None)
 
+
+@for_date_and_time
+def test__concat_same_type_via_concat(dtype):
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+    s1 = pd.Series(sample_values[:2], dtype=dtype)
+    s2 = pd.Series(sample_values[2:], dtype=dtype)
+    assert tuple(pd.concat((s1, s2))) == sample_values

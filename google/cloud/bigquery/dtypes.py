@@ -81,6 +81,10 @@ class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
         self._ndarray = values
         self._dtype = dtype
 
+    @classmethod
+    def _from_backing_data(cls, data):
+        return cls(data, data.dtype)
+
     def __getitem__(self, index):
         value = self._ndarray[index]
         if isinstance(index, slice):
@@ -115,6 +119,16 @@ class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
 
     def repeat(self, n):
         return self.__class__(self._ndarray.repeat(n), self._dtype)
+
+    @classmethod
+    def _concat_same_type(cls, to_concat, axis=0):
+        dtypes = {str(x.dtype) for x in to_concat}
+        if len(dtypes) != 1:
+            raise ValueError("to_concat must have the same dtype (tz)", dtypes)
+
+        new_values = [x._ndarray for x in to_concat]
+        new_values = numpy.concatenate(new_values, axis=axis)
+        return to_concat[0]._from_backing_data(new_values)  # type: ignore[arg-type]
 
 #
 ###########################################################################

@@ -438,3 +438,12 @@ def test_argsort(dtype):
     sample_values = SAMPLE_VALUES[dtype]
     s = pd.Series(sample_values * 2, dtype=dtype).argsort()
     assert list(s) == [0, 4, 1, 5, 2, 6, 3, 7]
+
+
+@for_date_and_time
+def test_astype_copy(dtype):
+    a = _make_one(dtype)
+    b = a.astype(a.dtype, copy=True)
+    assert b is not a
+    assert b.__class__ is a.__class__
+    assert np.array_equal(b, a)

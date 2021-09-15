@@ -282,11 +282,7 @@ class TableReference(_TableBase):
         Returns:
             Dict[str, object]: Table reference represented as an API resource
         """
-        return {
-            "projectId": self.project,
-            "datasetId": self.dataset_id,
-            "tableId": self.table_id,
-        }
+        return copy.deepcopy(self._properties)
 
     def to_bqstorage(self) -> str:
         """Construct a BigQuery Storage API representation of this table.

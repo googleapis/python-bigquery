@@ -1966,9 +1966,10 @@ class RowIterator(HTTPIterator):
             self.schema
         )
 
-        # When converting timestamp values to nanosecond precision, the result
+        # When converting date or timestamp values to nanosecond precision, the result
         # can be out of pyarrow bounds. To avoid the error when converting to
-        # Pandas, we set the timestamp_as_object parameter to True, if necessary.
+        # Pandas, we set the date_as_object or timestamp_as_object parameter to True,
+        # if necessary.
         date_as_object = not all(
             self.__can_cast_timestamp_ns(col)
             for col in record_batch

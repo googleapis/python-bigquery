@@ -1872,7 +1872,6 @@ class RowIterator(HTTPIterator):
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         geography_as_object: bool = False,
     ) -> "pandas.DataFrame":
         """Create a pandas DataFrame by loading all pages of a query.
@@ -1921,12 +1920,6 @@ class RowIterator(HTTPIterator):
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
                 .. versionadded:: 1.24.0
-
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
-
-                .. versionadded:: 1.26.0
 
             geography_as_object (Optional[bool]):
                 If ``True``, convert GEOGRAPHY data to :mod:`shapely`
@@ -2029,7 +2022,6 @@ class RowIterator(HTTPIterator):
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         geography_column: Optional[str] = None,
     ) -> "geopandas.GeoDataFrame":
         """Create a GeoPandas GeoDataFrame by loading all pages of a query.
@@ -2076,10 +2068,6 @@ class RowIterator(HTTPIterator):
                 ``bqstorage_client`` parameter for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
-
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
 
             geography_column (Optional[str]):
                 If there are more than one GEOGRAPHY column,
@@ -2136,7 +2124,6 @@ class RowIterator(HTTPIterator):
             dtypes,
             progress_bar_type,
             create_bqstorage_client,
-            date_as_object,
             geography_as_object=True,
         )
 
@@ -2193,7 +2180,6 @@ class _EmptyRowIterator(RowIterator):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
-        date_as_object=True,
         geography_as_object=False,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
@@ -2203,7 +2189,6 @@ class _EmptyRowIterator(RowIterator):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
-            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -2218,7 +2203,6 @@ class _EmptyRowIterator(RowIterator):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
-        date_as_object=True,
         geography_column: Optional[str] = None,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
@@ -2228,7 +2212,6 @@ class _EmptyRowIterator(RowIterator):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
-            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.

@@ -655,7 +655,7 @@ def test_to_dataframe_column_date_dtypes():
     )
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(begun_resource, client)
-    df = job.to_dataframe(date_as_object=False, create_bqstorage_client=False)
+    df = job.to_dataframe(create_bqstorage_client=False)
 
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 1  # verify the number of rows
@@ -916,7 +916,6 @@ def test_query_job_to_geodataframe_delegation(wait_for_query):
     dtypes = dict(xxx=numpy.dtype("int64"))
     progress_bar_type = "normal"
     create_bqstorage_client = False
-    date_as_object = False
     max_results = 42
     geography_column = "g"
 
@@ -925,7 +924,6 @@ def test_query_job_to_geodataframe_delegation(wait_for_query):
         dtypes=dtypes,
         progress_bar_type=progress_bar_type,
         create_bqstorage_client=create_bqstorage_client,
-        date_as_object=date_as_object,
         max_results=max_results,
         geography_column=geography_column,
     )
@@ -939,7 +937,6 @@ def test_query_job_to_geodataframe_delegation(wait_for_query):
         dtypes=dtypes,
         progress_bar_type=progress_bar_type,
         create_bqstorage_client=create_bqstorage_client,
-        date_as_object=date_as_object,
         geography_column=geography_column,
     )
     assert df is row_iterator.to_geodataframe.return_value

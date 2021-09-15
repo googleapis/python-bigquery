@@ -28,6 +28,11 @@ except ImportError:  # pragma: NO COVER
 else:
     import numpy
 
+    # get our custom dtypes registered
+    from . import dtypes
+
+    del dtypes
+
 import pyarrow
 import pyarrow.parquet
 
@@ -85,6 +90,8 @@ _BQ_TO_PANDAS_DTYPE_NULLSAFE = {
     "FLOAT64": "float64",
     "INT64": "Int64",
     "INTEGER": "Int64",
+    "DATE": "date",
+    "TIME": "time",
 }
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
@@ -102,6 +109,8 @@ _PANDAS_DTYPE_TO_BQ = {
     "uint16": "INTEGER",
     "uint32": "INTEGER",
     "geometry": "GEOGRAPHY",
+    "date": "DATE",
+    "time": "TIME",
 }
 
 

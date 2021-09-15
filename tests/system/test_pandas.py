@@ -827,15 +827,8 @@ def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_r
     assert df.dtypes["float64_col"].name == "float64"
     assert df.dtypes["int64_col"].name == "Int64"
     assert df.dtypes["timestamp_col"].name == "datetime64[ns, UTC]"
-
-    # object is used by default, but we can use "datetime64[ns]" automatically
-    # when data is within the supported range.
-    # https://github.com/googleapis/python-bigquery/issues/861
-    assert df.dtypes["date_col"].name == "object"
-
-    # object is used by default, but we can use "timedelta64[ns]" automatically
-    # https://github.com/googleapis/python-bigquery/issues/862
-    assert df.dtypes["time_col"].name == "object"
+    assert df.dtypes["date_col"].name == "date"
+    assert df.dtypes["time_col"].name == "time"
 
     # decimal.Decimal is used to avoid loss of precision.
     assert df.dtypes["bignumeric_col"].name == "object"
@@ -885,10 +878,7 @@ def test_list_rows_nullable_scalars_extreme_dtypes(
     assert df.dtypes["bool_col"].name == "boolean"
     assert df.dtypes["float64_col"].name == "float64"
     assert df.dtypes["int64_col"].name == "Int64"
-
-    # object is used by default, but we can use "timedelta64[ns]" automatically
-    # https://github.com/googleapis/python-bigquery/issues/862
-    assert df.dtypes["time_col"].name == "object"
+    assert df.dtypes["time_col"].name == "time"
 
     # decimal.Decimal is used to avoid loss of precision.
     assert df.dtypes["numeric_col"].name == "object"

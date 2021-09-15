@@ -630,7 +630,7 @@ def test_to_dataframe_column_dtypes():
     assert df.km.dtype.name == "float16"
     assert df.payment_type.dtype.name == "object"
     assert df.complete.dtype.name == "boolean"
-    assert df.date.dtype.name == "object"
+    assert df.date.dtype.name == "date"
 
 
 def test_to_dataframe_column_date_dtypes():
@@ -661,7 +661,7 @@ def test_to_dataframe_column_date_dtypes():
     assert len(df) == 1  # verify the number of rows
     exp_columns = [field["name"] for field in query_resource["schema"]["fields"]]
     assert list(df) == exp_columns  # verify the column names
-    assert df.date.dtype.name == "datetime64[ns]"
+    assert df.date.dtype.name == "date"
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")

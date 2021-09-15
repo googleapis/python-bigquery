@@ -1973,32 +1973,33 @@ class RowIterator(HTTPIterator):
             self.schema
         )
 
+        # When converting timestamp values to nanosecond precision, the result
+        # can be out of pyarrow bounds. To avoid the error when converting to
+        # Pandas, we set the timestamp_as_object parameter to True, if necessary.
+        date_as_object = not all(
+            self.__can_cast_timestamp_ns(col)
+            for col in record_batch
+            if str(col.type).startswith("date")
+        )
+        if date_as_object:
+            default_dtypes = {
+                name: type_ for name, type_ in default_dtypes.items() if type_ != "date"
+            }
+
         # Let the user-defined dtypes override the default ones.
         # https://stackoverflow.com/a/26853961/101923
         dtypes = {**default_dtypes, **dtypes}
 
-        # When converting timestamp values to nanosecond precision, the result
-        # can be out of pyarrow bounds. To avoid the error when converting to
-        # Pandas, we set the timestamp_as_object parameter to True, if necessary.
-        types_to_check = {
-            pyarrow.timestamp("us"),
-            pyarrow.timestamp("us", tz=datetime.timezone.utc),
-        }
-
-        for column in record_batch:
-            if column.type in types_to_check:
-                try:
-                    column.cast("timestamp[ns]")
-                except pyarrow.lib.ArrowInvalid:
-                    timestamp_as_object = True
-                    break
-        else:
-            timestamp_as_object = False
-
-        extra_kwargs = {"timestamp_as_object": timestamp_as_object}
+        timestamp_as_object = not all(
+            self.__can_cast_timestamp_ns(col)
+            for col in record_batch
+            if str(col.type).startswith("timestamp")
+        )
 
         df = record_batch.to_pandas(
-            date_as_object=date_as_object, integer_object_nulls=True, **extra_kwargs
+            date_as_object=True,  # Do conversion in pandas
+            timestamp_as_object=timestamp_as_object,
+            integer_object_nulls=True,
         )
 
         for column in dtypes:
@@ -2010,6 +2011,15 @@ class RowIterator(HTTPIterator):
                     df[field.name] = df[field.name].dropna().apply(_read_wkt)
 
         return df
+
+    @staticmethod
+    def __can_cast_timestamp_ns(column):
+        try:
+            column.cast("timestamp[ns]")
+        except pyarrow.lib.ArrowInvalid:
+            return False
+        else:
+            return True
 
     # If changing the signature of this method, make sure to apply the same
     # changes to job.QueryJob.to_geodataframe()

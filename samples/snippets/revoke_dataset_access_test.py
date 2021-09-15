@@ -14,8 +14,8 @@
 
 from google.cloud import bigquery
 
-from . import revoke_dataset_access
-from . import update_dataset_access
+import revoke_dataset_access
+import update_dataset_access
 
 
 def test_revoke_dataset_access(

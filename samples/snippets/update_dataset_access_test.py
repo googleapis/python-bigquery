@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import update_dataset_access
+import update_dataset_access
 
 
 def test_update_dataset_access(capsys, dataset_id):

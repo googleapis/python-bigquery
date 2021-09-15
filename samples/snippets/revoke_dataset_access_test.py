@@ -12,15 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from google.cloud import bigquery
-
 import revoke_dataset_access
 import update_dataset_access
 
 
-def test_revoke_dataset_access(
-    capsys, dataset_id, entity_id, bigquery_client: bigquery.Client
-):
+def test_revoke_dataset_access(capsys, dataset_id, entity_id, bigquery_client):
     update_dataset_access.update_dataset_access(dataset_id)
     updated_dataset = bigquery_client.get_dataset(dataset_id)
     updated_dataset_entries = list(updated_dataset.access_entries)

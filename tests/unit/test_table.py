@@ -105,9 +105,9 @@ class TestEncryptionConfiguration(unittest.TestCase):
 class TestTableBase:
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.table import TableBase
+        from google.cloud.bigquery.table import _TableBase
 
-        return TableBase
+        return _TableBase
 
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)

@@ -127,7 +127,7 @@ def _view_use_legacy_sql_getter(table):
         return True
 
 
-class TableBase:
+class _TableBase:
     """Base class for Table-related classes with common functionality."""
 
     _PROPERTY_TO_API_FIELD = {
@@ -169,7 +169,7 @@ class TableBase:
         )
 
     def __eq__(self, other):
-        if isinstance(other, TableBase):
+        if isinstance(other, _TableBase):
             return (
                 self.project == other.project
                 and self.dataset_id == other.dataset_id
@@ -182,7 +182,7 @@ class TableBase:
         return hash((self.project, self.dataset_id, self.table_id))
 
 
-class TableReference(TableBase):
+class TableReference(_TableBase):
     """TableReferences are pointers to tables.
 
     See
@@ -324,7 +324,7 @@ class TableReference(TableBase):
         return f"TableReference({dataset_ref!r}, '{self.table_id}')"
 
 
-class Table(TableBase):
+class Table(_TableBase):
     """Tables represent a set of rows whose values correspond to a schema.
 
     See
@@ -345,7 +345,7 @@ class Table(TableBase):
     """
 
     _PROPERTY_TO_API_FIELD = {
-        **TableBase._PROPERTY_TO_API_FIELD,
+        **_TableBase._PROPERTY_TO_API_FIELD,
         "clustering_fields": "clustering",
         "created": "creationTime",
         "description": "description",
@@ -1032,7 +1032,7 @@ class Table(TableBase):
         return "Table({})".format(repr(self.reference))
 
 
-class TableListItem(TableBase):
+class TableListItem(_TableBase):
     """A read-only table resource from a list operation.
 
     For performance reasons, the BigQuery API only includes some of the table

@@ -22,7 +22,7 @@ from pandas._libs import NaT
 from pandas._libs.lib import is_integer
 import pandas.core.algorithms
 import pandas.core.dtypes.base
-from pandas.core.dtypes.common import is_list_like
+from pandas.core.dtypes.common import is_dtype_equal, is_list_like, pandas_dtype
 import pandas.core.dtypes.dtypes
 import pandas.core.dtypes.generic
 
@@ -177,6 +177,16 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
         return cls(cls.__ndarray(scalars))
 
     _from_sequence_of_strings = _from_sequence
+
+    def astype(self, dtype, copy=True):
+        dtype = pandas_dtype(dtype)
+        if is_dtype_equal(dtype, self.dtype):
+            if not copy:
+                return self
+            else:
+                return self.copy()
+
+        return super().astype(dtype, copy=copy)
 
     def _cmp_method(self, other, op):
         if type(other) != type(self):

@@ -394,6 +394,19 @@ def test__concat_same_type_via_concat(dtype):
 
 
 @for_date_and_time
+def test__concat_same_type_not_same_type(dtype):
+    # Test a dtype-compatibility in _concat_same_type.
+    # This seems not to be needed in practice, because higher-level
+    # convatenation code detects multiple dtypes and casts to a common
+    # type, however, having the check seems hygienic. :)
+    sample_values = SAMPLE_VALUES[dtype]
+    s1 = pd.Series(sample_values[:2], dtype=dtype)
+    s2 = pd.Series(sample_values[2:])
+    with pytest.raises(ValueError):
+        s1.array._concat_same_type((s1.array, s2.array))
+
+
+@for_date_and_time
 def test_dropna(dtype):
     assert np.array_equal(_make_one(dtype).dropna(), _make_one(dtype)[:2])
 

@@ -492,3 +492,31 @@ def test_asdatetime(dtype, same):
         assert b is not a._ndarray
         assert np.array_equal(b[:2], a._ndarray[:2])
         assert pd.isna(b[2]) and str(b[2]) == "NaT"
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "<m8",
+        "<m8[s]",
+        "<m8[ms]",
+        "<m8[us]",
+        "<m8[ns]",
+        "timedelta",
+        "timedelta64",
+        "timedelta64[s]",
+        "timedelta64[ms]",
+        "timedelta64[us]",
+        "timedelta64[ns]",
+    ],
+)
+def test_astimedelta(dtype):
+    t = "01:02:03.123456"
+    expect = pd.to_timedelta([t]).array.astype(
+        "timedelta64[ns]" if dtype == "timedelta" else dtype
+    )
+
+    a = _cls("time")([t, None])
+    b = a.astype(dtype)
+    np.array_equal(b[:1], expect)
+    assert pd.isna(b[1]) and str(b[1]) == "NaT"

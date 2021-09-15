@@ -270,6 +270,7 @@ class TimeArray(_BaseArray):
 
     dtype = TimeDtype()
     _epoch = datetime.datetime(1970, 1, 1)
+    _npepoch = numpy.datetime64(_epoch)
 
     @classmethod
     def _datetime(cls, scalar):
@@ -289,6 +290,18 @@ class TimeArray(_BaseArray):
         if pandas.isnull(x):
             return None
         return x.astype("<M8[us]").astype(datetime.datetime).time()
+
+    __return_deltas = {"timedelta", "timedelta64", "timedelta64[ns]", "<m8", "<m8[ns]"}
+
+    def astype(self, dtype, copy=True):
+        deltas = self._ndarray - self._npepoch
+        stype = str(dtype)
+        if stype in self.__return_deltas:
+            return deltas
+        elif stype.startswith("timedelta64[") or stype.startswith("<m8["):
+            return deltas.astype(dtype, copy=False)
+        else:
+            return super().astype(dtype, copy=copy)
 
 
 @pandas.core.dtypes.dtypes.register_extension_dtype

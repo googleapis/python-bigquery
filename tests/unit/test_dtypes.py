@@ -237,6 +237,8 @@ def test_item_assignment(dtype):
     cls = _cls(dtype)
     a[0] = sample_values[2]
     assert np.array_equal(a, cls._from_sequence([sample_values[2], sample_values[1]]))
+    a[1] = None
+    assert np.array_equal(a, cls._from_sequence([sample_values[2], None]))
 
 
 @for_date_and_time

@@ -460,3 +460,35 @@ def test_astype_copy(dtype):
     assert b is not a
     assert b.__class__ is a.__class__
     assert np.array_equal(b, a)
+
+
+@pytest.mark.parametrize(
+    "dtype, same",
+    [
+        ("<M8[ns]", True),
+        ("<M8", True),
+        ("datetime64[ns]", True),
+        ("datetime64", True),
+        ("datetime", True),
+        ("<M8[us]", False),
+        ("<M8[ms]", False),
+        ("<M8[s]", False),
+        ("datetime64[us]", False),
+        ("datetime64[ms]", False),
+        ("datetime64[s]", False),
+    ],
+)
+def test_asdatetime(dtype, same):
+    a = _make_one("date")
+    for dt in dtype, np.dtype(dtype) if dtype != "datetime" else dtype:
+        if same:
+            b = a.astype(dt, copy=False)
+            assert b is a._ndarray
+            copy = True
+        else:
+            copy = False
+
+        b = a.astype(dt, copy=copy)
+        assert b is not a._ndarray
+        assert np.array_equal(b[:2], a._ndarray[:2])
+        assert pd.isna(b[2]) and str(b[2]) == "NaT"

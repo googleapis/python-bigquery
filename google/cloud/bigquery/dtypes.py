@@ -327,3 +327,16 @@ class DateArray(_BaseArray):
         if pandas.isnull(x):
             return None
         return x.astype("<M8[us]").astype(datetime.datetime).date()
+
+    def astype(self, dtype, copy=True):
+        stype = str(dtype)
+        if stype.startswith("datetime"):
+            if stype == "datetime" or stype == "datetime64":
+                dtype = self._ndarray.dtype
+            return self._ndarray.astype(dtype, copy=copy)
+        elif stype.startswith("<M8"):
+            if stype == "<M8":
+                dtype = self._ndarray.dtype
+            return self._ndarray.astype(dtype, copy=copy)
+
+        return super().astype(dtype, copy=copy)

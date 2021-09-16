@@ -1977,7 +1977,9 @@ class RowIterator(HTTPIterator):
         )
         if date_as_object:
             default_dtypes = {
-                name: type_ for name, type_ in default_dtypes.items() if type_ != "date"
+                name: type_
+                for name, type_ in default_dtypes.items()
+                if type_ != _pandas_helpers.date_dtype_name
             }
 
         # Let the user-defined dtypes override the default ones.

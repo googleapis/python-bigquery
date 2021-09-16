@@ -24,14 +24,11 @@ import warnings
 try:
     import pandas
 except ImportError:  # pragma: NO COVER
-    pandas = None
+    pandas = date_dtype_name = time_dtype_name = None
 else:
     import numpy
 
-    # get our custom dtypes registered
-    from . import dtypes
-
-    del dtypes
+    from .dtypes import date_dtype_name, time_dtype_name
 
 import pyarrow
 import pyarrow.parquet
@@ -90,8 +87,8 @@ _BQ_TO_PANDAS_DTYPE_NULLSAFE = {
     "FLOAT64": "float64",
     "INT64": "Int64",
     "INTEGER": "Int64",
-    "DATE": "date",
-    "TIME": "time",
+    "DATE": date_dtype_name,
+    "TIME": time_dtype_name,
 }
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
@@ -109,8 +106,8 @@ _PANDAS_DTYPE_TO_BQ = {
     "uint16": "INTEGER",
     "uint32": "INTEGER",
     "geometry": "GEOGRAPHY",
-    "date": "DATE",
-    "time": "TIME",
+    date_dtype_name: "DATE",
+    time_dtype_name: "TIME",
 }
 
 

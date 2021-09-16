@@ -33,6 +33,8 @@ import pandas.core.nanops
 
 pandas_release = packaging.version.parse(pandas.__version__).release
 
+date_dtype_name = "bqdate"
+time_dtype_name = "bqtime"
 
 ###########################################################################
 # To support old pandas versions, we provide forward ported
@@ -325,7 +327,7 @@ class TimeDtype(_BaseDtype):
     Extension dtype for time data.
     """
 
-    name = "time"
+    name = time_dtype_name
     type = datetime.time
 
     def construct_array_type(self):
@@ -386,7 +388,7 @@ class DateDtype(_BaseDtype):
     Extension dtype for time data.
     """
 
-    name = "date"
+    name = date_dtype_name
     type = datetime.date
 
     def construct_array_type(self):

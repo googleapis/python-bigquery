@@ -57,6 +57,8 @@ SAMPLE_DT_VALUES = dict(
 
 for_date_and_time = pytest.mark.parametrize("dtype", ["date", "time"])
 
+DTYPE_PREFIX = "bq"
+
 
 @pytest.fixture(autouse=True)
 def register_dtype():
@@ -112,7 +114,7 @@ def test_array_construction_bad_vaue_type(dtype):
 @for_date_and_time
 def test_time_series_construction(dtype):
     sample_values = SAMPLE_VALUES[dtype]
-    s = pd.Series(SAMPLE_RAW_VALUES[dtype], dtype=dtype)
+    s = pd.Series(SAMPLE_RAW_VALUES[dtype], dtype=DTYPE_PREFIX + dtype)
     assert len(s) == 3
     assert s[0], s[1] == sample_values[:2]
     assert s[2] is None
@@ -226,7 +228,7 @@ def test_timearray_slicing(dtype):
     )
 
     # Series also work:
-    s = pd.Series(SAMPLE_RAW_VALUES[dtype], dtype=dtype)
+    s = pd.Series(SAMPLE_RAW_VALUES[dtype], dtype=DTYPE_PREFIX + dtype)
     assert np.array_equal(s[:1].array, cls._from_sequence([sample_values[0]]))
 
 
@@ -348,8 +350,8 @@ def test_take_bad_index(dtype):
 @for_date_and_time
 def test__concat_same_type_via_concat(dtype):
     sample_values = SAMPLE_VALUES[dtype]
-    s1 = pd.Series(sample_values[:2], dtype=dtype)
-    s2 = pd.Series(sample_values[2:], dtype=dtype)
+    s1 = pd.Series(sample_values[:2], dtype=DTYPE_PREFIX + dtype)
+    s2 = pd.Series(sample_values[2:], dtype=DTYPE_PREFIX + dtype)
     assert tuple(pd.concat((s1, s2))) == sample_values
 
 
@@ -360,7 +362,7 @@ def test__concat_same_type_not_same_type(dtype):
     # convatenation code detects multiple dtypes and casts to a common
     # type, however, having the check seems hygienic. :)
     sample_values = SAMPLE_VALUES[dtype]
-    s1 = pd.Series(sample_values[:2], dtype=dtype)
+    s1 = pd.Series(sample_values[:2], dtype=DTYPE_PREFIX + dtype)
     s2 = pd.Series(sample_values[2:])
     with pytest.raises(ValueError):
         s1.array._concat_same_type((s1.array, s2.array))
@@ -409,7 +411,7 @@ def test_unique(dtype):
 @for_date_and_time
 def test_argsort(dtype):
     sample_values = SAMPLE_VALUES[dtype]
-    s = pd.Series(sample_values * 2, dtype=dtype).argsort()
+    s = pd.Series(sample_values * 2, dtype=DTYPE_PREFIX + dtype).argsort()
     assert list(s) == [0, 4, 1, 5, 2, 6, 3, 7]
 
 

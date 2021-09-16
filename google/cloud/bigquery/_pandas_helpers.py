@@ -312,7 +312,7 @@ def bq_to_arrow_array(series, bq_field):
         return pyarrow.ListArray.from_pandas(series, type=arrow_type)
     if field_type_upper in schema._STRUCT_TYPES:
         return pyarrow.StructArray.from_pandas(series, type=arrow_type)
-    return pyarrow.Array.from_pandas(series, type=arrow_type)
+    return pyarrow.Array.from_pandas(series.to_numpy(), type=arrow_type)
 
 
 def get_column_or_index(dataframe, name):

@@ -33,6 +33,7 @@ from . import helpers
 
 
 pandas = pytest.importorskip("pandas", minversion="0.23.0")
+numpy = pytest.importorskip("numpy")
 
 
 PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
@@ -83,6 +84,26 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
             ("uint8_col", pandas.Series([0, 1, 2], dtype="uint8")),
             ("uint16_col", pandas.Series([3, 4, 5], dtype="uint16")),
             ("uint32_col", pandas.Series([6, 7, 8], dtype="uint32")),
+            (
+                "date_col",
+                pandas.Series([
+                        datetime.date(2010, 1 , 2),
+                        datetime.date(2011, 2, 3),
+                        datetime.date(2012, 3, 14),
+                    ],
+                    dtype="date",
+                    ),
+            ),
+            (
+                "time_col",
+                pandas.Series([
+                        datetime.time(3, 44, 50),
+                        datetime.time(14, 50, 59),
+                        datetime.time(15, 16),
+                    ],
+                    dtype="time",
+                    ),
+            ),
         ]
     )
     dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
@@ -111,9 +132,37 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
         bigquery.SchemaField("uint8_col", "INTEGER"),
         bigquery.SchemaField("uint16_col", "INTEGER"),
         bigquery.SchemaField("uint32_col", "INTEGER"),
+        bigquery.SchemaField("date_col", "DATE"),
+        bigquery.SchemaField("time_col", "TIME"),
     )
-    assert table.num_rows == 3
-
+    assert (
+        numpy.array(
+            sorted(map(list, bigquery_client.list_rows(table)),
+                   key=lambda r: r[5]),
+            dtype='object')
+        .transpose().tolist()
+        ==
+        [[True, False, True],
+         [datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc),
+          datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
+          datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc)],
+         [datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc),
+          datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
+          datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc)],
+         [1.0, 2.0, 3.0],
+         [4.0, 5.0, 6.0],
+         [-12, -11, -10],
+         [-9, -8, -7],
+         [-6, -5, -4],
+         [-3, -2, -1],
+         [0, 1, 2],
+         [3, 4, 5],
+         [6, 7, 8],
+         [datetime.date(2010, 1, 2),
+          datetime.date(2011, 2, 3),
+          datetime.date(2012, 3, 14)],
+         [datetime.time(3, 44, 50), datetime.time(14, 50, 59), datetime.time(15, 16)]]
+        )
 
 @pytest.mark.skipif(
     PANDAS_INSTALLED_VERSION < PANDAS_INT64_VERSION,

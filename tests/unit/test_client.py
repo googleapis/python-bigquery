@@ -6917,6 +6917,28 @@ class TestClientUpload(object):
                         dtype="datetime64[ns]",
                     ).dt.tz_localize(datetime.timezone.utc),
                 ),
+                (
+                    "date_col",
+                    pandas.Series(
+                        [
+                            datetime.date(2010, 1, 2),
+                            datetime.date(2011, 2, 3),
+                            datetime.date(2012, 3, 14),
+                        ],
+                        dtype="date",
+                    ),
+                ),
+                (
+                    "time_col",
+                    pandas.Series(
+                        [
+                            datetime.time(3, 44, 50),
+                            datetime.time(14, 50, 59),
+                            datetime.time(15, 16),
+                        ],
+                        dtype="time",
+                    ),
+                ),
             ]
         )
         dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
@@ -6957,6 +6979,8 @@ class TestClientUpload(object):
             SchemaField("bool_col", "BOOLEAN"),
             SchemaField("dt_col", "TIMESTAMP"),
             SchemaField("ts_col", "TIMESTAMP"),
+            SchemaField("date_col", "DATE"),
+            SchemaField("time_col", "TIME"),
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")

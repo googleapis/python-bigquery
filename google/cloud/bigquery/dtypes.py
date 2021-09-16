@@ -140,9 +140,6 @@ class _BaseDtype(pandas.core.dtypes.base.ExtensionDtype):
     na_value = NaT
     kind = "o"
     names = None
-    if pandas_release >= (1, 3):
-        # Enables series `dt` special properties :)
-        dtype = numpy.datetime64
 
     @classmethod
     def construct_from_string(cls, name):

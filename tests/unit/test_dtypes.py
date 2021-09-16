@@ -14,13 +14,10 @@
 
 import datetime
 
-import packaging.version
 import pytest
 
 pd = pytest.importorskip("pandas")
 np = pytest.importorskip("numpy")
-
-pandas_release = packaging.version.parse(pd.__version__).release
 
 SAMPLE_RAW_VALUES = dict(
     date=(datetime.date(2021, 2, 2), "2021-2-3", None),
@@ -279,46 +276,6 @@ def test_from_ndarray_copy(dtype):
     b = cls(a._ndarray, copy=True)
     assert b._ndarray is not a._ndarray
     assert np.array_equal(b, a)
-
-
-@pytest.mark.skipif(
-    # TODO: Can we make this work for Pandas 1.1 and later?
-    pandas_release < (1, 3),
-    reason="The .dt attribute was added in Pandas 1.1",
-)
-def test_dt_date_and_time_functions():
-    dates = [datetime.date(2020, 1, 1), datetime.date(2021, 3, 31)]
-    s = pd.Series(dates, dtype="date")
-    assert list(s.dt.year) == [2020, 2021]
-    assert list(s.dt.month) == [1, 3]
-    assert list(s.dt.day) == [1, 31]
-    assert list(s.dt.date) == dates
-    assert list(s.dt.dayofyear) == [1, 90]
-    assert list(s.dt.day_of_year) == [1, 90]
-    assert list(s.dt.weekofyear) == [1, 13]
-    assert list(s.dt.week) == [1, 13]
-    assert list(s.dt.day_of_week) == [2, 2]
-    assert list(s.dt.dayofweek) == [2, 2]
-    assert list(s.dt.weekday) == [2, 2]
-    assert list(s.dt.quarter) == [1, 1]
-    assert list(s.dt.days_in_month) == [31, 31]
-    assert list(s.dt.is_month_start) == [True, False]
-    assert list(s.dt.is_month_end) == [False, True]
-    assert list(s.dt.is_quarter_start) == [True, False]
-    assert list(s.dt.is_quarter_end) == [False, True]
-    assert list(s.dt.is_year_start) == [True, False]
-    assert list(s.dt.is_year_end) == [False, False]
-    assert list(s.dt.is_leap_year) == [True, False]
-
-    times = [datetime.time(1, 2, 3), datetime.time(4, 5, 6, 500000)]
-    s = pd.Series(times, dtype="time")
-    assert list(s.dt.hour) == [1, 4]
-    assert list(s.dt.minute) == [2, 5]
-    assert list(s.dt.second) == [3, 6]
-    assert list(s.dt.microsecond) == [0, 500000]
-    # nanoseconds are distinct and BQ and Python time are only microsecond
-    assert list(s.dt.nanosecond) == [0, 0]
-    assert list(s.dt.time) == times
 
 
 @for_date_and_time

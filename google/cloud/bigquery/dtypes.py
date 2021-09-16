@@ -18,11 +18,13 @@ from typing import Any, Optional, Sequence
 
 import numpy
 import packaging.version
+import pandas
 from pandas._libs import NaT
 from pandas._libs.lib import is_integer
 from pandas._typing import Scalar
 import pandas.compat.numpy.function
 import pandas.core.algorithms
+import pandas.core.arrays
 import pandas.core.dtypes.base
 from pandas.core.dtypes.common import is_dtype_equal, is_list_like, pandas_dtype
 import pandas.core.dtypes.dtypes
@@ -56,6 +58,9 @@ def import_default(module_name, force=False, default=None):
 
 @import_default("pandas.core.arraylike")
 class OpsMixin:
+    def _cmp_method(self, other, op):  # pragma: NO COVER
+        return NotImplemented
+
     def __eq__(self, other):
         return self._cmp_method(other, operator.eq)
 

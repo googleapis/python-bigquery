@@ -14,17 +14,20 @@
 
 import datetime
 import operator
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 import numpy
 import packaging.version
 from pandas._libs import NaT
 from pandas._libs.lib import is_integer
+from pandas._typing import Scalar
+import pandas.compat.numpy.function
 import pandas.core.algorithms
 import pandas.core.dtypes.base
 from pandas.core.dtypes.common import is_dtype_equal, is_list_like, pandas_dtype
 import pandas.core.dtypes.dtypes
 import pandas.core.dtypes.generic
+import pandas.core.nanops
 
 pandas_release = packaging.version.parse(pandas.__version__).release
 
@@ -244,6 +247,72 @@ class _BaseArray(OpsMixin, NDArrayBackedExtensionArray):
     # factorize, argsort, searchsoeted for better performance over
     # abstract implementations.
 
+    def any(
+        self,
+        *,
+        axis: Optional[int] = None,
+        out=None,
+        keepdims: bool = False,
+        skipna: bool = True,
+    ):
+        pandas.compat.numpy.function.validate_any(
+            (), {"out": out, "keepdims": keepdims}
+        )
+        result = pandas.core.nanops.nanany(self._ndarray, axis=axis, skipna=skipna)
+        return result
+
+    def all(
+        self,
+        *,
+        axis: Optional[int] = None,
+        out=None,
+        keepdims: bool = False,
+        skipna: bool = True,
+    ):
+        pandas.compat.numpy.function.validate_all(
+            (), {"out": out, "keepdims": keepdims}
+        )
+        result = pandas.core.nanops.nanall(self._ndarray, axis=axis, skipna=skipna)
+        return result
+
+    def min(
+        self, *, axis: Optional[int] = None, skipna: bool = True, **kwargs
+    ) -> Scalar:
+        pandas.compat.numpy.function.validate_min((), kwargs)
+        result = pandas.core.nanops.nanmin(
+            values=self._ndarray, axis=axis, mask=self.isna(), skipna=skipna
+        )
+        return self._box_func(result)
+
+    def max(
+        self, *, axis: Optional[int] = None, skipna: bool = True, **kwargs
+    ) -> Scalar:
+        pandas.compat.numpy.function.validate_max((), kwargs)
+        result = pandas.core.nanops.nanmax(
+            values=self._ndarray, axis=axis, mask=self.isna(), skipna=skipna
+        )
+        return self._box_func(result)
+
+    if pandas_release >= (1, 2):
+
+        def median(
+            self,
+            *,
+            axis: Optional[int] = None,
+            out=None,
+            overwrite_input: bool = False,
+            keepdims: bool = False,
+            skipna: bool = True,
+        ):
+            pandas.compat.numpy.function.validate_median(
+                (),
+                {"out": out, "overwrite_input": overwrite_input, "keepdims": keepdims},
+            )
+            result = pandas.core.nanops.nanmedian(
+                self._ndarray, axis=axis, skipna=skipna
+            )
+            return self._box_func(result)
+
 
 @pandas.core.dtypes.dtypes.register_extension_dtype
 class TimeDtype(_BaseDtype):
@@ -286,7 +355,12 @@ class TimeArray(_BaseArray):
     def _box_func(self, x):
         if pandas.isnull(x):
             return None
-        return x.astype("<M8[us]").astype(datetime.datetime).time()
+
+        try:
+            return x.astype("<M8[us]").astype(datetime.datetime).time()
+        except AttributeError:
+            x = numpy.datetime64(x)
+            return x.astype("<M8[us]").astype(datetime.datetime).time()
 
     __return_deltas = {"timedelta", "timedelta64", "timedelta64[ns]", "<m8", "<m8[ns]"}
 
@@ -336,7 +410,11 @@ class DateArray(_BaseArray):
     def _box_func(self, x):
         if pandas.isnull(x):
             return None
-        return x.astype("<M8[us]").astype(datetime.datetime).date()
+        try:
+            return x.astype("<M8[us]").astype(datetime.datetime).date()
+        except AttributeError:
+            x = numpy.datetime64(x)
+            return x.astype("<M8[us]").astype(datetime.datetime).date()
 
     def astype(self, dtype, copy=True):
         stype = str(dtype)

@@ -14,10 +14,13 @@
 
 import datetime
 
+import packaging.version
 import pytest
 
 pd = pytest.importorskip("pandas")
 np = pytest.importorskip("numpy")
+
+pandas_release = packaging.version.parse(pd.__version__).release
 
 SAMPLE_RAW_VALUES = dict(
     date=(datetime.date(2021, 2, 2), "2021-2-3", None),
@@ -477,3 +480,72 @@ def test_astimedelta(dtype):
     b = a.astype(dtype)
     np.array_equal(b[:1], expect)
     assert pd.isna(b[1]) and str(b[1]) == "NaT"
+
+
+@for_date_and_time
+def test_any(dtype):
+    a = _make_one(dtype)
+    cls = _cls(dtype)
+    assert a.any()
+    assert a.any(skipna=False)
+    assert not cls([]).any()
+    assert not cls([]).any(skipna=False)
+    assert not cls([None]).any(skipna=True)
+    assert cls([None]).any(skipna=False)
+
+
+@for_date_and_time
+def test_all(dtype):
+    # All is always True
+    a = _make_one(dtype)
+    cls = _cls(dtype)
+    assert a.all()
+    assert a.all(skipna=False)
+    assert cls([]).all()
+    assert cls([None]).all()
+    assert cls([None]).all(skipna=False)
+
+
+@for_date_and_time
+def test_min_max_median(dtype):
+    import random
+
+    cls = _cls(dtype)
+    sample_values = SAMPLE_VALUES[dtype]
+
+    data = list(sample_values) * 2
+    for i in range(len(sample_values)):
+        random.shuffle(data)
+        a = cls(data)
+        assert a.min() == sample_values[0]
+        assert a.max() == sample_values[-1]
+        if pandas_release >= (1, 2):
+            assert (
+                a.median() == datetime.time(1, 2, 4)
+                if dtype == "time"
+                else datetime.date(2021, 2, 3)
+            )
+
+    empty = cls([])
+    assert empty.min() is None
+    assert empty.max() is None
+    if pandas_release >= (1, 2):
+        assert empty.median() is None
+    empty = cls([None])
+    assert empty.min() is None
+    assert empty.max() is None
+    assert empty.min(skipna=False) is None
+    assert empty.max(skipna=False) is None
+    if pandas_release >= (1, 2):
+        assert empty.median() is None
+        assert empty.median(skipna=False) is None
+
+    a = _make_one(dtype)
+    assert a.min() == sample_values[0]
+    assert a.max() == sample_values[1]
+    if pandas_release >= (1, 2):
+        assert (
+            a.median() == datetime.time(1, 2, 2, 750000)
+            if dtype == "time"
+            else datetime.date(2021, 2, 2)
+        )

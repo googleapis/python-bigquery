@@ -5215,14 +5215,39 @@ class TestClient(unittest.TestCase):
             self.PROJECT, self.DS_ID, self.TABLE_REF.table_id
         )
 
-        dataframe = pandas.DataFrame(
-            [
-                {"name": "Little One", "age": 10, "adult": False},
-                {"name": "Young Gun", "age": 20, "adult": True},
-                {"name": "Dad", "age": 30, "adult": True},
-                {"name": "Stranger", "age": 40, "adult": True},
-            ]
-        )
+        data = [
+            {
+                "name": "Little One",
+                "age": 10,
+                "adult": False,
+                "bdate": datetime.date(2011, 1, 2),
+                "btime": datetime.time(19, 1, 10),
+            },
+            {
+                "name": "Young Gun",
+                "age": 20,
+                "adult": True,
+                "bdate": datetime.date(2001, 1, 2),
+                "btime": datetime.time(19, 1, 20),
+            },
+            {
+                "name": "Dad",
+                "age": 30,
+                "adult": True,
+                "bdate": datetime.date(1991, 1, 2),
+                "btime": datetime.time(19, 1, 30),
+            },
+            {
+                "name": "Stranger",
+                "age": 40,
+                "adult": True,
+                "bdate": datetime.date(1981, 1, 2),
+                "btime": datetime.time(19, 1, 40),
+            },
+        ]
+        dataframe = pandas.DataFrame(data)
+        for dtype in "date", "time":
+            dataframe["b" + dtype] = pandas.Series(dataframe["b" + dtype], dtype=dtype)
 
         # create client
         creds = _make_credentials()
@@ -5235,6 +5260,8 @@ class TestClient(unittest.TestCase):
             SchemaField("name", "STRING", mode="REQUIRED"),
             SchemaField("age", "INTEGER", mode="REQUIRED"),
             SchemaField("adult", "BOOLEAN", mode="REQUIRED"),
+            SchemaField("bdata", "DATE", mode="REQUIRED"),
+            SchemaField("btime", "TIME", mode="REQUIRED"),
         ]
         table = Table(self.TABLE_REF, schema=schema)
 
@@ -5247,32 +5274,14 @@ class TestClient(unittest.TestCase):
         for chunk_errors in error_info:
             assert chunk_errors == []
 
-        EXPECTED_SENT_DATA = [
-            {
-                "rows": [
-                    {
-                        "insertId": "0",
-                        "json": {"name": "Little One", "age": "10", "adult": "false"},
-                    },
-                    {
-                        "insertId": "1",
-                        "json": {"name": "Young Gun", "age": "20", "adult": "true"},
-                    },
-                    {
-                        "insertId": "2",
-                        "json": {"name": "Dad", "age": "30", "adult": "true"},
-                    },
-                ]
-            },
-            {
-                "rows": [
-                    {
-                        "insertId": "3",
-                        "json": {"name": "Stranger", "age": "40", "adult": "true"},
-                    }
-                ]
-            },
-        ]
+        for row in data:
+            row["age"] = str(row["age"])
+            row["adult"] = str(row["adult"]).lower()
+            row["bdate"] = row["bdate"].isoformat()
+            row["btime"] = row["btime"].isoformat()
+
+        rows = [dict(insertId=str(i), json=row) for i, row in enumerate(data)]
+        EXPECTED_SENT_DATA = [dict(rows=rows[:3]), dict(rows=rows[3:])]
 
         actual_calls = conn.api_request.call_args_list
 

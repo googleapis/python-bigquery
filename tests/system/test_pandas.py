@@ -86,23 +86,25 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
             ("uint32_col", pandas.Series([6, 7, 8], dtype="uint32")),
             (
                 "date_col",
-                pandas.Series([
-                        datetime.date(2010, 1 , 2),
+                pandas.Series(
+                    [
+                        datetime.date(2010, 1, 2),
                         datetime.date(2011, 2, 3),
                         datetime.date(2012, 3, 14),
                     ],
                     dtype="date",
-                    ),
+                ),
             ),
             (
                 "time_col",
-                pandas.Series([
+                pandas.Series(
+                    [
                         datetime.time(3, 44, 50),
                         datetime.time(14, 50, 59),
                         datetime.time(15, 16),
                     ],
                     dtype="time",
-                    ),
+                ),
             ),
         ]
     )
@@ -135,34 +137,38 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
         bigquery.SchemaField("date_col", "DATE"),
         bigquery.SchemaField("time_col", "TIME"),
     )
-    assert (
-        numpy.array(
-            sorted(map(list, bigquery_client.list_rows(table)),
-                   key=lambda r: r[5]),
-            dtype='object')
-        .transpose().tolist()
-        ==
-        [[True, False, True],
-         [datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc),
-          datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
-          datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc)],
-         [datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc),
-          datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
-          datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc)],
-         [1.0, 2.0, 3.0],
-         [4.0, 5.0, 6.0],
-         [-12, -11, -10],
-         [-9, -8, -7],
-         [-6, -5, -4],
-         [-3, -2, -1],
-         [0, 1, 2],
-         [3, 4, 5],
-         [6, 7, 8],
-         [datetime.date(2010, 1, 2),
-          datetime.date(2011, 2, 3),
-          datetime.date(2012, 3, 14)],
-         [datetime.time(3, 44, 50), datetime.time(14, 50, 59), datetime.time(15, 16)]]
-        )
+    assert numpy.array(
+        sorted(map(list, bigquery_client.list_rows(table)), key=lambda r: r[5]),
+        dtype="object",
+    ).transpose().tolist() == [
+        [True, False, True],
+        [
+            datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc),
+        ],
+        [
+            datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc),
+        ],
+        [1.0, 2.0, 3.0],
+        [4.0, 5.0, 6.0],
+        [-12, -11, -10],
+        [-9, -8, -7],
+        [-6, -5, -4],
+        [-3, -2, -1],
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [
+            datetime.date(2010, 1, 2),
+            datetime.date(2011, 2, 3),
+            datetime.date(2012, 3, 14),
+        ],
+        [datetime.time(3, 44, 50), datetime.time(14, 50, 59), datetime.time(15, 16)],
+    ]
+
 
 @pytest.mark.skipif(
     PANDAS_INSTALLED_VERSION < PANDAS_INT64_VERSION,
@@ -657,6 +663,8 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
         SF("int_col", "INTEGER", mode="REQUIRED"),
         SF("bool_col", "BOOLEAN", mode="REQUIRED"),
         SF("string_col", "STRING", mode="NULLABLE"),
+        SF("date_col", "DATE", mode="NULLABLE"),
+        SF("time_col", "TIME", mode="NULLABLE"),
     ]
 
     dataframe = pandas.DataFrame(
@@ -666,30 +674,40 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
                 "bool_col": True,
                 "string_col": "my string",
                 "int_col": 10,
+                "date_col": datetime.date(2021, 1, 1),
+                "time_col": datetime.time(21, 1, 1),
             },
             {
                 "float_col": 2.22,
                 "bool_col": False,
                 "string_col": "another string",
                 "int_col": 20,
+                "date_col": datetime.date(2021, 1, 2),
+                "time_col": datetime.time(21, 1, 2),
             },
             {
                 "float_col": 3.33,
                 "bool_col": False,
                 "string_col": "another string",
                 "int_col": 30,
+                "date_col": datetime.date(2021, 1, 3),
+                "time_col": datetime.time(21, 1, 3),
             },
             {
                 "float_col": 4.44,
                 "bool_col": True,
                 "string_col": "another string",
                 "int_col": 40,
+                "date_col": datetime.date(2021, 1, 4),
+                "time_col": datetime.time(21, 1, 4),
             },
             {
                 "float_col": 5.55,
                 "bool_col": False,
                 "string_col": "another string",
                 "int_col": 50,
+                "date_col": datetime.date(2021, 1, 5),
+                "time_col": datetime.time(21, 1, 5),
             },
             {
                 "float_col": 6.66,
@@ -698,9 +716,15 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
                 # NULL value indicator.
                 "string_col": float("NaN"),
                 "int_col": 60,
+                "date_col": datetime.date(2021, 1, 6),
+                "time_col": datetime.time(21, 1, 6),
             },
         ]
     )
+    for dtype in "date", "time":
+        dataframe[dtype + "_col"] = pandas.Series(
+            dataframe[dtype + "_col"], dtype=dtype
+        )
 
     table_id = f"{bigquery_client.project}.{dataset_id}.test_insert_rows_from_dataframe"
     table_arg = bigquery.Table(table_id, schema=schema)

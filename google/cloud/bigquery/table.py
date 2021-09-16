@@ -1996,6 +1996,13 @@ class RowIterator(HTTPIterator):
             integer_object_nulls=True,
         )
 
+        # TODO: Maybe zero-copy conversion to date with:
+        # pandas.Series(DateArray(s.to_numpy(copy=False), copy=False), copy=False)
+        # Where DateArray is from the BQ dtypes module and s is the
+        # datetime64 series created by arrow (if date_as_object is False).
+        # Note that all those copy=False are currently not needed but are
+        # hygienic :).
+
         for column in dtypes:
             df[column] = pandas.Series(df[column], dtype=dtypes[column])
 

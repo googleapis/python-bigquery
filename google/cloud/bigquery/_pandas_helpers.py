@@ -24,7 +24,8 @@ import warnings
 try:
     import pandas
 except ImportError:  # pragma: NO COVER
-    pandas = date_dtype_name = time_dtype_name = None
+    pandas = None
+    date_dtype_name = time_dtype_name = ''  # Use '' rather than None because pytype
 else:
     import numpy
 

@@ -119,7 +119,7 @@ class Model:
         Read-only.
         """
         value = self._properties.get("creationTime")
-        if value is not None and value != 0:
+        if value is not None:
             # value will be in milliseconds.
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(value)
@@ -132,7 +132,7 @@ class Model:
         Read-only.
         """
         value = value = self._properties.get("lastModifiedTime")
-        if value is not None and value != 0:
+        if value is not None:
             # value will be in milliseconds.
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(value)

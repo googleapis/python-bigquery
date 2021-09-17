@@ -95,3 +95,71 @@ and load it into a new table:
    :dedent: 4
    :start-after: [START bigquery_load_table_dataframe]
    :end-before: [END bigquery_load_table_dataframe]
+
+Pandas date and time arrays used for BigQuery DATE and TIME columns
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When BigQuery DATE [#date]_ and TIME data are loaded into Pandas,
+BigQuery-supplied date and time series are used.
+
+Date and time series support comparison and basic statistics, `min`,
+`max` and `median`.
+
+Date series
+-----------
+
+Date series are created when loading BigQuery DATE data [#date]_, but
+they can also be created directly from `datetime.date` data or date strings:
+
+.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_bqdate_create]
+   :end-before: [END bigquery_bqdate_create]
+
+The data type name for BigQuery-supplied date series is `bqdate`.  You
+need to import `google.cloud.bigquery.dtypes` to cause this to get
+registered with pandas.
+
+You can convert date series to date-time series using `astype("datetime64")`:
+
+.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_bqdate_as_datetime]
+   :end-before: [END bigquery_bqdate_as_datetime]
+
+
+Time series
+-----------
+
+Time series are created when loading BigQuery TIME data, but
+they can also be created directly from `datetime.time` data or time strings:
+
+.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_bqtime_create]
+   :end-before: [END bigquery_bqtime_create]
+
+The data type name for BigQuery-supplied time series is `bqtime`.
+
+You can convert time series to time-delta series using `astype("timedelta64")`:
+
+.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_bqtime_as_timedelta]
+   :end-before: [END bigquery_bqtime_as_timedelta]
+
+This lets you combine dates and times to create date-time data:
+
+.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_combine_bqdate_bqtime]
+   :end-before: [END bigquery_combine_bqdate_bqtime]
+
+.. [#date] Dates before 1678 can't be represented using
+           BigQuery-supplied date series and will be converted as
+           object series.

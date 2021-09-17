@@ -21,32 +21,6 @@ from synthtool.languages import python
 
 common = gcp.CommonTemplates()
 
-default_version = "v2"
-
-for library in s.get_staging_dirs(default_version):
-    s.move(
-        library,
-        excludes=[
-            "*.tar.gz",
-            ".coveragerc",
-            "docs/index.rst",
-            f"docs/bigquery_{library.name}/*_service.rst",
-            f"docs/bigquery_{library.name}/services.rst",
-            "README.rst",
-            "noxfile.py",
-            "setup.py",
-            f"scripts/fixup_bigquery_{library.name}_keywords.py",
-            "google/cloud/bigquery/__init__.py",
-            "google/cloud/bigquery/py.typed",
-            # The library does not use any protos (it implements its own type classes),
-            # thus omit the generated code altogether.
-            f"google/cloud/bigquery_{library.name}/**",
-            f"tests/unit/gapic/bigquery_{library.name}/**",
-        ],
-    )
-
-s.remove_staging_dirs()
-
 # ----------------------------------------------------------------------------
 # Add templated files
 # ----------------------------------------------------------------------------

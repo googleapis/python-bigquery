@@ -21,7 +21,6 @@ import datetime
 from typing import Any, Dict, Optional, Sequence, Union
 
 import google.cloud._helpers
-from google.api_core import datetime_helpers
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
@@ -261,19 +260,8 @@ class Model:
             Model parsed from ``resource``.
         """
         this = cls(None)
-
         resource = copy.deepcopy(resource)
         this._properties = resource
-
-        # Convert from millis-from-epoch to timestamp well-known type.
-        # TODO: Remove this hack once CL 238585470 hits prod.
-        for training_run in resource.get("trainingRuns", ()):
-            start_time = training_run.get("startTime")
-            if not start_time or "-" in start_time:  # Already right format?
-                continue
-            start_time = datetime_helpers.from_microseconds(1e3 * float(start_time))
-            training_run["startTime"] = datetime_helpers.to_rfc3339(start_time)
-
         return this
 
     def _build_resource(self, filter_fields):

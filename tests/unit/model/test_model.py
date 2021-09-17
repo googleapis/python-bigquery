@@ -94,9 +94,9 @@ def test_from_api_repr(target_class):
             },
             {
                 "trainingOptions": {"initialLearnRate": 0.25},
-                # Allow milliseconds since epoch format.
-                # TODO: Remove this hack once CL 238585470 hits prod.
-                "startTime": str(google.cloud._helpers._millis(expiration_time)),
+                "startTime": str(
+                    google.cloud._helpers._datetime_to_rfc3339(expiration_time)
+                ),
             },
         ],
         "featureColumns": [],

@@ -30,6 +30,7 @@ from pandas.core.dtypes.common import is_dtype_equal, is_list_like, pandas_dtype
 import pandas.core.dtypes.dtypes
 import pandas.core.dtypes.generic
 import pandas.core.nanops
+import pyarrow
 
 pandas_release = packaging.version.parse(pandas.__version__).release
 
@@ -381,6 +382,11 @@ class TimeArray(_BaseArray):
         else:
             return super().astype(dtype, copy=copy)
 
+    def __arrow_array__(self, type=None):
+        return pyarrow.array(
+            self.to_numpy(), type=type if type is not None else pyarrow.time64("ns"),
+        )
+
 
 @pandas.core.dtypes.dtypes.register_extension_dtype
 class DateDtype(_BaseDtype):
@@ -435,3 +441,8 @@ class DateArray(_BaseArray):
             return self._ndarray.astype(dtype, copy=copy)
 
         return super().astype(dtype, copy=copy)
+
+    def __arrow_array__(self, type=None):
+        return pyarrow.array(
+            self._ndarray, type=type if type is not None else pyarrow.date32(),
+        )

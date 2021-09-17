@@ -25,7 +25,7 @@ try:
     import pandas
 except ImportError:  # pragma: NO COVER
     pandas = None
-    date_dtype_name = time_dtype_name = ''  # Use '' rather than None because pytype
+    date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 else:
     import numpy
 
@@ -310,7 +310,7 @@ def bq_to_arrow_array(series, bq_field):
         return pyarrow.ListArray.from_pandas(series, type=arrow_type)
     if field_type_upper in schema._STRUCT_TYPES:
         return pyarrow.StructArray.from_pandas(series, type=arrow_type)
-    return pyarrow.Array.from_pandas(series.to_numpy(), type=arrow_type)
+    return pyarrow.Array.from_pandas(series, type=arrow_type)
 
 
 def get_column_or_index(dataframe, name):

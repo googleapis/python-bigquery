@@ -551,3 +551,58 @@ def test_min_max_median(dtype):
             if dtype == "time"
             else datetime.date(2021, 2, 2)
         )
+
+
+def test_date_add():
+    dates = _cls("date")(SAMPLE_VALUES["date"])
+    times = _cls("time")(SAMPLE_VALUES["time"])
+    expect = dates.astype("datetime64") + times.astype("timedelta64")
+
+    assert np.array_equal(dates + times, expect)
+    assert np.array_equal(times + dates, expect)
+
+    with pytest.raises(TypeError):
+        dates + times.astype("timedelta64")
+    with pytest.raises(TypeError):
+        dates + 42
+
+    # When these are in series, we get handling of differing lengths
+    # and date offsets for free:
+    dates = pd.Series(dates)
+    times = pd.Series(times)
+    expect = dates.astype("datetime64") + times.astype("timedelta64")[:2]
+    assert np.array_equal(dates + times[:2], expect, equal_nan=True)
+    assert np.array_equal(times[:2] + dates, expect, equal_nan=True)
+
+    do = pd.Series([pd.DateOffset(days=i) for i in range(4)])
+    expect = dates.astype("object") + do
+    assert np.array_equal(dates + do, expect)
+    assert np.array_equal(do + dates, expect)
+
+
+def test_date_sub():
+    dates = _cls("date")(SAMPLE_VALUES["date"])
+    dates2 = _cls("date")(
+        (
+            datetime.date(2021, 1, 2),
+            datetime.date(2021, 1, 3),
+            datetime.date(2021, 1, 4),
+            datetime.date(2021, 1, 5),
+        )
+    )
+    expect = dates.astype("datetime64") - dates2.astype("datetime64")
+    assert np.array_equal(dates - dates2, expect)
+
+    with pytest.raises(TypeError):
+        dates - 42
+
+    # When these are in series, we get handling of differing lengths
+    # and date offsets for free:
+    dates = pd.Series(dates)
+    dates2 = pd.Series(dates2)
+    expect = dates.astype("datetime64") - dates2.astype("datetime64")[:2]
+    assert np.array_equal(dates - dates2[:2], expect, equal_nan=True)
+
+    do = pd.Series([pd.DateOffset(days=i) for i in range(4)])
+    expect = dates.astype("object") - do
+    assert np.array_equal(dates - do, expect)

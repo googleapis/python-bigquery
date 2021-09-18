@@ -129,6 +129,21 @@ You can convert date series to date-time series using `astype("datetime64")`:
    :start-after: [START bigquery_bqdate_as_datetime]
    :end-before: [END bigquery_bqdate_as_datetime]
 
+You can subtract date series to get timedelta64 series:
+
+.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_bqdate_sub]
+   :end-before: [END bigquery_bqdate_sub]
+
+You can also add and subtract Pandas date offsets:
+
+.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_bqdate_do]
+   :end-before: [END bigquery_bqdate_do]
 
 Time series
 -----------
@@ -153,6 +168,14 @@ You can convert time series to time-delta series using `astype("timedelta64")`:
    :end-before: [END bigquery_bqtime_as_timedelta]
 
 This lets you combine dates and times to create date-time data:
+
+.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
+   :language: python
+   :dedent: 4
+   :start-after: [START bigquery_combine_bqdate_bqtime]
+   :end-before: [END bigquery_combine_bqdate_bqtime]
+
+But you can also add dates and times directly:
 
 .. literalinclude:: ../samples/snippets/pandas_date_and_time.py
    :language: python

@@ -31,6 +31,19 @@ def pandas_date_and_time():
     datetimes = dates.astype("datetime64")
 
     # [END bigquery_bqdate_as_datetime]
+    # [START bigquery_bqdate_sub]
+
+    dates2 = pd.Series(['2021-1-1', '2021-1-2'], dtype='bqdate')
+    diffs = dates - dates2
+
+    # [END bigquery_bqdate_sub]
+    # [START bigquery_bqdate_do]
+
+    do = pd.Series([pd.DateOffset(days=1)] * len(dates))
+    after = dates + do
+    before = dates - do
+
+    # [END bigquery_bqdate_do]
     # [START bigquery_bqtime_create]
 
     times = pd.Series(
@@ -48,6 +61,24 @@ def pandas_date_and_time():
     combined = datetimes + timedeltas
 
     # [END bigquery_combine_bqdate_bqtime]
+    combined0 = combined
+    # [START bigquery_combine2_bqdate_bqtime]
+
+    combined = dates + times
+
+    # [END bigquery_combine_bqdate_bqtime]
     # fmt: on
 
-    return dates, datetimes, times, timedeltas, combined
+    return (
+        dates,
+        datetimes,
+        dates2,
+        diffs,
+        do,
+        after,
+        before,
+        times,
+        timedeltas,
+        combined,
+        combined0,
+    )

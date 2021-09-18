@@ -82,6 +82,8 @@ class OpsMixin:
     def __ge__(self, other):
         return self._cmp_method(other, operator.ge)
 
+    __add__ = __radd__ = __sub__ = lambda self, other: NotImplemented
+
 
 @import_default("pandas.core.arrays._mixins", pandas_release < (1, 3))
 class NDArrayBackedExtensionArray(pandas.core.arrays.base.ExtensionArray):
@@ -446,3 +448,16 @@ class DateArray(_BaseArray):
         return pyarrow.array(
             self._ndarray, type=type if type is not None else pyarrow.date32(),
         )
+
+    def __add__(self, other):
+        if isinstance(other, TimeArray):
+            return (other._ndarray - other._npepoch) + self._ndarray
+        return super().__add__(other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        if isinstance(other, self.__class__):
+            return self._ndarray - other._ndarray
+        return super().__sub__(other)

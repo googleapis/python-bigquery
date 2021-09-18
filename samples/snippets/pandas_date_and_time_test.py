@@ -14,16 +14,36 @@
 
 import datetime
 
+import numpy as np
 from pandas import Timestamp
 
 
 def test_pandas_date_and_time():
     from pandas_date_and_time import pandas_date_and_time
 
-    dates, _, times, _, combined = pandas_date_and_time()
+    (
+        dates,
+        _,
+        dates2,
+        diffs,
+        do,
+        after,
+        before,
+        times,
+        _,
+        combined,
+        combined0,
+    ) = pandas_date_and_time()
 
     assert str(dates.dtype) == "bqdate"
     assert list(dates) == [datetime.date(2021, 9, 17), datetime.date(2021, 9, 18)]
+
+    assert np.array_equal(
+        diffs, dates.astype("datetime64") - dates2.astype("datetime64"),
+    )
+
+    assert np.array_equal(after, dates.astype("object") + do)
+    assert np.array_equal(before, dates.astype("object") - do)
 
     assert str(times.dtype) == "bqtime"
     assert list(times) == [
@@ -31,8 +51,9 @@ def test_pandas_date_and_time():
         datetime.time(12, 0, 0, 600000),
     ]
 
-    assert str(combined.dtype) == "datetime64[ns]"
-    assert list(combined) == [
-        Timestamp("2021-09-17 01:02:03.456789"),
-        Timestamp("2021-09-18 12:00:00.600000"),
-    ]
+    for c in combined0, combined:
+        assert str(c.dtype) == "datetime64[ns]"
+        assert list(c) == [
+            Timestamp("2021-09-17 01:02:03.456789"),
+            Timestamp("2021-09-18 12:00:00.600000"),
+        ]

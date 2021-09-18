@@ -180,8 +180,8 @@ But you can also add dates and times directly:
 .. literalinclude:: ../samples/snippets/pandas_date_and_time.py
    :language: python
    :dedent: 4
-   :start-after: [START bigquery_combine_bqdate_bqtime]
-   :end-before: [END bigquery_combine_bqdate_bqtime]
+   :start-after: [START bigquery_combine2_bqdate_bqtime]
+   :end-before: [END bigquery_combine2_bqdate_bqtime]
 
 .. [#date] Dates before 1678 can't be represented using
            BigQuery-supplied date series and will be converted as

@@ -28,6 +28,8 @@ try:
     import pandas
 except ImportError:  # pragma: NO COVER
     pandas = None
+else:
+    from .dtypes import DateArray, date_dtype_name
 
 import pyarrow
 
@@ -1993,20 +1995,16 @@ class RowIterator(HTTPIterator):
         )
 
         df = record_batch.to_pandas(
-            date_as_object=True,  # Do conversion in pandas
+            date_as_object=date_as_object,
             timestamp_as_object=timestamp_as_object,
             integer_object_nulls=True,
         )
 
-        # TODO: Maybe zero-copy conversion to date with:
-        # pandas.Series(DateArray(s.to_numpy(copy=False), copy=False), copy=False)
-        # Where DateArray is from the BQ dtypes module and s is the
-        # datetime64 series created by arrow (if date_as_object is False).
-        # Note that all those copy=False are currently not needed but are
-        # hygienic :).
-
         for column in dtypes:
-            df[column] = pandas.Series(df[column], dtype=dtypes[column])
+            data = df[column]
+            if dtypes[column] == date_dtype_name:
+                data = DateArray(data.to_numpy(copy=False), copy=False)
+            df[column] = pandas.Series(data, dtype=dtypes[column], copy=False)
 
         if geography_as_object:
             for field in self.schema:

@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 def pandas_date_and_time():
     # fmt: off
     # [START bigquery_bqdate_create]
 
     import datetime
     import pandas as pd
-    import google.cloud.bigquery.dtypes
+    import google.cloud.bigquery.dtypes  # noqa import to register dtypes
 
     dates = pd.Series(
         [datetime.date(2021, 9, 17), '2021-9-18'],

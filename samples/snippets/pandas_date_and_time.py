@@ -66,7 +66,7 @@ def pandas_date_and_time():
 
     combined = dates + times
 
-    # [END bigquery_combine_bqdate_bqtime]
+    # [END bigquery_combine2_bqdate_bqtime]
     # fmt: on
 
     return (

@@ -450,14 +450,22 @@ class DateArray(_BaseArray):
         )
 
     def __add__(self, other):
+        if isinstance(other, pandas.DateOffset):
+            return self.astype("object") + other
+
         if isinstance(other, TimeArray):
             return (other._ndarray - other._npepoch) + self._ndarray
+
         return super().__add__(other)
 
     def __radd__(self, other):
         return self.__add__(other)
 
     def __sub__(self, other):
+        if isinstance(other, pandas.DateOffset):
+            return self.astype("object") - other
+
         if isinstance(other, self.__class__):
             return self._ndarray - other._ndarray
+
         return super().__sub__(other)

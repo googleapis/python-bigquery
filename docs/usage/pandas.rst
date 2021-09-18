@@ -137,7 +137,7 @@ You can subtract date series to get timedelta64 series:
    :start-after: [START bigquery_bqdate_sub]
    :end-before: [END bigquery_bqdate_sub]
 
-You can also add and subtract Pandas date offsets:
+You can also add and subtract Pandas date offsets, either as scalars or as arrays:
 
 .. literalinclude:: ../samples/snippets/pandas_date_and_time.py
    :language: python

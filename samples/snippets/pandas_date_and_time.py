@@ -39,7 +39,7 @@ def pandas_date_and_time():
     # [END bigquery_bqdate_sub]
     # [START bigquery_bqdate_do]
 
-    do = pd.Series([pd.DateOffset(days=1)] * len(dates))
+    do = pd.DateOffset(days=1)
     after = dates + do
     before = dates - do
 

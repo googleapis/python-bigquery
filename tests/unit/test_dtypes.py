@@ -561,6 +561,12 @@ def test_date_add():
     assert np.array_equal(dates + times, expect)
     assert np.array_equal(times + dates, expect)
 
+    do = pd.DateOffset(days=1)
+    expect = dates.astype("object") + do
+    assert np.array_equal(dates + do, expect)
+    if pandas_release >= (1, 1):
+        assert np.array_equal(do + dates, expect)
+
     with pytest.raises(TypeError):
         dates + times.astype("timedelta64")
     with pytest.raises(TypeError):
@@ -592,6 +598,10 @@ def test_date_sub():
     )
     expect = dates.astype("datetime64") - dates2.astype("datetime64")
     assert np.array_equal(dates - dates2, expect)
+
+    do = pd.DateOffset(days=1)
+    expect = dates.astype("object") - do
+    assert np.array_equal(dates - do, expect)
 
     with pytest.raises(TypeError):
         dates - 42

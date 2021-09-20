@@ -52,6 +52,10 @@ s.move(
     ],
 )
 
+# Remove unneeded intersphinx links, the library does not use any proto-generated code.
+s.replace("docs/conf.py", r'\s+"(proto-plus|protobuf)":.*$', "")
+
+
 # ----------------------------------------------------------------------------
 # Samples templates
 # ----------------------------------------------------------------------------

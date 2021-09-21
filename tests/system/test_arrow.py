@@ -23,8 +23,8 @@ from google.cloud.bigquery import enums
 
 
 pyarrow = pytest.importorskip(
-    "pyarrow", minversion="3.0.0"
-)  # Needs decimal256 for BIGNUMERIC columns.
+    "pyarrow", minversion="4.0.0"
+)  # Needs `use_compliant_nested_type` for `load_table_from_dataframe`.
 
 
 @pytest.mark.parametrize(

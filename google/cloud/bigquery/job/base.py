@@ -359,7 +359,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         Since a scripting query job can execute multiple transactions, this
         property is only expected on child jobs. Use the
-        :func:`google.cloud.bigquery.client.Client.list_jobs` method with the
+        :meth:`google.cloud.bigquery.client.Client.list_jobs` method with the
         ``parent_job`` parameter to iterate over child jobs.
 
         .. versionadded:: 2.24.0

@@ -530,7 +530,13 @@ def dataframe_to_arrow(dataframe, bq_schema):
     return pyarrow.Table.from_arrays(arrow_arrays, names=arrow_names)
 
 
-def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SNAPPY"):
+def dataframe_to_parquet(
+    dataframe,
+    bq_schema,
+    filepath,
+    parquet_compression="SNAPPY",
+    parquet_use_compliant_nested_type=True,
+):
     """Write dataframe as a Parquet file, according to the desired BQ schema.
 
     This function requires the :mod:`pyarrow` package. Arrow is used as an
@@ -551,6 +557,11 @@ def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SN
             The compression codec to use by the the ``pyarrow.parquet.write_table``
             serializing method. Defaults to "SNAPPY".
             https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+        parquet_use_compliant_nested_type (bool):
+            Whether the ``pyarrow.parquet.write_table`` serializing method should write
+            compliant Parquet nested type (lists). Defaults to ``True``.
+            https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#nested-types
+            https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
     """
     pyarrow = _helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
 
@@ -558,7 +569,12 @@ def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SN
 
     bq_schema = schema._to_schema_fields(bq_schema)
     arrow_table = dataframe_to_arrow(dataframe, bq_schema)
-    pyarrow.parquet.write_table(arrow_table, filepath, compression=parquet_compression)
+    pyarrow.parquet.write_table(
+        arrow_table,
+        filepath,
+        compression=parquet_compression,
+        use_compliant_nested_type=parquet_use_compliant_nested_type,
+    )
 
 
 def _row_iterator_page_to_arrow(page, column_names, arrow_types):

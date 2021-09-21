@@ -2456,6 +2456,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: LoadJobConfig = None,
         parquet_compression: str = "snappy",
+        parquet_use_compliant_nested_type: bool = True,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of a table from a pandas DataFrame.
@@ -2519,18 +2520,34 @@ class Client(ClientWithProject):
                 :attr:`~google.cloud.bigquery.job.SourceFormat.PARQUET` are
                 supported.
             parquet_compression (Optional[str]):
-                 [Beta] The compression method to use if intermittently
-                 serializing ``dataframe`` to a parquet file.
+                [Beta] The compression method to use if intermittently
+                serializing ``dataframe`` to a parquet file.
 
-                 The argument is directly passed as the ``compression``
-                 argument to the underlying ``pyarrow.parquet.write_table()``
-                 method (the default value "snappy" gets converted to uppercase).
-                 https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+                The argument is directly passed as the ``compression``
+                argument to the underlying ``pyarrow.parquet.write_table()``
+                method (the default value "snappy" gets converted to uppercase).
+                https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
 
-                 If the job config schema is missing, the argument is directly
-                 passed as the ``compression`` argument to the underlying
-                 ``DataFrame.to_parquet()`` method.
-                 https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
+                If the job config schema is missing, the argument is directly
+                passed as the ``compression`` argument to the underlying
+                ``DataFrame.to_parquet()`` method.
+                https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
+            parquet_use_compliant_nested_type (bool):
+                Whether the ``pyarrow.parquet.write_table`` serializing method should write
+                compliant Parquet nested type (lists). Defaults to ``True``.
+
+                The argument is directly passed as the ``use_compliant_nested_type``
+                argument to the underlying ``pyarrow.parquet.write_table()``
+                method.
+                https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+
+                If the job config schema is missing, the argument is directly
+                passed as an additonal ``kwarg`` argument to the underlying
+                ``DataFrame.to_parquet()`` method.
+                https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
+
+                This argument is only present to allow for backwards compatibility with
+                tables created using an old version of this method.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
@@ -2647,9 +2664,15 @@ class Client(ClientWithProject):
                         job_config.schema,
                         tmppath,
                         parquet_compression=parquet_compression,
+                        parquet_use_compliant_nested_type=parquet_use_compliant_nested_type,
                     )
                 else:
-                    dataframe.to_parquet(tmppath, compression=parquet_compression)
+                    dataframe.to_parquet(
+                        tmppath,
+                        engine="pyarrow",
+                        compression=parquet_compression,
+                        use_compliant_nested_type=parquet_use_compliant_nested_type,
+                    )
 
             else:
 

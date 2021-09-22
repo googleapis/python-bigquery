@@ -444,7 +444,14 @@ def augment_schema(dataframe, current_bq_schema):
             continue
 
         arrow_table = pyarrow.array(dataframe[field.name])
-        detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
+
+        if arrow_table.type.id == 25:
+            # `pyarrow.ListType`
+            detected_mode = "REPEATED"
+            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.values.type.id)
+        else:
+            detected_mode = field.mode
+            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
 
         if detected_type is None:
             unknown_type_fields.append(field)
@@ -453,7 +460,7 @@ def augment_schema(dataframe, current_bq_schema):
         new_field = schema.SchemaField(
             name=field.name,
             field_type=detected_type,
-            mode=field.mode,
+            mode=detected_mode,
             description=field.description,
             fields=field.fields,
         )

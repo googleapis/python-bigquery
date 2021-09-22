@@ -7309,6 +7309,124 @@ class TestClientUpload(object):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_array_fields(self):
+        """Test that a DataFrame with array columns can be uploaded correctly.
+
+        See: https://github.com/googleapis/python-bigquery/issues/19
+        """
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+
+        records = [(3.14, [1, 2])]
+        dataframe = pandas.DataFrame(
+            data=records, columns=["float_column", "array_column"]
+        )
+
+        schema = [
+            SchemaField("float_column", "FLOAT"),
+            SchemaField("array_column", "INTEGER", mode="REPEATED",),
+        ]
+        job_config = job.LoadJobConfig(schema=schema)
+
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+
+        with load_patch as load_table_from_file, get_table_patch:
+            client.load_table_from_dataframe(
+                dataframe,
+                self.TABLE_REF,
+                job_config=job_config,
+                location=self.LOCATION,
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert sent_config.schema == schema
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_array_fields_w_auto_schema(self):
+        """Test that a DataFrame with array columns can be uploaded correctly.
+
+        See: https://github.com/googleapis/python-bigquery/issues/19
+        """
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+
+        records = [(3.14, [1, 2])]
+        dataframe = pandas.DataFrame(
+            data=records, columns=["float_column", "array_column"]
+        )
+
+        expected_schema = [
+            SchemaField("float_column", "FLOAT"),
+            SchemaField("array_column", "INT64", mode="REPEATED",),
+        ]
+
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+
+        with load_patch as load_table_from_file, get_table_patch:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, location=self.LOCATION,
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert sent_config.schema == expected_schema
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_partial_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job

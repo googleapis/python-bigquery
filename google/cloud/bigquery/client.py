@@ -103,6 +103,7 @@ from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
+from google.cloud.bigquery.format_options import ParquetOptions
 
 
 _DEFAULT_CHUNKSIZE = 100 * 1024 * 1024  # 100 MB
@@ -2579,6 +2580,13 @@ class Client(ClientWithProject):
         if job_config.source_format is None:
             # default value
             job_config.source_format = job.SourceFormat.PARQUET
+
+        if job_config.parquet_options is None:
+            parquet_options = ParquetOptions()
+            # default value
+            parquet_options.enable_list_inference = True
+            job_config.parquet_options = parquet_options
+
         if job_config.source_format not in supported_formats:
             raise ValueError(
                 "Got unexpected source_format: '{}'. Currently, only PARQUET and CSV are supported".format(

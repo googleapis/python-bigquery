@@ -569,18 +569,23 @@ def dataframe_to_parquet(
             compliant Parquet nested type (lists). Defaults to ``True``.
             https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#nested-types
             https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+
+            This argument is ignored for ``pyarrow`` versions earlier than ``4.0.0``.
     """
     pyarrow = _helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
 
     import pyarrow.parquet
 
+    kwargs = (
+        {"use_compliant_nested_type": parquet_use_compliant_nested_type}
+        if _helpers._PYARROW_VERSION.major >= 4
+        else {}
+    )
+
     bq_schema = schema._to_schema_fields(bq_schema)
     arrow_table = dataframe_to_arrow(dataframe, bq_schema)
     pyarrow.parquet.write_table(
-        arrow_table,
-        filepath,
-        compression=parquet_compression,
-        use_compliant_nested_type=parquet_use_compliant_nested_type,
+        arrow_table, filepath, compression=parquet_compression, **kwargs,
     )
 
 

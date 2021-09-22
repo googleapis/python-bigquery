@@ -2547,6 +2547,8 @@ class Client(ClientWithProject):
                 ``DataFrame.to_parquet()`` method.
                 https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
 
+                This argument is ignored for ``pyarrow`` versions before ``4.0.0``.
+
                 This argument is only present to allow for backwards compatibility with
                 tables created using an old version of this method.
             timeout (Optional[float]):
@@ -2679,7 +2681,11 @@ class Client(ClientWithProject):
                         tmppath,
                         engine="pyarrow",
                         compression=parquet_compression,
-                        use_compliant_nested_type=parquet_use_compliant_nested_type,
+                        **{
+                            "use_compliant_nested_type": parquet_use_compliant_nested_type
+                        }
+                        if _PYARROW_VERSION.major >= 4
+                        else {},
                     )
 
             else:

@@ -33,13 +33,6 @@ from typing import Any, BinaryIO, Dict, Iterable, Optional, Sequence, Tuple, Uni
 import uuid
 import warnings
 
-try:
-    import pyarrow
-
-    _PYARROW_VERSION = packaging.version.parse(pyarrow.__version__)
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload
 from google.resumable_media.requests import ResumableUpload
@@ -104,6 +97,9 @@ from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
 from google.cloud.bigquery.format_options import ParquetOptions
+from google.cloud.bigquery import _helpers
+
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
 
 _DEFAULT_CHUNKSIZE = 100 * 1024 * 1024  # 100 MB
@@ -129,8 +125,6 @@ _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
 # https://github.com/googleapis/python-bigquery/issues/438
 _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
-# https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
-_PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
 
 TIMEOUT_HEADER = "X-Server-Timeout"
 
@@ -2655,12 +2649,12 @@ class Client(ClientWithProject):
         try:
 
             if job_config.source_format == job.SourceFormat.PARQUET:
-                if _PYARROW_VERSION in _PYARROW_BAD_VERSIONS:
+                if _helpers.PYARROW_VERSIONS.is_bad_version:
                     msg = (
                         "Loading dataframe data in PARQUET format with pyarrow "
-                        f"{_PYARROW_VERSION} can result in data corruption. It is "
-                        "therefore *strongly* advised to use a different pyarrow "
-                        "version or a different source format. "
+                        f"{_helpers.PYARROW_VERSIONS.installed_version} can result in data "
+                        "corruption. It is therefore *strongly* advised to use a "
+                        "different pyarrow version or a different source format. "
                         "See: https://github.com/googleapis/python-bigquery/issues/781"
                     )
                     warnings.warn(msg, category=RuntimeWarning)
@@ -2684,7 +2678,7 @@ class Client(ClientWithProject):
                         **{
                             "use_compliant_nested_type": parquet_use_compliant_nested_type
                         }
-                        if _PYARROW_VERSION.major >= 4
+                        if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
                         else {},
                     )
 

@@ -396,7 +396,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     # column, but it was not found.
     if bq_schema_unused:
         raise ValueError(
-            u"bq_schema contains fields not present in dataframe: {}".format(
+            "bq_schema contains fields not present in dataframe: {}".format(
                 bq_schema_unused
             )
         )
@@ -405,7 +405,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     # pyarrow, if available.
     if unknown_type_fields:
         if not pyarrow:
-            msg = u"Could not determine the type of columns: {}".format(
+            msg = "Could not determine the type of columns: {}".format(
                 ", ".join(field.name for field in unknown_type_fields)
             )
             warnings.warn(msg)
@@ -468,7 +468,7 @@ def augment_schema(dataframe, current_bq_schema):
 
     if unknown_type_fields:
         warnings.warn(
-            u"Pyarrow could not determine the type of columns: {}.".format(
+            "Pyarrow could not determine the type of columns: {}.".format(
                 ", ".join(field.name for field in unknown_type_fields)
             )
         )
@@ -507,7 +507,7 @@ def dataframe_to_arrow(dataframe, bq_schema):
     extra_fields = bq_field_names - column_and_index_names
     if extra_fields:
         raise ValueError(
-            u"bq_schema contains fields not present in dataframe: {}".format(
+            "bq_schema contains fields not present in dataframe: {}".format(
                 extra_fields
             )
         )
@@ -517,7 +517,7 @@ def dataframe_to_arrow(dataframe, bq_schema):
     missing_fields = column_names - bq_field_names
     if missing_fields:
         raise ValueError(
-            u"bq_schema is missing fields from dataframe: {}".format(missing_fields)
+            "bq_schema is missing fields from dataframe: {}".format(missing_fields)
         )
 
     arrow_arrays = []
@@ -578,7 +578,7 @@ def dataframe_to_parquet(
 
     kwargs = (
         {"use_compliant_nested_type": parquet_use_compliant_nested_type}
-        if _helpers._PYARROW_VERSION.major >= 4
+        if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
         else {}
     )
 

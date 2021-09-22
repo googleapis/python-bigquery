@@ -7672,9 +7672,13 @@ class TestClientUpload(object):
         records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
         dataframe = pandas.DataFrame(records)
 
+        _helpers_mock = mock.MagicMock()
+        _helpers_mock.PYARROW_VERSIONS = mock.MagicMock()
+        _helpers_mock.PYARROW_VERSIONS.installed_version = packaging.version.parse(
+            "2.0.0"
+        )  # A known bad version of pyarrow.
         pyarrow_version_patch = mock.patch(
-            "google.cloud.bigquery.client._PYARROW_VERSION",
-            packaging.version.parse("2.0.0"),  # A known bad version of pyarrow.
+            "google.cloud.bigquery.client._helpers", _helpers_mock
         )
         get_table_patch = mock.patch(
             "google.cloud.bigquery.client.Client.get_table",

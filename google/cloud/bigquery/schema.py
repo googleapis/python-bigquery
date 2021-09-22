@@ -15,7 +15,7 @@
 """Schemas for BigQuery tables / queries."""
 
 import collections
-from typing import Optional
+from typing import Optional, Tuple
 
 from google.cloud.bigquery_v2 import types
 
@@ -81,15 +81,15 @@ class SchemaField(object):
 
     def __init__(
         self,
-        name,
-        field_type,
-        mode="NULLABLE",
-        description=_DEFAULT_VALUE,
-        fields=(),
-        policy_tags=None,
-        precision=_DEFAULT_VALUE,
-        scale=_DEFAULT_VALUE,
-        max_length=_DEFAULT_VALUE,
+        name: str,
+        field_type: str,
+        mode: Optional[str] = "NULLABLE",
+        description: Optional[str] = _DEFAULT_VALUE,
+        fields: Optional[Tuple["SchemaField"]] = (),
+        policy_tags: Optional["PolicyTagList"] = _DEFAULT_VALUE,
+        precision: Optional[int] = _DEFAULT_VALUE,
+        scale: Optional[int] = _DEFAULT_VALUE,
+        max_length: Optional[int] = _DEFAULT_VALUE,
     ):
         self._properties = {
             "name": name,
@@ -105,27 +105,11 @@ class SchemaField(object):
             self._properties["scale"] = scale
         if max_length is not _DEFAULT_VALUE:
             self._properties["maxLength"] = max_length
+        if policy_tags is not _DEFAULT_VALUE:
+            self._properties["policyTags"] = (
+                policy_tags.to_api_repr() if policy_tags is not None else None
+            )
         self._fields = tuple(fields)
-
-        self._policy_tags = self._determine_policy_tags(field_type, policy_tags)
-
-    @staticmethod
-    def _determine_policy_tags(
-        field_type: str, given_policy_tags: Optional["PolicyTagList"]
-    ) -> Optional["PolicyTagList"]:
-        """Return the given policy tags, or their suitable representation if `None`.
-
-        Args:
-            field_type: The type of the schema field.
-            given_policy_tags: The policy tags to maybe ajdust.
-        """
-        if given_policy_tags is not None:
-            return given_policy_tags
-
-        if field_type is not None and field_type.upper() in _STRUCT_TYPES:
-            return None
-
-        return PolicyTagList()
 
     @staticmethod
     def __get_int(api_repr, name):
@@ -152,10 +136,10 @@ class SchemaField(object):
         mode = api_repr.get("mode", "NULLABLE")
         description = api_repr.get("description", _DEFAULT_VALUE)
         fields = api_repr.get("fields", ())
+        policy_tags = api_repr.get("policyTags", _DEFAULT_VALUE)
 
-        policy_tags = cls._determine_policy_tags(
-            field_type, PolicyTagList.from_api_repr(api_repr.get("policyTags"))
-        )
+        if policy_tags is not None and policy_tags is not _DEFAULT_VALUE:
+            policy_tags = PolicyTagList.from_api_repr(api_repr.get("policyTags"))
 
         return cls(
             field_type=field_type,
@@ -230,7 +214,8 @@ class SchemaField(object):
         """Optional[google.cloud.bigquery.schema.PolicyTagList]: Policy tag list
         definition for this field.
         """
-        return self._policy_tags
+        resource = self._properties.get("policyTags")
+        return PolicyTagList.from_api_repr(resource) if resource is not None else None
 
     def to_api_repr(self) -> dict:
         """Return a dictionary representing this schema field.
@@ -244,10 +229,6 @@ class SchemaField(object):
         # add this to the serialized representation.
         if self.field_type.upper() in _STRUCT_TYPES:
             answer["fields"] = [f.to_api_repr() for f in self.fields]
-        else:
-            # Explicitly include policy tag definition (we must not do it for RECORD
-            # fields, because those are not leaf fields).
-            answer["policyTags"] = self.policy_tags.to_api_repr()
 
         # Done; return the serialized dictionary.
         return answer
@@ -272,7 +253,7 @@ class SchemaField(object):
                     field_type = f"{field_type}({self.precision})"
 
         policy_tags = (
-            () if self._policy_tags is None else tuple(sorted(self._policy_tags.names))
+            () if self.policy_tags is None else tuple(sorted(self.policy_tags.names))
         )
 
         return (

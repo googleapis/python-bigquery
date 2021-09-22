@@ -673,7 +673,7 @@ class TestBigQuery(unittest.TestCase):
             mode=old_field.mode,
             description=None,
             fields=old_field.fields,
-            policy_tags=None,
+            policy_tags=PolicyTagList(),
         )
 
         table.schema = new_schema

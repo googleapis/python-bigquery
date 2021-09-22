@@ -680,7 +680,8 @@ class TestBigQuery(unittest.TestCase):
         updated_table = Config.CLIENT.update_table(table, ["schema"])
 
         self.assertFalse(updated_table.schema[1].description)  # Empty string or None.
-        self.assertEqual(updated_table.schema[1].policy_tags.names, ())
+        # policyTags key expected to be missing from response.
+        self.assertIsNone(updated_table.schema[1].policy_tags)
 
     def test_update_table_clustering_configuration(self):
         dataset = self.temp_dataset(_make_dataset_id("update_table"))

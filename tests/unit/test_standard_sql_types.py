@@ -75,7 +75,7 @@ class TestStandardSqlDataType:
 
         result = instance.to_api_repr()
 
-        expected = {"typeKind": "ARRAY", "arrayElementType": None}
+        expected = {"typeKind": "ARRAY"}
         assert result == expected
 
     def test_to_api_repr_array_type_w_element_type(self):
@@ -98,7 +98,7 @@ class TestStandardSqlDataType:
 
         result = instance.to_api_repr()
 
-        assert result == {"typeKind": "STRUCT", "structType": None}
+        assert result == {"typeKind": "STRUCT"}
 
     def test_to_api_repr_struct_type_w_field_types(self):
         from google.cloud.bigquery.standard_sql import StandardSqlField

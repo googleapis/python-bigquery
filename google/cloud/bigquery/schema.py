@@ -15,8 +15,7 @@
 """Schemas for BigQuery tables / queries."""
 
 import collections
-from collections.abc import Iterable
-from typing import Union
+from typing import Iterable, Union
 
 from google.cloud.bigquery_v2 import types
 

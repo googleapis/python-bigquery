@@ -168,6 +168,10 @@ class StandardSqlDataType:
 
     __hash__ = None
 
+    def __str__(self):
+        result = f"{self.__class__.__name__}(type_kind={self.type_kind!r}, ...)"
+        return result
+
 
 class StandardSqlField:
     """A field or a column.

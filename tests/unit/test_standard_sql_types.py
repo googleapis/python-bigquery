@@ -275,6 +275,11 @@ class TestStandardSqlDataType:
         )
         assert result == expected
 
+    def test_str(self):
+        instance = self._make_one(type_kind=bigquery.StandardSqlTypeNames.BOOL)
+        bool_type_repr = repr(bigquery.StandardSqlTypeNames.BOOL)
+        assert str(instance) == f"StandardSqlDataType(type_kind={bool_type_repr}, ...)"
+
 
 class TestStandardSqlTableType:
     @staticmethod

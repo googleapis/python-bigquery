@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from google.cloud import bigquery
+from unittest import mock
+
+import pytest
+
+from google.cloud import bigquery as bq
 
 
 class TestStandardSqlDataType:
@@ -27,7 +31,7 @@ class TestStandardSqlDataType:
 
     def test_ctor_default_type_kind(self):
         instance = self._make_one()
-        assert instance.type_kind == bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED
+        assert instance.type_kind == bq.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED
 
     def test_to_api_repr_no_type_set(self):
         instance = self._make_one()
@@ -38,7 +42,7 @@ class TestStandardSqlDataType:
         assert result == {"typeKind": "TYPE_KIND_UNSPECIFIED"}
 
     def test_to_api_repr_scalar_type(self):
-        instance = self._make_one(bigquery.StandardSqlTypeNames.FLOAT64)
+        instance = self._make_one(bq.StandardSqlTypeNames.FLOAT64)
 
         result = instance.to_api_repr()
 
@@ -46,7 +50,7 @@ class TestStandardSqlDataType:
 
     def test_to_api_repr_array_type_element_type_missing(self):
         instance = self._make_one(
-            bigquery.StandardSqlTypeNames.ARRAY, array_element_type=None
+            bq.StandardSqlTypeNames.ARRAY, array_element_type=None
         )
 
         result = instance.to_api_repr()
@@ -55,11 +59,9 @@ class TestStandardSqlDataType:
         assert result == expected
 
     def test_to_api_repr_array_type_w_element_type(self):
-        array_element_type = self._make_one(
-            type_kind=bigquery.StandardSqlTypeNames.BOOL
-        )
+        array_element_type = self._make_one(type_kind=bq.StandardSqlTypeNames.BOOL)
         instance = self._make_one(
-            bigquery.StandardSqlTypeNames.ARRAY, array_element_type=array_element_type
+            bq.StandardSqlTypeNames.ARRAY, array_element_type=array_element_type
         )
 
         result = instance.to_api_repr()
@@ -68,9 +70,7 @@ class TestStandardSqlDataType:
         assert result == expected
 
     def test_to_api_repr_struct_type_field_types_missing(self):
-        instance = self._make_one(
-            bigquery.StandardSqlTypeNames.STRUCT, struct_type=None
-        )
+        instance = self._make_one(bq.StandardSqlTypeNames.STRUCT, struct_type=None)
 
         result = instance.to_api_repr()
 
@@ -81,7 +81,7 @@ class TestStandardSqlDataType:
         from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         StandardSqlDataType = self._get_target_class()
-        TypeNames = bigquery.StandardSqlTypeNames
+        TypeNames = bq.StandardSqlTypeNames
 
         person_type = StandardSqlStructType(
             fields=[
@@ -133,7 +133,7 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource={})
 
         expected = klass(
-            type_kind=bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
+            type_kind=bq.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
             array_element_type=None,
             struct_type=None,
         )
@@ -146,7 +146,7 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=bigquery.StandardSqlTypeNames.DATE,
+            type_kind=bq.StandardSqlTypeNames.DATE,
             array_element_type=None,
             struct_type=None,
         )
@@ -159,8 +159,8 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=bigquery.StandardSqlTypeNames.ARRAY,
-            array_element_type=klass(type_kind=bigquery.StandardSqlTypeNames.BYTES),
+            type_kind=bq.StandardSqlTypeNames.ARRAY,
+            array_element_type=klass(type_kind=bq.StandardSqlTypeNames.BYTES),
             struct_type=None,
         )
         assert result == expected
@@ -172,7 +172,7 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=bigquery.StandardSqlTypeNames.ARRAY,
+            type_kind=bq.StandardSqlTypeNames.ARRAY,
             array_element_type=None,
             struct_type=None,
         )
@@ -183,7 +183,7 @@ class TestStandardSqlDataType:
         from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         klass = self._get_target_class()
-        TypeNames = bigquery.StandardSqlTypeNames
+        TypeNames = bq.StandardSqlTypeNames
 
         resource = {
             "typeKind": "STRUCT",
@@ -239,7 +239,7 @@ class TestStandardSqlDataType:
         result = klass.from_api_repr(resource=resource)
 
         expected = klass(
-            type_kind=bigquery.StandardSqlTypeNames.STRUCT,
+            type_kind=bq.StandardSqlTypeNames.STRUCT,
             array_element_type=None,
             struct_type=None,
         )
@@ -250,7 +250,7 @@ class TestStandardSqlDataType:
         from google.cloud.bigquery.standard_sql import StandardSqlStructType
 
         klass = self._get_target_class()
-        TypeNames = bigquery.StandardSqlTypeNames
+        TypeNames = bq.StandardSqlTypeNames
 
         resource = {
             "typeKind": "STRUCT",
@@ -275,10 +275,196 @@ class TestStandardSqlDataType:
         )
         assert result == expected
 
+    def test__eq__another_type(self):
+        instance = self._make_one()
+
+        class SqlTypeWannabe:
+            pass
+
+        not_a_type = SqlTypeWannabe()
+        not_a_type._properties = instance._properties
+
+        assert instance != not_a_type  # Can't fake it.
+
+    def test__eq__delegates_comparison_to_another_type(self):
+        instance = self._make_one()
+        assert instance == mock.ANY
+
+    def test__eq__similar_instance(self):
+        kwargs = {
+            "type_kind": bq.StandardSqlTypeNames.GEOGRAPHY,
+            "array_element_type": bq.StandardSqlDataType(
+                type_kind=bq.StandardSqlTypeNames.INT64
+            ),
+            "struct_type": bq.StandardSqlStructType(fields=[]),
+        }
+        instance = self._make_one(**kwargs)
+        instance2 = self._make_one(**kwargs)
+        assert instance == instance2
+
+    @pytest.mark.parametrize(
+        ("attr_name", "value", "value2"),
+        (
+            (
+                "type_kind",
+                bq.StandardSqlTypeNames.INT64,
+                bq.StandardSqlTypeNames.FLOAT64,
+            ),
+            (
+                "array_element_type",
+                bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.STRING),
+                bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.BOOL),
+            ),
+            (
+                "struct_type",
+                bq.StandardSqlStructType(fields=[bq.StandardSqlField(name="foo")]),
+                bq.StandardSqlStructType(fields=[bq.StandardSqlField(name="bar")]),
+            ),
+        ),
+    )
+    def test__eq__attribute_differs(self, attr_name, value, value2):
+        instance = self._make_one(**{attr_name: value})
+        instance2 = self._make_one(**{attr_name: value2})
+        assert instance != instance2
+
     def test_str(self):
-        instance = self._make_one(type_kind=bigquery.StandardSqlTypeNames.BOOL)
-        bool_type_repr = repr(bigquery.StandardSqlTypeNames.BOOL)
+        instance = self._make_one(type_kind=bq.StandardSqlTypeNames.BOOL)
+        bool_type_repr = repr(bq.StandardSqlTypeNames.BOOL)
         assert str(instance) == f"StandardSqlDataType(type_kind={bool_type_repr}, ...)"
+
+
+class TestStandardSqlField:
+    # This class only contains minimum tests to cover what other tests don't
+
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.standard_sql import StandardSqlField
+
+        return StandardSqlField
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_name(self):
+        instance = self._make_one(name="foo")
+        assert instance.name == "foo"
+        instance.name = "bar"
+        assert instance.name == "bar"
+
+    def test_type_missing(self):
+        instance = self._make_one(type=None)
+        assert instance.type is None
+
+    def test_type_set_none(self):
+        instance = self._make_one(
+            type=bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.BOOL)
+        )
+        instance.type = None
+        assert instance.type is None
+
+    def test_type_set_not_none(self):
+        instance = self._make_one(type=bq.StandardSqlDataType(type_kind=None))
+        instance.type = bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.INT64)
+        assert instance.type == bq.StandardSqlDataType(
+            type_kind=bq.StandardSqlTypeNames.INT64
+        )
+
+    def test__eq__another_type(self):
+        instance = self._make_one(
+            name="foo",
+            type=bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.BOOL),
+        )
+
+        class FieldWannabe:
+            pass
+
+        not_a_field = FieldWannabe()
+        not_a_field._properties = instance._properties
+
+        assert instance != not_a_field  # Can't fake it.
+
+    def test__eq__delegates_comparison_to_another_type(self):
+        instance = self._make_one(
+            name="foo",
+            type=bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.BOOL),
+        )
+        assert instance == mock.ANY
+
+    def test__eq__similar_instance(self):
+        kwargs = {
+            "name": "foo",
+            "type": bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.INT64),
+        }
+        instance = self._make_one(**kwargs)
+        instance2 = self._make_one(**kwargs)
+        assert instance == instance2
+
+    @pytest.mark.parametrize(
+        ("attr_name", "value", "value2"),
+        (
+            ("name", "foo", "bar",),
+            (
+                "type",
+                bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.INTERVAL),
+                bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.TIME),
+            ),
+        ),
+    )
+    def test__eq__attribute_differs(self, attr_name, value, value2):
+        instance = self._make_one(**{attr_name: value})
+        instance2 = self._make_one(**{attr_name: value2})
+        assert instance != instance2
+
+
+class TestStandardSqlStructType:
+    # This class only contains minimum tests to cover what other tests don't
+
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.standard_sql import StandardSqlStructType
+
+        return StandardSqlStructType
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_fields(self):
+        instance = self._make_one(fields=[])
+        assert instance.fields == []
+
+        new_fields = [bq.StandardSqlField(name="foo"), bq.StandardSqlField(name="bar")]
+        instance.fields = new_fields
+        assert instance.fields == new_fields
+
+    def test__eq__another_type(self):
+        instance = self._make_one(fields=[bq.StandardSqlField(name="foo")])
+
+        class StructTypeWannabe:
+            pass
+
+        not_a_type = StructTypeWannabe()
+        not_a_type._properties = instance._properties
+
+        assert instance != not_a_type  # Can't fake it.
+
+    def test__eq__delegates_comparison_to_another_type(self):
+        instance = self._make_one(fields=[bq.StandardSqlField(name="foo")])
+        assert instance == mock.ANY
+
+    def test__eq__similar_instance(self):
+        kwargs = {
+            "fields": [bq.StandardSqlField(name="foo"), bq.StandardSqlField(name="bar")]
+        }
+        instance = self._make_one(**kwargs)
+        instance2 = self._make_one(**kwargs)
+        assert instance == instance2
+
+    def test__eq__attribute_differs(self):
+        instance = self._make_one(fields=[bq.StandardSqlField(name="foo")])
+        instance2 = self._make_one(
+            fields=[bq.StandardSqlField(name="foo"), bq.StandardSqlField(name="bar")]
+        )
+        assert instance != instance2
 
 
 class TestStandardSqlTableType:
@@ -305,6 +491,17 @@ class TestStandardSqlTableType:
         assert len(instance.columns) == 3
         columns.pop()
         assert len(instance.columns) == 3  # Still the same.
+
+    def test_columns_setter(self):
+        from google.cloud.bigquery.standard_sql import StandardSqlField
+
+        columns = [StandardSqlField("foo")]
+        instance = self._make_one(columns=columns)
+        assert instance.columns == columns
+
+        new_columns = [StandardSqlField(name="bar")]
+        instance.columns = new_columns
+        assert instance.columns == new_columns
 
     def test_to_api_repr_no_columns(self):
         instance = self._make_one(columns=[])
@@ -345,15 +542,47 @@ class TestStandardSqlTableType:
         assert len(result.columns) == 2
 
         expected = StandardSqlField(
-            name=None,
-            type=StandardSqlDataType(type_kind=bigquery.StandardSqlTypeNames.BOOL),
+            name=None, type=StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.BOOL),
         )
         assert result.columns[0] == expected
 
         expected = StandardSqlField(
             name="bar",
             type=StandardSqlDataType(
-                type_kind=bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED
+                type_kind=bq.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED
             ),
         )
         assert result.columns[1] == expected
+
+    def test__eq__another_type(self):
+        instance = self._make_one(columns=[bq.StandardSqlField(name="foo")])
+
+        class TableTypeWannabe:
+            pass
+
+        not_a_type = TableTypeWannabe()
+        not_a_type._properties = instance._properties
+
+        assert instance != not_a_type  # Can't fake it.
+
+    def test__eq__delegates_comparison_to_another_type(self):
+        instance = self._make_one(columns=[bq.StandardSqlField(name="foo")])
+        assert instance == mock.ANY
+
+    def test__eq__similar_instance(self):
+        kwargs = {
+            "columns": [
+                bq.StandardSqlField(name="foo"),
+                bq.StandardSqlField(name="bar"),
+            ]
+        }
+        instance = self._make_one(**kwargs)
+        instance2 = self._make_one(**kwargs)
+        assert instance == instance2
+
+    def test__eq__attribute_differs(self):
+        instance = self._make_one(columns=[bq.StandardSqlField(name="foo")])
+        instance2 = self._make_one(
+            columns=[bq.StandardSqlField(name="foo"), bq.StandardSqlField(name="bar")]
+        )
+        assert instance != instance2

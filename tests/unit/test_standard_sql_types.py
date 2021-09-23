@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 from google.cloud import bigquery
 
 
@@ -26,28 +24,6 @@ class TestStandardSqlDataType:
 
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)
-
-    def test_ctor_w_both_array_element_and_struct_types(self):
-        from google.cloud.bigquery.standard_sql import StandardSqlField
-        from google.cloud.bigquery.standard_sql import StandardSqlStructType
-
-        StandardSqlDataType = self._get_target_class()
-        TypeNames = bigquery.StandardSqlTypeNames
-
-        array_element_type = StandardSqlDataType(TypeNames.INT64)
-        struct_type = StandardSqlStructType(
-            fields=[
-                StandardSqlField("name", StandardSqlDataType(TypeNames.STRING)),
-                StandardSqlField("age", StandardSqlDataType(TypeNames.INT64)),
-            ]
-        )
-
-        with pytest.raises(ValueError, match=r".*mutally exclusive.*"):
-            self._make_one(
-                type_kind=TypeNames.TYPE_KIND_UNSPECIFIED,
-                array_element_type=array_element_type,
-                struct_type=struct_type,
-            )
 
     def test_ctor_default_type_kind(self):
         instance = self._make_one()
@@ -197,11 +173,7 @@ class TestStandardSqlDataType:
 
         expected = klass(
             type_kind=bigquery.StandardSqlTypeNames.ARRAY,
-            array_element_type=klass(
-                type_kind=bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
-                array_element_type=None,
-                struct_type=None,
-            ),
+            array_element_type=None,
             struct_type=None,
         )
         assert result == expected
@@ -261,8 +233,6 @@ class TestStandardSqlDataType:
         assert result == expected
 
     def test_from_api_repr_struct_type_missing_struct_info(self):
-        from google.cloud.bigquery.standard_sql import StandardSqlStructType
-
         klass = self._get_target_class()
         resource = {"typeKind": "STRUCT"}
 
@@ -271,7 +241,7 @@ class TestStandardSqlDataType:
         expected = klass(
             type_kind=bigquery.StandardSqlTypeNames.STRUCT,
             array_element_type=None,
-            struct_type=StandardSqlStructType(fields=[]),
+            struct_type=None,
         )
         assert result == expected
 

@@ -61,11 +61,6 @@ class StandardSqlDataType:
         array_element_type: Optional["StandardSqlDataType"] = None,
         struct_type: Optional["StandardSqlStructType"] = None,
     ):
-        if array_element_type is not None and struct_type is not None:
-            raise ValueError(
-                "array_element_type and struct_type are mutally exclusive."
-            )
-
         self._properties = {}
 
         self.type_kind = type_kind
@@ -83,30 +78,6 @@ class StandardSqlDataType:
 
     @type_kind.setter
     def type_kind(self, value: Optional[StandardSqlTypeNames]):
-        new_instance = "typeKind" not in self._properties
-
-        if not new_instance:
-            current = self._properties.get("typeKind")
-
-            if value == current:
-                return  # Nothing to change.
-
-            if (
-                current == StandardSqlTypeNames.ARRAY
-                and self.array_element_type.type_kind
-                is not StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED
-            ):
-                raise ValueError(
-                    "Cannot change {StandardSqlTypeNames.ARRAY} type_kind, first set "
-                    "array_element_type attribute to None."
-                )
-
-            if current == StandardSqlTypeNames.STRUCT and self.struct_type.fields:
-                raise ValueError(
-                    "Cannot change {StandardSqlTypeNames.STRUCT} type_kind, first set "
-                    "struct_type attribute to None."
-                )
-
         if not value:
             kind = StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED.value
         else:
@@ -116,24 +87,15 @@ class StandardSqlDataType:
     @property
     def array_element_type(self) -> Optional["StandardSqlDataType"]:
         """The type of the array's elements, if type_kind is ARRAY."""
-        result = None
-        if self.type_kind == StandardSqlTypeNames.ARRAY:
-            element_type = self._properties.get("arrayElementType")
-            if element_type is not None:
-                result = StandardSqlDataType.from_api_repr(element_type)
-            else:
-                result = StandardSqlDataType()
+        element_type = self._properties.get("arrayElementType")
 
-        return result
+        if element_type is not None:
+            return StandardSqlDataType.from_api_repr(element_type)
+        else:
+            return None
 
     @array_element_type.setter
     def array_element_type(self, value: Optional["StandardSqlDataType"]):
-        if self.type_kind != StandardSqlTypeNames.ARRAY and value is not None:
-            raise ValueError(
-                "Cannot set to a non-None value if type_kind is not "
-                f"{StandardSqlTypeNames.ARRAY.value}."
-            )
-
         element_type = None if value is None else value.to_api_repr()
 
         if element_type is None:
@@ -144,24 +106,15 @@ class StandardSqlDataType:
     @property
     def struct_type(self) -> Optional["StandardSqlStructType"]:
         """The fields of this struct, in order, if type_kind is STRUCT."""
-        result = None
-        if self.type_kind == StandardSqlTypeNames.STRUCT:
-            struct_info = self._properties.get("structType")
-            if struct_info is not None:
-                result = StandardSqlStructType.from_api_repr(struct_info)
-            else:
-                result = StandardSqlStructType()
+        struct_info = self._properties.get("structType")
 
-        return result
+        if struct_info is not None:
+            return StandardSqlStructType.from_api_repr(struct_info)
+        else:
+            return None
 
     @struct_type.setter
     def struct_type(self, value: Optional["StandardSqlStructType"]):
-        if self.type_kind != StandardSqlTypeNames.STRUCT and value is not None:
-            raise ValueError(
-                "Cannot set to a non-None value if type_kind is not "
-                f"{StandardSqlTypeNames.STRUCT.value}."
-            )
-
         struct_type = None if value is None else value.to_api_repr()
 
         if struct_type is None:

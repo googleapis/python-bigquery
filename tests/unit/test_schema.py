@@ -178,8 +178,14 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.name, "foo")
         self.assertEqual(field.field_type, "RECORD")
         self.assertEqual(field.mode, "NULLABLE")
-        self.assertEqual(field.description, None)
         self.assertEqual(len(field.fields), 0)
+
+        # Keys not present in API representation shouldn't be included in
+        # _properties.
+        self.assertIsNone(field.description)
+        self.assertIsNone(field.policy_tags)
+        self.assertNotIn("description", field._properties)
+        self.assertNotIn("policyTags", field._properties)
 
     def test_name_property(self):
         name = "lemon-ness"

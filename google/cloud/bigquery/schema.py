@@ -15,12 +15,12 @@
 """Schemas for BigQuery tables / queries."""
 
 import collections
-from typing import Optional, Tuple
+from collections.abc import Iterable
+from typing import Union
 
 from google.cloud.bigquery_v2 import types
 
 
-_DEFAULT_VALUE = object()
 _STRUCT_TYPES = ("RECORD", "STRUCT")
 
 # SQL types reference:
@@ -49,47 +49,53 @@ LEGACY_TO_STANDARD_TYPES = {
 """String names of the legacy SQL types to integer codes of Standard SQL types."""
 
 
+class _DefaultSentinel:
+    """Object used as 'sentinel' indicating default value should be used."""
+
+
+_DEFAULT_VALUE = _DefaultSentinel()
+
+
 class SchemaField(object):
     """Describe a single field within a table schema.
 
     Args:
-        name (str): The name of the field.
+        name: The name of the field.
 
-        field_type (str): The type of the field. See
+        field_type:
+            The type of the field. See
             https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.type
 
-        mode (Optional[str]): The mode of the field.  See
+        mode:
+            Defaults to ``'NULLABLE'``. The mode of the field. See
             https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.mode
 
-        description (Optional[str]): Description for the field.
+        description: Description for the field.
 
-        fields (Optional[Tuple[google.cloud.bigquery.schema.SchemaField]]):
-            Subfields (requires ``field_type`` of 'RECORD').
+        fields: Subfields (requires ``field_type`` of 'RECORD').
 
-        policy_tags (Optional[PolicyTagList]): The policy tag list for the field.
+        policy_tags: The policy tag list for the field.
 
-        precision (Optional[int]):
+        precision:
             Precison (number of digits) of fields with NUMERIC or BIGNUMERIC type.
 
-        scale (Optional[int]):
+        scale:
             Scale (digits after decimal) of fields with NUMERIC or BIGNUMERIC type.
 
-        max_length (Optional[int]):
-            Maximim length of fields with STRING or BYTES type.
-
+        max_length: Maximim length of fields with STRING or BYTES type.
     """
 
     def __init__(
         self,
         name: str,
         field_type: str,
-        mode: Optional[str] = "NULLABLE",
-        description: Optional[str] = _DEFAULT_VALUE,
-        fields: Optional[Tuple["SchemaField"]] = (),
-        policy_tags: Optional["PolicyTagList"] = _DEFAULT_VALUE,
-        precision: Optional[int] = _DEFAULT_VALUE,
-        scale: Optional[int] = _DEFAULT_VALUE,
-        max_length: Optional[int] = _DEFAULT_VALUE,
+        mode: str = "NULLABLE",
+        description: Union[str, _DefaultSentinel] = _DEFAULT_VALUE,
+        fields: Iterable["SchemaField"] = (),
+        policy_tags: Union["PolicyTagList", None, _DefaultSentinel] = _DEFAULT_VALUE,
+        precision: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
+        scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
+        max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
     ):
         self._properties = {
             "name": name,
@@ -139,7 +145,7 @@ class SchemaField(object):
         policy_tags = api_repr.get("policyTags", _DEFAULT_VALUE)
 
         if policy_tags is not None and policy_tags is not _DEFAULT_VALUE:
-            policy_tags = PolicyTagList.from_api_repr(api_repr.get("policyTags"))
+            policy_tags = PolicyTagList.from_api_repr(policy_tags)
 
         return cls(
             field_type=field_type,

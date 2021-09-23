@@ -15,6 +15,7 @@
 """Schemas for BigQuery tables / queries."""
 
 import collections
+import enum
 from typing import Iterable, Union
 
 from google.cloud.bigquery_v2 import types
@@ -48,11 +49,20 @@ LEGACY_TO_STANDARD_TYPES = {
 """String names of the legacy SQL types to integer codes of Standard SQL types."""
 
 
-class _DefaultSentinel:
-    """Object used as 'sentinel' indicating default value should be used."""
+class _DefaultSentinel(enum.Enum):
+    """Object used as 'sentinel' indicating default value should be used.
+
+    Uses enum so that pytype/mypy knows that this is the only possible value.
+    https://stackoverflow.com/a/60605919/101923
+
+    Literal[_DEFAULT_VALUE] is an alternative, but only added in Python 3.8.
+    https://docs.python.org/3/library/typing.html#typing.Literal
+    """
+
+    DEFAULT_VALUE = object()
 
 
-_DEFAULT_VALUE = _DefaultSentinel()
+_DEFAULT_VALUE = _DefaultSentinel.DEFAULT_VALUE
 
 
 class SchemaField(object):

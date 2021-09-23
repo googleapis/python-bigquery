@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import copy
-from typing import Any, Dict, Generator, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from google.cloud.bigquery.enums import StandardSqlTypeNames
 
@@ -89,10 +89,12 @@ class StandardSqlDataType:
         """The type of the array's elements, if type_kind is ARRAY."""
         element_type = self._properties.get("arrayElementType")
 
-        if element_type is not None:
-            return StandardSqlDataType.from_api_repr(element_type)
-        else:
+        if element_type is None:
             return None
+
+        result = StandardSqlDataType()
+        result._properties = element_type  # We do not use a copy on purpose.
+        return result
 
     @array_element_type.setter
     def array_element_type(self, value: Optional["StandardSqlDataType"]):
@@ -108,10 +110,12 @@ class StandardSqlDataType:
         """The fields of this struct, in order, if type_kind is STRUCT."""
         struct_info = self._properties.get("structType")
 
-        if struct_info is not None:
-            return StandardSqlStructType.from_api_repr(struct_info)
-        else:
+        if struct_info is None:
             return None
+
+        result = StandardSqlStructType()
+        result._properties = struct_info  # We do not use a copy on purpose.
+        return result
 
     @struct_type.setter
     def struct_type(self, value: Optional["StandardSqlStructType"]):
@@ -190,7 +194,7 @@ class StandardSqlField:
         self._properties = {"name": name, "type": type}
 
     @property
-    def name(self):
+    def name(self) -> Optional[str]:
         """The name of this field. Can be absent for struct fields."""
         return self._properties["name"]
 
@@ -199,15 +203,19 @@ class StandardSqlField:
         self._properties["name"] = value
 
     @property
-    def type(self):
+    def type(self) -> Optional[StandardSqlDataType]:
         """The type of this parameter. Absent if not explicitly specified.
 
         For example, CREATE FUNCTION statement can omit the return type; in this
         case the output parameter does not have this "type" field).
         """
-        result = self._properties["type"]
-        if result is not None:
-            result = StandardSqlDataType.from_api_repr(result)
+        type_info = self._properties["type"]
+
+        if type_info is None:
+            return None
+
+        result = StandardSqlDataType()
+        result._properties = type_info  # We do not use a copy on purpose.
         return result
 
     @type.setter
@@ -256,8 +264,14 @@ class StandardSqlStructType:
     @property
     def fields(self) -> List[StandardSqlField]:
         """The fields in this struct."""
-        result = self._fields_from_resource(self._properties)
-        return list(result)
+        result = []
+
+        for field_resource in self._properties.get("fields", []):
+            field = StandardSqlField()
+            field._properties = field_resource  # We do not use a copy on purpose.
+            result.append(field)
+
+        return result
 
     @fields.setter
     def fields(self, value: Iterable[StandardSqlField]):
@@ -270,16 +284,11 @@ class StandardSqlStructType:
     @classmethod
     def from_api_repr(cls, resource: Dict[str, Any]) -> "StandardSqlStructType":
         """Construct an SQL struct type instance given its API representation."""
-        fields = cls._fields_from_resource(resource)
+        fields = (
+            StandardSqlField.from_api_repr(field_resource)
+            for field_resource in resource.get("fields", [])
+        )
         return cls(fields=fields)
-
-    @staticmethod
-    def _fields_from_resource(
-        resource: Dict[str, Any]
-    ) -> Generator[StandardSqlField, None, None]:
-        """Yield field instancess based on the resource info."""
-        for field_resource in resource.get("fields", []):
-            yield StandardSqlField.from_api_repr(field_resource)
 
     def __eq__(self, other):
         if not isinstance(other, StandardSqlStructType):
@@ -306,7 +315,14 @@ class StandardSqlTableType:
     @property
     def columns(self) -> List[StandardSqlField]:
         """The columns in this table type."""
-        return list(self._columns_from_resource(self._properties))
+        result = []
+
+        for column_resource in self._properties.get("columns", []):
+            column = StandardSqlField()
+            column._properties = column_resource  # We do not use a copy on purpose.
+            result.append(column)
+
+        return result
 
     @columns.setter
     def columns(self, value: Iterable[StandardSqlField]):
@@ -319,22 +335,20 @@ class StandardSqlTableType:
     @classmethod
     def from_api_repr(cls, resource: Dict[str, Any]) -> "StandardSqlTableType":
         """Construct an SQL table type instance given its API representation."""
-        columns = cls._columns_from_resource(resource)
-        return cls(columns=columns)
+        columns = []
 
-    @staticmethod
-    def _columns_from_resource(
-        resource: Dict[str, Any]
-    ) -> Generator[StandardSqlField, None, None]:
-        """Yield column instances based on the resource info."""
-        for column in resource.get("columns", []):
-            type_ = column.get("type")
+        for column_resource in resource.get("columns", []):
+            type_ = column_resource.get("type")
             if type_ is None:
                 type_ = {}
 
-            yield StandardSqlField(
-                name=column.get("name"), type=StandardSqlDataType.from_api_repr(type_),
+            column = StandardSqlField(
+                name=column_resource.get("name"),
+                type=StandardSqlDataType.from_api_repr(type_),
             )
+            columns.append(column)
+
+        return cls(columns=columns)
 
     def __eq__(self, other):
         if not isinstance(other, StandardSqlTableType):

@@ -57,6 +57,7 @@ import google.cloud._helpers
 from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
+from google.cloud.bigquery import ParquetOptions
 
 try:
     from google.cloud import bigquery_storage
@@ -6952,6 +6953,179 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.write_disposition == job.WriteDisposition.WRITE_TRUNCATE
+
+        # the original config object should not have been modified
+        assert job_config.to_api_repr() == original_config_copy.to_api_repr()
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_parquet_options_none(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.PARQUET,
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(
+                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
+            ),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, get_table_patch as get_table:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+            )
+
+        # no need to fetch and inspect table schema for WRITE_TRUNCATE jobs
+        assert not get_table.called
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.parquet_options.enable_list_inference is True
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_list_inference_none(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+
+        parquet_options = ParquetOptions()
+
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.PARQUET,
+        )
+        job_config.parquet_options = parquet_options
+
+        original_config_copy = copy.deepcopy(job_config)
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(
+                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
+            ),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, get_table_patch as get_table:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+            )
+
+        # no need to fetch and inspect table schema for WRITE_TRUNCATE jobs
+        assert not get_table.called
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.parquet_options.enable_list_inference is None
+
+        # the original config object should not have been modified
+        assert job_config.to_api_repr() == original_config_copy.to_api_repr()
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_list_inference_false(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+
+        parquet_options = ParquetOptions()
+        parquet_options.enable_list_inference = False
+
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.PARQUET,
+        )
+        job_config.parquet_options = parquet_options
+
+        original_config_copy = copy.deepcopy(job_config)
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(
+                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
+            ),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, get_table_patch as get_table:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+            )
+
+        # no need to fetch and inspect table schema for WRITE_TRUNCATE jobs
+        assert not get_table.called
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.parquet_options.enable_list_inference is False
 
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()

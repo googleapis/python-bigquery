@@ -91,7 +91,7 @@ class SchemaField(object):
         scale:
             Scale (digits after decimal) of fields with NUMERIC or BIGNUMERIC type.
 
-        max_length: Maximim length of fields with STRING or BYTES type.
+        max_length: Maximum length of fields with STRING or BYTES type.
     """
 
     def __init__(

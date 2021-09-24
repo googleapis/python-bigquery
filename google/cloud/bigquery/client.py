@@ -27,7 +27,6 @@ import itertools
 import json
 import math
 import os
-import packaging.version
 import tempfile
 from typing import Any, BinaryIO, Dict, Iterable, Optional, Sequence, Tuple, Union
 import uuid

@@ -445,7 +445,7 @@ def augment_schema(dataframe, current_bq_schema):
 
         arrow_table = pyarrow.array(dataframe[field.name])
 
-        if arrow_table.type.id == 25:
+        if pyarrow.types.is_list(arrow_table.type):
             # `pyarrow.ListType`
             detected_mode = "REPEATED"
             detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.values.type.id)

@@ -175,9 +175,8 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
     assert tuple(table.schema) == (
         bigquery.SchemaField("bool_col", "BOOLEAN"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
-        # BigQuery does not support uploading DATETIME values from
-        # Parquet files. See:
-        # https://github.com/googleapis/google-cloud-python/issues/9996
+        # TODO: Update to DATETIME in V3
+        # https://github.com/googleapis/python-bigquery/issues/985
         bigquery.SchemaField("dt_col", "TIMESTAMP"),
         bigquery.SchemaField("float32_col", "FLOAT"),
         bigquery.SchemaField("float64_col", "FLOAT"),
@@ -190,9 +189,8 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
         bigquery.SchemaField("uint32_col", "INTEGER"),
         bigquery.SchemaField("array_bool_col", "BOOLEAN", mode="REPEATED"),
         bigquery.SchemaField("array_ts_col", "TIMESTAMP", mode="REPEATED"),
-        # BigQuery does not support uploading DATETIME values from
-        # Parquet files. See:
-        # https://github.com/googleapis/google-cloud-python/issues/9996
+        # TODO: Update to DATETIME in V3
+        # https://github.com/googleapis/python-bigquery/issues/985
         bigquery.SchemaField("array_dt_col", "TIMESTAMP", mode="REPEATED"),
         bigquery.SchemaField("array_float32_col", "FLOAT", mode="REPEATED"),
         bigquery.SchemaField("array_float64_col", "FLOAT", mode="REPEATED"),

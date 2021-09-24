@@ -79,8 +79,8 @@ _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage dow
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
     "datetime64[ns, UTC]": "TIMESTAMP",
-    # BigQuery does not support uploading DATETIME values from Parquet files.
-    # See: https://github.com/googleapis/google-cloud-python/issues/9996
+    # TODO: Update to DATETIME in V3
+    # https://github.com/googleapis/python-bigquery/issues/985
     "datetime64[ns]": "TIMESTAMP",
     "float32": "FLOAT",
     "float64": "FLOAT",

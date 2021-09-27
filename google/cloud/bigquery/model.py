@@ -149,6 +149,9 @@ class Model:
     def training_runs(self) -> Sequence[Dict[str, Any]]:
         """Information for all training runs in increasing order of start time.
 
+        Dictionaries are in REST API format. See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/models#trainingrun
+
         Read-only.
         """
         return self._properties.get("trainingRuns", [])

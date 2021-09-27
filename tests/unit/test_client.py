@@ -49,8 +49,8 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 import google.api_core.exceptions
 from google.api_core import client_info
 import google.cloud._helpers
+from google.cloud import bigquery
 from google.cloud import bigquery_storage
-from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 
@@ -1832,7 +1832,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(updated_model.expires, model.expires)
 
         # ETag becomes If-Match header.
-        model._proto.etag = "etag"
+        model._properties["etag"] = "etag"
         client.update_model(model, [])
         req = conn.api_request.call_args
         self.assertEqual(req[1]["headers"]["If-Match"], "etag")
@@ -1862,8 +1862,8 @@ class TestClient(unittest.TestCase):
         routine.arguments = [
             RoutineArgument(
                 name="x",
-                data_type=bigquery_v2.types.StandardSqlDataType(
-                    type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.INT64
+                data_type=bigquery.standard_sql.StandardSqlDataType(
+                    type_kind=bigquery.StandardSqlTypeNames.INT64
                 ),
             )
         ]

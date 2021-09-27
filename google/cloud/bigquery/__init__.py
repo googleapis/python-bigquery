@@ -41,7 +41,7 @@ from google.cloud.bigquery.enums import AutoRowIDs
 from google.cloud.bigquery.enums import DecimalTargetType
 from google.cloud.bigquery.enums import KeyResultStatementKind
 from google.cloud.bigquery.enums import SqlTypeNames
-from google.cloud.bigquery.enums import StandardSqlDataTypes
+from google.cloud.bigquery.enums import StandardSqlTypeNames
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.external_config import BigtableOptions
 from google.cloud.bigquery.external_config import BigtableColumnFamily
@@ -77,6 +77,7 @@ from google.cloud.bigquery.query import ArrayQueryParameter
 from google.cloud.bigquery.query import ArrayQueryParameterType
 from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.query import ScalarQueryParameterType
+from google.cloud.bigquery.query import SqlParameterScalarTypes
 from google.cloud.bigquery.query import StructQueryParameter
 from google.cloud.bigquery.query import StructQueryParameterType
 from google.cloud.bigquery.query import UDFResource
@@ -87,6 +88,10 @@ from google.cloud.bigquery.routine import RoutineArgument
 from google.cloud.bigquery.routine import RoutineReference
 from google.cloud.bigquery.routine import RoutineType
 from google.cloud.bigquery.schema import SchemaField
+from google.cloud.bigquery.standard_sql import StandardSqlDataType
+from google.cloud.bigquery.standard_sql import StandardSqlField
+from google.cloud.bigquery.standard_sql import StandardSqlStructType
+from google.cloud.bigquery.standard_sql import StandardSqlTableType
 from google.cloud.bigquery.table import PartitionRange
 from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import Row
@@ -108,6 +113,7 @@ __all__ = [
     "StructQueryParameter",
     "ArrayQueryParameterType",
     "ScalarQueryParameterType",
+    "SqlParameterScalarTypes",
     "StructQueryParameterType",
     # Datasets
     "Dataset",
@@ -151,6 +157,11 @@ __all__ = [
     "ScriptOptions",
     "TransactionInfo",
     "DEFAULT_RETRY",
+    # Standard SQL types
+    "StandardSqlDataType",
+    "StandardSqlField",
+    "StandardSqlStructType",
+    "StandardSqlTableType",
     # Enum Constants
     "enums",
     "AutoRowIDs",
@@ -168,7 +179,7 @@ __all__ = [
     "SchemaUpdateOption",
     "SourceFormat",
     "SqlTypeNames",
-    "StandardSqlDataTypes",
+    "StandardSqlTypeNames",
     "WriteDisposition",
     # EncryptionConfiguration
     "EncryptionConfiguration",

@@ -34,7 +34,6 @@ dependencies = [
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core[grpc] >= 1.29.0, <3.0.0dev",
-    "proto-plus >= 1.10.0",
     "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
     # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
     # Until this issue is closed
@@ -42,7 +41,6 @@ dependencies = [
     "google-cloud-core >= 1.4.1, <3.0.0dev",
     "google-resumable-media >= 0.6.0, < 3.0dev",
     "packaging >= 14.3",
-    "protobuf >= 3.12.0",
     "pyarrow >= 3.0.0, < 6.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]

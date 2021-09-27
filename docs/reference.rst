@@ -197,9 +197,9 @@ Encryption Configuration
 Additional Types
 ================
 
-Protocol buffer classes for working with the Models API.
+Helper SQL type classes.
 
 .. toctree::
     :maxdepth: 2
 
-    bigquery_v2/types
+    bigquery/standard_sql

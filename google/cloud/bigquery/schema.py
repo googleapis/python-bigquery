@@ -17,7 +17,8 @@
 import collections
 from typing import Optional
 
-from google.cloud.bigquery_v2 import types
+from google.cloud.bigquery import standard_sql
+from google.cloud.bigquery.enums import StandardSqlTypeNames
 
 
 _DEFAULT_VALUE = object()
@@ -27,26 +28,26 @@ _STRUCT_TYPES = ("RECORD", "STRUCT")
 # https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
 LEGACY_TO_STANDARD_TYPES = {
-    "STRING": types.StandardSqlDataType.TypeKind.STRING,
-    "BYTES": types.StandardSqlDataType.TypeKind.BYTES,
-    "INTEGER": types.StandardSqlDataType.TypeKind.INT64,
-    "INT64": types.StandardSqlDataType.TypeKind.INT64,
-    "FLOAT": types.StandardSqlDataType.TypeKind.FLOAT64,
-    "FLOAT64": types.StandardSqlDataType.TypeKind.FLOAT64,
-    "NUMERIC": types.StandardSqlDataType.TypeKind.NUMERIC,
-    "BIGNUMERIC": types.StandardSqlDataType.TypeKind.BIGNUMERIC,
-    "BOOLEAN": types.StandardSqlDataType.TypeKind.BOOL,
-    "BOOL": types.StandardSqlDataType.TypeKind.BOOL,
-    "GEOGRAPHY": types.StandardSqlDataType.TypeKind.GEOGRAPHY,
-    "RECORD": types.StandardSqlDataType.TypeKind.STRUCT,
-    "STRUCT": types.StandardSqlDataType.TypeKind.STRUCT,
-    "TIMESTAMP": types.StandardSqlDataType.TypeKind.TIMESTAMP,
-    "DATE": types.StandardSqlDataType.TypeKind.DATE,
-    "TIME": types.StandardSqlDataType.TypeKind.TIME,
-    "DATETIME": types.StandardSqlDataType.TypeKind.DATETIME,
+    "STRING": StandardSqlTypeNames.STRING,
+    "BYTES": StandardSqlTypeNames.BYTES,
+    "INTEGER": StandardSqlTypeNames.INT64,
+    "INT64": StandardSqlTypeNames.INT64,
+    "FLOAT": StandardSqlTypeNames.FLOAT64,
+    "FLOAT64": StandardSqlTypeNames.FLOAT64,
+    "NUMERIC": StandardSqlTypeNames.NUMERIC,
+    "BIGNUMERIC": StandardSqlTypeNames.BIGNUMERIC,
+    "BOOLEAN": StandardSqlTypeNames.BOOL,
+    "BOOL": StandardSqlTypeNames.BOOL,
+    "GEOGRAPHY": StandardSqlTypeNames.GEOGRAPHY,
+    "RECORD": StandardSqlTypeNames.STRUCT,
+    "STRUCT": StandardSqlTypeNames.STRUCT,
+    "TIMESTAMP": StandardSqlTypeNames.TIMESTAMP,
+    "DATE": StandardSqlTypeNames.DATE,
+    "TIME": StandardSqlTypeNames.TIME,
+    "DATETIME": StandardSqlTypeNames.DATETIME,
     # no direct conversion from ARRAY, the latter is represented by mode="REPEATED"
 }
-"""String names of the legacy SQL types to integer codes of Standard SQL types."""
+"""String names of the legacy SQL types to integer codes of Standard SQL standard_sql."""
 
 
 class SchemaField(object):
@@ -285,48 +286,37 @@ class SchemaField(object):
             policy_tags,
         )
 
-    def to_standard_sql(self) -> types.StandardSqlField:
-        """Return the field as the standard SQL field representation object.
-
-        Returns:
-            An instance of :class:`~google.cloud.bigquery_v2.types.StandardSqlField`.
-        """
-        sql_type = types.StandardSqlDataType()
+    def to_standard_sql(self) -> standard_sql.StandardSqlField:
+        """Return the field as the standard SQL field representation object."""
+        sql_type = standard_sql.StandardSqlDataType()
 
         if self.mode == "REPEATED":
-            sql_type.type_kind = types.StandardSqlDataType.TypeKind.ARRAY
+            sql_type.type_kind = StandardSqlTypeNames.ARRAY
         else:
             sql_type.type_kind = LEGACY_TO_STANDARD_TYPES.get(
-                self.field_type,
-                types.StandardSqlDataType.TypeKind.TYPE_KIND_UNSPECIFIED,
+                self.field_type, StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
             )
 
-        if sql_type.type_kind == types.StandardSqlDataType.TypeKind.ARRAY:  # noqa: E721
+        if sql_type.type_kind == StandardSqlTypeNames.ARRAY:  # noqa: E721
             array_element_type = LEGACY_TO_STANDARD_TYPES.get(
-                self.field_type,
-                types.StandardSqlDataType.TypeKind.TYPE_KIND_UNSPECIFIED,
+                self.field_type, StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
             )
-            sql_type.array_element_type.type_kind = array_element_type
+            sql_type.array_element_type = standard_sql.StandardSqlDataType(
+                type_kind=array_element_type
+            )
 
             # ARRAY cannot directly contain other arrays, only scalar types and STRUCTs
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#array-type
-            if (
-                array_element_type
-                == types.StandardSqlDataType.TypeKind.STRUCT  # noqa: E721
-            ):
-                sql_type.array_element_type.struct_type.fields.extend(
-                    field.to_standard_sql() for field in self.fields
+            if array_element_type == StandardSqlTypeNames.STRUCT:  # noqa: E721
+                sql_type.array_element_type.struct_type = standard_sql.StandardSqlStructType(
+                    fields=(field.to_standard_sql() for field in self.fields)
                 )
-
-        elif (
-            sql_type.type_kind
-            == types.StandardSqlDataType.TypeKind.STRUCT  # noqa: E721
-        ):
-            sql_type.struct_type.fields.extend(
-                field.to_standard_sql() for field in self.fields
+        elif sql_type.type_kind == StandardSqlTypeNames.STRUCT:  # noqa: E721
+            sql_type.struct_type = standard_sql.StandardSqlStructType(
+                fields=(field.to_standard_sql() for field in self.fields)
             )
 
-        return types.StandardSqlField(name=self.name, type=sql_type)
+        return standard_sql.StandardSqlField(name=self.name, type=sql_type)
 
     def __eq__(self, other):
         if not isinstance(other, SchemaField):

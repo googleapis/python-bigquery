@@ -2463,7 +2463,7 @@ class Client(ClientWithProject):
             They are supported when using the PARQUET source format, but
             due to the way they are encoded in the ``parquet`` file,
             a mismatch with the existing table schema can occur, so
-            REPEATED fields are not properly support when using ``pyarrow<4.0.0``
+            REPEATED fields are not properly supported when using ``pyarrow<4.0.0``
             using the parquet format.
 
             https://github.com/googleapis/python-bigquery/issues/19

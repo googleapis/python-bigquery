@@ -19,11 +19,11 @@ def pandas_date_and_time():
 
     import datetime
     import pandas as pd
-    import google.cloud.bigquery.dtypes  # noqa import to register dtypes
+    import db_dtypes  # noqa import to register dtypes
 
     dates = pd.Series(
         [datetime.date(2021, 9, 17), '2021-9-18'],
-        dtype='bqdate')
+        dtype='date')
 
     # [END bigquery_bqdate_create]
     # [START bigquery_bqdate_as_datetime]
@@ -48,7 +48,7 @@ def pandas_date_and_time():
 
     times = pd.Series(
         [datetime.time(1, 2, 3, 456789), '12:00:00.6'],
-        dtype='bqtime')
+        dtype='time')
 
     # [END bigquery_bqtime_create]
     # [START bigquery_bqtime_as_timedelta]

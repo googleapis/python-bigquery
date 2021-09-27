@@ -100,7 +100,7 @@ Pandas date and time arrays used for BigQuery DATE and TIME columns
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When BigQuery DATE [#date]_ and TIME data are loaded into Pandas,
-BigQuery-supplied date and time series are used.
+date and time series are used.
 
 Date and time series support comparison and basic statistics, `min`,
 `max` and `median`.
@@ -117,9 +117,9 @@ they can also be created directly from `datetime.date` data or date strings:
    :start-after: [START bigquery_bqdate_create]
    :end-before: [END bigquery_bqdate_create]
 
-The data type name for BigQuery-supplied date series is `bqdate`.  You
-need to import `google.cloud.bigquery.dtypes` to cause this to get
-registered with pandas.
+The data type name for date series is `date`.  You need to import
+`db_dtypes` to cause this to get registered with
+pandas.
 
 You can convert date series to date-time series using `astype("datetime64")`:
 
@@ -157,7 +157,7 @@ they can also be created directly from `datetime.time` data or time strings:
    :start-after: [START bigquery_bqtime_create]
    :end-before: [END bigquery_bqtime_create]
 
-The data type name for BigQuery-supplied time series is `bqtime`.
+The data type name for time series is `time`.
 
 You can convert time series to time-delta series using `astype("timedelta64")`:
 
@@ -184,5 +184,5 @@ But you can also add dates and times directly:
    :end-before: [END bigquery_combine2_bqdate_bqtime]
 
 .. [#date] Dates before 1678 can't be represented using
-           BigQuery-supplied date series and will be converted as
+           date series and will be converted as
            object series.

@@ -2450,7 +2450,6 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: LoadJobConfig = None,
         parquet_compression: str = "snappy",
-        parquet_use_compliant_nested_type: bool = True,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of a table from a pandas DataFrame.
@@ -2526,24 +2525,6 @@ class Client(ClientWithProject):
                 passed as the ``compression`` argument to the underlying
                 ``DataFrame.to_parquet()`` method.
                 https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
-            parquet_use_compliant_nested_type (bool):
-                Whether the ``pyarrow.parquet.write_table`` serializing method should write
-                compliant Parquet nested type (lists). Defaults to ``True``.
-
-                The argument is directly passed as the ``use_compliant_nested_type``
-                argument to the underlying ``pyarrow.parquet.write_table()``
-                method.
-                https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
-
-                If the job config schema is missing, the argument is directly
-                passed as an additonal ``kwarg`` argument to the underlying
-                ``DataFrame.to_parquet()`` method.
-                https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
-
-                This argument is ignored for ``pyarrow`` versions before ``4.0.0``.
-
-                This argument is only present to allow for backwards compatibility with
-                tables created using an old version of this method.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
@@ -2667,16 +2648,14 @@ class Client(ClientWithProject):
                         job_config.schema,
                         tmppath,
                         parquet_compression=parquet_compression,
-                        parquet_use_compliant_nested_type=parquet_use_compliant_nested_type,
+                        parquet_use_compliant_nested_type=True,
                     )
                 else:
                     dataframe.to_parquet(
                         tmppath,
                         engine="pyarrow",
                         compression=parquet_compression,
-                        **{
-                            "use_compliant_nested_type": parquet_use_compliant_nested_type
-                        }
+                        **{"use_compliant_nested_type": True}
                         if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
                         else {},
                     )

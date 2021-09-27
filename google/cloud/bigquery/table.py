@@ -29,7 +29,7 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 else:
-    from .dtypes import DateArray, date_dtype_name
+    from db_dtypes import DateArray, date_dtype_name
 
 import pyarrow
 

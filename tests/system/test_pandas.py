@@ -92,7 +92,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
                         datetime.date(2011, 2, 3),
                         datetime.date(2012, 3, 14),
                     ],
-                    dtype="bqdate",
+                    dtype="date",
                 ),
             ),
             (
@@ -103,7 +103,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
                         datetime.time(14, 50, 59),
                         datetime.time(15, 16),
                     ],
-                    dtype="bqtime",
+                    dtype="time",
                 ),
             ),
         ]
@@ -723,7 +723,7 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
     )
     for dtype in "date", "time":
         dataframe[dtype + "_col"] = pandas.Series(
-            dataframe[dtype + "_col"], dtype="bq" + dtype
+            dataframe[dtype + "_col"], dtype=dtype
         )
 
     table_id = f"{bigquery_client.project}.{dataset_id}.test_insert_rows_from_dataframe"
@@ -900,8 +900,8 @@ def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_r
     assert df.dtypes["float64_col"].name == "float64"
     assert df.dtypes["int64_col"].name == "Int64"
     assert df.dtypes["timestamp_col"].name == "datetime64[ns, UTC]"
-    assert df.dtypes["date_col"].name == "bqdate"
-    assert df.dtypes["time_col"].name == "bqtime"
+    assert df.dtypes["date_col"].name == "date"
+    assert df.dtypes["time_col"].name == "time"
 
     # decimal.Decimal is used to avoid loss of precision.
     assert df.dtypes["bignumeric_col"].name == "object"
@@ -951,7 +951,7 @@ def test_list_rows_nullable_scalars_extreme_dtypes(
     assert df.dtypes["bool_col"].name == "boolean"
     assert df.dtypes["float64_col"].name == "float64"
     assert df.dtypes["int64_col"].name == "Int64"
-    assert df.dtypes["time_col"].name == "bqtime"
+    assert df.dtypes["time_col"].name == "time"
 
     # decimal.Decimal is used to avoid loss of precision.
     assert df.dtypes["numeric_col"].name == "object"

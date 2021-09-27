@@ -3092,7 +3092,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.km.dtype.name, "float16")
         self.assertEqual(df.payment_type.dtype.name, "object")
         self.assertEqual(df.complete.dtype.name, "boolean")
-        self.assertEqual(df.date.dtype.name, "bqdate")
+        self.assertEqual(df.date.dtype.name, "date")
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_datetime_objects(self):

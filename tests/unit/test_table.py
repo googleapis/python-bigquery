@@ -292,32 +292,16 @@ class TestTableReference(unittest.TestCase):
         table_ref = self._make_one(dataset_ref, "table_1")
         self.assertEqual(table_ref.dataset_id, dataset_ref.dataset_id)
         self.assertEqual(table_ref.table_id, "table_1")
-        self.assertEqual(table_ref.project_id_alternative, [])
-        self.assertEqual(table_ref.dataset_id_alternative, [])
-        self.assertEqual(table_ref.table_id_alternative, [])
 
     def test_to_api_repr(self):
         dataset_ref = DatasetReference("project_1", "dataset_1")
-        table_ref = self._make_one(
-            dataset_ref,
-            "table_1",
-            project_id_alternative=["p1", "p2"],
-            dataset_id_alternative=["d1", "d2"],
-            table_id_alternative=["t1", "t2"],
-        )
+        table_ref = self._make_one(dataset_ref, "table_1")
 
         resource = table_ref.to_api_repr()
 
         self.assertEqual(
             resource,
-            {
-                "projectId": "project_1",
-                "datasetId": "dataset_1",
-                "tableId": "table_1",
-                "projectIdAlternative": ["p1", "p2"],
-                "datasetIdAlternative": ["d1", "d2"],
-                "tableIdAlternative": ["t1", "t2"],
-            },
+            {"projectId": "project_1", "datasetId": "dataset_1", "tableId": "table_1"},
         )
 
     def test_from_api_repr(self):
@@ -330,38 +314,7 @@ class TestTableReference(unittest.TestCase):
             {"projectId": "project_1", "datasetId": "dataset_1", "tableId": "table_1"}
         )
 
-        self.assertEqual(expected, got)  # TODO: overide EQ?
-
-    def test_from_api_repr_full(self):
-        from google.cloud.bigquery.table import TableReference
-
-        dataset_ref = DatasetReference("project_1", "dataset_1")
-        expected = self._make_one(
-            dataset_ref,
-            "table_1",
-            project_id_alternative=["p1", "p2"],
-            dataset_id_alternative=["d1", "d2"],
-            table_id_alternative=["t1", "t2"],
-        )
-
-        got = TableReference.from_api_repr(
-            {
-                "projectId": "project_1",
-                "datasetId": "dataset_1",
-                "tableId": "table_1",
-                "projectIdAlternative": ["p1", "p2"],
-                "datasetIdAlternative": ["d1", "d2"],
-                "tableIdAlternative": ["t1", "t2"],
-            }
-        )
-
         self.assertEqual(expected, got)
-
-        # additional attributes are isgnored when comapring for equality, thus perform
-        # those checks separately.
-        self.assertEqual(got.project_id_alternative, ["p1", "p2"])
-        self.assertEqual(got.dataset_id_alternative, ["d1", "d2"])
-        self.assertEqual(got.table_id_alternative, ["t1", "t2"])
 
     def test_from_string(self):
         cls = self._get_target_class()

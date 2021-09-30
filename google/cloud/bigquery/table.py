@@ -21,7 +21,7 @@ import datetime
 import functools
 import operator
 import typing
-from typing import Any, Dict, Iterable, Iterator, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, Iterator, Optional, Tuple
 import warnings
 
 try:
@@ -184,34 +184,15 @@ class TableReference(_TableBase):
             A pointer to the dataset
         table_id:
             The ID of the table
-        project_id_alternative:
-            The alternative field that will be used when ESF is not able
-            to translate the received data to the project_id field.
-        dataset_id_alternative:
-            The alternative field that will be used when ESF is not able
-            to translate the received data to the project_id field.
-        table_id_alternative:
-            The alternative field that will be used when ESF is not able
-            to translate the received data to the project_id field.
     """
 
     _PROPERTY_TO_API_FIELD = {
         "dataset_id": "datasetId",
         "project": "projectId",
         "table_id": "tableId",
-        "project_id_alternative": "projectIdAlternative",
-        "dataset_id_alternative": "datasetIdAlternative",
-        "table_id_alternative": "tableIdAlternative",
     }
 
-    def __init__(
-        self,
-        dataset_ref: "DatasetReference",
-        table_id: str,
-        project_id_alternative: Sequence[str] = None,
-        dataset_id_alternative: Sequence[str] = None,
-        table_id_alternative: Sequence[str] = None,
-    ):
+    def __init__(self, dataset_ref: "DatasetReference", table_id: str):
         self._properties = {}
 
         _helpers._set_sub_prop(
@@ -227,27 +208,6 @@ class TableReference(_TableBase):
         _helpers._set_sub_prop(
             self._properties, self._PROPERTY_TO_API_FIELD["table_id"], table_id,
         )
-
-        if project_id_alternative is not None:
-            _helpers._set_sub_prop(
-                self._properties,
-                self._PROPERTY_TO_API_FIELD["project_id_alternative"],
-                project_id_alternative,
-            )
-
-        if dataset_id_alternative is not None:
-            _helpers._set_sub_prop(
-                self._properties,
-                self._PROPERTY_TO_API_FIELD["dataset_id_alternative"],
-                dataset_id_alternative,
-            )
-
-        if table_id_alternative is not None:
-            _helpers._set_sub_prop(
-                self._properties,
-                self._PROPERTY_TO_API_FIELD["table_id_alternative"],
-                table_id_alternative,
-            )
 
     @classmethod
     def from_string(
@@ -308,43 +268,7 @@ class TableReference(_TableBase):
         dataset_id = resource["datasetId"]
         table_id = resource["tableId"]
 
-        return cls(
-            DatasetReference(project, dataset_id),
-            table_id,
-            project_id_alternative=resource.get("projectIdAlternative"),
-            dataset_id_alternative=resource.get("datasetIdAlternative"),
-            table_id_alternative=resource.get("tableIdAlternative"),
-        )
-
-    @property
-    def project_id_alternative(self) -> Sequence[str]:
-        """The alternative project IDs."""
-        value = _helpers._get_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["project_id_alternative"]
-        )
-        if value is None:
-            value = []
-        return value
-
-    @property
-    def dataset_id_alternative(self) -> Sequence[str]:
-        """The alternative dataset IDs."""
-        value = _helpers._get_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["dataset_id_alternative"]
-        )
-        if value is None:
-            value = []
-        return value
-
-    @property
-    def table_id_alternative(self) -> Sequence[str]:
-        """The alternative table IDs."""
-        value = _helpers._get_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["table_id_alternative"]
-        )
-        if value is None:
-            value = []
-        return value
+        return cls(DatasetReference(project, dataset_id), table_id)
 
     def to_api_repr(self) -> dict:
         """Construct the API resource representation of this table reference.

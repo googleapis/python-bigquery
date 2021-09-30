@@ -123,7 +123,8 @@ def test_interval_from_json_w_invalid_format(mut):
             ),
         ),
         # Test with fraction that is not microseconds.
-        ("0-0 0 0:0:0.1", relativedelta(microseconds=100000)),
+        ("0-0 0 0:0:42.", relativedelta(seconds=42)),
+        ("0-0 0 0:0:59.1", relativedelta(seconds=59, microseconds=100000)),
         ("0-0 0 0:0:0.12", relativedelta(microseconds=120000)),
         ("0-0 0 0:0:0.123", relativedelta(microseconds=123000)),
         ("0-0 0 0:0:0.1234", relativedelta(microseconds=123400)),

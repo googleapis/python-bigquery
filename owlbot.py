@@ -99,8 +99,8 @@ templated_files = common.py_library(
     split_system_tests=True,
     intersphinx_dependencies={
         "dateutil": "https://dateutil.readthedocs.io/en/latest/",
-        "pandas": "https://pandas.pydata.org/pandas-docs/stable/",
         "geopandas": "https://geopandas.org/",
+        "pandas": "https://pandas.pydata.org/pandas-docs/dev",
     },
 )
 

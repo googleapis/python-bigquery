@@ -99,6 +99,7 @@ def test_from_api_repr(target_class):
                 ),
             },
         ],
+        "bestTrialId": "123",
         "featureColumns": [],
         "encryptionConfiguration": {"kmsKeyName": KMS_KEY_NAME},
     }
@@ -119,6 +120,7 @@ def test_from_api_repr(target_class):
     assert got.model_type == "LOGISTIC_REGRESSION"
     assert got.labels == {"greeting": "こんにちは"}
     assert got.encryption_configuration.kms_key_name == KMS_KEY_NAME
+    assert got.best_trial_id == 123
     assert got.training_runs[0]["trainingOptions"]["initialLearnRate"] == 1.0
     assert (
         google.cloud._helpers._rfc3339_to_datetime(got.training_runs[0]["startTime"])
@@ -161,6 +163,7 @@ def test_from_api_repr_w_minimal_resource(target_class):
     assert len(got.training_runs) == 0
     assert len(got.feature_columns) == 0
     assert len(got.label_columns) == 0
+    assert got.best_trial_id is None
 
 
 def test_from_api_repr_w_unknown_fields(target_class):

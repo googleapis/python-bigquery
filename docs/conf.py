@@ -363,7 +363,7 @@ intersphinx_mapping = {
     "google-auth": ("https://googleapis.dev/python/google-auth/latest/", None),
     "google.api_core": ("https://googleapis.dev/python/google-api-core/latest/", None,),
     "grpc": ("https://grpc.github.io/grpc/python/", None),
-    "pandas": ("http://pandas.pydata.org/pandas-docs/dev", None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/stable/", None),
     "geopandas": ("https://geopandas.org/", None),
 }
 

@@ -30,7 +30,7 @@ templated_files = common.py_library(
     microgenerator=True,
     split_system_tests=True,
     intersphinx_dependencies={
-        "pandas": "http://pandas.pydata.org/pandas-docs/dev",
+        "pandas": "http://pandas.pydata.org/pandas-docs/stable/",
         "geopandas": "https://geopandas.org/",
     },
 )
@@ -42,6 +42,7 @@ s.move(
         "noxfile.py",
         "docs/multiprocessing.rst",
         ".coveragerc",
+        ".github/CODEOWNERS",
         # Include custom SNIPPETS_TESTS job for performance.
         # https://github.com/googleapis/python-bigquery/issues/191
         ".kokoro/presubmit/presubmit.cfg",

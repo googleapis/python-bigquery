@@ -195,7 +195,7 @@ def _interval_from_json(
 ) -> Optional[relativedelta.relativedelta]:
     """Coerce 'value' to an interval, if set or not nullable."""
     if not _not_null(value, field):
-        return
+        return None
     if value is None:
         raise TypeError(f"got {value} for REQUIRED field: {repr(field)}")
 

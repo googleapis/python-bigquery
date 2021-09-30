@@ -32,12 +32,6 @@ class TestBQStorageVersions(unittest.TestCase):
 
         return _helpers.BQStorageVersions()
 
-    def _call_fut(self):
-        from google.cloud.bigquery import _helpers
-
-        # Reset any cached versions since it may not match reality.
-        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
-
     def test_installed_version_returns_cached(self):
         versions = self._object_under_test()
         versions._installed_version = object()

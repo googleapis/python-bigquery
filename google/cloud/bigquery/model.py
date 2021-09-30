@@ -175,6 +175,20 @@ class Model:
         return self._properties.get("labelColumns", [])
 
     @property
+    def best_trial_id(self) -> Optional[int]:
+        """The best trial_id across all training runs.
+
+        .. deprecated::
+            This property is deprecated!
+
+        Read-only.
+        """
+        value = self._properties.get("bestTrialId")
+        if value is not None:
+            value = int(value)
+        return value
+
+    @property
     def expires(self) -> Optional[datetime.datetime]:
         """The datetime when this model expires.
 

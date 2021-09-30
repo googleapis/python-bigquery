@@ -26,8 +26,8 @@ import pkg_resources
 import pytest
 
 from google.cloud import bigquery
-from google.cloud.bigquery import enums
 from google.cloud import bigquery_storage
+from google.cloud.bigquery import enums
 
 from . import helpers
 

@@ -825,8 +825,7 @@ class ExternalConfig(object):
 
     @property
     def avro_options(self) -> Optional[AvroOptions]:
-        """Optional[google.cloud.bigquery.format_options.AvroOptions]:
-        Additional properties to set if ``sourceFormat`` is set to AVRO.
+        """Additional properties to set if ``sourceFormat`` is set to AVRO.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.avro_options
@@ -849,8 +848,7 @@ class ExternalConfig(object):
 
     @property
     def bigtable_options(self) -> Optional[BigtableOptions]:
-        """Optional[google.cloud.bigquery.external_config.BigtableOptions]:
-        Additional properties to set if ``sourceFormat`` is set to BIGTABLE.
+        """Additional properties to set if ``sourceFormat`` is set to BIGTABLE.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.bigtable_options
@@ -873,8 +871,7 @@ class ExternalConfig(object):
 
     @property
     def csv_options(self) -> Optional[CSVOptions]:
-        """Optional[google.cloud.bigquery.external_config.CSVOptions]:
-        Additional properties to set if ``sourceFormat`` is set to CSV.
+        """Additional properties to set if ``sourceFormat`` is set to CSV.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.csv_options
@@ -897,8 +894,7 @@ class ExternalConfig(object):
 
     @property
     def google_sheets_options(self) -> Optional[GoogleSheetsOptions]:
-        """Optional[google.cloud.bigquery.external_config.GoogleSheetsOptions]:
-        Additional properties to set if ``sourceFormat`` is set to
+        """Additional properties to set if ``sourceFormat`` is set to
         GOOGLE_SHEETS.
 
         See:
@@ -922,8 +918,7 @@ class ExternalConfig(object):
 
     @property
     def parquet_options(self) -> Optional[ParquetOptions]:
-        """Optional[google.cloud.bigquery.format_options.ParquetOptions]:
-        Additional properties to set if ``sourceFormat`` is set to PARQUET.
+        """Additional properties to set if ``sourceFormat`` is set to PARQUET.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.parquet_options

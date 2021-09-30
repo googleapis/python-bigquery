@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import pathlib
 import os
+import re
 import shutil
 
 import nox
@@ -94,9 +95,16 @@ def unit(session):
     default(session)
 
 
-@nox.session(python=UNIT_TEST_PYTHON_VERSIONS[-1])
+@nox.session(python=[UNIT_TEST_PYTHON_VERSIONS[0], UNIT_TEST_PYTHON_VERSIONS[-1]])
 def unit_noextras(session):
     """Run the unit test suite."""
+
+    # Install optional dependencies that are out-of-date.
+    # https://github.com/googleapis/python-bigquery/issues/933
+    # There is no pyarrow 1.0.0 package for Python 3.9.
+    if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
+        session.install("pyarrow==1.0.0")
+
     default(session, install_extras=False)
 
 
@@ -160,10 +168,6 @@ def snippets(session):
     if os.environ.get("RUN_SNIPPETS_TESTS", "true") == "false":
         session.skip("RUN_SNIPPETS_TESTS is set to false, skipping")
 
-    # Sanity check: Only run snippets tests if the environment variable is set.
-    if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):
-        session.skip("Credentials must be set via environment variable.")
-
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
     )
@@ -209,9 +213,31 @@ def prerelease_deps(session):
     # PyArrow prerelease packages are published to an alternative PyPI host.
     # https://arrow.apache.org/docs/python/install.html#installing-nightly-packages
     session.install(
-        "--extra-index-url", "https://pypi.fury.io/arrow-nightlies/", "--pre", "pyarrow"
+        "--extra-index-url",
+        "https://pypi.fury.io/arrow-nightlies/",
+        "--prefer-binary",
+        "--pre",
+        "--upgrade",
+        "pyarrow",
     )
-    session.install("--pre", "grpcio", "pandas")
+    session.install(
+        "--extra-index-url",
+        "https://pypi.anaconda.org/scipy-wheels-nightly/simple",
+        "--prefer-binary",
+        "--pre",
+        "--upgrade",
+        "pandas",
+    )
+
+    session.install(
+        "--pre",
+        "--upgrade",
+        "google-api-core",
+        "google-cloud-bigquery-storage",
+        "google-cloud-core",
+        "google-resumable-media",
+        "grpcio",
+    )
     session.install(
         "freezegun",
         "google-cloud-datacatalog",
@@ -223,7 +249,30 @@ def prerelease_deps(session):
         "pytest",
         "pytest-cov",
     )
-    session.install("-e", ".[all]")
+
+    # Because we test minimum dependency versions on the minimum Python
+    # version, the first version we test with in the unit tests sessions has a
+    # constraints file containing all dependencies and extras.
+    with open(
+        CURRENT_DIRECTORY
+        / "testing"
+        / f"constraints-{UNIT_TEST_PYTHON_VERSIONS[0]}.txt",
+        encoding="utf-8",
+    ) as constraints_file:
+        constraints_text = constraints_file.read()
+
+    # Ignore leading whitespace and comment lines.
+    deps = [
+        match.group(1)
+        for match in re.finditer(
+            r"^\s*(\S+)(?===\S+)", constraints_text, flags=re.MULTILINE
+        )
+    ]
+
+    # We use --no-deps to ensure that pre-release versions aren't overwritten
+    # by the version ranges in setup.py.
+    session.install(*deps)
+    session.install("--no-deps", "-e", ".[all]")
 
     # Print out prerelease package versions.
     session.run("python", "-c", "import grpc; print(grpc.__version__)")

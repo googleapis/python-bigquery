@@ -14,6 +14,7 @@
 
 import datetime
 import logging
+import re
 import time
 import types
 import unittest
@@ -40,10 +41,9 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     pandas = None
 
 try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+    import geopandas
+except (ImportError, AttributeError):  # pragma: NO COVER
+    geopandas = None
 
 try:
     from tqdm import tqdm
@@ -51,6 +51,12 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery import _helpers
+
+
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+if pyarrow:
+    import pyarrow.types
 
 
 def _mock_client():
@@ -94,6 +100,189 @@ class TestEncryptionConfiguration(unittest.TestCase):
     def test_ctor_with_key(self):
         encryption_config = self._make_one(kms_key_name=self.KMS_KEY_NAME)
         self.assertEqual(encryption_config.kms_key_name, self.KMS_KEY_NAME)
+
+
+class TestTableBase:
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import _TableBase
+
+        return _TableBase
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_ctor_defaults(self):
+        instance = self._make_one()
+        assert instance._properties == {}
+
+    def test_project(self):
+        instance = self._make_one()
+        instance._properties = {"tableReference": {"projectId": "p_1"}}
+        assert instance.project == "p_1"
+
+    def test_dataset_id(self):
+        instance = self._make_one()
+        instance._properties = {"tableReference": {"datasetId": "ds_1"}}
+        assert instance.dataset_id == "ds_1"
+
+    def test_table_id(self):
+        instance = self._make_one()
+        instance._properties = {"tableReference": {"tableId": "tbl_1"}}
+        assert instance.table_id == "tbl_1"
+
+    def test_path(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        assert instance.path == "/projects/p_1/datasets/ds_1/tables/tbl_1"
+
+    def test___eq___wrong_type(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+
+        class TableWannabe:
+            pass
+
+        wannabe_other = TableWannabe()
+        wannabe_other._properties = instance._properties
+        wannabe_other.project = "p_1"
+        wannabe_other.dataset_id = "ds_1"
+        wannabe_other.table_id = "tbl_1"
+
+        assert instance != wannabe_other  # Can't fake it.
+        assert instance == mock.ANY  # ...but delegation to other object works.
+
+    def test___eq___project_mismatch(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        other = self._make_one()
+        other._properties = {
+            "projectId": "p_2",
+            "datasetId": "ds_1",
+            "tableId": "tbl_1",
+        }
+        assert instance != other
+
+    def test___eq___dataset_mismatch(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        other = self._make_one()
+        other._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_2",
+                "tableId": "tbl_1",
+            }
+        }
+        assert instance != other
+
+    def test___eq___table_mismatch(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        other = self._make_one()
+        other._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_2",
+            }
+        }
+        assert instance != other
+
+    def test___eq___equality(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        other = self._make_one()
+        other._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        assert instance == other
+
+    def test___hash__set_equality(self):
+        instance_1 = self._make_one()
+        instance_1._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+
+        instance_2 = self._make_one()
+        instance_2._properties = {
+            "tableReference": {
+                "projectId": "p_2",
+                "datasetId": "ds_2",
+                "tableId": "tbl_2",
+            }
+        }
+
+        set_one = {instance_1, instance_2}
+        set_two = {instance_1, instance_2}
+        assert set_one == set_two
+
+    def test___hash__sets_not_equal(self):
+        instance_1 = self._make_one()
+        instance_1._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+
+        instance_2 = self._make_one()
+        instance_2._properties = {
+            "tableReference": {
+                "projectId": "p_2",
+                "datasetId": "ds_2",
+                "tableId": "tbl_2",
+            }
+        }
+
+        set_one = {instance_1}
+        set_two = {instance_2}
+        assert set_one != set_two
 
 
 class TestTableReference(unittest.TestCase):
@@ -189,55 +378,6 @@ class TestTableReference(unittest.TestCase):
         self.assertEqual(got.project, "string-project")
         self.assertEqual(got.dataset_id, "string_dataset")
         self.assertEqual(got.table_id, "string_table")
-
-    def test___eq___wrong_type(self):
-        dataset_ref = DatasetReference("project_1", "dataset_1")
-        table = self._make_one(dataset_ref, "table_1")
-        other = object()
-        self.assertNotEqual(table, other)
-        self.assertEqual(table, mock.ANY)
-
-    def test___eq___project_mismatch(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        other_dataset = DatasetReference("project_2", "dataset_1")
-        table = self._make_one(dataset, "table_1")
-        other = self._make_one(other_dataset, "table_1")
-        self.assertNotEqual(table, other)
-
-    def test___eq___dataset_mismatch(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        other_dataset = DatasetReference("project_1", "dataset_2")
-        table = self._make_one(dataset, "table_1")
-        other = self._make_one(other_dataset, "table_1")
-        self.assertNotEqual(table, other)
-
-    def test___eq___table_mismatch(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        table = self._make_one(dataset, "table_1")
-        other = self._make_one(dataset, "table_2")
-        self.assertNotEqual(table, other)
-
-    def test___eq___equality(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        table = self._make_one(dataset, "table_1")
-        other = self._make_one(dataset, "table_1")
-        self.assertEqual(table, other)
-
-    def test___hash__set_equality(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        table1 = self._make_one(dataset, "table1")
-        table2 = self._make_one(dataset, "table2")
-        set_one = {table1, table2}
-        set_two = {table1, table2}
-        self.assertEqual(set_one, set_two)
-
-    def test___hash__not_equals(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        table1 = self._make_one(dataset, "table1")
-        table2 = self._make_one(dataset, "table2")
-        set_one = {table1}
-        set_two = {table2}
-        self.assertNotEqual(set_one, set_two)
 
     def test___repr__(self):
         dataset = DatasetReference("project1", "dataset1")
@@ -552,44 +692,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
         with self.assertRaises(ValueError):
             getattr(table, "num_rows")
 
-    def test__eq__wrong_type(self):
-        table = self._make_one("project_foo.dataset_bar.table_baz")
-
-        class TableWannabe:
-            pass
-
-        not_a_table = TableWannabe()
-        not_a_table._properties = table._properties
-
-        assert table != not_a_table  # Can't fake it.
-
-    def test__eq__same_table_basic(self):
-        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
-        table_2 = self._make_one("project_foo.dataset_bar.table_baz")
-        assert table_1 == table_2
-
-    def test__eq__same_table_multiple_properties(self):
-        from google.cloud.bigquery import SchemaField
-
-        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
-        table_1.require_partition_filter = True
-        table_1.labels = {"first": "one", "second": "two"}
-
-        table_1.schema = [
-            SchemaField("name", "STRING", "REQUIRED"),
-            SchemaField("age", "INTEGER", "NULLABLE"),
-        ]
-
-        table_2 = self._make_one("project_foo.dataset_bar.table_baz")
-        table_2.require_partition_filter = True
-        table_2.labels = {"first": "one", "second": "two"}
-        table_2.schema = [
-            SchemaField("name", "STRING", "REQUIRED"),
-            SchemaField("age", "INTEGER", "NULLABLE"),
-        ]
-
-        assert table_1 == table_2
-
     def test__eq__same_table_property_different(self):
         table_1 = self._make_one("project_foo.dataset_bar.table_baz")
         table_1.description = "This is table baz"
@@ -598,12 +700,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table_2.description = "This is also table baz"
 
         assert table_1 == table_2  # Still equal, only table reference is important.
-
-    def test__eq__different_table(self):
-        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
-        table_2 = self._make_one("project_foo.dataset_bar.table_baz_2")
-
-        assert table_1 != table_2
 
     def test_hashable(self):
         table_1 = self._make_one("project_foo.dataset_bar.table_baz")
@@ -1578,38 +1674,6 @@ class TestTableListItem(unittest.TestCase):
         table = self._make_one(resource)
         self.assertEqual(table.to_api_repr(), resource)
 
-    def test__eq__wrong_type(self):
-        resource = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_baz",
-            }
-        }
-        table = self._make_one(resource)
-
-        class FakeTableListItem:
-            project = "project_foo"
-            dataset_id = "dataset_bar"
-            table_id = "table_baz"
-
-        not_a_table = FakeTableListItem()
-
-        assert table != not_a_table  # Can't fake it.
-
-    def test__eq__same_table(self):
-        resource = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_baz",
-            }
-        }
-        table_1 = self._make_one(resource)
-        table_2 = self._make_one(resource)
-
-        assert table_1 == table_2
-
     def test__eq__same_table_property_different(self):
         table_ref_resource = {
             "projectId": "project_foo",
@@ -1624,40 +1688,6 @@ class TestTableListItem(unittest.TestCase):
         table_2 = self._make_one(resource_2)
 
         assert table_1 == table_2  # Still equal, only table reference is important.
-
-    def test__eq__different_table(self):
-        resource_1 = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_baz",
-            }
-        }
-        table_1 = self._make_one(resource_1)
-
-        resource_2 = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_quux",
-            }
-        }
-        table_2 = self._make_one(resource_2)
-
-        assert table_1 != table_2
-
-    def test_hashable(self):
-        resource = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_baz",
-            }
-        }
-        table_item = self._make_one(resource)
-        table_item_2 = self._make_one(resource)
-
-        assert hash(table_item) == hash(table_item_2)
 
 
 class TestTableClassesInterchangeability:
@@ -1842,6 +1872,26 @@ class Test_EmptyRowIterator(unittest.TestCase):
         self.assertEqual(len(df), 0)  # Verify the number of rows.
         self.assertEqual(len(df.columns), 0)
 
+    @mock.patch("google.cloud.bigquery.table.geopandas", new=None)
+    def test_to_geodataframe_if_geopandas_is_none(self):
+        row_iterator = self._make_one()
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "The geopandas library is not installed, please install "
+                "geopandas to use the to_geodataframe() function."
+            ),
+        ):
+            row_iterator.to_geodataframe(create_bqstorage_client=False)
+
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    def test_to_geodataframe(self):
+        row_iterator = self._make_one()
+        df = row_iterator.to_geodataframe(create_bqstorage_client=False)
+        self.assertIsInstance(df, geopandas.GeoDataFrame)
+        self.assertEqual(len(df), 0)  # verify the number of rows
+        self.assertIsNone(df.crs)
+
 
 class TestRowIterator(unittest.TestCase):
     def _class_under_test(self):
@@ -1878,6 +1928,16 @@ class TestRowIterator(unittest.TestCase):
         return self._class_under_test()(
             client, api_request, path, schema, table=table, **kwargs
         )
+
+    def _make_one_from_data(self, schema=(), rows=()):
+        from google.cloud.bigquery.schema import SchemaField
+
+        schema = [SchemaField(*a) for a in schema]
+        rows = [{"f": [{"v": v} for v in row]} for row in rows]
+
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        return self._make_one(_mock_client(), api_request, path, schema)
 
     def test_constructor(self):
         from google.cloud.bigquery.table import _item_to_row
@@ -3171,6 +3231,18 @@ class TestRowIterator(unittest.TestCase):
             row_iterator.to_dataframe()
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @mock.patch("google.cloud.bigquery.table.shapely", new=None)
+    def test_to_dataframe_error_if_shapely_is_none(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "The shapely library is not installed, please install "
+                "shapely to use the geography_as_object option."
+            ),
+        ):
+            self._make_one_from_data().to_dataframe(geography_as_object=True)
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_max_results_w_bqstorage_warning(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3926,6 +3998,221 @@ class TestRowIterator(unittest.TestCase):
 
         # Don't close the client if it was passed in.
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
+
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    def test_to_dataframe_geography_as_object(self):
+        row_iterator = self._make_one_from_data(
+            (("name", "STRING"), ("geog", "GEOGRAPHY")),
+            (
+                ("foo", "Point(0 0)"),
+                ("bar", None),
+                ("baz", "Polygon((0 0, 0 1, 1 0, 0 0))"),
+            ),
+        )
+        df = row_iterator.to_dataframe(
+            create_bqstorage_client=False, geography_as_object=True,
+        )
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 3)  # verify the number of rows
+        self.assertEqual(list(df), ["name", "geog"])  # verify the column names
+        self.assertEqual(df.name.dtype.name, "object")
+        self.assertEqual(df.geog.dtype.name, "object")
+        self.assertIsInstance(df.geog, pandas.Series)
+        self.assertEqual(
+            [v.__class__.__name__ for v in df.geog], ["Point", "float", "Polygon"]
+        )
+
+    @mock.patch("google.cloud.bigquery.table.geopandas", new=None)
+    def test_to_geodataframe_error_if_geopandas_is_none(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "The geopandas library is not installed, please install "
+                "geopandas to use the to_geodataframe() function."
+            ),
+        ):
+            self._make_one_from_data().to_geodataframe()
+
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    def test_to_geodataframe(self):
+        row_iterator = self._make_one_from_data(
+            (("name", "STRING"), ("geog", "GEOGRAPHY")),
+            (
+                ("foo", "Point(0 0)"),
+                ("bar", None),
+                ("baz", "Polygon((0 0, 0 1, 1 0, 0 0))"),
+            ),
+        )
+        df = row_iterator.to_geodataframe(create_bqstorage_client=False)
+        self.assertIsInstance(df, geopandas.GeoDataFrame)
+        self.assertEqual(len(df), 3)  # verify the number of rows
+        self.assertEqual(list(df), ["name", "geog"])  # verify the column names
+        self.assertEqual(df.name.dtype.name, "object")
+        self.assertEqual(df.geog.dtype.name, "geometry")
+        self.assertIsInstance(df.geog, geopandas.GeoSeries)
+
+        with warnings.catch_warnings():
+            # Computing the area on a GeoDataFrame that uses a geographic Coordinate
+            # Reference System (CRS) produces a warning that we are not interested in.
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.assertEqual(list(map(str, df.area)), ["0.0", "nan", "0.5"])
+            self.assertEqual(list(map(str, df.geog.area)), ["0.0", "nan", "0.5"])
+
+        self.assertEqual(df.crs.srs, "EPSG:4326")
+        self.assertEqual(df.crs.name, "WGS 84")
+        self.assertEqual(df.geog.crs.srs, "EPSG:4326")
+        self.assertEqual(df.geog.crs.name, "WGS 84")
+
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    def test_to_geodataframe_ambiguous_geog(self):
+        row_iterator = self._make_one_from_data(
+            (("name", "STRING"), ("geog", "GEOGRAPHY"), ("geog2", "GEOGRAPHY")), ()
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "There is more than one GEOGRAPHY column in the result. "
+                "The geography_column argument must be used to specify which "
+                "one to use to create a GeoDataFrame"
+            ),
+        ):
+            row_iterator.to_geodataframe(create_bqstorage_client=False)
+
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    def test_to_geodataframe_bad_geography_column(self):
+        row_iterator = self._make_one_from_data(
+            (("name", "STRING"), ("geog", "GEOGRAPHY"), ("geog2", "GEOGRAPHY")), ()
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "The given geography column, xxx, doesn't name"
+                " a GEOGRAPHY column in the result."
+            ),
+        ):
+            row_iterator.to_geodataframe(
+                create_bqstorage_client=False, geography_column="xxx"
+            )
+
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    def test_to_geodataframe_no_geog(self):
+        row_iterator = self._make_one_from_data(
+            (("name", "STRING"), ("geog", "STRING")), ()
+        )
+        with self.assertRaisesRegex(
+            TypeError,
+            re.escape(
+                "There must be at least one GEOGRAPHY column"
+                " to create a GeoDataFrame"
+            ),
+        ):
+            row_iterator.to_geodataframe(create_bqstorage_client=False)
+
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    def test_to_geodataframe_w_geography_column(self):
+        row_iterator = self._make_one_from_data(
+            (("name", "STRING"), ("geog", "GEOGRAPHY"), ("geog2", "GEOGRAPHY")),
+            (
+                ("foo", "Point(0 0)", "Point(1 1)"),
+                ("bar", None, "Point(2 2)"),
+                ("baz", "Polygon((0 0, 0 1, 1 0, 0 0))", "Point(3 3)"),
+            ),
+        )
+        df = row_iterator.to_geodataframe(
+            create_bqstorage_client=False, geography_column="geog"
+        )
+        self.assertIsInstance(df, geopandas.GeoDataFrame)
+        self.assertEqual(len(df), 3)  # verify the number of rows
+        self.assertEqual(list(df), ["name", "geog", "geog2"])  # verify the column names
+        self.assertEqual(df.name.dtype.name, "object")
+        self.assertEqual(df.geog.dtype.name, "geometry")
+        self.assertEqual(df.geog2.dtype.name, "object")
+        self.assertIsInstance(df.geog, geopandas.GeoSeries)
+
+        with warnings.catch_warnings():
+            # Computing the area on a GeoDataFrame that uses a geographic Coordinate
+            # Reference System (CRS) produces a warning that we are not interested in.
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.assertEqual(list(map(str, df.area)), ["0.0", "nan", "0.5"])
+            self.assertEqual(list(map(str, df.geog.area)), ["0.0", "nan", "0.5"])
+
+        self.assertEqual(
+            [v.__class__.__name__ for v in df.geog], ["Point", "NoneType", "Polygon"]
+        )
+
+        # Geog2 isn't a GeoSeries, but it contains geomentries:
+        self.assertIsInstance(df.geog2, pandas.Series)
+        self.assertEqual(
+            [v.__class__.__name__ for v in df.geog2], ["Point", "Point", "Point"]
+        )
+
+        # and can easily be converted to a GeoSeries
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.assertEqual(
+                list(map(str, geopandas.GeoSeries(df.geog2).area)),
+                ["0.0", "0.0", "0.0"],
+            )
+
+    @unittest.skipIf(geopandas is None, "Requires `geopandas`")
+    @mock.patch("google.cloud.bigquery.table.RowIterator.to_dataframe")
+    def test_rowiterator_to_geodataframe_delegation(self, to_dataframe):
+        """
+        RowIterator.to_geodataframe just delegates to RowIterator.to_dataframe.
+
+        This test just demonstrates that. We don't need to test all the
+        variations, which are tested for to_dataframe.
+        """
+        import numpy
+        from shapely import wkt
+
+        row_iterator = self._make_one_from_data(
+            (("name", "STRING"), ("g", "GEOGRAPHY"))
+        )
+        bqstorage_client = object()
+        dtypes = dict(xxx=numpy.dtype("int64"))
+        progress_bar_type = "normal"
+        create_bqstorage_client = False
+        date_as_object = False
+        geography_column = "g"
+
+        to_dataframe.return_value = pandas.DataFrame(
+            dict(name=["foo"], g=[wkt.loads("point(0 0)")],)
+        )
+
+        df = row_iterator.to_geodataframe(
+            bqstorage_client=bqstorage_client,
+            dtypes=dtypes,
+            progress_bar_type=progress_bar_type,
+            create_bqstorage_client=create_bqstorage_client,
+            date_as_object=date_as_object,
+            geography_column=geography_column,
+        )
+
+        to_dataframe.assert_called_once_with(
+            bqstorage_client,
+            dtypes,
+            progress_bar_type,
+            create_bqstorage_client,
+            date_as_object,
+            geography_as_object=True,
+        )
+
+        self.assertIsInstance(df, geopandas.GeoDataFrame)
+        self.assertEqual(len(df), 1)  # verify the number of rows
+        self.assertEqual(list(df), ["name", "g"])  # verify the column names
+        self.assertEqual(df.name.dtype.name, "object")
+        self.assertEqual(df.g.dtype.name, "geometry")
+        self.assertIsInstance(df.g, geopandas.GeoSeries)
+
+        with warnings.catch_warnings():
+            # Computing the area on a GeoDataFrame that uses a geographic Coordinate
+            # Reference System (CRS) produces a warning that we are not interested in.
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.assertEqual(list(map(str, df.area)), ["0.0"])
+            self.assertEqual(list(map(str, df.g.area)), ["0.0"])
+
+        self.assertEqual([v.__class__.__name__ for v in df.g], ["Point"])
 
 
 class TestPartitionRange(unittest.TestCase):

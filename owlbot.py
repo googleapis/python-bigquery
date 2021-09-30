@@ -97,7 +97,11 @@ templated_files = common.py_library(
     samples=True,
     microgenerator=True,
     split_system_tests=True,
-    intersphinx_dependencies={"dateutil": "https://dateutil.readthedocs.io/en/latest/"},
+    intersphinx_dependencies={
+        "dateutil": "https://dateutil.readthedocs.io/en/latest/",
+        "pandas": "https://pandas.pydata.org/pandas-docs/stable/",
+        "geopandas": "https://geopandas.org/",
+    },
 )
 
 # BigQuery has a custom multiprocessing note
@@ -107,6 +111,7 @@ s.move(
         "noxfile.py",
         "docs/multiprocessing.rst",
         ".coveragerc",
+        ".github/CODEOWNERS",
         # Include custom SNIPPETS_TESTS job for performance.
         # https://github.com/googleapis/python-bigquery/issues/191
         ".kokoro/presubmit/presubmit.cfg",

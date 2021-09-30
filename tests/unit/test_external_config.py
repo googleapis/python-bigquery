@@ -758,6 +758,117 @@ class TestExternalConfig(unittest.TestCase):
         ec.decimal_target_types = None  # No error if unsetting when already unset.
 
 
+class BigtableOptions(unittest.TestCase):
+    def test_to_api_repr(self):
+        options = external_config.BigtableOptions()
+        family1 = external_config.BigtableColumnFamily()
+        column1 = external_config.BigtableColumn()
+        column1.qualifier_string = "col1"
+        column1.field_name = "bqcol1"
+        column1.type_ = "FLOAT"
+        column1.encoding = "TEXT"
+        column1.only_read_latest = True
+        column2 = external_config.BigtableColumn()
+        column2.qualifier_encoded = b"col2"
+        column2.field_name = "bqcol2"
+        column2.type_ = "STRING"
+        column2.only_read_latest = False
+        family1.family_id = "family1"
+        family1.type_ = "INTEGER"
+        family1.encoding = "BINARY"
+        family1.columns = [column1, column2]
+        family1.only_read_latest = False
+        family2 = external_config.BigtableColumnFamily()
+        column3 = external_config.BigtableColumn()
+        column3.qualifier_string = "col3"
+        family2.family_id = "family2"
+        family2.type_ = "BYTES"
+        family2.encoding = "TEXT"
+        family2.columns = [column3]
+        family2.only_read_latest = True
+        options.column_families = [family1, family2]
+        options.ignore_unspecified_column_families = False
+        options.read_rowkey_as_string = True
+
+        resource = options.to_api_repr()
+
+        expected_column_families = [
+            {
+                "familyId": "family1",
+                "type": "INTEGER",
+                "encoding": "BINARY",
+                "columns": [
+                    {
+                        "qualifierString": "col1",
+                        "fieldName": "bqcol1",
+                        "type": "FLOAT",
+                        "encoding": "TEXT",
+                        "onlyReadLatest": True,
+                    },
+                    {
+                        "qualifierEncoded": "Y29sMg==",
+                        "fieldName": "bqcol2",
+                        "type": "STRING",
+                        "onlyReadLatest": False,
+                    },
+                ],
+                "onlyReadLatest": False,
+            },
+            {
+                "familyId": "family2",
+                "type": "BYTES",
+                "encoding": "TEXT",
+                "columns": [{"qualifierString": "col3"}],
+                "onlyReadLatest": True,
+            },
+        ]
+        self.maxDiff = None
+        self.assertEqual(
+            resource,
+            {
+                "columnFamilies": expected_column_families,
+                "ignoreUnspecifiedColumnFamilies": False,
+                "readRowkeyAsString": True,
+            },
+        )
+
+
+class CSVOptions(unittest.TestCase):
+    def test_to_api_repr(self):
+        options = external_config.CSVOptions()
+        options.field_delimiter = "\t"
+        options.skip_leading_rows = 42
+        options.quote_character = '"'
+        options.allow_quoted_newlines = True
+        options.allow_jagged_rows = False
+        options.encoding = "UTF-8"
+
+        resource = options.to_api_repr()
+
+        self.assertEqual(
+            resource,
+            {
+                "fieldDelimiter": "\t",
+                "skipLeadingRows": "42",
+                "quote": '"',
+                "allowQuotedNewlines": True,
+                "allowJaggedRows": False,
+                "encoding": "UTF-8",
+            },
+        )
+
+
+class TestGoogleSheetsOptions(unittest.TestCase):
+    def test_to_api_repr(self):
+        options = external_config.GoogleSheetsOptions()
+        options.range = "sheet1!A1:B20"
+        options.skip_leading_rows = 107
+
+        resource = options.to_api_repr()
+
+        self.assertEqual(resource, {"range": "sheet1!A1:B20", "skipLeadingRows": "107"})
+
+
 def _copy_and_update(d, u):
     d = copy.deepcopy(d)
     d.update(u)

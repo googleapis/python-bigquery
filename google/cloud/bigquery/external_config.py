@@ -952,10 +952,6 @@ class ExternalConfig(object):
                 A dictionary in the format used by the BigQuery API.
         """
         config = copy.deepcopy(self._properties)
-        if self.options is not None:
-            r = self.options.to_api_repr()
-            if r != {}:
-                config[self.options._RESOURCE_NAME] = r
         return config
 
     @classmethod

@@ -94,6 +94,7 @@ s.replace(
         google/cloud/
     exclude =
         tests/
+        google/cloud/bigquery_v2/  # Legacy proto-based types.
     output = .pytype/
     disable =
         # There's some issue with finding some pyi files, thus disabling.

@@ -109,6 +109,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = [
+    "google/cloud/bigquery_v2/**",  # Legacy proto-based types.
     "_build",
     "**/.nox/**/*",
     "samples/AUTHORING_GUIDE.md",

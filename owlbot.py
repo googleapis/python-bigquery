@@ -68,6 +68,11 @@ s.replace(
     r'\{"members": True\}',
     '{"members": True, "inherited-members": True}',
 )
+s.replace(
+    "docs/conf.py",
+    r"exclude_patterns = \[",
+    '\\g<0>\n    "google/cloud/bigquery_v2/**",  # Legacy proto-based types.',
+)
 
 # ----------------------------------------------------------------------------
 # pytype-related changes

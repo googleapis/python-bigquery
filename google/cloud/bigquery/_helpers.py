@@ -51,8 +51,7 @@ _PROJECT_PREFIX_PATTERN = re.compile(
 _INTERVAL_PATTERN = re.compile(
     r"(?P<calendar_sign>-?)(?P<years>[0-9]+)-(?P<months>[0-9]+) "
     r"(?P<days>-?[0-9]+) "
-    r"(?P<time_sign>-?)(?P<hours>[0-9]+):(?P<minutes>[0-9]+):"
-    r"(?P<seconds>[0-9]+)\.?(?P<fraction>[0-9]+)?$"
+    r"(?P<time_sign>-?)(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)\.?(?P<fraction>\d*)?$"
 )
 
 _MIN_PYARROW_VERSION = packaging.version.Version("3.0.0")

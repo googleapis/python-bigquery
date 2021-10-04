@@ -212,7 +212,7 @@ def _interval_from_json(
     minutes = time_sign * int(parsed.group("minutes"))
     seconds = time_sign * int(parsed.group("seconds"))
     fraction = parsed.group("fraction")
-    microseconds = time_sign * int(fraction.ljust(6, "0")) if fraction else 0
+    microseconds = time_sign * int(fraction.ljust(6, "0")[:6]) if fraction else 0
 
     return relativedelta.relativedelta(
         years=years,

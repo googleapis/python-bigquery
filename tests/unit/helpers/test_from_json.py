@@ -128,6 +128,28 @@ def test_interval_from_json_w_invalid_format(mut):
         ("0-0 0 0:0:0.12", relativedelta(microseconds=120000)),
         ("0-0 0 0:0:0.123", relativedelta(microseconds=123000)),
         ("0-0 0 0:0:0.1234", relativedelta(microseconds=123400)),
+        # Fractional seconds can cause rounding problems if cast to float. See:
+        # https://github.com/googleapis/python-db-dtypes-pandas/issues/18
+        ("0-0 0 0:0:59.876543", relativedelta(seconds=59, microseconds=876543)),
+        (
+            "0-0 0 01:01:01.010101",
+            relativedelta(hours=1, minutes=1, seconds=1, microseconds=10101),
+        ),
+        (
+            "0-0 0 09:09:09.090909",
+            relativedelta(hours=9, minutes=9, seconds=9, microseconds=90909),
+        ),
+        (
+            "0-0 0 11:11:11.111111",
+            relativedelta(hours=11, minutes=11, seconds=11, microseconds=111111),
+        ),
+        (
+            "0-0 0 19:16:23.987654",
+            relativedelta(hours=19, minutes=16, seconds=23, microseconds=987654),
+        ),
+        # Nanoseconds are not expected, but should not cause error.
+        ("0-0 0 0:0:00.123456789", relativedelta(microseconds=123456)),
+        ("0-0 0 0:0:59.87654321", relativedelta(seconds=59, microseconds=876543)),
     ),
 )
 def test_w_string_values(mut, value, expected):

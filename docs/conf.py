@@ -367,8 +367,8 @@ intersphinx_mapping = {
     "proto-plus": ("https://proto-plus-python.readthedocs.io/en/latest/", None),
     "protobuf": ("https://googleapis.dev/python/protobuf/latest/", None),
     "dateutil": ("https://dateutil.readthedocs.io/en/latest/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "geopandas": ("https://geopandas.org/", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/dev", None),
 }
 
 

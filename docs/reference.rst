@@ -204,3 +204,18 @@ Helper SQL type classes.
     :maxdepth: 2
 
     bigquery/standard_sql
+
+
+Legacy proto-based Types (deprecated)
+=====================================
+
+The legacy type classes based on protocol buffers.
+
+.. deprecated:: 3.0.0
+    These types are provided for backward compatibility only, and are not maintained
+    anymore.
+
+.. toctree::
+    :maxdepth: 2
+
+    bigquery/legacy_proto_types

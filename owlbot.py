@@ -109,6 +109,7 @@ s.move(
     excludes=[
         "noxfile.py",
         "docs/multiprocessing.rst",
+        "docs/index.rst",
         ".coveragerc",
         ".github/CODEOWNERS",
         # Include custom SNIPPETS_TESTS job for performance.

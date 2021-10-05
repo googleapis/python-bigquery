@@ -32,6 +32,8 @@ templated_files = common.py_library(
     intersphinx_dependencies={
         "pandas": "http://pandas.pydata.org/pandas-docs/stable/",
         "geopandas": "https://geopandas.org/",
+        "proto-plus": ("https://proto-plus-python.readthedocs.io/en/latest/", None),
+        "protobuf": ("https://googleapis.dev/python/protobuf/latest/", None),
     },
 )
 

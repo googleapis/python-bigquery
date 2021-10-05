@@ -366,6 +366,8 @@ intersphinx_mapping = {
     "grpc": ("https://grpc.github.io/grpc/python/", None),
     "pandas": ("http://pandas.pydata.org/pandas-docs/stable/", None),
     "geopandas": ("https://geopandas.org/", None),
+    "proto-plus": ("https://proto-plus-python.readthedocs.io/en/latest/", None),
+    "protobuf": ("https://googleapis.dev/python/protobuf/latest/", None),
 }
 
 

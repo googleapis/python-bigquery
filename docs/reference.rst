@@ -128,6 +128,7 @@ Schema
     :toctree: generated
 
     schema.SchemaField
+    schema.PolicyTagList
 
 
 Query
@@ -165,6 +166,11 @@ External Configuration
     external_config.BigtableColumn
     external_config.CSVOptions
     external_config.GoogleSheetsOptions
+
+.. toctree::
+    :maxdepth: 2
+
+    format_options
 
 
 Magics

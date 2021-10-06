@@ -180,10 +180,8 @@ class TableReference(_TableBase):
     https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablereference
 
     Args:
-        dataset_ref:
-            A pointer to the dataset
-        table_id:
-            The ID of the table
+        dataset_ref: A pointer to the dataset
+        table_id: The ID of the table
     """
 
     _PROPERTY_TO_API_FIELD = {
@@ -1688,6 +1686,8 @@ class RowIterator(HTTPIterator):
 
         .. versionadded:: 1.17.0
         """
+        self._maybe_warn_max_results(bqstorage_client)
+
         self._maybe_warn_max_results(bqstorage_client)
 
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):

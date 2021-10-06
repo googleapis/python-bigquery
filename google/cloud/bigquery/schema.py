@@ -66,6 +66,22 @@ class _DefaultSentinel(enum.Enum):
 _DEFAULT_VALUE = _DefaultSentinel.DEFAULT_VALUE
 
 
+class _DefaultSentinel(enum.Enum):
+    """Object used as 'sentinel' indicating default value should be used.
+
+    Uses enum so that pytype/mypy knows that this is the only possible value.
+    https://stackoverflow.com/a/60605919/101923
+
+    Literal[_DEFAULT_VALUE] is an alternative, but only added in Python 3.8.
+    https://docs.python.org/3/library/typing.html#typing.Literal
+    """
+
+    DEFAULT_VALUE = object()
+
+
+_DEFAULT_VALUE = _DefaultSentinel.DEFAULT_VALUE
+
+
 class SchemaField(object):
     """Describe a single field within a table schema.
 

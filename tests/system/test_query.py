@@ -19,12 +19,11 @@ import decimal
 import pytest
 
 from google.cloud import bigquery
+from google.cloud.bigquery.query import ArrayQueryParameter
 from google.cloud.bigquery.query import ScalarQueryParameter
-
-# from google.cloud.bigquery.query import ArrayQueryParameter
-# from google.cloud.bigquery.query import ScalarQueryParameterType
-# from google.cloud.bigquery.query import StructQueryParameter
-# from google.cloud.bigquery.query import StructQueryParameterType
+from google.cloud.bigquery.query import ScalarQueryParameterType
+from google.cloud.bigquery.query import StructQueryParameter
+from google.cloud.bigquery.query import StructQueryParameterType
 
 
 @pytest.fixture(params=["INSERT", "QUERY"])
@@ -279,116 +278,135 @@ def test_query_statistics(bigquery_client, query_api_method):
                 )
             ],
         ),
-        # (
-        #    "SELECT @array_param",
-        #    [1, 2],
-        #    [array_param],
-        # ),
-        # (
-        #    "SELECT (@hitchhiker.question, @hitchhiker.answer)",
-        #    ({"_field_1": question, "_field_2": answer}),
-        #    [struct_param],
-        # ),
-        # (
-        #    "SELECT "
-        #    "((@rectangle.bottom_right.x - @rectangle.top_left.x) "
-        #    "* (@rectangle.top_left.y - @rectangle.bottom_right.y))",
-        #    100,
-        #    [rectangle_param],
-        # ),
-        # (
-        #    "SELECT ?",
-        #    [
-        #        {"name": phred_name, "age": phred_age},
-        #        {"name": bharney_name, "age": bharney_age},
-        #    ],
-        #    [characters_param],
-        # ),
-        # (
-        #    "SELECT @empty_array_param",
-        #    [],
-        #    [empty_struct_array_param],
-        # ),
-        # (
-        #    "SELECT @roles",
-        #    (
-        #        "hero": {"name": phred_name, "age": phred_age},
-        #        "sidekick": {"name": bharney_name, "age": bharney_age},
-        #    ),
-        #    [roles_param],
-        # ),
-        # (
-        #    "SELECT ?",
-        #    {"friends": [phred_name, bharney_name]},
-        #    [with_friends_param],
-        # ),
-        # (
-        #    "SELECT @bignum_param",
-        #    bignum,
-        #    [bignum_param],
-        # ),
+        (
+            "SELECT @array_param",
+            [1, 2],
+            [
+                ArrayQueryParameter(
+                    name="array_param", array_type="INT64", values=[1, 2]
+                )
+            ],
+        ),
+        (
+            "SELECT (@hitchhiker.question, @hitchhiker.answer)",
+            ({"_field_1": "What is the answer?", "_field_2": 42}),
+            [
+                StructQueryParameter(
+                    "hitchhiker",
+                    ScalarQueryParameter(
+                        name="question", type_="STRING", value="What is the answer?",
+                    ),
+                    ScalarQueryParameter(name="answer", type_="INT64", value=42,),
+                ),
+            ],
+        ),
+        (
+            "SELECT "
+            "((@rectangle.bottom_right.x - @rectangle.top_left.x) "
+            "* (@rectangle.top_left.y - @rectangle.bottom_right.y))",
+            100,
+            [
+                StructQueryParameter(
+                    "rectangle",
+                    StructQueryParameter(
+                        "top_left",
+                        ScalarQueryParameter("x", "INT64", 12),
+                        ScalarQueryParameter("y", "INT64", 102),
+                    ),
+                    StructQueryParameter(
+                        "bottom_right",
+                        ScalarQueryParameter("x", "INT64", 22),
+                        ScalarQueryParameter("y", "INT64", 92),
+                    ),
+                )
+            ],
+        ),
+        (
+            "SELECT ?",
+            [
+                {"name": "Phred Phlyntstone", "age": 32},
+                {"name": "Bharney Rhubbyl", "age": 31},
+            ],
+            [
+                ArrayQueryParameter(
+                    name=None,
+                    array_type="RECORD",
+                    values=[
+                        StructQueryParameter(
+                            None,
+                            ScalarQueryParameter(
+                                name="name", type_="STRING", value="Phred Phlyntstone"
+                            ),
+                            ScalarQueryParameter(name="age", type_="INT64", value=32),
+                        ),
+                        StructQueryParameter(
+                            None,
+                            ScalarQueryParameter(
+                                name="name", type_="STRING", value="Bharney Rhubbyl"
+                            ),
+                            ScalarQueryParameter(name="age", type_="INT64", value=31),
+                        ),
+                    ],
+                )
+            ],
+        ),
+        (
+            "SELECT @empty_array_param",
+            [],
+            [
+                ArrayQueryParameter(
+                    name="empty_array_param",
+                    values=[],
+                    array_type=StructQueryParameterType(
+                        ScalarQueryParameterType(name="foo", type_="INT64"),
+                        ScalarQueryParameterType(name="bar", type_="STRING"),
+                    ),
+                )
+            ],
+        ),
+        (
+            "SELECT @roles",
+            {
+                "hero": {"name": "Phred Phlyntstone", "age": 32},
+                "sidekick": {"name": "Bharney Rhubbyl", "age": 31},
+            },
+            [
+                StructQueryParameter(
+                    "roles",
+                    StructQueryParameter(
+                        "hero",
+                        ScalarQueryParameter(
+                            name="name", type_="STRING", value="Phred Phlyntstone"
+                        ),
+                        ScalarQueryParameter(name="age", type_="INT64", value=32),
+                    ),
+                    StructQueryParameter(
+                        "sidekick",
+                        ScalarQueryParameter(
+                            name="name", type_="STRING", value="Bharney Rhubbyl"
+                        ),
+                        ScalarQueryParameter(name="age", type_="INT64", value=31),
+                    ),
+                ),
+            ],
+        ),
+        (
+            "SELECT ?",
+            {"friends": ["Jack", "Jill"]},
+            [
+                StructQueryParameter(
+                    None,
+                    ArrayQueryParameter(
+                        name="friends", array_type="STRING", values=["Jack", "Jill"]
+                    ),
+                )
+            ],
+        ),
     ),
 )
 def test_query_parameters(
     bigquery_client, query_api_method, sql, expected, query_parameters
 ):
-    # array_param = ArrayQueryParameter(
-    #    name="array_param", array_type="INT64", values=[1, 2]
-    # )
-    # struct_param = StructQueryParameter("hitchhiker", question_param, answer_param)
-    # phred_name = "Phred Phlyntstone"
-    # phred_name_param = ScalarQueryParameter(
-    #    name="name", type_="STRING", value=phred_name
-    # )
-    # phred_age = 32
-    # phred_age_param = ScalarQueryParameter(
-    #    name="age", type_="INT64", value=phred_age
-    # )
-    # phred_param = StructQueryParameter(None, phred_name_param, phred_age_param)
-    # bharney_name = "Bharney Rhubbyl"
-    # bharney_name_param = ScalarQueryParameter(
-    #    name="name", type_="STRING", value=bharney_name
-    # )
-    # bharney_age = 31
-    # bharney_age_param = ScalarQueryParameter(
-    #    name="age", type_="INT64", value=bharney_age
-    # )
-    # bharney_param = StructQueryParameter(
-    #    None, bharney_name_param, bharney_age_param
-    # )
-    # characters_param = ArrayQueryParameter(
-    #    name=None, array_type="RECORD", values=[phred_param, bharney_param]
-    # )
-    # empty_struct_array_param = ArrayQueryParameter(
-    #    name="empty_array_param",
-    #    values=[],
-    #    array_type=StructQueryParameterType(
-    #        ScalarQueryParameterType(name="foo", type_="INT64"),
-    #        ScalarQueryParameterType(name="bar", type_="STRING"),
-    #    ),
-    # )
-    # hero_param = StructQueryParameter("hero", phred_name_param, phred_age_param)
-    # sidekick_param = StructQueryParameter(
-    #    "sidekick", bharney_name_param, bharney_age_param
-    # )
-    # roles_param = StructQueryParameter("roles", hero_param, sidekick_param)
-    # friends_param = ArrayQueryParameter(
-    #    name="friends", array_type="STRING", values=[phred_name, bharney_name]
-    # )
-    # with_friends_param = StructQueryParameter(None, friends_param)
-    # top_left_param = StructQueryParameter(
-    #    "top_left",
-    #    ScalarQueryParameter("x", "INT64", 12),
-    #    ScalarQueryParameter("y", "INT64", 102),
-    # )
-    # bottom_right_param = StructQueryParameter(
-    #    "bottom_right",
-    #    ScalarQueryParameter("x", "INT64", 22),
-    #    ScalarQueryParameter("y", "INT64", 92),
-    # )
-    # rectangle_param = StructQueryParameter(
-    #    "rectangle", top_left_param, bottom_right_param
-    # )
 
     jconfig = bigquery.QueryJobConfig()
     jconfig.query_parameters = query_parameters

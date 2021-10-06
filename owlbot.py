@@ -32,6 +32,8 @@ templated_files = common.py_library(
     intersphinx_dependencies={
         "pandas": "http://pandas.pydata.org/pandas-docs/stable/",
         "geopandas": "https://geopandas.org/",
+        "proto-plus": ("https://proto-plus-python.readthedocs.io/en/latest/", None),
+        "protobuf": ("https://googleapis.dev/python/protobuf/latest/", None),
     },
 )
 
@@ -68,6 +70,11 @@ s.replace(
     r'\{"members": True\}',
     '{"members": True, "inherited-members": True}',
 )
+s.replace(
+    "docs/conf.py",
+    r"exclude_patterns = \[",
+    '\\g<0>\n    "google/cloud/bigquery_v2/**",  # Legacy proto-based types.',
+)
 
 # ----------------------------------------------------------------------------
 # pytype-related changes
@@ -89,6 +96,7 @@ s.replace(
         google/cloud/
     exclude =
         tests/
+        google/cloud/bigquery_v2/  # Legacy proto-based types.
     output = .pytype/
     disable =
         # There's some issue with finding some pyi files, thus disabling.

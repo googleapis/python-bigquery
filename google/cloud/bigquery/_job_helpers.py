@@ -123,9 +123,7 @@ def _to_query_request(job_config: Optional[job.QueryJobConfig]) -> Dict[str, Any
     """
     request_body = {}
     job_config_resource = job_config.to_api_repr() if job_config else {}
-    query_config_resource = job_config_resource.get("configuration", {}).get(
-        "query", {}
-    )
+    query_config_resource = job_config_resource.get("query", {})
 
     request_body.update(query_config_resource)
 
@@ -144,7 +142,6 @@ def _to_query_request(job_config: Optional[job.QueryJobConfig]) -> Dict[str, Any
 def _to_query_job(
     client: "Client", query: str, query_response: Dict[str, Any]
 ) -> job.QueryJob:
-    # TODO: check for errors?
     job_ref_resource = query_response["jobReference"]
     job_ref = job._JobReference._from_api_repr(job_ref_resource)
     query_job = job.QueryJob(job_ref, query, client=client)

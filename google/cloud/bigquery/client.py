@@ -61,6 +61,7 @@ from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
@@ -3124,7 +3125,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
-        api_method: str = "insert",
+        api_method: enums.QueryApiMethod = enums.QueryApiMethod.INSERT,
     ) -> job.QueryJob:
         """Run a SQL query.
 
@@ -3177,19 +3178,7 @@ class Client(ClientWithProject):
                 specified here becomes the default ``job_retry`` for
                 ``result()``, where it can also be specified.
             api_method:
-                One of ``'insert'`` or ``'query'``. Defaults to ``'insert'``.
-
-                When set to ``'insert'``, submit a query job by using the
-                `jobs.insert REST API method
-                <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert>_`.
-                This supports all job configuration options.
-
-                When set to ``'query'``, submit a query job by using the
-                `jobs.query REST API method
-                <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query>`_.
-                This API waits up to the specified timeout for the query to
-                finish.  The ``job_id`` and ``job_id_prefix`` parameters cannot
-                be used with this API method.
+                Method with which to start the query job.
 
         Returns:
             google.cloud.bigquery.job.QueryJob: A new query job instance.
@@ -3213,15 +3202,9 @@ class Client(ClientWithProject):
                 " provided."
             )
 
-        if api_method not in {"insert", "query"}:
-            raise ValueError(
-                f"Got unexpected value for api_method: {repr(api_method)}"
-                " Expected one of {'insert', 'query'}."
-            )
-
-        if job_id_given and api_method == "query":
+        if job_id_given and api_method == enums.QueryApiMethod.QUERY:
             raise TypeError(
-                "`job_id` was provided, but the 'query' `api_method` was requested."
+                "`job_id` was provided, but the 'QUERY' `api_method` was requested."
             )
 
         if project is None:
@@ -3253,12 +3236,11 @@ class Client(ClientWithProject):
 
         # Note that we haven't modified the original job_config (or
         # _default_query_job_config) up to this point.
-        if api_method == "query":
-            # TODO: error if job_id or job_id_prefix set
+        if api_method == enums.QueryApiMethod.QUERY:
             return _job_helpers.query_jobs_query(
                 self, query, job_config, location, project, retry, timeout, job_retry,
             )
-        else:
+        elif api_method == enums.QueryApiMethod.INSERT:
             return _job_helpers.query_jobs_insert(
                 self,
                 query,
@@ -3271,6 +3253,8 @@ class Client(ClientWithProject):
                 timeout,
                 job_retry,
             )
+        else:
+            raise ValueError(f"Got unexpected value for api_method: {repr(api_method)}")
 
     def insert_rows(
         self,

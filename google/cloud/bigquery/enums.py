@@ -122,6 +122,34 @@ class QueryPriority(object):
     """Specifies batch priority."""
 
 
+class QueryApiMethod(str, enum.Enum):
+    """API method used to start the query. The default value is
+    :attr:`INSERT`.
+    """
+
+    INSERT = "INSERT"
+    """Submit a query job by using the `jobs.insert REST API method
+    <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert>_`.
+
+    This supports all job configuration options.
+    """
+
+    QUERY = "QUERY"
+    """Submit a query job by using the `jobs.query REST API method
+    <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query>`_.
+
+    This API blocks for up to a specified timeout for the query to finish. The
+    full job resource (including job statistics) may not be available if the
+    query finishes within the timeout. Call
+    :meth:`~google.cloud.bigquery.job.QueryJob.reload` or
+    :meth:`~google.cloud.bigquery.client.Client.get_job` to get full job
+    statistics.
+
+    Many parameters, including destination table and job ID cannot be used with
+    this API method.
+    """
+
+
 class SchemaUpdateOption(object):
     """Specifies an update to the destination table schema as a side effect of
     a load job.

@@ -16,7 +16,7 @@
 
 import copy
 import uuid
-from typing import TYPE_CHECKING
+from typing import Any, Dict, TYPE_CHECKING, Optional
 
 import google.api_core.exceptions as core_exceptions
 from google.api_core import retry as retries
@@ -24,16 +24,14 @@ from google.api_core import retry as retries
 from google.cloud.bigquery import job
 
 # Avoid circular imports
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: NO COVER
     from google.cloud.bigquery.client import Client
-else:
-    Client = None
 
 
 _TIMEOUT_BUFFER_SECS = 0.1
 
 
-def make_job_id(job_id, prefix=None):
+def make_job_id(job_id: Optional[str] = None, prefix: Optional[str] = None) -> str:
     """Construct an ID for a new job.
 
     Args:
@@ -53,7 +51,7 @@ def make_job_id(job_id, prefix=None):
 
 
 def query_jobs_insert(
-    client: Client,
+    client: "Client",
     query: str,
     job_config: job.QueryJobConfig,
     job_id: str,
@@ -61,9 +59,13 @@ def query_jobs_insert(
     location: str,
     project: str,
     retry: retries.Retry,
-    timeout: float,
+    timeout: Optional[float],
     job_retry: retries.Retry,
 ):
+    """Initiate a query using jobs.insert.
+
+    See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert
+    """
     job_id_given = job_id is not None
     job_id_save = job_id
     job_config_save = job_config
@@ -112,43 +114,83 @@ def query_jobs_insert(
     return future
 
 
+def _to_query_request(job_config: Optional[job.QueryJobConfig]) -> Dict[str, Any]:
+    """Transform from Job resource to QueryRequest resource.
+
+    Most of the keys in job.configuration.query are in common with
+    QueryRequest. If any configuration property is set that is not available in
+    jobs.query, it will result in a server-side error.
+    """
+    request_body = {}
+    job_config_resource = job_config.to_api_repr() if job_config else {}
+    query_config_resource = job_config_resource.get("configuration", {}).get(
+        "query", {}
+    )
+
+    request_body.update(query_config_resource)
+
+    # These keys are top level in job resource and query resource.
+    if "labels" in job_config_resource:
+        request_body["labels"] = job_config_resource["labels"]
+    if "dryRun" in job_config_resource:
+        request_body["dryRun"] = job_config_resource["dryRun"]
+
+    # Default to standard SQL.
+    request_body.setdefault("useLegacySql", False)
+
+    return request_body
+
+
+def _to_query_job(
+    client: "Client", query: str, query_response: Dict[str, Any]
+) -> job.QueryJob:
+    # TODO: check for errors?
+    job_ref_resource = query_response["jobReference"]
+    job_ref = job._JobReference._from_api_repr(job_ref_resource)
+    query_job = job.QueryJob(job_ref, query, client=client)
+
+    # Set errors if any were encountered.
+    query_job._properties.setdefault("status", {})
+    if "errors" in query_response:
+        query_job._properties["status"]["errors"] = query_response["errors"]
+        query_job._properties["status"]["errorResult"] = query_response["errors"][0]
+
+    # Transform job state so that QueryJob doesn't try to restart the query.
+    job_complete = query_response.get("jobComplete")
+    if job_complete:
+        query_job._properties["status"]["state"] = "DONE"
+        # TODO: set first page of results if job is "complete"
+    else:
+        query_job._properties["status"]["state"] = "PENDING"
+
+    return query_job
+
+
 def query_jobs_query(
-    client: Client,
+    client: "Client",
     query: str,
-    job_config: job.QueryJobConfig,
+    job_config: Optional[job.QueryJobConfig],
     location: str,
     project: str,
     retry: retries.Retry,
-    timeout: float,
+    timeout: Optional[float],
     job_retry: retries.Retry,
 ):
-    # TODO: Validate that destination is not set.
+    """Initiate a query using jobs.query.
 
-    request_body = {}
-    job_config_resource = job_config.to_api_repr()
+    See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
+    """
+    path = f"/projects/{project}/queries"
+    request_body = _to_query_request(job_config)
 
-    # Transform from Job resource to QueryRequest resource.
-    # Most of the keys in job.configuration.query are in common
-    request_body.update(job_config_resource["configuration"]["query"])
+    if timeout is not None:
+        # Subtract a buffer for context switching, network latency, etc.
+        request_body["timeoutMs"] = max(0, int(1000 * (timeout - _TIMEOUT_BUFFER_SECS)))
     request_body["location"] = location
-    request_body["labels"] = job_config.labels
-    request_body["dryRun"] = job_config.dry_run
-
-    # Subtract a buffer for context switching, network latency, etc.
-    request_body["timeoutMs"] = max(0, int(1000 * (timeout - _TIMEOUT_BUFFER_SECS)))
+    request_body["query"] = query
 
     def do_query():
-        request_body["requestId"] = make_job_id(None)
-        # job_ref = job._JobReference(job_id, project=project, location=location)
-        # query_job = job.QueryJob(job_ref, query, client=client, job_config=job_config)
-
-        # query_job._begin(retry=retry, timeout=timeout)
-        client._call_api(retry)
-
-        path = f"/projects/{project}/queries"
-
-        # jobs.insert is idempotent because we ensure that every new
-        # job has an ID.
+        request_body["requestId"] = make_job_id()
         span_attributes = {"path": path}
         api_response = client._call_api(
             retry,
@@ -159,8 +201,7 @@ def query_jobs_query(
             data=request_body,
             timeout=timeout,
         )
-        # TODO: make query job out of api_response
-        return api_response
+        return _to_query_job(client, query, api_response)
 
     future = do_query()
 

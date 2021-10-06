@@ -3254,7 +3254,10 @@ class Client(ClientWithProject):
         # Note that we haven't modified the original job_config (or
         # _default_query_job_config) up to this point.
         if api_method == "query":
-            return None  # TODO
+            # TODO: error if job_id or job_id_prefix set
+            return _job_helpers.query_jobs_query(
+                self, query, job_config, location, project, retry, timeout, job_retry,
+            )
         else:
             return _job_helpers.query_jobs_insert(
                 self,

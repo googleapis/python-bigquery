@@ -700,64 +700,6 @@ class TestBigQuery(unittest.TestCase):
         page = next(iterator.pages)
         return list(page)
 
-    def _create_table_many_columns(self, rowcount):
-        # Generate a table of maximum width via CREATE TABLE AS SELECT.
-        # first column is named 'rowval', and has a value from 1..rowcount
-        # Subsequent column is named col_<N> and contains the value N*rowval,
-        # where N is between 1 and 9999 inclusive.
-        dsname = _make_dataset_id("wide_schema")
-        dataset = self.temp_dataset(dsname)
-        table_id = "many_columns"
-        table_ref = dataset.table(table_id)
-        self.to_delete.insert(0, table_ref)
-        colprojections = ",".join(
-            ["r * {} as col_{}".format(n, n) for n in range(1, 10000)]
-        )
-        sql = """
-            CREATE TABLE {}.{}
-            AS
-            SELECT
-                r as rowval,
-                {}
-            FROM
-              UNNEST(GENERATE_ARRAY(1,{},1)) as r
-            """.format(
-            dsname, table_id, colprojections, rowcount
-        )
-        query_job = Config.CLIENT.query(sql)
-        query_job.result()
-        self.assertEqual(query_job.statement_type, "CREATE_TABLE_AS_SELECT")
-        self.assertEqual(query_job.ddl_operation_performed, "CREATE")
-        self.assertEqual(query_job.ddl_target_table, table_ref)
-
-        return table_ref
-
-    def test_query_many_columns(self):
-        # Test working with the widest schema BigQuery supports, 10k columns.
-        row_count = 2
-        table_ref = self._create_table_many_columns(row_count)
-        rows = list(
-            Config.CLIENT.query(
-                "SELECT * FROM `{}.{}`".format(table_ref.dataset_id, table_ref.table_id)
-            )
-        )
-
-        self.assertEqual(len(rows), row_count)
-
-        # check field representations adhere to expected values.
-        correctwidth = 0
-        badvals = 0
-        for r in rows:
-            vals = r._xxx_values
-            rowval = vals[0]
-            if len(vals) == 10000:
-                correctwidth = correctwidth + 1
-            for n in range(1, 10000):
-                if vals[n] != rowval * (n):
-                    badvals = badvals + 1
-        self.assertEqual(correctwidth, row_count)
-        self.assertEqual(badvals, 0)
-
     def test_insert_rows_then_dump_table(self):
         NOW_SECONDS = 1448911495.484366
         NOW = datetime.datetime.utcfromtimestamp(NOW_SECONDS).replace(tzinfo=UTC)

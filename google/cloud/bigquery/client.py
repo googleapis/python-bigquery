@@ -2655,9 +2655,11 @@ class Client(ClientWithProject):
                         tmppath,
                         engine="pyarrow",
                         compression=parquet_compression,
-                        **{"use_compliant_nested_type": True}
-                        if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
-                        else {},
+                        **(
+                            {"use_compliant_nested_type": True}
+                            if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+                            else {}
+                        ),
                     )
 
             else:

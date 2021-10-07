@@ -77,9 +77,6 @@ class BQStorageVersions:
 class PyarrowVersions:
     """Version comparisons for pyarrow package."""
 
-    # https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
-    _PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
-
     def __init__(self):
         self._installed_version = None
 

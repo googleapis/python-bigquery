@@ -116,6 +116,7 @@ _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
 # https://github.com/googleapis/python-bigquery/issues/438
 _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
+TIMEOUT_HEADER = "X-Server-Timeout"
 
 
 class Project(object):

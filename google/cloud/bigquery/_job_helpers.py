@@ -156,9 +156,14 @@ def _to_query_job(
     job_complete = query_response.get("jobComplete")
     if job_complete:
         query_job._properties["status"]["state"] = "DONE"
-        # TODO: set first page of results if job is "complete" (and there is
-        # only 1 page of results? otherwise, need some awkward logic
-        # for DB API and to_dataframe to get destination table)
+        # TODO: https://github.com/googleapis/python-bigquery/issues/589
+        # Set the first page of results if job is "complete" and there is
+        # only 1 page of results. Otherwise, use the existing logic that
+        # refreshes the job stats.
+        #
+        # This also requires updates to `to_dataframe` and the DB API connector
+        # so that they don't try to read from a destination table if all the
+        # results are present.
     else:
         query_job._properties["status"]["state"] = "PENDING"
 

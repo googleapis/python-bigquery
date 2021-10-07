@@ -117,8 +117,6 @@ _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
 _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
 
-TIMEOUT_HEADER = "X-Server-Timeout"
-
 
 class Project(object):
     """Wrapper for resource describing a BigQuery project.

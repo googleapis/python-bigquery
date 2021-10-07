@@ -2557,7 +2557,10 @@ class Client(ClientWithProject):
             # default value
             job_config.source_format = job.SourceFormat.PARQUET
 
-        if job_config.parquet_options is None:
+        if (
+            job_config.source_format == job.SourceFormat.PARQUET
+            and job_config.parquet_options is None
+        ):
             parquet_options = ParquetOptions()
             # default value
             parquet_options.enable_list_inference = True

@@ -156,7 +156,9 @@ def _to_query_job(
     job_complete = query_response.get("jobComplete")
     if job_complete:
         query_job._properties["status"]["state"] = "DONE"
-        # TODO: set first page of results if job is "complete"
+        # TODO: set first page of results if job is "complete" (and there is
+        # only 1 page of results? otherwise, need some awkward logic
+        # for DB API and to_dataframe to get destination table)
     else:
         query_job._properties["status"]["state"] = "PENDING"
 

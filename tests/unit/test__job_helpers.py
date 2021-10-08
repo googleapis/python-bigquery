@@ -12,16 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Dict, Any
+from unittest import mock
+
 import pytest
 
-from google.cloud.bigquery.job.query import QueryJobConfig
+from google.cloud.bigquery.client import Client
+from google.cloud.bigquery import _job_helpers
+from google.cloud.bigquery.job.query import QueryJob, QueryJobConfig
 
 
-@pytest.fixture
-def module_under_test():
-    from google.cloud.bigquery import _job_helpers
-
-    return _job_helpers
+def make_query_response(
+    completed: bool = False,
+    job_id: str = "abcd-efg-hijk-lmnop",
+    location="US",
+    project_id="test-project",
+) -> Dict[str, Any]:
+    response = {
+        "jobReference": {
+            "projectId": project_id,
+            "jobId": job_id,
+            "location": location,
+        },
+        "jobComplete": completed,
+    }
+    return response
 
 
 @pytest.mark.parametrize(
@@ -40,6 +55,39 @@ def module_under_test():
         ),
     ),
 )
-def test__to_query_request(module_under_test, job_config, expected):
-    result = module_under_test._to_query_request(job_config)
+def test__to_query_request(job_config, expected):
+    result = _job_helpers._to_query_request(job_config)
     assert result == expected
+
+
+def test__to_query_job_defaults():
+    mock_client = mock.create_autospec(Client)
+    response = make_query_response(
+        job_id="test-job", project_id="some-project", location="asia-northeast1"
+    )
+    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", response)
+    assert job.query == "query-str"
+    assert job._client is mock_client
+    assert job.job_id == "test-job"
+    assert job.project == "some-project"
+    assert job.location == "asia-northeast1"
+    assert job.error_result is None
+    assert job.errors is None
+
+
+def test__to_query_job_dry_run():
+    assert False
+
+
+@pytest.mark.parametrize(
+    ("completed", "expected_state"), ((True, "DONE"), (False, "PENDING"),),
+)
+def test__to_query_job_sets_state(completed, expected_state):
+    mock_client = mock.create_autospec(Client)
+    response = make_query_response(completed=completed)
+    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", response)
+    assert job.state == expected_state
+
+
+def test__to_query_job_sets_errors():
+    assert False

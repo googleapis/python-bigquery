@@ -15,6 +15,7 @@
 import concurrent.futures
 import datetime
 import decimal
+from typing import Tuple
 
 import pytest
 
@@ -417,3 +418,26 @@ def test_query_parameters(
     assert len(rows) == 1
     assert len(rows[0]) == 1
     assert rows[0][0] == expected
+
+
+def test_dry_run(
+    bigquery_client: bigquery.Client,
+    query_api_method: str,
+    scalars_table_multi_location: Tuple[str, str],
+):
+    location, full_table_id = scalars_table_multi_location
+    query_config = bigquery.QueryJobConfig()
+    query_config.dry_run = True
+
+    query_string = f"SELECT * FROM {full_table_id}"
+    query_job = bigquery_client.query(
+        query_string,
+        location=location,
+        job_config=query_config,
+        api_method=query_api_method,
+    )
+
+    # Note: `query_job.result()` is not necessary on a dry run query. All
+    # necessary information is returned in the initial response.
+    assert query_job.dry_run is True
+    # TODO: check more properties, such as estimated bytes processed, schema

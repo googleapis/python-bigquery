@@ -118,6 +118,7 @@ _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
 TIMEOUT_HEADER = "X-Server-Timeout"
 
+
 class Project(object):
     """Wrapper for resource describing a BigQuery project.
 

@@ -555,7 +555,7 @@ class Client(ClientWithProject):
 
     def create_dataset(
         self,
-        dataset: Union[str, Dataset, DatasetReference],
+        dataset: Union[str, Dataset, DatasetReference, DatasetListItem],
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
@@ -685,7 +685,7 @@ class Client(ClientWithProject):
 
     def create_table(
         self,
-        table: Union[str, Table, TableReference],
+        table: Union[str, Table, TableReference, TableListItem],
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
@@ -699,6 +699,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 A :class:`~google.cloud.bigquery.table.Table` to create.
@@ -1301,7 +1302,7 @@ class Client(ClientWithProject):
 
     def list_models(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
@@ -1378,7 +1379,7 @@ class Client(ClientWithProject):
 
     def list_routines(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
@@ -1455,7 +1456,7 @@ class Client(ClientWithProject):
 
     def list_tables(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
@@ -1531,7 +1532,7 @@ class Client(ClientWithProject):
 
     def delete_dataset(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         delete_contents: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,

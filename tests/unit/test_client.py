@@ -49,8 +49,8 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 import google.api_core.exceptions
 from google.api_core import client_info
 import google.cloud._helpers
+from google.cloud import bigquery
 from google.cloud import bigquery_storage
-from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 
@@ -940,18 +940,8 @@ class TestClient(unittest.TestCase):
             {
                 "schema": {
                     "fields": [
-                        {
-                            "name": "full_name",
-                            "type": "STRING",
-                            "mode": "REQUIRED",
-                            "policyTags": {"names": []},
-                        },
-                        {
-                            "name": "age",
-                            "type": "INTEGER",
-                            "mode": "REQUIRED",
-                            "policyTags": {"names": []},
-                        },
+                        {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                        {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
                     ]
                 },
                 "view": {"query": query},
@@ -985,18 +975,8 @@ class TestClient(unittest.TestCase):
                 },
                 "schema": {
                     "fields": [
-                        {
-                            "name": "full_name",
-                            "type": "STRING",
-                            "mode": "REQUIRED",
-                            "policyTags": {"names": []},
-                        },
-                        {
-                            "name": "age",
-                            "type": "INTEGER",
-                            "mode": "REQUIRED",
-                            "policyTags": {"names": []},
-                        },
+                        {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                        {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
                     ]
                 },
                 "view": {"query": query, "useLegacySql": False},
@@ -1832,7 +1812,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(updated_model.expires, model.expires)
 
         # ETag becomes If-Match header.
-        model._proto.etag = "etag"
+        model._properties["etag"] = "etag"
         client.update_model(model, [])
         req = conn.api_request.call_args
         self.assertEqual(req[1]["headers"]["If-Match"], "etag")
@@ -1862,8 +1842,8 @@ class TestClient(unittest.TestCase):
         routine.arguments = [
             RoutineArgument(
                 name="x",
-                data_type=bigquery_v2.types.StandardSqlDataType(
-                    type_kind=bigquery_v2.types.StandardSqlDataType.TypeKind.INT64
+                data_type=bigquery.standard_sql.StandardSqlDataType(
+                    type_kind=bigquery.StandardSqlTypeNames.INT64
                 ),
             )
         ]
@@ -1919,6 +1899,7 @@ class TestClient(unittest.TestCase):
 
     def test_update_table(self):
         from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.schema import PolicyTagList
         from google.cloud.bigquery.table import Table
 
         path = "projects/%s/datasets/%s/tables/%s" % (
@@ -1945,7 +1926,6 @@ class TestClient(unittest.TestCase):
                             "type": "INTEGER",
                             "mode": "REQUIRED",
                             "description": "New field description",
-                            "policyTags": {"names": []},
                         },
                     ]
                 },
@@ -1956,7 +1936,15 @@ class TestClient(unittest.TestCase):
             }
         )
         schema = [
-            SchemaField("full_name", "STRING", mode="REQUIRED", description=None),
+            # Explicly setting policyTags to no names should be included in the sent resource.
+            # https://github.com/googleapis/python-bigquery/issues/981
+            SchemaField(
+                "full_name",
+                "STRING",
+                mode="REQUIRED",
+                description=None,
+                policy_tags=PolicyTagList(names=()),
+            ),
             SchemaField(
                 "age", "INTEGER", mode="REQUIRED", description="New field description"
             ),
@@ -1994,7 +1982,6 @@ class TestClient(unittest.TestCase):
                         "type": "INTEGER",
                         "mode": "REQUIRED",
                         "description": "New field description",
-                        "policyTags": {"names": []},
                     },
                 ]
             },
@@ -2113,21 +2100,14 @@ class TestClient(unittest.TestCase):
                     "type": "STRING",
                     "mode": "REQUIRED",
                     "description": None,
-                    "policyTags": {"names": []},
                 },
                 {
                     "name": "age",
                     "type": "INTEGER",
                     "mode": "REQUIRED",
                     "description": "this is a column",
-                    "policyTags": {"names": []},
                 },
-                {
-                    "name": "country",
-                    "type": "STRING",
-                    "mode": "NULLABLE",
-                    "policyTags": {"names": []},
-                },
+                {"name": "country", "type": "STRING", "mode": "NULLABLE"},
             ]
         }
         schema = [
@@ -6715,7 +6695,13 @@ class TestClientUpload(object):
             assert field["type"] == table_field.field_type
             assert field["mode"] == table_field.mode
             assert len(field.get("fields", [])) == len(table_field.fields)
-            assert field["policyTags"]["names"] == []
+            # Avoid accidentally updating policy tags when not explicitly included.
+            # https://github.com/googleapis/python-bigquery/issues/981
+            # Also, avoid 403 if someone has permission to write to table but
+            # not update policy tags by omitting policy tags we might have
+            # received from a get table request.
+            # https://github.com/googleapis/python-bigquery/pull/557
+            assert "policyTags" not in field
             # Omit unnecessary fields when they come from getting the table
             # (not passed in via job_config)
             assert "description" not in field
@@ -7937,21 +7923,18 @@ class TestClientUpload(object):
                 "description": "quarter",
                 "mode": "REQUIRED",
                 "name": "qtr",
-                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "sales representative",
                 "mode": "NULLABLE",
                 "name": "rep",
-                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "total sales",
                 "mode": "NULLABLE",
                 "name": "sales",
-                "policyTags": {"names": []},
                 "type": "FLOAT",
             },
         ]
@@ -7984,21 +7967,18 @@ class TestClientUpload(object):
                 "description": "quarter",
                 "mode": "REQUIRED",
                 "name": "qtr",
-                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "sales representative",
                 "mode": "NULLABLE",
                 "name": "rep",
-                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "total sales",
                 "mode": "NULLABLE",
                 "name": "sales",
-                "policyTags": {"names": []},
                 "type": "FLOAT",
             },
         ]

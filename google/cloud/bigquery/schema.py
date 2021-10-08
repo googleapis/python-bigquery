@@ -15,81 +15,97 @@
 """Schemas for BigQuery tables / queries."""
 
 import collections
-from typing import Optional
+import enum
+from typing import Iterable, Union
 
-from google.cloud.bigquery_v2 import types
+from google.cloud.bigquery import standard_sql
+from google.cloud.bigquery.enums import StandardSqlTypeNames
 
 
-_DEFAULT_VALUE = object()
 _STRUCT_TYPES = ("RECORD", "STRUCT")
 
 # SQL types reference:
 # https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
 LEGACY_TO_STANDARD_TYPES = {
-    "STRING": types.StandardSqlDataType.TypeKind.STRING,
-    "BYTES": types.StandardSqlDataType.TypeKind.BYTES,
-    "INTEGER": types.StandardSqlDataType.TypeKind.INT64,
-    "INT64": types.StandardSqlDataType.TypeKind.INT64,
-    "FLOAT": types.StandardSqlDataType.TypeKind.FLOAT64,
-    "FLOAT64": types.StandardSqlDataType.TypeKind.FLOAT64,
-    "NUMERIC": types.StandardSqlDataType.TypeKind.NUMERIC,
-    "BIGNUMERIC": types.StandardSqlDataType.TypeKind.BIGNUMERIC,
-    "BOOLEAN": types.StandardSqlDataType.TypeKind.BOOL,
-    "BOOL": types.StandardSqlDataType.TypeKind.BOOL,
-    "GEOGRAPHY": types.StandardSqlDataType.TypeKind.GEOGRAPHY,
-    "RECORD": types.StandardSqlDataType.TypeKind.STRUCT,
-    "STRUCT": types.StandardSqlDataType.TypeKind.STRUCT,
-    "TIMESTAMP": types.StandardSqlDataType.TypeKind.TIMESTAMP,
-    "DATE": types.StandardSqlDataType.TypeKind.DATE,
-    "TIME": types.StandardSqlDataType.TypeKind.TIME,
-    "DATETIME": types.StandardSqlDataType.TypeKind.DATETIME,
+    "STRING": StandardSqlTypeNames.STRING,
+    "BYTES": StandardSqlTypeNames.BYTES,
+    "INTEGER": StandardSqlTypeNames.INT64,
+    "INT64": StandardSqlTypeNames.INT64,
+    "FLOAT": StandardSqlTypeNames.FLOAT64,
+    "FLOAT64": StandardSqlTypeNames.FLOAT64,
+    "NUMERIC": StandardSqlTypeNames.NUMERIC,
+    "BIGNUMERIC": StandardSqlTypeNames.BIGNUMERIC,
+    "BOOLEAN": StandardSqlTypeNames.BOOL,
+    "BOOL": StandardSqlTypeNames.BOOL,
+    "GEOGRAPHY": StandardSqlTypeNames.GEOGRAPHY,
+    "RECORD": StandardSqlTypeNames.STRUCT,
+    "STRUCT": StandardSqlTypeNames.STRUCT,
+    "TIMESTAMP": StandardSqlTypeNames.TIMESTAMP,
+    "DATE": StandardSqlTypeNames.DATE,
+    "TIME": StandardSqlTypeNames.TIME,
+    "DATETIME": StandardSqlTypeNames.DATETIME,
     # no direct conversion from ARRAY, the latter is represented by mode="REPEATED"
 }
-"""String names of the legacy SQL types to integer codes of Standard SQL types."""
+"""String names of the legacy SQL types to integer codes of Standard SQL standard_sql."""
+
+
+class _DefaultSentinel(enum.Enum):
+    """Object used as 'sentinel' indicating default value should be used.
+
+    Uses enum so that pytype/mypy knows that this is the only possible value.
+    https://stackoverflow.com/a/60605919/101923
+
+    Literal[_DEFAULT_VALUE] is an alternative, but only added in Python 3.8.
+    https://docs.python.org/3/library/typing.html#typing.Literal
+    """
+
+    DEFAULT_VALUE = object()
+
+
+_DEFAULT_VALUE = _DefaultSentinel.DEFAULT_VALUE
 
 
 class SchemaField(object):
     """Describe a single field within a table schema.
 
     Args:
-        name (str): The name of the field.
+        name: The name of the field.
 
-        field_type (str): The type of the field. See
+        field_type:
+            The type of the field. See
             https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.type
 
-        mode (Optional[str]): The mode of the field.  See
+        mode:
+            Defaults to ``'NULLABLE'``. The mode of the field. See
             https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.mode
 
-        description (Optional[str]): Description for the field.
+        description: Description for the field.
 
-        fields (Optional[Tuple[google.cloud.bigquery.schema.SchemaField]]):
-            Subfields (requires ``field_type`` of 'RECORD').
+        fields: Subfields (requires ``field_type`` of 'RECORD').
 
-        policy_tags (Optional[PolicyTagList]): The policy tag list for the field.
+        policy_tags: The policy tag list for the field.
 
-        precision (Optional[int]):
+        precision:
             Precison (number of digits) of fields with NUMERIC or BIGNUMERIC type.
 
-        scale (Optional[int]):
+        scale:
             Scale (digits after decimal) of fields with NUMERIC or BIGNUMERIC type.
 
-        max_length (Optional[int]):
-            Maximim length of fields with STRING or BYTES type.
-
+        max_length: Maximum length of fields with STRING or BYTES type.
     """
 
     def __init__(
         self,
-        name,
-        field_type,
-        mode="NULLABLE",
-        description=_DEFAULT_VALUE,
-        fields=(),
-        policy_tags=None,
-        precision=_DEFAULT_VALUE,
-        scale=_DEFAULT_VALUE,
-        max_length=_DEFAULT_VALUE,
+        name: str,
+        field_type: str,
+        mode: str = "NULLABLE",
+        description: Union[str, _DefaultSentinel] = _DEFAULT_VALUE,
+        fields: Iterable["SchemaField"] = (),
+        policy_tags: Union["PolicyTagList", None, _DefaultSentinel] = _DEFAULT_VALUE,
+        precision: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
+        scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
+        max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
     ):
         self._properties = {
             "name": name,
@@ -105,27 +121,11 @@ class SchemaField(object):
             self._properties["scale"] = scale
         if max_length is not _DEFAULT_VALUE:
             self._properties["maxLength"] = max_length
+        if policy_tags is not _DEFAULT_VALUE:
+            self._properties["policyTags"] = (
+                policy_tags.to_api_repr() if policy_tags is not None else None
+            )
         self._fields = tuple(fields)
-
-        self._policy_tags = self._determine_policy_tags(field_type, policy_tags)
-
-    @staticmethod
-    def _determine_policy_tags(
-        field_type: str, given_policy_tags: Optional["PolicyTagList"]
-    ) -> Optional["PolicyTagList"]:
-        """Return the given policy tags, or their suitable representation if `None`.
-
-        Args:
-            field_type: The type of the schema field.
-            given_policy_tags: The policy tags to maybe ajdust.
-        """
-        if given_policy_tags is not None:
-            return given_policy_tags
-
-        if field_type is not None and field_type.upper() in _STRUCT_TYPES:
-            return None
-
-        return PolicyTagList()
 
     @staticmethod
     def __get_int(api_repr, name):
@@ -152,10 +152,10 @@ class SchemaField(object):
         mode = api_repr.get("mode", "NULLABLE")
         description = api_repr.get("description", _DEFAULT_VALUE)
         fields = api_repr.get("fields", ())
+        policy_tags = api_repr.get("policyTags", _DEFAULT_VALUE)
 
-        policy_tags = cls._determine_policy_tags(
-            field_type, PolicyTagList.from_api_repr(api_repr.get("policyTags"))
-        )
+        if policy_tags is not None and policy_tags is not _DEFAULT_VALUE:
+            policy_tags = PolicyTagList.from_api_repr(policy_tags)
 
         return cls(
             field_type=field_type,
@@ -230,7 +230,8 @@ class SchemaField(object):
         """Optional[google.cloud.bigquery.schema.PolicyTagList]: Policy tag list
         definition for this field.
         """
-        return self._policy_tags
+        resource = self._properties.get("policyTags")
+        return PolicyTagList.from_api_repr(resource) if resource is not None else None
 
     def to_api_repr(self) -> dict:
         """Return a dictionary representing this schema field.
@@ -244,10 +245,6 @@ class SchemaField(object):
         # add this to the serialized representation.
         if self.field_type.upper() in _STRUCT_TYPES:
             answer["fields"] = [f.to_api_repr() for f in self.fields]
-        else:
-            # Explicitly include policy tag definition (we must not do it for RECORD
-            # fields, because those are not leaf fields).
-            answer["policyTags"] = self.policy_tags.to_api_repr()
 
         # Done; return the serialized dictionary.
         return answer
@@ -272,7 +269,7 @@ class SchemaField(object):
                     field_type = f"{field_type}({self.precision})"
 
         policy_tags = (
-            () if self._policy_tags is None else tuple(sorted(self._policy_tags.names))
+            () if self.policy_tags is None else tuple(sorted(self.policy_tags.names))
         )
 
         return (
@@ -285,48 +282,37 @@ class SchemaField(object):
             policy_tags,
         )
 
-    def to_standard_sql(self) -> types.StandardSqlField:
-        """Return the field as the standard SQL field representation object.
-
-        Returns:
-            An instance of :class:`~google.cloud.bigquery_v2.types.StandardSqlField`.
-        """
-        sql_type = types.StandardSqlDataType()
+    def to_standard_sql(self) -> standard_sql.StandardSqlField:
+        """Return the field as the standard SQL field representation object."""
+        sql_type = standard_sql.StandardSqlDataType()
 
         if self.mode == "REPEATED":
-            sql_type.type_kind = types.StandardSqlDataType.TypeKind.ARRAY
+            sql_type.type_kind = StandardSqlTypeNames.ARRAY
         else:
             sql_type.type_kind = LEGACY_TO_STANDARD_TYPES.get(
-                self.field_type,
-                types.StandardSqlDataType.TypeKind.TYPE_KIND_UNSPECIFIED,
+                self.field_type, StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
             )
 
-        if sql_type.type_kind == types.StandardSqlDataType.TypeKind.ARRAY:  # noqa: E721
+        if sql_type.type_kind == StandardSqlTypeNames.ARRAY:  # noqa: E721
             array_element_type = LEGACY_TO_STANDARD_TYPES.get(
-                self.field_type,
-                types.StandardSqlDataType.TypeKind.TYPE_KIND_UNSPECIFIED,
+                self.field_type, StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
             )
-            sql_type.array_element_type.type_kind = array_element_type
+            sql_type.array_element_type = standard_sql.StandardSqlDataType(
+                type_kind=array_element_type
+            )
 
             # ARRAY cannot directly contain other arrays, only scalar types and STRUCTs
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#array-type
-            if (
-                array_element_type
-                == types.StandardSqlDataType.TypeKind.STRUCT  # noqa: E721
-            ):
-                sql_type.array_element_type.struct_type.fields.extend(
-                    field.to_standard_sql() for field in self.fields
+            if array_element_type == StandardSqlTypeNames.STRUCT:  # noqa: E721
+                sql_type.array_element_type.struct_type = standard_sql.StandardSqlStructType(
+                    fields=(field.to_standard_sql() for field in self.fields)
                 )
-
-        elif (
-            sql_type.type_kind
-            == types.StandardSqlDataType.TypeKind.STRUCT  # noqa: E721
-        ):
-            sql_type.struct_type.fields.extend(
-                field.to_standard_sql() for field in self.fields
+        elif sql_type.type_kind == StandardSqlTypeNames.STRUCT:  # noqa: E721
+            sql_type.struct_type = standard_sql.StandardSqlStructType(
+                fields=(field.to_standard_sql() for field in self.fields)
             )
 
-        return types.StandardSqlField(name=self.name, type=sql_type)
+        return standard_sql.StandardSqlField(name=self.name, type=sql_type)
 
     def __eq__(self, other):
         if not isinstance(other, SchemaField):

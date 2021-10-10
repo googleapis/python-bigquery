@@ -805,13 +805,16 @@ class Client(ClientWithProject):
 
     def get_iam_policy(
         self,
-        table: Union[Table, TableReference],
+        table: Union[Table, TableReference, TableListItem, str],
         requested_policy_version: int = 1,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> Policy:
-        if not isinstance(table, (Table, TableReference)):
-            raise TypeError("table must be a Table or TableReference")
+        table = _table_arg_to_table_ref(table, default_project=self.project)
+        if not isinstance(table, (TableReference)):
+            raise TypeError(
+                "table must be a Table, TableReference, or TableListItem, or string"
+            )
 
         if requested_policy_version != 1:
             raise ValueError("only IAM policy version 1 is supported")
@@ -834,14 +837,17 @@ class Client(ClientWithProject):
 
     def set_iam_policy(
         self,
-        table: Union[Table, TableReference],
+        table: Union[Table, TableReference, TableListItem, str],
         policy: Policy,
         updateMask: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> Policy:
-        if not isinstance(table, (Table, TableReference)):
-            raise TypeError("table must be a Table or TableReference")
+        table = _table_arg_to_table_ref(table, default_project=self.project)
+        if not isinstance(table, (TableReference)):
+            raise TypeError(
+                "table must be a Table, TableReference, or TableListItem, or string"
+            )
 
         if not isinstance(policy, (Policy)):
             raise TypeError("policy must be a Policy")
@@ -868,13 +874,16 @@ class Client(ClientWithProject):
 
     def test_iam_permissions(
         self,
-        table: Union[Table, TableReference],
+        table: Union[Table, TableReference, TableListItem, str],
         permissions: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> Dict[str, Any]:
-        if not isinstance(table, (Table, TableReference)):
-            raise TypeError("table must be a Table or TableReference")
+        table = _table_arg_to_table_ref(table, default_project=self.project)
+        if not isinstance(table, (TableReference)):
+            raise TypeError(
+                "table must be a Table, TableReference, or TableListItem, or string"
+            )
 
         body = {"permissions": permissions}
 
@@ -981,7 +990,7 @@ class Client(ClientWithProject):
 
     def get_table(
         self,
-        table: Union[Table, TableReference, str],
+        table: Union[Table, TableReference, TableListItem, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> Table:
@@ -991,6 +1000,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 A reference to the table to fetch from the BigQuery API.
@@ -1756,7 +1766,7 @@ class Client(ClientWithProject):
 
     def delete_table(
         self,
-        table: Union[Table, TableReference, str],
+        table: Union[Table, TableReference, TableListItem, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
@@ -1770,6 +1780,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 A reference to the table to delete. If a string is passed in,
@@ -2256,7 +2267,7 @@ class Client(ClientWithProject):
     def load_table_from_uri(
         self,
         source_uris: Union[str, Sequence[str]],
-        destination: Union[Table, TableReference, str],
+        destination: Union[Table, TableReference, TableListItem, str],
         job_id: str = None,
         job_id_prefix: str = None,
         location: str = None,
@@ -2277,6 +2288,7 @@ class Client(ClientWithProject):
             destination (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 Table into which data is to be loaded. If a string is passed
@@ -2338,7 +2350,7 @@ class Client(ClientWithProject):
     def load_table_from_file(
         self,
         file_obj: BinaryIO,
-        destination: Union[Table, TableReference, str],
+        destination: Union[Table, TableReference, TableListItem, str],
         rewind: bool = False,
         size: int = None,
         num_retries: int = _DEFAULT_NUM_RETRIES,
@@ -2359,6 +2371,7 @@ class Client(ClientWithProject):
             destination (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 Table into which data is to be loaded. If a string is passed
@@ -2698,7 +2711,7 @@ class Client(ClientWithProject):
     def load_table_from_json(
         self,
         json_rows: Iterable[Dict[str, Any]],
-        destination: Union[Table, TableReference, str],
+        destination: Union[Table, TableReference, TableListItem, str],
         num_retries: int = _DEFAULT_NUM_RETRIES,
         job_id: str = None,
         job_id_prefix: str = None,
@@ -2732,6 +2745,7 @@ class Client(ClientWithProject):
             destination (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 Table into which data is to be loaded. If a string is passed
@@ -2979,9 +2993,13 @@ class Client(ClientWithProject):
     def copy_table(
         self,
         sources: Union[
-            Table, TableReference, str, Sequence[Union[Table, TableReference, str]]
+            Table,
+            TableReference,
+            TableListItem,
+            str,
+            Sequence[Union[Table, TableReference, TableListItem, str]],
         ],
-        destination: Union[Table, TableReference, str],
+        destination: Union[Table, TableReference, TableListItem, str],
         job_id: str = None,
         job_id_prefix: str = None,
         location: str = None,
@@ -2999,11 +3017,13 @@ class Client(ClientWithProject):
             sources (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
                 Sequence[ \
                     Union[ \
                         google.cloud.bigquery.table.Table, \
                         google.cloud.bigquery.table.TableReference, \
+                        google.cloud.bigquery.table.TableListItem, \
                         str, \
                     ] \
                 ], \
@@ -3012,6 +3032,7 @@ class Client(ClientWithProject):
             destination (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 Table into which data is to be copied.
@@ -3083,7 +3104,7 @@ class Client(ClientWithProject):
 
     def extract_table(
         self,
-        source: Union[Table, TableReference, Model, ModelReference, str],
+        source: Union[Table, TableReference, TableListItem, Model, ModelReference, str],
         destination_uris: Union[str, Sequence[str]],
         job_id: str = None,
         job_id_prefix: str = None,
@@ -3103,6 +3124,7 @@ class Client(ClientWithProject):
             source (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 google.cloud.bigquery.model.Model, \
                 google.cloud.bigquery.model.ModelReference, \
                 src, \
@@ -3464,7 +3486,7 @@ class Client(ClientWithProject):
 
     def insert_rows_json(
         self,
-        table: Union[Table, TableReference, str],
+        table: Union[Table, TableReference, TableListItem, str],
         json_rows: Sequence[Dict],
         row_ids: Union[Iterable[str], AutoRowIDs, None] = AutoRowIDs.GENERATE_UUID,
         skip_invalid_rows: bool = None,
@@ -3482,6 +3504,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str \
             ]):
                 The destination table for the row data, or a reference to it.
@@ -3604,7 +3627,7 @@ class Client(ClientWithProject):
 
     def list_partitions(
         self,
-        table: Union[Table, TableReference, str],
+        table: Union[Table, TableReference, TableListItem, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> Sequence[str]:
@@ -3614,6 +3637,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 The table or reference from which to get partition info

@@ -1262,7 +1262,7 @@ class QueryJob(_AsyncJob):
         timeout: float = None,
         start_index: int = None,
         job_retry: "retries.Retry" = DEFAULT_JOB_RETRY,
-    ) -> Union["RowIterator", _EmptyRowIterator]:
+    ) -> Union["RowIterator", _EmptyRowIterator, None]:
         """Start the job and wait for it to complete and get the result.
 
         Args:
@@ -1318,6 +1318,8 @@ class QueryJob(_AsyncJob):
                 If Non-``None`` and non-default ``job_retry`` is
                 provided and the job is not retryable.
         """
+        if self.dry_run:
+            return
         try:
             retry_do_query = getattr(self, "_retry_do_query", None)
             if retry_do_query is not None:

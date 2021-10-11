@@ -20,4 +20,4 @@ from . import query
 def test_query():
     df = query.query()
     assert isinstance(df, pandas.DataFrame)
-    assert len(df) == 10
+    assert len(df) == 3

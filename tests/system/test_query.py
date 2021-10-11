@@ -439,5 +439,6 @@ def test_dry_run(
 
     # Note: `query_job.result()` is not necessary on a dry run query. All
     # necessary information is returned in the initial response.
-    assert query_job.dry_run is True
-    # TODO: check more properties, such as estimated bytes processed, schema
+    assert query_job.dry_run is False
+    assert query_job.total_bytes_processed > 0
+    assert len(query_job.schema) > 0

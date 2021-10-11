@@ -58,6 +58,7 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     import pyarrow
     from google.api_core import retry as retries
     from google.cloud import bigquery_storage
+    from google.cloud.bigquery.client import Client
     from google.cloud.bigquery.table import RowIterator
 
 
@@ -854,7 +855,7 @@ class QueryJob(_AsyncJob):
         }
 
     @classmethod
-    def from_api_repr(cls, resource: dict, client) -> "QueryJob":
+    def from_api_repr(cls, resource: dict, client: "Client") -> "QueryJob":
         """Factory:  construct a job given its API representation
 
         Args:
@@ -867,8 +868,10 @@ class QueryJob(_AsyncJob):
         Returns:
             google.cloud.bigquery.job.QueryJob: Job parsed from ``resource``.
         """
-        cls._check_resource_config(resource)
-        job_ref = _JobReference._from_api_repr(resource["jobReference"])
+        job_ref_properties = resource.setdefault(
+            "jobReference", {"projectId": client.project, "jobId": None}
+        )
+        job_ref = _JobReference._from_api_repr(job_ref_properties)
         job = cls(job_ref, None, client=client)
         job._set_properties(resource)
         return job

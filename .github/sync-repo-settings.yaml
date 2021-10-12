@@ -1,4 +1,6 @@
 # https://github.com/googleapis/repo-automation-bots/tree/main/packages/sync-repo-settings
+# Allow merge commits to sync main and v3 with fewer conflicts.
+mergeCommitAllowed: true
 # Rules for main branch protection
 branchProtectionRules:
 # Identifies the protection rule pattern. Name of the branch to be protected.

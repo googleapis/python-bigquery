@@ -4,7 +4,7 @@ branchProtectionRules:
 # Identifies the protection rule pattern. Name of the branch to be protected.
 # Defaults to `main`
 - pattern: main
-  mergeCommitAllowed: false
+  requiresLinearHistory: true
   requiresCodeOwnerReviews: true
   requiresStrictStatusChecks: true
   requiredStatusCheckContexts:
@@ -16,7 +16,7 @@ branchProtectionRules:
     - 'Samples - Python 3.7'
     - 'Samples - Python 3.8'
 - pattern: v3
-  mergeCommitAllowed: true
+  requiresLinearHistory: false
   requiresCodeOwnerReviews: true
   requiresStrictStatusChecks: true
   requiredStatusCheckContexts:

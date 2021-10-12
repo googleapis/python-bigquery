@@ -26,6 +26,7 @@ import requests
 
 from google.cloud.bigquery.client import _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS
 import google.cloud.bigquery.query
+from google.cloud.bigquery.table import _EmptyRowIterator
 
 from ..helpers import make_connection
 
@@ -990,37 +991,16 @@ class TestQueryJob(_Base):
         )
 
     def test_result_dry_run(self):
-        query_resource_done = {
-            "jobComplete": True,
-            "jobReference": {
-                "projectId": self.PROJECT,
-                "jobId": self.JOB_ID,
-                "location": "EU",
-            },
-            "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
-            "totalRows": "2",
-        }
         job_resource = self._make_resource(started=True, location="EU")
         job_resource["configuration"]["dryRun"] = True
-        # job_resource_done = self._make_resource(started=True, ended=True, location="EU")
-        # job_resource_done["configuration"]["query"]["destinationTable"] = {
-        #     "projectId": "dest-project",
-        #     "datasetId": "dest_dataset",
-        #     "tableId": "dest_table",
-        # }
-        results_page_resource = {
-            "totalRows": "1",
-            "pageToken": None,
-            "rows": [{"f": [{"v": "abc"}]}],
-        }
-        conn = make_connection(query_resource_done, results_page_resource)
+        conn = make_connection()
         client = _make_client(self.PROJECT, connection=conn)
         job = self._get_target_class().from_api_repr(job_resource, client)
 
         result = job.result()
 
         calls = conn.api_request.mock_calls
-        self.assertEqual(result, None)
+        self.assertIsInstance(result, _EmptyRowIterator)
         self.assertEqual(calls, [])
 
     def test_result_with_done_job_calls_get_query_results(self):

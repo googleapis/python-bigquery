@@ -18,7 +18,6 @@ branchProtectionRules:
 - pattern: v3
   mergeCommitAllowed: true
   requiresCodeOwnerReviews: true
-  requiredLinearHistory: false
   requiresStrictStatusChecks: true
   requiredStatusCheckContexts:
     - 'Kokoro'

@@ -65,7 +65,7 @@ def test__to_query_job_defaults():
     response = make_query_response(
         job_id="test-job", project_id="some-project", location="asia-northeast1"
     )
-    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", response)
+    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", None, response)
     assert job.query == "query-str"
     assert job._client is mock_client
     assert job.job_id == "test-job"
@@ -76,7 +76,16 @@ def test__to_query_job_defaults():
 
 
 def test__to_query_job_dry_run():
-    assert False
+    mock_client = mock.create_autospec(Client)
+    response = make_query_response(
+        job_id="test-job", project_id="some-project", location="asia-northeast1"
+    )
+    job_config: QueryJobConfig = QueryJobConfig()
+    job_config.dry_run = True
+    job: QueryJob = _job_helpers._to_query_job(
+        mock_client, "query-str", job_config, response
+    )
+    assert job.dry_run is True
 
 
 @pytest.mark.parametrize(
@@ -85,7 +94,7 @@ def test__to_query_job_dry_run():
 def test__to_query_job_sets_state(completed, expected_state):
     mock_client = mock.create_autospec(Client)
     response = make_query_response(completed=completed)
-    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", response)
+    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", None, response)
     assert job.state == expected_state
 
 

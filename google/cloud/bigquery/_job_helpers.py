@@ -142,14 +142,32 @@ def _to_query_request(job_config: Optional[job.QueryJobConfig]) -> Dict[str, Any
 def _to_query_job(
     client: "Client",
     query: str,
-    request_config: job.QueryJobConfig,
+    request_config: Optional[job.QueryJobConfig],
     query_response: Dict[str, Any],
 ) -> job.QueryJob:
     job_ref_resource = query_response["jobReference"]
     job_ref = job._JobReference._from_api_repr(job_ref_resource)
     query_job = job.QueryJob(job_ref, query, client=client)
 
-    query_job._properties["configuration"] = request_config.to_api_repr()
+    # Not all relevant properties are in the jobs.query response, so
+    if request_config is not None:
+        query_job._properties["configuration"].update(request_config.to_api_repr())
+        query_job._properties["configuration"]["query"]["query"] = query
+        query_job._properties["configuration"]["query"].setdefault(
+            "useLegacySql", False
+        )
+
+    query_job._properties.setdefault("statistics", {})
+    query_job._properties["statistics"].setdefault("query", {})
+    query_job._properties["statistics"]["query"]["cacheHit"] = query_response.get(
+        "cacheHit"
+    )
+    query_job._properties["statistics"]["query"]["schema"] = query_response.get(
+        "schema"
+    )
+    query_job._properties["statistics"]["query"][
+        "totalBytesProcessed"
+    ] = query_response.get("totalBytesProcessed")
 
     # Set errors if any were encountered.
     query_job._properties.setdefault("status", {})

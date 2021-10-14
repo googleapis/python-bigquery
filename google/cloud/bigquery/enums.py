@@ -138,15 +138,23 @@ class QueryApiMethod(str, enum.Enum):
     """Submit a query job by using the `jobs.query REST API method
     <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query>`_.
 
-    This API blocks for up to a specified timeout for the query to finish. The
-    full job resource (including job statistics) may not be available if the
-    query finishes within the timeout. Call
-    :meth:`~google.cloud.bigquery.job.QueryJob.reload` or
-    :meth:`~google.cloud.bigquery.client.Client.get_job` to get full job
-    statistics.
+    Differences from ``INSERT``:
 
-    Many parameters, including destination table and job ID cannot be used with
-    this API method.
+    * Many parameters, including destination table and job ID, cannot be used
+      with this API method.
+
+    * API blocks for up to a specified timeout, waiting for the query to
+      finish.
+
+    * The full job resource (including job statistics) may not be available.
+      Call :meth:`~google.cloud.bigquery.job.QueryJob.reload` or
+      :meth:`~google.cloud.bigquery.client.Client.get_job` to get full job
+      statistics.
+
+    * :meth:`~google.cloud.bigquery.Client.query` can raise API exceptions if
+      the query fails, whereas often the same errors don't appear until calling
+      :meth:`~google.cloud.bigquery.job.QueryJob.reload` when the ``INSERT``
+      API method is used.
     """
 
 

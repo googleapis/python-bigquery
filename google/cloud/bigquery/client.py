@@ -51,7 +51,6 @@ from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
 
 from google.cloud.bigquery import _job_helpers
 from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
-from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
@@ -3179,6 +3178,9 @@ class Client(ClientWithProject):
                 ``result()``, where it can also be specified.
             api_method:
                 Method with which to start the query job.
+
+                See :class:`google.cloud.bigquery.enums.QueryApiMethod` for
+                details on the difference between the query start methods.
 
         Returns:
             google.cloud.bigquery.job.QueryJob: A new query job instance.

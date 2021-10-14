@@ -140,20 +140,23 @@ class QueryApiMethod(str, enum.Enum):
 
     Differences from ``INSERT``:
 
-    * Many parameters, including destination table and job ID, cannot be used
-      with this API method.
+    * Many parameters and job configuration options, including job ID and
+      destination table, cannot be used
+      with this API method. See the `jobs.query REST API documentation
+      <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query>`_ for
+      the complete list of supported configuration options.
 
-    * API blocks for up to a specified timeout, waiting for the query to
+    * API blocks up to a specified timeout, waiting for the query to
       finish.
 
     * The full job resource (including job statistics) may not be available.
       Call :meth:`~google.cloud.bigquery.job.QueryJob.reload` or
       :meth:`~google.cloud.bigquery.client.Client.get_job` to get full job
-      statistics.
+      statistics and configuration.
 
     * :meth:`~google.cloud.bigquery.Client.query` can raise API exceptions if
-      the query fails, whereas often the same errors don't appear until calling
-      :meth:`~google.cloud.bigquery.job.QueryJob.reload` when the ``INSERT``
+      the query fails, whereas the same errors don't appear until calling
+      :meth:`~google.cloud.bigquery.job.QueryJob.result` when the ``INSERT``
       API method is used.
     """
 

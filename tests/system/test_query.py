@@ -17,6 +17,7 @@ import datetime
 import decimal
 from typing import Tuple
 
+from google.api_core import exceptions
 import pytest
 
 from google.cloud import bigquery
@@ -408,7 +409,6 @@ def test_query_statistics(bigquery_client, query_api_method):
 def test_query_parameters(
     bigquery_client, query_api_method, sql, expected, query_parameters
 ):
-
     jconfig = bigquery.QueryJobConfig()
     jconfig.query_parameters = query_parameters
     query_job = bigquery_client.query(
@@ -442,3 +442,21 @@ def test_dry_run(
     assert query_job.dry_run is True
     assert query_job.total_bytes_processed > 0
     assert len(query_job.schema) > 0
+
+
+def test_query_error_w_api_method_query(bigquery_client: bigquery.Client):
+    """No job is returned from jobs.query if the query fails."""
+
+    with pytest.raises(exceptions.NotFound, match="not_a_real_dataset"):
+        bigquery_client.query(
+            "SELECT * FROM not_a_real_dataset.doesnt_exist", api_method="QUERY"
+        )
+
+
+def test_query_error_w_api_method_insert(bigquery_client: bigquery.Client):
+    """With jobs.insert, an exception is thrown when fetching the results.."""
+
+    query_job = bigquery_client.query("SELECT * FROM not_a_real_dataset.doesnt_exist")
+
+    with pytest.raises(exceptions.NotFound, match="not_a_real_dataset"):
+        query_job.result()

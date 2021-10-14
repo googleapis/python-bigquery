@@ -172,10 +172,11 @@ def _to_query_job(
     # Set errors if any were encountered.
     query_job._properties.setdefault("status", {})
     if "errors" in query_response:
+        # Set errors but not errorResult. If there was an error that failed
+        # the job, jobs.query behaves like jobs.getQueryResults and returns a
+        # non-success HTTP status code.
         errors = query_response["errors"]
         query_job._properties["status"]["errors"] = errors
-        if len(errors) > 0:
-            query_job._properties["status"]["errorResult"] = errors[0]
 
     # Transform job state so that QueryJob doesn't try to restart the query.
     job_complete = query_response.get("jobComplete")

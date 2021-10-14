@@ -27,6 +27,7 @@ def make_query_response(
     job_id: str = "abcd-efg-hijk-lmnop",
     location="US",
     project_id="test-project",
+    errors=None,
 ) -> Dict[str, Any]:
     response = {
         "jobReference": {
@@ -36,6 +37,8 @@ def make_query_response(
         },
         "jobComplete": completed,
     }
+    if errors is not None:
+        response["errors"] = errors
     return response
 
 
@@ -99,4 +102,13 @@ def test__to_query_job_sets_state(completed, expected_state):
 
 
 def test__to_query_job_sets_errors():
-    assert False
+    mock_client = mock.create_autospec(Client)
+    response = make_query_response(
+        errors=[
+            # https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto
+            {"reason": "backendError", "message": "something went wrong"},
+            {"message": "something else went wrong"},
+        ]
+    )
+    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", None, response)
+    assert len(job.errors) == 2

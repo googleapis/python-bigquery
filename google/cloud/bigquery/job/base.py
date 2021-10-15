@@ -193,7 +193,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         return _helpers._get_sub_prop(self._properties, ["statistics", "parentJobId"])
 
     @property
-    def script_statistics(self) -> "ScriptStatistics":
+    def script_statistics(self) -> Optional["ScriptStatistics"]:
         """Statistics for a child job of a script."""
         resource = _helpers._get_sub_prop(
             self._properties, ["statistics", "scriptStatistics"]

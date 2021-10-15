@@ -77,6 +77,7 @@ from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.query import ArrayQueryParameter
 from google.cloud.bigquery.query import ArrayQueryParameterType
+from google.cloud.bigquery.query import ConnectionProperty
 from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.query import ScalarQueryParameterType
 from google.cloud.bigquery.query import StructQueryParameter
@@ -104,6 +105,7 @@ __all__ = [
     "__version__",
     "Client",
     # Queries
+    "ConnectionProperty",
     "QueryJob",
     "QueryJobConfig",
     "ArrayQueryParameter",

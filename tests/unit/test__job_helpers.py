@@ -12,14 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, Any
+from typing import Any, Dict, Optional
 from unittest import mock
 
+from google.api_core import retry as retries
 import pytest
 
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery import _job_helpers
 from google.cloud.bigquery.job.query import QueryJob, QueryJobConfig
+from google.cloud.bigquery.query import ScalarQueryParameter
+
+
+def make_query_request(additional_properties: Optional[Dict[str, Any]] = None):
+    request = {"useLegacySql": False, "formatOptions": {"useInt64Timestamp": True}}
+    if additional_properties is not None:
+        request.update(additional_properties)
+    return request
 
 
 def make_query_response(
@@ -45,16 +54,84 @@ def make_query_response(
 @pytest.mark.parametrize(
     ("job_config", "expected"),
     (
-        (None, {"useLegacySql": False}),
-        (QueryJobConfig(), {"useLegacySql": False}),
-        (QueryJobConfig(dry_run=True), {"useLegacySql": False, "dryRun": True}),
+        (None, make_query_request()),
+        (QueryJobConfig(), make_query_request()),
         (
-            QueryJobConfig(labels={"abc": "def"}),
-            {"useLegacySql": False, "labels": {"abc": "def"}},
+            QueryJobConfig(default_dataset="my-project.my_dataset"),
+            make_query_request(
+                {
+                    "defaultDataset": {
+                        "projectId": "my-project",
+                        "datasetId": "my_dataset",
+                    }
+                }
+            ),
         ),
+        (QueryJobConfig(dry_run=True), make_query_request({"dryRun": True})),
         (
             QueryJobConfig(use_query_cache=False),
-            {"useLegacySql": False, "useQueryCache": False},
+            make_query_request({"useQueryCache": False}),
+        ),
+        (
+            QueryJobConfig(use_legacy_sql=True),
+            make_query_request({"useLegacySql": True}),
+        ),
+        (
+            QueryJobConfig(
+                query_parameters=[
+                    ScalarQueryParameter("named_param1", "STRING", "param-value"),
+                    ScalarQueryParameter("named_param2", "INT64", 123),
+                ]
+            ),
+            make_query_request(
+                {
+                    "parameterMode": "NAMED",
+                    "queryParameters": [
+                        {
+                            "name": "named_param1",
+                            "parameterType": {"type": "STRING"},
+                            "parameterValue": {"value": "param-value"},
+                        },
+                        {
+                            "name": "named_param2",
+                            "parameterType": {"type": "INT64"},
+                            "parameterValue": {"value": "123"},
+                        },
+                    ],
+                }
+            ),
+        ),
+        (
+            QueryJobConfig(
+                query_parameters=[
+                    ScalarQueryParameter(None, "STRING", "param-value"),
+                    ScalarQueryParameter(None, "INT64", 123),
+                ]
+            ),
+            make_query_request(
+                {
+                    "parameterMode": "POSITIONAL",
+                    "queryParameters": [
+                        {
+                            "parameterType": {"type": "STRING"},
+                            "parameterValue": {"value": "param-value"},
+                        },
+                        {
+                            "parameterType": {"type": "INT64"},
+                            "parameterValue": {"value": "123"},
+                        },
+                    ],
+                }
+            ),
+        ),
+        # TODO: connection properties
+        (
+            QueryJobConfig(labels={"abc": "def"}),
+            make_query_request({"labels": {"abc": "def"}}),
+        ),
+        (
+            QueryJobConfig(maximum_bytes_billed=987654),
+            make_query_request({"maximumBytesBilled": "987654"}),
         ),
     ),
 )
@@ -112,3 +189,89 @@ def test__to_query_job_sets_errors():
     )
     job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", None, response)
     assert len(job.errors) == 2
+    # If we got back a response instead of an HTTP error status code, most
+    # likely the job didn't completely fail.
+    assert job.error_result is None
+
+
+def test_query_jobs_query_defaults():
+    mock_client = mock.create_autospec(Client)
+    mock_retry = mock.create_autospec(retries.Retry)
+    mock_job_retry = mock.create_autospec(retries.Retry)
+    _job_helpers.query_jobs_query(
+        mock_client,
+        "SELECT * FROM test",
+        None,
+        "asia-northeast1",
+        "test-project",
+        mock_retry,
+        None,
+        mock_job_retry,
+    )
+
+    assert mock_client._call_api.call_count == 1
+    call_args, call_kwargs = mock_client._call_api.call_args
+    assert call_args[0] is mock_retry
+    # See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
+    assert call_kwargs["path"] == "/projects/test-project/queries"
+    assert call_kwargs["method"] == "POST"
+    # See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#QueryRequest
+    request = call_kwargs["data"]
+    assert request["requestId"] is not None
+    assert request["query"] == "SELECT * FROM test"
+    assert request["location"] == "asia-northeast1"
+    assert request["formatOptions"]["useInt64Timestamp"] is True
+    assert "timeoutMs" not in request
+
+
+def test_query_jobs_query_sets_format_options():
+    """Since jobs.query can return results, ensure we use the lossless
+    timestamp format.
+
+    See: https://github.com/googleapis/python-bigquery/issues/395
+    """
+    mock_client = mock.create_autospec(Client)
+    mock_retry = mock.create_autospec(retries.Retry)
+    mock_job_retry = mock.create_autospec(retries.Retry)
+    _job_helpers.query_jobs_query(
+        mock_client,
+        "SELECT * FROM test",
+        None,
+        "US",
+        "test-project",
+        mock_retry,
+        None,
+        mock_job_retry,
+    )
+
+    assert mock_client._call_api.call_count == 1
+    _, call_kwargs = mock_client._call_api.call_args
+    # See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#QueryRequest
+    request = call_kwargs["data"]
+    assert request["formatOptions"]["useInt64Timestamp"] is True
+
+
+@pytest.mark.parametrize(
+    ("timeout", "expected_timeout"),
+    ((-1, 0), (0, 0), (1, 1000 - _job_helpers._TIMEOUT_BUFFER_MILLIS),),
+)
+def test_query_jobs_query_sets_timeout(timeout, expected_timeout):
+    mock_client = mock.create_autospec(Client)
+    mock_retry = mock.create_autospec(retries.Retry)
+    mock_job_retry = mock.create_autospec(retries.Retry)
+    _job_helpers.query_jobs_query(
+        mock_client,
+        "SELECT * FROM test",
+        None,
+        "US",
+        "test-project",
+        mock_retry,
+        timeout,
+        mock_job_retry,
+    )
+
+    assert mock_client._call_api.call_count == 1
+    _, call_kwargs = mock_client._call_api.call_args
+    # See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#QueryRequest
+    request = call_kwargs["data"]
+    assert request["timeoutMs"] == expected_timeout

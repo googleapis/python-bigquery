@@ -28,7 +28,7 @@ if TYPE_CHECKING:  # pragma: NO COVER
     from google.cloud.bigquery.client import Client
 
 
-_TIMEOUT_BUFFER_SECS = 0.1
+_TIMEOUT_BUFFER_MILLIS = 100
 
 
 def make_job_id(job_id: Optional[str] = None, prefix: Optional[str] = None) -> str:
@@ -136,6 +136,11 @@ def _to_query_request(job_config: Optional[job.QueryJobConfig]) -> Dict[str, Any
     # Default to standard SQL.
     request_body.setdefault("useLegacySql", False)
 
+    # Since jobs.query can return results, ensure we use the lossless timestamp
+    # format. See: https://github.com/googleapis/python-bigquery/issues/395
+    request_body.setdefault("formatOptions", {})
+    request_body["formatOptions"]["useInt64Timestamp"] = True
+
     return request_body
 
 
@@ -215,7 +220,7 @@ def query_jobs_query(
 
     if timeout is not None:
         # Subtract a buffer for context switching, network latency, etc.
-        request_body["timeoutMs"] = max(0, int(1000 * (timeout - _TIMEOUT_BUFFER_SECS)))
+        request_body["timeoutMs"] = max(0, int(1000 * timeout) - _TIMEOUT_BUFFER_MILLIS)
     request_body["location"] = location
     request_body["query"] = query
 

@@ -13,7 +13,108 @@ limitations under the License.
 
 # 3.0.0 Migration Guide
 
-TODO
+## New Required Dependencies
+
+Some of the previously optional dependencies are now *required* in `3.x` versions of the
+library, namely
+[google-cloud-bigquery-storage](https://pypi.org/project/google-cloud-bigquery-storage/)
+(minimum version `2.0.0`) and [pyarrow](https://pypi.org/project/pyarrow/) (minimum
+version `3.0.0`).
+
+The behavior of some of the package "extras" has thus also changed:
+ * The `bqstorage` extra has been preserved for comaptibility reasons, but it is now a
+   no-op and should be omitted when installing the BigQuery client library.
+
+   **Before:**
+   ```
+   $ pip install google-cloud-bigquery[bqstorage]
+   ```
+
+   **After:**
+   ```
+   $ pip install google-cloud-bigquery
+   ```
+
+ * The `bignumeric_type` extra has been removed, as `BIGNUMERIC` type is now
+   automatically supported. That extra should thus not be used.
+
+   **Before:**
+   ```
+   $ pip install google-cloud-bigquery[bignumeric_type]
+   ```
+
+   **After:**
+   ```
+   $ pip install google-cloud-bigquery
+   ```
+
+## Re-organized Types
+
+The auto-generated parts of the library has been removed, and proto-based types formerly
+found in `google.cloud.bigquery_v2` have been replaced by the new implementation (but
+see the [section](#legacy-types) below).
+
+For example, the standard SQL data types should new be imported from a new location:
+
+**Before:**
+```py
+from google.cloud.bigquery_v2 import StandardSqlDataType
+from google.cloud.bigquery_v2.types import StandardSqlField
+from google.cloud.bigquery_v2.types.standard_sql import StandardSqlStructType
+```
+
+**After:**
+```py
+from google.cloud.bigquery import StandardSqlDataType
+from google.cloud.bigquery.standard_sql import StandardSqlField
+from google.cloud.bigquery.standard_sql import StandardSqlStructType
+```
+
+The `TypeKind` enum defining all possible SQL types for schema fields has been renamed
+and is not nested anymore under `StandardSqlDataType`:
+
+
+**Before:**
+```py
+from google.cloud.bigquery_v2 import StandardSqlDataType
+
+if field_type == StandardSqlDataType.TypeKind.STRING:
+    ...
+```
+
+**After:**
+```py
+
+from google.cloud.bigquery import StandardSqlTypeNames
+
+if field_type == StandardSqlTypeNames.STRING:
+    ...
+```
+
+
+<a name="legacy-types"></a>
+## Legacy Types
+
+For compatibility reasons, the legacy proto-based types still exists as static code
+and can be imported:
+
+```py
+from google.cloud.bigquery_v2 import StandardSqlDataType  # a sublcass of proto.Message
+```
+
+Mind, however, that importing them will issue a warning, because aside from being
+importable, these types **are not maintained anymore** in any way. They may differ both
+from the types in `google.cloud.bigquery`, and from the types supported on the backend.
+
+Unless you have a very specific situation that warrants using them, you should instead
+use the actively maintained types from `google.cloud.bigquery`.
+
+
+## Destination Table is Preserved on Query Jobs
+
+When the BigQuery client creates a `QueryJob`, it no longer removes the destination
+table from the job's configuration. Destination table for the query can thus be
+explicitly defined by the user.
 
 
 # 2.0.0 Migration Guide

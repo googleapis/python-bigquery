@@ -55,6 +55,7 @@ Job-Related Types
     :toctree: generated
 
     job.Compression
+    job.ConnectionProperty
     job.CreateDisposition
     job.DestinationFormat
     job.DmlStats

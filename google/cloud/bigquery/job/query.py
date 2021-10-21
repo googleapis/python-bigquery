@@ -18,7 +18,7 @@ import concurrent.futures
 import copy
 import re
 import typing
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 from google.api_core import exceptions
 from google.api_core.future import polling as polling_future
@@ -222,6 +222,62 @@ class ScriptOptions:
         self._properties["keyResultStatement"] = value
 
 
+class ConnectionProperty:
+    """A connection-level property to customize query behavior.
+
+    See the product documention for the list of supported connection properties:
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/ConnectionProperty
+
+    .. versionadded:: 2.29.0
+    """
+
+    def __init__(self, key: str = None, value: str = None):
+        self._properties = {}
+
+        self.key = key
+        self.value = value
+
+    @classmethod
+    def from_api_repr(cls, resource: Dict[str, str]) -> "ConnectionProperty":
+        """Factory: construct instance from the JSON repr.
+
+        Args:
+            resource:
+                ConnectionProperty representation returned from API.
+        """
+        instance = cls()
+        instance._properties = copy.deepcopy(resource)
+        return instance
+
+    def to_api_repr(self) -> Dict[str, str]:
+        """Construct the API resource representation."""
+        return copy.deepcopy(self._properties)
+
+    @property
+    def key(self) -> Optional[str]:
+        """The key of the connection property to set."""
+        return self._properties.get("key")
+
+    @key.setter
+    def key(self, value: Optional[str]):
+        if value is None:
+            _helpers._del_sub_prop(self._properties, ["key"])
+        else:
+            self._properties["key"] = value
+
+    @property
+    def value(self) -> Optional[str]:
+        """The value of the connection property to set."""
+        return self._properties.get("value")
+
+    @value.setter
+    def value(self, value: Optional[str]):
+        if value is None:
+            _helpers._del_sub_prop(self._properties, ["value"])
+        else:
+            self._properties["value"] = value
+
+
 class QueryJobConfig(_JobConfig):
     """Configuration options for query jobs.
 
@@ -282,6 +338,27 @@ class QueryJobConfig(_JobConfig):
     @create_disposition.setter
     def create_disposition(self, value):
         self._set_sub_prop("createDisposition", value)
+
+    @property
+    def connection_properties(self) -> Optional[List[ConnectionProperty]]:
+        """Connection properties which can modify the query behavior.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.connection_properties
+
+        .. versionadded:: 2.29.0
+        """
+        properties = self._get_sub_prop("connectionProperties")
+        if properties is None:
+            return None
+        else:
+            return [ConnectionProperty.from_api_repr(prop) for prop in properties]
+
+    @connection_properties.setter
+    def connection_properties(self, value: Optional[Iterable[ConnectionProperty]]):
+        if value is not None:
+            value = [item.to_api_repr() for item in value]
+        self._set_sub_prop("connectionProperties", value)
 
     @property
     def create_session(self) -> Optional[bool]:

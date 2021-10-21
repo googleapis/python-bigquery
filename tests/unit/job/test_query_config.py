@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import operator as op
+
 import pytest
 
 from .helpers import _Base
@@ -330,3 +332,52 @@ class TestQueryJobConfig(_Base):
         self.assertEqual(
             script_options.key_result_statement, KeyResultStatementKind.LAST
         )
+
+    def test_to_api_repr_with_no_connection_properties(self):
+        config = self._make_one()
+        config.connection_properties = None
+
+        resource = config.to_api_repr()
+
+        assert resource == {"query": {"connectionProperties": None}}
+        assert config.connection_properties is None
+
+    def test_to_api_repr_with_connection_properties(self):
+        from google.cloud.bigquery import ConnectionProperty
+
+        config = self._make_one()
+        config.connection_properties = (
+            ConnectionProperty(key="foo", value="bar"),
+            ConnectionProperty(key="baz", value="quux"),
+        )
+
+        resource = config.to_api_repr()
+
+        expected_conn_properties = [
+            {"key": "foo", "value": "bar"},
+            {"key": "baz", "value": "quux"},
+        ]
+        assert resource == {"query": {"connectionProperties": expected_conn_properties}}
+
+    def test_from_api_repr_with_connection_properties(self):
+        from google.cloud.bigquery import ConnectionProperty
+
+        resource = {
+            "query": {
+                "connectionProperties": [
+                    {"key": "foo", "value": "bar"},
+                    {"key": "baz", "value": "quux"},
+                ]
+            },
+        }
+        klass = self._get_target_class()
+
+        config = klass.from_api_repr(resource)
+
+        # The exact order of the properties does not matter.
+        conn_properties = sorted(config.connection_properties, key=op.attrgetter("key"))
+
+        assert len(conn_properties) == 2
+        assert all(isinstance(prop, ConnectionProperty) for prop in conn_properties)
+        assert (conn_properties[0].key, conn_properties[0].value) == ("baz", "quux")
+        assert (conn_properties[1].key, conn_properties[1].value) == ("foo", "bar")

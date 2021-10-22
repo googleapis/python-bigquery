@@ -1133,6 +1133,21 @@ class QueryJob(_AsyncJob):
         return result
 
     @property
+    def session_id(self) -> Optional[str]:
+        """The session ID the query was part of, if any.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics2.FIELDS.session_info
+
+        .. versionadded:: 2.29.0
+        """
+        return (
+            self._properties.get("statistics", {})
+            .get("sessionInfo", {})
+            .get("sessionId")
+        )
+
+    @property
     def slot_millis(self):
         """Union[int, None]: Slot-milliseconds used by this query job."""
         return _helpers._int_or_none(self._job_statistics().get("totalSlotMs"))

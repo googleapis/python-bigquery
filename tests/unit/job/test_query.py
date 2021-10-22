@@ -359,6 +359,17 @@ class TestQueryJob(_Base):
         self.assertIs(job._client, client)
         self._verifyResourceProperties(job, RESOURCE)
 
+    def test_from_api_repr_with_session_info(self):
+        klass = self._get_target_class()
+        client = _make_client(project=self.PROJECT)
+        RESOURCE = self._make_resource()
+        RESOURCE["statistics"] = {"sessionInfo": {"sessionId": "abc123=="}}
+
+        job = klass.from_api_repr(RESOURCE, client=client)
+
+        self.assertIs(job._client, client)
+        self.assertEqual(job.session_id, "abc123==")
+
     def test_cancelled(self):
         client = _make_client(project=self.PROJECT)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
@@ -858,6 +869,22 @@ class TestQueryJob(_Base):
         self.assertEqual(struct.name, "my_struct")
         self.assertEqual(struct.struct_types, {"count": "INT64"})
         self.assertEqual(struct.struct_values, {"count": 123})
+
+    def test_session_id(self):
+        session_id = "aHR0cHM6Ly95b3V0dS5iZS9kUXc0dzlXZ1hjUQ=="  # not random
+
+        client = _make_client(project=self.PROJECT)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+        assert job.session_id is None
+
+        statistics = job._properties["statistics"] = {}
+        assert job.session_id is None
+
+        session_info = statistics["sessionInfo"] = {}
+        assert job.session_id is None
+
+        session_info["sessionId"] = session_id
+        assert job.session_id == session_id
 
     def test_estimated_bytes_processed(self):
         est_bytes = 123456

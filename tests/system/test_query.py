@@ -27,3 +27,30 @@ def test_dry_run(bigquery_client: bigquery.Client, scalars_table: str):
     assert query_job.dry_run is True
     assert query_job.total_bytes_processed > 0
     assert len(query_job.schema) > 0
+
+
+def test_query_session(bigquery_client: bigquery.Client):
+    # CREATE TEMPORARY TABLE requires a script, a plain statement would not do.
+    sql = """
+        DECLARE my_number INT64;
+        SET my_number = 123;
+        CREATE TEMPORARY TABLE tbl_temp AS SELECT my_number AS foo;
+    """
+    job_config = bigquery.QueryJobConfig(create_session=True)
+    query_job = bigquery_client.query(sql, job_config=job_config)
+    query_job.result()
+
+    session_id = query_job.session_id
+    assert session_id is not None
+
+    job_config = bigquery.QueryJobConfig(
+        connection_properties=[
+            bigquery.ConnectionProperty(key="session_id", value=session_id)
+        ]
+    )
+    query_job_2 = bigquery_client.query("SELECT * FROM tbl_temp", job_config=job_config)
+    result = query_job_2.result()  # No error if the session works.
+
+    rows = list(result)
+    assert len(rows) == 1
+    assert list(rows[0].items()) == [("foo", 123)]

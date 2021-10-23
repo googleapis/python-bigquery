@@ -60,6 +60,27 @@ class TestQueryJobConfig(_Base):
         expected = table.TableReference.from_string(destination)
         self.assertEqual(config.destination, expected)
 
+    def test_create_session_w_none(self):
+        object_under_test = self._get_target_class()()
+        assert object_under_test.create_session is None
+
+    def test_create_session_w_value(self):
+        object_under_test = self._get_target_class()()
+        object_under_test._properties["query"]["createSession"] = True
+        assert object_under_test.create_session
+
+    def test_create_session_setter_w_none(self):
+        object_under_test = self._get_target_class()()
+        object_under_test._properties["query"]["createSession"] = True
+        object_under_test.create_session = None
+        assert "createSession" not in object_under_test._properties["query"]
+
+    def test_create_session_setter_w_value(self):
+        object_under_test = self._get_target_class()()
+        object_under_test._properties["query"]["createSession"] = False
+        object_under_test.create_session = True
+        assert object_under_test.create_session
+
     def test_default_dataset_w_string(self):
         from google.cloud.bigquery import dataset
 

@@ -284,6 +284,35 @@ class QueryJobConfig(_JobConfig):
         self._set_sub_prop("createDisposition", value)
 
     @property
+    def create_session(self) -> Optional[bool]:
+        """If ``True``, the job creates a new session using a random session ID.
+
+        To continue using a created session with subsequent queries, pass the existing
+        session identifier as a
+        :class:`~google.cloud.bigquery.job.query.ConnectionProperty` value. The session
+        identifier is returned as the
+        :attr:`~google.cloud.bigquery.job.query.QueryJob.session_id` property of the
+        query job instance.
+
+        The new session's location will be set to Job.JobReference.location if it is
+        present, otherwise it's set to the default location based on existing routing
+        logic.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.create_session
+
+        .. versionadded:: 2.29.0
+        """
+        return self._get_sub_prop("createSession")
+
+    @create_session.setter
+    def create_session(self, value: Optional[bool]) -> None:
+        if value is None:
+            self._del_sub_prop("createSession")
+        else:
+            self._set_sub_prop("createSession", value)
+
+    @property
     def default_dataset(self):
         """google.cloud.bigquery.dataset.DatasetReference: the default dataset
         to use for unqualified table names in the query or :data:`None` if not

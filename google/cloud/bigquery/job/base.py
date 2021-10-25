@@ -204,7 +204,10 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
     @property
     def session_info(self) -> Optional["SessionInfo"]:
-        """[Preview] Information of the session if this job is part of one."""
+        """[Preview] Information of the session if this job is part of one.
+
+        .. versionadded:: 2.29.0
+        """
         resource = _helpers._get_sub_prop(
             self._properties, ["statistics", "sessionInfo"]
         )
@@ -1002,6 +1005,8 @@ class ScriptStatistics(object):
 
 class SessionInfo(object):
     """[Preview] Information of the session if this job is part of one.
+
+    .. versionadded:: 2.29.0
 
     Args:
         resource (Map[str, Any]): JSON representation of object.

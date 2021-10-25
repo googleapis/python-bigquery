@@ -18,7 +18,7 @@ import concurrent.futures
 import copy
 import re
 import typing
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 from google.api_core import exceptions
 from google.api_core.future import polling as polling_future
@@ -273,13 +273,16 @@ class QueryJobConfig(_JobConfig):
         self._set_sub_prop("allowLargeResults", value)
 
     @property
-    def connection_properties(self) -> Sequence[ConnectionProperty]:
-        """Connection properties."""
+    def connection_properties(self) -> List[ConnectionProperty]:
+        """Connection properties.
+
+        .. versionadded:: 2.29.0
+        """
         resource = self._get_sub_prop("connectionProperties", [])
         return [ConnectionProperty.from_api_repr(prop) for prop in resource]
 
     @connection_properties.setter
-    def connection_properties(self, value: Sequence[ConnectionProperty]):
+    def connection_properties(self, value: Iterable[ConnectionProperty]):
         self._set_sub_prop(
             "connectionProperties", [prop.to_api_repr() for prop in value],
         )
@@ -307,6 +310,11 @@ class QueryJobConfig(_JobConfig):
         If :data:`False`, runs query with an existing ``session_id`` passed in
         :attr:`~google.cloud.bigquery.job.QueryJobConfig.connection_properties`,
         otherwise runs query in non-session mode.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.create_session
+
+        .. versionadded:: 2.29.0
         """
         return self._get_sub_prop("createSession")
 
@@ -726,7 +734,7 @@ class QueryJob(_AsyncJob):
         return self._configuration.allow_large_results
 
     @property
-    def connection_properties(self) -> Sequence[ConnectionProperty]:
+    def connection_properties(self) -> List[ConnectionProperty]:
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.connection_properties`.
         """

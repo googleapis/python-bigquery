@@ -276,6 +276,9 @@ class QueryJobConfig(_JobConfig):
     def connection_properties(self) -> List[ConnectionProperty]:
         """Connection properties.
 
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.connection_properties
+
         .. versionadded:: 2.29.0
         """
         resource = self._get_sub_prop("connectionProperties", [])
@@ -737,6 +740,8 @@ class QueryJob(_AsyncJob):
     def connection_properties(self) -> List[ConnectionProperty]:
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.connection_properties`.
+
+        .. versionadded:: 2.29.0
         """
         return self._configuration.connection_properties
 
@@ -751,6 +756,8 @@ class QueryJob(_AsyncJob):
     def create_session(self) -> Optional[bool]:
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.create_session`.
+
+        .. versionadded:: 2.29.0
         """
         return self._configuration.create_session
 

@@ -32,7 +32,17 @@ _SCALAR_VALUE_TYPE = Optional[
 
 
 class ConnectionProperty:
-    """A connection-level property to customize query behavior."""
+    """A connection-level property to customize query behavior.
+
+    See
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/ConnectionProperty
+
+    Args:
+        key:
+            The key of the property to set, for example, ``'time_zone'`` or
+            ``'session_id'``.
+        value: The value of the property to set.
+    """
 
     def __init__(self, key: str = "", value: str = ""):
         self._properties = {

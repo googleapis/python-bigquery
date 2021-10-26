@@ -1003,7 +1003,7 @@ class ScriptStatistics(object):
         return self._properties.get("evaluationKind")
 
 
-class SessionInfo(object):
+class SessionInfo:
     """[Preview] Information of the session if this job is part of one.
 
     .. versionadded:: 2.29.0

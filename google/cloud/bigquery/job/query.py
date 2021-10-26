@@ -655,7 +655,7 @@ class QueryJobConfig(_JobConfig):
 
     @property
     def script_options(self) -> ScriptOptions:
-        """Connection properties which can modify the query behavior.
+        """Options controlling the execution of scripts.
 
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#scriptoptions
         """

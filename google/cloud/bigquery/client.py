@@ -812,10 +812,6 @@ class Client(ClientWithProject):
         timeout: float = DEFAULT_TIMEOUT,
     ) -> Policy:
         table = _table_arg_to_table_ref(table, default_project=self.project)
-        if not isinstance(table, (TableReference)):
-            raise TypeError(
-                "table must be a Table, TableReference, or TableListItem, or string"
-            )
 
         if requested_policy_version != 1:
             raise ValueError("only IAM policy version 1 is supported")
@@ -845,10 +841,6 @@ class Client(ClientWithProject):
         timeout: float = DEFAULT_TIMEOUT,
     ) -> Policy:
         table = _table_arg_to_table_ref(table, default_project=self.project)
-        if not isinstance(table, (TableReference)):
-            raise TypeError(
-                "table must be a Table, TableReference, or TableListItem, or string"
-            )
 
         if not isinstance(policy, (Policy)):
             raise TypeError("policy must be a Policy")
@@ -881,10 +873,6 @@ class Client(ClientWithProject):
         timeout: float = DEFAULT_TIMEOUT,
     ) -> Dict[str, Any]:
         table = _table_arg_to_table_ref(table, default_project=self.project)
-        if not isinstance(table, (TableReference)):
-            raise TypeError(
-                "table must be a Table, TableReference, or TableListItem, or string"
-            )
 
         body = {"permissions": permissions}
 

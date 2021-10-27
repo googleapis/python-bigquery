@@ -33,17 +33,17 @@ import uuid
 import warnings
 
 from google import resumable_media  # type: ignore
-from google.resumable_media.requests import MultipartUpload
+from google.resumable_media.requests import MultipartUpload  # type: ignore
 from google.resumable_media.requests import ResumableUpload
 
-import google.api_core.client_options
-import google.api_core.exceptions as core_exceptions
-from google.api_core.iam import Policy
+import google.api_core.client_options  # type: ignore
+import google.api_core.exceptions as core_exceptions  # type: ignore
+from google.api_core.iam import Policy  # type: ignore
 from google.api_core import page_iterator
 from google.api_core import retry as retries
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 from google.cloud import exceptions  # pytype: disable=import-error
-from google.cloud.client import ClientWithProject  # pytype: disable=import-error
+from google.cloud.client import ClientWithProject  # type: ignore  # pytype: disable=import-error
 
 try:
     from google.cloud.bigquery_storage_v1.services.big_query_read.client import (

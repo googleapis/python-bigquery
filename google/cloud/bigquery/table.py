@@ -25,33 +25,33 @@ from typing import Any, Dict, Iterable, Iterator, Optional, Tuple
 import warnings
 
 try:
-    import pandas
+    import pandas  # type: ignore
 except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
-    import geopandas
+    import geopandas  # type: ignore
 except ImportError:
     geopandas = None
 else:
     _COORDINATE_REFERENCE_SYSTEM = "EPSG:4326"
 
 try:
-    import shapely.geos
+    import shapely.geos  # type: ignore
 except ImportError:
     shapely = None
 else:
     _read_wkt = shapely.geos.WKTReader(shapely.geos.lgeos).read
 
 try:
-    import pyarrow
+    import pyarrow  # type: ignore
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
-import google.api_core.exceptions
-from google.api_core.page_iterator import HTTPIterator
+import google.api_core.exceptions  # type: ignore
+from google.api_core.page_iterator import HTTPIterator  # type: ignore
 
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError

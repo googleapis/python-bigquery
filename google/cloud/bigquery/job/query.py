@@ -20,8 +20,8 @@ import re
 import typing
 from typing import Any, Dict, Iterable, List, Optional, Union
 
-from google.api_core import exceptions
-from google.api_core.future import polling as polling_future
+from google.api_core import exceptions  # type: ignore
+from google.api_core.future import polling as polling_future  # type: ignore
 import requests
 
 from google.cloud.bigquery.dataset import Dataset
@@ -56,9 +56,9 @@ from google.cloud.bigquery.job.base import _JobReference
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Assumption: type checks are only used by library developers and CI environments
     # that have all optional dependencies installed, thus no conditional imports.
-    import pandas
-    import geopandas
-    import pyarrow
+    import pandas  # type: ignore
+    import geopandas  # type: ignore
+    import pyarrow  # type: ignore
     from google.api_core import retry as retries
     from google.cloud import bigquery_storage
     from google.cloud.bigquery.client import Client

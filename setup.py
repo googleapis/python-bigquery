@@ -56,7 +56,8 @@ extras = {
         # grpc.Channel.close() method isn't added until 1.32.0.
         # https://github.com/grpc/grpc/pull/15254
         "grpcio >= 1.38.1, < 2.0dev",
-    ] + pyarrow_dep,
+    ]
+    + pyarrow_dep,
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
     "pandas": ["pandas>=0.23.0"] + pyarrow_dep,
     "bignumeric_type": pyarrow_dep,

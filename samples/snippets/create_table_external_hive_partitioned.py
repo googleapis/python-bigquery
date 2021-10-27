@@ -44,6 +44,9 @@ def create_table_external_hive_partitioned(table_id: str):
     external_config.source_uris = [uri]
     external_config.autodetect = True
 
+    # Configure partitioning options.
+    hive_partitioning_opts = bigquery.external_config.HivePartitioningOptions()
+
     # The layout of the files in here is compatible with the layout requirements for hive partitioning,
     # so we can add an optional Hive partitioning configuration to leverage the object paths for deriving
     # partitioning column information.
@@ -53,11 +56,11 @@ def create_table_external_hive_partitioned(table_id: str):
 
     # We have a "/dt=YYYY-MM-DD/" path component in our example files as documented above.
     # Autolayout will expose this as a column named "dt" of type DATE.
-    hive_partitioning = bigquery.external_config.HivePartitioningOptions()
-    hive_partitioning.source_uri_prefix = source_uri_prefix
-    hive_partitioning.mode = "AUTO"
-    hive_partitioning.require_partition_filter = True
-    external_config.hive_partitioning = hive_partitioning
+    hive_partitioning_opts.mode = "AUTO"
+    hive_partitioning_opts.require_partition_filter = True
+    hive_partitioning_opts.source_uri_prefix = source_uri_prefix
+
+    external_config.hive_partitioning = hive_partitioning_opts
 
     table = bigquery.Table(table_id)
     table.external_data_configuration = external_config

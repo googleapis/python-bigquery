@@ -19,7 +19,7 @@ import copy
 import http
 import threading
 import typing
-from typing import Dict, Optional
+from typing import Dict, Optional, Sequence
 
 from google.api_core import exceptions
 import google.api_core.future.polling
@@ -193,7 +193,8 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         return _helpers._get_sub_prop(self._properties, ["statistics", "parentJobId"])
 
     @property
-    def script_statistics(self):
+    def script_statistics(self) -> Optional["ScriptStatistics"]:
+        """Statistics for a child job of a script."""
         resource = _helpers._get_sub_prop(
             self._properties, ["statistics", "scriptStatistics"]
         )
@@ -968,9 +969,8 @@ class ScriptStatistics(object):
         self._properties = resource
 
     @property
-    def stack_frames(self):
-        """List[ScriptStackFrame]: Stack trace where the current evaluation
-        happened.
+    def stack_frames(self) -> Sequence[ScriptStackFrame]:
+        """Stack trace where the current evaluation happened.
 
         Shows line/column/procedure name of each frame on the stack at the
         point where the current evaluation happened.
@@ -982,7 +982,7 @@ class ScriptStatistics(object):
         ]
 
     @property
-    def evaluation_kind(self):
+    def evaluation_kind(self) -> Optional[str]:
         """str: Indicates the type of child job.
 
         Possible values include ``STATEMENT`` and ``EXPRESSION``.
@@ -1005,7 +1005,9 @@ class UnknownJob(_AsyncJob):
         Returns:
             UnknownJob: Job corresponding to the resource.
         """
-        job_ref_properties = resource.get("jobReference", {"projectId": client.project})
+        job_ref_properties = resource.get(
+            "jobReference", {"projectId": client.project, "jobId": None}
+        )
         job_ref = _JobReference._from_api_repr(job_ref_properties)
         job = cls(job_ref, client)
         # Populate the job reference with the project, even if it has been

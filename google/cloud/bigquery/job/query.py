@@ -1448,7 +1448,7 @@ class QueryJob(_AsyncJob):
 
         except exceptions.GoogleAPICallError as exc:
             exc.message += self._format_for_exception(self.query, self.job_id)
-            exc.query_job = self
+            exc.query_job = self  # type: ignore
             raise
         except requests.exceptions.Timeout as exc:
             raise concurrent.futures.TimeoutError from exc

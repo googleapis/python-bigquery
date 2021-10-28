@@ -61,7 +61,7 @@ try:
         DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
     )
 except ImportError:
-    DEFAULT_BQSTORAGE_CLIENT_INFO = None
+    DEFAULT_BQSTORAGE_CLIENT_INFO = None  # type: ignore
 
 from google.cloud.bigquery._helpers import _del_sub_prop
 from google.cloud.bigquery._helpers import _get_sub_prop
@@ -538,7 +538,7 @@ class Client(ClientWithProject):
             bqstorage_client = bigquery_storage.BigQueryReadClient(
                 credentials=self._credentials,
                 client_options=client_options,
-                client_info=client_info,
+                client_info=client_info,  # type: ignore  # (None is also accepted)
             )
 
         return bqstorage_client
@@ -1380,7 +1380,7 @@ class Client(ClientWithProject):
             max_results=max_results,
             page_size=page_size,
         )
-        result.dataset = dataset
+        result.dataset = dataset  # type: ignore
         return result
 
     def list_routines(
@@ -1457,7 +1457,7 @@ class Client(ClientWithProject):
             max_results=max_results,
             page_size=page_size,
         )
-        result.dataset = dataset
+        result.dataset = dataset  # type: ignore
         return result
 
     def list_tables(
@@ -1533,7 +1533,7 @@ class Client(ClientWithProject):
             max_results=max_results,
             page_size=page_size,
         )
-        result.dataset = dataset
+        result.dataset = dataset  # type: ignore
         return result
 
     def delete_dataset(
@@ -1883,20 +1883,18 @@ class Client(ClientWithProject):
         )
         return _QueryResults.from_api_repr(resource)
 
-    def job_from_resource(self, resource: dict) -> job.UnknownJob:
+    def job_from_resource(
+        self, resource: dict
+    ) -> Union[
+        job.CopyJob, job.ExtractJob, job.LoadJob, job.QueryJob, job.UnknownJob,
+    ]:
         """Detect correct job type from resource and instantiate.
 
         Args:
             resource (Dict): one job resource from API response
 
         Returns:
-            Union[ \
-                google.cloud.bigquery.job.LoadJob, \
-                google.cloud.bigquery.job.CopyJob, \
-                google.cloud.bigquery.job.ExtractJob, \
-                google.cloud.bigquery.job.QueryJob \
-            ]:
-                The job instance, constructed via the resource.
+            The job instance, constructed via the resource.
         """
         config = resource.get("configuration", {})
         if "load" in config:
@@ -2079,7 +2077,11 @@ class Client(ClientWithProject):
             timeout=timeout,
         )
 
-        return self.job_from_resource(resource)
+        job_instance = self.job_from_resource(resource)  # never an UnknownJob
+
+        return typing.cast(
+            Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob], job_instance,
+        )
 
     def cancel_job(
         self,
@@ -2153,7 +2155,11 @@ class Client(ClientWithProject):
             timeout=timeout,
         )
 
-        return self.job_from_resource(resource["job"])
+        job_instance = self.job_from_resource(resource["job"])  # never an UnknownJob
+
+        return typing.cast(
+            Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob], job_instance,
+        )
 
     def list_jobs(
         self,
@@ -2453,7 +2459,7 @@ class Client(ClientWithProject):
         except resumable_media.InvalidResponse as exc:
             raise exceptions.from_http_response(exc.response)
 
-        return self.job_from_resource(response.json())
+        return typing.cast(LoadJob, self.job_from_resource(response.json()))
 
     def load_table_from_dataframe(
         self,

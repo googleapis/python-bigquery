@@ -696,7 +696,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             self.reload(retry=retry, timeout=timeout)
         return self.state == _DONE_STATE
 
-    def result(
+    def result(  # type: ignore  # (signature complaint)
         self, retry: "retries.Retry" = DEFAULT_RETRY, timeout: float = None
     ) -> "_AsyncJob":
         """Start the job and wait for it to complete and get the result.

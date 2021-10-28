@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable
-
 try:
     import pkg_resources
 
@@ -23,5 +21,4 @@ try:
 except ImportError:
     import pkgutil
 
-    # Use Iterable instead of List, otherwise pytype (incorrectly) complains
-    __path__: Iterable[str] = pkgutil.extend_path(__path__, __name__)
+    __path__ = pkgutil.extend_path(__path__, __name__)  # type: ignore

@@ -921,7 +921,7 @@ class _JobConfig(object):
         # cls is one of the job config subclasses that provides the job_type argument to
         # this base class on instantiation, thus missing-parameter warning is a false
         # positive here.
-        job_config = cls()  # pytype: disable=missing-parameter
+        job_config = cls()  # type: ignore  # pytype: disable=missing-parameter
         job_config._properties = resource
         return job_config
 

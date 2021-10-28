@@ -2657,7 +2657,7 @@ def _rows_page_start(iterator, page, response):
 # pylint: enable=unused-argument
 
 
-def _table_arg_to_table_ref(value, default_project=None):
+def _table_arg_to_table_ref(value, default_project=None) -> TableReference:
     """Helper to convert a string or Table to TableReference.
 
     This function keeps TableReference and other kinds of objects unchanged.
@@ -2669,7 +2669,7 @@ def _table_arg_to_table_ref(value, default_project=None):
     return value
 
 
-def _table_arg_to_table(value, default_project=None):
+def _table_arg_to_table(value, default_project=None) -> Table:
     """Helper to convert a string or TableReference to a Table.
 
     This function keeps Table and other kinds of objects unchanged.

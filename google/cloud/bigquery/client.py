@@ -28,7 +28,18 @@ import json
 import math
 import os
 import tempfile
-from typing import Any, BinaryIO, Dict, Iterable, Optional, Sequence, Tuple, Union
+import typing
+from typing import (
+    Any,
+    BinaryIO,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 import uuid
 import warnings
 
@@ -100,6 +111,7 @@ from google.cloud.bigquery import _helpers
 
 pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
+PathType = Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]
 
 _DEFAULT_CHUNKSIZE = 100 * 1024 * 1024  # 100 MB
 _MAX_MULTIPART_SIZE = 5 * 1024 * 1024
@@ -248,7 +260,7 @@ class Client(ClientWithProject):
         self,
         project: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> str:
         """Get the email address of the project's BigQuery service account
 
@@ -295,7 +307,7 @@ class Client(ClientWithProject):
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """List projects for the project associated with this client.
@@ -361,7 +373,7 @@ class Client(ClientWithProject):
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """List datasets for the project associated with this client.
@@ -400,7 +412,7 @@ class Client(ClientWithProject):
                 Iterator of :class:`~google.cloud.bigquery.dataset.DatasetListItem`.
                 associated with the project.
         """
-        extra_params = {}
+        extra_params: Dict[str, Any] = {}
         if project is None:
             project = self.project
         if include_all:
@@ -531,7 +543,7 @@ class Client(ClientWithProject):
 
         return bqstorage_client
 
-    def _dataset_from_arg(self, dataset):
+    def _dataset_from_arg(self, dataset) -> Union[Dataset, DatasetReference]:
         if isinstance(dataset, str):
             dataset = DatasetReference.from_string(
                 dataset, default_project=self.project
@@ -552,7 +564,7 @@ class Client(ClientWithProject):
         dataset: Union[str, Dataset, DatasetReference, DatasetListItem],
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Dataset:
         """API call: create the dataset via a POST request.
 
@@ -627,7 +639,7 @@ class Client(ClientWithProject):
         routine: Routine,
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Routine:
         """[Beta] Create a routine via a POST request.
 
@@ -682,7 +694,7 @@ class Client(ClientWithProject):
         table: Union[str, Table, TableReference, TableListItem],
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Table:
         """API call:  create a table via a PUT request
 
@@ -765,7 +777,7 @@ class Client(ClientWithProject):
         self,
         dataset_ref: Union[DatasetReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Dataset:
         """Fetch the dataset referenced by ``dataset_ref``
 
@@ -809,7 +821,7 @@ class Client(ClientWithProject):
         table: Union[Table, TableReference],
         requested_policy_version: int = 1,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Policy:
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
@@ -839,7 +851,7 @@ class Client(ClientWithProject):
         policy: Policy,
         updateMask: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Policy:
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
@@ -872,7 +884,7 @@ class Client(ClientWithProject):
         table: Union[Table, TableReference],
         permissions: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Dict[str, Any]:
         if not isinstance(table, (Table, TableReference)):
             raise TypeError("table must be a Table or TableReference")
@@ -897,7 +909,7 @@ class Client(ClientWithProject):
         self,
         model_ref: Union[ModelReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Model:
         """[Beta] Fetch the model referenced by ``model_ref``.
 
@@ -940,7 +952,7 @@ class Client(ClientWithProject):
         self,
         routine_ref: Union[Routine, RoutineReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Routine:
         """[Beta] Get the routine referenced by ``routine_ref``.
 
@@ -984,7 +996,7 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Table:
         """Fetch the table referenced by ``table``.
 
@@ -1026,7 +1038,7 @@ class Client(ClientWithProject):
         dataset: Dataset,
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Dataset:
         """Change some fields of a dataset.
 
@@ -1073,7 +1085,7 @@ class Client(ClientWithProject):
         """
         partial = dataset._build_resource(fields)
         if dataset.etag is not None:
-            headers = {"If-Match": dataset.etag}
+            headers: Optional[Dict[str, str]] = {"If-Match": dataset.etag}
         else:
             headers = None
         path = dataset.path
@@ -1096,7 +1108,7 @@ class Client(ClientWithProject):
         model: Model,
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Model:
         """[Beta] Change some fields of a model.
 
@@ -1137,7 +1149,7 @@ class Client(ClientWithProject):
         """
         partial = model._build_resource(fields)
         if model.etag:
-            headers = {"If-Match": model.etag}
+            headers: Optional[Dict[str, str]] = {"If-Match": model.etag}
         else:
             headers = None
         path = model.path
@@ -1160,7 +1172,7 @@ class Client(ClientWithProject):
         routine: Routine,
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Routine:
         """[Beta] Change some fields of a routine.
 
@@ -1207,7 +1219,7 @@ class Client(ClientWithProject):
         """
         partial = routine._build_resource(fields)
         if routine.etag:
-            headers = {"If-Match": routine.etag}
+            headers: Optional[Dict[str, str]] = {"If-Match": routine.etag}
         else:
             headers = None
 
@@ -1234,7 +1246,7 @@ class Client(ClientWithProject):
         table: Table,
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Table:
         """Change some fields of a table.
 
@@ -1275,7 +1287,7 @@ class Client(ClientWithProject):
         """
         partial = table._build_resource(fields)
         if table.etag is not None:
-            headers = {"If-Match": table.etag}
+            headers: Optional[Dict[str, str]] = {"If-Match": table.etag}
         else:
             headers = None
 
@@ -1300,7 +1312,7 @@ class Client(ClientWithProject):
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """[Beta] List models in the dataset.
@@ -1377,7 +1389,7 @@ class Client(ClientWithProject):
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """[Beta] List routines in the dataset.
@@ -1454,7 +1466,7 @@ class Client(ClientWithProject):
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """List tables in the dataset.
@@ -1529,7 +1541,7 @@ class Client(ClientWithProject):
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         delete_contents: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ) -> None:
         """Delete a dataset.
@@ -1588,7 +1600,7 @@ class Client(ClientWithProject):
         self,
         model: Union[Model, ModelReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ) -> None:
         """[Beta] Delete a model
@@ -1642,7 +1654,7 @@ class Client(ClientWithProject):
         project: Optional[str] = None,
         location: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ):
         """[Beta] Delete job metadata from job history.
@@ -1705,7 +1717,7 @@ class Client(ClientWithProject):
         self,
         routine: Union[Routine, RoutineReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ) -> None:
         """[Beta] Delete a routine.
@@ -1759,7 +1771,7 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ) -> None:
         """Delete a table
@@ -1812,7 +1824,7 @@ class Client(ClientWithProject):
         project: str = None,
         timeout_ms: int = None,
         location: str = None,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> _QueryResults:
         """Get the query results object for a query job.
 
@@ -1837,7 +1849,7 @@ class Client(ClientWithProject):
                 A new ``_QueryResults`` instance.
         """
 
-        extra_params = {"maxResults": 0}
+        extra_params: Dict[str, Any] = {"maxResults": 0}
 
         if timeout is not None:
             timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
@@ -1901,7 +1913,7 @@ class Client(ClientWithProject):
         self,
         job_config: dict,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
         """Create a new job.
         Args:
@@ -1934,7 +1946,7 @@ class Client(ClientWithProject):
             return self.load_table_from_uri(
                 source_uris,
                 destination,
-                job_config=load_job_config,
+                job_config=typing.cast(LoadJobConfig, load_job_config),
                 retry=retry,
                 timeout=timeout,
             )
@@ -1954,7 +1966,7 @@ class Client(ClientWithProject):
             return self.copy_table(
                 sources,
                 destination,
-                job_config=copy_job_config,
+                job_config=typing.cast(CopyJobConfig, copy_job_config),
                 retry=retry,
                 timeout=timeout,
             )
@@ -1974,7 +1986,7 @@ class Client(ClientWithProject):
             return self.extract_table(
                 source,
                 destination_uris,
-                job_config=extract_job_config,
+                job_config=typing.cast(ExtractJobConfig, extract_job_config),
                 retry=retry,
                 timeout=timeout,
                 source_type=source_type,
@@ -1987,7 +1999,10 @@ class Client(ClientWithProject):
             )
             query = _get_sub_prop(copy_config, ["query", "query"])
             return self.query(
-                query, job_config=query_job_config, retry=retry, timeout=timeout
+                query,
+                job_config=typing.cast(QueryJobConfig, query_job_config),
+                retry=retry,
+                timeout=timeout,
             )
         else:
             raise TypeError("Invalid job configuration received.")
@@ -1998,7 +2013,7 @@ class Client(ClientWithProject):
         project: str = None,
         location: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
         """Fetch a job for the project associated with this client.
 
@@ -2072,7 +2087,7 @@ class Client(ClientWithProject):
         project: str = None,
         location: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
         """Attempt to cancel a job from a job ID.
 
@@ -2149,7 +2164,7 @@ class Client(ClientWithProject):
         all_users: bool = None,
         state_filter: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         min_creation_time: datetime.datetime = None,
         max_creation_time: datetime.datetime = None,
         page_size: int = None,
@@ -2264,7 +2279,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: LoadJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Starts a job for loading data into a table from CloudStorage.
 
@@ -2348,7 +2363,7 @@ class Client(ClientWithProject):
         location: str = None,
         project: str = None,
         job_config: LoadJobConfig = None,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of this table from a file-like object.
 
@@ -2451,7 +2466,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: LoadJobConfig = None,
         parquet_compression: str = "snappy",
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of a table from a pandas DataFrame.
 
@@ -2591,7 +2606,7 @@ class Client(ClientWithProject):
             try:
                 table = self.get_table(destination)
             except core_exceptions.NotFound:
-                table = None
+                pass
             else:
                 columns_and_indexes = frozenset(
                     name
@@ -2706,7 +2721,7 @@ class Client(ClientWithProject):
         location: str = None,
         project: str = None,
         job_config: LoadJobConfig = None,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of a table from a JSON string or dict.
 
@@ -2989,7 +3004,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: CopyJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> job.CopyJob:
         """Copy one or more tables to another table.
 
@@ -3092,7 +3107,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: ExtractJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         source_type: str = "Table",
     ) -> job.ExtractJob:
         """Start a job to extract a table into Cloud Storage files.
@@ -3190,7 +3205,7 @@ class Client(ClientWithProject):
         location: str = None,
         project: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
     ) -> job.QueryJob:
         """Run a SQL query.
@@ -3347,7 +3362,7 @@ class Client(ClientWithProject):
         table: Union[Table, TableReference, str],
         rows: Union[Iterable[Tuple], Iterable[Dict]],
         selected_fields: Sequence[SchemaField] = None,
-        **kwargs: dict,
+        **kwargs,
     ) -> Sequence[dict]:
         """Insert rows into a table via the streaming API.
 
@@ -3472,7 +3487,7 @@ class Client(ClientWithProject):
         ignore_unknown_values: bool = None,
         template_suffix: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Sequence[dict]:
         """Insert rows into a table without applying local type conversions.
 
@@ -3539,8 +3554,8 @@ class Client(ClientWithProject):
         # insert_rows_json doesn't need the table schema. It's not doing any
         # type conversions.
         table = _table_arg_to_table_ref(table, default_project=self.project)
-        rows_info = []
-        data = {"rows": rows_info}
+        rows_info: List[Any] = []
+        data: Dict[str, Any] = {"rows": rows_info}
 
         if row_ids is None:
             warnings.warn(
@@ -3558,7 +3573,7 @@ class Client(ClientWithProject):
                 raise TypeError(msg)
 
         for i, row in enumerate(json_rows):
-            info = {"json": row}
+            info: Dict[str, Any] = {"json": row}
 
             if row_ids is AutoRowIDs.GENERATE_UUID:
                 info["insertId"] = str(uuid.uuid4())
@@ -3607,7 +3622,7 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> Sequence[str]:
         """List the partitions in a table.
 
@@ -3657,7 +3672,7 @@ class Client(ClientWithProject):
         start_index: int = None,
         page_size: int = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> RowIterator:
         """List the rows of the table.
 
@@ -3733,7 +3748,7 @@ class Client(ClientWithProject):
             table = self.get_table(table.reference, retry=retry, timeout=timeout)
             schema = table.schema
 
-        params = {}
+        params: Dict[str, Any] = {}
         if selected_fields is not None:
             params["selectedFields"] = ",".join(field.name for field in selected_fields)
         if start_index is not None:
@@ -3769,7 +3784,7 @@ class Client(ClientWithProject):
         start_index: int = None,
         page_size: int = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: Optional[float] = DEFAULT_TIMEOUT,
     ) -> RowIterator:
         """List the rows of a completed query.
         See
@@ -3814,7 +3829,7 @@ class Client(ClientWithProject):
                 Iterator of row data
                 :class:`~google.cloud.bigquery.table.Row`-s.
         """
-        params = {
+        params: Dict[str, Any] = {
             "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
             "location": location,
         }
@@ -3855,7 +3870,7 @@ class Client(ClientWithProject):
         """
         json.dump(schema_list, file_obj, indent=2, sort_keys=True)
 
-    def schema_from_json(self, file_or_path: Union[str, BinaryIO]):
+    def schema_from_json(self, file_or_path: PathType):
         """Takes a file object or file path that contains json that describes
         a table schema.
 
@@ -3868,9 +3883,7 @@ class Client(ClientWithProject):
         with open(file_or_path) as file_obj:
             return self._schema_from_json_file_object(file_obj)
 
-    def schema_to_json(
-        self, schema_list: Sequence[SchemaField], destination: Union[str, BinaryIO]
-    ):
+    def schema_to_json(self, schema_list: Sequence[SchemaField], destination: PathType):
         """Takes a list of schema field objects.
 
         Serializes the list of schema field objects as json to a file.
@@ -4011,13 +4024,12 @@ def _extract_job_reference(job, project=None, location=None):
     return (project, location, job_id)
 
 
-def _make_job_id(job_id, prefix=None):
+def _make_job_id(job_id: Optional[str], prefix: Optional[str] = None) -> str:
     """Construct an ID for a new job.
 
     Args:
-        job_id (Optional[str]): the user-provided job ID.
-
-        prefix (Optional[str]): the user-provided prefix for a job ID.
+        job_id: the user-provided job ID.
+        prefix: the user-provided prefix for a job ID.
 
     Returns:
         str: A job ID

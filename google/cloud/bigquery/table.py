@@ -2307,8 +2307,6 @@ class PartitionRange(object):
         key_vals = ["{}={}".format(key, val) for key, val in self._key()]
         return "PartitionRange({})".format(", ".join(key_vals))
 
-    __hash__ = None  # type: ignore
-
 
 class RangePartitioning(object):
     """Range-based partitioning configuration for a table.
@@ -2386,8 +2384,6 @@ class RangePartitioning(object):
     def __repr__(self):
         key_vals = ["{}={}".format(key, repr(val)) for key, val in self._key()]
         return "RangePartitioning({})".format(", ".join(key_vals))
-
-    __hash__ = None  # type: ignore
 
 
 class TimePartitioningType(object):

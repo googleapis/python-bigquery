@@ -674,8 +674,9 @@ class ExternalConfig(object):
             # The code below is too much magic for mypy to handle.
             if self.source_format == optcls._SOURCE_FORMAT:  # type: ignore
                 options: OptionsType = optcls()  # type: ignore
-                self._properties.setdefault(optcls._RESOURCE_NAME, {})  # type: ignore
-                options._properties = self._properties[optcls._RESOURCE_NAME]  # type: ignore
+                options._properties = self._properties.setdefault(
+                    optcls._RESOURCE_NAME, {}  # type: ignore
+                )
                 return options
 
         # No matching source format found.

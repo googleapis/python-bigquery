@@ -48,8 +48,8 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
-import google.api_core.exceptions  # type: ignore
-from google.api_core.page_iterator import HTTPIterator  # type: ignore
+import google.api_core.exceptions
+from google.api_core.page_iterator import HTTPIterator
 
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers

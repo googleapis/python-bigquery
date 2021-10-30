@@ -47,9 +47,9 @@ from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore
 from google.resumable_media.requests import ResumableUpload
 
-import google.api_core.client_options  # type: ignore
-import google.api_core.exceptions as core_exceptions  # type: ignore
-from google.api_core.iam import Policy  # type: ignore
+import google.api_core.client_options
+import google.api_core.exceptions as core_exceptions
+from google.api_core.iam import Policy
 from google.api_core import page_iterator
 from google.api_core import retry as retries
 import google.cloud._helpers  # type: ignore

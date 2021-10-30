@@ -96,9 +96,9 @@ try:
 except ImportError:  # pragma: NO COVER
     raise ImportError("This module can only be loaded in IPython.")
 
-from google.api_core import client_info  # type: ignore
+from google.api_core import client_info
 from google.api_core import client_options
-from google.api_core.exceptions import NotFound  # type: ignore
+from google.api_core.exceptions import NotFound
 import google.auth  # type: ignore
 from google.cloud import bigquery
 import google.cloud.bigquery.dataset
@@ -718,7 +718,7 @@ def _make_bqstorage_client(client, use_bqstorage_api, client_options):
         raise customized_error from err
 
     try:
-        from google.api_core.gapic_v1 import client_info as gapic_client_info  # type: ignore
+        from google.api_core.gapic_v1 import client_info as gapic_client_info
     except ImportError as err:
         customized_error = ImportError(
             "Install the grpcio package to use the BigQuery Storage API."

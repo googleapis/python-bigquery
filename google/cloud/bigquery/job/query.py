@@ -20,8 +20,8 @@ import re
 import typing
 from typing import Any, Dict, Iterable, List, Optional, Union
 
-from google.api_core import exceptions  # type: ignore
-from google.api_core.future import polling as polling_future  # type: ignore
+from google.api_core import exceptions
+from google.api_core.future import polling as polling_future
 import requests
 
 from google.cloud.bigquery.dataset import Dataset

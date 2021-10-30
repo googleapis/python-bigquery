@@ -21,8 +21,8 @@ import threading
 import typing
 from typing import Dict, Optional, Sequence
 
-from google.api_core import exceptions  # type: ignore
-import google.api_core.future.polling  # type: ignore
+from google.api_core import exceptions
+import google.api_core.future.polling
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.retry import DEFAULT_RETRY

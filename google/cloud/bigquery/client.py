@@ -111,8 +111,11 @@ from google.cloud.bigquery import _helpers
 
 pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
-PathType = Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]
 TimeoutType = Union[float, None]
+
+if typing.TYPE_CHECKING:
+    # os.PathLike is only subscriptable in Python 3.9+, thus shielding with a condition.
+    PathType = Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]
 
 _DEFAULT_CHUNKSIZE = 100 * 1024 * 1024  # 100 MB
 _MAX_MULTIPART_SIZE = 5 * 1024 * 1024
@@ -3877,7 +3880,7 @@ class Client(ClientWithProject):
         """
         json.dump(schema_list, file_obj, indent=2, sort_keys=True)
 
-    def schema_from_json(self, file_or_path: PathType):
+    def schema_from_json(self, file_or_path: "PathType"):
         """Takes a file object or file path that contains json that describes
         a table schema.
 
@@ -3890,7 +3893,9 @@ class Client(ClientWithProject):
         with open(file_or_path) as file_obj:
             return self._schema_from_json_file_object(file_obj)
 
-    def schema_to_json(self, schema_list: Sequence[SchemaField], destination: PathType):
+    def schema_to_json(
+        self, schema_list: Sequence[SchemaField], destination: "PathType"
+    ):
         """Takes a list of schema field objects.
 
         Serializes the list of schema field objects as json to a file.

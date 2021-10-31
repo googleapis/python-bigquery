@@ -2291,7 +2291,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
-        """Starts a job for loading data into a table from CloudStorage.
+        """Starts a job for loading data into a table from Cloud Storage.
 
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload

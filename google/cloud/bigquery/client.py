@@ -113,7 +113,7 @@ pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
 TimeoutType = Union[float, None]
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: NO COVER
     # os.PathLike is only subscriptable in Python 3.9+, thus shielding with a condition.
     PathType = Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]
 

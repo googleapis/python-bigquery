@@ -63,9 +63,11 @@ extras = {
     "bignumeric_type": pyarrow_dep,
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
-        "opentelemetry-api >= 0.11b0",
-        "opentelemetry-sdk >= 0.11b0",
-        "opentelemetry-instrumentation >= 0.11b0",
+        # The Opentelemetry API was changed in v0.15b, we need to bound the version.
+        # https://github.com/open-telemetry/opentelemetry-python/commit/f3cdfa2cdb9cb1c442189e2ead3788f45d92352d#diff-ebe3b7e2373ce704ff49dcab7a82d2270aa35c624337325cd0233e60e7a95a39R35
+        "opentelemetry-api >= 0.11b0, <0.15b0",
+        "opentelemetry-sdk >= 0.11b0, <0.15b0",
+        "opentelemetry-instrumentation >= 0.11b0, <0.15b0",
     ],
 }
 

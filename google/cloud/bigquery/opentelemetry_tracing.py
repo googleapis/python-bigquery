@@ -19,7 +19,7 @@ from google.api_core.exceptions import GoogleAPICallError  # type: ignore
 logger = logging.getLogger(__name__)
 try:
     from opentelemetry import trace
-    from opentelemetry.instrumentation.utils import http_status_to_status_code
+    from opentelemetry.instrumentation.utils import http_status_to_canonical_code  # type: ignore
     from opentelemetry.trace.status import Status
 
     HAS_OPENTELEMETRY = True
@@ -81,7 +81,7 @@ def create_span(name, attributes=None, client=None, job_ref=None):
             yield span
         except GoogleAPICallError as error:
             if error.code is not None:
-                span.set_status(Status(http_status_to_status_code(error.code)))
+                span.set_status(Status(http_status_to_canonical_code(error.code)))
             raise
 
 

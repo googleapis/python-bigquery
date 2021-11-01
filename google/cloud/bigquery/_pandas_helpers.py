@@ -29,7 +29,10 @@ except ImportError:  # pragma: NO COVER
 else:
     import numpy
 
-    from db_dtypes import date_dtype_name, time_dtype_name
+    from db_dtypes import DateDtype, TimeDtype
+
+    date_dtype_name = DateDtype.name
+    time_dtype_name = TimeDtype.name
 
 import pyarrow
 import pyarrow.parquet

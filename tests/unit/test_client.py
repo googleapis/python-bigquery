@@ -5227,8 +5227,8 @@ class TestClient(unittest.TestCase):
             },
         ]
         dataframe = pandas.DataFrame(data)
-        for dtype in "date", "time":
-            dataframe["b" + dtype] = pandas.Series(dataframe["b" + dtype], dtype=dtype)
+        dataframe["bdate"] = dataframe["bdate"].astype("dbdate")
+        dataframe["btime"] = dataframe["btime"].astype("dbtime")
 
         # create client
         creds = _make_credentials()
@@ -7091,7 +7091,7 @@ class TestClientUpload(object):
                             datetime.date(2011, 2, 3),
                             datetime.date(2012, 3, 14),
                         ],
-                        dtype="date",
+                        dtype="dbdate",
                     ),
                 ),
                 (
@@ -7102,7 +7102,7 @@ class TestClientUpload(object):
                             datetime.time(14, 50, 59),
                             datetime.time(15, 16),
                         ],
-                        dtype="time",
+                        dtype="dbtime",
                     ),
                 ),
             ]

@@ -786,7 +786,10 @@ class TestClient(unittest.TestCase):
         memory_exporter = InMemorySpanExporter()
         span_processor = SimpleExportSpanProcessor(memory_exporter)
         tracer_provider.add_span_processor(span_processor)
-        trace.set_tracer_provider(tracer_provider)
+
+        # OpenTelemetry API >= 0.12b0 does not allow overriding the tracer once
+        # initialized, thus directly override the internal global var.
+        tracer_patcher = mock.patch.object(trace, "_TRACER_PROVIDER", tracer_provider)
 
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
@@ -797,7 +800,7 @@ class TestClient(unittest.TestCase):
         full_routine_id = "test-routine-project.test_routines.minimal_routine"
         routine = Routine(full_routine_id)
 
-        with pytest.raises(google.api_core.exceptions.AlreadyExists):
+        with pytest.raises(google.api_core.exceptions.AlreadyExists), tracer_patcher:
             client.create_routine(routine)
 
         span_list = memory_exporter.get_finished_spans()

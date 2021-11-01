@@ -12,15 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import warnings
+from google.cloud import bigquery
 
 
-def test_importing_legacy_types_emits_warning():
-    with warnings.catch_warnings(record=True) as warned:
-        from google.cloud.bigquery_v2 import types  # noqa: F401
+def test_dry_run(bigquery_client: bigquery.Client, scalars_table: str):
+    query_config = bigquery.QueryJobConfig()
+    query_config.dry_run = True
 
-    assert len(warned) == 1
-    assert warned[0].category is DeprecationWarning
-    warning_msg = str(warned[0])
-    assert "bigquery_v2" in warning_msg
-    assert "not maintained" in warning_msg
+    query_string = f"SELECT * FROM {scalars_table}"
+    query_job = bigquery_client.query(query_string, job_config=query_config,)
+
+    # Note: `query_job.result()` is not necessary on a dry run query. All
+    # necessary information is returned in the initial response.
+    assert query_job.dry_run is True
+    assert query_job.total_bytes_processed > 0
+    assert len(query_job.schema) > 0

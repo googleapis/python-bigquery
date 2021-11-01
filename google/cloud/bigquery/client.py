@@ -89,6 +89,8 @@ from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
+from google.cloud.bigquery.format_options import ParquetOptions
+from google.cloud.bigquery import _helpers
 
 
 _DEFAULT_CHUNKSIZE = 100 * 1024 * 1024  # 100 MB
@@ -518,7 +520,7 @@ class Client(ClientWithProject):
 
     def create_dataset(
         self,
-        dataset: Union[str, Dataset, DatasetReference],
+        dataset: Union[str, Dataset, DatasetReference, DatasetListItem],
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
@@ -648,7 +650,7 @@ class Client(ClientWithProject):
 
     def create_table(
         self,
-        table: Union[str, Table, TableReference],
+        table: Union[str, Table, TableReference, TableListItem],
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
@@ -662,6 +664,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 A :class:`~google.cloud.bigquery.table.Table` to create.
@@ -1264,7 +1267,7 @@ class Client(ClientWithProject):
 
     def list_models(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
@@ -1341,7 +1344,7 @@ class Client(ClientWithProject):
 
     def list_routines(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
@@ -1418,7 +1421,7 @@ class Client(ClientWithProject):
 
     def list_tables(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
@@ -1494,7 +1497,7 @@ class Client(ClientWithProject):
 
     def delete_dataset(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         delete_contents: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: float = DEFAULT_TIMEOUT,
@@ -2430,10 +2433,10 @@ class Client(ClientWithProject):
             They are supported when using the PARQUET source format, but
             due to the way they are encoded in the ``parquet`` file,
             a mismatch with the existing table schema can occur, so
-            100% compatibility cannot be guaranteed for REPEATED fields when
+            REPEATED fields are not properly supported when using ``pyarrow<4.0.0``
             using the parquet format.
 
-            https://github.com/googleapis/python-bigquery/issues/17
+            https://github.com/googleapis/python-bigquery/issues/19
 
         Args:
             dataframe (pandas.DataFrame):
@@ -2480,18 +2483,18 @@ class Client(ClientWithProject):
                 :attr:`~google.cloud.bigquery.job.SourceFormat.PARQUET` are
                 supported.
             parquet_compression (Optional[str]):
-                 [Beta] The compression method to use if intermittently
-                 serializing ``dataframe`` to a parquet file.
+                [Beta] The compression method to use if intermittently
+                serializing ``dataframe`` to a parquet file.
 
-                 The argument is directly passed as the ``compression``
-                 argument to the underlying ``pyarrow.parquet.write_table()``
-                 method (the default value "snappy" gets converted to uppercase).
-                 https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+                The argument is directly passed as the ``compression``
+                argument to the underlying ``pyarrow.parquet.write_table()``
+                method (the default value "snappy" gets converted to uppercase).
+                https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
 
-                 If the job config schema is missing, the argument is directly
-                 passed as the ``compression`` argument to the underlying
-                 ``DataFrame.to_parquet()`` method.
-                 https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
+                If the job config schema is missing, the argument is directly
+                passed as the ``compression`` argument to the underlying
+                ``DataFrame.to_parquet()`` method.
+                https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
@@ -2520,6 +2523,16 @@ class Client(ClientWithProject):
         if job_config.source_format is None:
             # default value
             job_config.source_format = job.SourceFormat.PARQUET
+
+        if (
+            job_config.source_format == job.SourceFormat.PARQUET
+            and job_config.parquet_options is None
+        ):
+            parquet_options = ParquetOptions()
+            # default value
+            parquet_options.enable_list_inference = True
+            job_config.parquet_options = parquet_options
+
         if job_config.source_format not in supported_formats:
             raise ValueError(
                 "Got unexpected source_format: '{}'. Currently, only PARQUET and CSV are supported".format(
@@ -2591,9 +2604,19 @@ class Client(ClientWithProject):
                         job_config.schema,
                         tmppath,
                         parquet_compression=parquet_compression,
+                        parquet_use_compliant_nested_type=True,
                     )
                 else:
-                    dataframe.to_parquet(tmppath, compression=parquet_compression)
+                    dataframe.to_parquet(
+                        tmppath,
+                        engine="pyarrow",
+                        compression=parquet_compression,
+                        **(
+                            {"use_compliant_nested_type": True}
+                            if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+                            else {}
+                        ),
+                    )
 
             else:
 

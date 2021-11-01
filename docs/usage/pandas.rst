@@ -50,13 +50,25 @@ The following data types are used when creating a pandas DataFrame.
      -
    * - DATETIME
      - datetime64[ns], object
-     - object is used when there are values not representable in pandas
+     - The object dtype is used when there are values not representable in a
+       pandas nanosecond-precision timestamp.
+   * - DATE
+     - dbdate, object
+     - The object dtype is used when there are values not representable in a
+       pandas nanosecond-precision timestamp.
+
+       Requires the ``db-dtypes`` package. See the `db-dtypes usage guide
+       <https://googleapis.dev/python/db-dtypes/latest/usage.html>`_
    * - FLOAT64
      - float64
      -
    * - INT64
      - Int64
      -
+   * - TIME
+     - dbtime
+     - Requires the ``db-dtypes`` package. See the `db-dtypes usage guide
+       <https://googleapis.dev/python/db-dtypes/latest/usage.html>`_
 
 Retrieve BigQuery GEOGRAPHY data as a GeoPandas GeoDataFrame
 ------------------------------------------------------------
@@ -95,94 +107,3 @@ and load it into a new table:
    :dedent: 4
    :start-after: [START bigquery_load_table_dataframe]
    :end-before: [END bigquery_load_table_dataframe]
-
-Pandas date and time arrays used for BigQuery DATE and TIME columns
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When BigQuery DATE [#date]_ and TIME data are loaded into Pandas,
-date and time series are used.
-
-Date and time series support comparison and basic statistics, `min`,
-`max` and `median`.
-
-Date series
------------
-
-Date series are created when loading BigQuery DATE data [#date]_, but
-they can also be created directly from `datetime.date` data or date strings:
-
-.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
-   :language: python
-   :dedent: 4
-   :start-after: [START bigquery_bqdate_create]
-   :end-before: [END bigquery_bqdate_create]
-
-The data type name for date series is `date`.  You need to import
-`db_dtypes` to cause this to get registered with
-pandas.
-
-You can convert date series to date-time series using `astype("datetime64")`:
-
-.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
-   :language: python
-   :dedent: 4
-   :start-after: [START bigquery_bqdate_as_datetime]
-   :end-before: [END bigquery_bqdate_as_datetime]
-
-You can subtract date series to get timedelta64 series:
-
-.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
-   :language: python
-   :dedent: 4
-   :start-after: [START bigquery_bqdate_sub]
-   :end-before: [END bigquery_bqdate_sub]
-
-You can also add and subtract Pandas date offsets, either as scalars or as arrays:
-
-.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
-   :language: python
-   :dedent: 4
-   :start-after: [START bigquery_bqdate_do]
-   :end-before: [END bigquery_bqdate_do]
-
-Time series
------------
-
-Time series are created when loading BigQuery TIME data, but
-they can also be created directly from `datetime.time` data or time strings:
-
-.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
-   :language: python
-   :dedent: 4
-   :start-after: [START bigquery_bqtime_create]
-   :end-before: [END bigquery_bqtime_create]
-
-The data type name for time series is `time`.
-
-You can convert time series to time-delta series using `astype("timedelta64")`:
-
-.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
-   :language: python
-   :dedent: 4
-   :start-after: [START bigquery_bqtime_as_timedelta]
-   :end-before: [END bigquery_bqtime_as_timedelta]
-
-This lets you combine dates and times to create date-time data:
-
-.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
-   :language: python
-   :dedent: 4
-   :start-after: [START bigquery_combine_bqdate_bqtime]
-   :end-before: [END bigquery_combine_bqdate_bqtime]
-
-But you can also add dates and times directly:
-
-.. literalinclude:: ../samples/snippets/pandas_date_and_time.py
-   :language: python
-   :dedent: 4
-   :start-after: [START bigquery_combine2_bqdate_bqtime]
-   :end-before: [END bigquery_combine2_bqdate_bqtime]
-
-.. [#date] Dates before 1678 can't be represented using
-           date series and will be converted as
-           object series.

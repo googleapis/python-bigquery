@@ -96,6 +96,10 @@ class PyarrowVersions:
 
         return self._installed_version
 
+    @property
+    def use_compliant_nested_type(self) -> bool:
+        return self.installed_version.major >= 4
+
 
 BQ_STORAGE_VERSIONS = BQStorageVersions()
 PYARROW_VERSIONS = PyarrowVersions()

@@ -94,8 +94,8 @@ _BQ_TO_PANDAS_DTYPE_NULLSAFE = {
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
     "datetime64[ns, UTC]": "TIMESTAMP",
-    # BigQuery does not support uploading DATETIME values from Parquet files.
-    # See: https://github.com/googleapis/google-cloud-python/issues/9996
+    # TODO: Update to DATETIME in V3
+    # https://github.com/googleapis/python-bigquery/issues/985
     "datetime64[ns]": "TIMESTAMP",
     "float32": "FLOAT",
     "float64": "FLOAT",
@@ -431,7 +431,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     # column, but it was not found.
     if bq_schema_unused:
         raise ValueError(
-            u"bq_schema contains fields not present in dataframe: {}".format(
+            "bq_schema contains fields not present in dataframe: {}".format(
                 bq_schema_unused
             )
         )
@@ -472,7 +472,14 @@ def augment_schema(dataframe, current_bq_schema):
             continue
 
         arrow_table = pyarrow.array(dataframe[field.name])
-        detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
+
+        if pyarrow.types.is_list(arrow_table.type):
+            # `pyarrow.ListType`
+            detected_mode = "REPEATED"
+            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.values.type.id)
+        else:
+            detected_mode = field.mode
+            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
 
         if detected_type is None:
             unknown_type_fields.append(field)
@@ -481,7 +488,7 @@ def augment_schema(dataframe, current_bq_schema):
         new_field = schema.SchemaField(
             name=field.name,
             field_type=detected_type,
-            mode=field.mode,
+            mode=detected_mode,
             description=field.description,
             fields=field.fields,
         )
@@ -489,7 +496,7 @@ def augment_schema(dataframe, current_bq_schema):
 
     if unknown_type_fields:
         warnings.warn(
-            u"Pyarrow could not determine the type of columns: {}.".format(
+            "Pyarrow could not determine the type of columns: {}.".format(
                 ", ".join(field.name for field in unknown_type_fields)
             )
         )
@@ -528,7 +535,7 @@ def dataframe_to_arrow(dataframe, bq_schema):
     extra_fields = bq_field_names - column_and_index_names
     if extra_fields:
         raise ValueError(
-            u"bq_schema contains fields not present in dataframe: {}".format(
+            "bq_schema contains fields not present in dataframe: {}".format(
                 extra_fields
             )
         )
@@ -538,7 +545,7 @@ def dataframe_to_arrow(dataframe, bq_schema):
     missing_fields = column_names - bq_field_names
     if missing_fields:
         raise ValueError(
-            u"bq_schema is missing fields from dataframe: {}".format(missing_fields)
+            "bq_schema is missing fields from dataframe: {}".format(missing_fields)
         )
 
     arrow_arrays = []
@@ -558,7 +565,13 @@ def dataframe_to_arrow(dataframe, bq_schema):
     return pyarrow.Table.from_arrays(arrow_arrays, names=arrow_names)
 
 
-def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SNAPPY"):
+def dataframe_to_parquet(
+    dataframe,
+    bq_schema,
+    filepath,
+    parquet_compression="SNAPPY",
+    parquet_use_compliant_nested_type=True,
+):
     """Write dataframe as a Parquet file, according to the desired BQ schema.
 
     This function requires the :mod:`pyarrow` package. Arrow is used as an
@@ -579,10 +592,27 @@ def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SN
             The compression codec to use by the the ``pyarrow.parquet.write_table``
             serializing method. Defaults to "SNAPPY".
             https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+        parquet_use_compliant_nested_type (bool):
+            Whether the ``pyarrow.parquet.write_table`` serializing method should write
+            compliant Parquet nested type (lists). Defaults to ``True``.
+            https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#nested-types
+            https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+
+            This argument is ignored for ``pyarrow`` versions earlier than ``4.0.0``.
     """
+    import pyarrow.parquet
+
+    kwargs = (
+        {"use_compliant_nested_type": parquet_use_compliant_nested_type}
+        if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+        else {}
+    )
+
     bq_schema = schema._to_schema_fields(bq_schema)
     arrow_table = dataframe_to_arrow(dataframe, bq_schema)
-    pyarrow.parquet.write_table(arrow_table, filepath, compression=parquet_compression)
+    pyarrow.parquet.write_table(
+        arrow_table, filepath, compression=parquet_compression, **kwargs,
+    )
 
 
 def _row_iterator_page_to_arrow(page, column_names, arrow_types):

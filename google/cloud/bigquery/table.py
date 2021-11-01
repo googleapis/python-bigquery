@@ -182,10 +182,8 @@ class TableReference(_TableBase):
     https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablereference
 
     Args:
-        dataset_ref:
-            A pointer to the dataset
-        table_id:
-            The ID of the table
+        dataset_ref: A pointer to the dataset
+        table_id: The ID of the table
     """
 
     _PROPERTY_TO_API_FIELD = {

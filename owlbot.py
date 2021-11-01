@@ -30,7 +30,7 @@ templated_files = common.py_library(
     microgenerator=True,
     split_system_tests=True,
     intersphinx_dependencies={
-        "pandas": "http://pandas.pydata.org/pandas-docs/stable/",
+        "pandas": "https://pandas.pydata.org/pandas-docs/stable/",
         "geopandas": "https://geopandas.org/",
     },
 )

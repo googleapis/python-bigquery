@@ -5,6 +5,14 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+### [2.29.1](https://www.github.com/googleapis/python-bigquery/compare/v2.29.0...v2.29.1) (2021-11-01)
+
+
+### Documentation
+
+* add code samples for Jupyter/IPython magics ([#1013](https://www.github.com/googleapis/python-bigquery/issues/1013)) ([61141ee](https://www.github.com/googleapis/python-bigquery/commit/61141ee0634024ad261d1595c95cd14a896fb87e))
+* **samples:** add create external table with hive partitioning  ([#1033](https://www.github.com/googleapis/python-bigquery/issues/1033)) ([d64f5b6](https://www.github.com/googleapis/python-bigquery/commit/d64f5b682854a2293244426316890df4ab1e079e))
+
 ## [2.29.0](https://www.github.com/googleapis/python-bigquery/compare/v2.28.1...v2.29.0) (2021-10-27)
 
 

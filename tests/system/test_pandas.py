@@ -92,7 +92,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
                         datetime.date(2011, 2, 3),
                         datetime.date(2012, 3, 14),
                     ],
-                    dtype="date",
+                    dtype="dbdate",
                 ),
             ),
             (
@@ -103,7 +103,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
                         datetime.time(14, 50, 59),
                         datetime.time(15, 16),
                     ],
-                    dtype="time",
+                    dtype="dbtime",
                 ),
             ),
             ("array_bool_col", pandas.Series([[True], [False], [True]])),
@@ -229,32 +229,82 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
         sorted(map(list, bigquery_client.list_rows(table)), key=lambda r: r[5]),
         dtype="object",
     ).transpose().tolist() == [
+        # bool_col
         [True, False, True],
+        # ts_col
         [
             datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc),
             datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
             datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc),
         ],
+        # dt_col
+        # TODO: Remove tzinfo in V3.
+        # https://github.com/googleapis/python-bigquery/issues/985
         [
             datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc),
             datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
             datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc),
         ],
+        # float32_col
         [1.0, 2.0, 3.0],
+        # float64_col
         [4.0, 5.0, 6.0],
+        # int8_col
         [-12, -11, -10],
+        # int16_col
         [-9, -8, -7],
+        # int32_col
         [-6, -5, -4],
+        # int64_col
         [-3, -2, -1],
+        # uint8_col
         [0, 1, 2],
+        # uint16_col
         [3, 4, 5],
+        # uint32_col
         [6, 7, 8],
+        # date_col
         [
             datetime.date(2010, 1, 2),
             datetime.date(2011, 2, 3),
             datetime.date(2012, 3, 14),
         ],
+        # time_col
         [datetime.time(3, 44, 50), datetime.time(14, 50, 59), datetime.time(15, 16)],
+        # array_bool_col
+        [[True], [False], [True]],
+        # array_ts_col
+        [
+            [datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc)],
+            [datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc)],
+            [datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc)],
+        ],
+        # array_dt_col
+        # TODO: Remove tzinfo in V3.
+        # https://github.com/googleapis/python-bigquery/issues/985
+        [
+            [datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc)],
+            [datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc)],
+            [datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc)],
+        ],
+        # array_float32_col
+        [[1.0], [2.0], [3.0]],
+        # array_float64_col
+        [[4.0], [5.0], [6.0]],
+        # array_int8_col
+        [[-12], [-11], [-10]],
+        # array_int16_col
+        [[-9], [-8], [-7]],
+        # array_int32_col
+        [[-6], [-5], [-4]],
+        # array_int64_col
+        [[-3], [-2], [-1]],
+        # array_uint8_col
+        [[0], [1], [2]],
+        # array_uint16_col
+        [[3], [4], [5]],
+        # array_uint32_col
+        [[6], [7], [8]],
     ]
 
 
@@ -809,10 +859,8 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
             },
         ]
     )
-    for dtype in "date", "time":
-        dataframe[dtype + "_col"] = pandas.Series(
-            dataframe[dtype + "_col"], dtype=dtype
-        )
+    dataframe["date_col"] = dataframe["date_col"].astype("dbdate")
+    dataframe["time_col"] = dataframe["time_col"].astype("dbtime")
 
     table_id = f"{bigquery_client.project}.{dataset_id}.test_insert_rows_from_dataframe"
     table_arg = bigquery.Table(table_id, schema=schema)
@@ -988,8 +1036,8 @@ def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_r
     assert df.dtypes["float64_col"].name == "float64"
     assert df.dtypes["int64_col"].name == "Int64"
     assert df.dtypes["timestamp_col"].name == "datetime64[ns, UTC]"
-    assert df.dtypes["date_col"].name == "date"
-    assert df.dtypes["time_col"].name == "time"
+    assert df.dtypes["date_col"].name == "dbdate"
+    assert df.dtypes["time_col"].name == "dbtime"
 
     # decimal.Decimal is used to avoid loss of precision.
     assert df.dtypes["bignumeric_col"].name == "object"
@@ -1039,7 +1087,7 @@ def test_list_rows_nullable_scalars_extreme_dtypes(
     assert df.dtypes["bool_col"].name == "boolean"
     assert df.dtypes["float64_col"].name == "float64"
     assert df.dtypes["int64_col"].name == "Int64"
-    assert df.dtypes["time_col"].name == "time"
+    assert df.dtypes["time_col"].name == "dbtime"
 
     # decimal.Decimal is used to avoid loss of precision.
     assert df.dtypes["numeric_col"].name == "object"

@@ -1918,6 +1918,8 @@ class RowIterator(HTTPIterator):
         date_as_object = not all(
             self.__can_cast_timestamp_ns(col)
             for col in record_batch
+            # Type can be date32 or date64 (plus units).
+            # See: https://arrow.apache.org/docs/python/api/datatypes.html
             if str(col.type).startswith("date")
         )
         if date_as_object:
@@ -1934,6 +1936,8 @@ class RowIterator(HTTPIterator):
         timestamp_as_object = not all(
             self.__can_cast_timestamp_ns(col)
             for col in record_batch
+            # Type can be timestamp (plus units and time zone).
+            # See: https://arrow.apache.org/docs/python/api/datatypes.html
             if str(col.type).startswith("timestamp")
         )
 

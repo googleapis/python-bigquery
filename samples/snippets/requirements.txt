@@ -1,4 +1,4 @@
-db-dtypes==0.0.1a2
+db-dtypes==0.2.0
 google-cloud-bigquery==2.27.1
 google-cloud-bigquery-storage==2.9.0
 google-auth-oauthlib==0.4.6

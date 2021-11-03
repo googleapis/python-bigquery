@@ -29,7 +29,7 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 else:
-    from db_dtypes import DateArray, date_dtype_name
+    import db_dtypes  # noqa
 
 import pyarrow
 
@@ -1923,6 +1923,8 @@ class RowIterator(HTTPIterator):
             if str(col.type).startswith("date")
         )
         if date_as_object:
+            # Remove dates, so object dtype is retained.
+            # TODO: Why don't we need this logic for timestamp?
             default_dtypes = {
                 name: type_
                 for name, type_ in default_dtypes.items()
@@ -1945,12 +1947,15 @@ class RowIterator(HTTPIterator):
             date_as_object=date_as_object,
             timestamp_as_object=timestamp_as_object,
             integer_object_nulls=True,
+            types_mapper=_pandas_helpers.default_types_mapper(
+                date_as_object=date_as_object
+            ),
         )
 
         for column in dtypes:
             data = df[column]
-            if dtypes[column] == date_dtype_name:
-                data = DateArray(data.to_numpy(copy=False), copy=False)
+            # if dtypes[column] == date_dtype_name:
+            #    data = DateArray(data.to_numpy(copy=False), copy=False)
             df[column] = pandas.Series(data, dtype=dtypes[column], copy=False)
 
         if geography_as_object:

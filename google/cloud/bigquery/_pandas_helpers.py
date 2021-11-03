@@ -85,10 +85,12 @@ _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage dow
 
 # If you update the default dtypes, also update the docs at docs/usage/pandas.rst.
 _BQ_TO_PANDAS_DTYPE_NULLSAFE = {
+    # TODO: maybe we do this in types_mapper, instead.
     "BOOL": "boolean",
     "BOOLEAN": "boolean",
     "FLOAT": "float64",
     "FLOAT64": "float64",
+    # TODO: maybe we do this in types_mapper, instead.
     "INT64": "Int64",
     "INTEGER": "Int64",
     "DATE": date_dtype_name,
@@ -275,6 +277,21 @@ def bq_to_arrow_schema(bq_schema):
             return None
         arrow_fields.append(arrow_field)
     return pyarrow.schema(arrow_fields)
+
+
+def default_types_mapper(date_as_object: bool = False):
+    """
+    """
+
+    def types_mapper(arrow_data_type):
+        data_type = str(arrow_data_type)
+
+        # Type can be date32 or date64 (plus units).
+        # See: https://arrow.apache.org/docs/python/api/datatypes.html
+        if data_type.startswith("date"):
+            return DateDtype
+
+    return types_mapper
 
 
 def bq_schema_to_nullsafe_pandas_dtypes(

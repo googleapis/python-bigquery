@@ -59,7 +59,7 @@ extras = {
     ]
     + pyarrow_dep,
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
-    "pandas": ["pandas>=0.23.0"] + pyarrow_dep,
+    "pandas": ["pandas>=0.24.2"] + pyarrow_dep,
     "bignumeric_type": pyarrow_dep,
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [

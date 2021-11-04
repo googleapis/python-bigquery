@@ -513,8 +513,20 @@ class TestSchemaField(unittest.TestCase):
         expected = "SchemaField('field1', 'STRING', 'NULLABLE', None, (), None)"
         self.assertEqual(repr(field1), expected)
 
-    def test___repr__evaluable(self):
+    def test___repr__evaluable_no_policy_tags(self):
         field = self._make_one("field1", "STRING", "REQUIRED", "Description")
+        field_repr = repr(field)
+        SchemaField = self._get_target_class()  # needed for eval  # noqa
+
+        evaled_field = eval(field_repr)
+
+        assert field == evaled_field
+
+    def test___repr__evaluable_with_policy_tags(self):
+        policy_tags = PolicyTagList(names=["foo", "bar"])
+        field = self._make_one(
+            "field1", "STRING", "REQUIRED", "Description", policy_tags=policy_tags,
+        )
         field_repr = repr(field)
         SchemaField = self._get_target_class()  # needed for eval  # noqa
 

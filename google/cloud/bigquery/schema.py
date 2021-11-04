@@ -336,7 +336,11 @@ class SchemaField(object):
         return hash(self._key())
 
     def __repr__(self):
-        return "SchemaField{}".format(self._key())
+        key = self._key()
+        policy_tags = key[-1]
+        policy_tags_inst = None if policy_tags is None else PolicyTagList(policy_tags)
+        adjusted_key = key[:-1] + (policy_tags_inst,)
+        return f"{self.__class__.__name__}{adjusted_key}"
 
 
 def _parse_schema_resource(info):

@@ -795,6 +795,34 @@ class TestPolicyTags(unittest.TestCase):
         set_two = {policy2}
         self.assertNotEqual(set_one, set_two)
 
+    def test___repr__no_tags(self):
+        policy = self._make_one()
+        assert repr(policy) == "PolicyTagList(names=())"
+
+    def test___repr__with_tags(self):
+        policy1 = self._make_one(["foo", "bar", "baz"])
+        policy2 = self._make_one(["baz", "bar", "foo"])
+        expected_repr = "PolicyTagList(names=('bar', 'baz', 'foo'))"  # alphabetical
+
+        assert repr(policy1) == expected_repr
+        assert repr(policy2) == expected_repr
+
+    def test___repr__evaluable_no_tags(self):
+        policy = self._make_one(names=[])
+        policy_repr = repr(policy)
+
+        evaled_policy = eval(policy_repr)
+
+        assert policy == evaled_policy
+
+    def test___repr__evaluable_with_tags(self):
+        policy = self._make_one(names=["foo", "bar"])
+        policy_repr = repr(policy)
+
+        evaled_policy = eval(policy_repr)
+
+        assert policy == evaled_policy
+
 
 @pytest.mark.parametrize(
     "api,expect,key2",

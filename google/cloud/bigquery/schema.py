@@ -268,7 +268,7 @@ class SchemaField(object):
                     field_type = f"{field_type}({self.precision})"
 
         policy_tags = (
-            () if self.policy_tags is None else tuple(sorted(self.policy_tags.names))
+            None if self.policy_tags is None else tuple(sorted(self.policy_tags.names))
         )
 
         return (

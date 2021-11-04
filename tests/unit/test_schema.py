@@ -510,8 +510,17 @@ class TestSchemaField(unittest.TestCase):
 
     def test___repr__(self):
         field1 = self._make_one("field1", "STRING")
-        expected = "SchemaField('field1', 'STRING', 'NULLABLE', None, (), ())"
+        expected = "SchemaField('field1', 'STRING', 'NULLABLE', None, (), None)"
         self.assertEqual(repr(field1), expected)
+
+    def test___repr__evaluable(self):
+        field = self._make_one("field1", "STRING", "REQUIRED", "Description")
+        field_repr = repr(field)
+        SchemaField = self._get_target_class()  # needed for eval  # noqa
+
+        evaled_field = eval(field_repr)
+
+        assert field == evaled_field
 
 
 # TODO: dedup with the same class in test_table.py.

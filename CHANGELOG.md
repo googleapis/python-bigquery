@@ -5,6 +5,41 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [2.30.0](https://www.github.com/googleapis/python-bigquery/compare/v2.29.0...v2.30.0) (2021-11-03)
+
+
+### Features
+
+* accept TableListItem where TableReference is accepted ([#1016](https://www.github.com/googleapis/python-bigquery/issues/1016)) ([fe16adc](https://www.github.com/googleapis/python-bigquery/commit/fe16adc86a170d0992c32091b349b036f8b43884))
+* support Python 3.10 ([#1043](https://www.github.com/googleapis/python-bigquery/issues/1043)) ([5bbb832](https://www.github.com/googleapis/python-bigquery/commit/5bbb832a83ebb66db4b5ee740cdfc53f4df8430b))
+
+
+### Documentation
+
+* add code samples for Jupyter/IPython magics ([#1013](https://www.github.com/googleapis/python-bigquery/issues/1013)) ([61141ee](https://www.github.com/googleapis/python-bigquery/commit/61141ee0634024ad261d1595c95cd14a896fb87e))
+* **samples:** add create external table with hive partitioning  ([#1033](https://www.github.com/googleapis/python-bigquery/issues/1033)) ([d64f5b6](https://www.github.com/googleapis/python-bigquery/commit/d64f5b682854a2293244426316890df4ab1e079e))
+
+## [2.29.0](https://www.github.com/googleapis/python-bigquery/compare/v2.28.1...v2.29.0) (2021-10-27)
+
+
+### Features
+
+* add `QueryJob.schema` property for dry run queries ([#1014](https://www.github.com/googleapis/python-bigquery/issues/1014)) ([2937fa1](https://www.github.com/googleapis/python-bigquery/commit/2937fa1386898766c561579fd39d42958182d260))
+* add session and connection properties to QueryJobConfig ([#1024](https://www.github.com/googleapis/python-bigquery/issues/1024)) ([e4c94f4](https://www.github.com/googleapis/python-bigquery/commit/e4c94f446c27eb474f30b033c1b62d11bd0acd98))
+* add support for INTERVAL data type to `list_rows` ([#840](https://www.github.com/googleapis/python-bigquery/issues/840)) ([e37380a](https://www.github.com/googleapis/python-bigquery/commit/e37380a959cbd5bb9cbbf6807f0a8ea147e0a713))
+* allow queryJob.result() to be called on a dryRun ([#1015](https://www.github.com/googleapis/python-bigquery/issues/1015)) ([685f06a](https://www.github.com/googleapis/python-bigquery/commit/685f06a5e7b5df17a53e9eb340ff04ecd1e51d1d))
+
+
+### Documentation
+
+* document ScriptStatistics and other missing resource classes ([#1023](https://www.github.com/googleapis/python-bigquery/issues/1023)) ([6679109](https://www.github.com/googleapis/python-bigquery/commit/66791093c61f262ea063d2a7950fc643915ee693))
+* fix formatting of generated client docstrings ([#1009](https://www.github.com/googleapis/python-bigquery/issues/1009)) ([f7b0ee4](https://www.github.com/googleapis/python-bigquery/commit/f7b0ee45a664295ccc9f209eeeac122af8de3c80))
+
+
+### Dependencies
+
+* allow pyarrow 6.x ([#1031](https://www.github.com/googleapis/python-bigquery/issues/1031)) ([1c2de74](https://www.github.com/googleapis/python-bigquery/commit/1c2de74a55046a343bcf9474f67100a82fb05401))
+
 ### [2.28.1](https://www.github.com/googleapis/python-bigquery/compare/v2.28.0...v2.28.1) (2021-10-07)
 
 

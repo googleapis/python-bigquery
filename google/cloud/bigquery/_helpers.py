@@ -19,8 +19,9 @@ import datetime
 import decimal
 import math
 import re
-from typing import Union
+from typing import Optional, Union
 
+from dateutil import relativedelta
 from google.cloud._helpers import UTC
 from google.cloud._helpers import _date_from_iso8601_date
 from google.cloud._helpers import _datetime_from_microseconds
@@ -38,6 +39,14 @@ _PROJECT_PREFIX_PATTERN = re.compile(
     (?P<project_id>\S+\:[^.]+)\.(?P<dataset_id>[^.]+)(?:$|\.(?P<custom_id>[^.]+)$)
 """,
     re.VERBOSE,
+)
+
+# BigQuery sends INTERVAL data in "canonical format"
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#interval_type
+_INTERVAL_PATTERN = re.compile(
+    r"(?P<calendar_sign>-?)(?P<years>\d+)-(?P<months>\d+) "
+    r"(?P<days>-?\d+) "
+    r"(?P<time_sign>-?)(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)\.?(?P<fraction>\d*)?$"
 )
 
 _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
@@ -114,6 +123,41 @@ def _int_from_json(value, field):
     """Coerce 'value' to an int, if set or not nullable."""
     if _not_null(value, field):
         return int(value)
+
+
+def _interval_from_json(
+    value: Optional[str], field
+) -> Optional[relativedelta.relativedelta]:
+    """Coerce 'value' to an interval, if set or not nullable."""
+    if not _not_null(value, field):
+        return None
+    if value is None:
+        raise TypeError(f"got {value} for REQUIRED field: {repr(field)}")
+
+    parsed = _INTERVAL_PATTERN.match(value)
+    if parsed is None:
+        raise ValueError(f"got interval: '{value}' with unexpected format")
+
+    calendar_sign = -1 if parsed.group("calendar_sign") == "-" else 1
+    years = calendar_sign * int(parsed.group("years"))
+    months = calendar_sign * int(parsed.group("months"))
+    days = int(parsed.group("days"))
+    time_sign = -1 if parsed.group("time_sign") == "-" else 1
+    hours = time_sign * int(parsed.group("hours"))
+    minutes = time_sign * int(parsed.group("minutes"))
+    seconds = time_sign * int(parsed.group("seconds"))
+    fraction = parsed.group("fraction")
+    microseconds = time_sign * int(fraction.ljust(6, "0")[:6]) if fraction else 0
+
+    return relativedelta.relativedelta(
+        years=years,
+        months=months,
+        days=days,
+        hours=hours,
+        minutes=minutes,
+        seconds=seconds,
+        microseconds=microseconds,
+    )
 
 
 def _float_from_json(value, field):
@@ -252,6 +296,7 @@ def _record_from_json(value, field):
 _CELLDATA_FROM_JSON = {
     "INTEGER": _int_from_json,
     "INT64": _int_from_json,
+    "INTERVAL": _interval_from_json,
     "FLOAT": _float_from_json,
     "FLOAT64": _float_from_json,
     "NUMERIC": _decimal_from_json,

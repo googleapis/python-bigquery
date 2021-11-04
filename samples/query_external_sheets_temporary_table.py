@@ -23,7 +23,7 @@ def query_external_sheets_temporary_table():
     # Create credentials with Drive & BigQuery API scopes.
     # Both APIs must be enabled for your project before running this code.
     #
-    # If you are using credentials from gcloud, you must authorized the
+    # If you are using credentials from gcloud, you must authorize the
     # application first with the following command:
     #
     # gcloud auth application-default login \

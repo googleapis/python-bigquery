@@ -2010,25 +2010,20 @@ class Client(ClientWithProject):
 
     def get_job(
         self,
-        job_id: str,
+        job_id: Union[str, job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob],
         project: str = None,
         location: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-    ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
+    ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
         """Fetch a job for the project associated with this client.
 
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/get
 
         Args:
-            job_id (Union[ \
-                str, \
-                google.cloud.bigquery.job.LoadJob, \
-                google.cloud.bigquery.job.CopyJob, \
-                google.cloud.bigquery.job.ExtractJob, \
-                google.cloud.bigquery.job.QueryJob \
-            ]): Job identifier.
+            job_id:
+                Job identifier.
 
         Keyword Arguments:
             project (Optional[str]):
@@ -2043,13 +2038,7 @@ class Client(ClientWithProject):
                 before using ``retry``.
 
         Returns:
-            Union[ \
-                google.cloud.bigquery.job.LoadJob, \
-                google.cloud.bigquery.job.CopyJob, \
-                google.cloud.bigquery.job.ExtractJob, \
-                google.cloud.bigquery.job.QueryJob \
-            ]:
-                Job instance, based on the resource returned by the API.
+            Job instance, based on the resource returned by the API.
         """
         extra_params = {"projection": "full"}
 
@@ -2080,11 +2069,7 @@ class Client(ClientWithProject):
             timeout=timeout,
         )
 
-        job_instance = self.job_from_resource(resource)  # never an UnknownJob
-
-        return typing.cast(
-            Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob], job_instance,
-        )
+        return self.job_from_resource(resource)
 
     def cancel_job(
         self,

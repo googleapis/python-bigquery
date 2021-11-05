@@ -43,7 +43,7 @@ dependencies = [
     "packaging >= 14.3",
     "proto-plus >= 1.10.0",  # For the legacy proto-based types.
     "protobuf >= 3.12.0",  # For the legacy proto-based types.
-    "pyarrow >= 3.0.0, < 6.0dev",
+    "pyarrow >= 3.0.0, < 7.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]
 extras = {
@@ -113,6 +113,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
         "Topic :: Internet",
     ],
@@ -121,7 +122,7 @@ setuptools.setup(
     namespace_packages=namespaces,
     install_requires=dependencies,
     extras_require=extras,
-    python_requires=">=3.6, <3.10",
+    python_requires=">=3.6, <3.11",
     include_package_data=True,
     zip_safe=False,
 )

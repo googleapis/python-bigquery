@@ -1814,7 +1814,7 @@ def test_bigquery_magic_query_variable_non_string(ipython_ns_cleanup):
     cell_body = "$custom_query"
 
     with pytest.raises(
-        TypeError, match=r".*must be string or bytes-like.*"
+        TypeError, match=r".*must be a string or a bytes-like.*"
     ), run_query_patch as run_query_mock:
         ip.run_cell_magic("bigquery", "", cell_body)
 

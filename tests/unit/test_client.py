@@ -36,16 +36,24 @@ try:
     import pandas
 except (ImportError, AttributeError):  # pragma: NO COVER
     pandas = None
+
 try:
     import opentelemetry
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import SimpleExportSpanProcessor
-    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
-        InMemorySpanExporter,
-    )
-except (ImportError, AttributeError):  # pragma: NO COVER
+except ImportError:
     opentelemetry = None
+
+if opentelemetry is not None:
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+            InMemorySpanExporter,
+        )
+    except (ImportError, AttributeError) as exc:  # pragma: NO COVER
+        msg = "Error importing from opentelemetry, is the installed version compatible?"
+        raise ImportError(msg) from exc
+
 try:
     import pyarrow
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -784,7 +792,7 @@ class TestClient(unittest.TestCase):
 
         tracer_provider = TracerProvider()
         memory_exporter = InMemorySpanExporter()
-        span_processor = SimpleExportSpanProcessor(memory_exporter)
+        span_processor = SimpleSpanProcessor(memory_exporter)
         tracer_provider.add_span_processor(span_processor)
 
         # OpenTelemetry API >= 0.12b0 does not allow overriding the tracer once

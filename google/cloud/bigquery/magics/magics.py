@@ -611,8 +611,8 @@ def _cell_magic(line, query):
                 else:
                     if not isinstance(query, (str, bytes)):
                         raise TypeError(
-                            f"Query variable {query_var_name} must be string "
-                            "or bytes-like value."
+                            f"Query variable {query_var_name} must be a string "
+                            "or a bytes-like value."
                         )
 
         # Any query that does not contain whitespace (aside from leading and trailing whitespace)

@@ -596,6 +596,25 @@ def _cell_magic(line, query):
             _handle_error(error, args.destination_var)
             return
 
+        # Check if query is given as a reference to a variable.
+        if query.startswith("$"):
+            query_var_name = query[1:]
+
+            if query_var_name.isidentifier():
+                ip = IPython.get_ipython()
+                try:
+                    query = ip.user_ns[query_var_name]
+                except KeyError:
+                    raise NameError(
+                        f"Unknown query, variable {query_var_name} does not exist."
+                    ) from None
+                else:
+                    if not isinstance(query, (str, bytes)):
+                        raise TypeError(
+                            f"Query variable {query_var_name} must be string "
+                            "or bytes-like value."
+                        )
+
         # Any query that does not contain whitespace (aside from leading and trailing whitespace)
         # is assumed to be a table id
         if not re.search(r"\s", query):

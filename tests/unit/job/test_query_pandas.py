@@ -21,6 +21,8 @@ import pyarrow
 import pytest
 
 from google.cloud import bigquery_storage
+import google.cloud.bigquery_storage_v1.reader
+import google.cloud.bigquery_storage_v1.services.big_query_read.client
 
 try:
     import pandas
@@ -108,7 +110,7 @@ def test_to_dataframe_bqstorage_preserve_order(query, table_read_options_kwarg):
     )
     job_resource["configuration"]["query"]["query"] = query
     job_resource["status"] = {"state": "DONE"}
-    get_query_results_resource = {
+    query_resource = {
         "jobComplete": True,
         "jobReference": {"projectId": "test-project", "jobId": "test-job"},
         "schema": {
@@ -119,25 +121,43 @@ def test_to_dataframe_bqstorage_preserve_order(query, table_read_options_kwarg):
         },
         "totalRows": "4",
     }
-    connection = make_connection(get_query_results_resource, job_resource)
+    stream_id = "projects/1/locations/2/sessions/3/streams/4"
+    name_array = pyarrow.array(
+        ["Matthew", "Mark", "Luke", "John"], type=pyarrow.string()
+    )
+    age_array = pyarrow.array([17, 24, 21, 15], type=pyarrow.int64())
+    arrow_schema = pyarrow.schema(
+        [
+            pyarrow.field("name", pyarrow.string(), True),
+            pyarrow.field("age", pyarrow.int64(), True),
+        ]
+    )
+    record_batch = pyarrow.RecordBatch.from_arrays(
+        [name_array, age_array], schema=arrow_schema
+    )
+    connection = make_connection(query_resource)
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(job_resource, client)
     bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
     session = bigquery_storage.types.ReadSession()
-    session.avro_schema.schema = json.dumps(
-        {
-            "type": "record",
-            "name": "__root__",
-            "fields": [
-                {"name": "name", "type": ["null", "string"]},
-                {"name": "age", "type": ["null", "long"]},
-            ],
-        }
-    )
+    session.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
+    session.streams = [bigquery_storage.types.ReadStream(name=stream_id)]
     bqstorage_client.create_read_session.return_value = session
+    bqstorage_base_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+    page = bigquery_storage.types.ReadRowsResponse()
+    page.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
+    page.arrow_record_batch.serialized_record_batch = (
+        record_batch.serialize().to_pybytes()
+    )
+    bqstorage_base_client.read_rows.return_value = [page]
+    reader = google.cloud.bigquery_storage_v1.reader.ReadRowsStream(
+        [page], bqstorage_base_client, stream_id, 0, {}
+    )
+    bqstorage_client.read_rows.return_value = reader
 
-    job.to_dataframe(bqstorage_client=bqstorage_client)
+    dataframe = job.to_dataframe(bqstorage_client=bqstorage_client)
 
+    assert len(dataframe) == 4
     destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
         **job_resource["configuration"]["query"]["destinationTable"]
     )
@@ -498,25 +518,43 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
             ]
         },
     }
+    stream_id = "projects/1/locations/2/sessions/3/streams/4"
+    name_array = pyarrow.array(
+        ["Matthew", "Mark", "Luke", "John"], type=pyarrow.string()
+    )
+    age_array = pyarrow.array([17, 24, 21, 15], type=pyarrow.int64())
+    arrow_schema = pyarrow.schema(
+        [
+            pyarrow.field("name", pyarrow.string(), True),
+            pyarrow.field("age", pyarrow.int64(), True),
+        ]
+    )
+    record_batch = pyarrow.RecordBatch.from_arrays(
+        [name_array, age_array], schema=arrow_schema
+    )
     connection = make_connection(query_resource)
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(resource, client)
     bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
     session = bigquery_storage.types.ReadSession()
-    session.avro_schema.schema = json.dumps(
-        {
-            "type": "record",
-            "name": "__root__",
-            "fields": [
-                {"name": "name", "type": ["null", "string"]},
-                {"name": "age", "type": ["null", "long"]},
-            ],
-        }
-    )
+    session.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
+    session.streams = [bigquery_storage.types.ReadStream(name=stream_id)]
     bqstorage_client.create_read_session.return_value = session
+    bqstorage_base_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+    page = bigquery_storage.types.ReadRowsResponse()
+    page.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
+    page.arrow_record_batch.serialized_record_batch = (
+        record_batch.serialize().to_pybytes()
+    )
+    bqstorage_base_client.read_rows.return_value = [page]
+    reader = google.cloud.bigquery_storage_v1.reader.ReadRowsStream(
+        [page], bqstorage_base_client, stream_id, 0, {}
+    )
+    bqstorage_client.read_rows.return_value = reader
 
-    job.to_dataframe(bqstorage_client=bqstorage_client)
+    dataframe = job.to_dataframe(bqstorage_client=bqstorage_client)
 
+    assert len(dataframe) == 4
     destination_table = "projects/{projectId}/datasets/{datasetId}/tables/{tableId}".format(
         **resource["configuration"]["query"]["destinationTable"]
     )
@@ -530,6 +568,7 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
         read_session=expected_session,
         max_stream_count=0,  # Use default number of streams for best performance.
     )
+    bqstorage_client.read_rows.assert_called_once_with(stream_id)
 
 
 def test_to_dataframe_bqstorage_no_pyarrow_compression():

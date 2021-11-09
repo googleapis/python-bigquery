@@ -1922,14 +1922,6 @@ class RowIterator(HTTPIterator):
             # See: https://arrow.apache.org/docs/python/api/datatypes.html
             if str(col.type).startswith("date")
         )
-        if date_as_object:
-            # Remove dates, so object dtype is retained.
-            # TODO: Why don't we need this logic for timestamp?
-            default_dtypes = {
-                name: type_
-                for name, type_ in default_dtypes.items()
-                if type_ != _pandas_helpers.date_dtype_name
-            }
 
         # Let the user-defined dtypes override the default ones.
         # https://stackoverflow.com/a/26853961/101923

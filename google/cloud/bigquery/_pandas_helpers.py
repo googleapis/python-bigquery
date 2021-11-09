@@ -84,17 +84,17 @@ _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seco
 _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage downloads
 
 # If you update the default dtypes, also update the docs at docs/usage/pandas.rst.
+# The types in this dictionary are converted after the initial conversion from
+# Arrow RecordBatch/Table because Int64Dtype and BooleanDtype don't fully
+# implement Arrow interoperability.
+# TODO: link to pandas issue re Arrow-Pandas extension types.
 _BQ_TO_PANDAS_DTYPE_NULLSAFE = {
-    # TODO: maybe we do this in types_mapper, instead.
     "BOOL": "boolean",
     "BOOLEAN": "boolean",
     "FLOAT": "float64",
     "FLOAT64": "float64",
-    # TODO: maybe we do this in types_mapper, instead.
     "INT64": "Int64",
     "INTEGER": "Int64",
-    "DATE": date_dtype_name,
-    "TIME": time_dtype_name,
 }
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
@@ -285,32 +285,26 @@ def default_types_mapper(date_as_object: bool = False):
     This overrides the pandas defaults to use null-safe extension types where
     available.
 
-    If you update the default dtypes, also update the docs at docs/usage/pandas.rst.
+    See: https://arrow.apache.org/docs/python/api/datatypes.html for a list of
+    data types. See:
+    tests/unit/test__pandas_helpers.py::test_bq_to_arrow_data_type for
+    BigQuery to Arrow type mapping.
+
+    Note to google-cloud-bigquery developers: If you update the default dtypes,
+    also update the docs at docs/usage/pandas.rst.
     """
 
     def types_mapper(arrow_data_type):
-        data_type = str(arrow_data_type)
-
         if (
             # If date_as_object is True, we know some DATE columns are
             # out-of-bounds of what is supported by pandas.
             not date_as_object
-            # Use startswith because the full type name includes units. See:
-            # https://arrow.apache.org/docs/python/api/datatypes.html
-            and (data_type.startswith("date32") or data_type.startswith("date64"))
+            and pyarrow.types.is_date(arrow_data_type)
         ):
             return DateDtype
 
-        # # TODO: maybe we do this in types_mapper, instead.
-        # "BOOL": "boolean",
-        # "BOOLEAN": "boolean",
-        # "FLOAT": "float64",
-        # "FLOAT64": "float64",
-        # # TODO: maybe we do this in types_mapper, instead.
-        # "INT64": "Int64",
-        # "INTEGER": "Int64",
-        # "DATE": date_dtype_name,
-        # "TIME": time_dtype_name,
+        elif pyarrow.types.is_time(arrow_data_type):
+            return TimeDtype
 
     return types_mapper
 

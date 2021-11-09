@@ -520,7 +520,7 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
     }
     stream_id = "projects/1/locations/2/sessions/3/streams/4"
     name_array = pyarrow.array(
-        ["Matthew", "Mark", "Luke", "John"], type=pyarrow.string()
+        ["John", "Paul", "George", "Ringo"], type=pyarrow.string()
     )
     age_array = pyarrow.array([17, 24, 21, 15], type=pyarrow.int64())
     arrow_schema = pyarrow.schema(

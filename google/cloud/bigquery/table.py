@@ -1928,19 +1928,23 @@ class RowIterator(HTTPIterator):
             if str(col.type).startswith("timestamp")
         )
 
-        df = record_batch.to_pandas(
-            date_as_object=date_as_object,
-            timestamp_as_object=timestamp_as_object,
-            integer_object_nulls=True,
-            types_mapper=_pandas_helpers.default_types_mapper(
-                date_as_object=date_as_object
-            ),
-        )
+        if len(record_batch) > 0:
+            df = record_batch.to_pandas(
+                date_as_object=date_as_object,
+                timestamp_as_object=timestamp_as_object,
+                integer_object_nulls=True,
+                types_mapper=_pandas_helpers.default_types_mapper(
+                    date_as_object=date_as_object
+                ),
+            )
+        else:
+            # Avoid "ValueError: need at least one array to concatenate" on
+            # older versions of pyarrow when converting empty RecordBatch to
+            # DataFrame.
+            df = pandas.DataFrame([], columns=record_batch.schema.names)
 
         for column in dtypes:
             data = df[column]
-            # if dtypes[column] == date_dtype_name:
-            #    data = DateArray(data.to_numpy(copy=False), copy=False)
             df[column] = pandas.Series(data, dtype=dtypes[column], copy=False)
 
         if geography_as_object:

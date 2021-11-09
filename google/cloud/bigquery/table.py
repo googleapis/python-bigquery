@@ -1939,8 +1939,8 @@ class RowIterator(HTTPIterator):
             )
         else:
             # Avoid "ValueError: need at least one array to concatenate" on
-            # older versions of pyarrow when converting empty RecordBatch to
-            # DataFrame.
+            # older versions of pandas when converting empty RecordBatch to
+            # DataFrame. See: https://github.com/pandas-dev/pandas/issues/41241
             df = pandas.DataFrame([], columns=record_batch.schema.names)
 
         for column in dtypes:

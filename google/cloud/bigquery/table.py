@@ -1944,8 +1944,7 @@ class RowIterator(HTTPIterator):
             df = pandas.DataFrame([], columns=record_batch.schema.names)
 
         for column in dtypes:
-            data = df[column]
-            df[column] = pandas.Series(data, dtype=dtypes[column], copy=False)
+            df[column] = pandas.Series(df[column], dtype=dtypes[column], copy=False)
 
         if geography_as_object:
             for field in self.schema:

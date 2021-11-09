@@ -280,16 +280,37 @@ def bq_to_arrow_schema(bq_schema):
 
 
 def default_types_mapper(date_as_object: bool = False):
-    """
+    """Create a mapping from pyarrow types to pandas types.
+
+    This overrides the pandas defaults to use null-safe extension types where
+    available.
+
+    If you update the default dtypes, also update the docs at docs/usage/pandas.rst.
     """
 
     def types_mapper(arrow_data_type):
         data_type = str(arrow_data_type)
 
-        # Type can be date32 or date64 (plus units).
-        # See: https://arrow.apache.org/docs/python/api/datatypes.html
-        if data_type.startswith("date"):
+        if (
+            # If date_as_object is True, we know some DATE columns are
+            # out-of-bounds of what is supported by pandas.
+            not date_as_object
+            # Use startswith because the full type name includes units. See:
+            # https://arrow.apache.org/docs/python/api/datatypes.html
+            and (data_type.startswith("date32") or data_type.startswith("date64"))
+        ):
             return DateDtype
+
+        # # TODO: maybe we do this in types_mapper, instead.
+        # "BOOL": "boolean",
+        # "BOOLEAN": "boolean",
+        # "FLOAT": "float64",
+        # "FLOAT64": "float64",
+        # # TODO: maybe we do this in types_mapper, instead.
+        # "INT64": "Int64",
+        # "INTEGER": "Int64",
+        # "DATE": date_dtype_name,
+        # "TIME": time_dtype_name,
 
     return types_mapper
 

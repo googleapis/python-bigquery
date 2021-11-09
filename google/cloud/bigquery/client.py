@@ -197,7 +197,7 @@ class Client(ClientWithProject):
             to acquire default credentials.
     """
 
-    SCOPE = (
+    SCOPE = (  # type: ignore
         "https://www.googleapis.com/auth/bigquery",
         "https://www.googleapis.com/auth/cloud-platform",
     )

@@ -29,7 +29,7 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 
-import pyarrow
+import pyarrow  # type: ignore
 
 try:
     import geopandas  # type: ignore

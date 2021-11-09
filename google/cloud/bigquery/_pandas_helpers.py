@@ -28,8 +28,8 @@ except ImportError:  # pragma: NO COVER
 else:
     import numpy
 
-import pyarrow
-import pyarrow.parquet
+import pyarrow  # type: ignore
+import pyarrow.parquet  # type: ignore
 
 try:
     # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`

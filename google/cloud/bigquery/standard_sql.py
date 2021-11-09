@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import copy
+import typing
 from typing import Any, Dict, Iterable, List, Optional
 
 from google.cloud.bigquery.enums import StandardSqlTypeNames
@@ -61,14 +62,14 @@ class StandardSqlDataType:
         array_element_type: Optional["StandardSqlDataType"] = None,
         struct_type: Optional["StandardSqlStructType"] = None,
     ):
-        self._properties = {}
+        self._properties: Dict[str, Any] = {}
 
         self.type_kind = type_kind
         self.array_element_type = array_element_type
         self.struct_type = struct_type
 
     @property
-    def type_kind(self) -> StandardSqlTypeNames:
+    def type_kind(self) -> Optional[StandardSqlTypeNames]:
         """The top level type of this field.
 
         Can be any standard SQL data type, e.g. INT64, DATE, ARRAY.
@@ -139,7 +140,7 @@ class StandardSqlDataType:
         else:
             # Convert string to an enum member.
             type_kind = StandardSqlTypeNames[  # pytype: disable=missing-parameter
-                type_kind
+                typing.cast(str, type_kind)
             ]
 
         array_element_type = None
@@ -166,8 +167,6 @@ class StandardSqlDataType:
                 and self.struct_type == other.struct_type
             )
 
-    __hash__ = None
-
     def __str__(self):
         result = f"{self.__class__.__name__}(type_kind={self.type_kind!r}, ...)"
         return result
@@ -192,15 +191,13 @@ class StandardSqlField:
     def __init__(
         self, name: Optional[str] = None, type: Optional[StandardSqlDataType] = None
     ):
-        if type is not None:
-            type = type.to_api_repr()
-
-        self._properties = {"name": name, "type": type}
+        type_repr = None if type is None else type.to_api_repr()
+        self._properties = {"name": name, "type": type_repr}
 
     @property
     def name(self) -> Optional[str]:
         """The name of this field. Can be absent for struct fields."""
-        return self._properties["name"]
+        return typing.cast(Optional[str], self._properties["name"])
 
     @name.setter
     def name(self, value: Optional[str]):
@@ -219,14 +216,15 @@ class StandardSqlField:
             return None
 
         result = StandardSqlDataType()
-        result._properties = type_info  # We do not use a copy on purpose.
+        # We do not use a properties copy on purpose.
+        result._properties = typing.cast(Dict[str, Any], type_info)
+
         return result
 
     @type.setter
     def type(self, value: Optional[StandardSqlDataType]):
-        if value is not None:
-            value = value.to_api_repr()
-        self._properties["type"] = value
+        value_repr = None if value is None else value.to_api_repr()
+        self._properties["type"] = value_repr
 
     def to_api_repr(self) -> Dict[str, Any]:
         """Construct the API resource representation of this SQL field."""
@@ -246,8 +244,6 @@ class StandardSqlField:
             return NotImplemented
         else:
             return self.name == other.name and self.type == other.type
-
-    __hash__ = None
 
 
 class StandardSqlStructType:
@@ -299,8 +295,6 @@ class StandardSqlStructType:
             return NotImplemented
         else:
             return self.fields == other.fields
-
-    __hash__ = None
 
 
 class StandardSqlTableType:
@@ -359,5 +353,3 @@ class StandardSqlTableType:
             return NotImplemented
         else:
             return self.columns == other.columns
-
-    __hash__ = None

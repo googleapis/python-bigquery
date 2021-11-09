@@ -18,11 +18,11 @@
 
 import copy
 import datetime
+import typing
 from typing import Any, Dict, Optional, Sequence, Union
 
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 
@@ -70,46 +70,52 @@ class Model:
         Read-only.
         """
         resource = self._properties.get("modelReference")
-        if resource is not None:
+        if resource is None:
+            return None
+        else:
             return ModelReference.from_api_repr(resource)
 
     @property
-    def project(self) -> str:
+    def project(self) -> Optional[str]:
         """Project bound to the model."""
-        return self.reference.project
+        ref = self.reference
+        return ref.project if ref is not None else None
 
     @property
-    def dataset_id(self) -> str:
+    def dataset_id(self) -> Optional[str]:
         """ID of dataset containing the model."""
-        return self.reference.dataset_id
+        ref = self.reference
+        return ref.dataset_id if ref is not None else None
 
     @property
-    def model_id(self) -> str:
+    def model_id(self) -> Optional[str]:
         """The model ID."""
-        return self.reference.model_id
+        ref = self.reference
+        return ref.model_id if ref is not None else None
 
     @property
-    def path(self) -> str:
+    def path(self) -> Optional[str]:
         """URL path for the model's APIs."""
-        return self.reference.path
+        ref = self.reference
+        return ref.path if ref is not None else None
 
     @property
-    def location(self) -> str:
+    def location(self) -> Optional[str]:
         """The geographic location where the model resides.
 
         This value is inherited from the dataset.
 
         Read-only.
         """
-        return self._properties.get("location")
+        return typing.cast(Optional[str], self._properties.get("location"))
 
     @property
-    def etag(self) -> str:
+    def etag(self) -> Optional[str]:
         """ETag for the model resource (:data:`None` until set from the server).
 
         Read-only.
         """
-        return self._properties.get("etag")
+        return typing.cast(Optional[str], self._properties.get("etag"))
 
     @property
     def created(self) -> Optional[datetime.datetime]:
@@ -117,8 +123,10 @@ class Model:
 
         Read-only.
         """
-        value = self._properties.get("creationTime")
-        if value is not None:
+        value = typing.cast(Optional[float], self._properties.get("creationTime"))
+        if value is None:
+            return None
+        else:
             # value will be in milliseconds.
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(value)
@@ -130,8 +138,10 @@ class Model:
 
         Read-only.
         """
-        value = value = self._properties.get("lastModifiedTime")
-        if value is not None:
+        value = typing.cast(Optional[float], self._properties.get("lastModifiedTime"))
+        if value is None:
+            return None
+        else:
             # value will be in milliseconds.
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(value)
@@ -143,7 +153,9 @@ class Model:
 
         Read-only.
         """
-        return self._properties.get("modelType", "MODEL_TYPE_UNSPECIFIED")
+        return typing.cast(
+            str, self._properties.get("modelType", "MODEL_TYPE_UNSPECIFIED")
+        )
 
     @property
     def training_runs(self) -> Sequence[Dict[str, Any]]:
@@ -154,25 +166,31 @@ class Model:
 
         Read-only.
         """
-        return self._properties.get("trainingRuns", [])
+        return typing.cast(
+            Sequence[Dict[str, Any]], self._properties.get("trainingRuns", [])
+        )
 
     @property
-    def feature_columns(self) -> Sequence[standard_sql.StandardSqlField]:
+    def feature_columns(self) -> Sequence[Dict[str, Any]]:
         """Input feature columns that were used to train this model.
 
         Read-only.
         """
-        return self._properties.get("featureColumns", [])
+        return typing.cast(
+            Sequence[Dict[str, Any]], self._properties.get("featureColumns", [])
+        )
 
     @property
-    def label_columns(self) -> Sequence[standard_sql.StandardSqlField]:
+    def label_columns(self) -> Sequence[Dict[str, Any]]:
         """Label columns that were used to train this model.
 
         The output of the model will have a ``predicted_`` prefix to these columns.
 
         Read-only.
         """
-        return self._properties.get("labelColumns", [])
+        return typing.cast(
+            Sequence[Dict[str, Any]], self._properties.get("labelColumns", [])
+        )
 
     @property
     def best_trial_id(self) -> Optional[int]:
@@ -183,7 +201,7 @@ class Model:
 
         Read-only.
         """
-        value = self._properties.get("bestTrialId")
+        value = typing.cast(Optional[int], self._properties.get("bestTrialId"))
         if value is not None:
             value = int(value)
         return value
@@ -195,8 +213,10 @@ class Model:
         If not present, the model will persist indefinitely. Expired models will be
         deleted and their storage reclaimed.
         """
-        value = self._properties.get("expirationTime")
-        if value is not None:
+        value = typing.cast(Optional[float], self._properties.get("expirationTime"))
+        if value is None:
+            return None
+        else:
             # value will be in milliseconds.
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(value)
@@ -204,27 +224,32 @@ class Model:
 
     @expires.setter
     def expires(self, value: Optional[datetime.datetime]):
-        if value is not None:
-            value = str(google.cloud._helpers._millis_from_datetime(value))
-        self._properties["expirationTime"] = value
+        if value is None:
+            value_to_store: Optional[str] = None
+        else:
+            value_to_store = str(google.cloud._helpers._millis_from_datetime(value))
+        # TODO: Consider using typing.TypedDict when only Python 3.8+ is supported.
+        self._properties["expirationTime"] = value_to_store  # type: ignore
 
     @property
     def description(self) -> Optional[str]:
         """Description of the model (defaults to :data:`None`)."""
-        return self._properties.get("description")
+        return typing.cast(Optional[str], self._properties.get("description"))
 
     @description.setter
     def description(self, value: Optional[str]):
-        self._properties["description"] = value
+        # TODO: Consider using typing.TypedDict when only Python 3.8+ is supported.
+        self._properties["description"] = value  # type: ignore
 
     @property
     def friendly_name(self) -> Optional[str]:
         """Title of the table (defaults to :data:`None`)."""
-        return self._properties.get("friendlyName")
+        return typing.cast(Optional[str], self._properties.get("friendlyName"))
 
     @friendly_name.setter
     def friendly_name(self, value: Optional[str]):
-        self._properties["friendlyName"] = value
+        # TODO: Consider using typing.TypedDict when only Python 3.8+ is supported.
+        self._properties["friendlyName"] = value  # type: ignore
 
     @property
     def labels(self) -> Dict[str, str]:
@@ -256,13 +281,11 @@ class Model:
         prop = self._properties.get("encryptionConfiguration")
         if prop:
             prop = EncryptionConfiguration.from_api_repr(prop)
-        return prop
+        return typing.cast(Optional[EncryptionConfiguration], prop)
 
     @encryption_configuration.setter
     def encryption_configuration(self, value: Optional[EncryptionConfiguration]):
-        api_repr = value
-        if value:
-            api_repr = value.to_api_repr()
+        api_repr = value.to_api_repr() if value else value
         self._properties["encryptionConfiguration"] = api_repr
 
     @classmethod

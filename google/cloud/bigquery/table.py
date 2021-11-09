@@ -1907,9 +1907,6 @@ class RowIterator(HTTPIterator):
             bqstorage_client=bqstorage_client,
             create_bqstorage_client=create_bqstorage_client,
         )
-        default_dtypes = _pandas_helpers.bq_schema_to_nullsafe_pandas_dtypes(
-            self.schema
-        )
 
         # When converting date or timestamp values to nanosecond precision, the result
         # can be out of pyarrow bounds. To avoid the error when converting to
@@ -1922,10 +1919,6 @@ class RowIterator(HTTPIterator):
             # See: https://arrow.apache.org/docs/python/api/datatypes.html
             if str(col.type).startswith("date")
         )
-
-        # Let the user-defined dtypes override the default ones.
-        # https://stackoverflow.com/a/26853961/101923
-        dtypes = {**default_dtypes, **dtypes}
 
         timestamp_as_object = not all(
             self.__can_cast_timestamp_ns(col)

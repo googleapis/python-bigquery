@@ -20,7 +20,7 @@ import copy
 import datetime
 from typing import Any, Dict, Optional, Sequence, Union
 
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration

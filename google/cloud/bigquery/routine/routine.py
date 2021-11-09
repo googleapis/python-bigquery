@@ -18,7 +18,7 @@
 
 from typing import Optional
 
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.standard_sql import StandardSqlDataType
 from google.cloud.bigquery.standard_sql import StandardSqlTableType

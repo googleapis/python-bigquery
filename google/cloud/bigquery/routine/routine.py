@@ -18,7 +18,7 @@
 
 from typing import Optional
 
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.standard_sql import StandardSqlDataType
 from google.cloud.bigquery.standard_sql import StandardSqlTableType
@@ -210,10 +210,7 @@ class Routine(object):
 
     @return_type.setter
     def return_type(self, value: StandardSqlDataType):
-        if value:
-            resource = value.to_api_repr()
-        else:
-            resource = None
+        resource = None if not value else value.to_api_repr()
         self._properties[self._PROPERTY_TO_API_FIELD["return_type"]] = resource
 
     @property

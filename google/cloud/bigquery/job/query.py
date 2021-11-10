@@ -1556,7 +1556,6 @@ class QueryJob(_AsyncJob):
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         max_results: Optional[int] = None,
         geography_as_object: bool = False,
     ) -> "pandas.DataFrame":
@@ -1599,12 +1598,6 @@ class QueryJob(_AsyncJob):
 
                 .. versionadded:: 1.24.0
 
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
-
-                .. versionadded:: 1.26.0
-
             max_results (Optional[int]):
                 Maximum number of rows to include in the result. No limit by default.
 
@@ -1638,7 +1631,6 @@ class QueryJob(_AsyncJob):
             dtypes=dtypes,
             progress_bar_type=progress_bar_type,
             create_bqstorage_client=create_bqstorage_client,
-            date_as_object=date_as_object,
             geography_as_object=geography_as_object,
         )
 
@@ -1651,7 +1643,6 @@ class QueryJob(_AsyncJob):
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         max_results: Optional[int] = None,
         geography_column: Optional[str] = None,
     ) -> "geopandas.GeoDataFrame":
@@ -1694,12 +1685,6 @@ class QueryJob(_AsyncJob):
 
                 .. versionadded:: 1.24.0
 
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
-
-                .. versionadded:: 1.26.0
-
             max_results (Optional[int]):
                 Maximum number of rows to include in the result. No limit by default.
 
@@ -1732,7 +1717,6 @@ class QueryJob(_AsyncJob):
             dtypes=dtypes,
             progress_bar_type=progress_bar_type,
             create_bqstorage_client=create_bqstorage_client,
-            date_as_object=date_as_object,
             geography_column=geography_column,
         )
 

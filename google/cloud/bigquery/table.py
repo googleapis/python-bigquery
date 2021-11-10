@@ -28,6 +28,8 @@ try:
     import pandas  # type: ignore
 except ImportError:  # pragma: NO COVER
     pandas = None
+else:
+    import db_dtypes  # type: ignore # noqa
 
 import pyarrow  # type: ignore
 
@@ -1815,7 +1817,6 @@ class RowIterator(HTTPIterator):
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         geography_as_object: bool = False,
     ) -> "pandas.DataFrame":
         """Create a pandas DataFrame by loading all pages of a query.
@@ -1865,12 +1866,6 @@ class RowIterator(HTTPIterator):
 
                 .. versionadded:: 1.24.0
 
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
-
-                .. versionadded:: 1.26.0
-
             geography_as_object (Optional[bool]):
                 If ``True``, convert GEOGRAPHY data to :mod:`shapely`
                 geometry objects. If ``False`` (default), don't cast
@@ -1912,40 +1907,44 @@ class RowIterator(HTTPIterator):
             bqstorage_client=bqstorage_client,
             create_bqstorage_client=create_bqstorage_client,
         )
-        default_dtypes = _pandas_helpers.bq_schema_to_nullsafe_pandas_dtypes(
-            self.schema
-        )
 
-        # Let the user-defined dtypes override the default ones.
-        # https://stackoverflow.com/a/26853961/101923
-        dtypes = {**default_dtypes, **dtypes}
-
-        # When converting timestamp values to nanosecond precision, the result
+        # When converting date or timestamp values to nanosecond precision, the result
         # can be out of pyarrow bounds. To avoid the error when converting to
-        # Pandas, we set the timestamp_as_object parameter to True, if necessary.
-        types_to_check = {
-            pyarrow.timestamp("us"),
-            pyarrow.timestamp("us", tz=datetime.timezone.utc),
-        }
-
-        for column in record_batch:
-            if column.type in types_to_check:
-                try:
-                    column.cast("timestamp[ns]")
-                except pyarrow.lib.ArrowInvalid:
-                    timestamp_as_object = True
-                    break
-        else:
-            timestamp_as_object = False
-
-        extra_kwargs = {"timestamp_as_object": timestamp_as_object}
-
-        df = record_batch.to_pandas(
-            date_as_object=date_as_object, integer_object_nulls=True, **extra_kwargs
+        # Pandas, we set the date_as_object or timestamp_as_object parameter to True,
+        # if necessary.
+        date_as_object = not all(
+            self.__can_cast_timestamp_ns(col)
+            for col in record_batch
+            # Type can be date32 or date64 (plus units).
+            # See: https://arrow.apache.org/docs/python/api/datatypes.html
+            if str(col.type).startswith("date")
         )
+
+        timestamp_as_object = not all(
+            self.__can_cast_timestamp_ns(col)
+            for col in record_batch
+            # Type can be timestamp (plus units and time zone).
+            # See: https://arrow.apache.org/docs/python/api/datatypes.html
+            if str(col.type).startswith("timestamp")
+        )
+
+        if len(record_batch) > 0:
+            df = record_batch.to_pandas(
+                date_as_object=date_as_object,
+                timestamp_as_object=timestamp_as_object,
+                integer_object_nulls=True,
+                types_mapper=_pandas_helpers.default_types_mapper(
+                    date_as_object=date_as_object
+                ),
+            )
+        else:
+            # Avoid "ValueError: need at least one array to concatenate" on
+            # older versions of pandas when converting empty RecordBatch to
+            # DataFrame. See: https://github.com/pandas-dev/pandas/issues/41241
+            df = pandas.DataFrame([], columns=record_batch.schema.names)
 
         for column in dtypes:
-            df[column] = pandas.Series(df[column], dtype=dtypes[column])
+            df[column] = pandas.Series(df[column], dtype=dtypes[column], copy=False)
 
         if geography_as_object:
             for field in self.schema:
@@ -1953,6 +1952,15 @@ class RowIterator(HTTPIterator):
                     df[field.name] = df[field.name].dropna().apply(_read_wkt)
 
         return df
+
+    @staticmethod
+    def __can_cast_timestamp_ns(column):
+        try:
+            column.cast("timestamp[ns]")
+        except pyarrow.lib.ArrowInvalid:
+            return False
+        else:
+            return True
 
     # If changing the signature of this method, make sure to apply the same
     # changes to job.QueryJob.to_geodataframe()
@@ -1962,7 +1970,6 @@ class RowIterator(HTTPIterator):
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         geography_column: Optional[str] = None,
     ) -> "geopandas.GeoDataFrame":
         """Create a GeoPandas GeoDataFrame by loading all pages of a query.
@@ -2009,10 +2016,6 @@ class RowIterator(HTTPIterator):
                 ``bqstorage_client`` parameter for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
-
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
 
             geography_column (Optional[str]):
                 If there are more than one GEOGRAPHY column,
@@ -2069,7 +2072,6 @@ class RowIterator(HTTPIterator):
             dtypes,
             progress_bar_type,
             create_bqstorage_client,
-            date_as_object,
             geography_as_object=True,
         )
 
@@ -2126,7 +2128,6 @@ class _EmptyRowIterator(RowIterator):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
-        date_as_object=True,
         geography_as_object=False,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
@@ -2136,7 +2137,6 @@ class _EmptyRowIterator(RowIterator):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
-            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -2151,7 +2151,6 @@ class _EmptyRowIterator(RowIterator):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
-        date_as_object=True,
         geography_column: Optional[str] = None,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
@@ -2161,7 +2160,6 @@ class _EmptyRowIterator(RowIterator):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
-            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.

@@ -18,15 +18,20 @@ import concurrent.futures
 import functools
 import logging
 import queue
-from typing import Dict, Sequence
 import warnings
 
 try:
     import pandas  # type: ignore
 except ImportError:  # pragma: NO COVER
     pandas = None
+    date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 else:
     import numpy
+
+    from db_dtypes import DateDtype, TimeDtype  # type: ignore
+
+    date_dtype_name = DateDtype.name
+    time_dtype_name = TimeDtype.name
 
 import pyarrow  # type: ignore
 import pyarrow.parquet  # type: ignore
@@ -77,15 +82,6 @@ _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seco
 
 _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage downloads
 
-# If you update the default dtypes, also update the docs at docs/usage/pandas.rst.
-_BQ_TO_PANDAS_DTYPE_NULLSAFE = {
-    "BOOL": "boolean",
-    "BOOLEAN": "boolean",
-    "FLOAT": "float64",
-    "FLOAT64": "float64",
-    "INT64": "Int64",
-    "INTEGER": "Int64",
-}
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
     "datetime64[ns, UTC]": "TIMESTAMP",
@@ -102,6 +98,8 @@ _PANDAS_DTYPE_TO_BQ = {
     "uint16": "INTEGER",
     "uint32": "INTEGER",
     "geometry": "GEOGRAPHY",
+    date_dtype_name: "DATE",
+    time_dtype_name: "TIME",
 }
 
 
@@ -267,26 +265,40 @@ def bq_to_arrow_schema(bq_schema):
     return pyarrow.schema(arrow_fields)
 
 
-def bq_schema_to_nullsafe_pandas_dtypes(
-    bq_schema: Sequence[schema.SchemaField],
-) -> Dict[str, str]:
-    """Return the default dtypes to use for columns in a BigQuery schema.
+def default_types_mapper(date_as_object: bool = False):
+    """Create a mapping from pyarrow types to pandas types.
 
-    Only returns default dtypes which are safe to have NULL values. This
-    includes Int64, which has pandas.NA values and does not result in
-    loss-of-precision.
+    This overrides the pandas defaults to use null-safe extension types where
+    available.
 
-    Returns:
-        A mapping from column names to pandas dtypes.
+    See: https://arrow.apache.org/docs/python/api/datatypes.html for a list of
+    data types. See:
+    tests/unit/test__pandas_helpers.py::test_bq_to_arrow_data_type for
+    BigQuery to Arrow type mapping.
+
+    Note to google-cloud-bigquery developers: If you update the default dtypes,
+    also update the docs at docs/usage/pandas.rst.
     """
-    dtypes = {}
-    for bq_field in bq_schema:
-        if bq_field.mode.upper() not in {"NULLABLE", "REQUIRED"}:
-            continue
-        field_type = bq_field.field_type.upper()
-        if field_type in _BQ_TO_PANDAS_DTYPE_NULLSAFE:
-            dtypes[bq_field.name] = _BQ_TO_PANDAS_DTYPE_NULLSAFE[field_type]
-    return dtypes
+
+    def types_mapper(arrow_data_type):
+        if pyarrow.types.is_boolean(arrow_data_type):
+            return pandas.BooleanDtype()
+
+        elif (
+            # If date_as_object is True, we know some DATE columns are
+            # out-of-bounds of what is supported by pandas.
+            not date_as_object
+            and pyarrow.types.is_date(arrow_data_type)
+        ):
+            return DateDtype()
+
+        elif pyarrow.types.is_integer(arrow_data_type):
+            return pandas.Int64Dtype()
+
+        elif pyarrow.types.is_time(arrow_data_type):
+            return TimeDtype()
+
+    return types_mapper
 
 
 def bq_to_arrow_array(series, bq_field):

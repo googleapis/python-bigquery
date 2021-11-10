@@ -54,9 +54,9 @@ extras = {
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
-        "opentelemetry-api >= 0.11b0",
-        "opentelemetry-sdk >= 0.11b0",
-        "opentelemetry-instrumentation >= 0.11b0",
+        "opentelemetry-api >= 1.1.0",
+        "opentelemetry-sdk >= 1.1.0",
+        "opentelemetry-instrumentation >= 0.20b0",
     ],
 }
 

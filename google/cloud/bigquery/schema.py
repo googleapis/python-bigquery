@@ -16,7 +16,7 @@
 
 import collections
 import enum
-from typing import Iterable, Union
+from typing import Any, Dict, Iterable, Union
 
 from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.enums import StandardSqlTypeNames
@@ -48,22 +48,6 @@ LEGACY_TO_STANDARD_TYPES = {
     # no direct conversion from ARRAY, the latter is represented by mode="REPEATED"
 }
 """String names of the legacy SQL types to integer codes of Standard SQL standard_sql."""
-
-
-class _DefaultSentinel(enum.Enum):
-    """Object used as 'sentinel' indicating default value should be used.
-
-    Uses enum so that pytype/mypy knows that this is the only possible value.
-    https://stackoverflow.com/a/60605919/101923
-
-    Literal[_DEFAULT_VALUE] is an alternative, but only added in Python 3.8.
-    https://docs.python.org/3/library/typing.html#typing.Literal
-    """
-
-    DEFAULT_VALUE = object()
-
-
-_DEFAULT_VALUE = _DefaultSentinel.DEFAULT_VALUE
 
 
 class _DefaultSentinel(enum.Enum):
@@ -123,7 +107,7 @@ class SchemaField(object):
         scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
     ):
-        self._properties = {
+        self._properties: Dict[str, Any] = {
             "name": name,
             "type": field_type,
         }

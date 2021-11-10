@@ -602,12 +602,12 @@ def _cell_magic(line, query):
 
             if query_var_name.isidentifier():
                 ip = IPython.get_ipython()
-                try:
-                    query = ip.user_ns[query_var_name]
-                except KeyError:
+                query = ip.user_ns.get(query_var_name, ip)  # ip serves as a sentinel
+
+                if query is ip:
                     raise NameError(
                         f"Unknown query, variable {query_var_name} does not exist."
-                    ) from None
+                    )
                 else:
                     if not isinstance(query, (str, bytes)):
                         raise TypeError(

@@ -41,8 +41,8 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
+from google.cloud.bigquery._helpers import BQ_STORAGE_VERSIONS
 from ..helpers import make_connection
-
 from .helpers import _make_client
 from .helpers import _make_job_resource
 
@@ -145,7 +145,8 @@ def test_to_dataframe_bqstorage_preserve_order(query, table_read_options_kwarg):
     bqstorage_client.create_read_session.return_value = session
     bqstorage_base_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
     page = bigquery_storage.types.ReadRowsResponse()
-    page.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
+    if BQ_STORAGE_VERSIONS.is_read_session_optional:
+        page.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
     page.arrow_record_batch.serialized_record_batch = (
         record_batch.serialize().to_pybytes()
     )
@@ -542,7 +543,8 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
     bqstorage_client.create_read_session.return_value = session
     bqstorage_base_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
     page = bigquery_storage.types.ReadRowsResponse()
-    page.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
+    if BQ_STORAGE_VERSIONS.is_read_session_optional:
+        page.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
     page.arrow_record_batch.serialized_record_batch = (
         record_batch.serialize().to_pybytes()
     )

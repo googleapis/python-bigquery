@@ -1826,6 +1826,29 @@ def test_bigquery_magic_query_variable_non_string(ipython_ns_cleanup):
 
 @pytest.mark.usefixtures("ipython_interactive")
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_bigquery_magic_query_variable_not_identifier():
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    magics.context.credentials = mock.create_autospec(
+        google.auth.credentials.Credentials, instance=True
+    )
+
+    cell_body = "$123foo"  # 123foo is not valid Python identifier
+
+    with io.capture_output() as captured_io:
+        ip.run_cell_magic("bigquery", "", cell_body)
+
+    # If "$" prefixes a string that is not a Python identifier, we do not treat such
+    # cell_body as a variable reference and just treat is as any other cell body input.
+    # If at the same time the cell body does not contain any whitespace, it is
+    # considered a table name, thus we expect an error that the table ID is not valid.
+    output = captured_io.stderr
+    assert "ERROR:" in output
+    assert "must be a fully-qualified ID" in output
+
+
+@pytest.mark.usefixtures("ipython_interactive")
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_bigquery_magic_with_invalid_multiple_option_values():
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")

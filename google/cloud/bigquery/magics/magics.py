@@ -600,6 +600,10 @@ def _cell_magic(line, query):
         if query.startswith("$"):
             query_var_name = query[1:]
 
+            if not query_var_name:
+                missing_msg = 'Missing query variable name, empty "$" is not allowed.'
+                raise NameError(missing_msg)
+
             if query_var_name.isidentifier():
                 ip = IPython.get_ipython()
                 query = ip.user_ns.get(query_var_name, ip)  # ip serves as a sentinel

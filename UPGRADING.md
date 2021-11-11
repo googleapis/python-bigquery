@@ -117,6 +117,24 @@ table from the job's configuration. Destination table for the query can thus be
 explicitly defined by the user.
 
 
+## Type Annotations
+
+The library is now type-annotated and declares itself as such. If you use a static
+type checker such as `mypy`, you might start getting errors in places where
+`google-cloud-bigquery` package is used.
+
+It is recommended to update your code and/or type annotations to fix these errors, but
+if this is not feasible in the short term, you can temporarily ignore type annotations
+in `google-cloud-bigquery`, for example by using a special `# type: ignore` comment:
+
+```py
+from google.cloud import bigquery  # type: ignore
+```
+
+But again, this is only recommended as a possible short-term workaround if immediately
+fixing the type check errors in your project is not feasible.
+
+
 # 2.0.0 Migration Guide
 
 The 2.0 release of the `google-cloud-bigquery` client drops support for Python

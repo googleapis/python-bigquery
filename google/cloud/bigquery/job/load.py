@@ -442,6 +442,10 @@ class LoadJobConfig(_JobConfig):
         Only specify at most one of
         :attr:`~google.cloud.bigquery.job.LoadJobConfig.time_partitioning` or
         :attr:`~google.cloud.bigquery.job.LoadJobConfig.range_partitioning`.
+        
+        .. note::
+
+           You can't create partitions in already existing unpartitioned tables.
         """
         prop = self._get_sub_prop("timePartitioning")
         if prop is not None:

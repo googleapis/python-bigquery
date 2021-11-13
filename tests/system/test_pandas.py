@@ -65,7 +65,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
                 ).dt.tz_localize(datetime.timezone.utc),
             ),
             (
-                "dt_col",
+                "dt_col_no_tz",
                 pandas.Series(
                     [
                         datetime.datetime(2010, 1, 2, 3, 44, 50),
@@ -130,7 +130,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
                 ),
             ),
             (
-                "array_dt_col",
+                "array_dt_col_no_tz",
                 pandas.Series(
                     [
                         [datetime.datetime(2010, 1, 2, 3, 44, 50)],
@@ -196,9 +196,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
     assert tuple(table.schema) == (
         bigquery.SchemaField("bool_col", "BOOLEAN"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
-        # TODO: Update to DATETIME in V3
-        # https://github.com/googleapis/python-bigquery/issues/985
-        bigquery.SchemaField("dt_col", "TIMESTAMP"),
+        bigquery.SchemaField("dt_col_no_tz", "DATETIME"),
         bigquery.SchemaField("float32_col", "FLOAT"),
         bigquery.SchemaField("float64_col", "FLOAT"),
         bigquery.SchemaField("int8_col", "INTEGER"),
@@ -212,9 +210,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("array_bool_col", "BOOLEAN", mode="REPEATED"),
         bigquery.SchemaField("array_ts_col", "TIMESTAMP", mode="REPEATED"),
-        # TODO: Update to DATETIME in V3
-        # https://github.com/googleapis/python-bigquery/issues/985
-        bigquery.SchemaField("array_dt_col", "TIMESTAMP", mode="REPEATED"),
+        bigquery.SchemaField("array_dt_col_no_tz", "DATETIME", mode="REPEATED"),
         bigquery.SchemaField("array_float32_col", "FLOAT", mode="REPEATED"),
         bigquery.SchemaField("array_float64_col", "FLOAT", mode="REPEATED"),
         bigquery.SchemaField("array_int8_col", "INTEGER", mode="REPEATED"),
@@ -225,6 +221,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
         bigquery.SchemaField("array_uint16_col", "INTEGER", mode="REPEATED"),
         bigquery.SchemaField("array_uint32_col", "INTEGER", mode="REPEATED"),
     )
+
     assert numpy.array(
         sorted(map(list, bigquery_client.list_rows(table)), key=lambda r: r[5]),
         dtype="object",
@@ -237,13 +234,11 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
             datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
             datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc),
         ],
-        # dt_col
-        # TODO: Remove tzinfo in V3.
-        # https://github.com/googleapis/python-bigquery/issues/985
+        # dt_col_no_tz
         [
-            datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc),
-            datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2010, 1, 2, 3, 44, 50),
+            datetime.datetime(2011, 2, 3, 14, 50, 59),
+            datetime.datetime(2012, 3, 14, 15, 16),
         ],
         # float32_col
         [1.0, 2.0, 3.0],
@@ -280,12 +275,10 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
             [datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc)],
         ],
         # array_dt_col
-        # TODO: Remove tzinfo in V3.
-        # https://github.com/googleapis/python-bigquery/issues/985
         [
-            [datetime.datetime(2010, 1, 2, 3, 44, 50, tzinfo=datetime.timezone.utc)],
-            [datetime.datetime(2011, 2, 3, 14, 50, 59, tzinfo=datetime.timezone.utc)],
-            [datetime.datetime(2012, 3, 14, 15, 16, tzinfo=datetime.timezone.utc)],
+            [datetime.datetime(2010, 1, 2, 3, 44, 50)],
+            [datetime.datetime(2011, 2, 3, 14, 50, 59)],
+            [datetime.datetime(2012, 3, 14, 15, 16)],
         ],
         # array_float32_col
         [[1.0], [2.0], [3.0]],

@@ -22,6 +22,8 @@ library, namely
 version `3.0.0`).
 
 The behavior of some of the package "extras" has thus also changed:
+ * The `pandas` extra now requires the [db-types](https://pypi.org/project/db-dtypes/)
+   package.
  * The `bqstorage` extra has been preserved for comaptibility reasons, but it is now a
    no-op and should be omitted when installing the BigQuery client library.
 

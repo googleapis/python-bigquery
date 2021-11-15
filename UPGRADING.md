@@ -119,6 +119,21 @@ table from the job's configuration. Destination table for the query can thus be
 explicitly defined by the user.
 
 
+## Changed Default Inferred Type for Naive `datetime` Instances.
+
+In the absence of schema information, columns with naive `datetime.datetime` values,
+i.e. without timezone information, are recognized and loaded using the `DATETIME` type.
+On the other hand, for columns with timezone-aware `datetime.dateime` values, the
+`TIMESTAMP` type is continued to be used.
+
+
+## Destination Table is Preserved on Query Jobs
+
+When the BigQuery client creates a `QueryJob`, it no longer removes the destination
+table from the job's configuration. Destination table for the query can thus be
+explicitly defined by the user.
+
+
 ## Type Annotations
 
 The library is now type-annotated and declares itself as such. If you use a static

@@ -1209,6 +1209,46 @@ def test_dataframe_to_bq_schema_geography(module_under_test):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test__first_array_valid_no_valid_items(module_under_test):
+    series = pandas.Series([None, pandas.NA, float("NaN")])
+    result = module_under_test._first_array_valid(series)
+    assert result is None
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test__first_array_valid_valid_item_exists(module_under_test):
+    series = pandas.Series([None, [0], [1], None])
+    result = module_under_test._first_array_valid(series)
+    assert result == 0
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test__first_array_valid_all_nan_items_in_first_valid_candidate(module_under_test):
+    import numpy
+
+    series = pandas.Series(
+        [
+            None,
+            [None, float("NaN"), pandas.NA, pandas.NaT, numpy.nan],
+            None,
+            [None, None],
+            [None, float("NaN"), pandas.NA, pandas.NaT, numpy.nan, 42, None],
+            [1, 2, 3],
+            None,
+        ]
+    )
+    result = module_under_test._first_array_valid(series)
+    assert result == 42
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test__first_array_valid_no_arrays_with_valid_items(module_under_test):
+    series = pandas.Series([[None, None], [None, None]])
+    result = module_under_test._first_array_valid(series)
+    assert result is None
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_augment_schema_type_detection_succeeds(module_under_test):
     dataframe = pandas.DataFrame(
         data=[
@@ -1275,6 +1315,59 @@ def test_augment_schema_type_detection_succeeds(module_under_test):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_augment_schema_repeated_fields(module_under_test):
+    dataframe = pandas.DataFrame(
+        data=[
+            # Include some values useless for type detection to make sure the logic
+            # indeed finds the value that is suitable.
+            {"string_array": None, "timestamp_array": None, "datetime_array": None},
+            {
+                "string_array": [None],
+                "timestamp_array": [None],
+                "datetime_array": [None],
+            },
+            {"string_array": None, "timestamp_array": None, "datetime_array": None},
+            {
+                "string_array": [None, "foo"],
+                "timestamp_array": [
+                    None,
+                    datetime.datetime(
+                        2005, 5, 31, 14, 25, 55, tzinfo=datetime.timezone.utc
+                    ),
+                ],
+                "datetime_array": [None, datetime.datetime(2005, 5, 31, 14, 25, 55)],
+            },
+            {"string_array": None, "timestamp_array": None, "datetime_array": None},
+        ]
+    )
+
+    current_schema = (
+        schema.SchemaField("string_array", field_type=None, mode="NULLABLE"),
+        schema.SchemaField("timestamp_array", field_type=None, mode="NULLABLE"),
+        schema.SchemaField("datetime_array", field_type=None, mode="NULLABLE"),
+    )
+
+    with warnings.catch_warnings(record=True) as warned:
+        augmented_schema = module_under_test.augment_schema(dataframe, current_schema)
+
+    # there should be no relevant warnings
+    unwanted_warnings = [
+        warning for warning in warned if "Pyarrow could not" in str(warning)
+    ]
+    assert not unwanted_warnings
+
+    # the augmented schema must match the expected
+    expected_schema = (
+        schema.SchemaField("string_array", field_type="STRING", mode="REPEATED"),
+        schema.SchemaField("timestamp_array", field_type="TIMESTAMP", mode="REPEATED"),
+        schema.SchemaField("datetime_array", field_type="DATETIME", mode="REPEATED"),
+    )
+
+    by_name = operator.attrgetter("name")
+    assert sorted(augmented_schema, key=by_name) == sorted(expected_schema, key=by_name)
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_augment_schema_type_detection_fails(module_under_test):
     dataframe = pandas.DataFrame(
         data=[
@@ -1308,6 +1401,30 @@ def test_augment_schema_type_detection_fails(module_under_test):
     warning_msg = str(expected_warnings[0])
     assert "pyarrow" in warning_msg.lower()
     assert "struct_field" in warning_msg and "struct_field_2" in warning_msg
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_augment_schema_type_detection_fails_array_data(module_under_test):
+    dataframe = pandas.DataFrame(
+        data=[{"all_none_array": [None, float("NaN")], "empty_array": []}]
+    )
+    current_schema = [
+        schema.SchemaField("all_none_array", field_type=None, mode="NULLABLE"),
+        schema.SchemaField("empty_array", field_type=None, mode="NULLABLE"),
+    ]
+
+    with warnings.catch_warnings(record=True) as warned:
+        augmented_schema = module_under_test.augment_schema(dataframe, current_schema)
+
+    assert augmented_schema is None
+
+    expected_warnings = [
+        warning for warning in warned if "could not determine" in str(warning)
+    ]
+    assert len(expected_warnings) == 1
+    warning_msg = str(expected_warnings[0])
+    assert "pyarrow" in warning_msg.lower()
+    assert "all_none_array" in warning_msg and "empty_array" in warning_msg
 
 
 def test_dataframe_to_parquet_dict_sequence_schema(module_under_test):

@@ -44,7 +44,7 @@ def test_load_table_dataframe(capsys, client, random_table_id):
         "INTEGER",
         "FLOAT",
         "TIMESTAMP",
-        "TIMESTAMP",
+        "DATETIME",
     ]
 
     df = client.list_rows(table).to_dataframe()
@@ -64,9 +64,9 @@ def test_load_table_dataframe(capsys, client, random_table_id):
         pandas.Timestamp("1983-05-09T11:00:00+00:00"),
     ]
     assert df["dvd_release"].tolist() == [
-        pandas.Timestamp("2003-10-22T10:00:00+00:00"),
-        pandas.Timestamp("2002-07-16T09:00:00+00:00"),
-        pandas.Timestamp("2008-01-14T08:00:00+00:00"),
-        pandas.Timestamp("2002-01-22T07:00:00+00:00"),
+        pandas.Timestamp("2003-10-22T10:00:00"),
+        pandas.Timestamp("2002-07-16T09:00:00"),
+        pandas.Timestamp("2008-01-14T08:00:00"),
+        pandas.Timestamp("2002-01-22T07:00:00"),
     ]
     assert df["wikidata_id"].tolist() == [u"Q16403", u"Q25043", u"Q24953", u"Q24980"]

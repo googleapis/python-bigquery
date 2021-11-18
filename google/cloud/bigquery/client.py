@@ -2850,7 +2850,7 @@ class Client(ClientWithProject):
         )
 
         while not upload.finished:
-            response = upload.transmit_next_chunk(transport)
+            response = upload.transmit_next_chunk(transport, timeout=timeout)
 
         return response
 

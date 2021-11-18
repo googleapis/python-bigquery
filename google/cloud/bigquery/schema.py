@@ -16,7 +16,7 @@
 
 import collections
 import enum
-from typing import Iterable, Union
+from typing import Any, Dict, Iterable, Union
 
 from google.cloud.bigquery_v2 import types
 
@@ -106,7 +106,7 @@ class SchemaField(object):
         scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
     ):
-        self._properties = {
+        self._properties: Dict[str, Any] = {
             "name": name,
             "type": field_type,
         }
@@ -268,7 +268,7 @@ class SchemaField(object):
                     field_type = f"{field_type}({self.precision})"
 
         policy_tags = (
-            () if self.policy_tags is None else tuple(sorted(self.policy_tags.names))
+            None if self.policy_tags is None else tuple(sorted(self.policy_tags.names))
         )
 
         return (
@@ -336,7 +336,11 @@ class SchemaField(object):
         return hash(self._key())
 
     def __repr__(self):
-        return "SchemaField{}".format(self._key())
+        key = self._key()
+        policy_tags = key[-1]
+        policy_tags_inst = None if policy_tags is None else PolicyTagList(policy_tags)
+        adjusted_key = key[:-1] + (policy_tags_inst,)
+        return f"{self.__class__.__name__}{adjusted_key}"
 
 
 def _parse_schema_resource(info):
@@ -407,7 +411,7 @@ class PolicyTagList(object):
             `projects/*/locations/*/taxonomies/*/policyTags/*`.
     """
 
-    def __init__(self, names=()):
+    def __init__(self, names: Iterable[str] = ()):
         self._properties = {}
         self._properties["names"] = tuple(names)
 
@@ -425,7 +429,7 @@ class PolicyTagList(object):
         Returns:
             Tuple: The contents of this :class:`~google.cloud.bigquery.schema.PolicyTagList`.
         """
-        return tuple(sorted(self._properties.items()))
+        return tuple(sorted(self._properties.get("names", ())))
 
     def __eq__(self, other):
         if not isinstance(other, PolicyTagList):
@@ -439,7 +443,7 @@ class PolicyTagList(object):
         return hash(self._key())
 
     def __repr__(self):
-        return "PolicyTagList{}".format(self._key())
+        return f"{self.__class__.__name__}(names={self._key()})"
 
     @classmethod
     def from_api_repr(cls, api_repr: dict) -> "PolicyTagList":
@@ -478,5 +482,5 @@ class PolicyTagList(object):
                 A dictionary representing the PolicyTagList object in
                 serialized form.
         """
-        answer = {"names": [name for name in self.names]}
+        answer = {"names": list(self.names)}
         return answer

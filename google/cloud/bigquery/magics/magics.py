@@ -14,15 +14,6 @@
 
 """IPython Magics
 
-To use these magics, you must first register them. Run the ``%load_ext`` magic
-in a Jupyter notebook cell.
-
-.. code::
-
-    %load_ext google.cloud.bigquery
-
-This makes the ``%%bigquery`` magic available.
-
 .. function:: %%bigquery
 
     IPython cell magic to run a query and display the result as a DataFrame
@@ -85,63 +76,6 @@ This makes the ``%%bigquery`` magic available.
     .. note::
         All queries run using this magic will run using the context
         :attr:`~google.cloud.bigquery.magics.Context.credentials`.
-
-    Examples:
-        The following examples can be run in an IPython notebook after loading
-        the bigquery IPython extension (see ``In[1]``) and setting up
-        Application Default Credentials.
-
-    .. code-block:: none
-
-        In [1]: %load_ext google.cloud.bigquery
-
-        In [2]: %%bigquery
-           ...: SELECT name, SUM(number) as count
-           ...: FROM `bigquery-public-data.usa_names.usa_1910_current`
-           ...: GROUP BY name
-           ...: ORDER BY count DESC
-           ...: LIMIT 3
-
-        Out[2]:       name    count
-           ...: -------------------
-           ...: 0    James  4987296
-           ...: 1     John  4866302
-           ...: 2   Robert  4738204
-
-        In [3]: %%bigquery df --project my-alternate-project --verbose
-           ...: SELECT name, SUM(number) as count
-           ...: FROM `bigquery-public-data.usa_names.usa_1910_current`
-           ...: WHERE gender = 'F'
-           ...: GROUP BY name
-           ...: ORDER BY count DESC
-           ...: LIMIT 3
-        Executing query with job ID: bf633912-af2c-4780-b568-5d868058632b
-        Query executing: 2.61s
-        Query complete after 2.92s
-
-        In [4]: df
-
-        Out[4]:          name    count
-           ...: ----------------------
-           ...: 0        Mary  3736239
-           ...: 1    Patricia  1568495
-           ...: 2   Elizabeth  1519946
-
-        In [5]: %%bigquery --params {"num": 17}
-           ...: SELECT @num AS num
-
-        Out[5]:     num
-           ...: -------
-           ...: 0    17
-
-        In [6]: params = {"num": 17}
-
-        In [7]: %%bigquery --params $params
-           ...: SELECT @num AS num
-
-        Out[7]:     num
-           ...: -------
-           ...: 0    17
 """
 
 from __future__ import print_function
@@ -156,16 +90,16 @@ import warnings
 from concurrent import futures
 
 try:
-    import IPython
-    from IPython import display
-    from IPython.core import magic_arguments
+    import IPython  # type: ignore
+    from IPython import display  # type: ignore
+    from IPython.core import magic_arguments  # type: ignore
 except ImportError:  # pragma: NO COVER
     raise ImportError("This module can only be loaded in IPython.")
 
 from google.api_core import client_info
 from google.api_core import client_options
 from google.api_core.exceptions import NotFound
-import google.auth
+import google.auth  # type: ignore
 from google.cloud import bigquery
 import google.cloud.bigquery.dataset
 from google.cloud.bigquery.dbapi import _helpers
@@ -661,6 +595,29 @@ def _cell_magic(line, query):
             error = ValueError("Query is missing.")
             _handle_error(error, args.destination_var)
             return
+
+        # Check if query is given as a reference to a variable.
+        if query.startswith("$"):
+            query_var_name = query[1:]
+
+            if not query_var_name:
+                missing_msg = 'Missing query variable name, empty "$" is not allowed.'
+                raise NameError(missing_msg)
+
+            if query_var_name.isidentifier():
+                ip = IPython.get_ipython()
+                query = ip.user_ns.get(query_var_name, ip)  # ip serves as a sentinel
+
+                if query is ip:
+                    raise NameError(
+                        f"Unknown query, variable {query_var_name} does not exist."
+                    )
+                else:
+                    if not isinstance(query, (str, bytes)):
+                        raise TypeError(
+                            f"Query variable {query_var_name} must be a string "
+                            "or a bytes-like value."
+                        )
 
         # Any query that does not contain whitespace (aside from leading and trailing whitespace)
         # is assumed to be a table id

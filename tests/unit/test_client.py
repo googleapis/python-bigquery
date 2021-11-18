@@ -36,16 +36,24 @@ try:
     import pandas
 except (ImportError, AttributeError):  # pragma: NO COVER
     pandas = None
+
 try:
     import opentelemetry
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import SimpleExportSpanProcessor
-    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
-        InMemorySpanExporter,
-    )
-except (ImportError, AttributeError):  # pragma: NO COVER
+except ImportError:
     opentelemetry = None
+
+if opentelemetry is not None:
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+            InMemorySpanExporter,
+        )
+    except (ImportError, AttributeError) as exc:  # pragma: NO COVER
+        msg = "Error importing from opentelemetry, is the installed version compatible?"
+        raise ImportError(msg) from exc
+
 try:
     import pyarrow
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -784,9 +792,12 @@ class TestClient(unittest.TestCase):
 
         tracer_provider = TracerProvider()
         memory_exporter = InMemorySpanExporter()
-        span_processor = SimpleExportSpanProcessor(memory_exporter)
+        span_processor = SimpleSpanProcessor(memory_exporter)
         tracer_provider.add_span_processor(span_processor)
-        trace.set_tracer_provider(tracer_provider)
+
+        # OpenTelemetry API >= 0.12b0 does not allow overriding the tracer once
+        # initialized, thus directly override the internal global var.
+        tracer_patcher = mock.patch.object(trace, "_TRACER_PROVIDER", tracer_provider)
 
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
@@ -797,7 +808,7 @@ class TestClient(unittest.TestCase):
         full_routine_id = "test-routine-project.test_routines.minimal_routine"
         routine = Routine(full_routine_id)
 
-        with pytest.raises(google.api_core.exceptions.AlreadyExists):
+        with pytest.raises(google.api_core.exceptions.AlreadyExists), tracer_patcher:
             client.create_routine(routine)
 
         span_list = memory_exporter.get_finished_spans()
@@ -1554,7 +1565,7 @@ class TestClient(unittest.TestCase):
             self.PROJECT, self.DS_ID, self.TABLE_ID,
         )
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             client.get_iam_policy(table_resource_string)
 
     def test_get_iam_policy_w_invalid_version(self):
@@ -1675,7 +1686,7 @@ class TestClient(unittest.TestCase):
             self.TABLE_ID,
         )
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             client.set_iam_policy(table_resource_string, policy)
 
     def test_test_iam_permissions(self):
@@ -1717,7 +1728,7 @@ class TestClient(unittest.TestCase):
 
         PERMISSIONS = ["bigquery.tables.get", "bigquery.tables.update"]
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             client.test_iam_permissions(table_resource_string, PERMISSIONS)
 
     def test_update_dataset_w_invalid_field(self):

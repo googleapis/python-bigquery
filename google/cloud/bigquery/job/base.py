@@ -19,7 +19,7 @@ import copy
 import http
 import threading
 import typing
-from typing import Dict, Optional
+from typing import Dict, Optional, Sequence
 
 from google.api_core import exceptions
 import google.api_core.future.polling
@@ -193,13 +193,27 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         return _helpers._get_sub_prop(self._properties, ["statistics", "parentJobId"])
 
     @property
-    def script_statistics(self):
+    def script_statistics(self) -> Optional["ScriptStatistics"]:
+        """Statistics for a child job of a script."""
         resource = _helpers._get_sub_prop(
             self._properties, ["statistics", "scriptStatistics"]
         )
         if resource is None:
             return None
         return ScriptStatistics(resource)
+
+    @property
+    def session_info(self) -> Optional["SessionInfo"]:
+        """[Preview] Information of the session if this job is part of one.
+
+        .. versionadded:: 2.29.0
+        """
+        resource = _helpers._get_sub_prop(
+            self._properties, ["statistics", "sessionInfo"]
+        )
+        if resource is None:
+            return None
+        return SessionInfo(resource)
 
     @property
     def num_child_jobs(self):
@@ -682,7 +696,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             self.reload(retry=retry, timeout=timeout)
         return self.state == _DONE_STATE
 
-    def result(
+    def result(  # type: ignore  # (signature complaint)
         self, retry: "retries.Retry" = DEFAULT_RETRY, timeout: float = None
     ) -> "_AsyncJob":
         """Start the job and wait for it to complete and get the result.
@@ -907,7 +921,7 @@ class _JobConfig(object):
         # cls is one of the job config subclasses that provides the job_type argument to
         # this base class on instantiation, thus missing-parameter warning is a false
         # positive here.
-        job_config = cls()  # pytype: disable=missing-parameter
+        job_config = cls()  # type: ignore  # pytype: disable=missing-parameter
         job_config._properties = resource
         return job_config
 
@@ -968,9 +982,8 @@ class ScriptStatistics(object):
         self._properties = resource
 
     @property
-    def stack_frames(self):
-        """List[ScriptStackFrame]: Stack trace where the current evaluation
-        happened.
+    def stack_frames(self) -> Sequence[ScriptStackFrame]:
+        """Stack trace where the current evaluation happened.
 
         Shows line/column/procedure name of each frame on the stack at the
         point where the current evaluation happened.
@@ -982,12 +995,30 @@ class ScriptStatistics(object):
         ]
 
     @property
-    def evaluation_kind(self):
+    def evaluation_kind(self) -> Optional[str]:
         """str: Indicates the type of child job.
 
         Possible values include ``STATEMENT`` and ``EXPRESSION``.
         """
         return self._properties.get("evaluationKind")
+
+
+class SessionInfo:
+    """[Preview] Information of the session if this job is part of one.
+
+    .. versionadded:: 2.29.0
+
+    Args:
+        resource (Map[str, Any]): JSON representation of object.
+    """
+
+    def __init__(self, resource):
+        self._properties = resource
+
+    @property
+    def session_id(self) -> Optional[str]:
+        """The ID of the session."""
+        return self._properties.get("sessionId")
 
 
 class UnknownJob(_AsyncJob):
@@ -1005,7 +1036,9 @@ class UnknownJob(_AsyncJob):
         Returns:
             UnknownJob: Job corresponding to the resource.
         """
-        job_ref_properties = resource.get("jobReference", {"projectId": client.project})
+        job_ref_properties = resource.get(
+            "jobReference", {"projectId": client.project, "jobId": None}
+        )
         job_ref = _JobReference._from_api_repr(job_ref_properties)
         job = cls(job_ref, client)
         # Populate the job reference with the project, even if it has been

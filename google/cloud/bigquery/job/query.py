@@ -18,7 +18,7 @@ import concurrent.futures
 import copy
 import re
 import typing
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 from google.api_core import exceptions
 from google.api_core.future import polling as polling_future
@@ -31,13 +31,17 @@ from google.cloud.bigquery.encryption_configuration import EncryptionConfigurati
 from google.cloud.bigquery.enums import KeyResultStatementKind
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery.query import _query_param_from_api_repr
-from google.cloud.bigquery.query import ArrayQueryParameter
-from google.cloud.bigquery.query import ScalarQueryParameter
-from google.cloud.bigquery.query import StructQueryParameter
-from google.cloud.bigquery.query import UDFResource
+from google.cloud.bigquery.query import (
+    _query_param_from_api_repr,
+    ArrayQueryParameter,
+    ConnectionProperty,
+    ScalarQueryParameter,
+    StructQueryParameter,
+    UDFResource,
+)
 from google.cloud.bigquery.retry import DEFAULT_RETRY, DEFAULT_JOB_RETRY
 from google.cloud.bigquery.routine import RoutineReference
+from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery.table import _EmptyRowIterator
 from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import _table_arg_to_table_ref
@@ -52,11 +56,12 @@ from google.cloud.bigquery.job.base import _JobReference
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Assumption: type checks are only used by library developers and CI environments
     # that have all optional dependencies installed, thus no conditional imports.
-    import pandas
-    import geopandas
-    import pyarrow
+    import pandas  # type: ignore
+    import geopandas  # type: ignore
+    import pyarrow  # type: ignore
     from google.api_core import retry as retries
     from google.cloud import bigquery_storage
+    from google.cloud.bigquery.client import Client
     from google.cloud.bigquery.table import RowIterator
 
 
@@ -139,7 +144,7 @@ class DmlStats(typing.NamedTuple):
 
         args = (
             int(stats.get(api_field, default_val))
-            for api_field, default_val in zip(api_fields, cls.__new__.__defaults__)
+            for api_field, default_val in zip(api_fields, cls.__new__.__defaults__)  # type: ignore
         )
         return cls(*args)
 
@@ -156,7 +161,7 @@ class ScriptOptions:
         statement_byte_budget: Optional[int] = None,
         key_result_statement: Optional[KeyResultStatementKind] = None,
     ):
-        self._properties = {}
+        self._properties: Dict[str, Any] = {}
         self.statement_timeout_ms = statement_timeout_ms
         self.statement_byte_budget = statement_byte_budget
         self.key_result_statement = key_result_statement
@@ -188,9 +193,8 @@ class ScriptOptions:
 
     @statement_timeout_ms.setter
     def statement_timeout_ms(self, value: Union[int, None]):
-        if value is not None:
-            value = str(value)
-        self._properties["statementTimeoutMs"] = value
+        new_value = None if value is None else str(value)
+        self._properties["statementTimeoutMs"] = new_value
 
     @property
     def statement_byte_budget(self) -> Union[int, None]:
@@ -202,9 +206,8 @@ class ScriptOptions:
 
     @statement_byte_budget.setter
     def statement_byte_budget(self, value: Union[int, None]):
-        if value is not None:
-            value = str(value)
-        self._properties["statementByteBudget"] = value
+        new_value = None if value is None else str(value)
+        self._properties["statementByteBudget"] = new_value
 
     @property
     def key_result_statement(self) -> Union[KeyResultStatementKind, None]:
@@ -268,6 +271,24 @@ class QueryJobConfig(_JobConfig):
         self._set_sub_prop("allowLargeResults", value)
 
     @property
+    def connection_properties(self) -> List[ConnectionProperty]:
+        """Connection properties.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.connection_properties
+
+        .. versionadded:: 2.29.0
+        """
+        resource = self._get_sub_prop("connectionProperties", [])
+        return [ConnectionProperty.from_api_repr(prop) for prop in resource]
+
+    @connection_properties.setter
+    def connection_properties(self, value: Iterable[ConnectionProperty]):
+        self._set_sub_prop(
+            "connectionProperties", [prop.to_api_repr() for prop in value],
+        )
+
+    @property
     def create_disposition(self):
         """google.cloud.bigquery.job.CreateDisposition: Specifies behavior
         for creating tables.
@@ -280,6 +301,27 @@ class QueryJobConfig(_JobConfig):
     @create_disposition.setter
     def create_disposition(self, value):
         self._set_sub_prop("createDisposition", value)
+
+    @property
+    def create_session(self) -> Optional[bool]:
+        """[Preview] If :data:`True`, creates a new session, where
+        :attr:`~google.cloud.bigquery.job.QueryJob.session_info` will contain a
+        random server generated session id.
+
+        If :data:`False`, runs query with an existing ``session_id`` passed in
+        :attr:`~google.cloud.bigquery.job.QueryJobConfig.connection_properties`,
+        otherwise runs query in non-session mode.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.create_session
+
+        .. versionadded:: 2.29.0
+        """
+        return self._get_sub_prop("createSession")
+
+    @create_session.setter
+    def create_session(self, value: Optional[bool]):
+        self._set_sub_prop("createSession", value)
 
     @property
     def default_dataset(self):
@@ -611,7 +653,7 @@ class QueryJobConfig(_JobConfig):
 
     @property
     def script_options(self) -> ScriptOptions:
-        """Connection properties which can modify the query behavior.
+        """Options controlling the execution of scripts.
 
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#scriptoptions
         """
@@ -622,9 +664,8 @@ class QueryJobConfig(_JobConfig):
 
     @script_options.setter
     def script_options(self, value: Union[ScriptOptions, None]):
-        if value is not None:
-            value = value.to_api_repr()
-        self._set_sub_prop("scriptOptions", value)
+        new_value = None if value is None else value.to_api_repr()
+        self._set_sub_prop("scriptOptions", new_value)
 
     def to_api_repr(self) -> dict:
         """Build an API representation of the query job config.
@@ -693,11 +734,29 @@ class QueryJob(_AsyncJob):
         return self._configuration.allow_large_results
 
     @property
+    def connection_properties(self) -> List[ConnectionProperty]:
+        """See
+        :attr:`google.cloud.bigquery.job.QueryJobConfig.connection_properties`.
+
+        .. versionadded:: 2.29.0
+        """
+        return self._configuration.connection_properties
+
+    @property
     def create_disposition(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.create_disposition`.
         """
         return self._configuration.create_disposition
+
+    @property
+    def create_session(self) -> Optional[bool]:
+        """See
+        :attr:`google.cloud.bigquery.job.QueryJobConfig.create_session`.
+
+        .. versionadded:: 2.29.0
+        """
+        return self._configuration.create_session
 
     @property
     def default_dataset(self):
@@ -853,7 +912,7 @@ class QueryJob(_AsyncJob):
         }
 
     @classmethod
-    def from_api_repr(cls, resource: dict, client) -> "QueryJob":
+    def from_api_repr(cls, resource: dict, client: "Client") -> "QueryJob":
         """Factory:  construct a job given its API representation
 
         Args:
@@ -866,8 +925,10 @@ class QueryJob(_AsyncJob):
         Returns:
             google.cloud.bigquery.job.QueryJob: Job parsed from ``resource``.
         """
-        cls._check_resource_config(resource)
-        job_ref = _JobReference._from_api_repr(resource["jobReference"])
+        job_ref_properties = resource.setdefault(
+            "jobReference", {"projectId": client.project, "jobId": None}
+        )
+        job_ref = _JobReference._from_api_repr(job_ref_properties)
         job = cls(job_ref, None, client=client)
         job._set_properties(resource)
         return job
@@ -886,6 +947,18 @@ class QueryJob(_AsyncJob):
         """
         plan_entries = self._job_statistics().get("queryPlan", ())
         return [QueryPlanEntry.from_api_repr(entry) for entry in plan_entries]
+
+    @property
+    def schema(self) -> Optional[List[SchemaField]]:
+        """The schema of the results.
+
+        Present only for successful dry run of non-legacy SQL queries.
+        """
+        resource = self._job_statistics().get("schema")
+        if resource is None:
+            return None
+        fields = resource.get("fields", [])
+        return [SchemaField.from_api_repr(field) for field in fields]
 
     @property
     def timeline(self):
@@ -1254,7 +1327,7 @@ class QueryJob(_AsyncJob):
             except exceptions.GoogleAPIError as exc:
                 self.set_exception(exc)
 
-    def result(
+    def result(  # type: ignore  # (complaints about the overloaded signature)
         self,
         page_size: int = None,
         max_results: int = None,
@@ -1318,11 +1391,13 @@ class QueryJob(_AsyncJob):
                 If Non-``None`` and non-default ``job_retry`` is
                 provided and the job is not retryable.
         """
+        if self.dry_run:
+            return _EmptyRowIterator()
         try:
             retry_do_query = getattr(self, "_retry_do_query", None)
             if retry_do_query is not None:
                 if job_retry is DEFAULT_JOB_RETRY:
-                    job_retry = self._job_retry
+                    job_retry = self._job_retry  # type: ignore
             else:
                 if job_retry is not None and job_retry is not DEFAULT_JOB_RETRY:
                     raise TypeError(
@@ -1373,7 +1448,7 @@ class QueryJob(_AsyncJob):
 
         except exceptions.GoogleAPICallError as exc:
             exc.message += self._format_for_exception(self.query, self.job_id)
-            exc.query_job = self
+            exc.query_job = self  # type: ignore
             raise
         except requests.exceptions.Timeout as exc:
             raise concurrent.futures.TimeoutError from exc

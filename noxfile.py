@@ -22,13 +22,14 @@ import shutil
 import nox
 
 
+MYPY_VERSION = "mypy==0.910"
 PYTYPE_VERSION = "pytype==2021.4.9"
 BLACK_VERSION = "black==19.10b0"
 BLACK_PATHS = ("docs", "google", "samples", "tests", "noxfile.py", "setup.py")
 
 DEFAULT_PYTHON_VERSION = "3.8"
-SYSTEM_TEST_PYTHON_VERSIONS = ["3.8"]
-UNIT_TEST_PYTHON_VERSIONS = ["3.6", "3.7", "3.8", "3.9"]
+SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.10"]
+UNIT_TEST_PYTHON_VERSIONS = ["3.6", "3.7", "3.8", "3.9", "3.10"]
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 # 'docfx' is excluded since it only needs to run in 'docs-presubmit'
@@ -41,6 +42,7 @@ nox.options.sessions = [
     "lint",
     "lint_setup_py",
     "blacken",
+    "mypy",
     "pytype",
     "docs",
 ]
@@ -69,7 +71,12 @@ def default(session, install_extras=True):
         constraints_path,
     )
 
-    install_target = ".[all]" if install_extras else "."
+    if install_extras and session.python == "3.10":
+        install_target = ".[bqstorage,pandas,tqdm,opentelemetry]"
+    elif install_extras:
+        install_target = ".[all]"
+    else:
+        install_target = "."
     session.install("-e", install_target, "-c", constraints_path)
 
     session.install("ipython", "-c", constraints_path)
@@ -109,8 +116,23 @@ def unit_noextras(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
+def mypy(session):
+    """Run type checks with mypy."""
+    session.install("-e", ".[all]")
+    session.install("ipython")
+    session.install(MYPY_VERSION)
+
+    # Just install the dependencies' type info directly, since "mypy --install-types"
+    # might require an additional pass.
+    session.install(
+        "types-protobuf", "types-python-dateutil", "types-requests", "types-setuptools",
+    )
+    session.run("mypy", "google/cloud")
+
+
+@nox.session(python=DEFAULT_PYTHON_VERSION)
 def pytype(session):
-    """Run type checks."""
+    """Run type checks with pytype."""
     # An indirect dependecy attrs==21.1.0 breaks the check, and installing a less
     # recent version avoids the error until a possibly better fix is found.
     # https://github.com/googleapis/python-bigquery/issues/655
@@ -153,7 +175,11 @@ def system(session):
     # Data Catalog needed for the column ACL test with a real Policy Tag.
     session.install("google-cloud-datacatalog", "-c", constraints_path)
 
-    session.install("-e", ".[all]", "-c", constraints_path)
+    if session.python == "3.10":
+        extras = "[bqstorage,pandas,tqdm,opentelemetry]"
+    else:
+        extras = "[all]"
+    session.install("-e", f".{extras}", "-c", constraints_path)
     session.install("ipython", "-c", constraints_path)
 
     # Run py.test against the system tests.
@@ -177,7 +203,11 @@ def snippets(session):
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
-    session.install("-e", ".[all]", "-c", constraints_path)
+    if session.python == "3.10":
+        extras = "[bqstorage,pandas,tqdm,opentelemetry]"
+    else:
+        extras = "[all]"
+    session.install("-e", f".{extras}", "-c", constraints_path)
 
     # Run py.test against the snippets tests.
     # Skip tests in samples/snippets, as those are run in a different session
@@ -186,8 +216,9 @@ def snippets(session):
     session.run(
         "py.test",
         "samples",
-        "--ignore=samples/snippets",
+        "--ignore=samples/magics",
         "--ignore=samples/geography",
+        "--ignore=samples/snippets",
         *session.posargs,
     )
 

@@ -26,6 +26,7 @@ import requests
 
 from google.cloud.bigquery.client import _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS
 import google.cloud.bigquery.query
+from google.cloud.bigquery.table import _EmptyRowIterator
 
 from ..helpers import make_connection
 
@@ -268,25 +269,6 @@ class TestQueryJob(_Base):
         job = self._make_one(self.JOB_ID, self.QUERY, client, job_config=config)
         self.assertEqual(job.query_parameters, query_parameters)
 
-    def test_from_api_repr_missing_identity(self):
-        self._setUpConstants()
-        client = _make_client(project=self.PROJECT)
-        RESOURCE = {}
-        klass = self._get_target_class()
-        with self.assertRaises(KeyError):
-            klass.from_api_repr(RESOURCE, client=client)
-
-    def test_from_api_repr_missing_config(self):
-        self._setUpConstants()
-        client = _make_client(project=self.PROJECT)
-        RESOURCE = {
-            "id": "%s:%s" % (self.PROJECT, self.DS_ID),
-            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
-        }
-        klass = self._get_target_class()
-        with self.assertRaises(KeyError):
-            klass.from_api_repr(RESOURCE, client=client)
-
     def test_from_api_repr_bare(self):
         self._setUpConstants()
         client = _make_client(project=self.PROJECT)
@@ -299,6 +281,8 @@ class TestQueryJob(_Base):
         job = klass.from_api_repr(RESOURCE, client=client)
         self.assertIs(job._client, client)
         self._verifyResourceProperties(job, RESOURCE)
+        self.assertEqual(len(job.connection_properties), 0)
+        self.assertIsNone(job.create_session)
 
     def test_from_api_repr_with_encryption(self):
         self._setUpConstants()
@@ -989,6 +973,19 @@ class TestQueryJob(_Base):
             [query_results_call, query_results_call, reload_call, query_page_call]
         )
 
+    def test_result_dry_run(self):
+        job_resource = self._make_resource(started=True, location="EU")
+        job_resource["configuration"]["dryRun"] = True
+        conn = make_connection()
+        client = _make_client(self.PROJECT, connection=conn)
+        job = self._get_target_class().from_api_repr(job_resource, client)
+
+        result = job.result()
+
+        calls = conn.api_request.mock_calls
+        self.assertIsInstance(result, _EmptyRowIterator)
+        self.assertEqual(calls, [])
+
     def test_result_with_done_job_calls_get_query_results(self):
         query_resource_done = {
             "jobComplete": True,
@@ -1390,6 +1387,43 @@ class TestQueryJob(_Base):
         # Make sure that timeout errors get rebranded to concurrent futures timeout.
         with call_api_patch, self.assertRaises(concurrent.futures.TimeoutError):
             job.result(timeout=1)
+
+    def test_no_schema(self):
+        client = _make_client(project=self.PROJECT)
+        resource = {}
+        klass = self._get_target_class()
+        job = klass.from_api_repr(resource, client=client)
+        assert job.schema is None
+
+    def test_schema(self):
+        client = _make_client(project=self.PROJECT)
+        resource = {
+            "statistics": {
+                "query": {
+                    "schema": {
+                        "fields": [
+                            {"mode": "NULLABLE", "name": "bool_col", "type": "BOOLEAN"},
+                            {
+                                "mode": "NULLABLE",
+                                "name": "string_col",
+                                "type": "STRING",
+                            },
+                            {
+                                "mode": "NULLABLE",
+                                "name": "timestamp_col",
+                                "type": "TIMESTAMP",
+                            },
+                        ]
+                    },
+                },
+            },
+        }
+        klass = self._get_target_class()
+        job = klass.from_api_repr(resource, client=client)
+        assert len(job.schema) == 3
+        assert job.schema[0].field_type == "BOOLEAN"
+        assert job.schema[1].field_type == "STRING"
+        assert job.schema[2].field_type == "TIMESTAMP"
 
     def test__begin_error(self):
         from google.cloud import exceptions

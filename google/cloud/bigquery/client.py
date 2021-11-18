@@ -28,12 +28,23 @@ import json
 import math
 import os
 import tempfile
-from typing import Any, BinaryIO, Dict, Iterable, Optional, Sequence, Tuple, Union
+import typing
+from typing import (
+    Any,
+    BinaryIO,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 import uuid
 import warnings
 
 from google import resumable_media  # type: ignore
-from google.resumable_media.requests import MultipartUpload
+from google.resumable_media.requests import MultipartUpload  # type: ignore
 from google.resumable_media.requests import ResumableUpload
 
 import google.api_core.client_options
@@ -41,9 +52,9 @@ import google.api_core.exceptions as core_exceptions
 from google.api_core.iam import Policy
 from google.api_core import page_iterator
 from google.api_core import retry as retries
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 from google.cloud import exceptions  # pytype: disable=import-error
-from google.cloud.client import ClientWithProject  # pytype: disable=import-error
+from google.cloud.client import ClientWithProject  # type: ignore  # pytype: disable=import-error
 
 from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
     DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
@@ -92,7 +103,14 @@ from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
+from google.cloud.bigquery.format_options import ParquetOptions
+from google.cloud.bigquery import _helpers
 
+TimeoutType = Union[float, None]
+
+if typing.TYPE_CHECKING:  # pragma: NO COVER
+    # os.PathLike is only subscriptable in Python 3.9+, thus shielding with a condition.
+    PathType = Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]
 
 _DEFAULT_CHUNKSIZE = 100 * 1024 * 1024  # 100 MB
 _MAX_MULTIPART_SIZE = 5 * 1024 * 1024
@@ -182,7 +200,7 @@ class Client(ClientWithProject):
             to acquire default credentials.
     """
 
-    SCOPE = (
+    SCOPE = (  # type: ignore
         "https://www.googleapis.com/auth/bigquery",
         "https://www.googleapis.com/auth/cloud-platform",
     )
@@ -240,7 +258,7 @@ class Client(ClientWithProject):
         self,
         project: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> str:
         """Get the email address of the project's BigQuery service account
 
@@ -287,7 +305,7 @@ class Client(ClientWithProject):
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """List projects for the project associated with this client.
@@ -353,7 +371,7 @@ class Client(ClientWithProject):
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """List datasets for the project associated with this client.
@@ -392,7 +410,7 @@ class Client(ClientWithProject):
                 Iterator of :class:`~google.cloud.bigquery.dataset.DatasetListItem`.
                 associated with the project.
         """
-        extra_params = {}
+        extra_params: Dict[str, Any] = {}
         if project is None:
             project = self.project
         if include_all:
@@ -498,12 +516,12 @@ class Client(ClientWithProject):
             bqstorage_client = bigquery_storage.BigQueryReadClient(
                 credentials=self._credentials,
                 client_options=client_options,
-                client_info=client_info,
+                client_info=client_info,  # type: ignore  # (None is also accepted)
             )
 
         return bqstorage_client
 
-    def _dataset_from_arg(self, dataset):
+    def _dataset_from_arg(self, dataset) -> Union[Dataset, DatasetReference]:
         if isinstance(dataset, str):
             dataset = DatasetReference.from_string(
                 dataset, default_project=self.project
@@ -521,10 +539,10 @@ class Client(ClientWithProject):
 
     def create_dataset(
         self,
-        dataset: Union[str, Dataset, DatasetReference],
+        dataset: Union[str, Dataset, DatasetReference, DatasetListItem],
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Dataset:
         """API call: create the dataset via a POST request.
 
@@ -599,7 +617,7 @@ class Client(ClientWithProject):
         routine: Routine,
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Routine:
         """[Beta] Create a routine via a POST request.
 
@@ -651,10 +669,10 @@ class Client(ClientWithProject):
 
     def create_table(
         self,
-        table: Union[str, Table, TableReference],
+        table: Union[str, Table, TableReference, TableListItem],
         exists_ok: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Table:
         """API call:  create a table via a PUT request
 
@@ -665,6 +683,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 A :class:`~google.cloud.bigquery.table.Table` to create.
@@ -736,7 +755,7 @@ class Client(ClientWithProject):
         self,
         dataset_ref: Union[DatasetReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Dataset:
         """Fetch the dataset referenced by ``dataset_ref``
 
@@ -777,13 +796,12 @@ class Client(ClientWithProject):
 
     def get_iam_policy(
         self,
-        table: Union[Table, TableReference],
+        table: Union[Table, TableReference, TableListItem, str],
         requested_policy_version: int = 1,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Policy:
-        if not isinstance(table, (Table, TableReference)):
-            raise TypeError("table must be a Table or TableReference")
+        table = _table_arg_to_table_ref(table, default_project=self.project)
 
         if requested_policy_version != 1:
             raise ValueError("only IAM policy version 1 is supported")
@@ -806,14 +824,13 @@ class Client(ClientWithProject):
 
     def set_iam_policy(
         self,
-        table: Union[Table, TableReference],
+        table: Union[Table, TableReference, TableListItem, str],
         policy: Policy,
         updateMask: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Policy:
-        if not isinstance(table, (Table, TableReference)):
-            raise TypeError("table must be a Table or TableReference")
+        table = _table_arg_to_table_ref(table, default_project=self.project)
 
         if not isinstance(policy, (Policy)):
             raise TypeError("policy must be a Policy")
@@ -840,13 +857,12 @@ class Client(ClientWithProject):
 
     def test_iam_permissions(
         self,
-        table: Union[Table, TableReference],
+        table: Union[Table, TableReference, TableListItem, str],
         permissions: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Dict[str, Any]:
-        if not isinstance(table, (Table, TableReference)):
-            raise TypeError("table must be a Table or TableReference")
+        table = _table_arg_to_table_ref(table, default_project=self.project)
 
         body = {"permissions": permissions}
 
@@ -868,7 +884,7 @@ class Client(ClientWithProject):
         self,
         model_ref: Union[ModelReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Model:
         """[Beta] Fetch the model referenced by ``model_ref``.
 
@@ -911,7 +927,7 @@ class Client(ClientWithProject):
         self,
         routine_ref: Union[Routine, RoutineReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Routine:
         """[Beta] Get the routine referenced by ``routine_ref``.
 
@@ -953,9 +969,9 @@ class Client(ClientWithProject):
 
     def get_table(
         self,
-        table: Union[Table, TableReference, str],
+        table: Union[Table, TableReference, TableListItem, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Table:
         """Fetch the table referenced by ``table``.
 
@@ -963,6 +979,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 A reference to the table to fetch from the BigQuery API.
@@ -997,7 +1014,7 @@ class Client(ClientWithProject):
         dataset: Dataset,
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Dataset:
         """Change some fields of a dataset.
 
@@ -1044,7 +1061,7 @@ class Client(ClientWithProject):
         """
         partial = dataset._build_resource(fields)
         if dataset.etag is not None:
-            headers = {"If-Match": dataset.etag}
+            headers: Optional[Dict[str, str]] = {"If-Match": dataset.etag}
         else:
             headers = None
         path = dataset.path
@@ -1067,7 +1084,7 @@ class Client(ClientWithProject):
         model: Model,
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Model:
         """[Beta] Change some fields of a model.
 
@@ -1108,7 +1125,7 @@ class Client(ClientWithProject):
         """
         partial = model._build_resource(fields)
         if model.etag:
-            headers = {"If-Match": model.etag}
+            headers: Optional[Dict[str, str]] = {"If-Match": model.etag}
         else:
             headers = None
         path = model.path
@@ -1131,7 +1148,7 @@ class Client(ClientWithProject):
         routine: Routine,
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Routine:
         """[Beta] Change some fields of a routine.
 
@@ -1178,7 +1195,7 @@ class Client(ClientWithProject):
         """
         partial = routine._build_resource(fields)
         if routine.etag:
-            headers = {"If-Match": routine.etag}
+            headers: Optional[Dict[str, str]] = {"If-Match": routine.etag}
         else:
             headers = None
 
@@ -1205,7 +1222,7 @@ class Client(ClientWithProject):
         table: Table,
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Table:
         """Change some fields of a table.
 
@@ -1246,7 +1263,7 @@ class Client(ClientWithProject):
         """
         partial = table._build_resource(fields)
         if table.etag is not None:
-            headers = {"If-Match": table.etag}
+            headers: Optional[Dict[str, str]] = {"If-Match": table.etag}
         else:
             headers = None
 
@@ -1267,11 +1284,11 @@ class Client(ClientWithProject):
 
     def list_models(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """[Beta] List models in the dataset.
@@ -1339,16 +1356,16 @@ class Client(ClientWithProject):
             max_results=max_results,
             page_size=page_size,
         )
-        result.dataset = dataset
+        result.dataset = dataset  # type: ignore
         return result
 
     def list_routines(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """[Beta] List routines in the dataset.
@@ -1416,16 +1433,16 @@ class Client(ClientWithProject):
             max_results=max_results,
             page_size=page_size,
         )
-        result.dataset = dataset
+        result.dataset = dataset  # type: ignore
         return result
 
     def list_tables(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: int = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: int = None,
     ) -> page_iterator.Iterator:
         """List tables in the dataset.
@@ -1492,15 +1509,15 @@ class Client(ClientWithProject):
             max_results=max_results,
             page_size=page_size,
         )
-        result.dataset = dataset
+        result.dataset = dataset  # type: ignore
         return result
 
     def delete_dataset(
         self,
-        dataset: Union[Dataset, DatasetReference, str],
+        dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         delete_contents: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ) -> None:
         """Delete a dataset.
@@ -1559,7 +1576,7 @@ class Client(ClientWithProject):
         self,
         model: Union[Model, ModelReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ) -> None:
         """[Beta] Delete a model
@@ -1613,7 +1630,7 @@ class Client(ClientWithProject):
         project: Optional[str] = None,
         location: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ):
         """[Beta] Delete job metadata from job history.
@@ -1676,7 +1693,7 @@ class Client(ClientWithProject):
         self,
         routine: Union[Routine, RoutineReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ) -> None:
         """[Beta] Delete a routine.
@@ -1728,9 +1745,9 @@ class Client(ClientWithProject):
 
     def delete_table(
         self,
-        table: Union[Table, TableReference, str],
+        table: Union[Table, TableReference, TableListItem, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         not_found_ok: bool = False,
     ) -> None:
         """Delete a table
@@ -1742,6 +1759,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 A reference to the table to delete. If a string is passed in,
@@ -1783,7 +1801,7 @@ class Client(ClientWithProject):
         project: str = None,
         timeout_ms: int = None,
         location: str = None,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> _QueryResults:
         """Get the query results object for a query job.
 
@@ -1808,7 +1826,7 @@ class Client(ClientWithProject):
                 A new ``_QueryResults`` instance.
         """
 
-        extra_params = {"maxResults": 0}
+        extra_params: Dict[str, Any] = {"maxResults": 0}
 
         if timeout is not None:
             timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
@@ -1842,20 +1860,18 @@ class Client(ClientWithProject):
         )
         return _QueryResults.from_api_repr(resource)
 
-    def job_from_resource(self, resource: dict) -> job.UnknownJob:
+    def job_from_resource(
+        self, resource: dict
+    ) -> Union[
+        job.CopyJob, job.ExtractJob, job.LoadJob, job.QueryJob, job.UnknownJob,
+    ]:
         """Detect correct job type from resource and instantiate.
 
         Args:
             resource (Dict): one job resource from API response
 
         Returns:
-            Union[ \
-                google.cloud.bigquery.job.LoadJob, \
-                google.cloud.bigquery.job.CopyJob, \
-                google.cloud.bigquery.job.ExtractJob, \
-                google.cloud.bigquery.job.QueryJob \
-            ]:
-                The job instance, constructed via the resource.
+            The job instance, constructed via the resource.
         """
         config = resource.get("configuration", {})
         if "load" in config:
@@ -1872,7 +1888,7 @@ class Client(ClientWithProject):
         self,
         job_config: dict,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
         """Create a new job.
         Args:
@@ -1905,7 +1921,7 @@ class Client(ClientWithProject):
             return self.load_table_from_uri(
                 source_uris,
                 destination,
-                job_config=load_job_config,
+                job_config=typing.cast(LoadJobConfig, load_job_config),
                 retry=retry,
                 timeout=timeout,
             )
@@ -1925,7 +1941,7 @@ class Client(ClientWithProject):
             return self.copy_table(
                 sources,
                 destination,
-                job_config=copy_job_config,
+                job_config=typing.cast(CopyJobConfig, copy_job_config),
                 retry=retry,
                 timeout=timeout,
             )
@@ -1945,7 +1961,7 @@ class Client(ClientWithProject):
             return self.extract_table(
                 source,
                 destination_uris,
-                job_config=extract_job_config,
+                job_config=typing.cast(ExtractJobConfig, extract_job_config),
                 retry=retry,
                 timeout=timeout,
                 source_type=source_type,
@@ -1956,32 +1972,30 @@ class Client(ClientWithProject):
             )
             query = _get_sub_prop(job_config, ["query", "query"])
             return self.query(
-                query, job_config=query_job_config, retry=retry, timeout=timeout
+                query,
+                job_config=typing.cast(QueryJobConfig, query_job_config),
+                retry=retry,
+                timeout=timeout,
             )
         else:
             raise TypeError("Invalid job configuration received.")
 
     def get_job(
         self,
-        job_id: str,
+        job_id: Union[str, job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob],
         project: str = None,
         location: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
-    ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
+    ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
         """Fetch a job for the project associated with this client.
 
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/get
 
         Args:
-            job_id (Union[ \
-                str, \
-                google.cloud.bigquery.job.LoadJob, \
-                google.cloud.bigquery.job.CopyJob, \
-                google.cloud.bigquery.job.ExtractJob, \
-                google.cloud.bigquery.job.QueryJob \
-            ]): Job identifier.
+            job_id:
+                Job identifier.
 
         Keyword Arguments:
             project (Optional[str]):
@@ -1996,13 +2010,7 @@ class Client(ClientWithProject):
                 before using ``retry``.
 
         Returns:
-            Union[ \
-                google.cloud.bigquery.job.LoadJob, \
-                google.cloud.bigquery.job.CopyJob, \
-                google.cloud.bigquery.job.ExtractJob, \
-                google.cloud.bigquery.job.QueryJob \
-            ]:
-                Job instance, based on the resource returned by the API.
+            Job instance, based on the resource returned by the API.
         """
         extra_params = {"projection": "full"}
 
@@ -2041,7 +2049,7 @@ class Client(ClientWithProject):
         project: str = None,
         location: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
         """Attempt to cancel a job from a job ID.
 
@@ -2107,7 +2115,11 @@ class Client(ClientWithProject):
             timeout=timeout,
         )
 
-        return self.job_from_resource(resource["job"])
+        job_instance = self.job_from_resource(resource["job"])  # never an UnknownJob
+
+        return typing.cast(
+            Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob], job_instance,
+        )
 
     def list_jobs(
         self,
@@ -2118,7 +2130,7 @@ class Client(ClientWithProject):
         all_users: bool = None,
         state_filter: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         min_creation_time: datetime.datetime = None,
         max_creation_time: datetime.datetime = None,
         page_size: int = None,
@@ -2226,16 +2238,16 @@ class Client(ClientWithProject):
     def load_table_from_uri(
         self,
         source_uris: Union[str, Sequence[str]],
-        destination: Union[Table, TableReference, str],
+        destination: Union[Table, TableReference, TableListItem, str],
         job_id: str = None,
         job_id_prefix: str = None,
         location: str = None,
         project: str = None,
         job_config: LoadJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
-        """Starts a job for loading data into a table from CloudStorage.
+        """Starts a job for loading data into a table from Cloud Storage.
 
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobconfigurationload
@@ -2247,6 +2259,7 @@ class Client(ClientWithProject):
             destination (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 Table into which data is to be loaded. If a string is passed
@@ -2308,7 +2321,7 @@ class Client(ClientWithProject):
     def load_table_from_file(
         self,
         file_obj: BinaryIO,
-        destination: Union[Table, TableReference, str],
+        destination: Union[Table, TableReference, TableListItem, str],
         rewind: bool = False,
         size: int = None,
         num_retries: int = _DEFAULT_NUM_RETRIES,
@@ -2317,7 +2330,7 @@ class Client(ClientWithProject):
         location: str = None,
         project: str = None,
         job_config: LoadJobConfig = None,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of this table from a file-like object.
 
@@ -2329,6 +2342,7 @@ class Client(ClientWithProject):
             destination (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 Table into which data is to be loaded. If a string is passed
@@ -2407,7 +2421,7 @@ class Client(ClientWithProject):
         except resumable_media.InvalidResponse as exc:
             raise exceptions.from_http_response(exc.response)
 
-        return self.job_from_resource(response.json())
+        return typing.cast(LoadJob, self.job_from_resource(response.json()))
 
     def load_table_from_dataframe(
         self,
@@ -2420,7 +2434,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: LoadJobConfig = None,
         parquet_compression: str = "snappy",
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of a table from a pandas DataFrame.
 
@@ -2433,10 +2447,10 @@ class Client(ClientWithProject):
             They are supported when using the PARQUET source format, but
             due to the way they are encoded in the ``parquet`` file,
             a mismatch with the existing table schema can occur, so
-            100% compatibility cannot be guaranteed for REPEATED fields when
+            REPEATED fields are not properly supported when using ``pyarrow<4.0.0``
             using the parquet format.
 
-            https://github.com/googleapis/python-bigquery/issues/17
+            https://github.com/googleapis/python-bigquery/issues/19
 
         Args:
             dataframe (pandas.DataFrame):
@@ -2483,18 +2497,18 @@ class Client(ClientWithProject):
                 :attr:`~google.cloud.bigquery.job.SourceFormat.PARQUET` are
                 supported.
             parquet_compression (Optional[str]):
-                 [Beta] The compression method to use if intermittently
-                 serializing ``dataframe`` to a parquet file.
+                [Beta] The compression method to use if intermittently
+                serializing ``dataframe`` to a parquet file.
 
-                 The argument is directly passed as the ``compression``
-                 argument to the underlying ``pyarrow.parquet.write_table()``
-                 method (the default value "snappy" gets converted to uppercase).
-                 https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+                The argument is directly passed as the ``compression``
+                argument to the underlying ``pyarrow.parquet.write_table()``
+                method (the default value "snappy" gets converted to uppercase).
+                https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
 
-                 If the job config schema is missing, the argument is directly
-                 passed as the ``compression`` argument to the underlying
-                 ``DataFrame.to_parquet()`` method.
-                 https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
+                If the job config schema is missing, the argument is directly
+                passed as the ``compression`` argument to the underlying
+                ``DataFrame.to_parquet()`` method.
+                https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_parquet.html#pandas.DataFrame.to_parquet
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
@@ -2523,6 +2537,16 @@ class Client(ClientWithProject):
         if job_config.source_format is None:
             # default value
             job_config.source_format = job.SourceFormat.PARQUET
+
+        if (
+            job_config.source_format == job.SourceFormat.PARQUET
+            and job_config.parquet_options is None
+        ):
+            parquet_options = ParquetOptions()
+            # default value
+            parquet_options.enable_list_inference = True
+            job_config.parquet_options = parquet_options
+
         if job_config.source_format not in supported_formats:
             raise ValueError(
                 "Got unexpected source_format: '{}'. Currently, only PARQUET and CSV are supported".format(
@@ -2543,7 +2567,7 @@ class Client(ClientWithProject):
             try:
                 table = self.get_table(destination)
             except core_exceptions.NotFound:
-                table = None
+                pass
             else:
                 columns_and_indexes = frozenset(
                     name
@@ -2594,9 +2618,19 @@ class Client(ClientWithProject):
                         job_config.schema,
                         tmppath,
                         parquet_compression=parquet_compression,
+                        parquet_use_compliant_nested_type=True,
                     )
                 else:
-                    dataframe.to_parquet(tmppath, compression=parquet_compression)
+                    dataframe.to_parquet(
+                        tmppath,
+                        engine="pyarrow",
+                        compression=parquet_compression,
+                        **(
+                            {"use_compliant_nested_type": True}
+                            if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+                            else {}
+                        ),
+                    )
 
             else:
 
@@ -2631,14 +2665,14 @@ class Client(ClientWithProject):
     def load_table_from_json(
         self,
         json_rows: Iterable[Dict[str, Any]],
-        destination: Union[Table, TableReference, str],
+        destination: Union[Table, TableReference, TableListItem, str],
         num_retries: int = _DEFAULT_NUM_RETRIES,
         job_id: str = None,
         job_id_prefix: str = None,
         location: str = None,
         project: str = None,
         job_config: LoadJobConfig = None,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of a table from a JSON string or dict.
 
@@ -2665,6 +2699,7 @@ class Client(ClientWithProject):
             destination (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 Table into which data is to be loaded. If a string is passed
@@ -2912,16 +2947,20 @@ class Client(ClientWithProject):
     def copy_table(
         self,
         sources: Union[
-            Table, TableReference, str, Sequence[Union[Table, TableReference, str]]
+            Table,
+            TableReference,
+            TableListItem,
+            str,
+            Sequence[Union[Table, TableReference, TableListItem, str]],
         ],
-        destination: Union[Table, TableReference, str],
+        destination: Union[Table, TableReference, TableListItem, str],
         job_id: str = None,
         job_id_prefix: str = None,
         location: str = None,
         project: str = None,
         job_config: CopyJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.CopyJob:
         """Copy one or more tables to another table.
 
@@ -2932,11 +2971,13 @@ class Client(ClientWithProject):
             sources (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
                 Sequence[ \
                     Union[ \
                         google.cloud.bigquery.table.Table, \
                         google.cloud.bigquery.table.TableReference, \
+                        google.cloud.bigquery.table.TableListItem, \
                         str, \
                     ] \
                 ], \
@@ -2945,6 +2986,7 @@ class Client(ClientWithProject):
             destination (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 Table into which data is to be copied.
@@ -3016,7 +3058,7 @@ class Client(ClientWithProject):
 
     def extract_table(
         self,
-        source: Union[Table, TableReference, Model, ModelReference, str],
+        source: Union[Table, TableReference, TableListItem, Model, ModelReference, str],
         destination_uris: Union[str, Sequence[str]],
         job_id: str = None,
         job_id_prefix: str = None,
@@ -3024,7 +3066,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: ExtractJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         source_type: str = "Table",
     ) -> job.ExtractJob:
         """Start a job to extract a table into Cloud Storage files.
@@ -3036,6 +3078,7 @@ class Client(ClientWithProject):
             source (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 google.cloud.bigquery.model.Model, \
                 google.cloud.bigquery.model.ModelReference, \
                 src, \
@@ -3122,7 +3165,7 @@ class Client(ClientWithProject):
         location: str = None,
         project: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
         api_method: enums.QueryApiMethod = enums.QueryApiMethod.INSERT,
     ) -> job.QueryJob:
@@ -3263,7 +3306,7 @@ class Client(ClientWithProject):
         table: Union[Table, TableReference, str],
         rows: Union[Iterable[Tuple], Iterable[Dict]],
         selected_fields: Sequence[SchemaField] = None,
-        **kwargs: dict,
+        **kwargs,
     ) -> Sequence[dict]:
         """Insert rows into a table via the streaming API.
 
@@ -3381,14 +3424,14 @@ class Client(ClientWithProject):
 
     def insert_rows_json(
         self,
-        table: Union[Table, TableReference, str],
+        table: Union[Table, TableReference, TableListItem, str],
         json_rows: Sequence[Dict],
         row_ids: Union[Iterable[str], AutoRowIDs, None] = AutoRowIDs.GENERATE_UUID,
         skip_invalid_rows: bool = None,
         ignore_unknown_values: bool = None,
         template_suffix: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Sequence[dict]:
         """Insert rows into a table without applying local type conversions.
 
@@ -3399,6 +3442,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str \
             ]):
                 The destination table for the row data, or a reference to it.
@@ -3455,8 +3499,8 @@ class Client(ClientWithProject):
         # insert_rows_json doesn't need the table schema. It's not doing any
         # type conversions.
         table = _table_arg_to_table_ref(table, default_project=self.project)
-        rows_info = []
-        data = {"rows": rows_info}
+        rows_info: List[Any] = []
+        data: Dict[str, Any] = {"rows": rows_info}
 
         if row_ids is None:
             warnings.warn(
@@ -3474,7 +3518,7 @@ class Client(ClientWithProject):
                 raise TypeError(msg)
 
         for i, row in enumerate(json_rows):
-            info = {"json": row}
+            info: Dict[str, Any] = {"json": row}
 
             if row_ids is AutoRowIDs.GENERATE_UUID:
                 info["insertId"] = str(uuid.uuid4())
@@ -3521,9 +3565,9 @@ class Client(ClientWithProject):
 
     def list_partitions(
         self,
-        table: Union[Table, TableReference, str],
+        table: Union[Table, TableReference, TableListItem, str],
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Sequence[str]:
         """List the partitions in a table.
 
@@ -3531,6 +3575,7 @@ class Client(ClientWithProject):
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
                 google.cloud.bigquery.table.TableReference, \
+                google.cloud.bigquery.table.TableListItem, \
                 str, \
             ]):
                 The table or reference from which to get partition info
@@ -3573,7 +3618,7 @@ class Client(ClientWithProject):
         start_index: int = None,
         page_size: int = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> RowIterator:
         """List the rows of the table.
 
@@ -3649,7 +3694,7 @@ class Client(ClientWithProject):
             table = self.get_table(table.reference, retry=retry, timeout=timeout)
             schema = table.schema
 
-        params = {}
+        params: Dict[str, Any] = {}
         if selected_fields is not None:
             params["selectedFields"] = ",".join(field.name for field in selected_fields)
         if start_index is not None:
@@ -3685,7 +3730,7 @@ class Client(ClientWithProject):
         start_index: int = None,
         page_size: int = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> RowIterator:
         """List the rows of a completed query.
         See
@@ -3730,7 +3775,7 @@ class Client(ClientWithProject):
                 Iterator of row data
                 :class:`~google.cloud.bigquery.table.Row`-s.
         """
-        params = {
+        params: Dict[str, Any] = {
             "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
             "location": location,
         }
@@ -3771,7 +3816,7 @@ class Client(ClientWithProject):
         """
         json.dump(schema_list, file_obj, indent=2, sort_keys=True)
 
-    def schema_from_json(self, file_or_path: Union[str, BinaryIO]):
+    def schema_from_json(self, file_or_path: "PathType"):
         """Takes a file object or file path that contains json that describes
         a table schema.
 
@@ -3785,7 +3830,7 @@ class Client(ClientWithProject):
             return self._schema_from_json_file_object(file_obj)
 
     def schema_to_json(
-        self, schema_list: Sequence[SchemaField], destination: Union[str, BinaryIO]
+        self, schema_list: Sequence[SchemaField], destination: "PathType"
     ):
         """Takes a list of schema field objects.
 

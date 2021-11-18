@@ -460,3 +460,31 @@ def test_query_error_w_api_method_insert(bigquery_client: bigquery.Client):
 
     with pytest.raises(exceptions.NotFound, match="not_a_real_dataset"):
         query_job.result()
+
+
+def test_session(bigquery_client: bigquery.Client, query_api_method: str):
+    initial_config = bigquery.QueryJobConfig()
+    initial_config.create_session = True
+    initial_query = """
+    CREATE TEMPORARY TABLE numbers(id INT64)
+    AS
+    SELECT * FROM UNNEST([1, 2, 3, 4, 5]) AS id;
+    """
+    initial_job = bigquery_client.query(
+        initial_query, job_config=initial_config, api_method=query_api_method
+    )
+    initial_job.result()
+    session_id = initial_job.session_info.session_id
+    assert session_id is not None
+
+    second_config = bigquery.QueryJobConfig()
+    second_config.connection_properties = [
+        bigquery.ConnectionProperty("session_id", session_id),
+    ]
+    second_job = bigquery_client.query(
+        "SELECT COUNT(*) FROM numbers;", job_config=second_config
+    )
+    rows = list(second_job.result())
+
+    assert len(rows) == 1
+    assert rows[0][0] == 5

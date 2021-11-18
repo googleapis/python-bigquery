@@ -258,6 +258,7 @@ class SqlTypeNames(str, enum.Enum):
     DATE = "DATE"
     TIME = "TIME"
     DATETIME = "DATETIME"
+    INTERVAL = "INTERVAL"  # NOTE: not available in legacy types
 
 
 class WriteDisposition(object):

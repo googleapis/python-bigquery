@@ -26,6 +26,7 @@ import requests
 
 from google.cloud.bigquery.client import _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS
 import google.cloud.bigquery.query
+from google.cloud.bigquery.table import _EmptyRowIterator
 
 from ..helpers import make_connection
 
@@ -280,6 +281,8 @@ class TestQueryJob(_Base):
         job = klass.from_api_repr(RESOURCE, client=client)
         self.assertIs(job._client, client)
         self._verifyResourceProperties(job, RESOURCE)
+        self.assertEqual(len(job.connection_properties), 0)
+        self.assertIsNone(job.create_session)
 
     def test_from_api_repr_with_encryption(self):
         self._setUpConstants()
@@ -969,6 +972,19 @@ class TestQueryJob(_Base):
         conn.api_request.assert_has_calls(
             [query_results_call, query_results_call, reload_call, query_page_call]
         )
+
+    def test_result_dry_run(self):
+        job_resource = self._make_resource(started=True, location="EU")
+        job_resource["configuration"]["dryRun"] = True
+        conn = make_connection()
+        client = _make_client(self.PROJECT, connection=conn)
+        job = self._get_target_class().from_api_repr(job_resource, client)
+
+        result = job.result()
+
+        calls = conn.api_request.mock_calls
+        self.assertIsInstance(result, _EmptyRowIterator)
+        self.assertEqual(calls, [])
 
     def test_result_with_done_job_calls_get_query_results(self):
         query_resource_done = {

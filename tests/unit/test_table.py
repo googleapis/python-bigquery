@@ -3115,7 +3115,37 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.km.dtype.name, "float16")
         self.assertEqual(df.payment_type.dtype.name, "object")
         self.assertEqual(df.complete.dtype.name, "boolean")
-        self.assertEqual(df.date.dtype.name, "object")
+        self.assertEqual(df.date.dtype.name, "dbdate")
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    def test_to_dataframe_datetime_objects(self):
+        # When converting date or timestamp values to nanosecond
+        # precision, the result can be out of pyarrow bounds. To avoid
+        # the error when converting to Pandas, we use object type if
+        # necessary.
+
+        from google.cloud.bigquery.schema import SchemaField
+
+        schema = [
+            SchemaField("ts", "TIMESTAMP"),
+            SchemaField("date", "DATE"),
+        ]
+        row_data = [
+            ["-20000000000000000", "1111-01-01"],
+        ]
+        rows = [{"f": [{"v": field} for field in row]} for row in row_data]
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        row_iterator = self._make_one(_mock_client(), api_request, path, schema)
+
+        df = row_iterator.to_dataframe(create_bqstorage_client=False)
+
+        self.assertIsInstance(df, pandas.DataFrame)
+        self.assertEqual(len(df), 1)  # verify the number of rows
+        self.assertEqual(df["ts"].dtype.name, "object")
+        self.assertEqual(df["date"].dtype.name, "object")
+        self.assertEqual(df["ts"][0].date(), datetime.date(1336, 3, 23))
+        self.assertEqual(df["date"][0], datetime.date(1111, 1, 1))
 
     @mock.patch("google.cloud.bigquery.table.pandas", new=None)
     def test_to_dataframe_error_if_pandas_is_none(self):
@@ -4036,7 +4066,6 @@ class TestRowIterator(unittest.TestCase):
         dtypes = dict(xxx=numpy.dtype("int64"))
         progress_bar_type = "normal"
         create_bqstorage_client = False
-        date_as_object = False
         geography_column = "g"
 
         to_dataframe.return_value = pandas.DataFrame(
@@ -4048,7 +4077,6 @@ class TestRowIterator(unittest.TestCase):
             dtypes=dtypes,
             progress_bar_type=progress_bar_type,
             create_bqstorage_client=create_bqstorage_client,
-            date_as_object=date_as_object,
             geography_column=geography_column,
         )
 
@@ -4057,7 +4085,6 @@ class TestRowIterator(unittest.TestCase):
             dtypes,
             progress_bar_type,
             create_bqstorage_client,
-            date_as_object,
             geography_as_object=True,
         )
 

@@ -275,3 +275,27 @@ def test_query_jobs_query_sets_timeout(timeout, expected_timeout):
     # See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#QueryRequest
     request = call_kwargs["data"]
     assert request["timeoutMs"] == expected_timeout
+
+
+def test_make_job_id_wo_suffix():
+    job_id = _job_helpers.make_job_id("job_id")
+    assert job_id == "job_id"
+
+
+def test_make_job_id_w_suffix():
+    with mock.patch("uuid.uuid4", side_effect=["212345"]):
+        job_id = _job_helpers.make_job_id(None, prefix="job_id")
+
+    assert job_id == "job_id212345"
+
+
+def test_make_job_id_random():
+    with mock.patch("uuid.uuid4", side_effect=["212345"]):
+        job_id = _job_helpers.make_job_id(None)
+
+    assert job_id == "212345"
+
+
+def test_make_job_id_w_job_id_overrides_prefix():
+    job_id = _job_helpers.make_job_id("job_id", prefix="unused_prefix")
+    assert job_id == "job_id"

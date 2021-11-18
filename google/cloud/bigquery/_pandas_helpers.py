@@ -15,25 +15,32 @@
 """Shared helper functions for connecting BigQuery and pandas."""
 
 import concurrent.futures
+from datetime import datetime
 import functools
+from itertools import islice
 import logging
 import queue
-from typing import Dict, Sequence
 import warnings
 
 try:
-    import pandas
+    import pandas  # type: ignore
 except ImportError:  # pragma: NO COVER
     pandas = None
+    date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 else:
     import numpy
 
-import pyarrow
-import pyarrow.parquet
+    from db_dtypes import DateDtype, TimeDtype  # type: ignore
+
+    date_dtype_name = DateDtype.name
+    time_dtype_name = TimeDtype.name
+
+import pyarrow  # type: ignore
+import pyarrow.parquet  # type: ignore
 
 try:
     # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
-    from shapely.geometry.base import BaseGeometry as _BaseGeometry
+    from shapely.geometry.base import BaseGeometry as _BaseGeometry  # type: ignore
 except ImportError:  # pragma: NO COVER
     # No shapely, use NoneType for _BaseGeometry as a placeholder.
     _BaseGeometry = type(None)
@@ -47,7 +54,7 @@ else:
             # - Avoid extra work done by `shapely.wkb.dumps` that we don't need.
             # - Caches the WKBWriter (and write method lookup :) )
             # - Avoids adding WKBWriter, lgeos, and notnull to the module namespace.
-            from shapely.geos import WKBWriter, lgeos
+            from shapely.geos import WKBWriter, lgeos  # type: ignore
 
             write = WKBWriter(lgeos).write
             notnull = pandas.notnull
@@ -77,21 +84,10 @@ _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seco
 
 _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage downloads
 
-# If you update the default dtypes, also update the docs at docs/usage/pandas.rst.
-_BQ_TO_PANDAS_DTYPE_NULLSAFE = {
-    "BOOL": "boolean",
-    "BOOLEAN": "boolean",
-    "FLOAT": "float64",
-    "FLOAT64": "float64",
-    "INT64": "Int64",
-    "INTEGER": "Int64",
-}
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
     "datetime64[ns, UTC]": "TIMESTAMP",
-    # BigQuery does not support uploading DATETIME values from Parquet files.
-    # See: https://github.com/googleapis/google-cloud-python/issues/9996
-    "datetime64[ns]": "TIMESTAMP",
+    "datetime64[ns]": "DATETIME",
     "float32": "FLOAT",
     "float64": "FLOAT",
     "int8": "INTEGER",
@@ -102,6 +98,8 @@ _PANDAS_DTYPE_TO_BQ = {
     "uint16": "INTEGER",
     "uint32": "INTEGER",
     "geometry": "GEOGRAPHY",
+    date_dtype_name: "DATE",
+    time_dtype_name: "TIME",
 }
 
 
@@ -267,26 +265,40 @@ def bq_to_arrow_schema(bq_schema):
     return pyarrow.schema(arrow_fields)
 
 
-def bq_schema_to_nullsafe_pandas_dtypes(
-    bq_schema: Sequence[schema.SchemaField],
-) -> Dict[str, str]:
-    """Return the default dtypes to use for columns in a BigQuery schema.
+def default_types_mapper(date_as_object: bool = False):
+    """Create a mapping from pyarrow types to pandas types.
 
-    Only returns default dtypes which are safe to have NULL values. This
-    includes Int64, which has pandas.NA values and does not result in
-    loss-of-precision.
+    This overrides the pandas defaults to use null-safe extension types where
+    available.
 
-    Returns:
-        A mapping from column names to pandas dtypes.
+    See: https://arrow.apache.org/docs/python/api/datatypes.html for a list of
+    data types. See:
+    tests/unit/test__pandas_helpers.py::test_bq_to_arrow_data_type for
+    BigQuery to Arrow type mapping.
+
+    Note to google-cloud-bigquery developers: If you update the default dtypes,
+    also update the docs at docs/usage/pandas.rst.
     """
-    dtypes = {}
-    for bq_field in bq_schema:
-        if bq_field.mode.upper() not in {"NULLABLE", "REQUIRED"}:
-            continue
-        field_type = bq_field.field_type.upper()
-        if field_type in _BQ_TO_PANDAS_DTYPE_NULLSAFE:
-            dtypes[bq_field.name] = _BQ_TO_PANDAS_DTYPE_NULLSAFE[field_type]
-    return dtypes
+
+    def types_mapper(arrow_data_type):
+        if pyarrow.types.is_boolean(arrow_data_type):
+            return pandas.BooleanDtype()
+
+        elif (
+            # If date_as_object is True, we know some DATE columns are
+            # out-of-bounds of what is supported by pandas.
+            not date_as_object
+            and pyarrow.types.is_date(arrow_data_type)
+        ):
+            return DateDtype()
+
+        elif pyarrow.types.is_integer(arrow_data_type):
+            return pandas.Int64Dtype()
+
+        elif pyarrow.types.is_time(arrow_data_type):
+            return TimeDtype()
+
+    return types_mapper
 
 
 def bq_to_arrow_array(series, bq_field):
@@ -367,6 +379,36 @@ def _first_valid(series):
         return series.at[first_valid_index]
 
 
+def _first_array_valid(series):
+    """Return the first "meaningful" element from the array series.
+
+    Here, "meaningful" means the first non-None element in one of the arrays that can
+    be used for type detextion.
+    """
+    first_valid_index = series.first_valid_index()
+    if first_valid_index is None:
+        return None
+
+    valid_array = series.at[first_valid_index]
+    valid_item = next((item for item in valid_array if not pandas.isna(item)), None)
+
+    if valid_item is not None:
+        return valid_item
+
+    # Valid item is None because all items in the "valid" array are invalid. Try
+    # to find a true valid array manually.
+    for array in islice(series, first_valid_index + 1, None):
+        try:
+            array_iter = iter(array)
+        except TypeError:
+            continue  # Not an array, apparently, e.g. None, thus skip.
+        valid_item = next((item for item in array_iter if not pandas.isna(item)), None)
+        if valid_item is not None:
+            break
+
+    return valid_item
+
+
 def dataframe_to_bq_schema(dataframe, bq_schema):
     """Convert a pandas DataFrame schema to a BigQuery schema.
 
@@ -424,7 +466,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     # column, but it was not found.
     if bq_schema_unused:
         raise ValueError(
-            u"bq_schema contains fields not present in dataframe: {}".format(
+            "bq_schema contains fields not present in dataframe: {}".format(
                 bq_schema_unused
             )
         )
@@ -465,7 +507,27 @@ def augment_schema(dataframe, current_bq_schema):
             continue
 
         arrow_table = pyarrow.array(dataframe[field.name])
-        detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
+
+        if pyarrow.types.is_list(arrow_table.type):
+            # `pyarrow.ListType`
+            detected_mode = "REPEATED"
+            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.values.type.id)
+
+            # For timezone-naive datetimes, pyarrow assumes the UTC timezone and adds
+            # it to such datetimes, causing them to be recognized as TIMESTAMP type.
+            # We thus additionally check the actual data to see if we need to overrule
+            # that and choose DATETIME instead.
+            # Note that this should only be needed for datetime values inside a list,
+            # since scalar datetime values have a proper Pandas dtype that allows
+            # distinguishing between timezone-naive and timezone-aware values before
+            # even requiring the additional schema augment logic in this method.
+            if detected_type == "TIMESTAMP":
+                valid_item = _first_array_valid(dataframe[field.name])
+                if isinstance(valid_item, datetime) and valid_item.tzinfo is None:
+                    detected_type = "DATETIME"
+        else:
+            detected_mode = field.mode
+            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
 
         if detected_type is None:
             unknown_type_fields.append(field)
@@ -474,7 +536,7 @@ def augment_schema(dataframe, current_bq_schema):
         new_field = schema.SchemaField(
             name=field.name,
             field_type=detected_type,
-            mode=field.mode,
+            mode=detected_mode,
             description=field.description,
             fields=field.fields,
         )
@@ -482,7 +544,7 @@ def augment_schema(dataframe, current_bq_schema):
 
     if unknown_type_fields:
         warnings.warn(
-            u"Pyarrow could not determine the type of columns: {}.".format(
+            "Pyarrow could not determine the type of columns: {}.".format(
                 ", ".join(field.name for field in unknown_type_fields)
             )
         )
@@ -521,7 +583,7 @@ def dataframe_to_arrow(dataframe, bq_schema):
     extra_fields = bq_field_names - column_and_index_names
     if extra_fields:
         raise ValueError(
-            u"bq_schema contains fields not present in dataframe: {}".format(
+            "bq_schema contains fields not present in dataframe: {}".format(
                 extra_fields
             )
         )
@@ -531,7 +593,7 @@ def dataframe_to_arrow(dataframe, bq_schema):
     missing_fields = column_names - bq_field_names
     if missing_fields:
         raise ValueError(
-            u"bq_schema is missing fields from dataframe: {}".format(missing_fields)
+            "bq_schema is missing fields from dataframe: {}".format(missing_fields)
         )
 
     arrow_arrays = []
@@ -551,7 +613,13 @@ def dataframe_to_arrow(dataframe, bq_schema):
     return pyarrow.Table.from_arrays(arrow_arrays, names=arrow_names)
 
 
-def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SNAPPY"):
+def dataframe_to_parquet(
+    dataframe,
+    bq_schema,
+    filepath,
+    parquet_compression="SNAPPY",
+    parquet_use_compliant_nested_type=True,
+):
     """Write dataframe as a Parquet file, according to the desired BQ schema.
 
     This function requires the :mod:`pyarrow` package. Arrow is used as an
@@ -572,10 +640,27 @@ def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SN
             The compression codec to use by the the ``pyarrow.parquet.write_table``
             serializing method. Defaults to "SNAPPY".
             https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+        parquet_use_compliant_nested_type (bool):
+            Whether the ``pyarrow.parquet.write_table`` serializing method should write
+            compliant Parquet nested type (lists). Defaults to ``True``.
+            https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#nested-types
+            https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+
+            This argument is ignored for ``pyarrow`` versions earlier than ``4.0.0``.
     """
+    import pyarrow.parquet  # type: ignore
+
+    kwargs = (
+        {"use_compliant_nested_type": parquet_use_compliant_nested_type}
+        if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+        else {}
+    )
+
     bq_schema = schema._to_schema_fields(bq_schema)
     arrow_table = dataframe_to_arrow(dataframe, bq_schema)
-    pyarrow.parquet.write_table(arrow_table, filepath, compression=parquet_compression)
+    pyarrow.parquet.write_table(
+        arrow_table, filepath, compression=parquet_compression, **kwargs,
+    )
 
 
 def _row_iterator_page_to_arrow(page, column_names, arrow_types):

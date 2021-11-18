@@ -26,19 +26,6 @@ import unittest
 import uuid
 from typing import Optional
 
-import psutil
-import pytest
-
-from . import helpers
-
-try:
-    import fastavro  # to parse BQ storage client results
-except ImportError:  # pragma: NO COVER
-    fastavro = None
-
-import pyarrow
-import pyarrow.types
-
 from google.api_core.exceptions import PreconditionFailed
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import ClientError
@@ -59,11 +46,16 @@ from google.cloud import bigquery_storage
 from google.cloud import storage
 from google.cloud.datacatalog_v1 import types as datacatalog_types
 from google.cloud.datacatalog_v1 import PolicyTagManagerClient
-
+import psutil
+import pytest
+import pyarrow
+import pyarrow.types
 from test_utils.retry import RetryErrors
 from test_utils.retry import RetryInstanceState
 from test_utils.retry import RetryResult
 from test_utils.system import unique_resource_id
+
+from . import helpers
 
 
 JOB_TIMEOUT = 120  # 2 minutes

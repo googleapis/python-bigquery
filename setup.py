@@ -43,20 +43,20 @@ dependencies = [
     "packaging >= 14.3",
     "proto-plus >= 1.10.0",  # For the legacy proto-based types.
     "protobuf >= 3.12.0",  # For the legacy proto-based types.
-    "pyarrow >= 3.0.0, < 6.0dev",
+    "pyarrow >= 3.0.0, < 7.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]
 extras = {
     # Keep the no-op bqstorage extra for backward compatibility.
     # See: https://github.com/googleapis/python-bigquery/issues/757
     "bqstorage": [],
-    "pandas": ["pandas>=1.0.0"],
+    "pandas": ["pandas>=1.0.0", "db-dtypes>=0.3.0,<2.0.0dev"],
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
-        "opentelemetry-api >= 0.11b0",
-        "opentelemetry-sdk >= 0.11b0",
-        "opentelemetry-instrumentation >= 0.11b0",
+        "opentelemetry-api >= 1.1.0",
+        "opentelemetry-sdk >= 1.1.0",
+        "opentelemetry-instrumentation >= 0.20b0",
     ],
 }
 
@@ -113,6 +113,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
         "Topic :: Internet",
     ],
@@ -121,7 +122,7 @@ setuptools.setup(
     namespace_packages=namespaces,
     install_requires=dependencies,
     extras_require=extras,
-    python_requires=">=3.6, <3.10",
+    python_requires=">=3.6, <3.11",
     include_package_data=True,
     zip_safe=False,
 )

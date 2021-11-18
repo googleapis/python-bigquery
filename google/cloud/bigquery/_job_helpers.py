@@ -36,7 +36,6 @@ def make_job_id(job_id: Optional[str] = None, prefix: Optional[str] = None) -> s
 
     Args:
         job_id (Optional[str]): the user-provided job ID.
-
         prefix (Optional[str]): the user-provided prefix for a job ID.
 
     Returns:

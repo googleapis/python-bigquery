@@ -21,25 +21,27 @@ import datetime
 import functools
 import operator
 import typing
-from typing import Any, Dict, Iterable, Iterator, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 import warnings
 
 try:
-    import pandas
+    import pandas  # type: ignore
 except ImportError:  # pragma: NO COVER
     pandas = None
+else:
+    import db_dtypes  # type: ignore # noqa
 
-import pyarrow
+import pyarrow  # type: ignore
 
 try:
-    import geopandas
+    import geopandas  # type: ignore
 except ImportError:
     geopandas = None
 else:
     _COORDINATE_REFERENCE_SYSTEM = "EPSG:4326"
 
 try:
-    import shapely.geos
+    import shapely.geos  # type: ignore
 except ImportError:
     shapely = None
 else:
@@ -48,7 +50,7 @@ else:
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator
 
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.schema import _build_schema_resource
@@ -121,7 +123,7 @@ def _view_use_legacy_sql_getter(table):
 class _TableBase:
     """Base class for Table-related classes with common functionality."""
 
-    _PROPERTY_TO_API_FIELD = {
+    _PROPERTY_TO_API_FIELD: Dict[str, Union[str, List[str]]] = {
         "dataset_id": ["tableReference", "datasetId"],
         "project": ["tableReference", "projectId"],
         "table_id": ["tableReference", "tableId"],
@@ -180,10 +182,8 @@ class TableReference(_TableBase):
     https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablereference
 
     Args:
-        dataset_ref:
-            A pointer to the dataset
-        table_id:
-            The ID of the table
+        dataset_ref: A pointer to the dataset
+        table_id: The ID of the table
     """
 
     _PROPERTY_TO_API_FIELD = {
@@ -801,7 +801,7 @@ class Table(_TableBase):
 
     view_use_legacy_sql = property(_view_use_legacy_sql_getter)
 
-    @view_use_legacy_sql.setter
+    @view_use_legacy_sql.setter  # type: ignore  # (redefinition from above)
     def view_use_legacy_sql(self, value):
         if not isinstance(value, bool):
             raise ValueError("Pass a boolean")
@@ -1722,7 +1722,7 @@ class RowIterator(HTTPIterator):
                 progress_bar.close()
         finally:
             if owns_bqstorage_client:
-                bqstorage_client._transport.grpc_channel.close()
+                bqstorage_client._transport.grpc_channel.close()  # type: ignore
 
         if record_batches and bqstorage_client is not None:
             return pyarrow.Table.from_batches(record_batches)
@@ -1739,7 +1739,7 @@ class RowIterator(HTTPIterator):
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
-        max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,
+        max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
     ) -> "pandas.DataFrame":
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -1817,7 +1817,6 @@ class RowIterator(HTTPIterator):
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         geography_as_object: bool = False,
     ) -> "pandas.DataFrame":
         """Create a pandas DataFrame by loading all pages of a query.
@@ -1867,12 +1866,6 @@ class RowIterator(HTTPIterator):
 
                 .. versionadded:: 1.24.0
 
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
-
-                .. versionadded:: 1.26.0
-
             geography_as_object (Optional[bool]):
                 If ``True``, convert GEOGRAPHY data to :mod:`shapely`
                 geometry objects. If ``False`` (default), don't cast
@@ -1914,40 +1907,44 @@ class RowIterator(HTTPIterator):
             bqstorage_client=bqstorage_client,
             create_bqstorage_client=create_bqstorage_client,
         )
-        default_dtypes = _pandas_helpers.bq_schema_to_nullsafe_pandas_dtypes(
-            self.schema
-        )
 
-        # Let the user-defined dtypes override the default ones.
-        # https://stackoverflow.com/a/26853961/101923
-        dtypes = {**default_dtypes, **dtypes}
-
-        # When converting timestamp values to nanosecond precision, the result
+        # When converting date or timestamp values to nanosecond precision, the result
         # can be out of pyarrow bounds. To avoid the error when converting to
-        # Pandas, we set the timestamp_as_object parameter to True, if necessary.
-        types_to_check = {
-            pyarrow.timestamp("us"),
-            pyarrow.timestamp("us", tz=datetime.timezone.utc),
-        }
-
-        for column in record_batch:
-            if column.type in types_to_check:
-                try:
-                    column.cast("timestamp[ns]")
-                except pyarrow.lib.ArrowInvalid:
-                    timestamp_as_object = True
-                    break
-        else:
-            timestamp_as_object = False
-
-        extra_kwargs = {"timestamp_as_object": timestamp_as_object}
-
-        df = record_batch.to_pandas(
-            date_as_object=date_as_object, integer_object_nulls=True, **extra_kwargs
+        # Pandas, we set the date_as_object or timestamp_as_object parameter to True,
+        # if necessary.
+        date_as_object = not all(
+            self.__can_cast_timestamp_ns(col)
+            for col in record_batch
+            # Type can be date32 or date64 (plus units).
+            # See: https://arrow.apache.org/docs/python/api/datatypes.html
+            if str(col.type).startswith("date")
         )
+
+        timestamp_as_object = not all(
+            self.__can_cast_timestamp_ns(col)
+            for col in record_batch
+            # Type can be timestamp (plus units and time zone).
+            # See: https://arrow.apache.org/docs/python/api/datatypes.html
+            if str(col.type).startswith("timestamp")
+        )
+
+        if len(record_batch) > 0:
+            df = record_batch.to_pandas(
+                date_as_object=date_as_object,
+                timestamp_as_object=timestamp_as_object,
+                integer_object_nulls=True,
+                types_mapper=_pandas_helpers.default_types_mapper(
+                    date_as_object=date_as_object
+                ),
+            )
+        else:
+            # Avoid "ValueError: need at least one array to concatenate" on
+            # older versions of pandas when converting empty RecordBatch to
+            # DataFrame. See: https://github.com/pandas-dev/pandas/issues/41241
+            df = pandas.DataFrame([], columns=record_batch.schema.names)
 
         for column in dtypes:
-            df[column] = pandas.Series(df[column], dtype=dtypes[column])
+            df[column] = pandas.Series(df[column], dtype=dtypes[column], copy=False)
 
         if geography_as_object:
             for field in self.schema:
@@ -1955,6 +1952,15 @@ class RowIterator(HTTPIterator):
                     df[field.name] = df[field.name].dropna().apply(_read_wkt)
 
         return df
+
+    @staticmethod
+    def __can_cast_timestamp_ns(column):
+        try:
+            column.cast("timestamp[ns]")
+        except pyarrow.lib.ArrowInvalid:
+            return False
+        else:
+            return True
 
     # If changing the signature of this method, make sure to apply the same
     # changes to job.QueryJob.to_geodataframe()
@@ -1964,7 +1970,6 @@ class RowIterator(HTTPIterator):
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         geography_column: Optional[str] = None,
     ) -> "geopandas.GeoDataFrame":
         """Create a GeoPandas GeoDataFrame by loading all pages of a query.
@@ -2011,10 +2016,6 @@ class RowIterator(HTTPIterator):
                 ``bqstorage_client`` parameter for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
-
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
 
             geography_column (Optional[str]):
                 If there are more than one GEOGRAPHY column,
@@ -2071,7 +2072,6 @@ class RowIterator(HTTPIterator):
             dtypes,
             progress_bar_type,
             create_bqstorage_client,
-            date_as_object,
             geography_as_object=True,
         )
 
@@ -2128,7 +2128,6 @@ class _EmptyRowIterator(RowIterator):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
-        date_as_object=True,
         geography_as_object=False,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
@@ -2138,7 +2137,6 @@ class _EmptyRowIterator(RowIterator):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
-            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -2153,7 +2151,6 @@ class _EmptyRowIterator(RowIterator):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
-        date_as_object=True,
         geography_column: Optional[str] = None,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
@@ -2163,7 +2160,6 @@ class _EmptyRowIterator(RowIterator):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
-            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -2288,8 +2284,6 @@ class PartitionRange(object):
         key_vals = ["{}={}".format(key, val) for key, val in self._key()]
         return "PartitionRange({})".format(", ".join(key_vals))
 
-    __hash__ = None
-
 
 class RangePartitioning(object):
     """Range-based partitioning configuration for a table.
@@ -2367,8 +2361,6 @@ class RangePartitioning(object):
     def __repr__(self):
         key_vals = ["{}={}".format(key, repr(val)) for key, val in self._key()]
         return "RangePartitioning({})".format(", ".join(key_vals))
-
-    __hash__ = None
 
 
 class TimePartitioningType(object):
@@ -2638,7 +2630,7 @@ def _rows_page_start(iterator, page, response):
 # pylint: enable=unused-argument
 
 
-def _table_arg_to_table_ref(value, default_project=None):
+def _table_arg_to_table_ref(value, default_project=None) -> TableReference:
     """Helper to convert a string or Table to TableReference.
 
     This function keeps TableReference and other kinds of objects unchanged.
@@ -2650,7 +2642,7 @@ def _table_arg_to_table_ref(value, default_project=None):
     return value
 
 
-def _table_arg_to_table(value, default_project=None):
+def _table_arg_to_table(value, default_project=None) -> Table:
     """Helper to convert a string or TableReference to a Table.
 
     This function keeps Table and other kinds of objects unchanged.

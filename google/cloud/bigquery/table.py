@@ -2274,7 +2274,7 @@ class _EmptyRowIterator(RowIterator):
     ) -> Iterator["pyarrow.RecordBatch"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
-        .. versionadded:: 2.21.0
+        .. versionadded:: 2.31.0
 
         Args:
             bqstorage_client:

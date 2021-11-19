@@ -198,6 +198,13 @@ def test_query_jobs_query_defaults():
     mock_client = mock.create_autospec(Client)
     mock_retry = mock.create_autospec(retries.Retry)
     mock_job_retry = mock.create_autospec(retries.Retry)
+    mock_client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "test-project",
+            "jobId": "abc",
+            "location": "asia-northeast1",
+        }
+    }
     _job_helpers.query_jobs_query(
         mock_client,
         "SELECT * FROM test",
@@ -233,6 +240,9 @@ def test_query_jobs_query_sets_format_options():
     mock_client = mock.create_autospec(Client)
     mock_retry = mock.create_autospec(retries.Retry)
     mock_job_retry = mock.create_autospec(retries.Retry)
+    mock_client._call_api.return_value = {
+        "jobReference": {"projectId": "test-project", "jobId": "abc", "location": "US"}
+    }
     _job_helpers.query_jobs_query(
         mock_client,
         "SELECT * FROM test",
@@ -259,6 +269,9 @@ def test_query_jobs_query_sets_timeout(timeout, expected_timeout):
     mock_client = mock.create_autospec(Client)
     mock_retry = mock.create_autospec(retries.Retry)
     mock_job_retry = mock.create_autospec(retries.Retry)
+    mock_client._call_api.return_value = {
+        "jobReference": {"projectId": "test-project", "jobId": "abc", "location": "US"}
+    }
     _job_helpers.query_jobs_query(
         mock_client,
         "SELECT * FROM test",

@@ -17,11 +17,16 @@ import update_dataset_access
 
 
 def test_dataset_access_permissions(capsys, dataset_id, entity_id, bigquery_client):
-
+    original_dataset = bigquery_client.get_dataset(dataset_id)
     update_dataset_access.update_dataset_access(dataset_id)
+    full_dataset_id = "{}.{}".format(
+        original_dataset.project, original_dataset.dataset_id
+    )
+
     out, err = capsys.readouterr()
     assert (
-        "Updated dataset '{}' with modified user permissions.".format(dataset_id) in out
+        "Updated dataset '{}' with modified user permissions.".format(full_dataset_id)
+        in out
     )
 
     updated_dataset = bigquery_client.get_dataset(dataset_id)

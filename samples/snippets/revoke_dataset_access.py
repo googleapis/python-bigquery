@@ -14,6 +14,7 @@
 
 
 def revoke_dataset_access(dataset_id, entity_id):
+    # [START bigquery_revoke_dataset_access]
 
     # TODO(developer): Set dataset_id to the ID of the dataset to fetch.
     # dataset_id = 'your-project.your_dataset'
@@ -21,8 +22,6 @@ def revoke_dataset_access(dataset_id, entity_id):
     # TODO(developer): Set entity_id to the ID of the email or group from whom you are revoking access.
     # entity_id = "user-or-group-to-remove@example.com"
 
-    # [END bigquery_revoke_dataset_access]
-    # [START bigquery_revoke_dataset_access]
     from google.cloud import bigquery
 
     # Construct a BigQuery client object.

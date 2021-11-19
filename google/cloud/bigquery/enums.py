@@ -129,7 +129,7 @@ class QueryApiMethod(str, enum.Enum):
 
     INSERT = "INSERT"
     """Submit a query job by using the `jobs.insert REST API method
-    <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert>_`.
+    <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert>`_.
 
     This supports all job configuration options.
     """

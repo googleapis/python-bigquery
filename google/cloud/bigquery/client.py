@@ -3167,7 +3167,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
-        api_method: enums.QueryApiMethod = enums.QueryApiMethod.INSERT,
+        api_method: Union[str, enums.QueryApiMethod] = enums.QueryApiMethod.INSERT,
     ) -> job.QueryJob:
         """Run a SQL query.
 
@@ -3219,7 +3219,7 @@ class Client(ClientWithProject):
                 called on the job returned. The ``job_retry``
                 specified here becomes the default ``job_retry`` for
                 ``result()``, where it can also be specified.
-            api_method:
+            api_method (Union[str, enums.QueryApiMethod]):
                 Method with which to start the query job.
 
                 See :class:`google.cloud.bigquery.enums.QueryApiMethod` for

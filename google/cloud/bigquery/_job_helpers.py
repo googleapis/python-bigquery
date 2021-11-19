@@ -52,9 +52,9 @@ def make_job_id(job_id: Optional[str] = None, prefix: Optional[str] = None) -> s
 def query_jobs_insert(
     client: "Client",
     query: str,
-    job_config: job.QueryJobConfig,
-    job_id: str,
-    job_id_prefix: str,
+    job_config: Optional[job.QueryJobConfig],
+    job_id: Optional[str],
+    job_id_prefix: Optional[str],
     location: str,
     project: str,
     retry: retries.Retry,
@@ -138,7 +138,7 @@ def _to_query_request(job_config: Optional[job.QueryJobConfig]) -> Dict[str, Any
     # Since jobs.query can return results, ensure we use the lossless timestamp
     # format. See: https://github.com/googleapis/python-bigquery/issues/395
     request_body.setdefault("formatOptions", {})
-    request_body["formatOptions"]["useInt64Timestamp"] = True
+    request_body["formatOptions"]["useInt64Timestamp"] = True  # type: ignore
 
     return request_body
 

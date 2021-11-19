@@ -1665,7 +1665,7 @@ class RowIterator(HTTPIterator):
             ValueError:
                 If the :mod:`pyarrow` library cannot be imported.
 
-        .. versionadded:: 2.30.2
+        .. versionadded:: 2.31.0
         """
         if pyarrow is None:
             raise ValueError(_NO_PYARROW_ERROR)

@@ -16,8 +16,14 @@ import revoke_dataset_access
 import update_dataset_access
 
 
-def test_revoke_dataset_access(capsys, dataset_id, entity_id, bigquery_client):
+def test_dataset_access_permissions(capsys, dataset_id, entity_id, bigquery_client):
+
     update_dataset_access.update_dataset_access(dataset_id)
+    out, err = capsys.readouterr()
+    assert (
+        "Updated dataset '{}' with modified user permissions.".format(dataset_id) in out
+    )
+
     updated_dataset = bigquery_client.get_dataset(dataset_id)
     updated_dataset_entries = list(updated_dataset.access_entries)
     revoke_dataset_access.revoke_dataset_access(dataset_id, entity_id)

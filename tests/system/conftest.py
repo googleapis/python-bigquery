@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pathlib
+import random
 import re
 from typing import Tuple
 
@@ -97,10 +98,11 @@ def load_scalars_table(
     data_path: str = "scalars.jsonl",
 ) -> str:
     schema = bigquery_client.schema_from_json(DATA_DIR / "scalars_schema.json")
+    table_id = data_path.replace(".", "_") + hex(random.randrange(1000000))
     job_config = bigquery.LoadJobConfig()
     job_config.schema = schema
     job_config.source_format = enums.SourceFormat.NEWLINE_DELIMITED_JSON
-    full_table_id = f"{project_id}.{dataset_id}.scalars"
+    full_table_id = f"{project_id}.{dataset_id}.{table_id}"
     with open(DATA_DIR / data_path, "rb") as data_file:
         job = bigquery_client.load_table_from_file(
             data_file, full_table_id, job_config=job_config
@@ -113,7 +115,7 @@ def load_scalars_table(
 def scalars_table(bigquery_client: bigquery.Client, project_id: str, dataset_id: str):
     full_table_id = load_scalars_table(bigquery_client, project_id, dataset_id)
     yield full_table_id
-    bigquery_client.delete_table(full_table_id)
+    bigquery_client.delete_table(full_table_id, not_found_ok=True)
 
 
 @pytest.fixture(scope="session")
@@ -122,7 +124,7 @@ def scalars_table_tokyo(
 ):
     full_table_id = load_scalars_table(bigquery_client, project_id, dataset_id_tokyo)
     yield full_table_id
-    bigquery_client.delete_table(full_table_id)
+    bigquery_client.delete_table(full_table_id, not_found_ok=True)
 
 
 @pytest.fixture(scope="session")
@@ -133,7 +135,7 @@ def scalars_extreme_table(
         bigquery_client, project_id, dataset_id, data_path="scalars_extreme.jsonl"
     )
     yield full_table_id
-    bigquery_client.delete_table(full_table_id)
+    bigquery_client.delete_table(full_table_id, not_found_ok=True)
 
 
 @pytest.fixture(scope="session", params=["US", TOKYO_LOCATION])

@@ -152,14 +152,16 @@ def _to_query_job(
     job_ref_resource = query_response["jobReference"]
     job_ref = job._JobReference._from_api_repr(job_ref_resource)
     query_job = job.QueryJob(job_ref, query, client=client)
+    query_job._properties.setdefault("configuration", {})
 
-    # Not all relevant properties are in the jobs.query response, so
+    # Not all relevant properties are in the jobs.query response. Populate some
+    # expected properties based on the job configuration.
     if request_config is not None:
         query_job._properties["configuration"].update(request_config.to_api_repr())
-        query_job._properties["configuration"]["query"]["query"] = query
-        query_job._properties["configuration"]["query"].setdefault(
-            "useLegacySql", False
-        )
+
+    query_job._properties["configuration"].setdefault("query", {})
+    query_job._properties["configuration"]["query"]["query"] = query
+    query_job._properties["configuration"]["query"].setdefault("useLegacySql", False)
 
     query_job._properties.setdefault("statistics", {})
     query_job._properties["statistics"].setdefault("query", {})

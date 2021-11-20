@@ -8458,7 +8458,7 @@ def test_upload_chunksize(client):
 
         upload.finished = False
 
-        def transmit_next_chunk(transport):
+        def transmit_next_chunk(transport, *args, **kwargs):
             upload.finished = True
             result = mock.MagicMock()
             result.json.return_value = {}

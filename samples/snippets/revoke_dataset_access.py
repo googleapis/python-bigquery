@@ -39,8 +39,9 @@ def revoke_dataset_access(dataset_id, entity_id):
     entries.append(entry)
     dataset.access_entries = entries
 
-    entries_remaining = filter(lambda entry: entry.entity_id != entity_id, entries)
-    dataset.access_entries = list(entries_remaining)
+    dataset.access_entries = list(
+        filter(lambda entry: entry.entity_id != entity_id, entries)
+    )
 
     dataset = client.update_dataset(
         dataset,

@@ -28,15 +28,24 @@ if TYPE_CHECKING:  # pragma: NO COVER
     from google.cloud.bigquery.client import Client
 
 
-_TIMEOUT_BUFFER_MILLIS = 100
+# The purpose of _TIMEOUT_BUFFER_MILLIS is to allow the server-side timeout to
+# happen before the client-side timeout. This is not strictly neccessary, as the
+# client retries client-side timeouts, but the hope by making the server-side
+# timeout slightly shorter is that it can save the server from some unncessary
+# processing time.
+#
+# 250 milliseconds is chosen arbitrarily, though should be about the right
+# order of magnitude for network latency and switching delays. It is about the
+# amount of time for light to circumnavigate the world twice.
+_TIMEOUT_BUFFER_MILLIS = 250
 
 
 def make_job_id(job_id: Optional[str] = None, prefix: Optional[str] = None) -> str:
     """Construct an ID for a new job.
 
     Args:
-        job_id (Optional[str]): the user-provided job ID.
-        prefix (Optional[str]): the user-provided prefix for a job ID.
+        job_id: the user-provided job ID.
+        prefix: the user-provided prefix for a job ID.
 
     Returns:
         str: A job ID
@@ -60,7 +69,7 @@ def query_jobs_insert(
     retry: retries.Retry,
     timeout: Optional[float],
     job_retry: retries.Retry,
-):
+) -> job.QueryJob:
     """Initiate a query using jobs.insert.
 
     See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert
@@ -211,7 +220,7 @@ def query_jobs_query(
     retry: retries.Retry,
     timeout: Optional[float],
     job_retry: retries.Retry,
-):
+) -> job.QueryJob:
     """Initiate a query using jobs.query.
 
     See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query

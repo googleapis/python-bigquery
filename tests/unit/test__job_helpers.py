@@ -21,7 +21,7 @@ import pytest
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery import _job_helpers
 from google.cloud.bigquery.job.query import QueryJob, QueryJobConfig
-from google.cloud.bigquery.query import ScalarQueryParameter
+from google.cloud.bigquery.query import ConnectionProperty, ScalarQueryParameter
 
 
 def make_query_request(additional_properties: Optional[Dict[str, Any]] = None):
@@ -124,7 +124,22 @@ def make_query_response(
                 }
             ),
         ),
-        # TODO: connection properties
+        (
+            QueryJobConfig(
+                connection_properties=[
+                    ConnectionProperty(key="time_zone", value="America/Chicago"),
+                    ConnectionProperty(key="session_id", value="abcd-efgh-ijkl-mnop"),
+                ]
+            ),
+            make_query_request(
+                {
+                    "connectionProperties": [
+                        {"key": "time_zone", "value": "America/Chicago"},
+                        {"key": "session_id", "value": "abcd-efgh-ijkl-mnop"},
+                    ]
+                }
+            ),
+        ),
         (
             QueryJobConfig(labels={"abc": "def"}),
             make_query_request({"labels": {"abc": "def"}}),

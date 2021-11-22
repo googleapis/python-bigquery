@@ -43,7 +43,7 @@ def table_with_9999_columns_10_rows(bigquery_client, project_id, dataset_id):
     """
     table_id = "many_columns"
     row_count = 10
-    col_projections = ",".join([f"r * {n} as col_{n}" for n in range(1, 10000)])
+    col_projections = ",".join(f"r * {n} as col_{n}" for n in range(1, 10000))
     sql = f"""
     CREATE TABLE `{project_id}.{dataset_id}.{table_id}`
     AS
@@ -453,8 +453,13 @@ def test_query_error_w_api_method_query(bigquery_client: bigquery.Client):
         )
 
 
-def test_query_error_w_api_method_insert(bigquery_client: bigquery.Client):
-    """With jobs.insert, an exception is thrown when fetching the results.."""
+def test_query_error_w_api_method_default(bigquery_client: bigquery.Client):
+    """Test that an exception is not thrown until fetching the results.
+
+    For backwards compatibility, jobs.insert is the default API method. With
+    jobs.insert, a failed query job is "sucessfully" created. An exception is
+    thrown when fetching the results.
+    """
 
     query_job = bigquery_client.query("SELECT * FROM not_a_real_dataset.doesnt_exist")
 

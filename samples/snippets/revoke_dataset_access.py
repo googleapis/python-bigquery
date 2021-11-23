@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def revoke_dataset_access(dataset_id, entity_id):
+def revoke_dataset_access(dataset_id: str, entity_id: str):
     original_dataset_id = dataset_id
     original_entity_id = entity_id
     

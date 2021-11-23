@@ -51,7 +51,7 @@ def dataset_id(bigquery_client: bigquery.Client, project_id: str):
 
 
 @pytest.fixture(scope="session")
-def entity_id(bigquery_client: bigquery.Client, dataset_id: dataset_id):
+def entity_id(bigquery_client: bigquery.Client, dataset_id: str):
     return "cloud-developer-relations@google.com"
 
 

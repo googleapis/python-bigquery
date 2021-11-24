@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def update_dataset_access(dataset_id: str):
+def update_dataset_access(dataset_id: str, entity_id: str):
 
     # [START bigquery_update_dataset_access]
     from google.cloud import bigquery
@@ -23,13 +23,12 @@ def update_dataset_access(dataset_id: str):
 
     # TODO(developer): Set dataset_id to the ID of the dataset to fetch.
     # dataset_id = 'your-project.your_dataset'
+    # entity_id = 'your-email@email.com"
 
     dataset = client.get_dataset(dataset_id)  # Make an API request.
 
     entry = bigquery.AccessEntry(
-        role="READER",
-        entity_type="groupByEmail",
-        entity_id="cloud-developer-relations@google.com",
+        role="READER", entity_type="groupByEmail", entity_id=entity_id,
     )
 
     entries = list(dataset.access_entries)

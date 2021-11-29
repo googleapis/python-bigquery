@@ -12,19 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import typing
+
 import google.auth
 
 import authenticate_service_account
 
+if typing.TYPE_CHECKING:
+    import pytest
 
-def mock_credentials(*args, **kwargs):
+
+def mock_credentials() -> google.auth.credentials.Credentials:
     credentials, _ = google.auth.default(
         ["https://www.googleapis.com/auth/cloud-platform"]
     )
     return credentials
 
 
-def test_main(monkeypatch):
+def test_main(monkeypatch: "pytest.MonkeyPatch") -> None:
     monkeypatch.setattr(
         "google.oauth2.service_account.Credentials.from_service_account_file",
         mock_credentials,

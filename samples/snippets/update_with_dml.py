@@ -14,6 +14,8 @@
 
 # [START bigquery_update_with_dml]
 import pathlib
+import typing
+from typing import Dict, Optional
 
 from google.cloud import bigquery
 from google.cloud.bigquery import enums
@@ -25,7 +27,7 @@ def load_from_newline_delimited_json(
     project_id: str,
     dataset_id: str,
     table_id: str,
-):
+) -> None:
     full_table_id = f"{project_id}.{dataset_id}.{table_id}"
     job_config = bigquery.LoadJobConfig()
     job_config.source_format = enums.SourceFormat.NEWLINE_DELIMITED_JSON
@@ -48,7 +50,7 @@ def load_from_newline_delimited_json(
 
 def update_with_dml(
     client: bigquery.Client, project_id: str, dataset_id: str, table_id: str
-):
+) -> int:
     query_text = f"""
     UPDATE `{project_id}.{dataset_id}.{table_id}`
     SET ip_address = REGEXP_REPLACE(ip_address, r"(\\.[0-9]+)$", ".0")
@@ -60,10 +62,13 @@ def update_with_dml(
     query_job.result()
 
     print(f"DML query modified {query_job.num_dml_affected_rows} rows.")
-    return query_job.num_dml_affected_rows
+    return typing.cast(int, query_job.num_dml_affected_rows)
 
 
-def run_sample(override_values={}):
+def run_sample(override_values: Optional[Dict[str, str]] = None) -> int:
+    if override_values is None:
+        override_values = {}
+
     client = bigquery.Client()
     filepath = pathlib.Path(__file__).parent / "user_sessions_data.json"
     project_id = client.project

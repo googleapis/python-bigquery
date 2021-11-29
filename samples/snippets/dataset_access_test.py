@@ -31,6 +31,8 @@ def test_dataset_access_permissions(capsys, dataset_id, entity_id, bigquery_clie
 
     updated_dataset = bigquery_client.get_dataset(dataset_id)
     updated_dataset_entries = list(updated_dataset.access_entries)
+    updated_dataset_entity_ids = {entry.entity_id for entry in updated_dataset_entries}
+    assert entity_id in updated_dataset_entity_ids
     revoke_dataset_access.revoke_dataset_access(dataset_id, entity_id)
     revoked_dataset = bigquery_client.get_dataset(dataset_id)
     revoked_dataset_entries = list(revoked_dataset.access_entries)

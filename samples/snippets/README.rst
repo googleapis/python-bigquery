@@ -15,7 +15,7 @@ This directory contains samples for Google BigQuery. `Google BigQuery`_ is Googl
 .. _Google BigQuery: https://cloud.google.com/bigquery/docs
 
 
-To run the sample, you need to have `BigQuery Admin` role.
+To run the sample, you need to have the `BigQuery Admin` role.
 
 
 

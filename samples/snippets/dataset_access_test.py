@@ -42,8 +42,5 @@ def test_dataset_access_permissions(capsys, dataset_id, entity_id, bigquery_clie
         in out
     )
     assert len(revoked_dataset_entries) == len(updated_dataset_entries) - 1
-    is_revoked = 0
-    for entry in revoked_dataset_entries:
-        if entry.entity_id == entity_id:
-            is_revoked += 1
-    assert is_revoked == 0
+    revoked_dataset_entity_ids = {entry.entity_id for entry in revoked_dataset_entries}
+    assert entity_id not in revoked_dataset_entity_ids

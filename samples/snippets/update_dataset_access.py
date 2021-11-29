@@ -23,6 +23,7 @@ def update_dataset_access(dataset_id: str, entity_id: str):
 
     # TODO(developer): Set dataset_id to the ID of the dataset to fetch.
     # dataset_id = 'your-project.your_dataset'
+    # TODO(developer): Set entity_id to the ID of the entry to update.
     # entity_id = 'your-email@email.com"
 
     dataset = client.get_dataset(dataset_id)  # Make an API request.

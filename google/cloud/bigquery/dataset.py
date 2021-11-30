@@ -127,11 +127,10 @@ class AccessEntry(object):
                     'target_types: 'VIEWS'
                 }
 
-    -    Raises:
--        ValueError:
--            If the ``entity_type`` is not among :attr:`ENTITY_TYPES`, or if a
--            ``view`` or a ``routine`` has ``role`` set, or a non ``view`` and
--            non ``routine`` **does not** have a ``role`` set.
+    Raises:
+        ValueError:
+            If a ``view``, ``routine``, or ``dataset`` has ``role`` set, or a non ``view``,
+            non ``routine``, and non ``dataset`` **does not** have a ``role`` set.
 
     Examples:
         >>> entry = AccessEntry('OWNER', 'userByEmail', 'user@example.com')

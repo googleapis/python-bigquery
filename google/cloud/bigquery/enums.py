@@ -235,8 +235,8 @@ StandardSqlDataTypes = _make_sql_scalars_enum()
 class EntityTypes:
     """Enum of allowed entity type names in AccessEntry"""
 
-    userByEmail = "userByEmail"
-    GROUP_BY_EMIAL = "groupByEmail"
+    USER_BY_EMAIL = "userByEmail"
+    GROUP_BY_EMAIL = "groupByEmail"
     DOMAIN = "domain"
     DATASET = "dataset"
     SPECIAL_GROUP = "specialGroup"

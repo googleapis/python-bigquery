@@ -141,6 +141,16 @@ class TestAccessEntry(unittest.TestCase):
         exp_resource = {"routine": routine}
         self.assertEqual(resource, exp_resource)
 
+    def test_to_api_repr_dataset(self):
+        dataset = {
+            "dataset": {"projectId": "my-project", "datasetId": "my_dataset"},
+            "target_types": "VIEWS",
+        }
+        entry = self._make_one(None, "dataset", dataset)
+        resource = entry.to_api_repr()
+        exp_resource = {"dataset": dataset}
+        self.assertEqual(resource, exp_resource)
+
     def test_from_api_repr(self):
         resource = {"role": "OWNER", "userByEmail": "salmon@example.com"}
         entry = self._get_target_class().from_api_repr(resource)
@@ -148,10 +158,17 @@ class TestAccessEntry(unittest.TestCase):
         self.assertEqual(entry.entity_type, "userByEmail")
         self.assertEqual(entry.entity_id, "salmon@example.com")
 
-    def test_from_api_repr_w_unknown_entity_type(self):
-        resource = {"role": "READER", "unknown": "UNKNOWN"}
+    def test_to_api_value_error(self):
+        dataset = {
+            "dataset": {
+                "projectId": "my-project",
+                "datasetId": "my_dataset",
+                "tableId": "my_table",
+            },
+            "target_type": "VIEW",
+        }
         with self.assertRaises(ValueError):
-            self._get_target_class().from_api_repr(resource)
+            self._make_one("READER", "dataset", dataset)
 
     def test_from_api_repr_entries_w_extra_keys(self):
         resource = {

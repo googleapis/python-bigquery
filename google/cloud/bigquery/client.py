@@ -60,6 +60,8 @@ from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
     DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
 )
 
+from google.cloud.bigquery import _job_helpers
+from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
@@ -69,6 +71,7 @@ from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
@@ -3164,6 +3167,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
+        api_method: Union[str, enums.QueryApiMethod] = enums.QueryApiMethod.INSERT,
     ) -> job.QueryJob:
         """Run a SQL query.
 
@@ -3215,6 +3219,11 @@ class Client(ClientWithProject):
                 called on the job returned. The ``job_retry``
                 specified here becomes the default ``job_retry`` for
                 ``result()``, where it can also be specified.
+            api_method (Union[str, enums.QueryApiMethod]):
+                Method with which to start the query job.
+
+                See :class:`google.cloud.bigquery.enums.QueryApiMethod` for
+                details on the difference between the query start methods.
 
         Returns:
             google.cloud.bigquery.job.QueryJob: A new query job instance.
@@ -3238,7 +3247,10 @@ class Client(ClientWithProject):
                 " provided."
             )
 
-        job_id_save = job_id
+        if job_id_given and api_method == enums.QueryApiMethod.QUERY:
+            raise TypeError(
+                "`job_id` was provided, but the 'QUERY' `api_method` was requested."
+            )
 
         if project is None:
             project = self.project
@@ -3269,50 +3281,25 @@ class Client(ClientWithProject):
 
         # Note that we haven't modified the original job_config (or
         # _default_query_job_config) up to this point.
-        job_config_save = job_config
-
-        def do_query():
-            # Make a copy now, so that original doesn't get changed by the process
-            # below and to facilitate retry
-            job_config = copy.deepcopy(job_config_save)
-
-            job_id = _make_job_id(job_id_save, job_id_prefix)
-            job_ref = job._JobReference(job_id, project=project, location=location)
-            query_job = job.QueryJob(job_ref, query, client=self, job_config=job_config)
-
-            try:
-                query_job._begin(retry=retry, timeout=timeout)
-            except core_exceptions.Conflict as create_exc:
-                # The thought is if someone is providing their own job IDs and they get
-                # their job ID generation wrong, this could end up returning results for
-                # the wrong query. We thus only try to recover if job ID was not given.
-                if job_id_given:
-                    raise create_exc
-
-                try:
-                    query_job = self.get_job(
-                        job_id,
-                        project=project,
-                        location=location,
-                        retry=retry,
-                        timeout=timeout,
-                    )
-                except core_exceptions.GoogleAPIError:  # (includes RetryError)
-                    raise create_exc
-                else:
-                    return query_job
-            else:
-                return query_job
-
-        future = do_query()
-        # The future might be in a failed state now, but if it's
-        # unrecoverable, we'll find out when we ask for it's result, at which
-        # point, we may retry.
-        if not job_id_given:
-            future._retry_do_query = do_query  # in case we have to retry later
-            future._job_retry = job_retry
-
-        return future
+        if api_method == enums.QueryApiMethod.QUERY:
+            return _job_helpers.query_jobs_query(
+                self, query, job_config, location, project, retry, timeout, job_retry,
+            )
+        elif api_method == enums.QueryApiMethod.INSERT:
+            return _job_helpers.query_jobs_insert(
+                self,
+                query,
+                job_config,
+                job_id,
+                job_id_prefix,
+                location,
+                project,
+                retry,
+                timeout,
+                job_retry,
+            )
+        else:
+            raise ValueError(f"Got unexpected value for api_method: {repr(api_method)}")
 
     def insert_rows(
         self,
@@ -3983,24 +3970,6 @@ def _extract_job_reference(job, project=None, location=None):
         job_id = job
 
     return (project, location, job_id)
-
-
-def _make_job_id(job_id: Optional[str], prefix: Optional[str] = None) -> str:
-    """Construct an ID for a new job.
-
-    Args:
-        job_id: the user-provided job ID.
-        prefix: the user-provided prefix for a job ID.
-
-    Returns:
-        str: A job ID
-    """
-    if job_id is not None:
-        return job_id
-    elif prefix is not None:
-        return str(prefix) + str(uuid.uuid4())
-    else:
-        return str(uuid.uuid4())
 
 
 def _check_mode(stream):

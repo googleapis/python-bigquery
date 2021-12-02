@@ -4016,6 +4016,160 @@ class TestClient(unittest.TestCase):
         self.assertEqual(sent_config["query"], QUERY)
         self.assertFalse(sent_config["useLegacySql"])
 
+    def test_query_w_api_method_query(self):
+        query = "select count(*) from persons"
+        response = {
+            "jobReference": {
+                "projectId": self.PROJECT,
+                "location": "EU",
+                "jobId": "abcd",
+            },
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(response)
+
+        job = client.query(query, location="EU", api_method="QUERY")
+
+        self.assertEqual(job.query, query)
+        self.assertEqual(job.job_id, "abcd")
+        self.assertEqual(job.location, "EU")
+
+        # Check that query actually starts the job.
+        expected_resource = {
+            "query": query,
+            "useLegacySql": False,
+            "location": "EU",
+            "formatOptions": {"useInt64Timestamp": True},
+            "requestId": mock.ANY,
+        }
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path=f"/projects/{self.PROJECT}/queries",
+            data=expected_resource,
+            timeout=None,
+        )
+
+    def test_query_w_api_method_query_legacy_sql(self):
+        from google.cloud.bigquery import QueryJobConfig
+
+        query = "select count(*) from persons"
+        response = {
+            "jobReference": {
+                "projectId": self.PROJECT,
+                "location": "EU",
+                "jobId": "abcd",
+            },
+        }
+        job_config = QueryJobConfig()
+        job_config.use_legacy_sql = True
+        job_config.maximum_bytes_billed = 100
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(response)
+
+        job = client.query(
+            query, location="EU", job_config=job_config, api_method="QUERY"
+        )
+
+        self.assertEqual(job.query, query)
+        self.assertEqual(job.job_id, "abcd")
+        self.assertEqual(job.location, "EU")
+
+        # Check that query actually starts the job.
+        expected_resource = {
+            "query": query,
+            "useLegacySql": True,
+            "location": "EU",
+            "formatOptions": {"useInt64Timestamp": True},
+            "requestId": mock.ANY,
+            "maximumBytesBilled": "100",
+        }
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path=f"/projects/{self.PROJECT}/queries",
+            data=expected_resource,
+            timeout=None,
+        )
+
+    def test_query_w_api_method_query_parameters(self):
+        from google.cloud.bigquery import QueryJobConfig, ScalarQueryParameter
+
+        query = "select count(*) from persons"
+        response = {
+            "jobReference": {
+                "projectId": self.PROJECT,
+                "location": "EU",
+                "jobId": "abcd",
+            },
+        }
+        job_config = QueryJobConfig()
+        job_config.dry_run = True
+        job_config.query_parameters = [ScalarQueryParameter("param1", "INTEGER", 123)]
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(response)
+
+        job = client.query(
+            query, location="EU", job_config=job_config, api_method="QUERY"
+        )
+
+        self.assertEqual(job.query, query)
+        self.assertEqual(job.job_id, "abcd")
+        self.assertEqual(job.location, "EU")
+
+        # Check that query actually starts the job.
+        expected_resource = {
+            "query": query,
+            "dryRun": True,
+            "useLegacySql": False,
+            "location": "EU",
+            "formatOptions": {"useInt64Timestamp": True},
+            "requestId": mock.ANY,
+            "parameterMode": "NAMED",
+            "queryParameters": [
+                {
+                    "name": "param1",
+                    "parameterType": {"type": "INTEGER"},
+                    "parameterValue": {"value": "123"},
+                },
+            ],
+        }
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path=f"/projects/{self.PROJECT}/queries",
+            data=expected_resource,
+            timeout=None,
+        )
+
+    def test_query_w_api_method_query_and_job_id_fails(self):
+        query = "select count(*) from persons"
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        client._connection = make_connection({})
+
+        with self.assertRaises(TypeError) as exc:
+            client.query(query, job_id="abcd", api_method="QUERY")
+        self.assertIn(
+            "`job_id` was provided, but the 'QUERY' `api_method` was requested",
+            exc.exception.args[0],
+        )
+
+    def test_query_w_api_method_unknown(self):
+        query = "select count(*) from persons"
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        client._connection = make_connection({})
+
+        with self.assertRaises(ValueError) as exc:
+            client.query(query, api_method="UNKNOWN")
+        self.assertIn("Got unexpected value for api_method: ", exc.exception.args[0])
+
     def test_query_w_explicit_timeout(self):
         query = "select count(*) from persons"
         resource = {
@@ -6211,35 +6365,6 @@ class TestClient(unittest.TestCase):
                 pass
 
         fake_close.assert_called_once()
-
-
-class Test_make_job_id(unittest.TestCase):
-    def _call_fut(self, job_id, prefix=None):
-        from google.cloud.bigquery.client import _make_job_id
-
-        return _make_job_id(job_id, prefix=prefix)
-
-    def test__make_job_id_wo_suffix(self):
-        job_id = self._call_fut("job_id")
-
-        self.assertEqual(job_id, "job_id")
-
-    def test__make_job_id_w_suffix(self):
-        with mock.patch("uuid.uuid4", side_effect=["212345"]):
-            job_id = self._call_fut(None, prefix="job_id")
-
-        self.assertEqual(job_id, "job_id212345")
-
-    def test__make_random_job_id(self):
-        with mock.patch("uuid.uuid4", side_effect=["212345"]):
-            job_id = self._call_fut(None)
-
-        self.assertEqual(job_id, "212345")
-
-    def test__make_job_id_w_job_id_overrides_prefix(self):
-        job_id = self._call_fut("job_id", prefix="unused_prefix")
-
-        self.assertEqual(job_id, "job_id")
 
 
 class TestClientUpload(object):

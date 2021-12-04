@@ -15,7 +15,7 @@
 from google.api_core import datetime_helpers
 
 
-def undelete_table(table_id, recovered_table_id):
+def undelete_table(table_id: str, recovered_table_id: str) -> None:
     # [START bigquery_undelete_table]
     import time
 

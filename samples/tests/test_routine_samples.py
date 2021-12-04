@@ -15,7 +15,7 @@
 from google.cloud import bigquery
 
 
-def test_create_routine(capsys, random_routine_id):
+def test_create_routine(capsys, random_routine_id: str) -> None:
     from .. import create_routine
 
     create_routine.create_routine(random_routine_id)

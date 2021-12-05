@@ -25,7 +25,7 @@ if typing.TYPE_CHECKING:
 
 def test_load_table_file(
     capsys: "pytest.CaptureFixture[str]", random_table_id: str, client: bigquery.Client
-):
+) -> None:
     samples_test_dir = os.path.abspath(os.path.dirname(__file__))
     file_path = os.path.join(
         samples_test_dir, "..", "..", "tests", "data", "people.csv"

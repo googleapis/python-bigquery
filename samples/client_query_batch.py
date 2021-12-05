@@ -12,8 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import typing
 
-def client_query_batch():
+if typing.TYPE_CHECKING:
+    from google.cloud import bigquery
+
+
+def client_query_batch() -> "bigquery.QueryJob":
 
     # [START bigquery_query_batch]
     from google.cloud import bigquery

@@ -12,10 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import typing
+
 from .. import copy_table
 
+if typing.TYPE_CHECKING:
+    import pytest
+    from google.cloud import bigquery
 
-def test_copy_table(capsys, table_with_data_id, random_table_id, client):
+
+def test_copy_table(
+    capsys: "pytest.CaptureFixture[str]",
+    table_with_data_id: str,
+    random_table_id: str,
+    client: bigquery.Client,
+) -> None:
 
     copy_table.copy_table(table_with_data_id, random_table_id)
     out, err = capsys.readouterr()

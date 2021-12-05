@@ -12,16 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import typing
+
 import pytest
 
 from .. import load_table_dataframe
+
+if typing.TYPE_CHECKING:
+    from google.cloud import bigquery
 
 
 pandas = pytest.importorskip("pandas")
 pyarrow = pytest.importorskip("pyarrow")
 
 
-def test_load_table_dataframe(capsys, client, random_table_id):
+def test_load_table_dataframe(
+    capsys: pytest.CaptureFixture[str], client: "bigquery.Client", random_table_id: str,
+) -> None:
 
     table = load_table_dataframe.load_table_dataframe(random_table_id)
     out, _ = capsys.readouterr()

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def browse_table_data(table_id):
+def browse_table_data(table_id: str) -> None:
 
     # [START bigquery_browse_table]
 

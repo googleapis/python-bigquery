@@ -170,6 +170,13 @@ class TestAccessEntry(unittest.TestCase):
         self.assertEqual(entry.entity_type, "userByEmail")
         self.assertEqual(entry.entity_id, "salmon@example.com")
 
+    def test_from_api_repr_w_unknown_entity_type(self):
+        resource = {"role": "READER", "unknown": "UNKNOWN"}
+        entry = self._get_target_class().from_api_repr(resource)
+        self.assertEqual(entry.role, "READER")
+        self.assertEqual(entry.entity_type, "unknown")
+        self.assertEqual(entry.entity_id, "UNKNOWN")
+
     def test_from_api_repr_entries_w_extra_keys(self):
         resource = {
             "role": "READER",
@@ -178,13 +185,6 @@ class TestAccessEntry(unittest.TestCase):
         }
         with self.assertRaises(ValueError):
             self._get_target_class().from_api_repr(resource)
-
-    def test_from_api_repr_w_unknown_entity_type(self):
-        resource = {"role": "READER", "unknown": "UNKNOWN"}
-        entry = self._get_target_class().from_api_repr(resource)
-        self.assertEqual(entry.role, "READER")
-        self.assertEqual(entry.entity_type, "unknown")
-        self.assertEqual(entry.entity_id, "UNKNOWN")
 
 
 class TestDatasetReference(unittest.TestCase):

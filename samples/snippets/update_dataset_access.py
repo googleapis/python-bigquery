@@ -14,27 +14,51 @@
 
 
 def update_dataset_access(dataset_id: str, entity_id: str):
+    original_dataset_id = dataset_id
+    original_entity_id = entity_id
 
     # [START bigquery_update_dataset_access]
+
+    # TODO(developer): Set dataset_id to the ID of the dataset to fetch.
+    dataset_id = "your-project.your_dataset"
+
+    # TODO(developer): Set entity_id to the ID of the email or group from whom
+    # you are adding access. Alternatively, to the JSON REST API representation
+    # of the entity, such as a view's table reference.
+    entity_id = "user-or-group-to-add@example.com"
+
+    # TODO(developer): Set entity_type to the type of entity you are granting access to.
+    # Common types include:
+    #
+    # * "userByEmail" -- A single user or service account. For example "fred@example.com"
+    # * "groupByEmail" -- A group of users. For example "example@googlegroups.com"
+    # * "view" -- An authorized view. For example
+    #       {"projectId": "p", "datasetId": "d", "tableId": "v"}
+    #
+    # For a complete reference, see the REST API reference documentation:
+    # https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#Dataset.FIELDS.access
+    entity_type = "groupByEmail"
+
+    # TODO(developer): Set role to a one of the "Basic roles for datasets"
+    # described here:
+    # https://cloud.google.com/bigquery/docs/access-control-basic-roles#dataset-basic-roles
+    role = "READER"
+    # [END bigquery_update_dataset_access]
+    dataset_id = original_dataset_id
+    entity_id = original_entity_id
+    # [START bigquery_update_dataset_access]
+
     from google.cloud import bigquery
 
     # Construct a BigQuery client object.
     client = bigquery.Client()
 
-    # TODO(developer): Set dataset_id to the ID of the dataset to fetch.
-    # dataset_id = 'your-project.your_dataset'
-    # TODO(developer): Set entity_id to the ID of the entry to update.
-    # entity_id = 'your-email@email.com"
-
     dataset = client.get_dataset(dataset_id)  # Make an API request.
 
-    # This is an example entry that will have "reader" dataset access. For other entry options, see https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.dataset.AccessEntry.html?highlight=accessentry#google.cloud.bigquery.dataset.AccessEntry
-    entry = bigquery.AccessEntry(
-        role="READER", entity_type="groupByEmail", entity_id=entity_id,
-    )
-
     entries = list(dataset.access_entries)
-    entries.append(entry)
+    entries.append(
+        bigquery.AccessEntry(role=role, entity_type=entity_type, entity_id=entity_id,)
+    )
     dataset.access_entries = entries
 
     dataset = client.update_dataset(dataset, ["access_entries"])  # Make an API request.

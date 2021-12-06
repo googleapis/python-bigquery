@@ -37,8 +37,6 @@ def revoke_dataset_access(dataset_id: str, entity_id: str):
     dataset = client.get_dataset(dataset_id)  # Make an API request.
 
     entries = list(dataset.access_entries)
-    dataset.access_entries = entries
-
     dataset.access_entries = [
         entry for entry in entries if entry.entity_id != entity_id
     ]

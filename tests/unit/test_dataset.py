@@ -179,6 +179,13 @@ class TestAccessEntry(unittest.TestCase):
         with self.assertRaises(ValueError):
             self._get_target_class().from_api_repr(resource)
 
+    def test_from_api_repr_w_unknown_entity_type(self):
+        resource = {"role": "READER", "unknown": "UNKNOWN"}
+        entry = self._get_target_class().from_api_repr(resource)
+        self.assertEqual(entry.role, "READER")
+        self.assertEqual(entry.entity_type, "unknown")
+        self.assertEqual(entry.entity_id, "UNKNOWN")
+
 
 class TestDatasetReference(unittest.TestCase):
     @staticmethod

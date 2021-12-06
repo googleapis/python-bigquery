@@ -232,7 +232,7 @@ def _make_sql_scalars_enum():
 StandardSqlDataTypes = _make_sql_scalars_enum()
 
 
-class EntityTypes:
+class EntityTypes(str, enum.Enum):
     """Enum of allowed entity type names in AccessEntry"""
 
     USER_BY_EMAIL = "userByEmail"

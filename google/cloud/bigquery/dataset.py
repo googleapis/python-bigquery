@@ -143,7 +143,8 @@ class AccessEntry(object):
         >>> entry = AccessEntry(None, 'view', view)
     """
 
-    def __init__(self, role, entity_type, entity_id):
+    def __init__(self, role, entity_type=None, entity_id=None):
+        self._properties = {}
         if entity_type in ("view", "routine", "dataset"):
             if role is not None:
                 raise ValueError(
@@ -234,7 +235,9 @@ class AccessEntry(object):
         entity_type, entity_id = entry.popitem()
         if len(entry) != 0:
             raise ValueError("Entry has unexpected keys remaining.", entry)
-        return cls(role, entity_type, entity_id)
+        config = cls(role, entity_type, entity_id)
+        config._properties = copy.deepcopy(resource)
+        return config
 
 
 class DatasetReference(object):

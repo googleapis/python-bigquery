@@ -27,7 +27,7 @@ from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 
-def _get_table_reference(self, table_id):
+def _get_table_reference(self, table_id: str) -> TableReference:
     """Constructs a TableReference.
 
     Args:
@@ -144,7 +144,7 @@ class AccessEntry(object):
     )
     """Allowed entity types."""
 
-    def __init__(self, role, entity_type, entity_id):
+    def __init__(self, role, entity_type, entity_id) -> None:
         if entity_type not in self.ENTITY_TYPES:
             message = "Entity type %r not among: %s" % (
                 entity_type,
@@ -407,7 +407,7 @@ class Dataset(object):
         "default_encryption_configuration": "defaultEncryptionConfiguration",
     }
 
-    def __init__(self, dataset_ref):
+    def __init__(self, dataset_ref) -> None:
         if isinstance(dataset_ref, str):
             dataset_ref = DatasetReference.from_string(dataset_ref)
         self._properties = {"datasetReference": dataset_ref.to_api_repr(), "labels": {}}

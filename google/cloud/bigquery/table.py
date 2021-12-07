@@ -369,7 +369,7 @@ class Table(_TableBase):
         "require_partition_filter": "requirePartitionFilter",
     }
 
-    def __init__(self, table_ref, schema=None):
+    def __init__(self, table_ref, schema=None) -> None:
         table_ref = _table_arg_to_table_ref(table_ref)
         self._properties = {"tableReference": table_ref.to_api_repr(), "labels": {}}
         # Let the @property do validation.
@@ -1318,7 +1318,7 @@ class Row(object):
     # Choose unusual field names to try to avoid conflict with schema fields.
     __slots__ = ("_xxx_values", "_xxx_field_to_index")
 
-    def __init__(self, values, field_to_index):
+    def __init__(self, values, field_to_index) -> None:
         self._xxx_values = values
         self._xxx_field_to_index = field_to_index
 
@@ -2230,7 +2230,7 @@ class PartitionRange(object):
             Private. Used to construct object from API resource.
     """
 
-    def __init__(self, start=None, end=None, interval=None, _properties=None):
+    def __init__(self, start=None, end=None, interval=None, _properties=None) -> None:
         if _properties is None:
             _properties = {}
         self._properties = _properties
@@ -2305,10 +2305,10 @@ class RangePartitioning(object):
             Private. Used to construct object from API resource.
     """
 
-    def __init__(self, range_=None, field=None, _properties=None):
+    def __init__(self, range_=None, field=None, _properties=None) -> None:
         if _properties is None:
             _properties = {}
-        self._properties = _properties
+        self._properties: Dict[str, Any] = _properties
 
         if range_ is not None:
             self.range_ = range_
@@ -2414,8 +2414,8 @@ class TimePartitioning(object):
 
     def __init__(
         self, type_=None, field=None, expiration_ms=None, require_partition_filter=None
-    ):
-        self._properties = {}
+    ) -> None:
+        self._properties: Dict[str, Any] = {}
         if type_ is None:
             self.type_ = TimePartitioningType.DAY
         else:

@@ -215,7 +215,7 @@ class Client(ClientWithProject):
         default_query_job_config=None,
         client_info=None,
         client_options=None,
-    ):
+    ) -> None:
         super(Client, self).__init__(
             project=project,
             credentials=credentials,
@@ -3426,7 +3426,9 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableReference, TableListItem, str],
         json_rows: Sequence[Dict],
-        row_ids: Union[Iterable[str], AutoRowIDs, None] = AutoRowIDs.GENERATE_UUID,
+        row_ids: Union[
+            Iterable[Optional[str]], AutoRowIDs, None
+        ] = AutoRowIDs.GENERATE_UUID,
         skip_invalid_rows: bool = None,
         ignore_unknown_values: bool = None,
         template_suffix: str = None,

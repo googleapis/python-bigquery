@@ -16,7 +16,7 @@
 
 """Define resources for the BigQuery Routines API."""
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
@@ -69,7 +69,7 @@ class Routine(object):
         "determinism_level": "determinismLevel",
     }
 
-    def __init__(self, routine_ref, **kwargs):
+    def __init__(self, routine_ref, **kwargs) -> None:
         if isinstance(routine_ref, str):
             routine_ref = RoutineReference.from_string(routine_ref)
 
@@ -214,7 +214,7 @@ class Routine(object):
         self._properties[self._PROPERTY_TO_API_FIELD["return_type"]] = resource
 
     @property
-    def return_table_type(self) -> StandardSqlTableType:
+    def return_table_type(self) -> Optional[StandardSqlTableType]:
         """The return type of a Table Valued Function (TVF) routine.
 
         .. versionadded:: 2.22.0
@@ -352,8 +352,8 @@ class RoutineArgument(object):
         "mode": "mode",
     }
 
-    def __init__(self, **kwargs):
-        self._properties = {}
+    def __init__(self, **kwargs) -> None:
+        self._properties: Dict[str, Any] = {}
         for property_name in kwargs:
             setattr(self, property_name, kwargs[property_name])
 

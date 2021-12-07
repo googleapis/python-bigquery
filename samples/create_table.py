@@ -12,13 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import typing
 
-if typing.TYPE_CHECKING:
-    from google.cloud import bigquery
-
-
-def create_table(table_id: str) -> "bigquery.Table":
+def create_table(table_id: str) -> None:
 
     # [START bigquery_create_table]
     from google.cloud import bigquery

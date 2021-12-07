@@ -16,6 +16,7 @@
 def query_external_sheets_permanent_table(dataset_id: str) -> None:
 
     # [START bigquery_query_external_sheets_perm]
+    import typing
     from google.cloud import bigquery
     import google.auth
 
@@ -56,8 +57,9 @@ def query_external_sheets_permanent_table(dataset_id: str) -> None:
         "/d/1i_QCL-7HcSyUZmIbP9E6lO_T5u3HnpLe7dnpHaijg_E/edit?usp=sharing"
     )
     external_config.source_uris = [sheet_url]
-    external_config.options.skip_leading_rows = 1  # Optionally skip header row.
-    external_config.options.range = (
+    options = typing.cast(bigquery.GoogleSheetsOptions, external_config.options)
+    options.skip_leading_rows = 1  # Optionally skip header row.
+    options.range = (
         "us-states!A20:B49"  # Optionally set range of the sheet to query from.
     )
     table.external_data_configuration = external_config

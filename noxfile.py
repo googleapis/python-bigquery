@@ -198,6 +198,7 @@ def mypy_samples(session):
     # Just install the dependencies' type info directly, since "mypy --install-types"
     # might require an additional pass.
     session.install("types-mock", "types-pytz")
+    session.install("typing-extensions")  # for TypedDict in pre-3.8 Python versions
 
     session.run(
         "mypy",

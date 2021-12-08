@@ -13,7 +13,12 @@
 # limitations under the License.
 
 import typing
-from typing import Dict, Optional, Tuple, TypedDict
+from typing import Dict, Optional, Tuple
+
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
 if typing.TYPE_CHECKING:
     from google.cloud import bigquery

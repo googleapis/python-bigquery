@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
     from google.cloud import bigquery
 
 
-def delete_dataset_labels(dataset_id: str) -> bigquery.Dataset:
+def delete_dataset_labels(dataset_id: str) -> "bigquery.Dataset":
 
     # [START bigquery_delete_label_dataset]
 

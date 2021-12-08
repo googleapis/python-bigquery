@@ -25,7 +25,7 @@ def test_copy_table(
     capsys: "pytest.CaptureFixture[str]",
     table_with_data_id: str,
     random_table_id: str,
-    client: bigquery.Client,
+    client: "bigquery.Client",
 ) -> None:
 
     copy_table.copy_table(table_with_data_id, random_table_id)

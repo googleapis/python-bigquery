@@ -5,6 +5,13 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+### [2.31.1](https://www.github.com/googleapis/python-bigquery/compare/v2.31.0...v2.31.1) (2021-12-09)
+
+
+### Documentation
+
+* add sample for revoking dataset access ([#778](https://www.github.com/googleapis/python-bigquery/issues/778)) ([effd673](https://www.github.com/googleapis/python-bigquery/commit/effd6734a08914216482ba370d9433364d278f3a))
+
 ## [2.31.0](https://www.github.com/googleapis/python-bigquery/compare/v2.30.1...v2.31.0) (2021-11-24)
 
 

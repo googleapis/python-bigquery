@@ -179,16 +179,24 @@ class TestAccessEntry(unittest.TestCase):
         exp_resource = entry.to_api_repr()
         self.assertEqual(resource, exp_resource)
 
+    def test_to_api_repr_w_extra_properties(self):
+        resource = {
+            "role": "READER",
+            "userByEmail": "salmon@example.com",
+        }
+        entry = self._get_target_class().from_api_repr(resource)
+        entry._properties["specialGroup"] = resource["specialGroup"] = "projectReaders"
+        exp_resource = entry.to_api_repr()
+        self.assertEqual(resource, exp_resource)
+
     def test_from_api_repr_entries_w_extra_keys(self):
         resource = {
             "role": "READER",
             "specialGroup": "projectReaders",
             "userByEmail": "salmon@example.com",
         }
-        entry = self._get_target_class().from_api_repr(resource)
-        self.assertEqual(entry.role, "READER")
-        self.assertEqual(entry.entity_type, "userByEmail")
-        self.assertEqual(entry._properties["specialGroup"], "projectReaders")
+        with self.assertRaises(ValueError):
+            self._get_target_class().from_api_repr(resource)
 
 
 class TestDatasetReference(unittest.TestCase):

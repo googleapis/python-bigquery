@@ -233,6 +233,8 @@ class AccessEntry(object):
         entry = resource.copy()
         role = entry.pop("role", None)
         entity_type, entity_id = entry.popitem()
+        if len(entry) != 0:
+            raise ValueError("Entry has unexpected keys remaining.", entry)
 
         config = cls(role, entity_type, entity_id)
         config._properties = copy.deepcopy(resource)

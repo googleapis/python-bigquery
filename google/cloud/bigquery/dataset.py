@@ -143,7 +143,7 @@ class AccessEntry(object):
         >>> entry = AccessEntry(None, 'view', view)
     """
 
-    def __init__(self, role, entity_type=None, entity_id=None):
+    def __init__(self, role=None, entity_type=None, entity_id=None):
         self._properties = {}
         if entity_type in ("view", "routine", "dataset"):
             if role is not None:
@@ -156,7 +156,6 @@ class AccessEntry(object):
                 raise ValueError(
                     "Role must be set for entity " "type %r" % (entity_type,)
                 )
-
         self._role = role
         self._entity_type = entity_type
         self._entity_id = entity_id
@@ -208,7 +207,8 @@ class AccessEntry(object):
         Returns:
             Dict[str, object]: Access entry represented as an API resource
         """
-        resource = {self._entity_type: self._entity_id}
+        resource = copy.deepcopy(self._properties)
+        resource[self._entity_type] = self._entity_id
         if self._role is not None:
             resource["role"] = self._role
         return resource
@@ -233,8 +233,6 @@ class AccessEntry(object):
         entry = resource.copy()
         role = entry.pop("role", None)
         entity_type, entity_id = entry.popitem()
-        if len(entry) != 0:
-            raise ValueError("Entry has unexpected keys remaining.", entry)
 
         config = cls(role, entity_type, entity_id)
         config._properties = copy.deepcopy(resource)

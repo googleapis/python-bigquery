@@ -17,7 +17,6 @@ def query_external_sheets_temporary_table() -> None:
 
     # [START bigquery_query_external_sheets_temp]
     # [START bigquery_auth_drive_scope]
-    import typing
     from google.cloud import bigquery
     import google.auth
 
@@ -54,7 +53,8 @@ def query_external_sheets_temporary_table() -> None:
         bigquery.SchemaField("name", "STRING"),
         bigquery.SchemaField("post_abbr", "STRING"),
     ]
-    options = typing.cast(bigquery.GoogleSheetsOptions, external_config.options)
+    options = external_config.google_sheets_options
+    assert options is not None
     options.skip_leading_rows = 1  # Optionally skip header row.
     options.range = (
         "us-states!A20:B49"  # Optionally set range of the sheet to query from.

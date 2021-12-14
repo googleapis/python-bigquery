@@ -16,7 +16,6 @@
 def query_external_gcs_temporary_table() -> None:
 
     # [START bigquery_query_external_gcs_temp]
-    import typing
     from google.cloud import bigquery
 
     # Construct a BigQuery client object.
@@ -31,7 +30,9 @@ def query_external_gcs_temporary_table() -> None:
         bigquery.SchemaField("name", "STRING"),
         bigquery.SchemaField("post_abbr", "STRING"),
     ]
-    typing.cast(bigquery.CSVOptions, external_config.options).skip_leading_rows = 1
+    assert external_config.csv_options is not None
+    external_config.csv_options.skip_leading_rows = 1
+
     table_id = "us_states"
     job_config = bigquery.QueryJobConfig(table_definitions={table_id: external_config})
 

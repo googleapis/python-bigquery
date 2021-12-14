@@ -20,6 +20,7 @@ import decimal
 import json
 import io
 import operator
+import warnings
 
 import google.api_core.retry
 import pkg_resources
@@ -363,7 +364,7 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
     See: https://github.com/googleapis/google-cloud-python/issues/7370
     """
     # Schema with all scalar types.
-    scalars_schema = (
+    table_schema = (
         bigquery.SchemaField("bool_col", "BOOLEAN"),
         bigquery.SchemaField("bytes_col", "BYTES"),
         bigquery.SchemaField("date_col", "DATE"),
@@ -378,15 +379,6 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
     )
 
-    table_schema = scalars_schema + (
-        # TODO: Array columns can't be read due to NULLABLE versus REPEATED
-        #       mode mismatch. See:
-        #       https://issuetracker.google.com/133415569#comment3
-        # bigquery.SchemaField("array_col", "INTEGER", mode="REPEATED"),
-        # TODO: Support writing StructArrays to Parquet. See:
-        #       https://jira.apache.org/jira/browse/ARROW-2587
-        # bigquery.SchemaField("struct_col", "RECORD", fields=scalars_schema),
-    )
     num_rows = 100
     nulls = [None] * num_rows
     df_data = [
@@ -467,7 +459,8 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
     # See:
     #       https://github.com/googleapis/python-bigquery/issues/61
     #       https://issuetracker.google.com/issues/151765076
-    scalars_schema = (
+    table_schema = (
+        bigquery.SchemaField("row_num", "INTEGER"),
         bigquery.SchemaField("bool_col", "BOOLEAN"),
         bigquery.SchemaField("bytes_col", "BYTES"),
         bigquery.SchemaField("date_col", "DATE"),
@@ -482,17 +475,8 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
     )
 
-    table_schema = scalars_schema + (
-        # TODO: Array columns can't be read due to NULLABLE versus REPEATED
-        #       mode mismatch. See:
-        #       https://issuetracker.google.com/133415569#comment3
-        # bigquery.SchemaField("array_col", "INTEGER", mode="REPEATED"),
-        # TODO: Support writing StructArrays to Parquet. See:
-        #       https://jira.apache.org/jira/browse/ARROW-2587
-        # bigquery.SchemaField("struct_col", "RECORD", fields=scalars_schema),
-    )
-
     df_data = [
+        ("row_num", [1, 2, 3]),
         ("bool_col", [True, None, False]),
         ("bytes_col", [b"abc", None, b"def"]),
         ("date_col", [datetime.date(1, 1, 1), None, datetime.date(9999, 12, 31)]),
@@ -558,6 +542,22 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
     table = bigquery_client.get_table(table_id)
     assert tuple(table.schema) == table_schema
     assert table.num_rows == 3
+
+    result = bigquery_client.list_rows(table).to_dataframe()
+    result.sort_values("row_num", inplace=True)
+
+    # Check that extreme DATE/DATETIME values are loaded correctly.
+    # https://github.com/googleapis/python-bigquery/issues/1076
+    assert result["date_col"][0] == datetime.date(1, 1, 1)
+    assert result["date_col"][2] == datetime.date(9999, 12, 31)
+    assert result["dt_col"][0] == datetime.datetime(1, 1, 1, 0, 0, 0)
+    assert result["dt_col"][2] == datetime.datetime(9999, 12, 31, 23, 59, 59, 999999)
+    assert result["ts_col"][0] == datetime.datetime(
+        1, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc
+    )
+    assert result["ts_col"][2] == datetime.datetime(
+        9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc
+    )
 
 
 def test_load_table_from_dataframe_w_struct_datatype(bigquery_client, dataset_id):
@@ -1180,9 +1180,17 @@ def test_to_geodataframe(bigquery_client, dataset_id):
     assert df["geog"][2] == wkt.loads("point(0 0)")
     assert isinstance(df, geopandas.GeoDataFrame)
     assert isinstance(df["geog"], geopandas.GeoSeries)
-    assert df.area[0] == 0.5
-    assert pandas.isna(df.area[1])
-    assert df.area[2] == 0.0
+
+    with warnings.catch_warnings():
+        # Computing the area on a GeoDataFrame that uses a geographic Coordinate
+        # Reference System (CRS) produces a warning that we are not interested in.
+        # We do not mind if the computed area is incorrect with respect to the
+        # GeoDataFrame data, as long as it matches the expected "incorrect" value.
+        warnings.filterwarnings("ignore", category=UserWarning)
+        assert df.area[0] == 0.5
+        assert pandas.isna(df.area[1])
+        assert df.area[2] == 0.0
+
     assert df.crs.srs == "EPSG:4326"
     assert df.crs.name == "WGS 84"
     assert df.geog.crs.srs == "EPSG:4326"

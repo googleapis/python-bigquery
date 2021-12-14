@@ -231,7 +231,7 @@ class QueryJobConfig(_JobConfig):
     the property name as the name of a keyword argument.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super(QueryJobConfig, self).__init__("query", **kwargs)
 
     @property
@@ -1067,7 +1067,7 @@ class QueryJob(_AsyncJob):
         return prop
 
     @property
-    def num_dml_affected_rows(self):
+    def num_dml_affected_rows(self) -> Optional[int]:
         """Return the number of DML rows affected by the job.
 
         See:

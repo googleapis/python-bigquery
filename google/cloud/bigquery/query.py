@@ -520,7 +520,7 @@ class ArrayQueryParameter(_AbstractQueryParameter):
         values (List[appropriate type]): The parameter array values.
     """
 
-    def __init__(self, name, array_type, values):
+    def __init__(self, name, array_type, values) -> None:
         self.name = name
         self.values = values
 
@@ -683,10 +683,13 @@ class StructQueryParameter(_AbstractQueryParameter):
         ]]): The sub-parameters for the struct
     """
 
-    def __init__(self, name, *sub_params):
+    def __init__(self, name, *sub_params) -> None:
         self.name = name
-        types = self.struct_types = OrderedDict()
-        values = self.struct_values = {}
+        self.struct_types: Dict[str, Any] = OrderedDict()
+        self.struct_values: Dict[str, Any] = {}
+
+        types = self.struct_types
+        values = self.struct_values
         for sub in sub_params:
             if isinstance(sub, self.__class__):
                 types[sub.name] = "STRUCT"

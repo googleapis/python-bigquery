@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import datetime
+from typing import Iterator
 import uuid
 
 import google.auth
@@ -23,7 +24,7 @@ from google.cloud import bigquery
 
 
 @pytest.fixture(scope="session", autouse=True)
-def client():
+def client() -> bigquery.Client:
     credentials, project = google.auth.default(
         scopes=[
             "https://www.googleapis.com/auth/drive",
@@ -33,12 +34,12 @@ def client():
     real_client = bigquery.Client(credentials=credentials, project=project)
     mock_client = mock.create_autospec(bigquery.Client)
     mock_client.return_value = real_client
-    bigquery.Client = mock_client
+    bigquery.Client = mock_client  # type: ignore
     return real_client
 
 
 @pytest.fixture
-def random_table_id(dataset_id):
+def random_table_id(dataset_id: str) -> str:
     now = datetime.datetime.now()
     random_table_id = "example_table_{}_{}".format(
         now.strftime("%Y%m%d%H%M%S"), uuid.uuid4().hex[:8]
@@ -47,7 +48,7 @@ def random_table_id(dataset_id):
 
 
 @pytest.fixture
-def random_dataset_id(client):
+def random_dataset_id(client: bigquery.Client) -> Iterator[str]:
     now = datetime.datetime.now()
     random_dataset_id = "example_dataset_{}_{}".format(
         now.strftime("%Y%m%d%H%M%S"), uuid.uuid4().hex[:8]
@@ -57,7 +58,7 @@ def random_dataset_id(client):
 
 
 @pytest.fixture
-def random_routine_id(dataset_id):
+def random_routine_id(dataset_id: str) -> str:
     now = datetime.datetime.now()
     random_routine_id = "example_routine_{}_{}".format(
         now.strftime("%Y%m%d%H%M%S"), uuid.uuid4().hex[:8]
@@ -66,7 +67,7 @@ def random_routine_id(dataset_id):
 
 
 @pytest.fixture
-def dataset_id(client):
+def dataset_id(client: bigquery.Client) -> Iterator[str]:
     now = datetime.datetime.now()
     dataset_id = "python_dataset_sample_{}_{}".format(
         now.strftime("%Y%m%d%H%M%S"), uuid.uuid4().hex[:8]
@@ -77,7 +78,7 @@ def dataset_id(client):
 
 
 @pytest.fixture
-def table_id(client, dataset_id):
+def table_id(client: bigquery.Client, dataset_id: str) -> Iterator[str]:
     now = datetime.datetime.now()
     table_id = "python_table_sample_{}_{}".format(
         now.strftime("%Y%m%d%H%M%S"), uuid.uuid4().hex[:8]
@@ -90,7 +91,7 @@ def table_id(client, dataset_id):
 
 
 @pytest.fixture
-def table_with_schema_id(client, dataset_id):
+def table_with_schema_id(client: bigquery.Client, dataset_id: str) -> Iterator[str]:
     now = datetime.datetime.now()
     table_id = "python_table_with_schema_{}_{}".format(
         now.strftime("%Y%m%d%H%M%S"), uuid.uuid4().hex[:8]
@@ -106,12 +107,12 @@ def table_with_schema_id(client, dataset_id):
 
 
 @pytest.fixture
-def table_with_data_id():
+def table_with_data_id() -> str:
     return "bigquery-public-data.samples.shakespeare"
 
 
 @pytest.fixture
-def routine_id(client, dataset_id):
+def routine_id(client: bigquery.Client, dataset_id: str) -> Iterator[str]:
     now = datetime.datetime.now()
     routine_id = "python_routine_sample_{}_{}".format(
         now.strftime("%Y%m%d%H%M%S"), uuid.uuid4().hex[:8]
@@ -136,7 +137,7 @@ def routine_id(client, dataset_id):
 
 
 @pytest.fixture
-def model_id(client, dataset_id):
+def model_id(client: bigquery.Client, dataset_id: str) -> str:
     model_id = "{}.{}".format(dataset_id, uuid.uuid4().hex)
 
     # The only way to create a model resource is via SQL.
@@ -162,5 +163,5 @@ def model_id(client, dataset_id):
 
 
 @pytest.fixture
-def kms_key_name():
+def kms_key_name() -> str:
     return "projects/cloud-samples-tests/locations/us/keyRings/test/cryptoKeys/test"

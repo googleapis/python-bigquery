@@ -38,7 +38,7 @@ class LoadJobConfig(_JobConfig):
     the property name as the name of a keyword argument.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super(LoadJobConfig, self).__init__("load", **kwargs)
 
     @property

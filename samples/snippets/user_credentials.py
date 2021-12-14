@@ -23,7 +23,7 @@ your application.
 import argparse
 
 
-def main(project, launch_browser=True):
+def main(project: str, launch_browser: bool = True) -> None:
     # [START bigquery_auth_user_flow]
     from google_auth_oauthlib import flow
 

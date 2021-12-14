@@ -18,14 +18,15 @@ from typing import Dict, Mapping, Optional, Sequence
 def insert_geojson(
     override_values: Optional[Mapping[str, str]] = None
 ) -> Sequence[Dict[str, object]]:
+
+    if override_values is None:
+        override_values = {}
+
     # [START bigquery_insert_geojson]
     import geojson
     from google.cloud import bigquery
 
     bigquery_client = bigquery.Client()
-
-    if override_values is None:
-        override_values = {}
 
     # This example uses a table containing a column named "geo" with the
     # GEOGRAPHY data type.

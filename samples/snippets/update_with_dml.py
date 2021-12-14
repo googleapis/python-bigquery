@@ -14,7 +14,6 @@
 
 # [START bigquery_update_with_dml]
 import pathlib
-import typing
 from typing import Dict, Optional
 
 from google.cloud import bigquery
@@ -61,8 +60,10 @@ def update_with_dml(
     # Wait for query job to finish.
     query_job.result()
 
+    assert query_job.num_dml_affected_rows is not None
+
     print(f"DML query modified {query_job.num_dml_affected_rows} rows.")
-    return typing.cast(int, query_job.num_dml_affected_rows)
+    return query_job.num_dml_affected_rows
 
 
 def run_sample(override_values: Optional[Dict[str, str]] = None) -> int:

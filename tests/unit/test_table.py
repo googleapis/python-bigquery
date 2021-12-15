@@ -2205,25 +2205,6 @@ class TestRowIterator(unittest.TestCase):
             [[{"name": "Bepples Phlyntstone", "age": 0}, {"name": "Dino", "age": 4}]],
         )
 
-    @mock.patch("google.cloud.bigquery.table.pyarrow", new=None)
-    def test_to_arrow_iterable_error_if_pyarrow_is_none(self):
-        from google.cloud.bigquery.schema import SchemaField
-
-        schema = [
-            SchemaField("name", "STRING", mode="REQUIRED"),
-            SchemaField("age", "INTEGER", mode="REQUIRED"),
-        ]
-        rows = [
-            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
-            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
-        ]
-        path = "/foo"
-        api_request = mock.Mock(return_value={"rows": rows})
-        row_iterator = self._make_one(_mock_client(), api_request, path, schema)
-
-        with pytest.raises(ValueError, match="pyarrow"):
-            row_iterator.to_arrow_iterable()
-
     def test_to_arrow_iterable_w_bqstorage(self):
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
@@ -2299,7 +2280,6 @@ class TestRowIterator(unittest.TestCase):
         # Don't close the client if it was passed in.
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_to_arrow(self):
         from google.cloud.bigquery.schema import SchemaField
 

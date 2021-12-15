@@ -17,6 +17,7 @@
 from __future__ import absolute_import
 
 import copy
+from typing import Dict, Any
 
 import google.cloud._helpers  # type: ignore
 
@@ -144,7 +145,7 @@ class AccessEntry(object):
     """
 
     def __init__(self, role=None, entity_type=None, entity_id=None) -> None:
-        self._properties = {}
+        self._properties: Dict[str, Any] = {}
         if entity_type in ("view", "routine", "dataset"):
             if role is not None:
                 raise ValueError(

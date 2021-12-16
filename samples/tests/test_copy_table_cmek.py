@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import typing
+import pytest
 
 from .. import copy_table_cmek
-
-if typing.TYPE_CHECKING:
-    import pytest
 
 
 def test_copy_table_cmek(
@@ -26,6 +23,7 @@ def test_copy_table_cmek(
     table_with_data_id: str,
     kms_key_name: str,
 ) -> None:
+    pytest.skip("b/210907595: copy fails for shakespeare table")
 
     copy_table_cmek.copy_table_cmek(random_table_id, table_with_data_id, kms_key_name)
     out, err = capsys.readouterr()

@@ -14,10 +14,11 @@
 
 import typing
 
+import pytest
+
 from .. import copy_table
 
 if typing.TYPE_CHECKING:
-    import pytest
     from google.cloud import bigquery
 
 
@@ -27,6 +28,7 @@ def test_copy_table(
     random_table_id: str,
     client: "bigquery.Client",
 ) -> None:
+    pytest.skip("b/210907595: copy fails for shakespeare table")
 
     copy_table.copy_table(table_with_data_id, random_table_id)
     out, err = capsys.readouterr()

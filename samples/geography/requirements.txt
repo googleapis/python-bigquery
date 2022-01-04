@@ -45,4 +45,3 @@ six==1.16.0
 typing-extensions==4.0.1
 typing-inspect==0.7.1
 urllib3==1.26.7
-zipp==3.7.0

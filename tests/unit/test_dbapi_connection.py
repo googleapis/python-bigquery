@@ -224,7 +224,7 @@ class TestConnection(unittest.TestCase):
           try:
             if isinstance(obj, Cursor):
               cursor_count += 1
-          except ReferenceError:
+          except ReferenceError:  # pragma: NO COVER
             pass
         self.assertEqual(cursor_count, 2)
 

@@ -5,6 +5,18 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [2.32.0](https://www.github.com/googleapis/python-bigquery/compare/v2.31.0...v2.32.0) (2022-01-10)
+
+
+### Features
+
+* support authorized dataset entity ([#1075](https://www.github.com/googleapis/python-bigquery/issues/1075)) ([c098cd0](https://www.github.com/googleapis/python-bigquery/commit/c098cd01c755633bfaba7193dd5c044a489a5b61))
+
+
+### Documentation
+
+* add sample for revoking dataset access ([#778](https://www.github.com/googleapis/python-bigquery/issues/778)) ([effd673](https://www.github.com/googleapis/python-bigquery/commit/effd6734a08914216482ba370d9433364d278f3a))
+
 ## [2.31.0](https://www.github.com/googleapis/python-bigquery/compare/v2.30.1...v2.31.0) (2021-11-24)
 
 

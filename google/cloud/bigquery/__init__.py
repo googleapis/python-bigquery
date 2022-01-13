@@ -50,7 +50,9 @@ from google.cloud.bigquery.external_config import BigtableColumn
 from google.cloud.bigquery.external_config import CSVOptions
 from google.cloud.bigquery.external_config import GoogleSheetsOptions
 from google.cloud.bigquery.external_config import ExternalSourceFormat
+from google.cloud.bigquery.format_options import AvroOptions
 from google.cloud.bigquery.format_options import ParquetOptions
+from google.cloud.bigquery.job.base import SessionInfo
 from google.cloud.bigquery.job import Compression
 from google.cloud.bigquery.job import CopyJob
 from google.cloud.bigquery.job import CopyJobConfig
@@ -76,6 +78,7 @@ from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.query import ArrayQueryParameter
 from google.cloud.bigquery.query import ArrayQueryParameterType
+from google.cloud.bigquery.query import ConnectionProperty
 from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.query import ScalarQueryParameterType
 from google.cloud.bigquery.query import StructQueryParameter
@@ -88,6 +91,7 @@ from google.cloud.bigquery.routine import RoutineArgument
 from google.cloud.bigquery.routine import RoutineReference
 from google.cloud.bigquery.routine import RoutineType
 from google.cloud.bigquery.schema import SchemaField
+from google.cloud.bigquery.schema import PolicyTagList
 from google.cloud.bigquery.table import PartitionRange
 from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import Row
@@ -102,6 +106,7 @@ __all__ = [
     "__version__",
     "Client",
     # Queries
+    "ConnectionProperty",
     "QueryJob",
     "QueryJobConfig",
     "ArrayQueryParameter",
@@ -130,6 +135,7 @@ __all__ = [
     "ExtractJobConfig",
     "LoadJob",
     "LoadJobConfig",
+    "SessionInfo",
     "UnknownJob",
     # Models
     "Model",
@@ -140,8 +146,10 @@ __all__ = [
     "RoutineReference",
     # Shared helpers
     "SchemaField",
+    "PolicyTagList",
     "UDFResource",
     "ExternalConfig",
+    "AvroOptions",
     "BigtableOptions",
     "BigtableColumnFamily",
     "BigtableColumn",

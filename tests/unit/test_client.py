@@ -36,16 +36,24 @@ try:
     import pandas
 except (ImportError, AttributeError):  # pragma: NO COVER
     pandas = None
+
 try:
     import opentelemetry
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import SimpleExportSpanProcessor
-    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
-        InMemorySpanExporter,
-    )
-except (ImportError, AttributeError):  # pragma: NO COVER
+except ImportError:
     opentelemetry = None
+
+if opentelemetry is not None:
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+            InMemorySpanExporter,
+        )
+    except (ImportError, AttributeError) as exc:  # pragma: NO COVER
+        msg = "Error importing from opentelemetry, is the installed version compatible?"
+        raise ImportError(msg) from exc
+
 try:
     import pyarrow
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -57,6 +65,7 @@ import google.cloud._helpers
 from google.cloud import bigquery_v2
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
+from google.cloud.bigquery import ParquetOptions
 
 try:
     from google.cloud import bigquery_storage
@@ -783,9 +792,12 @@ class TestClient(unittest.TestCase):
 
         tracer_provider = TracerProvider()
         memory_exporter = InMemorySpanExporter()
-        span_processor = SimpleExportSpanProcessor(memory_exporter)
+        span_processor = SimpleSpanProcessor(memory_exporter)
         tracer_provider.add_span_processor(span_processor)
-        trace.set_tracer_provider(tracer_provider)
+
+        # OpenTelemetry API >= 0.12b0 does not allow overriding the tracer once
+        # initialized, thus directly override the internal global var.
+        tracer_patcher = mock.patch.object(trace, "_TRACER_PROVIDER", tracer_provider)
 
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
@@ -796,7 +808,7 @@ class TestClient(unittest.TestCase):
         full_routine_id = "test-routine-project.test_routines.minimal_routine"
         routine = Routine(full_routine_id)
 
-        with pytest.raises(google.api_core.exceptions.AlreadyExists):
+        with pytest.raises(google.api_core.exceptions.AlreadyExists), tracer_patcher:
             client.create_routine(routine)
 
         span_list = memory_exporter.get_finished_spans()
@@ -1024,18 +1036,8 @@ class TestClient(unittest.TestCase):
             {
                 "schema": {
                     "fields": [
-                        {
-                            "name": "full_name",
-                            "type": "STRING",
-                            "mode": "REQUIRED",
-                            "policyTags": {"names": []},
-                        },
-                        {
-                            "name": "age",
-                            "type": "INTEGER",
-                            "mode": "REQUIRED",
-                            "policyTags": {"names": []},
-                        },
+                        {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                        {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
                     ]
                 },
                 "view": {"query": query},
@@ -1069,18 +1071,8 @@ class TestClient(unittest.TestCase):
                 },
                 "schema": {
                     "fields": [
-                        {
-                            "name": "full_name",
-                            "type": "STRING",
-                            "mode": "REQUIRED",
-                            "policyTags": {"names": []},
-                        },
-                        {
-                            "name": "age",
-                            "type": "INTEGER",
-                            "mode": "REQUIRED",
-                            "policyTags": {"names": []},
-                        },
+                        {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                        {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
                     ]
                 },
                 "view": {"query": query, "useLegacySql": False},
@@ -1573,7 +1565,7 @@ class TestClient(unittest.TestCase):
             self.PROJECT, self.DS_ID, self.TABLE_ID,
         )
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             client.get_iam_policy(table_resource_string)
 
     def test_get_iam_policy_w_invalid_version(self):
@@ -1694,7 +1686,7 @@ class TestClient(unittest.TestCase):
             self.TABLE_ID,
         )
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             client.set_iam_policy(table_resource_string, policy)
 
     def test_test_iam_permissions(self):
@@ -1736,7 +1728,7 @@ class TestClient(unittest.TestCase):
 
         PERMISSIONS = ["bigquery.tables.get", "bigquery.tables.update"]
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             client.test_iam_permissions(table_resource_string, PERMISSIONS)
 
     def test_update_dataset_w_invalid_field(self):
@@ -1806,7 +1798,6 @@ class TestClient(unittest.TestCase):
                 "access": ACCESS,
             },
             path="/" + PATH,
-            headers=None,
             timeout=7.5,
         )
         self.assertEqual(ds2.description, ds.description)
@@ -1850,7 +1841,6 @@ class TestClient(unittest.TestCase):
             method="PATCH",
             data={"newAlphaProperty": "unreleased property"},
             path=path,
-            headers=None,
             timeout=DEFAULT_TIMEOUT,
         )
 
@@ -1909,7 +1899,7 @@ class TestClient(unittest.TestCase):
             "labels": {"x": "y"},
         }
         conn.api_request.assert_called_once_with(
-            method="PATCH", data=sent, path="/" + path, headers=None, timeout=7.5
+            method="PATCH", data=sent, path="/" + path, timeout=7.5
         )
         self.assertEqual(updated_model.model_id, model.model_id)
         self.assertEqual(updated_model.description, model.description)
@@ -1982,7 +1972,6 @@ class TestClient(unittest.TestCase):
             method="PUT",
             data=sent,
             path="/projects/routines-project/datasets/test_routines/routines/updated_routine",
-            headers=None,
             timeout=7.5,
         )
         self.assertEqual(actual_routine.arguments, routine.arguments)
@@ -2006,6 +1995,7 @@ class TestClient(unittest.TestCase):
 
     def test_update_table(self):
         from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.schema import PolicyTagList
         from google.cloud.bigquery.table import Table
 
         path = "projects/%s/datasets/%s/tables/%s" % (
@@ -2032,7 +2022,6 @@ class TestClient(unittest.TestCase):
                             "type": "INTEGER",
                             "mode": "REQUIRED",
                             "description": "New field description",
-                            "policyTags": {"names": []},
                         },
                     ]
                 },
@@ -2043,7 +2032,15 @@ class TestClient(unittest.TestCase):
             }
         )
         schema = [
-            SchemaField("full_name", "STRING", mode="REQUIRED", description=None),
+            # Explicly setting policyTags to no names should be included in the sent resource.
+            # https://github.com/googleapis/python-bigquery/issues/981
+            SchemaField(
+                "full_name",
+                "STRING",
+                mode="REQUIRED",
+                description=None,
+                policy_tags=PolicyTagList(names=()),
+            ),
             SchemaField(
                 "age", "INTEGER", mode="REQUIRED", description="New field description"
             ),
@@ -2081,7 +2078,6 @@ class TestClient(unittest.TestCase):
                         "type": "INTEGER",
                         "mode": "REQUIRED",
                         "description": "New field description",
-                        "policyTags": {"names": []},
                     },
                 ]
             },
@@ -2090,7 +2086,7 @@ class TestClient(unittest.TestCase):
             "labels": {"x": "y"},
         }
         conn.api_request.assert_called_once_with(
-            method="PATCH", data=sent, path="/" + path, headers=None, timeout=7.5
+            method="PATCH", data=sent, path="/" + path, timeout=7.5
         )
         self.assertEqual(updated_table.description, table.description)
         self.assertEqual(updated_table.friendly_name, table.friendly_name)
@@ -2140,7 +2136,6 @@ class TestClient(unittest.TestCase):
             method="PATCH",
             path="/%s" % path,
             data={"newAlphaProperty": "unreleased property"},
-            headers=None,
             timeout=DEFAULT_TIMEOUT,
         )
         self.assertEqual(
@@ -2175,7 +2170,6 @@ class TestClient(unittest.TestCase):
             method="PATCH",
             path="/%s" % path,
             data={"view": {"useLegacySql": True}},
-            headers=None,
             timeout=DEFAULT_TIMEOUT,
         )
         self.assertEqual(updated_table.view_use_legacy_sql, table.view_use_legacy_sql)
@@ -2202,21 +2196,14 @@ class TestClient(unittest.TestCase):
                     "type": "STRING",
                     "mode": "REQUIRED",
                     "description": None,
-                    "policyTags": {"names": []},
                 },
                 {
                     "name": "age",
                     "type": "INTEGER",
                     "mode": "REQUIRED",
                     "description": "this is a column",
-                    "policyTags": {"names": []},
                 },
-                {
-                    "name": "country",
-                    "type": "STRING",
-                    "mode": "NULLABLE",
-                    "policyTags": {"names": []},
-                },
+                {"name": "country", "type": "STRING", "mode": "NULLABLE"},
             ]
         }
         schema = [
@@ -2273,7 +2260,6 @@ class TestClient(unittest.TestCase):
                 "expirationTime": str(_millis(exp_time)),
                 "schema": schema_resource,
             },
-            headers=None,
             timeout=DEFAULT_TIMEOUT,
         )
 
@@ -6801,7 +6787,13 @@ class TestClientUpload(object):
             assert field["type"] == table_field.field_type
             assert field["mode"] == table_field.mode
             assert len(field.get("fields", [])) == len(table_field.fields)
-            assert field["policyTags"]["names"] == []
+            # Avoid accidentally updating policy tags when not explicitly included.
+            # https://github.com/googleapis/python-bigquery/issues/981
+            # Also, avoid 403 if someone has permission to write to table but
+            # not update policy tags by omitting policy tags we might have
+            # received from a get table request.
+            # https://github.com/googleapis/python-bigquery/pull/557
+            assert "policyTags" not in field
             # Omit unnecessary fields when they come from getting the table
             # (not passed in via job_config)
             assert "description" not in field
@@ -6958,6 +6950,179 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.write_disposition == job.WriteDisposition.WRITE_TRUNCATE
+
+        # the original config object should not have been modified
+        assert job_config.to_api_repr() == original_config_copy.to_api_repr()
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_parquet_options_none(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.PARQUET,
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(
+                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
+            ),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, get_table_patch as get_table:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+            )
+
+        # no need to fetch and inspect table schema for WRITE_TRUNCATE jobs
+        assert not get_table.called
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.parquet_options.enable_list_inference is True
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_list_inference_none(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+
+        parquet_options = ParquetOptions()
+
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.PARQUET,
+        )
+        job_config.parquet_options = parquet_options
+
+        original_config_copy = copy.deepcopy(job_config)
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(
+                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
+            ),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, get_table_patch as get_table:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+            )
+
+        # no need to fetch and inspect table schema for WRITE_TRUNCATE jobs
+        assert not get_table.called
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.parquet_options.enable_list_inference is None
+
+        # the original config object should not have been modified
+        assert job_config.to_api_repr() == original_config_copy.to_api_repr()
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_list_inference_false(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+
+        parquet_options = ParquetOptions()
+        parquet_options.enable_list_inference = False
+
+        job_config = job.LoadJobConfig(
+            write_disposition=job.WriteDisposition.WRITE_TRUNCATE,
+            source_format=job.SourceFormat.PARQUET,
+        )
+        job_config.parquet_options = parquet_options
+
+        original_config_copy = copy.deepcopy(job_config)
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            return_value=mock.Mock(
+                schema=[SchemaField("id", "INTEGER"), SchemaField("age", "INTEGER")]
+            ),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, get_table_patch as get_table:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+            )
+
+        # no need to fetch and inspect table schema for WRITE_TRUNCATE jobs
+        assert not get_table.called
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.parquet_options.enable_list_inference is False
 
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
@@ -7315,6 +7480,124 @@ class TestClientUpload(object):
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_array_fields(self):
+        """Test that a DataFrame with array columns can be uploaded correctly.
+
+        See: https://github.com/googleapis/python-bigquery/issues/19
+        """
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+
+        records = [(3.14, [1, 2])]
+        dataframe = pandas.DataFrame(
+            data=records, columns=["float_column", "array_column"]
+        )
+
+        schema = [
+            SchemaField("float_column", "FLOAT"),
+            SchemaField("array_column", "INTEGER", mode="REPEATED",),
+        ]
+        job_config = job.LoadJobConfig(schema=schema)
+
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+
+        with load_patch as load_table_from_file, get_table_patch:
+            client.load_table_from_dataframe(
+                dataframe,
+                self.TABLE_REF,
+                job_config=job_config,
+                location=self.LOCATION,
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert sent_config.schema == schema
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_array_fields_w_auto_schema(self):
+        """Test that a DataFrame with array columns can be uploaded correctly.
+
+        See: https://github.com/googleapis/python-bigquery/issues/19
+        """
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+        from google.cloud.bigquery.schema import SchemaField
+
+        client = self._make_client()
+
+        records = [(3.14, [1, 2])]
+        dataframe = pandas.DataFrame(
+            data=records, columns=["float_column", "array_column"]
+        )
+
+        expected_schema = [
+            SchemaField("float_column", "FLOAT"),
+            SchemaField("array_column", "INT64", mode="REPEATED",),
+        ]
+
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+
+        with load_patch as load_table_from_file, get_table_patch:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, location=self.LOCATION,
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            rewind=True,
+            size=mock.ANY,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=self.LOCATION,
+            project=None,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.PARQUET
+        assert sent_config.schema == expected_schema
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_partial_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -7560,9 +7843,13 @@ class TestClientUpload(object):
         records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
         dataframe = pandas.DataFrame(records)
 
+        _helpers_mock = mock.MagicMock()
+        _helpers_mock.PYARROW_VERSIONS = mock.MagicMock()
+        _helpers_mock.PYARROW_VERSIONS.installed_version = packaging.version.parse(
+            "2.0.0"
+        )  # A known bad version of pyarrow.
         pyarrow_version_patch = mock.patch(
-            "google.cloud.bigquery.client._PYARROW_VERSION",
-            packaging.version.parse("2.0.0"),  # A known bad version of pyarrow.
+            "google.cloud.bigquery.client._helpers", _helpers_mock
         )
         get_table_patch = mock.patch(
             "google.cloud.bigquery.client.Client.get_table",
@@ -7948,6 +8235,22 @@ class TestClientUpload(object):
         assert initiation_url is not None
         assert "projects/custom-project" in initiation_url
 
+    def test__do_resumable_upload_custom_timeout(self):
+        file_obj = self._make_file_obj()
+        file_obj_len = len(file_obj.getvalue())
+        transport = self._make_transport(
+            self._make_resumable_upload_responses(file_obj_len)
+        )
+        client = self._make_client(transport)
+
+        client._do_resumable_upload(
+            file_obj, self.EXPECTED_CONFIGURATION, num_retries=0, timeout=3.14
+        )
+
+        # The timeout should be applied to all underlying calls.
+        for call_args in transport.request.call_args_list:
+            assert call_args.kwargs.get("timeout") == 3.14
+
     def test__do_multipart_upload(self):
         transport = self._make_transport([self._make_response(http.client.OK)])
         client = self._make_client(transport)
@@ -8075,21 +8378,18 @@ class TestClientUpload(object):
                 "description": "quarter",
                 "mode": "REQUIRED",
                 "name": "qtr",
-                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "sales representative",
                 "mode": "NULLABLE",
                 "name": "rep",
-                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "total sales",
                 "mode": "NULLABLE",
                 "name": "sales",
-                "policyTags": {"names": []},
                 "type": "FLOAT",
             },
         ]
@@ -8122,21 +8422,18 @@ class TestClientUpload(object):
                 "description": "quarter",
                 "mode": "REQUIRED",
                 "name": "qtr",
-                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "sales representative",
                 "mode": "NULLABLE",
                 "name": "rep",
-                "policyTags": {"names": []},
                 "type": "STRING",
             },
             {
                 "description": "total sales",
                 "mode": "NULLABLE",
                 "name": "sales",
-                "policyTags": {"names": []},
                 "type": "FLOAT",
             },
         ]
@@ -8161,7 +8458,7 @@ def test_upload_chunksize(client):
 
         upload.finished = False
 
-        def transmit_next_chunk(transport):
+        def transmit_next_chunk(transport, *args, **kwargs):
             upload.finished = True
             result = mock.MagicMock()
             result.json.return_value = {}
@@ -8173,3 +8470,20 @@ def test_upload_chunksize(client):
 
         chunk_size = RU.call_args_list[0][0][1]
         assert chunk_size == 100 * (1 << 20)
+
+
+@pytest.mark.enable_add_server_timeout_header
+@pytest.mark.parametrize("headers", [None, {}])
+def test__call_api_add_server_timeout_w_timeout(client, headers):
+    client._connection = make_connection({})
+    client._call_api(None, method="GET", path="/", headers=headers, timeout=42)
+    client._connection.api_request.assert_called_with(
+        method="GET", path="/", timeout=42, headers={"X-Server-Timeout": "42"}
+    )
+
+
+@pytest.mark.enable_add_server_timeout_header
+def test__call_api_no_add_server_timeout_wo_timeout(client):
+    client._connection = make_connection({})
+    client._call_api(None, method="GET", path="/")
+    client._connection.api_request.assert_called_with(method="GET", path="/")

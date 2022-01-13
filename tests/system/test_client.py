@@ -38,11 +38,6 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 
 try:
-    import fastavro  # to parse BQ storage client results
-except ImportError:  # pragma: NO COVER
-    fastavro = None
-
-try:
     import pyarrow
     import pyarrow.types
 except ImportError:  # pragma: NO COVER
@@ -673,14 +668,15 @@ class TestBigQuery(unittest.TestCase):
             mode=old_field.mode,
             description=None,
             fields=old_field.fields,
-            policy_tags=None,
+            policy_tags=PolicyTagList(),
         )
 
         table.schema = new_schema
         updated_table = Config.CLIENT.update_table(table, ["schema"])
 
         self.assertFalse(updated_table.schema[1].description)  # Empty string or None.
-        self.assertEqual(updated_table.schema[1].policy_tags.names, ())
+        # policyTags key expected to be missing from response.
+        self.assertIsNone(updated_table.schema[1].policy_tags)
 
     def test_update_table_clustering_configuration(self):
         dataset = self.temp_dataset(_make_dataset_id("update_table"))
@@ -1211,6 +1207,8 @@ class TestBigQuery(unittest.TestCase):
         self.assertIn("Bharney Rhubble", got)
 
     def test_copy_table(self):
+        pytest.skip("b/210907595: copy fails for shakespeare table")
+
         # If we create a new table to copy from, the test won't work
         # because the new rows will be stored in the streaming buffer,
         # and copy jobs don't read the streaming buffer.
@@ -1586,9 +1584,15 @@ class TestBigQuery(unittest.TestCase):
         query_job = Config.CLIENT.query(sql)
         query_job.result()
 
-        # Transaction ID set by the server should be accessible
-        assert query_job.transaction_info is not None
-        assert query_job.transaction_info.transaction_id != ""
+        child_jobs = Config.CLIENT.list_jobs(parent_job=query_job)
+        begin_transaction_job = next(iter(child_jobs))
+
+        # Transaction ID set by the server should be accessible on the child
+        # job responsible for `BEGIN TRANSACTION`. It is not expected to be
+        # present on the parent job itself.
+        # https://github.com/googleapis/python-bigquery/issues/975
+        assert begin_transaction_job.transaction_info is not None
+        assert begin_transaction_job.transaction_info.transaction_id != ""
 
     def test_dbapi_w_standard_sql_types(self):
         for sql, expected in helpers.STANDARD_SQL_EXAMPLES:
@@ -1721,7 +1725,7 @@ class TestBigQuery(unittest.TestCase):
 
         connection.close()
         conn_count_end = len(current_process.connections())
-        self.assertEqual(conn_count_end, conn_count_start)
+        self.assertLessEqual(conn_count_end, conn_count_start)
 
     def _load_table_for_dml(self, rows, dataset_id, table_id):
         from google.cloud._testing import _NamedTemporaryFile

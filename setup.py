@@ -28,6 +28,7 @@ description = "Google BigQuery API client library"
 # 'Development Status :: 4 - Beta'
 # 'Development Status :: 5 - Production/Stable'
 release_status = "Development Status :: 5 - Production/Stable"
+pyarrow_dep = ["pyarrow >= 3.0.0, < 7.0dev"]
 dependencies = [
     "grpcio >= 1.38.1, < 2.0dev",  # https://github.com/googleapis/python-bigquery/issues/695
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
@@ -42,6 +43,7 @@ dependencies = [
     "google-resumable-media >= 0.6.0, < 3.0dev",
     "packaging >= 14.3",
     "protobuf >= 3.12.0",
+    "python-dateutil >= 2.7.2, <3.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]
 extras = {
@@ -54,16 +56,16 @@ extras = {
         # grpc.Channel.close() method isn't added until 1.32.0.
         # https://github.com/grpc/grpc/pull/15254
         "grpcio >= 1.38.1, < 2.0dev",
-        "pyarrow >= 3.0.0, < 6.0dev",
-    ],
+    ]
+    + pyarrow_dep,
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
-    "pandas": ["pandas>=0.23.0", "pyarrow >= 3.0.0, < 6.0dev"],
-    "bignumeric_type": ["pyarrow >= 3.0.0, < 6.0dev"],
+    "pandas": ["pandas>=0.24.2"] + pyarrow_dep,
+    "bignumeric_type": pyarrow_dep,
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
-        "opentelemetry-api >= 0.11b0",
-        "opentelemetry-sdk >= 0.11b0",
-        "opentelemetry-instrumentation >= 0.11b0",
+        "opentelemetry-api >= 1.1.0",
+        "opentelemetry-sdk >= 1.1.0",
+        "opentelemetry-instrumentation >= 0.20b0",
     ],
 }
 
@@ -125,6 +127,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
         "Topic :: Internet",
     ],
@@ -133,7 +136,7 @@ setuptools.setup(
     namespace_packages=namespaces,
     install_requires=dependencies,
     extras_require=extras,
-    python_requires=">=3.6, <3.10",
+    python_requires=">=3.6, <3.11",
     include_package_data=True,
     zip_safe=False,
 )

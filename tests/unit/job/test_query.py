@@ -26,9 +26,12 @@ import requests
 
 from google.cloud.bigquery.client import _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS
 import google.cloud.bigquery.query
+from google.cloud.bigquery.table import _EmptyRowIterator
+
+from ..helpers import make_connection
+
 from .helpers import _Base
 from .helpers import _make_client
-from .helpers import _make_connection
 
 
 class TestQueryJob(_Base):
@@ -266,25 +269,6 @@ class TestQueryJob(_Base):
         job = self._make_one(self.JOB_ID, self.QUERY, client, job_config=config)
         self.assertEqual(job.query_parameters, query_parameters)
 
-    def test_from_api_repr_missing_identity(self):
-        self._setUpConstants()
-        client = _make_client(project=self.PROJECT)
-        RESOURCE = {}
-        klass = self._get_target_class()
-        with self.assertRaises(KeyError):
-            klass.from_api_repr(RESOURCE, client=client)
-
-    def test_from_api_repr_missing_config(self):
-        self._setUpConstants()
-        client = _make_client(project=self.PROJECT)
-        RESOURCE = {
-            "id": "%s:%s" % (self.PROJECT, self.DS_ID),
-            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
-        }
-        klass = self._get_target_class()
-        with self.assertRaises(KeyError):
-            klass.from_api_repr(RESOURCE, client=client)
-
     def test_from_api_repr_bare(self):
         self._setUpConstants()
         client = _make_client(project=self.PROJECT)
@@ -297,6 +281,8 @@ class TestQueryJob(_Base):
         job = klass.from_api_repr(RESOURCE, client=client)
         self.assertIs(job._client, client)
         self._verifyResourceProperties(job, RESOURCE)
+        self.assertEqual(len(job.connection_properties), 0)
+        self.assertIsNone(job.create_session)
 
     def test_from_api_repr_with_encryption(self):
         self._setUpConstants()
@@ -943,7 +929,7 @@ class TestQueryJob(_Base):
             "pageToken": None,
             "rows": [{"f": [{"v": "abc"}]}],
         }
-        conn = _make_connection(
+        conn = make_connection(
             query_resource, query_resource_done, job_resource_done, query_page_resource
         )
         client = _make_client(self.PROJECT, connection=conn)
@@ -987,6 +973,19 @@ class TestQueryJob(_Base):
             [query_results_call, query_results_call, reload_call, query_page_call]
         )
 
+    def test_result_dry_run(self):
+        job_resource = self._make_resource(started=True, location="EU")
+        job_resource["configuration"]["dryRun"] = True
+        conn = make_connection()
+        client = _make_client(self.PROJECT, connection=conn)
+        job = self._get_target_class().from_api_repr(job_resource, client)
+
+        result = job.result()
+
+        calls = conn.api_request.mock_calls
+        self.assertIsInstance(result, _EmptyRowIterator)
+        self.assertEqual(calls, [])
+
     def test_result_with_done_job_calls_get_query_results(self):
         query_resource_done = {
             "jobComplete": True,
@@ -1005,7 +1004,7 @@ class TestQueryJob(_Base):
             "pageToken": None,
             "rows": [{"f": [{"v": "abc"}]}],
         }
-        conn = _make_connection(query_resource_done, results_page_resource)
+        conn = make_connection(query_resource_done, results_page_resource)
         client = _make_client(self.PROJECT, connection=conn)
         job = self._get_target_class().from_api_repr(job_resource, client)
 
@@ -1052,7 +1051,7 @@ class TestQueryJob(_Base):
                 {"f": [{"v": "ghi"}]},
             ],
         }
-        connection = _make_connection(query_resource, query_page_resource)
+        connection = make_connection(query_resource, query_page_resource)
         client = _make_client(self.PROJECT, connection=connection)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
@@ -1096,7 +1095,7 @@ class TestQueryJob(_Base):
             "tableId": "dest_table",
         }
 
-        connection = _make_connection(
+        connection = make_connection(
             exceptions.NotFound("not normally retriable"),
             query_resource,
             exceptions.NotFound("not normally retriable"),
@@ -1144,7 +1143,7 @@ class TestQueryJob(_Base):
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
             "schema": {"fields": []},
         }
-        connection = _make_connection(query_resource, query_resource)
+        connection = make_connection(query_resource, query_resource)
         client = _make_client(self.PROJECT, connection=connection)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
@@ -1165,7 +1164,7 @@ class TestQueryJob(_Base):
         query_resource["jobComplete"] = True
         done_resource = copy.deepcopy(begun_resource)
         done_resource["status"] = {"state": "DONE"}
-        connection = _make_connection(
+        connection = make_connection(
             begun_resource,
             incomplete_resource,
             query_resource,
@@ -1196,7 +1195,7 @@ class TestQueryJob(_Base):
         }
         done_resource = copy.deepcopy(begun_resource)
         done_resource["status"] = {"state": "DONE"}
-        connection = _make_connection(begun_resource, query_resource, done_resource)
+        connection = make_connection(begun_resource, query_resource, done_resource)
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 
@@ -1245,7 +1244,7 @@ class TestQueryJob(_Base):
             ],
         }
         query_page_resource_2 = {"totalRows": 4, "rows": [{"f": [{"v": "row4"}]}]}
-        conn = _make_connection(
+        conn = make_connection(
             query_results_resource, query_page_resource, query_page_resource_2
         )
         client = _make_client(self.PROJECT, connection=conn)
@@ -1303,7 +1302,7 @@ class TestQueryJob(_Base):
                 {"f": [{"v": "jkl"}]},
             ],
         }
-        connection = _make_connection(query_resource, tabledata_resource)
+        connection = make_connection(query_resource, tabledata_resource)
         client = _make_client(self.PROJECT, connection=connection)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)
@@ -1361,13 +1360,19 @@ class TestQueryJob(_Base):
         exc_job_instance = getattr(exc_info.exception, "query_job", None)
         self.assertIs(exc_job_instance, job)
 
+        # Query text could contain sensitive information, so it must not be
+        # included in logs / exception representation.
         full_text = str(exc_info.exception)
         assert job.job_id in full_text
-        assert "Query Job SQL Follows" in full_text
+        assert "Query Job SQL Follows" not in full_text
 
+        # It is useful to have query text available, so it is provided in a
+        # debug_message property.
+        debug_message = exc_info.exception.debug_message
+        assert "Query Job SQL Follows" in debug_message
         for i, line in enumerate(query.splitlines(), start=1):
             expected_line = "{}:{}".format(i, line)
-            assert expected_line in full_text
+            assert expected_line in debug_message
 
     def test_result_transport_timeout_error(self):
         query = textwrap.dedent(
@@ -1388,6 +1393,43 @@ class TestQueryJob(_Base):
         # Make sure that timeout errors get rebranded to concurrent futures timeout.
         with call_api_patch, self.assertRaises(concurrent.futures.TimeoutError):
             job.result(timeout=1)
+
+    def test_no_schema(self):
+        client = _make_client(project=self.PROJECT)
+        resource = {}
+        klass = self._get_target_class()
+        job = klass.from_api_repr(resource, client=client)
+        assert job.schema is None
+
+    def test_schema(self):
+        client = _make_client(project=self.PROJECT)
+        resource = {
+            "statistics": {
+                "query": {
+                    "schema": {
+                        "fields": [
+                            {"mode": "NULLABLE", "name": "bool_col", "type": "BOOLEAN"},
+                            {
+                                "mode": "NULLABLE",
+                                "name": "string_col",
+                                "type": "STRING",
+                            },
+                            {
+                                "mode": "NULLABLE",
+                                "name": "timestamp_col",
+                                "type": "TIMESTAMP",
+                            },
+                        ]
+                    },
+                },
+            },
+        }
+        klass = self._get_target_class()
+        job = klass.from_api_repr(resource, client=client)
+        assert len(job.schema) == 3
+        assert job.schema[0].field_type == "BOOLEAN"
+        assert job.schema[1].field_type == "STRING"
+        assert job.schema[2].field_type == "TIMESTAMP"
 
     def test__begin_error(self):
         from google.cloud import exceptions
@@ -1416,19 +1458,25 @@ class TestQueryJob(_Base):
         exc_job_instance = getattr(exc_info.exception, "query_job", None)
         self.assertIs(exc_job_instance, job)
 
+        # Query text could contain sensitive information, so it must not be
+        # included in logs / exception representation.
         full_text = str(exc_info.exception)
         assert job.job_id in full_text
-        assert "Query Job SQL Follows" in full_text
+        assert "Query Job SQL Follows" not in full_text
 
+        # It is useful to have query text available, so it is provided in a
+        # debug_message property.
+        debug_message = exc_info.exception.debug_message
+        assert "Query Job SQL Follows" in debug_message
         for i, line in enumerate(query.splitlines(), start=1):
             expected_line = "{}:{}".format(i, line)
-            assert expected_line in full_text
+            assert expected_line in debug_message
 
     def test__begin_w_timeout(self):
         PATH = "/projects/%s/jobs" % (self.PROJECT,)
         RESOURCE = self._make_resource()
 
-        conn = _make_connection(RESOURCE)
+        conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
         with mock.patch(
@@ -1462,7 +1510,7 @@ class TestQueryJob(_Base):
         del RESOURCE["etag"]
         del RESOURCE["selfLink"]
         del RESOURCE["user_email"]
-        conn = _make_connection(RESOURCE)
+        conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
 
         config = QueryJobConfig()
@@ -1530,9 +1578,9 @@ class TestQueryJob(_Base):
         }
         RESOURCE["configuration"]["query"] = QUERY_CONFIGURATION
         RESOURCE["configuration"]["dryRun"] = True
-        conn1 = _make_connection()
+        conn1 = make_connection()
         client1 = _make_client(project=self.PROJECT, connection=conn1)
-        conn2 = _make_connection(RESOURCE)
+        conn2 = make_connection(RESOURCE)
         client2 = _make_client(project=self.PROJECT, connection=conn2)
         dataset_ref = DatasetReference(self.PROJECT, DS_ID)
         table_ref = dataset_ref.table(TABLE)
@@ -1588,7 +1636,7 @@ class TestQueryJob(_Base):
             {"resourceUri": RESOURCE_URI},
             {"inlineCode": INLINE_UDF_CODE},
         ]
-        conn = _make_connection(RESOURCE)
+        conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         udf_resources = [
             UDFResource("resourceUri", RESOURCE_URI),
@@ -1647,7 +1695,7 @@ class TestQueryJob(_Base):
                 "parameterValue": {"value": "123"},
             }
         ]
-        conn = _make_connection(RESOURCE)
+        conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         jconfig = QueryJobConfig()
         jconfig.query_parameters = query_parameters
@@ -1695,7 +1743,7 @@ class TestQueryJob(_Base):
         config["queryParameters"] = [
             {"parameterType": {"type": "INT64"}, "parameterValue": {"value": "123"}}
         ]
-        conn = _make_connection(RESOURCE)
+        conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         jconfig = QueryJobConfig()
         jconfig.query_parameters = query_parameters
@@ -1774,7 +1822,7 @@ class TestQueryJob(_Base):
             csv_table: CSV_CONFIG_RESOURCE,
         }
         want_resource = copy.deepcopy(RESOURCE)
-        conn = _make_connection(RESOURCE)
+        conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         config = QueryJobConfig()
         config.table_definitions = {bt_table: bt_config, csv_table: csv_config}
@@ -1818,7 +1866,7 @@ class TestQueryJob(_Base):
         del RESOURCE["selfLink"]
         del RESOURCE["user_email"]
         RESOURCE["configuration"]["dryRun"] = True
-        conn = _make_connection(RESOURCE)
+        conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         config = QueryJobConfig()
         config.dry_run = True
@@ -1846,7 +1894,7 @@ class TestQueryJob(_Base):
 
     def test_exists_miss_w_bound_client(self):
         PATH = "/projects/%s/jobs/%s" % (self.PROJECT, self.JOB_ID)
-        conn = _make_connection()
+        conn = make_connection()
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
         with mock.patch(
@@ -1862,9 +1910,9 @@ class TestQueryJob(_Base):
 
     def test_exists_hit_w_alternate_client(self):
         PATH = "/projects/%s/jobs/%s" % (self.PROJECT, self.JOB_ID)
-        conn1 = _make_connection()
+        conn1 = make_connection()
         client1 = _make_client(project=self.PROJECT, connection=conn1)
-        conn2 = _make_connection({})
+        conn2 = make_connection({})
         client2 = _make_client(project=self.PROJECT, connection=conn2)
         job = self._make_one(self.JOB_ID, self.QUERY, client1)
         with mock.patch(
@@ -1887,7 +1935,7 @@ class TestQueryJob(_Base):
         DS_ID = "DATASET"
         DEST_TABLE = "dest_table"
         RESOURCE = self._make_resource()
-        conn = _make_connection(RESOURCE)
+        conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         dataset_ref = DatasetReference(self.PROJECT, DS_ID)
         table_ref = dataset_ref.table(DEST_TABLE)
@@ -1919,9 +1967,9 @@ class TestQueryJob(_Base):
             "datasetId": DS_ID,
             "tableId": DEST_TABLE,
         }
-        conn1 = _make_connection()
+        conn1 = make_connection()
         client1 = _make_client(project=self.PROJECT, connection=conn1)
-        conn2 = _make_connection(RESOURCE)
+        conn2 = make_connection(RESOURCE)
         client2 = _make_client(project=self.PROJECT, connection=conn2)
         job = self._make_one(self.JOB_ID, self.QUERY, client1)
         with mock.patch(
@@ -1945,7 +1993,7 @@ class TestQueryJob(_Base):
         DS_ID = "DATASET"
         DEST_TABLE = "dest_table"
         RESOURCE = self._make_resource()
-        conn = _make_connection(RESOURCE)
+        conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         dataset_ref = DatasetReference(self.PROJECT, DS_ID)
         table_ref = dataset_ref.table(DEST_TABLE)
@@ -1975,7 +2023,7 @@ class TestQueryJob(_Base):
         }
         done_resource = copy.deepcopy(begun_resource)
         done_resource["status"] = {"state": "DONE"}
-        connection = _make_connection(begun_resource, query_resource, done_resource)
+        connection = make_connection(begun_resource, query_resource, done_resource)
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
 

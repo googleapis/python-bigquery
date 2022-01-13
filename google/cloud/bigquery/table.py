@@ -21,37 +21,37 @@ import datetime
 import functools
 import operator
 import typing
-from typing import Any, Dict, Iterable, Iterator, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 import warnings
 
 try:
-    import pandas
+    import pandas  # type: ignore
 except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
-    import geopandas
+    import geopandas  # type: ignore
 except ImportError:
     geopandas = None
 else:
     _COORDINATE_REFERENCE_SYSTEM = "EPSG:4326"
 
 try:
-    import shapely.geos
+    import shapely.geos  # type: ignore
 except ImportError:
     shapely = None
 else:
     _read_wkt = shapely.geos.WKTReader(shapely.geos.lgeos).read
 
 try:
-    import pyarrow
+    import pyarrow  # type: ignore
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator
 
-import google.cloud._helpers
+import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
@@ -69,6 +69,7 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     import geopandas
     import pyarrow
     from google.cloud import bigquery_storage
+    from google.cloud.bigquery.dataset import DatasetReference
 
 
 _NO_PANDAS_ERROR = (
@@ -126,45 +127,93 @@ def _view_use_legacy_sql_getter(table):
         return True
 
 
-class TableReference(object):
+class _TableBase:
+    """Base class for Table-related classes with common functionality."""
+
+    _PROPERTY_TO_API_FIELD: Dict[str, Union[str, List[str]]] = {
+        "dataset_id": ["tableReference", "datasetId"],
+        "project": ["tableReference", "projectId"],
+        "table_id": ["tableReference", "tableId"],
+    }
+
+    def __init__(self):
+        self._properties = {}
+
+    @property
+    def project(self) -> str:
+        """Project bound to the table."""
+        return _helpers._get_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["project"]
+        )
+
+    @property
+    def dataset_id(self) -> str:
+        """ID of dataset containing the table."""
+        return _helpers._get_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["dataset_id"]
+        )
+
+    @property
+    def table_id(self) -> str:
+        """The table ID."""
+        return _helpers._get_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["table_id"]
+        )
+
+    @property
+    def path(self) -> str:
+        """URL path for the table's APIs."""
+        return (
+            f"/projects/{self.project}/datasets/{self.dataset_id}"
+            f"/tables/{self.table_id}"
+        )
+
+    def __eq__(self, other):
+        if isinstance(other, _TableBase):
+            return (
+                self.project == other.project
+                and self.dataset_id == other.dataset_id
+                and self.table_id == other.table_id
+            )
+        else:
+            return NotImplemented
+
+    def __hash__(self):
+        return hash((self.project, self.dataset_id, self.table_id))
+
+
+class TableReference(_TableBase):
     """TableReferences are pointers to tables.
 
     See
     https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#tablereference
 
     Args:
-        dataset_ref (google.cloud.bigquery.dataset.DatasetReference):
-            A pointer to the dataset
-        table_id (str): The ID of the table
+        dataset_ref: A pointer to the dataset
+        table_id: The ID of the table
     """
 
-    def __init__(self, dataset_ref, table_id):
-        self._project = dataset_ref.project
-        self._dataset_id = dataset_ref.dataset_id
-        self._table_id = table_id
+    _PROPERTY_TO_API_FIELD = {
+        "dataset_id": "datasetId",
+        "project": "projectId",
+        "table_id": "tableId",
+    }
 
-    @property
-    def project(self):
-        """str: Project bound to the table"""
-        return self._project
+    def __init__(self, dataset_ref: "DatasetReference", table_id: str):
+        self._properties = {}
 
-    @property
-    def dataset_id(self):
-        """str: ID of dataset containing the table."""
-        return self._dataset_id
-
-    @property
-    def table_id(self):
-        """str: The table ID."""
-        return self._table_id
-
-    @property
-    def path(self):
-        """str: URL path for the table's APIs."""
-        return "/projects/%s/datasets/%s/tables/%s" % (
-            self._project,
-            self._dataset_id,
-            self._table_id,
+        _helpers._set_sub_prop(
+            self._properties,
+            self._PROPERTY_TO_API_FIELD["project"],
+            dataset_ref.project,
+        )
+        _helpers._set_sub_prop(
+            self._properties,
+            self._PROPERTY_TO_API_FIELD["dataset_id"],
+            dataset_ref.dataset_id,
+        )
+        _helpers._set_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["table_id"], table_id,
         )
 
     @classmethod
@@ -233,11 +282,7 @@ class TableReference(object):
         Returns:
             Dict[str, object]: Table reference represented as an API resource
         """
-        return {
-            "projectId": self._project,
-            "datasetId": self._dataset_id,
-            "tableId": self._table_id,
-        }
+        return copy.deepcopy(self._properties)
 
     def to_bqstorage(self) -> str:
         """Construct a BigQuery Storage API representation of this table.
@@ -257,42 +302,13 @@ class TableReference(object):
             str: A reference to this table in the BigQuery Storage API.
         """
 
-        table_id, _, _ = self._table_id.partition("@")
+        table_id, _, _ = self.table_id.partition("@")
         table_id, _, _ = table_id.partition("$")
 
-        table_ref = "projects/{}/datasets/{}/tables/{}".format(
-            self._project, self._dataset_id, table_id,
+        table_ref = (
+            f"projects/{self.project}/datasets/{self.dataset_id}/tables/{table_id}"
         )
-
         return table_ref
-
-    def _key(self):
-        """A tuple key that uniquely describes this field.
-
-        Used to compute this instance's hashcode and evaluate equality.
-
-        Returns:
-            Tuple[str]: The contents of this :class:`DatasetReference`.
-        """
-        return (self._project, self._dataset_id, self._table_id)
-
-    def __eq__(self, other):
-        if isinstance(other, (Table, TableListItem)):
-            return (
-                self.project == other.project
-                and self.dataset_id == other.dataset_id
-                and self.table_id == other.table_id
-            )
-        elif isinstance(other, TableReference):
-            return self._key() == other._key()
-        else:
-            return NotImplemented
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __hash__(self):
-        return hash(self._key())
 
     def __str__(self):
         return f"{self.project}.{self.dataset_id}.{self.table_id}"
@@ -300,11 +316,11 @@ class TableReference(object):
     def __repr__(self):
         from google.cloud.bigquery.dataset import DatasetReference
 
-        dataset_ref = DatasetReference(self._project, self._dataset_id)
-        return "TableReference({}, '{}')".format(repr(dataset_ref), self._table_id)
+        dataset_ref = DatasetReference(self.project, self.dataset_id)
+        return f"TableReference({dataset_ref!r}, '{self.table_id}')"
 
 
-class Table(object):
+class Table(_TableBase):
     """Tables represent a set of rows whose values correspond to a schema.
 
     See
@@ -325,9 +341,9 @@ class Table(object):
     """
 
     _PROPERTY_TO_API_FIELD = {
+        **_TableBase._PROPERTY_TO_API_FIELD,
         "clustering_fields": "clustering",
         "created": "creationTime",
-        "dataset_id": ["tableReference", "datasetId"],
         "description": "description",
         "encryption_configuration": "encryptionConfiguration",
         "etag": "etag",
@@ -346,14 +362,12 @@ class Table(object):
         "num_rows": "numRows",
         "partition_expiration": "timePartitioning",
         "partitioning_type": "timePartitioning",
-        "project": ["tableReference", "projectId"],
         "range_partitioning": "rangePartitioning",
         "time_partitioning": "timePartitioning",
         "schema": "schema",
         "snapshot_definition": "snapshotDefinition",
         "streaming_buffer": "streamingBuffer",
         "self_link": "selfLink",
-        "table_id": ["tableReference", "tableId"],
         "time_partitioning": "timePartitioning",
         "type": "type",
         "view_use_legacy_sql": "view",
@@ -368,37 +382,7 @@ class Table(object):
         if schema is not None:
             self.schema = schema
 
-    @property
-    def project(self):
-        """str: Project bound to the table."""
-        return _helpers._get_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["project"]
-        )
-
-    @property
-    def dataset_id(self):
-        """str: ID of dataset containing the table."""
-        return _helpers._get_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["dataset_id"]
-        )
-
-    @property
-    def table_id(self):
-        """str: ID of the table."""
-        return _helpers._get_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["table_id"]
-        )
-
     reference = property(_reference_getter)
-
-    @property
-    def path(self):
-        """str: URL path for the table's APIs."""
-        return "/projects/%s/datasets/%s/tables/%s" % (
-            self.project,
-            self.dataset_id,
-            self.table_id,
-        )
 
     @property
     def require_partition_filter(self):
@@ -823,7 +807,7 @@ class Table(object):
 
     view_use_legacy_sql = property(_view_use_legacy_sql_getter)
 
-    @view_use_legacy_sql.setter
+    @view_use_legacy_sql.setter  # type: ignore  # (redefinition from above)
     def view_use_legacy_sql(self, value):
         if not isinstance(value, bool):
             raise ValueError("Pass a boolean")
@@ -1040,29 +1024,11 @@ class Table(object):
         """Generate a resource for ``update``."""
         return _helpers._build_resource_from_properties(self, filter_fields)
 
-    def __eq__(self, other):
-        if isinstance(other, Table):
-            return (
-                self._properties["tableReference"]
-                == other._properties["tableReference"]
-            )
-        elif isinstance(other, (TableReference, TableListItem)):
-            return (
-                self.project == other.project
-                and self.dataset_id == other.dataset_id
-                and self.table_id == other.table_id
-            )
-        else:
-            return NotImplemented
-
-    def __hash__(self):
-        return hash((self.project, self.dataset_id, self.table_id))
-
     def __repr__(self):
         return "Table({})".format(repr(self.reference))
 
 
-class TableListItem(object):
+class TableListItem(_TableBase):
     """A read-only table resource from a list operation.
 
     For performance reasons, the BigQuery API only includes some of the table
@@ -1125,21 +1091,6 @@ class TableListItem(object):
             return google.cloud._helpers._datetime_from_microseconds(
                 1000.0 * float(expiration_time)
             )
-
-    @property
-    def project(self):
-        """str: Project bound to the table."""
-        return self._properties["tableReference"]["projectId"]
-
-    @property
-    def dataset_id(self):
-        """str: ID of dataset containing the table."""
-        return self._properties["tableReference"]["datasetId"]
-
-    @property
-    def table_id(self):
-        """str: ID of the table."""
-        return self._properties["tableReference"]["tableId"]
 
     reference = property(_reference_getter)
 
@@ -1275,19 +1226,6 @@ class TableListItem(object):
             Dict[str, object]: Table represented as an API resource
         """
         return copy.deepcopy(self._properties)
-
-    def __eq__(self, other):
-        if isinstance(other, (Table, TableReference, TableListItem)):
-            return (
-                self.project == other.project
-                and self.dataset_id == other.dataset_id
-                and self.table_id == other.table_id
-            )
-        else:
-            return NotImplemented
-
-    def __hash__(self):
-        return hash((self.project, self.dataset_id, self.table_id))
 
 
 def _row_from_mapping(mapping, schema):
@@ -1691,8 +1629,49 @@ class RowIterator(HTTPIterator):
         )
         yield from result_pages
 
-    def _to_arrow_iterable(self, bqstorage_client=None):
-        """Create an iterable of arrow RecordBatches, to process the table as a stream."""
+    def to_arrow_iterable(
+        self,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
+    ) -> Iterator["pyarrow.RecordBatch"]:
+        """[Beta] Create an iterable of class:`pyarrow.RecordBatch`, to process the table as a stream.
+
+        Args:
+            bqstorage_client (Optional[google.cloud.bigquery_storage_v1.BigQueryReadClient]):
+                A BigQuery Storage API client. If supplied, use the faster
+                BigQuery Storage API to fetch rows from BigQuery.
+
+                This method requires the ``pyarrow`` and
+                ``google-cloud-bigquery-storage`` libraries.
+
+                This method only exposes a subset of the capabilities of the
+                BigQuery Storage API. For full access to all features
+                (projections, filters, snapshots) use the Storage API directly.
+
+            max_queue_size (Optional[int]):
+                The maximum number of result pages to hold in the internal queue when
+                streaming query results over the BigQuery Storage API. Ignored if
+                Storage API is not used.
+
+                By default, the max queue size is set to the number of BQ Storage streams
+                created by the server. If ``max_queue_size`` is :data:`None`, the queue
+                size is infinite.
+
+        Returns:
+            pyarrow.RecordBatch:
+                A generator of :class:`~pyarrow.RecordBatch`.
+
+        Raises:
+            ValueError:
+                If the :mod:`pyarrow` library cannot be imported.
+
+        .. versionadded:: 2.31.0
+        """
+        if pyarrow is None:
+            raise ValueError(_NO_PYARROW_ERROR)
+
+        self._maybe_warn_max_results(bqstorage_client)
+
         bqstorage_download = functools.partial(
             _pandas_helpers.download_arrow_bqstorage,
             self._project,
@@ -1700,6 +1679,7 @@ class RowIterator(HTTPIterator):
             bqstorage_client,
             preserve_order=self._preserve_order,
             selected_fields=self._selected_fields,
+            max_queue_size=max_queue_size,
         )
         tabledata_list_download = functools.partial(
             _pandas_helpers.download_arrow_row_iterator, iter(self.pages), self.schema
@@ -1791,7 +1771,7 @@ class RowIterator(HTTPIterator):
             )
 
             record_batches = []
-            for record_batch in self._to_arrow_iterable(
+            for record_batch in self.to_arrow_iterable(
                 bqstorage_client=bqstorage_client
             ):
                 record_batches.append(record_batch)
@@ -1808,12 +1788,16 @@ class RowIterator(HTTPIterator):
                 progress_bar.close()
         finally:
             if owns_bqstorage_client:
-                bqstorage_client._transport.grpc_channel.close()
+                bqstorage_client._transport.grpc_channel.close()  # type: ignore
 
-        if record_batches:
+        if record_batches and bqstorage_client is not None:
             return pyarrow.Table.from_batches(record_batches)
         else:
-            # No records, use schema based on BigQuery schema.
+            # No records (not record_batches), use schema based on BigQuery schema
+            # **or**
+            # we used the REST API (bqstorage_client is None),
+            # which doesn't add arrow extension metadata, so we let
+            # `bq_to_arrow_schema` do it.
             arrow_schema = _pandas_helpers.bq_to_arrow_schema(self._schema)
             return pyarrow.Table.from_batches(record_batches, schema=arrow_schema)
 
@@ -1821,7 +1805,7 @@ class RowIterator(HTTPIterator):
         self,
         bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         dtypes: Dict[str, Any] = None,
-        max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,
+        max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
     ) -> "pandas.DataFrame":
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -2247,7 +2231,10 @@ class _EmptyRowIterator(RowIterator):
         """
         if geopandas is None:
             raise ValueError(_NO_GEOPANDAS_ERROR)
-        return geopandas.GeoDataFrame(crs=_COORDINATE_REFERENCE_SYSTEM)
+
+        # Since an empty GeoDataFrame has no geometry column, we do not CRS on it,
+        # because that's deprecated.
+        return geopandas.GeoDataFrame()
 
     def to_dataframe_iterable(
         self,
@@ -2279,6 +2266,33 @@ class _EmptyRowIterator(RowIterator):
         if pandas is None:
             raise ValueError(_NO_PANDAS_ERROR)
         return iter((pandas.DataFrame(),))
+
+    def to_arrow_iterable(
+        self,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
+        max_queue_size: Optional[int] = None,
+    ) -> Iterator["pyarrow.RecordBatch"]:
+        """Create an iterable of pandas DataFrames, to process the table as a stream.
+
+        .. versionadded:: 2.31.0
+
+        Args:
+            bqstorage_client:
+                Ignored. Added for compatibility with RowIterator.
+
+            max_queue_size:
+                Ignored. Added for compatibility with RowIterator.
+
+        Returns:
+            An iterator yielding a single empty :class:`~pyarrow.RecordBatch`.
+
+        Raises:
+            ValueError:
+                If the :mod:`pyarrow` library cannot be imported.
+        """
+        if pyarrow is None:
+            raise ValueError(_NO_PYARROW_ERROR)
+        return iter((pyarrow.record_batch([]),))
 
     def __iter__(self):
         return iter(())
@@ -2362,8 +2376,6 @@ class PartitionRange(object):
         key_vals = ["{}={}".format(key, val) for key, val in self._key()]
         return "PartitionRange({})".format(", ".join(key_vals))
 
-    __hash__ = None
-
 
 class RangePartitioning(object):
     """Range-based partitioning configuration for a table.
@@ -2441,8 +2453,6 @@ class RangePartitioning(object):
     def __repr__(self):
         key_vals = ["{}={}".format(key, repr(val)) for key, val in self._key()]
         return "RangePartitioning({})".format(", ".join(key_vals))
-
-    __hash__ = None
 
 
 class TimePartitioningType(object):
@@ -2712,7 +2722,7 @@ def _rows_page_start(iterator, page, response):
 # pylint: enable=unused-argument
 
 
-def _table_arg_to_table_ref(value, default_project=None):
+def _table_arg_to_table_ref(value, default_project=None) -> TableReference:
     """Helper to convert a string or Table to TableReference.
 
     This function keeps TableReference and other kinds of objects unchanged.
@@ -2724,7 +2734,7 @@ def _table_arg_to_table_ref(value, default_project=None):
     return value
 
 
-def _table_arg_to_table(value, default_project=None):
+def _table_arg_to_table(value, default_project=None) -> Table:
     """Helper to convert a string or TableReference to a Table.
 
     This function keeps Table and other kinds of objects unchanged.

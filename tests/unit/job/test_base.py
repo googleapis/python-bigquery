@@ -21,8 +21,9 @@ import google.api_core.retry
 import mock
 import pytest
 
+from ..helpers import make_connection
+
 from .helpers import _make_client
-from .helpers import _make_connection
 from .helpers import _make_retriable_exception
 from .helpers import _make_job_resource
 
@@ -226,6 +227,15 @@ class Test_AsyncJob(unittest.TestCase):
         self.assertEqual(stack_frame.end_line, 9)
         self.assertEqual(stack_frame.end_column, 14)
         self.assertEqual(stack_frame.text, "QUERY TEXT")
+
+    def test_session_info(self):
+        client = _make_client(project=self.PROJECT)
+        job = self._make_one(self.JOB_ID, client)
+
+        self.assertIsNone(job.session_info)
+        job._properties["statistics"] = {"sessionInfo": {"sessionId": "abcdefg"}}
+        self.assertIsNotNone(job.session_info)
+        self.assertEqual(job.session_info.session_id, "abcdefg")
 
     def test_transaction_info(self):
         from google.cloud.bigquery.job.base import TransactionInfo
@@ -740,7 +750,7 @@ class Test_AsyncJob(unittest.TestCase):
         response = {"job": resource}
         job = self._set_properties_job()
         job._properties["jobReference"]["location"] = self.LOCATION
-        connection = job._client._connection = _make_connection(response)
+        connection = job._client._connection = make_connection(response)
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
@@ -769,7 +779,7 @@ class Test_AsyncJob(unittest.TestCase):
         response = {"job": resource}
         job = self._set_properties_job()
         client = _make_client(project=other_project)
-        connection = client._connection = _make_connection(response)
+        connection = client._connection = make_connection(response)
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
@@ -930,7 +940,7 @@ class Test_AsyncJob(unittest.TestCase):
             started=True,
             ended=True,
         )
-        conn = _make_connection(
+        conn = make_connection(
             _make_retriable_exception(),
             begun_job_resource,
             _make_retriable_exception(),
@@ -968,7 +978,7 @@ class Test_AsyncJob(unittest.TestCase):
             started=True,
             ended=True,
         )
-        conn = _make_connection(
+        conn = make_connection(
             exceptions.NotFound("not normally retriable"),
             begun_job_resource,
             exceptions.NotFound("not normally retriable"),
@@ -1008,7 +1018,7 @@ class Test_AsyncJob(unittest.TestCase):
         )
 
     def test_result_explicit_w_state(self):
-        conn = _make_connection()
+        conn = make_connection()
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, client)
         # Use _set_properties() instead of directly modifying _properties so
@@ -1041,6 +1051,12 @@ class Test_AsyncJob(unittest.TestCase):
         job._properties["status"] = {"errorResult": {"reason": "stopped"}}
 
         self.assertTrue(job.cancelled())
+
+    def test_repr(self):
+        client = _make_client(project="project-foo")
+        job = self._make_one("job-99", client)
+        job._properties.setdefault("jobReference", {})["location"] = "ABC"
+        assert repr(job) == "_AsyncJob<project=project-foo, location=ABC, id=job-99>"
 
 
 class Test_JobConfig(unittest.TestCase):

@@ -47,7 +47,6 @@ Job Classes
     job.CopyJob
     job.LoadJob
     job.ExtractJob
-    job.UnknownJob
 
 Job-Related Types
 -----------------
@@ -68,7 +67,11 @@ Job-Related Types
     job.SourceFormat
     job.WriteDisposition
     job.SchemaUpdateOption
-    job.TransactionInfo
+
+.. toctree::
+  :maxdepth: 2
+
+  job_base
 
 
 Dataset
@@ -128,19 +131,16 @@ Schema
     :toctree: generated
 
     schema.SchemaField
+    schema.PolicyTagList
 
 
 Query
 =====
 
-.. autosummary::
-    :toctree: generated
+.. toctree::
+  :maxdepth: 2
 
-    query.ArrayQueryParameter
-    query.ScalarQueryParameter
-    query.ScalarQueryParameterType
-    query.StructQueryParameter
-    query.UDFResource
+  query
 
 
 Retries
@@ -165,6 +165,11 @@ External Configuration
     external_config.BigtableColumn
     external_config.CSVOptions
     external_config.GoogleSheetsOptions
+
+.. toctree::
+    :maxdepth: 2
+
+    format_options
 
 
 Magics

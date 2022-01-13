@@ -46,17 +46,17 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     geopandas = None
 
 try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
-try:
     from tqdm import tqdm
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery import _helpers
+
+
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+if pyarrow:
+    import pyarrow.types
 
 
 def _mock_client():
@@ -100,6 +100,189 @@ class TestEncryptionConfiguration(unittest.TestCase):
     def test_ctor_with_key(self):
         encryption_config = self._make_one(kms_key_name=self.KMS_KEY_NAME)
         self.assertEqual(encryption_config.kms_key_name, self.KMS_KEY_NAME)
+
+
+class TestTableBase:
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import _TableBase
+
+        return _TableBase
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_ctor_defaults(self):
+        instance = self._make_one()
+        assert instance._properties == {}
+
+    def test_project(self):
+        instance = self._make_one()
+        instance._properties = {"tableReference": {"projectId": "p_1"}}
+        assert instance.project == "p_1"
+
+    def test_dataset_id(self):
+        instance = self._make_one()
+        instance._properties = {"tableReference": {"datasetId": "ds_1"}}
+        assert instance.dataset_id == "ds_1"
+
+    def test_table_id(self):
+        instance = self._make_one()
+        instance._properties = {"tableReference": {"tableId": "tbl_1"}}
+        assert instance.table_id == "tbl_1"
+
+    def test_path(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        assert instance.path == "/projects/p_1/datasets/ds_1/tables/tbl_1"
+
+    def test___eq___wrong_type(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+
+        class TableWannabe:
+            pass
+
+        wannabe_other = TableWannabe()
+        wannabe_other._properties = instance._properties
+        wannabe_other.project = "p_1"
+        wannabe_other.dataset_id = "ds_1"
+        wannabe_other.table_id = "tbl_1"
+
+        assert instance != wannabe_other  # Can't fake it.
+        assert instance == mock.ANY  # ...but delegation to other object works.
+
+    def test___eq___project_mismatch(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        other = self._make_one()
+        other._properties = {
+            "projectId": "p_2",
+            "datasetId": "ds_1",
+            "tableId": "tbl_1",
+        }
+        assert instance != other
+
+    def test___eq___dataset_mismatch(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        other = self._make_one()
+        other._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_2",
+                "tableId": "tbl_1",
+            }
+        }
+        assert instance != other
+
+    def test___eq___table_mismatch(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        other = self._make_one()
+        other._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_2",
+            }
+        }
+        assert instance != other
+
+    def test___eq___equality(self):
+        instance = self._make_one()
+        instance._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        other = self._make_one()
+        other._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+        assert instance == other
+
+    def test___hash__set_equality(self):
+        instance_1 = self._make_one()
+        instance_1._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+
+        instance_2 = self._make_one()
+        instance_2._properties = {
+            "tableReference": {
+                "projectId": "p_2",
+                "datasetId": "ds_2",
+                "tableId": "tbl_2",
+            }
+        }
+
+        set_one = {instance_1, instance_2}
+        set_two = {instance_1, instance_2}
+        assert set_one == set_two
+
+    def test___hash__sets_not_equal(self):
+        instance_1 = self._make_one()
+        instance_1._properties = {
+            "tableReference": {
+                "projectId": "p_1",
+                "datasetId": "ds_1",
+                "tableId": "tbl_1",
+            }
+        }
+
+        instance_2 = self._make_one()
+        instance_2._properties = {
+            "tableReference": {
+                "projectId": "p_2",
+                "datasetId": "ds_2",
+                "tableId": "tbl_2",
+            }
+        }
+
+        set_one = {instance_1}
+        set_two = {instance_2}
+        assert set_one != set_two
 
 
 class TestTableReference(unittest.TestCase):
@@ -195,55 +378,6 @@ class TestTableReference(unittest.TestCase):
         self.assertEqual(got.project, "string-project")
         self.assertEqual(got.dataset_id, "string_dataset")
         self.assertEqual(got.table_id, "string_table")
-
-    def test___eq___wrong_type(self):
-        dataset_ref = DatasetReference("project_1", "dataset_1")
-        table = self._make_one(dataset_ref, "table_1")
-        other = object()
-        self.assertNotEqual(table, other)
-        self.assertEqual(table, mock.ANY)
-
-    def test___eq___project_mismatch(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        other_dataset = DatasetReference("project_2", "dataset_1")
-        table = self._make_one(dataset, "table_1")
-        other = self._make_one(other_dataset, "table_1")
-        self.assertNotEqual(table, other)
-
-    def test___eq___dataset_mismatch(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        other_dataset = DatasetReference("project_1", "dataset_2")
-        table = self._make_one(dataset, "table_1")
-        other = self._make_one(other_dataset, "table_1")
-        self.assertNotEqual(table, other)
-
-    def test___eq___table_mismatch(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        table = self._make_one(dataset, "table_1")
-        other = self._make_one(dataset, "table_2")
-        self.assertNotEqual(table, other)
-
-    def test___eq___equality(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        table = self._make_one(dataset, "table_1")
-        other = self._make_one(dataset, "table_1")
-        self.assertEqual(table, other)
-
-    def test___hash__set_equality(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        table1 = self._make_one(dataset, "table1")
-        table2 = self._make_one(dataset, "table2")
-        set_one = {table1, table2}
-        set_two = {table1, table2}
-        self.assertEqual(set_one, set_two)
-
-    def test___hash__not_equals(self):
-        dataset = DatasetReference("project_1", "dataset_1")
-        table1 = self._make_one(dataset, "table1")
-        table2 = self._make_one(dataset, "table2")
-        set_one = {table1}
-        set_two = {table2}
-        self.assertNotEqual(set_one, set_two)
 
     def test___repr__(self):
         dataset = DatasetReference("project1", "dataset1")
@@ -558,44 +692,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
         with self.assertRaises(ValueError):
             getattr(table, "num_rows")
 
-    def test__eq__wrong_type(self):
-        table = self._make_one("project_foo.dataset_bar.table_baz")
-
-        class TableWannabe:
-            pass
-
-        not_a_table = TableWannabe()
-        not_a_table._properties = table._properties
-
-        assert table != not_a_table  # Can't fake it.
-
-    def test__eq__same_table_basic(self):
-        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
-        table_2 = self._make_one("project_foo.dataset_bar.table_baz")
-        assert table_1 == table_2
-
-    def test__eq__same_table_multiple_properties(self):
-        from google.cloud.bigquery import SchemaField
-
-        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
-        table_1.require_partition_filter = True
-        table_1.labels = {"first": "one", "second": "two"}
-
-        table_1.schema = [
-            SchemaField("name", "STRING", "REQUIRED"),
-            SchemaField("age", "INTEGER", "NULLABLE"),
-        ]
-
-        table_2 = self._make_one("project_foo.dataset_bar.table_baz")
-        table_2.require_partition_filter = True
-        table_2.labels = {"first": "one", "second": "two"}
-        table_2.schema = [
-            SchemaField("name", "STRING", "REQUIRED"),
-            SchemaField("age", "INTEGER", "NULLABLE"),
-        ]
-
-        assert table_1 == table_2
-
     def test__eq__same_table_property_different(self):
         table_1 = self._make_one("project_foo.dataset_bar.table_baz")
         table_1.description = "This is table baz"
@@ -604,12 +700,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table_2.description = "This is also table baz"
 
         assert table_1 == table_2  # Still equal, only table reference is important.
-
-    def test__eq__different_table(self):
-        table_1 = self._make_one("project_foo.dataset_bar.table_baz")
-        table_2 = self._make_one("project_foo.dataset_bar.table_baz_2")
-
-        assert table_1 != table_2
 
     def test_hashable(self):
         table_1 = self._make_one("project_foo.dataset_bar.table_baz")
@@ -1584,38 +1674,6 @@ class TestTableListItem(unittest.TestCase):
         table = self._make_one(resource)
         self.assertEqual(table.to_api_repr(), resource)
 
-    def test__eq__wrong_type(self):
-        resource = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_baz",
-            }
-        }
-        table = self._make_one(resource)
-
-        class FakeTableListItem:
-            project = "project_foo"
-            dataset_id = "dataset_bar"
-            table_id = "table_baz"
-
-        not_a_table = FakeTableListItem()
-
-        assert table != not_a_table  # Can't fake it.
-
-    def test__eq__same_table(self):
-        resource = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_baz",
-            }
-        }
-        table_1 = self._make_one(resource)
-        table_2 = self._make_one(resource)
-
-        assert table_1 == table_2
-
     def test__eq__same_table_property_different(self):
         table_ref_resource = {
             "projectId": "project_foo",
@@ -1630,40 +1688,6 @@ class TestTableListItem(unittest.TestCase):
         table_2 = self._make_one(resource_2)
 
         assert table_1 == table_2  # Still equal, only table reference is important.
-
-    def test__eq__different_table(self):
-        resource_1 = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_baz",
-            }
-        }
-        table_1 = self._make_one(resource_1)
-
-        resource_2 = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_quux",
-            }
-        }
-        table_2 = self._make_one(resource_2)
-
-        assert table_1 != table_2
-
-    def test_hashable(self):
-        resource = {
-            "tableReference": {
-                "projectId": "project_foo",
-                "datasetId": "dataset_bar",
-                "tableId": "table_baz",
-            }
-        }
-        table_item = self._make_one(resource)
-        table_item_2 = self._make_one(resource)
-
-        assert hash(table_item) == hash(table_item_2)
 
 
 class TestTableClassesInterchangeability:
@@ -1816,6 +1840,25 @@ class Test_EmptyRowIterator(unittest.TestCase):
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 0)
 
+    @mock.patch("google.cloud.bigquery.table.pyarrow", new=None)
+    def test_to_arrow_iterable_error_if_pyarrow_is_none(self):
+        row_iterator = self._make_one()
+        with self.assertRaises(ValueError):
+            row_iterator.to_arrow_iterable()
+
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_to_arrow_iterable(self):
+        row_iterator = self._make_one()
+        arrow_iter = row_iterator.to_arrow_iterable()
+
+        result = list(arrow_iter)
+
+        self.assertEqual(len(result), 1)
+        record_batch = result[0]
+        self.assertIsInstance(record_batch, pyarrow.RecordBatch)
+        self.assertEqual(record_batch.num_rows, 0)
+        self.assertEqual(record_batch.num_columns, 0)
+
     @mock.patch("google.cloud.bigquery.table.pandas", new=None)
     def test_to_dataframe_error_if_pandas_is_none(self):
         row_iterator = self._make_one()
@@ -1866,8 +1909,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
         df = row_iterator.to_geodataframe(create_bqstorage_client=False)
         self.assertIsInstance(df, geopandas.GeoDataFrame)
         self.assertEqual(len(df), 0)  # verify the number of rows
-        self.assertEqual(df.crs.srs, "EPSG:4326")
-        self.assertEqual(df.crs.name, "WGS 84")
+        self.assertIsNone(df.crs)
 
 
 class TestRowIterator(unittest.TestCase):
@@ -2127,6 +2169,205 @@ class TestRowIterator(unittest.TestCase):
             warning for warning in warned if "BQ Storage too old" in str(warning)
         ]
         assert matching_warnings, "Obsolete dependency warning not raised."
+
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_to_arrow_iterable(self):
+        from google.cloud.bigquery.schema import SchemaField
+
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+            SchemaField(
+                "child",
+                "RECORD",
+                mode="REPEATED",
+                fields=[
+                    SchemaField("name", "STRING", mode="REQUIRED"),
+                    SchemaField("age", "INTEGER", mode="REQUIRED"),
+                ],
+            ),
+        ]
+        rows = [
+            {
+                "f": [
+                    {"v": "Bharney Rhubble"},
+                    {"v": "33"},
+                    {
+                        "v": [
+                            {"v": {"f": [{"v": "Whamm-Whamm Rhubble"}, {"v": "3"}]}},
+                            {"v": {"f": [{"v": "Hoppy"}, {"v": "1"}]}},
+                        ]
+                    },
+                ]
+            },
+            {
+                "f": [
+                    {"v": "Wylma Phlyntstone"},
+                    {"v": "29"},
+                    {
+                        "v": [
+                            {"v": {"f": [{"v": "Bepples Phlyntstone"}, {"v": "0"}]}},
+                            {"v": {"f": [{"v": "Dino"}, {"v": "4"}]}},
+                        ]
+                    },
+                ]
+            },
+        ]
+        path = "/foo"
+        api_request = mock.Mock(
+            side_effect=[
+                {"rows": [rows[0]], "pageToken": "NEXTPAGE"},
+                {"rows": [rows[1]]},
+            ]
+        )
+        row_iterator = self._make_one(
+            _mock_client(), api_request, path, schema, page_size=1, max_results=5
+        )
+
+        record_batches = row_iterator.to_arrow_iterable()
+        self.assertIsInstance(record_batches, types.GeneratorType)
+        record_batches = list(record_batches)
+        self.assertEqual(len(record_batches), 2)
+
+        # Check the schema.
+        for record_batch in record_batches:
+            self.assertIsInstance(record_batch, pyarrow.RecordBatch)
+            self.assertEqual(record_batch.schema[0].name, "name")
+            self.assertTrue(pyarrow.types.is_string(record_batch.schema[0].type))
+            self.assertEqual(record_batch.schema[1].name, "age")
+            self.assertTrue(pyarrow.types.is_int64(record_batch.schema[1].type))
+            child_field = record_batch.schema[2]
+            self.assertEqual(child_field.name, "child")
+            self.assertTrue(pyarrow.types.is_list(child_field.type))
+            self.assertTrue(pyarrow.types.is_struct(child_field.type.value_type))
+            self.assertEqual(child_field.type.value_type[0].name, "name")
+            self.assertEqual(child_field.type.value_type[1].name, "age")
+
+        # Check the data.
+        record_batch_1 = record_batches[0].to_pydict()
+        names = record_batch_1["name"]
+        ages = record_batch_1["age"]
+        children = record_batch_1["child"]
+        self.assertEqual(names, ["Bharney Rhubble"])
+        self.assertEqual(ages, [33])
+        self.assertEqual(
+            children,
+            [
+                [
+                    {"name": "Whamm-Whamm Rhubble", "age": 3},
+                    {"name": "Hoppy", "age": 1},
+                ],
+            ],
+        )
+
+        record_batch_2 = record_batches[1].to_pydict()
+        names = record_batch_2["name"]
+        ages = record_batch_2["age"]
+        children = record_batch_2["child"]
+        self.assertEqual(names, ["Wylma Phlyntstone"])
+        self.assertEqual(ages, [29])
+        self.assertEqual(
+            children,
+            [[{"name": "Bepples Phlyntstone", "age": 0}, {"name": "Dino", "age": 4}]],
+        )
+
+    @mock.patch("google.cloud.bigquery.table.pyarrow", new=None)
+    def test_to_arrow_iterable_error_if_pyarrow_is_none(self):
+        from google.cloud.bigquery.schema import SchemaField
+
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+        row_iterator = self._make_one(_mock_client(), api_request, path, schema)
+
+        with pytest.raises(ValueError, match="pyarrow"):
+            row_iterator.to_arrow_iterable()
+
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    def test_to_arrow_iterable_w_bqstorage(self):
+        from google.cloud.bigquery import schema
+        from google.cloud.bigquery import table as mut
+        from google.cloud.bigquery_storage_v1 import reader
+
+        bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+        bqstorage_client._transport = mock.create_autospec(
+            big_query_read_grpc_transport.BigQueryReadGrpcTransport
+        )
+        streams = [
+            # Use two streams we want to check frames are read from each stream.
+            {"name": "/projects/proj/dataset/dset/tables/tbl/streams/1234"},
+            {"name": "/projects/proj/dataset/dset/tables/tbl/streams/5678"},
+        ]
+        session = bigquery_storage.types.ReadSession(streams=streams)
+        arrow_schema = pyarrow.schema(
+            [
+                pyarrow.field("colA", pyarrow.int64()),
+                # Not alphabetical to test column order.
+                pyarrow.field("colC", pyarrow.float64()),
+                pyarrow.field("colB", pyarrow.string()),
+            ]
+        )
+        session.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
+        bqstorage_client.create_read_session.return_value = session
+
+        mock_rowstream = mock.create_autospec(reader.ReadRowsStream)
+        bqstorage_client.read_rows.return_value = mock_rowstream
+
+        mock_rows = mock.create_autospec(reader.ReadRowsIterable)
+        mock_rowstream.rows.return_value = mock_rows
+        page_items = [
+            pyarrow.array([1, -1]),
+            pyarrow.array([2.0, 4.0]),
+            pyarrow.array(["abc", "def"]),
+        ]
+
+        expected_record_batch = pyarrow.RecordBatch.from_arrays(
+            page_items, schema=arrow_schema
+        )
+        expected_num_record_batches = 3
+
+        mock_page = mock.create_autospec(reader.ReadRowsPage)
+        mock_page.to_arrow.return_value = expected_record_batch
+        mock_pages = (mock_page,) * expected_num_record_batches
+        type(mock_rows).pages = mock.PropertyMock(return_value=mock_pages)
+
+        schema = [
+            schema.SchemaField("colA", "INTEGER"),
+            schema.SchemaField("colC", "FLOAT"),
+            schema.SchemaField("colB", "STRING"),
+        ]
+
+        row_iterator = mut.RowIterator(
+            _mock_client(),
+            None,  # api_request: ignored
+            None,  # path: ignored
+            schema,
+            table=mut.TableReference.from_string("proj.dset.tbl"),
+            selected_fields=schema,
+        )
+
+        record_batches = list(
+            row_iterator.to_arrow_iterable(bqstorage_client=bqstorage_client)
+        )
+        total_record_batches = len(streams) * len(mock_pages)
+        self.assertEqual(len(record_batches), total_record_batches)
+
+        for record_batch in record_batches:
+            # Are the record batches return as expected?
+            self.assertEqual(record_batch, expected_record_batch)
+
+        # Don't close the client if it was passed in.
+        bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_to_arrow(self):
@@ -4027,8 +4268,14 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.name.dtype.name, "object")
         self.assertEqual(df.geog.dtype.name, "geometry")
         self.assertIsInstance(df.geog, geopandas.GeoSeries)
-        self.assertEqual(list(map(str, df.area)), ["0.0", "nan", "0.5"])
-        self.assertEqual(list(map(str, df.geog.area)), ["0.0", "nan", "0.5"])
+
+        with warnings.catch_warnings():
+            # Computing the area on a GeoDataFrame that uses a geographic Coordinate
+            # Reference System (CRS) produces a warning that we are not interested in.
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.assertEqual(list(map(str, df.area)), ["0.0", "nan", "0.5"])
+            self.assertEqual(list(map(str, df.geog.area)), ["0.0", "nan", "0.5"])
+
         self.assertEqual(df.crs.srs, "EPSG:4326")
         self.assertEqual(df.crs.name, "WGS 84")
         self.assertEqual(df.geog.crs.srs, "EPSG:4326")
@@ -4099,8 +4346,14 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.geog.dtype.name, "geometry")
         self.assertEqual(df.geog2.dtype.name, "object")
         self.assertIsInstance(df.geog, geopandas.GeoSeries)
-        self.assertEqual(list(map(str, df.area)), ["0.0", "nan", "0.5"])
-        self.assertEqual(list(map(str, df.geog.area)), ["0.0", "nan", "0.5"])
+
+        with warnings.catch_warnings():
+            # Computing the area on a GeoDataFrame that uses a geographic Coordinate
+            # Reference System (CRS) produces a warning that we are not interested in.
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.assertEqual(list(map(str, df.area)), ["0.0", "nan", "0.5"])
+            self.assertEqual(list(map(str, df.geog.area)), ["0.0", "nan", "0.5"])
+
         self.assertEqual(
             [v.__class__.__name__ for v in df.geog], ["Point", "NoneType", "Polygon"]
         )
@@ -4110,10 +4363,14 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(
             [v.__class__.__name__ for v in df.geog2], ["Point", "Point", "Point"]
         )
+
         # and can easily be converted to a GeoSeries
-        self.assertEqual(
-            list(map(str, geopandas.GeoSeries(df.geog2).area)), ["0.0", "0.0", "0.0"]
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.assertEqual(
+                list(map(str, geopandas.GeoSeries(df.geog2).area)),
+                ["0.0", "0.0", "0.0"],
+            )
 
     @unittest.skipIf(geopandas is None, "Requires `geopandas`")
     @mock.patch("google.cloud.bigquery.table.RowIterator.to_dataframe")
@@ -4165,8 +4422,14 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.name.dtype.name, "object")
         self.assertEqual(df.g.dtype.name, "geometry")
         self.assertIsInstance(df.g, geopandas.GeoSeries)
-        self.assertEqual(list(map(str, df.area)), ["0.0"])
-        self.assertEqual(list(map(str, df.g.area)), ["0.0"])
+
+        with warnings.catch_warnings():
+            # Computing the area on a GeoDataFrame that uses a geographic Coordinate
+            # Reference System (CRS) produces a warning that we are not interested in.
+            warnings.filterwarnings("ignore", category=UserWarning)
+            self.assertEqual(list(map(str, df.area)), ["0.0"])
+            self.assertEqual(list(map(str, df.g.area)), ["0.0"])
+
         self.assertEqual([v.__class__.__name__ for v in df.g], ["Point"])
 
 

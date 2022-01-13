@@ -98,8 +98,9 @@ templated_files = common.py_library(
     microgenerator=True,
     split_system_tests=True,
     intersphinx_dependencies={
-        "pandas": "http://pandas.pydata.org/pandas-docs/dev",
+        "dateutil": "https://dateutil.readthedocs.io/en/latest/",
         "geopandas": "https://geopandas.org/",
+        "pandas": "https://pandas.pydata.org/pandas-docs/stable/",
     },
 )
 
@@ -109,14 +110,12 @@ s.move(
     excludes=[
         "noxfile.py",
         "docs/multiprocessing.rst",
+        "docs/index.rst",
         ".coveragerc",
+        ".github/CODEOWNERS",
         # Include custom SNIPPETS_TESTS job for performance.
         # https://github.com/googleapis/python-bigquery/issues/191
         ".kokoro/presubmit/presubmit.cfg",
-        # Group all renovate PRs together. If this works well, remove this and
-        # update the shared templates (possibly with configuration option to
-        # py_library.)
-        "renovate.json",
     ],
 )
 

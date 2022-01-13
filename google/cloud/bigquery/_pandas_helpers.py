@@ -21,7 +21,7 @@ import queue
 import warnings
 
 try:
-    import pandas
+    import pandas  # type: ignore
 except ImportError:  # pragma: NO COVER
     pandas = None
 else:
@@ -29,7 +29,7 @@ else:
 
 try:
     # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
-    from shapely.geometry.base import BaseGeometry as _BaseGeometry
+    from shapely.geometry.base import BaseGeometry as _BaseGeometry  # type: ignore
 except ImportError:  # pragma: NO COVER
     # No shapely, use NoneType for _BaseGeometry as a placeholder.
     _BaseGeometry = type(None)
@@ -43,7 +43,7 @@ else:
             # - Avoid extra work done by `shapely.wkb.dumps` that we don't need.
             # - Caches the WKBWriter (and write method lookup :) )
             # - Avoids adding WKBWriter, lgeos, and notnull to the module namespace.
-            from shapely.geos import WKBWriter, lgeos
+            from shapely.geos import WKBWriter, lgeos  # type: ignore
 
             write = WKBWriter(lgeos).write
             notnull = pandas.notnull
@@ -54,12 +54,6 @@ else:
             return _to_wkb
 
         _to_wkb = _to_wkb()
-
-try:
-    import pyarrow
-    import pyarrow.parquet
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
 
 try:
     from google.cloud.bigquery_storage import ArrowSerializationOptions
@@ -73,12 +67,10 @@ from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
 
 
-_LOGGER = logging.getLogger(__name__)
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
-_NO_BQSTORAGE_ERROR = (
-    "The google-cloud-bigquery-storage library is not installed, "
-    "please install google-cloud-bigquery-storage to use bqstorage features."
-)
+
+_LOGGER = logging.getLogger(__name__)
 
 _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seconds.
 
@@ -87,8 +79,8 @@ _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage dow
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
     "datetime64[ns, UTC]": "TIMESTAMP",
-    # BigQuery does not support uploading DATETIME values from Parquet files.
-    # See: https://github.com/googleapis/google-cloud-python/issues/9996
+    # TODO: Update to DATETIME in V3
+    # https://github.com/googleapis/python-bigquery/issues/985
     "datetime64[ns]": "TIMESTAMP",
     "float32": "FLOAT",
     "float64": "FLOAT",
@@ -181,6 +173,13 @@ if pyarrow:
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
         pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
     }
+    BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {
+        "GEOGRAPHY": {
+            b"ARROW:extension:name": b"google:sqlType:geography",
+            b"ARROW:extension:metadata": b'{"encoding": "WKT"}',
+        },
+        "DATETIME": {b"ARROW:extension:name": b"google:sqlType:datetime"},
+    }
 
 else:  # pragma: NO COVER
     BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
@@ -235,7 +234,12 @@ def bq_to_arrow_field(bq_field, array_type=None):
         if array_type is not None:
             arrow_type = array_type  # For GEOGRAPHY, at least initially
         is_nullable = bq_field.mode.upper() == "NULLABLE"
-        return pyarrow.field(bq_field.name, arrow_type, nullable=is_nullable)
+        metadata = BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA.get(
+            bq_field.field_type.upper() if bq_field.field_type else ""
+        )
+        return pyarrow.field(
+            bq_field.name, arrow_type, nullable=is_nullable, metadata=metadata
+        )
 
     warnings.warn("Unable to determine type for field '{}'.".format(bq_field.name))
     return None
@@ -392,7 +396,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     # column, but it was not found.
     if bq_schema_unused:
         raise ValueError(
-            u"bq_schema contains fields not present in dataframe: {}".format(
+            "bq_schema contains fields not present in dataframe: {}".format(
                 bq_schema_unused
             )
         )
@@ -401,7 +405,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     # pyarrow, if available.
     if unknown_type_fields:
         if not pyarrow:
-            msg = u"Could not determine the type of columns: {}".format(
+            msg = "Could not determine the type of columns: {}".format(
                 ", ".join(field.name for field in unknown_type_fields)
             )
             warnings.warn(msg)
@@ -440,7 +444,14 @@ def augment_schema(dataframe, current_bq_schema):
             continue
 
         arrow_table = pyarrow.array(dataframe[field.name])
-        detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
+
+        if pyarrow.types.is_list(arrow_table.type):
+            # `pyarrow.ListType`
+            detected_mode = "REPEATED"
+            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.values.type.id)
+        else:
+            detected_mode = field.mode
+            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
 
         if detected_type is None:
             unknown_type_fields.append(field)
@@ -449,7 +460,7 @@ def augment_schema(dataframe, current_bq_schema):
         new_field = schema.SchemaField(
             name=field.name,
             field_type=detected_type,
-            mode=field.mode,
+            mode=detected_mode,
             description=field.description,
             fields=field.fields,
         )
@@ -457,7 +468,7 @@ def augment_schema(dataframe, current_bq_schema):
 
     if unknown_type_fields:
         warnings.warn(
-            u"Pyarrow could not determine the type of columns: {}.".format(
+            "Pyarrow could not determine the type of columns: {}.".format(
                 ", ".join(field.name for field in unknown_type_fields)
             )
         )
@@ -496,7 +507,7 @@ def dataframe_to_arrow(dataframe, bq_schema):
     extra_fields = bq_field_names - column_and_index_names
     if extra_fields:
         raise ValueError(
-            u"bq_schema contains fields not present in dataframe: {}".format(
+            "bq_schema contains fields not present in dataframe: {}".format(
                 extra_fields
             )
         )
@@ -506,7 +517,7 @@ def dataframe_to_arrow(dataframe, bq_schema):
     missing_fields = column_names - bq_field_names
     if missing_fields:
         raise ValueError(
-            u"bq_schema is missing fields from dataframe: {}".format(missing_fields)
+            "bq_schema is missing fields from dataframe: {}".format(missing_fields)
         )
 
     arrow_arrays = []
@@ -526,7 +537,13 @@ def dataframe_to_arrow(dataframe, bq_schema):
     return pyarrow.Table.from_arrays(arrow_arrays, names=arrow_names)
 
 
-def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SNAPPY"):
+def dataframe_to_parquet(
+    dataframe,
+    bq_schema,
+    filepath,
+    parquet_compression="SNAPPY",
+    parquet_use_compliant_nested_type=True,
+):
     """Write dataframe as a Parquet file, according to the desired BQ schema.
 
     This function requires the :mod:`pyarrow` package. Arrow is used as an
@@ -547,13 +564,29 @@ def dataframe_to_parquet(dataframe, bq_schema, filepath, parquet_compression="SN
             The compression codec to use by the the ``pyarrow.parquet.write_table``
             serializing method. Defaults to "SNAPPY".
             https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+        parquet_use_compliant_nested_type (bool):
+            Whether the ``pyarrow.parquet.write_table`` serializing method should write
+            compliant Parquet nested type (lists). Defaults to ``True``.
+            https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#nested-types
+            https://arrow.apache.org/docs/python/generated/pyarrow.parquet.write_table.html#pyarrow-parquet-write-table
+
+            This argument is ignored for ``pyarrow`` versions earlier than ``4.0.0``.
     """
-    if pyarrow is None:
-        raise ValueError("pyarrow is required for BigQuery schema conversion.")
+    pyarrow = _helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
+
+    import pyarrow.parquet  # type: ignore
+
+    kwargs = (
+        {"use_compliant_nested_type": parquet_use_compliant_nested_type}
+        if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+        else {}
+    )
 
     bq_schema = schema._to_schema_fields(bq_schema)
     arrow_table = dataframe_to_arrow(dataframe, bq_schema)
-    pyarrow.parquet.write_table(arrow_table, filepath, compression=parquet_compression)
+    pyarrow.parquet.write_table(
+        arrow_table, filepath, compression=parquet_compression, **kwargs,
+    )
 
 
 def _row_iterator_page_to_arrow(page, column_names, arrow_types):
@@ -805,7 +838,12 @@ def _download_table_bqstorage(
 
 
 def download_arrow_bqstorage(
-    project_id, table, bqstorage_client, preserve_order=False, selected_fields=None,
+    project_id,
+    table,
+    bqstorage_client,
+    preserve_order=False,
+    selected_fields=None,
+    max_queue_size=_MAX_QUEUE_SIZE_DEFAULT,
 ):
     return _download_table_bqstorage(
         project_id,
@@ -814,6 +852,7 @@ def download_arrow_bqstorage(
         preserve_order=preserve_order,
         selected_fields=selected_fields,
         page_to_item=_bqstorage_page_to_arrow,
+        max_queue_size=max_queue_size,
     )
 
 
@@ -844,7 +883,13 @@ def dataframe_to_json_generator(dataframe):
         output = {}
         for column, value in zip(dataframe.columns, row):
             # Omit NaN values.
-            if pandas.isna(value):
+            is_nan = pandas.isna(value)
+
+            # isna() can also return an array-like of bools, but the latter's boolean
+            # value is ambiguous, hence an extra check. An array-like value is *not*
+            # considered a NaN, however.
+            if isinstance(is_nan, bool) and is_nan:
                 continue
             output[column] = value
+
         yield output

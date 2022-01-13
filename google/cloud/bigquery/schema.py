@@ -15,12 +15,12 @@
 """Schemas for BigQuery tables / queries."""
 
 import collections
-from typing import Optional
+import enum
+from typing import Any, Dict, Iterable, Union
 
 from google.cloud.bigquery_v2 import types
 
 
-_DEFAULT_VALUE = object()
 _STRUCT_TYPES = ("RECORD", "STRUCT")
 
 # SQL types reference:
@@ -49,49 +49,64 @@ LEGACY_TO_STANDARD_TYPES = {
 """String names of the legacy SQL types to integer codes of Standard SQL types."""
 
 
+class _DefaultSentinel(enum.Enum):
+    """Object used as 'sentinel' indicating default value should be used.
+
+    Uses enum so that pytype/mypy knows that this is the only possible value.
+    https://stackoverflow.com/a/60605919/101923
+
+    Literal[_DEFAULT_VALUE] is an alternative, but only added in Python 3.8.
+    https://docs.python.org/3/library/typing.html#typing.Literal
+    """
+
+    DEFAULT_VALUE = object()
+
+
+_DEFAULT_VALUE = _DefaultSentinel.DEFAULT_VALUE
+
+
 class SchemaField(object):
     """Describe a single field within a table schema.
 
     Args:
-        name (str): The name of the field.
+        name: The name of the field.
 
-        field_type (str): The type of the field. See
+        field_type:
+            The type of the field. See
             https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.type
 
-        mode (Optional[str]): The mode of the field.  See
+        mode:
+            Defaults to ``'NULLABLE'``. The mode of the field. See
             https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.mode
 
-        description (Optional[str]): Description for the field.
+        description: Description for the field.
 
-        fields (Optional[Tuple[google.cloud.bigquery.schema.SchemaField]]):
-            Subfields (requires ``field_type`` of 'RECORD').
+        fields: Subfields (requires ``field_type`` of 'RECORD').
 
-        policy_tags (Optional[PolicyTagList]): The policy tag list for the field.
+        policy_tags: The policy tag list for the field.
 
-        precision (Optional[int]):
+        precision:
             Precison (number of digits) of fields with NUMERIC or BIGNUMERIC type.
 
-        scale (Optional[int]):
+        scale:
             Scale (digits after decimal) of fields with NUMERIC or BIGNUMERIC type.
 
-        max_length (Optional[int]):
-            Maximim length of fields with STRING or BYTES type.
-
+        max_length: Maximum length of fields with STRING or BYTES type.
     """
 
     def __init__(
         self,
-        name,
-        field_type,
-        mode="NULLABLE",
-        description=_DEFAULT_VALUE,
-        fields=(),
-        policy_tags=None,
-        precision=_DEFAULT_VALUE,
-        scale=_DEFAULT_VALUE,
-        max_length=_DEFAULT_VALUE,
+        name: str,
+        field_type: str,
+        mode: str = "NULLABLE",
+        description: Union[str, _DefaultSentinel] = _DEFAULT_VALUE,
+        fields: Iterable["SchemaField"] = (),
+        policy_tags: Union["PolicyTagList", None, _DefaultSentinel] = _DEFAULT_VALUE,
+        precision: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
+        scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
+        max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
     ):
-        self._properties = {
+        self._properties: Dict[str, Any] = {
             "name": name,
             "type": field_type,
         }
@@ -105,27 +120,11 @@ class SchemaField(object):
             self._properties["scale"] = scale
         if max_length is not _DEFAULT_VALUE:
             self._properties["maxLength"] = max_length
+        if policy_tags is not _DEFAULT_VALUE:
+            self._properties["policyTags"] = (
+                policy_tags.to_api_repr() if policy_tags is not None else None
+            )
         self._fields = tuple(fields)
-
-        self._policy_tags = self._determine_policy_tags(field_type, policy_tags)
-
-    @staticmethod
-    def _determine_policy_tags(
-        field_type: str, given_policy_tags: Optional["PolicyTagList"]
-    ) -> Optional["PolicyTagList"]:
-        """Return the given policy tags, or their suitable representation if `None`.
-
-        Args:
-            field_type: The type of the schema field.
-            given_policy_tags: The policy tags to maybe ajdust.
-        """
-        if given_policy_tags is not None:
-            return given_policy_tags
-
-        if field_type is not None and field_type.upper() in _STRUCT_TYPES:
-            return None
-
-        return PolicyTagList()
 
     @staticmethod
     def __get_int(api_repr, name):
@@ -152,10 +151,10 @@ class SchemaField(object):
         mode = api_repr.get("mode", "NULLABLE")
         description = api_repr.get("description", _DEFAULT_VALUE)
         fields = api_repr.get("fields", ())
+        policy_tags = api_repr.get("policyTags", _DEFAULT_VALUE)
 
-        policy_tags = cls._determine_policy_tags(
-            field_type, PolicyTagList.from_api_repr(api_repr.get("policyTags"))
-        )
+        if policy_tags is not None and policy_tags is not _DEFAULT_VALUE:
+            policy_tags = PolicyTagList.from_api_repr(policy_tags)
 
         return cls(
             field_type=field_type,
@@ -230,7 +229,8 @@ class SchemaField(object):
         """Optional[google.cloud.bigquery.schema.PolicyTagList]: Policy tag list
         definition for this field.
         """
-        return self._policy_tags
+        resource = self._properties.get("policyTags")
+        return PolicyTagList.from_api_repr(resource) if resource is not None else None
 
     def to_api_repr(self) -> dict:
         """Return a dictionary representing this schema field.
@@ -244,10 +244,6 @@ class SchemaField(object):
         # add this to the serialized representation.
         if self.field_type.upper() in _STRUCT_TYPES:
             answer["fields"] = [f.to_api_repr() for f in self.fields]
-        else:
-            # Explicitly include policy tag definition (we must not do it for RECORD
-            # fields, because those are not leaf fields).
-            answer["policyTags"] = self.policy_tags.to_api_repr()
 
         # Done; return the serialized dictionary.
         return answer
@@ -272,7 +268,7 @@ class SchemaField(object):
                     field_type = f"{field_type}({self.precision})"
 
         policy_tags = (
-            () if self._policy_tags is None else tuple(sorted(self._policy_tags.names))
+            None if self.policy_tags is None else tuple(sorted(self.policy_tags.names))
         )
 
         return (
@@ -340,7 +336,11 @@ class SchemaField(object):
         return hash(self._key())
 
     def __repr__(self):
-        return "SchemaField{}".format(self._key())
+        key = self._key()
+        policy_tags = key[-1]
+        policy_tags_inst = None if policy_tags is None else PolicyTagList(policy_tags)
+        adjusted_key = key[:-1] + (policy_tags_inst,)
+        return f"{self.__class__.__name__}{adjusted_key}"
 
 
 def _parse_schema_resource(info):
@@ -411,7 +411,7 @@ class PolicyTagList(object):
             `projects/*/locations/*/taxonomies/*/policyTags/*`.
     """
 
-    def __init__(self, names=()):
+    def __init__(self, names: Iterable[str] = ()):
         self._properties = {}
         self._properties["names"] = tuple(names)
 
@@ -429,7 +429,7 @@ class PolicyTagList(object):
         Returns:
             Tuple: The contents of this :class:`~google.cloud.bigquery.schema.PolicyTagList`.
         """
-        return tuple(sorted(self._properties.items()))
+        return tuple(sorted(self._properties.get("names", ())))
 
     def __eq__(self, other):
         if not isinstance(other, PolicyTagList):
@@ -443,7 +443,7 @@ class PolicyTagList(object):
         return hash(self._key())
 
     def __repr__(self):
-        return "PolicyTagList{}".format(self._key())
+        return f"{self.__class__.__name__}(names={self._key()})"
 
     @classmethod
     def from_api_repr(cls, api_repr: dict) -> "PolicyTagList":
@@ -482,5 +482,5 @@ class PolicyTagList(object):
                 A dictionary representing the PolicyTagList object in
                 serialized form.
         """
-        answer = {"names": [name for name in self.names]}
+        answer = {"names": list(self.names)}
         return answer

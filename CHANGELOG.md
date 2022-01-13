@@ -5,6 +5,18 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [2.32.0](https://github.com/googleapis/python-bigquery/compare/v2.31.0...v2.32.0) (2022-01-13)
+
+
+### Features
+
+* support authorized dataset entity ([#1075](https://github.com/googleapis/python-bigquery/issues/1075)) ([c098cd0](https://github.com/googleapis/python-bigquery/commit/c098cd01c755633bfaba7193dd5c044a489a5b61))
+
+
+### Bug Fixes
+
+* remove query text from exception message, use `exception.debug_message` instead ([#1105](https://github.com/googleapis/python-bigquery/issues/1105)) ([e23114c](https://github.com/googleapis/python-bigquery/commit/e23114ce362e09ac72f733a640e53a561cc9ce69))
+
 ## [2.32.0](https://github.com/googleapis/python-bigquery/compare/v2.31.0...v2.32.0) (2022-01-12)
 
 

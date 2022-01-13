@@ -1,7 +1,7 @@
 Python Client for Google BigQuery
 =================================
 
-|GA| |pypi| |versions| 
+|GA| |pypi| |versions|
 
 Querying massive datasets can be time consuming and expensive without the
 right hardware and infrastructure. Google `BigQuery`_ solves this problem by
@@ -52,7 +52,7 @@ dependencies.
 
 Supported Python Versions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-Python >= 3.6, < 3.10
+Python >= 3.6, < 3.11
 
 Unsupported Python Versions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -140,6 +140,3 @@ In this example all tracing data will be published to the Google
 
 .. _OpenTelemetry documentation: https://opentelemetry-python.readthedocs.io
 .. _Cloud Trace: https://cloud.google.com/trace
-
-
-

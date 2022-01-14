@@ -549,8 +549,12 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
         record_batch.serialize().to_pybytes()
     )
     bqstorage_base_client.read_rows.return_value = [page]
+    # TODO: constructor is different depending on version
+    #       May want to just mock this out entirely. It'd be nice to test the
+    #       arrow deserialization, but that's tested in the
+    #       google-cloud-bigquery-storage client too.
     reader = google.cloud.bigquery_storage_v1.reader.ReadRowsStream(
-        [page], bqstorage_base_client, stream_id, 0, {}
+        bqstorage_base_client, stream_id, 0, {}
     )
     bqstorage_client.read_rows.return_value = reader
 

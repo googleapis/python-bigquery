@@ -221,11 +221,11 @@ class TestConnection(unittest.TestCase):
         gc.collect()
         cursor_count = 0
         for obj in gc.get_objects():
-          try:
-            if isinstance(obj, Cursor):
-              cursor_count += 1
-          except ReferenceError:  # pragma: NO COVER
-            pass
+            try:
+                if isinstance(obj, Cursor):
+                    cursor_count += 1
+            except ReferenceError:  # pragma: NO COVER
+                pass
         self.assertEqual(cursor_count, 2)
 
     def test_commit(self):

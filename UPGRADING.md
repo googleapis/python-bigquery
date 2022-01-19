@@ -50,6 +50,24 @@ The behavior of some of the package "extras" has thus also changed:
    $ pip install google-cloud-bigquery
    ```
 
+
+## Type Annotations
+
+The library is now type-annotated and declares itself as such. If you use a static
+type checker such as `mypy`, you might start getting errors in places where
+`google-cloud-bigquery` package is used.
+
+It is recommended to update your code and/or type annotations to fix these errors, but
+if this is not feasible in the short term, you can temporarily ignore type annotations
+in `google-cloud-bigquery`, for example by using a special `# type: ignore` comment:
+
+```py
+from google.cloud import bigquery  # type: ignore
+```
+
+But again, this is only recommended as a possible short-term workaround if immediately
+fixing the type check errors in your project is not feasible.
+
 ## Re-organized Types
 
 The auto-generated parts of the library has been removed, and proto-based types formerly
@@ -94,6 +112,27 @@ if field_type == StandardSqlTypeNames.STRING:
 ```
 
 
+## Issuing queries with `Client.create_job` preserves destination table
+
+The `Client.create_job` method no longer removes the destination table from a
+query job's configuration. Destination table for the query can thus be
+explicitly defined by the user.
+
+
+## Changes to data types when reading a pandas DataFrame
+
+TODO
+## Changes to data types loading a pandas DataFrame
+
+In the absence of schema information, columns with naive `datetime.datetime` values,
+i.e. without timezone information, are recognized and loaded using the `DATETIME` type.
+On the other hand, for columns with timezone-aware `datetime.dateime` values, the
+`TIMESTAMP` type is continued to be used.
+
+## Changes to get_model and list_models
+
+TODO
+
 <a name="legacy-types"></a>
 ## Legacy Types
 
@@ -110,46 +149,6 @@ from the types in `google.cloud.bigquery`, and from the types supported on the b
 
 Unless you have a very specific situation that warrants using them, you should instead
 use the actively maintained types from `google.cloud.bigquery`.
-
-
-## Destination Table is Preserved on Query Jobs
-
-When the BigQuery client creates a `QueryJob`, it no longer removes the destination
-table from the job's configuration. Destination table for the query can thus be
-explicitly defined by the user.
-
-
-## Changed Default Inferred Type for Naive `datetime` Instances.
-
-In the absence of schema information, columns with naive `datetime.datetime` values,
-i.e. without timezone information, are recognized and loaded using the `DATETIME` type.
-On the other hand, for columns with timezone-aware `datetime.dateime` values, the
-`TIMESTAMP` type is continued to be used.
-
-
-## Destination Table is Preserved on Query Jobs
-
-When the BigQuery client creates a `QueryJob`, it no longer removes the destination
-table from the job's configuration. Destination table for the query can thus be
-explicitly defined by the user.
-
-
-## Type Annotations
-
-The library is now type-annotated and declares itself as such. If you use a static
-type checker such as `mypy`, you might start getting errors in places where
-`google-cloud-bigquery` package is used.
-
-It is recommended to update your code and/or type annotations to fix these errors, but
-if this is not feasible in the short term, you can temporarily ignore type annotations
-in `google-cloud-bigquery`, for example by using a special `# type: ignore` comment:
-
-```py
-from google.cloud import bigquery  # type: ignore
-```
-
-But again, this is only recommended as a possible short-term workaround if immediately
-fixing the type check errors in your project is not feasible.
 
 
 # 2.0.0 Migration Guide

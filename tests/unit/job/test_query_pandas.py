@@ -41,7 +41,6 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
-from google.cloud.bigquery._helpers import BQ_STORAGE_VERSIONS
 from ..helpers import make_connection
 from .helpers import _make_client
 from .helpers import _make_job_resource
@@ -142,18 +141,22 @@ def test_to_dataframe_bqstorage_preserve_order(query, table_read_options_kwarg):
     session = bigquery_storage.types.ReadSession()
     session.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
     session.streams = [bigquery_storage.types.ReadStream(name=stream_id)]
+    reader = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsStream, instance=True
+    )
+    row_iterable = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsIterable, instance=True
+    )
+    page = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsPage, instance=True
+    )
+    page.to_arrow.return_value = record_batch
+    type(row_iterable).pages = mock.PropertyMock(return_value=[page])
+    reader.rows.return_value = row_iterable
+    bqstorage_client = mock.create_autospec(
+        bigquery_storage.BigQueryReadClient, instance=True
+    )
     bqstorage_client.create_read_session.return_value = session
-    bqstorage_base_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
-    page = bigquery_storage.types.ReadRowsResponse()
-    if BQ_STORAGE_VERSIONS.is_read_session_optional:
-        page.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
-    page.arrow_record_batch.serialized_record_batch = (
-        record_batch.serialize().to_pybytes()
-    )
-    bqstorage_base_client.read_rows.return_value = [page]
-    reader = google.cloud.bigquery_storage_v1.reader.ReadRowsStream(
-        [page], bqstorage_base_client, stream_id, 0, {}
-    )
     bqstorage_client.read_rows.return_value = reader
 
     dataframe = job.to_dataframe(bqstorage_client=bqstorage_client)
@@ -536,22 +539,25 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
     connection = make_connection(query_resource)
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(resource, client)
-    bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
     session = bigquery_storage.types.ReadSession()
     session.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
     session.streams = [bigquery_storage.types.ReadStream(name=stream_id)]
+    reader = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsStream, instance=True
+    )
+    row_iterable = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsIterable, instance=True
+    )
+    page = mock.create_autospec(
+        google.cloud.bigquery_storage_v1.reader.ReadRowsPage, instance=True
+    )
+    page.to_arrow.return_value = record_batch
+    type(row_iterable).pages = mock.PropertyMock(return_value=[page])
+    reader.rows.return_value = row_iterable
+    bqstorage_client = mock.create_autospec(
+        bigquery_storage.BigQueryReadClient, instance=True
+    )
     bqstorage_client.create_read_session.return_value = session
-    bqstorage_base_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
-    page = bigquery_storage.types.ReadRowsResponse()
-    if BQ_STORAGE_VERSIONS.is_read_session_optional:
-        page.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
-    page.arrow_record_batch.serialized_record_batch = (
-        record_batch.serialize().to_pybytes()
-    )
-    bqstorage_base_client.read_rows.return_value = [page]
-    reader = google.cloud.bigquery_storage_v1.reader.ReadRowsStream(
-        [page], bqstorage_base_client, stream_id, 0, {}
-    )
     bqstorage_client.read_rows.return_value = reader
 
     dataframe = job.to_dataframe(bqstorage_client=bqstorage_client)

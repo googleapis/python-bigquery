@@ -15,7 +15,9 @@
 """Shared helper functions for connecting BigQuery and pandas."""
 
 import concurrent.futures
+from datetime import datetime
 import functools
+from itertools import islice
 import logging
 import queue
 import warnings
@@ -85,9 +87,7 @@ _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage dow
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
     "datetime64[ns, UTC]": "TIMESTAMP",
-    # TODO: Update to DATETIME in V3
-    # https://github.com/googleapis/python-bigquery/issues/985
-    "datetime64[ns]": "TIMESTAMP",
+    "datetime64[ns]": "DATETIME",
     "float32": "FLOAT",
     "float64": "FLOAT",
     "int8": "INTEGER",
@@ -379,6 +379,36 @@ def _first_valid(series):
         return series.at[first_valid_index]
 
 
+def _first_array_valid(series):
+    """Return the first "meaningful" element from the array series.
+
+    Here, "meaningful" means the first non-None element in one of the arrays that can
+    be used for type detextion.
+    """
+    first_valid_index = series.first_valid_index()
+    if first_valid_index is None:
+        return None
+
+    valid_array = series.at[first_valid_index]
+    valid_item = next((item for item in valid_array if not pandas.isna(item)), None)
+
+    if valid_item is not None:
+        return valid_item
+
+    # Valid item is None because all items in the "valid" array are invalid. Try
+    # to find a true valid array manually.
+    for array in islice(series, first_valid_index + 1, None):
+        try:
+            array_iter = iter(array)
+        except TypeError:
+            continue  # Not an array, apparently, e.g. None, thus skip.
+        valid_item = next((item for item in array_iter if not pandas.isna(item)), None)
+        if valid_item is not None:
+            break
+
+    return valid_item
+
+
 def dataframe_to_bq_schema(dataframe, bq_schema):
     """Convert a pandas DataFrame schema to a BigQuery schema.
 
@@ -482,6 +512,19 @@ def augment_schema(dataframe, current_bq_schema):
             # `pyarrow.ListType`
             detected_mode = "REPEATED"
             detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.values.type.id)
+
+            # For timezone-naive datetimes, pyarrow assumes the UTC timezone and adds
+            # it to such datetimes, causing them to be recognized as TIMESTAMP type.
+            # We thus additionally check the actual data to see if we need to overrule
+            # that and choose DATETIME instead.
+            # Note that this should only be needed for datetime values inside a list,
+            # since scalar datetime values have a proper Pandas dtype that allows
+            # distinguishing between timezone-naive and timezone-aware values before
+            # even requiring the additional schema augment logic in this method.
+            if detected_type == "TIMESTAMP":
+                valid_item = _first_array_valid(dataframe[field.name])
+                if isinstance(valid_item, datetime) and valid_item.tzinfo is None:
+                    detected_type = "DATETIME"
         else:
             detected_mode = field.mode
             detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
@@ -869,7 +912,12 @@ def _download_table_bqstorage(
 
 
 def download_arrow_bqstorage(
-    project_id, table, bqstorage_client, preserve_order=False, selected_fields=None,
+    project_id,
+    table,
+    bqstorage_client,
+    preserve_order=False,
+    selected_fields=None,
+    max_queue_size=_MAX_QUEUE_SIZE_DEFAULT,
 ):
     return _download_table_bqstorage(
         project_id,
@@ -878,6 +926,7 @@ def download_arrow_bqstorage(
         preserve_order=preserve_order,
         selected_fields=selected_fields,
         page_to_item=_bqstorage_page_to_arrow,
+        max_queue_size=max_queue_size,
     )
 
 

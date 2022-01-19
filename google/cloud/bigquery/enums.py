@@ -122,6 +122,45 @@ class QueryPriority(object):
     """Specifies batch priority."""
 
 
+class QueryApiMethod(str, enum.Enum):
+    """API method used to start the query. The default value is
+    :attr:`INSERT`.
+    """
+
+    INSERT = "INSERT"
+    """Submit a query job by using the `jobs.insert REST API method
+    <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert>`_.
+
+    This supports all job configuration options.
+    """
+
+    QUERY = "QUERY"
+    """Submit a query job by using the `jobs.query REST API method
+    <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query>`_.
+
+    Differences from ``INSERT``:
+
+    * Many parameters and job configuration options, including job ID and
+      destination table, cannot be used
+      with this API method. See the `jobs.query REST API documentation
+      <https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query>`_ for
+      the complete list of supported configuration options.
+
+    * API blocks up to a specified timeout, waiting for the query to
+      finish.
+
+    * The full job resource (including job statistics) may not be available.
+      Call :meth:`~google.cloud.bigquery.job.QueryJob.reload` or
+      :meth:`~google.cloud.bigquery.client.Client.get_job` to get full job
+      statistics and configuration.
+
+    * :meth:`~google.cloud.bigquery.Client.query` can raise API exceptions if
+      the query fails, whereas the same errors don't appear until calling
+      :meth:`~google.cloud.bigquery.job.QueryJob.result` when the ``INSERT``
+      API method is used.
+    """
+
+
 class SchemaUpdateOption(object):
     """Specifies an update to the destination table schema as a side effect of
     a load job.
@@ -195,6 +234,19 @@ class StandardSqlTypeNames(str, enum.Enum):
     JSON = enum.auto()
     ARRAY = enum.auto()
     STRUCT = enum.auto()
+
+
+class EntityTypes(str, enum.Enum):
+    """Enum of allowed entity type names in AccessEntry"""
+
+    USER_BY_EMAIL = "userByEmail"
+    GROUP_BY_EMAIL = "groupByEmail"
+    DOMAIN = "domain"
+    DATASET = "dataset"
+    SPECIAL_GROUP = "specialGroup"
+    VIEW = "view"
+    IAM_MEMBER = "iamMember"
+    ROUTINE = "routine"
 
 
 # See also: https://cloud.google.com/bigquery/data-types#legacy_sql_data_types

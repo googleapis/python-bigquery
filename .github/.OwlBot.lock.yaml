@@ -1,3 +1,3 @@
 docker:
   image: gcr.io/cloud-devrel-public-resources/owlbot-python:latest
-  digest: sha256:dfa9b663b32de8b5b327e32c1da665a80de48876558dd58091d8160c60ad7355
+  digest: sha256:f0e4b51deef56bed74d3e2359c583fc104a8d6367da3984fc5c66938db738828

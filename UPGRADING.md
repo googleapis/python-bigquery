@@ -121,38 +121,80 @@ explicitly defined by the user.
 
 ## Changes to data types when reading a pandas DataFrame
 
-TODO
+The default dtypes returned by the `to_dataframe` method have changed.
+
+* Now, the BigQuery `BOOLEAN` data type maps to the pandas `boolean` dtype.
+  Previously, this mapped to the pandas `bool` dtype when the column did not
+  contain `NULL` values and the pandas `object` dtype when `NULL` values are
+  present.
+* Now, the BigQuery `INT64` data type maps to the pandas `Int64` dtype.
+  Previously, this mapped to the pandas `int64` dtype when the column did not
+  contain `NULL` values and the pandas `float64` dtype when `NULL` values are
+  present.
+* Now, the BigQuery `DATE` data type maps to the pandas `dbdate` dtype, which
+  is provided by the
+  [db-dtypes](https://googleapis.dev/python/db-dtypes/latest/index.html)
+  package. If any date value is outside of the range of
+  [pandas.Timestamp.min](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.min.html)
+  (1677-09-22) and
+  [pandas.Timestamp.max](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.max.html)
+  (2262-04-11), the data type maps to the pandas `object` dtype. The
+  `date_as_object` parameter has been removed.
+* Now, the BigQuery `TIME` data type maps to the pandas `dbtime` dtype, which
+  is provided by the
+  [db-dtypes](https://googleapis.dev/python/db-dtypes/latest/index.html)
+  package.
+
+
 ## Changes to data types loading a pandas DataFrame
 
-In the absence of schema information, columns with naive `datetime.datetime` values,
-i.e. without timezone information, are recognized and loaded using the `DATETIME` type.
-On the other hand, for columns with timezone-aware `datetime.dateime` values, the
-`TIMESTAMP` type is continued to be used.
+In the absence of schema information, pandas columns with naive
+`datetime64[ns]` values, i.e. without timezone information, are recognized and
+loaded using the `DATETIME` type.  On the other hand, for columns with
+timezone-aware `datetime64[ns, UTC]` values, the `TIMESTAMP` type is continued
+to be used.
 
 ## Changes to `Model`, `Client.get_model`, `Client.update_model`, and `Client.list_models`
 
 The types of several `Model` properties have been changed.
 
-- `Model.feature_columns` now returns a sequence of dictionaries, as recieved from the [BigQuery REST API](https://cloud.google.com/bigquery/docs/reference/rest/v2/models#Model.FIELDS.feature_columns).
-- `Model.label_columns` now returns a sequence of dictionaries, as recieved from the [BigQuery REST API](https://cloud.google.com/bigquery/docs/reference/rest/v2/models#Model.FIELDS.label_columns).
+- `Model.feature_columns` now returns a sequence of `google.cloud.bigquery.standard_sql.StandardSqlField`.
+- `Model.label_columns` now returns a sequence of `google.cloud.bigquery.standard_sql.StandardSqlField`.
+- `Model.model_type` now returns a string.
+- `Model.training_runs` now returns a sequence of dictionaries, as recieved from the [BigQuery REST API](https://cloud.google.com/bigquery/docs/reference/rest/v2/models#Model.FIELDS.training_runs).
 
-<a name="legacy-types"></a>
-## Legacy Types
+<a name="legacy-protobuf-types"></a>
+## Legacy Protocol Buffers Types
 
 For compatibility reasons, the legacy proto-based types still exists as static code
 and can be imported:
 
 ```py
-from google.cloud.bigquery_v2 import StandardSqlDataType  # a sublcass of proto.Message
+from google.cloud.bigquery_v2 import Model  # a sublcass of proto.Message
 ```
 
-Mind, however, that importing them will issue a warning, because aside from being
-importable, these types **are not maintained anymore** in any way. They may differ both
-from the types in `google.cloud.bigquery`, and from the types supported on the backend.
+Mind, however, that importing them will issue a warning, because aside from
+being importable, these types **are not maintained anymore**. They may differ
+both from the types in `google.cloud.bigquery`, and from the types supported on
+the backend.
 
-Unless you have a very specific situation that warrants using them, you should instead
-use the actively maintained types from `google.cloud.bigquery`.
+### Maintaining compatibility with `google-cloud-bigquery` version 2.0
 
+If you maintain a library or system that needs to support both
+`google-cloud-bigquery` version 2.x and 3.x, it is recommended that you detect
+when version 2.x is in use and convert properties that use the legacy protocol
+buffer types, such as `Model.training_runs`, into the types used in 3.x.
+
+Call the [`to_dict`
+method](https://proto-plus-python.readthedocs.io/en/latest/reference/message.html#proto.message.Message.to_dict)
+on the protocol buffers objects to get a JSON-compatible dictionary.
+
+```py
+from google.cloud.bigquery_v2 import Model
+
+training_run: Model.TrainingRun = ...
+training_run_dict = training_run.to_dict()
+```
 
 # 2.0.0 Migration Guide
 

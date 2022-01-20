@@ -129,9 +129,12 @@ i.e. without timezone information, are recognized and loaded using the `DATETIME
 On the other hand, for columns with timezone-aware `datetime.dateime` values, the
 `TIMESTAMP` type is continued to be used.
 
-## Changes to get_model and list_models
+## Changes to `Model`, `Client.get_model`, `Client.update_model`, and `Client.list_models`
 
-TODO
+The types of several `Model` properties have been changed.
+
+- `Model.feature_columns` now returns a sequence of dictionaries, as recieved from the [BigQuery REST API](https://cloud.google.com/bigquery/docs/reference/rest/v2/models#Model.FIELDS.feature_columns).
+- `Model.label_columns` now returns a sequence of dictionaries, as recieved from the [BigQuery REST API](https://cloud.google.com/bigquery/docs/reference/rest/v2/models#Model.FIELDS.label_columns).
 
 <a name="legacy-types"></a>
 ## Legacy Types

@@ -23,6 +23,7 @@ from typing import Any, Dict, Optional, Sequence, Union
 
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
+from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 
@@ -171,26 +172,32 @@ class Model:
         )
 
     @property
-    def feature_columns(self) -> Sequence[Dict[str, Any]]:
+    def feature_columns(self) -> Sequence[standard_sql.StandardSqlField]:
         """Input feature columns that were used to train this model.
 
         Read-only.
         """
-        return typing.cast(
+        resource: Sequence[Dict[str, Any]] = typing.cast(
             Sequence[Dict[str, Any]], self._properties.get("featureColumns", [])
         )
+        return [
+            standard_sql.StandardSqlField.from_api_repr(column) for column in resource
+        ]
 
     @property
-    def label_columns(self) -> Sequence[Dict[str, Any]]:
+    def label_columns(self) -> Sequence[standard_sql.StandardSqlField]:
         """Label columns that were used to train this model.
 
         The output of the model will have a ``predicted_`` prefix to these columns.
 
         Read-only.
         """
-        return typing.cast(
+        resource: Sequence[Dict[str, Any]] = typing.cast(
             Sequence[Dict[str, Any]], self._properties.get("labelColumns", [])
         )
+        return [
+            standard_sql.StandardSqlField.from_api_repr(column) for column in resource
+        ]
 
     @property
     def best_trial_id(self) -> Optional[int]:

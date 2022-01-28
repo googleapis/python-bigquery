@@ -198,7 +198,150 @@ class TestAccessEntry(unittest.TestCase):
         with self.assertRaises(ValueError):
             self._get_target_class().from_api_repr(resource)
 
+    # def test_properties(self):
+    #     from google.cloud.bigquery import external_config
+    #     from google.cloud.bigquery.dataset import AccessEntry
+    #     from google.cloud.bigquery.external_config import AvroOptions
 
+    #     options = AvroOptions.from_api_repr({"useAvroLogicalTypes": True})
+    #     ec = external_config.ExternalConfig(external_config.ExternalSourceFormat.AVRO)
+
+    #     self.assertIsNone(ec.avro_options.use_avro_logical_types)
+
+    #     ec.avro_options = options
+
+    #     self.assertTrue(ec.avro_options.use_avro_logical_types)
+    #     self.assertIs(
+    #         ec.options._properties, ec._properties[AvroOptions._RESOURCE_NAME]
+    #     )
+    #     self.assertIs(
+    #         ec.avro_options._properties, ec._properties[AvroOptions._RESOURCE_NAME]
+    #     )
+
+    #     view = {
+    #         "projectId": "my-project",
+    #         "datasetId": "my_dataset",
+    #         "tableId": "my_table",
+    #     }
+    #     table_resource_string = "abc.abc.abc"
+    #     entry = self._make_one(None, "view", table_resource_string)
+    #     # resource = entry.to_api_repr()
+    #     # exp_resource = {"role": "READER"}
+    #     print("******")
+    #     print(repr(entry))
+    #     print("properties:")
+    #     print(entry._properties)
+    #     # print("_entity_type:")
+    #     # print(entry._entity_type)
+    #     # print("~~~~~~~")
+    #     # table_resource_string = "abc.abc.abc"
+    #     # entry.view = table_resource_string
+    #     # print(repr(entry))
+    #     # print("properties:")
+    #     # print(entry._properties)
+
+    #     # review = {
+    #     #     "projectId": "msdfafast",
+    #     #     "datasetId": "myasfadft",
+    #     #     "tableId": "myasdfadfale",
+    #     # }
+    #     # entry._properties["view"] = review
+    #     # print(repr(entry))
+    #     # print("properties:")
+    #     # print(entry._properties)
+    #     # entry2 = AccessEntry("READER")
+    #     # entry2.view = view
+    #     # print("******2")
+    #     # print(repr(entry2))
+    #     # print("properties2:")
+    #     # print(entry2._properties)
+    #     # entry._entity_type = "view"
+    #     # print("set entity type")
+    #     # print(entry2._properties)
+        
+
+    #     # print("~~~~~~~")
+    #     # print(repr(resource))
+    #     # print('external config:')
+    #     # print(ec)
+    #     # print(ec._properties)
+
+    #     # print(resource.properties)
+    #     self.assertEqual(resource, exp_resource)
+
+    def test_view_getter_setter(self):
+        from google.cloud.bigquery import external_config
+        from google.cloud.bigquery.dataset import AccessEntry
+        from google.cloud.bigquery.external_config import AvroOptions
+
+        view = {
+            "projectId": "my_project",
+            "datasetId": "my_dataset",
+            "tableId": "my_table",
+        }
+        entry = self._make_one(None)
+        entry.view = view
+        resource = entry.to_api_repr()
+        exp_resource = {"view": view}
+        self.assertEqual(resource, exp_resource)
+
+    def test_view_getter_setter_incorrect_role(self):
+        view = {
+            "projectId": "my_project",
+            "datasetId": "my_dataset",
+            "tableId": "my_table",
+        }
+        entry = self._make_one("READER")
+        with self.assertRaises(ValueError):
+            entry.view = view
+
+    def test_dataset_getter_setter(self):
+        dataset = {
+            "dataset": {
+                "projectId": "my-project",
+                "datasetId": "my_dataset",
+                "tableId": "my_table",
+            }
+        }
+        entry = self._make_one(None)
+        entry.dataset = dataset
+        resource = entry.to_api_repr()
+        exp_resource = {"dataset": dataset}
+        self.assertEqual(resource, exp_resource)
+
+    def test_dataset_getter_setter_incorrect_role(self):
+        dataset = {
+            "dataset": {
+                "projectId": "my-project",
+                "datasetId": "my_dataset",
+                "tableId": "my_table",
+            }
+        }
+        entry = self._make_one("READER")
+        with self.assertRaises(ValueError):
+            entry.dataset = dataset
+
+    def test_routine_getter_setter(self):
+        routine = {
+            "projectId": "my-project",
+            "datasetId": "my_dataset",
+            "routineId": "my_routine",
+        }
+        entry = self._make_one(None)
+        entry.routine = routine
+        resource = entry.to_api_repr()
+        exp_resource = {"routine": routine}
+        self.assertEqual(resource, exp_resource)
+    
+    def test_routine_getter_setter_incorrect_role(self):
+        routine = {
+            "projectId": "my-project",
+            "datasetId": "my_dataset",
+            "routineId": "my_routine",
+        }
+        entry = self._make_one("READER")
+        with self.assertRaises(ValueError):
+            entry.routine = routine
 class TestDatasetReference(unittest.TestCase):
     @staticmethod
     def _get_target_class():

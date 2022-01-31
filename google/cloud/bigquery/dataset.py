@@ -75,6 +75,7 @@ def _get_routine_reference(self, routine_id):
         }
     )
 
+
 class DatasetReference(object):
     """DatasetReferences are pointers to datasets.
 
@@ -294,14 +295,19 @@ class AccessEntry(object):
         #         raise ValueError(
         #             "Role must be set for entity " "type %r" % (entity_type,)
         #         )
-        self._role = role
+        self._role = self._properties["role"] = role
         self._entity_type = entity_type
         self._entity_id = entity_id
 
     @property
     def role(self):
         """str: The role of the entry."""
-        return self._role
+        if self._properties["role"]:
+            return self._properties["role"]
+
+    @role.setter
+    def role(self, value):
+        self._properties["role"] = value
 
     @property
     def view(self) -> Optional[TableReference]:
@@ -310,11 +316,9 @@ class AccessEntry(object):
 
     @view.setter
     def view(self, value):
-        # value = _table_arg_to_table_ref(value).to_api_repr() # maybe unneccessary
         if self._role is not None:
             raise ValueError(
-                "Role must be None for a view. Current "
-                "role: %r" % (self._role)
+                "Role must be None for a view. Current " "role: %r" % (self._role)
             )
         self._properties["view"] = value
 
@@ -327,10 +331,8 @@ class AccessEntry(object):
     def dataset(self, value):
         if self._role is not None:
             raise ValueError(
-                "Role must be None for a dataset. Current "
-                "role: %r" % (self._role)
+                "Role must be None for a dataset. Current " "role: %r" % (self._role)
             )
-        # value = _table_arg_to_table_ref(value).to_api_repr() # maybe unneccessary
         self._properties["dataset"] = value
 
     @property
@@ -342,11 +344,45 @@ class AccessEntry(object):
     def routine(self, value):
         if self._role is not None:
             raise ValueError(
-                "Role must be None for a routine. Current "
-                "role: %r" % (self._role)
+                "Role must be None for a routine. Current " "role: %r" % (self._role)
             )
-        # value = _table_arg_to_table_ref(value).to_api_repr() # maybe unneccessary
         self._properties["routine"] = value
+
+    @property
+    def group_by_email(self) -> Optional[str]:
+        """groupbyEmail"""
+        return self._properties["groupByEmail"]
+
+    @group_by_email.setter
+    def group_by_email(self, value):
+        self._properties["groupByEmail"] = value
+
+    @property
+    def user_by_email(self) -> Optional[str]:
+        """userByEmail"""
+        return self._properties["userByEmail"]
+
+    @user_by_email.setter
+    def user_by_email(self, value):
+        self._properties["userByEmail"] = value
+
+    @property
+    def domain(self) -> Optional[str]:
+        """domain"""
+        return self._properties["domain"]
+
+    @domain.setter
+    def domain(self, value):
+        self._properties["domain"] = value
+
+    @property
+    def special_group(self) -> Optional[str]:
+        """specialGroup"""
+        return self._properties["specialGroup"]
+
+    @special_group.setter
+    def special_group(self, value):
+        self._properties["specialGroup"] = value
 
     @property
     def entity_type(self):
@@ -379,7 +415,9 @@ class AccessEntry(object):
         Returns:
             Tuple: The contents of this :class:`~google.cloud.bigquery.dataset.AccessEntry`.
         """
-        return (self._role, self._entity_type, self._entity_id)
+        properties = self._properties.copy()
+        prop_tup = tuple(sorted(properties.items()))
+        return (self._role, self._entity_type, self._entity_id, prop_tup)
 
     def __hash__(self):
         return hash(self._key())

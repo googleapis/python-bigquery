@@ -290,11 +290,6 @@ class AccessEntry(object):
         self._properties = {}
         if entity_type is not None:
             self._properties[entity_type] = entity_id
-        # else:
-        #     if role is None:
-        #         raise ValueError(
-        #             "Role must be set for entity " "type %r" % (entity_type,)
-        #         )
         self._role = self._properties["role"] = role
         self._entity_type = entity_type
         self._entity_id = entity_id

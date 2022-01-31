@@ -195,7 +195,6 @@ class TestAccessEntry(unittest.TestCase):
         entry = self._make_one(None)
         entry.dataset = dataset
         resource = entry.to_api_repr()
-        print("TO API REPR", resource)
         exp_resource = {"dataset": dataset, "role": None}
         self.assertEqual(resource, exp_resource)
 

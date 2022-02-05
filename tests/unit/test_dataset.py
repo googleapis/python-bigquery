@@ -15,9 +15,14 @@
 import unittest
 
 import mock
-from google.cloud.bigquery.routine.routine import RoutineReference
+from google.cloud.bigquery.routine.routine import Routine, RoutineReference
 import pytest
-from google.cloud.bigquery.dataset import AccessEntry, DatasetReference, TableReference
+from google.cloud.bigquery.dataset import (
+    AccessEntry,
+    Dataset,
+    DatasetReference,
+    TableReference,
+)
 
 
 class TestAccessEntry(unittest.TestCase):
@@ -217,7 +222,9 @@ class TestAccessEntry(unittest.TestCase):
             "dataset": {"dataset": dataset, "targetTypes": None},
             "role": None,
         }
+        prop = entry.dataset
         self.assertEqual(resource, exp_resource)
+        self.assertEqual(prop, exp_resource["dataset"])
 
     def test_dataset_getter_setter_string(self):
         project = "my-project"
@@ -239,6 +246,21 @@ class TestAccessEntry(unittest.TestCase):
         dataset_id = "my_dataset"
         entry = self._make_one(None)
         entry.dataset = DatasetReference(project, dataset_id)
+        resource = entry.to_api_repr()
+        exp_resource = {
+            "dataset": {
+                "dataset": {"projectId": project, "datasetId": dataset_id},
+                "targetTypes": None,
+            },
+            "role": None,
+        }
+        self.assertEqual(resource, exp_resource)
+
+    def test_dataset_getter_setter_dataset(self):
+        project = "my-project"
+        dataset_id = "my_dataset"
+        entry = self._make_one(None)
+        entry.dataset = Dataset(DatasetReference(project, dataset_id))
         resource = entry.to_api_repr()
         exp_resource = {
             "dataset": {
@@ -285,20 +307,31 @@ class TestAccessEntry(unittest.TestCase):
         self.assertEqual(resource, exp_resource)
 
     def test_routine_getter_setter_routine_ref(self):
-        project = "my-project"
-        dataset_id = "my_dataset"
-        routine_id = "my_routine"
+        routine = {
+            "projectId": "my-project",
+            "datasetId": "my_dataset",
+            "routineId": "my_routine",
+        }
         entry = self._make_one(None)
-        entry.routine = RoutineReference.from_string(
-            f"{project}.{dataset_id}.{routine_id}"
-        )
+        entry.routine = RoutineReference.from_api_repr(routine)
         resource = entry.to_api_repr()
         exp_resource = {
-            "routine": {
-                "projectId": project,
-                "datasetId": dataset_id,
-                "routineId": routine_id,
-            },
+            "routine": routine,
+            "role": None,
+        }
+        self.assertEqual(resource, exp_resource)
+
+    def test_routine_getter_setter_routine(self):
+        routine = {
+            "projectId": "my-project",
+            "datasetId": "my_dataset",
+            "routineId": "my_routine",
+        }
+        entry = self._make_one(None)
+        entry.routine = Routine(RoutineReference.from_api_repr(routine))
+        resource = entry.to_api_repr()
+        exp_resource = {
+            "routine": routine,
             "role": None,
         }
         self.assertEqual(resource, exp_resource)

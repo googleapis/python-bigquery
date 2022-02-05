@@ -22,11 +22,11 @@ import google.cloud._helpers  # type: ignore
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.model import ModelReference
-from google.cloud.bigquery.routine import RoutineReference
+from google.cloud.bigquery.routine import Routine, RoutineReference
 from google.cloud.bigquery.table import TableReference, _table_arg_to_table_ref
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
-from typing import FrozenSet, Iterable, Optional, Union
+from typing import FrozenSet, Iterable, Optional, Union, List
 
 
 def _get_table_reference(self, table_id):
@@ -295,7 +295,7 @@ class AccessEntry(object):
         self._entity_id = entity_id
 
     @property
-    def role(self):
+    def role(self) -> Optional[str]:
         """str: The role of the entry."""
         if self._properties["role"]:
             return self._properties["role"]
@@ -305,20 +305,7 @@ class AccessEntry(object):
         self._properties["role"] = value
 
     @property
-    def view(self) -> Optional[TableReference]:
-        """some view representation (tableref or string?)"""
-        return self._properties["view"]
-
-    @view.setter
-    def view(self, value):
-        if self._role is not None:
-            raise ValueError(
-                "Role must be None for a view. Current " "role: %r" % (self._role)
-            )
-        self._properties["view"] = value
-
-    @property
-    def dataset(self) -> Optional[DatasetReference]:
+    def dataset(self) -> Optional[dict]:
         """some dataset representation (tableref or string?)"""
         return self._properties["dataset"]
 
@@ -328,10 +315,34 @@ class AccessEntry(object):
             raise ValueError(
                 "Role must be None for a dataset. Current " "role: %r" % (self._role)
             )
-        self._properties["dataset"] = value
+        if not isinstance(value, dict):
+            if isinstance(value, str):
+                value = DatasetReference.from_string(value)
+
+            if isinstance(value, (Dataset, DatasetListItem)):
+                value = value.reference
+
+            value = value.to_api_repr()
+
+        prop = {
+            "dataset": value,
+            "targetTypes": self._properties.get("targetTypes", None),
+        }
+        self._properties["dataset"] = prop
 
     @property
-    def routine(self) -> Optional[RoutineReference]:
+    def target_types(self) -> Optional[List[str]]:
+        """target types"""
+        return self._properties["dataset"]["targetTypes"]
+
+    @target_types.setter
+    def target_types(self, value):
+        if not "dataset" in self._properties:
+            self._properties["dataset"] = {}
+        self._properties["dataset"]["targetTypes"] = value
+
+    @property
+    def routine(self) -> Optional[dict]:
         """some routine representation (tableref or string?)"""
         return self._properties["routine"]
 
@@ -341,7 +352,31 @@ class AccessEntry(object):
             raise ValueError(
                 "Role must be None for a routine. Current " "role: %r" % (self._role)
             )
+        if not isinstance(value, dict):
+            if isinstance(value, str):
+                value = RoutineReference.from_string(value)
+
+            if isinstance(value, Routine):
+                value = value.reference
+
+            value = value.to_api_repr()
         self._properties["routine"] = value
+
+    @property
+    def view(self) -> Optional[dict]:
+        """some view representation (tableref or string?)"""
+        return self._properties["view"]
+
+    @view.setter
+    def view(self, value):
+        if self._role is not None:
+            raise ValueError(
+                "Role must be None for a view. Current " "role: %r" % (self._role)
+            )
+        if not isinstance(value, dict):
+            value = _table_arg_to_table_ref(value)
+            value = value.to_api_repr()
+        self._properties["view"] = value
 
     @property
     def group_by_email(self) -> Optional[str]:
@@ -380,12 +415,12 @@ class AccessEntry(object):
         self._properties["specialGroup"] = value
 
     @property
-    def entity_type(self):
+    def entity_type(self) -> Optional[str]:
         """str: The entity_type of the entry."""
         return self._entity_type
 
     @property
-    def entity_id(self):
+    def entity_id(self) -> Optional[str]:
         """str: The entity_id of the entry."""
         return self._entity_id
 

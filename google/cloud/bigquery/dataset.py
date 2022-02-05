@@ -26,7 +26,7 @@ from google.cloud.bigquery.routine import Routine, RoutineReference
 from google.cloud.bigquery.table import TableReference, _table_arg_to_table_ref
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
-from typing import FrozenSet, Iterable, Optional, Union, List
+from typing import Optional, List
 
 
 def _get_table_reference(self, table_id):
@@ -296,7 +296,7 @@ class AccessEntry(object):
 
     @property
     def role(self) -> Optional[str]:
-        """str: The role of the entry."""
+        """The role of the entry."""
         if self._properties["role"]:
             return self._properties["role"]
 
@@ -306,7 +306,7 @@ class AccessEntry(object):
 
     @property
     def dataset(self) -> Optional[dict]:
-        """some dataset representation (tableref or string?)"""
+        """API resource representation of a dataset reference."""
         return self._properties["dataset"]
 
     @dataset.setter
@@ -332,18 +332,18 @@ class AccessEntry(object):
 
     @property
     def target_types(self) -> Optional[List[str]]:
-        """target types"""
+        """Which resources that the dataset in this entry applies to."""
         return self._properties["dataset"]["targetTypes"]
 
     @target_types.setter
     def target_types(self, value):
-        if not "dataset" in self._properties:
+        if "dataset" not in self._properties:
             self._properties["dataset"] = {}
         self._properties["dataset"]["targetTypes"] = value
 
     @property
     def routine(self) -> Optional[dict]:
-        """some routine representation (tableref or string?)"""
+        """API resource representation of a routine reference."""
         return self._properties["routine"]
 
     @routine.setter
@@ -364,7 +364,7 @@ class AccessEntry(object):
 
     @property
     def view(self) -> Optional[dict]:
-        """some view representation (tableref or string?)"""
+        """API resource representation of a view reference."""
         return self._properties["view"]
 
     @view.setter
@@ -380,7 +380,7 @@ class AccessEntry(object):
 
     @property
     def group_by_email(self) -> Optional[str]:
-        """groupbyEmail"""
+        """An email address of a Google Group to grant access to."""
         return self._properties["groupByEmail"]
 
     @group_by_email.setter
@@ -389,7 +389,7 @@ class AccessEntry(object):
 
     @property
     def user_by_email(self) -> Optional[str]:
-        """userByEmail"""
+        """An email address of a user to grant access to."""
         return self._properties["userByEmail"]
 
     @user_by_email.setter
@@ -398,7 +398,7 @@ class AccessEntry(object):
 
     @property
     def domain(self) -> Optional[str]:
-        """domain"""
+        """A domain to grant access to."""
         return self._properties["domain"]
 
     @domain.setter
@@ -407,7 +407,7 @@ class AccessEntry(object):
 
     @property
     def special_group(self) -> Optional[str]:
-        """specialGroup"""
+        """A special group to grant access to."""
         return self._properties["specialGroup"]
 
     @special_group.setter
@@ -416,12 +416,12 @@ class AccessEntry(object):
 
     @property
     def entity_type(self) -> Optional[str]:
-        """str: The entity_type of the entry."""
+        """The entity_type of the entry."""
         return self._entity_type
 
     @property
     def entity_id(self) -> Optional[str]:
-        """str: The entity_id of the entry."""
+        """The entity_id of the entry."""
         return self._entity_id
 
     def __eq__(self, other):

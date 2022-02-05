@@ -23,8 +23,6 @@ from google.cloud.bigquery.dataset import AccessEntry, DatasetReference, TableRe
 class TestAccessEntry(unittest.TestCase):
     @staticmethod
     def _get_target_class():
-        # from google.cloud.bigquery.dataset import AccessEntry, DatasetReference
-
         return AccessEntry
 
     def _make_one(self, *args, **kw):
@@ -214,9 +212,7 @@ class TestAccessEntry(unittest.TestCase):
         dataset = {"dataset": {"projectId": "my-project", "datasetId": "my_dataset"}}
         entry = self._make_one(None)
         entry.dataset = dataset
-        print("ENTRY:", entry)
         resource = entry.to_api_repr()
-        print("RESOURCE:", resource)
         exp_resource = {
             "dataset": {"dataset": dataset, "targetTypes": None},
             "role": None,
@@ -254,7 +250,7 @@ class TestAccessEntry(unittest.TestCase):
         self.assertEqual(resource, exp_resource)
 
     def test_dataset_getter_setter_incorrect_role(self):
-        dataset = {"dataset": {"projectId": "my-project", "datasetId": "my_dataset",}}
+        dataset = {"dataset": {"projectId": "my-project", "datasetId": "my_dataset"}}
         entry = self._make_one("READER")
         with self.assertRaises(ValueError):
             entry.dataset = dataset

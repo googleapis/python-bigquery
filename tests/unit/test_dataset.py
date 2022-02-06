@@ -378,6 +378,21 @@ class TestAccessEntry(unittest.TestCase):
         exp_resource = {"specialGroup": special_group, "role": None}
         self.assertEqual(resource, exp_resource)
 
+    def test_role_getter_setter(self):
+        role = "READER"
+        entry = self._make_one(None)
+        entry.role = role
+        resource = entry.to_api_repr()
+        exp_resource = {"role": role}
+        self.assertEqual(resource, exp_resource)
+
+    def test_target_types_getter_setter(self):
+        target_types = ["VIEWS"]
+        entry = self._make_one(None)
+        entry.target_types = target_types
+        resource = entry.to_api_repr()
+        self.assertEqual(resource["dataset"]["targetTypes"], target_types)
+
 
 class TestDatasetReference(unittest.TestCase):
     @staticmethod

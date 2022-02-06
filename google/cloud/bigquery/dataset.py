@@ -297,8 +297,7 @@ class AccessEntry(object):
     @property
     def role(self) -> Optional[str]:
         """The role of the entry."""
-        if self._properties["role"]:
-            return self._properties["role"]
+        return self._properties["role"]
 
     @role.setter
     def role(self, value):

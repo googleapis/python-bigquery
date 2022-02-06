@@ -179,6 +179,7 @@ class TestAccessEntry(unittest.TestCase):
         entry.view = view
         resource = entry.to_api_repr()
         exp_resource = {"view": view, "role": None}
+        self.assertEqual(entry.view, view)
         self.assertEqual(resource, exp_resource)
 
     def test_view_getter_setter_string(self):
@@ -334,6 +335,7 @@ class TestAccessEntry(unittest.TestCase):
             "routine": routine,
             "role": None,
         }
+        self.assertEqual(entry.routine, routine)
         self.assertEqual(resource, exp_resource)
 
     def test_routine_getter_setter_incorrect_role(self):
@@ -360,6 +362,7 @@ class TestAccessEntry(unittest.TestCase):
         entry.user_by_email = email
         resource = entry.to_api_repr()
         exp_resource = {"userByEmail": email, "role": None}
+        self.assertEqual(entry.user_by_email, email)
         self.assertEqual(resource, exp_resource)
 
     def test_domain_setter(self):
@@ -368,6 +371,7 @@ class TestAccessEntry(unittest.TestCase):
         entry.domain = domain
         resource = entry.to_api_repr()
         exp_resource = {"domain": domain, "role": None}
+        self.assertEqual(entry.domain, domain)
         self.assertEqual(resource, exp_resource)
 
     def test_special_group_getter_setter(self):
@@ -376,6 +380,7 @@ class TestAccessEntry(unittest.TestCase):
         entry.special_group = special_group
         resource = entry.to_api_repr()
         exp_resource = {"specialGroup": special_group, "role": None}
+        self.assertEqual(entry.special_group, special_group)
         self.assertEqual(resource, exp_resource)
 
     def test_role_getter_setter(self):
@@ -390,8 +395,8 @@ class TestAccessEntry(unittest.TestCase):
         target_types = ["VIEWS"]
         entry = self._make_one(None)
         entry.target_types = target_types
-        resource = entry.to_api_repr()
-        self.assertEqual(resource["dataset"]["targetTypes"], target_types)
+        self.assertEqual(entry.target_types, target_types)
+        self.assertEqual(entry.dataset["targetTypes"], target_types)
 
 
 class TestDatasetReference(unittest.TestCase):

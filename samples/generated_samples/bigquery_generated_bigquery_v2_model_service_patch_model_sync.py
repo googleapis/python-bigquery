@@ -15,7 +15,7 @@
 #
 # Generated code. DO NOT EDIT!
 #
-# Snippet for ListModels
+# Snippet for PatchModel
 # NOTE: This snippet has been automatically generated for illustrative purposes only.
 # It may require modifications to work in your environment.
 
@@ -23,24 +23,32 @@
 #   python3 -m pip install google-cloud-bigquery
 
 
-# [START bigquery_generated_bigquery_v2_ModelService_ListModels_async]
+# [START bigquery_generated_bigquery_v2_ModelService_PatchModel_sync]
 from google.cloud import bigquery_v2
 
 
-async def sample_list_models():
+def sample_patch_model():
     # Create a client
-    client = bigquery_v2.ModelServiceAsyncClient()
+    client = bigquery_v2.ModelServiceClient()
 
     # Initialize request argument(s)
-    request = bigquery_v2.ListModelsRequest(
+    model = bigquery_v2.Model()
+    model.model_reference.project_id = "project_id_value"
+    model.model_reference.dataset_id = "dataset_id_value"
+    model.model_reference.model_id = "model_id_value"
+
+    request = bigquery_v2.PatchModelRequest(
         project_id="project_id_value",
         dataset_id="dataset_id_value",
+        model_id="model_id_value",
+        model=model,
     )
 
     # Make the request
-    response = await client.list_models(request=request)
+    response = client.patch_model(request=request)
 
     # Handle response
     print(response)
 
-# [END bigquery_generated_bigquery_v2_ModelService_ListModels_async]
+
+# [END bigquery_generated_bigquery_v2_ModelService_PatchModel_sync]

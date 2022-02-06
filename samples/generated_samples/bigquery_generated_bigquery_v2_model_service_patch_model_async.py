@@ -50,4 +50,5 @@ async def sample_patch_model():
     # Handle response
     print(response)
 
+
 # [END bigquery_generated_bigquery_v2_ModelService_PatchModel_async]

@@ -15,7 +15,7 @@
 #
 # Generated code. DO NOT EDIT!
 #
-# Snippet for ListModels
+# Snippet for GetModel
 # NOTE: This snippet has been automatically generated for illustrative purposes only.
 # It may require modifications to work in your environment.
 
@@ -23,24 +23,26 @@
 #   python3 -m pip install google-cloud-bigquery
 
 
-# [START bigquery_generated_bigquery_v2_ModelService_ListModels_sync]
+# [START bigquery_generated_bigquery_v2_ModelService_GetModel_sync]
 from google.cloud import bigquery_v2
 
 
-def sample_list_models():
+def sample_get_model():
     # Create a client
     client = bigquery_v2.ModelServiceClient()
 
     # Initialize request argument(s)
-    request = bigquery_v2.ListModelsRequest(
+    request = bigquery_v2.GetModelRequest(
         project_id="project_id_value",
         dataset_id="dataset_id_value",
+        model_id="model_id_value",
     )
 
     # Make the request
-    response = client.list_models(request=request)
+    response = client.get_model(request=request)
 
     # Handle response
     print(response)
 
-# [END bigquery_generated_bigquery_v2_ModelService_ListModels_sync]
+
+# [END bigquery_generated_bigquery_v2_ModelService_GetModel_sync]

@@ -44,4 +44,5 @@ async def sample_get_model():
     # Handle response
     print(response)
 
+
 # [END bigquery_generated_bigquery_v2_ModelService_GetModel_async]

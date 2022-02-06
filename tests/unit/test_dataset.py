@@ -354,6 +354,7 @@ class TestAccessEntry(unittest.TestCase):
         entry.group_by_email = email
         resource = entry.to_api_repr()
         exp_resource = {"groupByEmail": email, "role": None}
+        self.assertEqual(entry.group_by_email, email)
         self.assertEqual(resource, exp_resource)
 
     def test_user_by_email_getter_setter(self):
@@ -394,6 +395,15 @@ class TestAccessEntry(unittest.TestCase):
     def test_target_types_getter_setter(self):
         target_types = ["VIEWS"]
         entry = self._make_one(None)
+        entry.target_types = target_types
+        self.assertEqual(entry.target_types, target_types)
+        self.assertEqual(entry.dataset["targetTypes"], target_types)
+
+    def test_target_types_getter_setter_w_dataset(self):
+        dataset = {"dataset": {"projectId": "my-project", "datasetId": "my_dataset"}}
+        target_types = ["VIEWS"]
+        entry = self._make_one(None)
+        entry.dataset = dataset
         entry.target_types = target_types
         self.assertEqual(entry.target_types, target_types)
         self.assertEqual(entry.dataset["targetTypes"], target_types)

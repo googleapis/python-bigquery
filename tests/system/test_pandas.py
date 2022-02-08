@@ -40,6 +40,12 @@ numpy = pytest.importorskip("numpy")
 PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 PANDAS_INT64_VERSION = pkg_resources.parse_version("1.0.0")
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
+MIN_BIGNUMERIC = "-5.7896044618658097711785492504343953926634992332820282019728792003956564819968E+38"
+MAX_BIGNUMERIC = (
+    "5.7896044618658097711785492504343953926634992332820282019728792003956564819967E+38"
+)
+
 
 class MissingDataError(Exception):
     pass
@@ -1284,3 +1290,23 @@ def test_load_dataframe_w_wkb(bigquery_client, dataset_id):
         ["bar", "POINT(1 1)"],
         ["foo", None],
     ]
+
+
+@pytest.mark.parametrize(("use_bqstorage_api",), [(True,), (False,)])
+def test_query_extreme_bignumeric(bigquery_client, use_bqstorage_api):
+    """
+    Check that values outside of the pyarrow representable bounds can still be
+    passed in.
+
+    https://github.com/googleapis/python-bigquery/issues/812
+    """
+    query_text = f"""
+    SELECT
+    CAST('{MIN_BIGNUMERIC}' AS BIGNUMERIC) AS min_bignumeric,
+    CAST('{MAX_BIGNUMERIC}' AS BIGNUMERIC) AS max_bignumeric
+    """
+    df = bigquery_client.query(query_text).to_dataframe(
+        create_bqstorage_client=use_bqstorage_api
+    )
+    assert df["min_bignumeric"][0] == decimal.Decimal(MIN_BIGNUMERIC)
+    assert df["max_bignumeric"][0] == decimal.Decimal(MAX_BIGNUMERIC)

@@ -40,12 +40,6 @@ numpy = pytest.importorskip("numpy")
 PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 PANDAS_INT64_VERSION = pkg_resources.parse_version("1.0.0")
 
-# https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
-MIN_BIGNUMERIC = "-5.7896044618658097711785492504343953926634992332820282019728792003956564819968E+38"
-MAX_BIGNUMERIC = (
-    "5.7896044618658097711785492504343953926634992332820282019728792003956564819967E+38"
-)
-
 
 class MissingDataError(Exception):
     pass
@@ -1301,12 +1295,48 @@ def test_query_extreme_bignumeric(bigquery_client, use_bqstorage_api):
     https://github.com/googleapis/python-bigquery/issues/812
     """
     query_text = f"""
+    DECLARE MIN_BIGNUMERIC STRING;
+    DECLARE MAX_BIGNUMERIC STRING;
+    SET MIN_BIGNUMERIC = '{helpers.MIN_BIGNUMERIC}';
+    SET MAX_BIGNUMERIC = '{helpers.MAX_BIGNUMERIC}';
+
     SELECT
-    CAST('{MIN_BIGNUMERIC}' AS BIGNUMERIC) AS min_bignumeric,
-    CAST('{MAX_BIGNUMERIC}' AS BIGNUMERIC) AS max_bignumeric
+    CAST(MIN_BIGNUMERIC AS BIGNUMERIC) AS min_bignumeric,
+    CAST(MAX_BIGNUMERIC AS BIGNUMERIC) AS max_bignumeric,
+    CAST('1.2345' AS BIGNUMERIC) AS small_bignumeric,
+    STRUCT<x BIGNUMERIC, y BIGNUMERIC>(
+        CAST(MIN_BIGNUMERIC AS BIGNUMERIC),
+        CAST(MAX_BIGNUMERIC AS BIGNUMERIC)
+    ) AS struct_bignumeric,
+    [
+        CAST(MIN_BIGNUMERIC AS BIGNUMERIC),
+        CAST(MAX_BIGNUMERIC AS BIGNUMERIC)
+    ] AS array_bignumeric,
+    [
+        STRUCT<x BIGNUMERIC, y BIGNUMERIC>(
+            CAST(MIN_BIGNUMERIC AS BIGNUMERIC),
+            CAST(MAX_BIGNUMERIC AS BIGNUMERIC)
+        ),
+            STRUCT<x BIGNUMERIC, y BIGNUMERIC>(
+            CAST(MIN_BIGNUMERIC AS BIGNUMERIC),
+            CAST(MAX_BIGNUMERIC AS BIGNUMERIC)
+        )
+    ] AS array_struct_bignumeric;
     """
     df = bigquery_client.query(query_text).to_dataframe(
         create_bqstorage_client=use_bqstorage_api
     )
-    assert df["min_bignumeric"][0] == decimal.Decimal(MIN_BIGNUMERIC)
-    assert df["max_bignumeric"][0] == decimal.Decimal(MAX_BIGNUMERIC)
+    assert df["min_bignumeric"][0] == decimal.Decimal(helpers.MIN_BIGNUMERIC)
+    assert df["max_bignumeric"][0] == decimal.Decimal(helpers.MAX_BIGNUMERIC)
+    assert df["small_bignumeric"][0] == decimal.Decimal("1.2345")
+    assert df["array_bignumeric"][0][0] == decimal.Decimal(helpers.MIN_BIGNUMERIC)
+    assert df["array_bignumeric"][0][1] == decimal.Decimal(helpers.MAX_BIGNUMERIC)
+    assert df["struct_bignumeric"][0]["x"] == decimal.Decimal(helpers.MIN_BIGNUMERIC)
+    assert df["struct_bignumeric"][0]["y"] == decimal.Decimal(helpers.MAX_BIGNUMERIC)
+    for array_index in range(2):
+        assert df["array_struct_bignumeric"][0][array_index]["x"] == decimal.Decimal(
+            helpers.MIN_BIGNUMERIC
+        )
+        assert df["array_struct_bignumeric"][0][array_index]["y"] == decimal.Decimal(
+            helpers.MAX_BIGNUMERIC
+        )

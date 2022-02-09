@@ -17,10 +17,12 @@
 from typing import Optional
 
 import pyarrow
+import pyarrow.types
 import pytest
 
 from google.cloud import bigquery
 from google.cloud.bigquery import enums
+from . import helpers
 
 
 @pytest.mark.parametrize(
@@ -165,3 +167,84 @@ def test_arrow_extension_types_same_for_storage_and_REST_APIs_894(
         b"ARROW:extension:name": b"google:sqlType:geography",
         b"ARROW:extension:metadata": b'{"encoding": "WKT"}',
     }
+
+
+@pytest.mark.parametrize(("use_bqstorage_api",), [(True,), (False,)])
+def test_query_extreme_bignumeric(bigquery_client, use_bqstorage_api):
+    """
+    Check that values outside of the pyarrow representable bounds can still be
+    passed in.
+
+    https://github.com/googleapis/python-bigquery/issues/812
+    """
+    query_text = f"""
+    DECLARE MIN_BIGNUMERIC STRING;
+    DECLARE MAX_BIGNUMERIC STRING;
+    SET MIN_BIGNUMERIC = '{helpers.MIN_BIGNUMERIC}';
+    SET MAX_BIGNUMERIC = '{helpers.MAX_BIGNUMERIC}';
+
+    SELECT
+    CAST(MIN_BIGNUMERIC AS BIGNUMERIC) AS min_bignumeric,
+    CAST(MAX_BIGNUMERIC AS BIGNUMERIC) AS max_bignumeric,
+    CAST('1.2345' AS BIGNUMERIC) AS small_bignumeric,
+    STRUCT<x BIGNUMERIC, y BIGNUMERIC>(
+        CAST(MIN_BIGNUMERIC AS BIGNUMERIC),
+        CAST(MAX_BIGNUMERIC AS BIGNUMERIC)
+    ) AS struct_bignumeric,
+    [
+        CAST(MIN_BIGNUMERIC AS BIGNUMERIC),
+        CAST(MAX_BIGNUMERIC AS BIGNUMERIC)
+    ] AS array_bignumeric,
+    [
+        STRUCT<x BIGNUMERIC, y BIGNUMERIC>(
+            CAST(MIN_BIGNUMERIC AS BIGNUMERIC),
+            CAST(MAX_BIGNUMERIC AS BIGNUMERIC)
+        ),
+            STRUCT<x BIGNUMERIC, y BIGNUMERIC>(
+            CAST(MIN_BIGNUMERIC AS BIGNUMERIC),
+            CAST(MAX_BIGNUMERIC AS BIGNUMERIC)
+        )
+    ] AS array_struct_bignumeric;
+    """
+    arrow_table = bigquery_client.query(query_text).to_arrow(
+        create_bqstorage_client=use_bqstorage_api
+    )
+    arrow_schema = arrow_table.schema
+    assert pyarrow.types.is_decimal256(arrow_schema.field("small_bignumeric").type)
+
+    if use_bqstorage_api:
+        assert pyarrow.types.is_decimal256(arrow_schema.field("min_bignumeric").type)
+        assert pyarrow.types.is_decimal256(arrow_schema.field("max_bignumeric").type)
+        assert pyarrow.types.is_decimal256(
+            arrow_schema.field("array_bignumeric").type.value_type
+        )
+        assert pyarrow.types.is_decimal256(
+            arrow_schema.field("struct_bignumeric").type["x"].type
+        )
+        assert pyarrow.types.is_decimal256(
+            arrow_schema.field("struct_bignumeric").type["y"].type
+        )
+        assert pyarrow.types.is_decimal256(
+            arrow_schema.field("array_struct_bignumeric").type.value_type["x"].type
+        )
+        assert pyarrow.types.is_decimal256(
+            arrow_schema.field("array_struct_bignumeric").type.value_type["y"].type
+        )
+    else:
+        assert pyarrow.types.is_string(arrow_schema.field("min_bignumeric").type)
+        assert pyarrow.types.is_string(arrow_schema.field("max_bignumeric").type)
+        assert pyarrow.types.is_string(
+            arrow_schema.field("array_bignumeric").type.value_type
+        )
+        assert pyarrow.types.is_string(
+            arrow_schema.field("struct_bignumeric").type["x"].type
+        )
+        assert pyarrow.types.is_string(
+            arrow_schema.field("struct_bignumeric").type["y"].type
+        )
+        assert pyarrow.types.is_string(
+            arrow_schema.field("array_struct_bignumeric").type.value_type["x"].type
+        )
+        assert pyarrow.types.is_string(
+            arrow_schema.field("array_struct_bignumeric").type.value_type["y"].type
+        )

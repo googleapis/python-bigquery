@@ -30,6 +30,12 @@ _zoned = _naive.replace(tzinfo=UTC)
 _zoned_microseconds = _naive_microseconds.replace(tzinfo=UTC)
 _numeric = decimal.Decimal("123456789.123456789")
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
+MIN_BIGNUMERIC = "-5.7896044618658097711785492504343953926634992332820282019728792003956564819968E+38"
+MAX_BIGNUMERIC = (
+    "5.7896044618658097711785492504343953926634992332820282019728792003956564819967E+38"
+)
+
 
 # Examples of most data types to test with query() and DB-API.
 STANDARD_SQL_EXAMPLES = [

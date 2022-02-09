@@ -135,7 +135,7 @@ def pyarrow_timestamp():
     return pyarrow.timestamp("us", tz="UTC")
 
 
-# This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
+# This dictionary is duplicated in bigquery_storage/test/unit/test_reader.py
 # When modifying it be sure to update it there as well.
 BQ_TO_ARROW_SCALARS = {
     "BIGNUMERIC": pyarrow_bignumeric,
@@ -205,6 +205,33 @@ def bq_to_arrow_struct_data_type(field):
 
 def bq_to_arrow_data_type(field):
     """Return the Arrow data type, corresponding to a given BigQuery column.
+
+    Returns:
+        None: if default Arrow type inspection should be used.
+    """
+    if field.mode is not None and field.mode.upper() == "REPEATED":
+        inner_type = bq_to_arrow_data_type(
+            schema.SchemaField(field.name, field.field_type, fields=field.fields)
+        )
+        if inner_type:
+            return pyarrow.list_(inner_type)
+        return None
+
+    field_type_upper = field.field_type.upper() if field.field_type else ""
+    if field_type_upper in schema._STRUCT_TYPES:
+        return bq_to_arrow_struct_data_type(field)
+
+    data_type_constructor = BQ_TO_ARROW_SCALARS.get(field_type_upper)
+    if data_type_constructor is None:
+        return None
+    return data_type_constructor()
+
+
+def bq_to_arrow_data_type_fallback(field):
+    """Return the Arrow data type, corresponding to a given BigQuery column.
+
+    This function is called when the first guess at types failed, possibly due
+    to out-of-bounds errors.
 
     Returns:
         None: if default Arrow type inspection should be used.

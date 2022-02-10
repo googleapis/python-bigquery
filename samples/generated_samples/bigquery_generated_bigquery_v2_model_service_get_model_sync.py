@@ -44,4 +44,5 @@ def sample_get_model():
     # Handle the response
     print(response)
 
+
 # [END bigquery_generated_bigquery_v2_ModelService_GetModel_sync]

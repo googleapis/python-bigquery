@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from google.cloud import bigquery
+import pytest
 
 import manage_job_cancel
 import manage_job_get

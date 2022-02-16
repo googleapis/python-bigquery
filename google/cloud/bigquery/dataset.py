@@ -323,11 +323,7 @@ class AccessEntry(object):
 
             value = value.to_api_repr()
 
-        prop = {
-            "dataset": value,
-            "targetTypes": self._properties.get("targetTypes", None),
-        }
-        self._properties["dataset"] = prop
+        _helpers._set_sub_prop(self._properties, ["dataset", "dataset"], prop)
 
     @property
     def target_types(self) -> Optional[List[str]]:

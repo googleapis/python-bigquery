@@ -290,14 +290,14 @@ class AccessEntry(object):
         self._properties = {}
         if entity_type is not None:
             self._properties[entity_type] = entity_id
-        self._role = self._properties["role"] = role
+        self._properties["role"] = role
         self._entity_type = entity_type
-        self._entity_id = entity_id
+        # self._entity_id = entity_id
 
     @property
     def role(self) -> Optional[str]:
         """The role of the entry."""
-        return self._properties["role"]
+        return self._properties.get("role")
 
     @role.setter
     def role(self, value):
@@ -306,13 +306,13 @@ class AccessEntry(object):
     @property
     def dataset(self) -> Optional[dict]:
         """API resource representation of a dataset reference."""
-        return self._properties["dataset"]
+        return self._properties.get("dataset")
 
     @dataset.setter
     def dataset(self, value):
-        if self._role is not None:
+        if self.role is not None:
             raise ValueError(
-                "Role must be None for a dataset. Current " "role: %r" % (self._role)
+                "Role must be None for a dataset. Current " "role: %r" % (self.role)
             )
         if not isinstance(value, dict):
             if isinstance(value, str):
@@ -332,7 +332,7 @@ class AccessEntry(object):
     @property
     def target_types(self) -> Optional[List[str]]:
         """Which resources that the dataset in this entry applies to."""
-        return self._properties["dataset"]["targetTypes"]
+        return self._properties.get("dataset").get("targetTypes")
 
     @target_types.setter
     def target_types(self, value):
@@ -343,13 +343,13 @@ class AccessEntry(object):
     @property
     def routine(self) -> Optional[dict]:
         """API resource representation of a routine reference."""
-        return self._properties["routine"]
+        return self._properties.get("routine")
 
     @routine.setter
     def routine(self, value):
-        if self._role is not None:
+        if self.role is not None:
             raise ValueError(
-                "Role must be None for a routine. Current " "role: %r" % (self._role)
+                "Role must be None for a routine. Current " "role: %r" % (self.role)
             )
         if not isinstance(value, dict):
             if isinstance(value, str):
@@ -364,13 +364,13 @@ class AccessEntry(object):
     @property
     def view(self) -> Optional[dict]:
         """API resource representation of a view reference."""
-        return self._properties["view"]
+        return self._properties.get("view")
 
     @view.setter
     def view(self, value):
-        if self._role is not None:
+        if self.role is not None:
             raise ValueError(
-                "Role must be None for a view. Current " "role: %r" % (self._role)
+                "Role must be None for a view. Current " "role: %r" % (self.role)
             )
         if not isinstance(value, dict):
             value = _table_arg_to_table_ref(value)
@@ -380,7 +380,7 @@ class AccessEntry(object):
     @property
     def group_by_email(self) -> Optional[str]:
         """An email address of a Google Group to grant access to."""
-        return self._properties["groupByEmail"]
+        return self._properties.get("groupByEmail")
 
     @group_by_email.setter
     def group_by_email(self, value):
@@ -389,7 +389,7 @@ class AccessEntry(object):
     @property
     def user_by_email(self) -> Optional[str]:
         """An email address of a user to grant access to."""
-        return self._properties["userByEmail"]
+        return self._properties.get("userByEmail")
 
     @user_by_email.setter
     def user_by_email(self, value):
@@ -398,7 +398,7 @@ class AccessEntry(object):
     @property
     def domain(self) -> Optional[str]:
         """A domain to grant access to."""
-        return self._properties["domain"]
+        return self._properties.get("domain")
 
     @domain.setter
     def domain(self, value):
@@ -407,7 +407,7 @@ class AccessEntry(object):
     @property
     def special_group(self) -> Optional[str]:
         """A special group to grant access to."""
-        return self._properties["specialGroup"]
+        return self._properties.get("specialGroup")
 
     @special_group.setter
     def special_group(self, value):
@@ -421,7 +421,7 @@ class AccessEntry(object):
     @property
     def entity_id(self) -> Optional[str]:
         """The entity_id of the entry."""
-        return self._entity_id
+        return self._properties.get(self.entity_type)
 
     def __eq__(self, other):
         if not isinstance(other, AccessEntry):
@@ -433,9 +433,9 @@ class AccessEntry(object):
 
     def __repr__(self):
         return "<AccessEntry: role=%s, %s=%s>" % (
-            self._role,
+            self.role,
             self._entity_type,
-            self._entity_id,
+            self.entity_id,
         )
 
     def _key(self):
@@ -446,7 +446,7 @@ class AccessEntry(object):
         """
         properties = self._properties.copy()
         prop_tup = tuple(sorted(properties.items()))
-        return (self._role, self._entity_type, self._entity_id, prop_tup)
+        return (self.role, self._entity_type, self.entity_id, prop_tup)
 
     def __hash__(self):
         return hash(self._key())
@@ -459,9 +459,9 @@ class AccessEntry(object):
         """
         resource = copy.deepcopy(self._properties)
         if self._entity_type is not None:
-            resource[self._entity_type] = self._entity_id
-        if self._role is not None:
-            resource["role"] = self._role
+            resource[self.entity_type] = self.entity_id
+        if self.role is not None:
+            resource["role"] = self.role
         return resource
 
     @classmethod

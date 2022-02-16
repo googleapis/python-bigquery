@@ -328,7 +328,7 @@ class AccessEntry(object):
     @property
     def target_types(self) -> Optional[List[str]]:
         """Which resources that the dataset in this entry applies to."""
-        return self._properties["dataset"]["targetTypes"]
+        return _helpers._get_sub_prop(self._properties, ["dataset", "targetTypes"])
 
     @target_types.setter
     def target_types(self, value):

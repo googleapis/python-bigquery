@@ -182,6 +182,10 @@ class TestAccessEntry(unittest.TestCase):
         self.assertEqual(entry.view, view)
         self.assertEqual(resource, exp_resource)
 
+    def test_view_getter_setter_none(self):
+        entry = self._make_one(None)
+        self.assertEqual(entry.view, None)
+
     def test_view_getter_setter_string(self):
         project = "my_project"
         dataset = "my_dataset"
@@ -226,6 +230,10 @@ class TestAccessEntry(unittest.TestCase):
         prop = entry.dataset
         self.assertEqual(resource, exp_resource)
         self.assertEqual(prop, exp_resource["dataset"])
+
+    def test_dataset_getter_setter_none(self):
+        entry = self._make_one(None)
+        self.assertEqual(entry.dataset, None)
 
     def test_dataset_getter_setter_string(self):
         project = "my-project"
@@ -289,6 +297,10 @@ class TestAccessEntry(unittest.TestCase):
         resource = entry.to_api_repr()
         exp_resource = {"routine": routine, "role": None}
         self.assertEqual(resource, exp_resource)
+
+    def test_routine_getter_setter_none(self):
+        entry = self._make_one(None)
+        self.assertEqual(entry.routine, None)
 
     def test_routine_getter_setter_string(self):
         project = "my-project"
@@ -357,6 +369,10 @@ class TestAccessEntry(unittest.TestCase):
         self.assertEqual(entry.group_by_email, email)
         self.assertEqual(resource, exp_resource)
 
+    def test_group_by_email_getter_setter_none(self):
+        entry = self._make_one(None)
+        self.assertEqual(entry.group_by_email, None)
+
     def test_user_by_email_getter_setter(self):
         email = "cloud-developer-relations@google.com"
         entry = self._make_one(None)
@@ -365,6 +381,10 @@ class TestAccessEntry(unittest.TestCase):
         exp_resource = {"userByEmail": email, "role": None}
         self.assertEqual(entry.user_by_email, email)
         self.assertEqual(resource, exp_resource)
+
+    def test_user_by_email_getter_setter_none(self):
+        entry = self._make_one(None)
+        self.assertEqual(entry.user_by_email, None)
 
     def test_domain_setter(self):
         domain = "my_domain"
@@ -375,6 +395,10 @@ class TestAccessEntry(unittest.TestCase):
         self.assertEqual(entry.domain, domain)
         self.assertEqual(resource, exp_resource)
 
+    def test_domain_getter_setter_none(self):
+        entry = self._make_one(None)
+        self.assertEqual(entry.domain, None)
+
     def test_special_group_getter_setter(self):
         special_group = "my_special_group"
         entry = self._make_one(None)
@@ -384,6 +408,10 @@ class TestAccessEntry(unittest.TestCase):
         self.assertEqual(entry.special_group, special_group)
         self.assertEqual(resource, exp_resource)
 
+    def test_special_group_getter_setter_none(self):
+        entry = self._make_one(None)
+        self.assertEqual(entry.special_group, None)
+
     def test_role_getter_setter(self):
         role = "READER"
         entry = self._make_one(None)
@@ -392,12 +420,20 @@ class TestAccessEntry(unittest.TestCase):
         exp_resource = {"role": role}
         self.assertEqual(resource, exp_resource)
 
+    def test_role_getter_setter_none(self):
+        entry = self._make_one(None)
+        self.assertEqual(entry.role, None)
+
     def test_target_types_getter_setter(self):
         target_types = ["VIEWS"]
         entry = self._make_one(None)
         entry.target_types = target_types
         self.assertEqual(entry.target_types, target_types)
         self.assertEqual(entry.dataset["targetTypes"], target_types)
+
+    def test_target_types_getter_setter_none(self):
+        entry = self._make_one(None)
+        self.assertEqual(entry.target_types, None)
 
     def test_target_types_getter_setter_w_dataset(self):
         dataset = {"dataset": {"projectId": "my-project", "datasetId": "my_dataset"}}

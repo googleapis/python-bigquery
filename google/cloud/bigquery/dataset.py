@@ -292,7 +292,6 @@ class AccessEntry(object):
             self._properties[entity_type] = entity_id
         self._properties["role"] = role
         self._entity_type = entity_type
-        # self._entity_id = entity_id
 
     @property
     def role(self) -> Optional[str]:
@@ -323,22 +322,23 @@ class AccessEntry(object):
 
             value = value.to_api_repr()
 
-        prop = {
-            "dataset": value,
-            "targetTypes": self._properties.get("targetTypes", None),
-        }
-        self._properties["dataset"] = prop
+        _helpers._set_sub_prop(self._properties, ["dataset", "dataset"], value)
+        _helpers._set_sub_prop(
+            self._properties,
+            ["dataset", "targetTypes"],
+            self._properties.get("targetTypes"),
+        )
 
     @property
     def target_types(self) -> Optional[List[str]]:
         """Which resources that the dataset in this entry applies to."""
-        return self._properties.get("dataset").get("targetTypes")
+        return _helpers._get_sub_prop(self._properties, ["dataset", "targetTypes"])
 
     @target_types.setter
     def target_types(self, value):
         if "dataset" not in self._properties:
             self._properties["dataset"] = {}
-        self._properties["dataset"]["targetTypes"] = value
+        _helpers._set_sub_prop(self._properties, ["dataset", "targetTypes"], value)
 
     @property
     def routine(self) -> Optional[dict]:

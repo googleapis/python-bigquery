@@ -362,7 +362,7 @@ class AccessEntry(object):
         self._properties["routine"] = value
 
     @property
-    def view(self) -> Optional[dict]:
+    def view(self) -> Optional[Dict[str, Any]]:
         """API resource representation of a view reference."""
         return self._properties.get("view")
 

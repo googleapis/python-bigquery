@@ -26,7 +26,7 @@ from google.cloud.bigquery.routine import Routine, RoutineReference
 from google.cloud.bigquery.table import TableReference, _table_arg_to_table_ref
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 
 def _get_table_reference(self, table_id):
@@ -286,7 +286,12 @@ class AccessEntry(object):
         >>> entry = AccessEntry(None, 'view', view)
     """
 
-    def __init__(self, role: Optional[str] = None, entity_type: Optional[str] = None, entity_id Optional[Dict[str, Any] = None):
+    def __init__(
+        self,
+        role: Optional[str] = None,
+        entity_type: Optional[str] = None,
+        entity_id: Optional[Dict[str, Any]] = None,
+    ):
         self._properties = {}
         if entity_type is not None:
             self._properties[entity_type] = entity_id

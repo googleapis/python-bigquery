@@ -458,10 +458,6 @@ class AccessEntry(object):
             Dict[str, object]: Access entry represented as an API resource
         """
         resource = copy.deepcopy(self._properties)
-        if self._entity_type is not None:
-            resource[self.entity_type] = self.entity_id
-        if self.role is not None:
-            resource["role"] = self.role
         return resource
 
     @classmethod

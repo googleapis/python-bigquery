@@ -286,7 +286,7 @@ class AccessEntry(object):
         >>> entry = AccessEntry(None, 'view', view)
     """
 
-    def __init__(self, role=None, entity_type=None, entity_id=None):
+    def __init__(self, role: Optional[str] = None, entity_type: Optional[str] = None, entity_id Optional[Dict[str, Any] = None):
         self._properties = {}
         if entity_type is not None:
             self._properties[entity_type] = entity_id

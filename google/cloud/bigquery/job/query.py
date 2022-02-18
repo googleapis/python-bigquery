@@ -29,7 +29,6 @@ from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import KeyResultStatementKind
-from google.cloud.bigquery.enums import BiEngineMode, BiEngineReasonCode
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.query import (
@@ -128,13 +127,13 @@ class BiEngineReason(typing.NamedTuple):
     https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#bienginereason
     """
 
-    code: BiEngineReasonCode = BiEngineReasonCode.CODE_UNSPECIFIED
+    code: str = "CODE_UNSPECIFIED"
 
     reason: str = ""
 
     @classmethod
     def from_api_repr(cls, reason: Dict[str, str]) -> "BiEngineReason":
-        return cls(BiEngineReasonCode[reason.get("code")], reason.get("message"))
+        return cls(reason.get("code"), reason.get("message"))
 
 
 class BiEngineStats(typing.NamedTuple):
@@ -143,7 +142,7 @@ class BiEngineStats(typing.NamedTuple):
     https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#bienginestatistics
     """
 
-    mode: BiEngineMode = BiEngineMode.ACCELERATION_MODE_UNSPECIFIED
+    mode: str = "ACCELERATION_MODE_UNSPECIFIED"
     """ Specifies which mode of BI Engine acceleration was performed (if any)
     """
 
@@ -153,15 +152,13 @@ class BiEngineStats(typing.NamedTuple):
 
     @classmethod
     def from_api_repr(cls, stats: Dict[str, str]) -> "BiEngineStats":
-        biEngineMode = stats.get("biEngineMode")
-        biEngineReasons = stats.get("biEngineReasons")
+        mode = stats.get("biEngineMode")
+        reasons = stats.get("biEngineReasons")
 
-        mode = BiEngineMode[biEngineMode]
-
-        if biEngineReasons is None:
+        if reasons is None:
             reasons = []
         else:
-            reasons = [BiEngineReason.from_api_repr(r) for r in biEngineReasons]
+            reasons = [BiEngineReason.from_api_repr(r) for r in reasons]
 
         return cls(mode, reasons)
 

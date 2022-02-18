@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from .helpers import _Base
-from google.cloud.bigquery.enums import BiEngineMode, BiEngineReasonCode
 
 
 class TestBiEngineStats:
@@ -28,7 +27,7 @@ class TestBiEngineStats:
 
     def test_ctor_defaults(self):
         bi_engine_stats = self._make_one()
-        assert bi_engine_stats.mode == BiEngineMode.ACCELERATION_MODE_UNSPECIFIED
+        assert bi_engine_stats.mode == "ACCELERATION_MODE_UNSPECIFIED"
         assert bi_engine_stats.reasons == []
 
     def test_from_api_repr_unspecified(self):
@@ -36,7 +35,7 @@ class TestBiEngineStats:
         result = klass.from_api_repr({"biEngineMode": "ACCELERATION_MODE_UNSPECIFIED"})
 
         assert isinstance(result, klass)
-        assert result.mode == BiEngineMode.ACCELERATION_MODE_UNSPECIFIED
+        assert result.mode == "ACCELERATION_MODE_UNSPECIFIED"
         assert result.reasons == []
 
     def test_from_api_repr_full(self):
@@ -44,7 +43,7 @@ class TestBiEngineStats:
         result = klass.from_api_repr({"biEngineMode": "FULL"})
 
         assert isinstance(result, klass)
-        assert result.mode == BiEngineMode.FULL
+        assert result.mode == "FULL"
         assert result.reasons == []
 
     def test_from_api_repr_disabled(self):
@@ -62,10 +61,10 @@ class TestBiEngineStats:
         )
 
         assert isinstance(result, klass)
-        assert result.mode == BiEngineMode.DISABLED
+        assert result.mode == "DISABLED"
 
         reason = result.reasons[0]
-        assert reason.code == BiEngineReasonCode.OTHER_REASON
+        assert reason.code == "OTHER_REASON"
         assert (
             reason.reason
             == "Unable to support input table xyz due to an internal error."

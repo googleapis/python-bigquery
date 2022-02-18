@@ -153,13 +153,9 @@ class BiEngineStats(typing.NamedTuple):
     @classmethod
     def from_api_repr(cls, stats: Dict[str, str]) -> "BiEngineStats":
         mode = stats.get("biEngineMode")
-        reasons = stats.get("biEngineReasons")
-
-        if reasons is None:
-            reasons = []
-        else:
-            reasons = [BiEngineReason.from_api_repr(r) for r in reasons]
-
+        reasons = [
+            BiEngineReason.from_api_repr(r) for r in stats.get("biEngineReasons", [])
+        ]
         return cls(mode, reasons)
 
 
@@ -1237,7 +1233,7 @@ class QueryJob(_AsyncJob):
     def bi_engine_stats(self) -> Optional[BiEngineStats]:
         stats = self._job_statistics().get("biEngineStatistics")
 
-        if stats is not None:
+        if stats is None:
             return None
         else:
             return BiEngineStats.from_api_repr(stats)

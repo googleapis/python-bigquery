@@ -26,7 +26,7 @@ from google.cloud.bigquery.routine import Routine, RoutineReference
 from google.cloud.bigquery.table import TableReference, _table_arg_to_table_ref
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 
 
 def _get_table_reference(self, table_id):
@@ -299,7 +299,7 @@ class AccessEntry(object):
         self._entity_type = entity_type
 
     @property
-    def role(self) -> Optional[str]:
+    def role(self) -> Optional[Union[Dict[str, Any], str]]:
         """The role of the entry."""
         return self._properties.get("role")
 
@@ -424,7 +424,7 @@ class AccessEntry(object):
         return self._entity_type
 
     @property
-    def entity_id(self) -> Optional[str]:
+    def entity_id(self) -> Optional[Union[Dict[str, Any], str]]:
         """The entity_id of the entry."""
         return self._properties.get(self.entity_type)
 

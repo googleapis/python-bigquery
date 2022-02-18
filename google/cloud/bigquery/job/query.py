@@ -133,7 +133,7 @@ class BiEngineReason(typing.NamedTuple):
 
     @classmethod
     def from_api_repr(cls, reason: Dict[str, str]) -> "BiEngineReason":
-        return cls(reason.get("code"), reason.get("message"))
+        return cls(reason.get("code", "CODE_UNSPECIFIED"), reason.get("message", ""))
 
 
 class BiEngineStats(typing.NamedTuple):
@@ -151,8 +151,8 @@ class BiEngineStats(typing.NamedTuple):
     """
 
     @classmethod
-    def from_api_repr(cls, stats: Dict[str, str]) -> "BiEngineStats":
-        mode = stats.get("biEngineMode")
+    def from_api_repr(cls, stats: Dict[str, Any]) -> "BiEngineStats":
+        mode = stats.get("biEngineMode", "ACCELERATION_MODE_UNSPECIFIED")
         reasons = [
             BiEngineReason.from_api_repr(r) for r in stats.get("biEngineReasons", [])
         ]

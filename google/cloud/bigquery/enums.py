@@ -28,6 +28,46 @@ class AutoRowIDs(enum.Enum):
     GENERATE_UUID = enum.auto()
 
 
+class BiEngineReasonCode(enum.Enum):
+    """Specifies reason why BI Engine did not accelerate query"""
+
+    CODE_UNSPECIFIED = enum.auto()
+    """BiEngineReason not specified."""
+
+    NO_RESERVATION = enum.auto()
+    """No reservation available for BI Engine acceleration."""
+
+    INSUFFICIENT_RESERVATION = enum.auto()
+    """Not enough memory available for BI Engine acceleration."""
+
+    UNCACHED = enum.auto()
+    """Data is not-cached and could not be accelerated by BI Engine."""
+
+    UNSUPPORTED_SQL_TEXT = enum.auto()
+    """This particular SQL text is not supported for acceleration by BI Engine."""
+
+    INPUT_TOO_LARGE = enum.auto()
+    """Input too large for acceleration by BI Engine."""
+
+    OTHER_REASON = enum.auto()
+    """Catch-all code for all other cases for partial or disabled acceleration."""
+
+    TABLE_EXCLUDED = enum.auto()
+    """One or more tables were not eligible for BI Engine acceleration."""
+
+
+class BiEngineMode(enum.Enum):
+    """Specifies which mode of BI Engine acceleration was performed"""
+
+    ACCELERATION_MODE_UNSPECIFIED = enum.auto()
+
+    DISABLED = enum.auto()
+
+    PARTIAL = enum.auto()
+
+    FULL = enum.auto()
+
+
 class Compression(object):
     """The compression type to use for exported files. The default value is
     :attr:`NONE`.

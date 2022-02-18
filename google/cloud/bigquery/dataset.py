@@ -18,6 +18,8 @@ from __future__ import absolute_import
 
 import copy
 
+import typing
+
 import google.cloud._helpers  # type: ignore
 
 from google.cloud.bigquery import _helpers
@@ -301,7 +303,7 @@ class AccessEntry(object):
     @property
     def role(self) -> Optional[str]:
         """The role of the entry."""
-        return self._properties.get("role")
+        return typing.cast(Optional[str], self._properties.get("role"))
 
     @role.setter
     def role(self, value):
@@ -310,7 +312,7 @@ class AccessEntry(object):
     @property
     def dataset(self) -> Optional[Dict[str, Any]]:
         """API resource representation of a dataset reference."""
-        return self._properties.get("dataset")
+        return typing.cast(Optional[Dict[str, Any]], self._properties.get("dataset"))
 
     @dataset.setter
     def dataset(self, value):
@@ -337,7 +339,10 @@ class AccessEntry(object):
     @property
     def target_types(self) -> Optional[List[str]]:
         """Which resources that the dataset in this entry applies to."""
-        return _helpers._get_sub_prop(self._properties, ["dataset", "targetTypes"])
+        return typing.cast(
+            Optional[List[str]],
+            _helpers._get_sub_prop(self._properties, ["dataset", "targetTypes"]),
+        )
 
     @target_types.setter
     def target_types(self, value):
@@ -348,7 +353,7 @@ class AccessEntry(object):
     @property
     def routine(self) -> Optional[Dict[str, Any]]:
         """API resource representation of a routine reference."""
-        return self._properties.get("routine")
+        return typing.cast(Optional[Dict[str, Any]], self._properties.get("routine"))
 
     @routine.setter
     def routine(self, value):
@@ -369,7 +374,7 @@ class AccessEntry(object):
     @property
     def view(self) -> Optional[Dict[str, Any]]:
         """API resource representation of a view reference."""
-        return self._properties.get("view")
+        return typing.cast(Optional[Dict[str, Any]], self._properties.get("view"))
 
     @view.setter
     def view(self, value):
@@ -385,7 +390,7 @@ class AccessEntry(object):
     @property
     def group_by_email(self) -> Optional[str]:
         """An email address of a Google Group to grant access to."""
-        return self._properties.get("groupByEmail")
+        return typing.cast(Optional[str], self._properties.get("groupByEmail"))
 
     @group_by_email.setter
     def group_by_email(self, value):
@@ -394,7 +399,7 @@ class AccessEntry(object):
     @property
     def user_by_email(self) -> Optional[str]:
         """An email address of a user to grant access to."""
-        return self._properties.get("userByEmail")
+        return typing.cast(Optional[str], self._properties.get("userByEmail"))
 
     @user_by_email.setter
     def user_by_email(self, value):
@@ -403,7 +408,7 @@ class AccessEntry(object):
     @property
     def domain(self) -> Optional[str]:
         """A domain to grant access to."""
-        return self._properties.get("domain")
+        return typing.cast(Optional[str], self._properties.get("domain"))
 
     @domain.setter
     def domain(self, value):
@@ -412,7 +417,7 @@ class AccessEntry(object):
     @property
     def special_group(self) -> Optional[str]:
         """A special group to grant access to."""
-        return self._properties.get("specialGroup")
+        return typing.cast(Optional[str], self._properties.get("specialGroup"))
 
     @special_group.setter
     def special_group(self, value):
@@ -424,9 +429,9 @@ class AccessEntry(object):
         return self._entity_type
 
     @property
-    def entity_id(self):
+    def entity_id(self) -> Optional[Union[Dict[str, Any], str]]:
         """The entity_id of the entry."""
-        return self._properties.get(self.entity_type) if self.entity_type else None
+        return self._properties.get(self._entity_type) if self._entity_type else None
 
     def __eq__(self, other):
         if not isinstance(other, AccessEntry):
@@ -439,9 +444,12 @@ class AccessEntry(object):
     def __repr__(self):
 
         return "<AccessEntry: role=%s, %s=%s>" % (
+            str,
             self.role,
+            str,
             self._entity_type,
-            str(self.entity_id),
+            str,
+            self.entity_id,
         )
 
     def _key(self):

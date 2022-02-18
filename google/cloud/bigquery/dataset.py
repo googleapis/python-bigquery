@@ -290,7 +290,7 @@ class AccessEntry(object):
         self,
         role: Optional[str] = None,
         entity_type: Optional[str] = None,
-        entity_id: Optional[Dict[str, Any]] = None,
+        entity_id: Optional[Union[Dict[str, Any], str]] = None,
     ):
         self._properties = {}
         if entity_type is not None:
@@ -299,7 +299,7 @@ class AccessEntry(object):
         self._entity_type = entity_type
 
     @property
-    def role(self) -> Optional[Union[Dict[str, Any], str]]:
+    def role(self) -> Optional[str]:
         """The role of the entry."""
         return self._properties.get("role")
 
@@ -308,7 +308,7 @@ class AccessEntry(object):
         self._properties["role"] = value
 
     @property
-    def dataset(self) -> Optional[dict]:
+    def dataset(self) -> Optional[Dict[str, Any]]:
         """API resource representation of a dataset reference."""
         return self._properties.get("dataset")
 
@@ -346,7 +346,7 @@ class AccessEntry(object):
         _helpers._set_sub_prop(self._properties, ["dataset", "targetTypes"], value)
 
     @property
-    def routine(self) -> Optional[dict]:
+    def routine(self) -> Optional[Dict[str, Any]]:
         """API resource representation of a routine reference."""
         return self._properties.get("routine")
 
@@ -356,7 +356,7 @@ class AccessEntry(object):
             raise ValueError(
                 "Role must be None for a routine. Current " "role: %r" % (self.role)
             )
-        if not isinstance(value, dict):
+        if not isinstance(value, Dict):
             if isinstance(value, str):
                 value = RoutineReference.from_string(value)
 
@@ -424,9 +424,9 @@ class AccessEntry(object):
         return self._entity_type
 
     @property
-    def entity_id(self) -> Optional[Union[Dict[str, Any], str]]:
+    def entity_id(self):
         """The entity_id of the entry."""
-        return self._properties.get(self.entity_type)
+        return self._properties.get(self.entity_type) if self.entity_type else None
 
     def __eq__(self, other):
         if not isinstance(other, AccessEntry):
@@ -437,10 +437,11 @@ class AccessEntry(object):
         return not self == other
 
     def __repr__(self):
+
         return "<AccessEntry: role=%s, %s=%s>" % (
             self.role,
             self._entity_type,
-            self.entity_id,
+            str(self.entity_id),
         )
 
     def _key(self):

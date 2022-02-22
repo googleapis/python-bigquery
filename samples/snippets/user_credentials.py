@@ -23,26 +23,16 @@ your application.
 import argparse
 
 
-def main(project, launch_browser=True):
+def main(project):
     # [START bigquery_auth_user_flow]
     from google_auth_oauthlib import flow
 
-    # TODO: Uncomment the line below to set the `launch_browser` variable.
-    # launch_browser = True
-    #
-    # The `launch_browser` boolean variable indicates if a local server is used
-    # as the callback URL in the auth flow. A value of `True` is recommended,
-    # but a local server does not work if accessing the application remotely,
-    # such as over SSH or from a remote Jupyter notebook.
-
+    # A local server is used as the callback URL in the auth flow.
     appflow = flow.InstalledAppFlow.from_client_secrets_file(
         "client_secrets.json", scopes=["https://www.googleapis.com/auth/bigquery"]
     )
 
-    if launch_browser:
-        appflow.run_local_server()
-    else:
-        appflow.run_console()
+    appflow.run_local_server()
 
     credentials = appflow.credentials
     # [END bigquery_auth_user_flow]

@@ -443,14 +443,7 @@ class AccessEntry(object):
 
     def __repr__(self):
 
-        return "<AccessEntry: role=%s, %s=%s>" % (
-            str,
-            self.role,
-            str,
-            self._entity_type,
-            str,
-            self.entity_id,
-        )
+        return f"<AccessEntry: role={self.role}, {self._entity_type}={self.entity_id}>"
 
     def _key(self):
         """ A tuple key that uniquely describes this field.

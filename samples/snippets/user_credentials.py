@@ -37,7 +37,7 @@ def main(project):
     # SSH or a remote Jupyter notebook, this flow will not work. Use the
     # `gcloud auth application-default login --no-browser` command or workload
     # identity federation to get authentication tokens, instead.
-    # 
+    #
     appflow.run_local_server()
 
     credentials = appflow.credentials

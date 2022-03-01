@@ -38,8 +38,8 @@ except ImportError:
 bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
 IPython = pytest.importorskip("IPython")
 interactiveshell = pytest.importorskip("IPython.terminal.interactiveshell")
-io = pytest.importorskip("IPython.utils.io")
 tools = pytest.importorskip("IPython.testing.tools")
+io = pytest.importorskip("IPython.utils.io")
 pandas = pytest.importorskip("pandas")
 
 

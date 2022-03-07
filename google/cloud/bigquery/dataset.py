@@ -230,16 +230,16 @@ class AccessEntry(object):
     See https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets.
 
     Args:
-        role (str):
+        role:
             Role granted to the entity. The following string values are
             supported: `'READER'`, `'WRITER'`, `'OWNER'`. It may also be
             :data:`None` if the ``entity_type`` is ``view``, ``routine``, or ``dataset``.
 
-        entity_type (str):
+        entity_type:
             Type of entity being granted the role. See
             :class:`google.cloud.bigquery.enums.EntityTypes` for supported types.
 
-        entity_id (Union[str, Dict[str, str]]):
+        entity_id:
             If the ``entity_type`` is not 'view', 'routine', or 'dataset', the
             ``entity_id`` is the ``str`` ID of the entity being granted the role. If
             the ``entity_type`` is 'view' or 'routine', the ``entity_id`` is a ``dict``
@@ -310,9 +310,12 @@ class AccessEntry(object):
         self._properties["role"] = value
 
     @property
-    def dataset(self) -> Optional[Dict[str, Any]]:
+    def dataset(self) -> Optional[DatasetReference]:
         """API resource representation of a dataset reference."""
-        return typing.cast(Optional[Dict[str, Any]], self._properties.get("dataset"))
+        return typing.cast(
+            Optional[DatasetReference],
+            _helpers._get_sub_prop(self._properties, ["dataset", "dataset"]),
+        )
 
     @dataset.setter
     def dataset(self, value):
@@ -320,14 +323,16 @@ class AccessEntry(object):
             raise ValueError(
                 "Role must be None for a dataset. Current " "role: %r" % (self.role)
             )
-        if not isinstance(value, dict):
-            if isinstance(value, str):
-                value = DatasetReference.from_string(value)
+        if isinstance(value, dict):
+            value = DatasetReference.from_api_repr(value)
 
-            if isinstance(value, (Dataset, DatasetListItem)):
-                value = value.reference
+        if isinstance(value, str):
+            value = DatasetReference.from_string(value)
 
-            value = value.to_api_repr()
+        if isinstance(value, (Dataset, DatasetListItem)):
+            value = value.reference
+
+            # value = value.to_api_repr()
 
         _helpers._set_sub_prop(self._properties, ["dataset", "dataset"], value)
         _helpers._set_sub_prop(

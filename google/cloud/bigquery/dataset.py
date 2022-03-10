@@ -25,7 +25,7 @@ import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.routine import Routine, RoutineReference
-from google.cloud.bigquery.table import TableReference, _table_arg_to_table_ref
+from google.cloud.bigquery.table import Table, TableReference
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 from typing import Optional, List, Dict, Any, Union
@@ -332,8 +332,6 @@ class AccessEntry(object):
         if isinstance(value, (Dataset, DatasetListItem)):
             value = value.reference
 
-            # value = value.to_api_repr()
-
         _helpers._set_sub_prop(self._properties, ["dataset", "dataset"], value)
         _helpers._set_sub_prop(
             self._properties,
@@ -342,23 +340,23 @@ class AccessEntry(object):
         )
 
     @property
-    def target_types(self) -> Optional[List[str]]:
+    def dataset_target_types(self) -> Optional[List[str]]:
         """Which resources that the dataset in this entry applies to."""
         return typing.cast(
             Optional[List[str]],
             _helpers._get_sub_prop(self._properties, ["dataset", "targetTypes"]),
         )
 
-    @target_types.setter
-    def target_types(self, value):
+    @dataset_target_types.setter
+    def dataset_target_types(self, value):
         if "dataset" not in self._properties:
             self._properties["dataset"] = {}
         _helpers._set_sub_prop(self._properties, ["dataset", "targetTypes"], value)
 
     @property
-    def routine(self) -> Optional[Dict[str, Any]]:
+    def routine(self) -> Optional[RoutineReference]:
         """API resource representation of a routine reference."""
-        return typing.cast(Optional[Dict[str, Any]], self._properties.get("routine"))
+        return typing.cast(Optional[RoutineReference], self._properties.get("routine"))
 
     @routine.setter
     def routine(self, value):
@@ -366,20 +364,22 @@ class AccessEntry(object):
             raise ValueError(
                 "Role must be None for a routine. Current " "role: %r" % (self.role)
             )
-        if not isinstance(value, Dict):
-            if isinstance(value, str):
-                value = RoutineReference.from_string(value)
 
-            if isinstance(value, Routine):
-                value = value.reference
+        if isinstance(value, Dict):
+            value = RoutineReference.from_api_repr(value)
 
-            value = value.to_api_repr()
+        if isinstance(value, str):
+            value = RoutineReference.from_string(value)
+
+        if isinstance(value, Routine):
+            value = value.reference
+
         self._properties["routine"] = value
 
     @property
-    def view(self) -> Optional[Dict[str, Any]]:
+    def view(self) -> Optional[TableReference]:
         """API resource representation of a view reference."""
-        return typing.cast(Optional[Dict[str, Any]], self._properties.get("view"))
+        return typing.cast(Optional[TableReference], self._properties.get("view"))
 
     @view.setter
     def view(self, value):
@@ -387,9 +387,15 @@ class AccessEntry(object):
             raise ValueError(
                 "Role must be None for a view. Current " "role: %r" % (self.role)
             )
-        if not isinstance(value, dict):
-            value = _table_arg_to_table_ref(value)
-            value = value.to_api_repr()
+        if isinstance(value, dict):
+            value = TableReference.from_api_repr(value)
+
+        if isinstance(value, str):
+            value = TableReference.from_string(value)
+
+        if isinstance(value, Table):
+            value = value.reference
+
         self._properties["view"] = value
 
     @property

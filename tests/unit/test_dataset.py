@@ -119,6 +119,7 @@ class TestAccessEntry(unittest.TestCase):
             "datasetId": "my_dataset",
             "routineId": "my_routine",
         }
+
         entry = self._make_one(None, "routine", routine)
         resource = entry.to_api_repr()
         exp_resource = {"routine": routine, "role": None}
@@ -175,11 +176,12 @@ class TestAccessEntry(unittest.TestCase):
             "datasetId": "my_dataset",
             "tableId": "my_table",
         }
+        view_ref = TableReference.from_api_repr(view)
         entry = self._make_one(None)
         entry.view = view
         resource = entry.to_api_repr()
-        exp_resource = {"view": view, "role": None}
-        self.assertEqual(entry.view, view)
+        exp_resource = {"view": view_ref, "role": None}
+        self.assertEqual(entry.view, view_ref)
         self.assertEqual(resource, exp_resource)
 
     def test_view_getter_setter_none(self):
@@ -190,22 +192,22 @@ class TestAccessEntry(unittest.TestCase):
         project = "my_project"
         dataset = "my_dataset"
         table = "my_table"
+        view_ref = TableReference.from_string(f"{project}.{dataset}.{table}")
         entry = self._make_one(None)
         entry.view = f"{project}.{dataset}.{table}"
         resource = entry.to_api_repr()
-        exp_view = {"projectId": project, "datasetId": dataset, "tableId": table}
-        exp_resource = {"view": exp_view, "role": None}
+        exp_resource = {"view": view_ref, "role": None}
         self.assertEqual(resource, exp_resource)
 
     def test_view_getter_setter_table_ref(self):
         project = "my_project"
         dataset = "my_dataset"
         table = "my_table"
+        view_ref = TableReference.from_string(f"{project}.{dataset}.{table}")
         entry = self._make_one(None)
-        entry.view = TableReference(DatasetReference(project, dataset), table)
+        entry.view = view_ref
         resource = entry.to_api_repr()
-        exp_view = {"projectId": project, "datasetId": dataset, "tableId": table}
-        exp_resource = {"view": exp_view, "role": None}
+        exp_resource = {"view": view_ref, "role": None}
         self.assertEqual(resource, exp_resource)
 
     def test_view_getter_setter_incorrect_role(self):
@@ -214,9 +216,10 @@ class TestAccessEntry(unittest.TestCase):
             "datasetId": "my_dataset",
             "tableId": "my_table",
         }
+        view_ref = TableReference.from_api_repr(view)
         entry = self._make_one("READER")
         with self.assertRaises(ValueError):
-            entry.view = view
+            entry.view = view_ref
 
     def test_dataset_getter_setter(self):
         dataset = {"projectId": "my-project", "datasetId": "my_dataset"}
@@ -225,11 +228,10 @@ class TestAccessEntry(unittest.TestCase):
         dataset_ref = DatasetReference.from_api_repr(dataset)
         resource = entry.to_api_repr()
         exp_resource = {
-            "dataset": {"dataset": dataset_ref, "targetTypes": None,},
+            "dataset": {"dataset": dataset_ref, "targetTypes": None},
             "role": None,
         }
         prop = entry.dataset
-        print("prop", prop)
         self.assertEqual(resource, exp_resource)
         self.assertEqual(prop, dataset_ref)
 
@@ -246,7 +248,7 @@ class TestAccessEntry(unittest.TestCase):
         dataset_ref = DatasetReference.from_string(string_ref)
         resource = entry.to_api_repr()
         exp_resource = {
-            "dataset": {"dataset": dataset_ref, "targetTypes": None,},
+            "dataset": {"dataset": dataset_ref, "targetTypes": None},
             "role": None,
         }
         self.assertEqual(resource, exp_resource)
@@ -259,7 +261,7 @@ class TestAccessEntry(unittest.TestCase):
         entry.dataset = dataset_ref
         resource = entry.to_api_repr()
         exp_resource = {
-            "dataset": {"dataset": dataset_ref, "targetTypes": None,},
+            "dataset": {"dataset": dataset_ref, "targetTypes": None},
             "role": None,
         }
         self.assertEqual(resource, exp_resource)
@@ -276,7 +278,6 @@ class TestAccessEntry(unittest.TestCase):
             "role": None,
             "dataset": {"dataset": dataset_ref, "targetTypes": None},
         }
-        print(resource)
         self.assertEqual(resource, exp_resource)
 
     def test_dataset_getter_setter_incorrect_role(self):
@@ -291,10 +292,11 @@ class TestAccessEntry(unittest.TestCase):
             "datasetId": "my_dataset",
             "routineId": "my_routine",
         }
+        routine_ref = RoutineReference.from_api_repr(routine)
         entry = self._make_one(None)
         entry.routine = routine
         resource = entry.to_api_repr()
-        exp_resource = {"routine": routine, "role": None}
+        exp_resource = {"routine": routine_ref, "role": None}
         self.assertEqual(resource, exp_resource)
 
     def test_routine_getter_setter_none(self):
@@ -307,13 +309,12 @@ class TestAccessEntry(unittest.TestCase):
         routine_id = "my_routine"
         entry = self._make_one(None)
         entry.routine = f"{project}.{dataset_id}.{routine_id}"
+        routine_ref = RoutineReference.from_string(
+            f"{project}.{dataset_id}.{routine_id}"
+        )
         resource = entry.to_api_repr()
         exp_resource = {
-            "routine": {
-                "projectId": project,
-                "datasetId": dataset_id,
-                "routineId": routine_id,
-            },
+            "routine": routine_ref,
             "role": None,
         }
         self.assertEqual(resource, exp_resource)
@@ -324,11 +325,12 @@ class TestAccessEntry(unittest.TestCase):
             "datasetId": "my_dataset",
             "routineId": "my_routine",
         }
+        routine_ref = RoutineReference.from_api_repr(routine)
         entry = self._make_one(None)
         entry.routine = RoutineReference.from_api_repr(routine)
         resource = entry.to_api_repr()
         exp_resource = {
-            "routine": routine,
+            "routine": routine_ref,
             "role": None,
         }
         self.assertEqual(resource, exp_resource)
@@ -339,14 +341,15 @@ class TestAccessEntry(unittest.TestCase):
             "datasetId": "my_dataset",
             "routineId": "my_routine",
         }
+        routine_ref = RoutineReference.from_api_repr(routine)
         entry = self._make_one(None)
-        entry.routine = Routine(RoutineReference.from_api_repr(routine))
+        entry.routine = Routine(routine_ref)
         resource = entry.to_api_repr()
         exp_resource = {
-            "routine": routine,
+            "routine": routine_ref,
             "role": None,
         }
-        self.assertEqual(entry.routine, routine)
+        self.assertEqual(entry.routine, routine_ref)
         self.assertEqual(resource, exp_resource)
 
     def test_routine_getter_setter_incorrect_role(self):
@@ -423,25 +426,23 @@ class TestAccessEntry(unittest.TestCase):
         entry = self._make_one(None)
         self.assertEqual(entry.role, None)
 
-    def test_target_types_getter_setter(self):
+    def test_dataset_target_types_getter_setter(self):
         target_types = ["VIEWS"]
         entry = self._make_one(None)
-        entry.target_types = target_types
-        self.assertEqual(entry.target_types, target_types)
-        # self.assertEqual(entry.dataset["targetTypes"], target_types)
+        entry.dataset_target_types = target_types
+        self.assertEqual(entry.dataset_target_types, target_types)
 
-    def test_target_types_getter_setter_none(self):
+    def test_dataset_target_types_getter_setter_none(self):
         entry = self._make_one(None)
-        self.assertEqual(entry.target_types, None)
+        self.assertEqual(entry.dataset_target_types, None)
 
-    def test_target_types_getter_setter_w_dataset(self):
+    def test_dataset_target_types_getter_setter_w_dataset(self):
         dataset = {"projectId": "my-project", "datasetId": "my_dataset"}
         target_types = ["VIEWS"]
         entry = self._make_one(None)
         entry.dataset = dataset
-        entry.target_types = target_types
-        self.assertEqual(entry.target_types, target_types)
-        # self.assertEqual(entry.dataset["targetTypes"], target_types)
+        entry.dataset_target_types = target_types
+        self.assertEqual(entry.dataset_target_types, target_types)
 
 
 class TestDatasetReference(unittest.TestCase):

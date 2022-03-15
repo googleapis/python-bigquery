@@ -495,8 +495,9 @@ def _create_dataset_if_necessary(client, dataset_id):
         "Defaults to use tqdm. Install the ``tqdm`` package to use this feature."
     ),
 )
+# step one of fix
 @magic_arguments.argument(
-    "--send_bqml_job", #send_job not bqml specific
+    "--send_bq_job", 
     action="store_true",
     type=str,
     default=False,
@@ -504,8 +505,9 @@ def _create_dataset_if_necessary(client, dataset_id):
         "TODO"
     ),
 )
+# step 2 of fix
 @magic_arguments.argument(
-    "--bqml_job_status", #check_job_status
+    "--check_job_status",
     type=str, #[project:"project, job_id:"job_id", location:"location",] #check
     default=None,
     help=(
@@ -722,7 +724,7 @@ def _cell_magic(line, cell_body):
     finally:
         close_transports()
     
-    if args.send_bqml_job:
+    if args.send_bq_job:
         client = bigquery.Client(
             project=project,
             credentials=context.credentials,
@@ -731,14 +733,14 @@ def _cell_magic(line, cell_body):
             client_options=bigquery_client_options,
         )
         #cache credentials? 
-        bqml_job_config = bigquery.job.query.QueryJobConfig(
+        bq_job_config = bigquery.job.query.QueryJobConfig(
             [
                 job_id= # what was passed in magic line.nargs?
             ]
         )
 
-        bqml_job = client.query(query, bqml_job_config)
-        if bqml_job.done(timeout: 5000):
+        bq_job = client.query(query, bqml_job_config)
+        if bq_job.done(timeout: 5000):
             # add time out parameter
             # return bqml_job.result()?
             print("something")
@@ -752,7 +754,7 @@ def _cell_magic(line, cell_body):
         `SQL`
         """
 
-    if args.bqml_job_status is not None:
+    if args.check_job_status is not None:
         client = bigquery.Client(
             project=project,
             credentials=context.credentials,
@@ -761,12 +763,12 @@ def _cell_magic(line, cell_body):
             client_options=bigquery_client_options,
         )
         job_id = args.job_id #something
-        bqml_job = client.get_job(job_id)
-        if bqml_job.running():
+        bq_job = client.get_job(job_id)
+        if bq_job.running():
             print("TODO but Job with id job_id is still running, check again later")
         else:
-            if bqml_job.done():
-                bqml_job.reload()
+            if bq_job.done():
+                bq_job.reload()
                 print("TODO")
                 # return job.results()? 
             else:

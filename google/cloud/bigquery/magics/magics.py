@@ -87,15 +87,16 @@ import functools
 import sys
 import time
 import warnings
+import threading
 from concurrent import futures
 
 try:
     import IPython  # type: ignore
-    from IPython import display  # type: ignore
+    from IPython import display, HTML  # type: ignore
     from IPython.core import magic_arguments  # type: ignore
 except ImportError:  # pragma: NO COVER
     raise ImportError("This module can only be loaded in IPython.")
-
+import ipywidgets as widgets
 from google.api_core import client_info
 from google.api_core import client_options
 from google.api_core.exceptions import NotFound
@@ -495,23 +496,14 @@ def _create_dataset_if_necessary(client, dataset_id):
         "Defaults to use tqdm. Install the ``tqdm`` package to use this feature."
     ),
 )
-# step one of fix
 @magic_arguments.argument(
-    "--send_bq_job", 
+    "--send_widget_job",
     action="store_true",
     type=str,
     default=False,
     help=(
-        "TODO"
-    ),
-)
-# step 2 of fix
-@magic_arguments.argument(
-    "--check_job_status",
-    type=str, #[project:"project, job_id:"job_id", location:"location",] #check
-    default=None,
-    help=(
-        "TODO"
+        "Shows current status of a job as a progress bar in a widget."
+        "For use with longer-running jobs such as BQML queries."
     ),
 )
 def _cell_magic(line, cell_body):
@@ -723,8 +715,8 @@ def _cell_magic(line, cell_body):
             return result
     finally:
         close_transports()
-    
-    if args.send_bq_job:
+
+    if args.send_widget_job:
         client = bigquery.Client(
             project=project,
             credentials=context.credentials,
@@ -732,49 +724,37 @@ def _cell_magic(line, cell_body):
             client_info=client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
             client_options=bigquery_client_options,
         )
-        #cache credentials? 
-        bq_job_config = bigquery.job.query.QueryJobConfig(
-            [
-                job_id= # what was passed in magic line.nargs?
-            ]
-        )
+        job_config = bigquery.job.query.QueryJobConfig()
+        job_config.query_parameters = params
 
-        bq_job = client.query(query, bqml_job_config)
-        if bq_job.done(timeout: 5000):
-            # add time out parameter
-            # return bqml_job.result()?
-            print("something")
-        else:
-            print("TODO: say job has been sent and restate job_id")
-        # return job_id? how would this be stored elegantly in a variable?
-        # only use id as set by user so it's easy to retrieve?
-        """
-        job_id = `some_id`
-        %%bigquery --send_bqml_job job_id
-        `SQL`
-        """
+        widget_job = client.query(query, widget_job)
 
-    if args.check_job_status is not None:
-        client = bigquery.Client(
-            project=project,
-            credentials=context.credentials,
-            default_query_job_config=context.default_query_job_config,
-            client_info=client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
-            client_options=bigquery_client_options,
-        )
-        job_id = args.job_id #something
-        bq_job = client.get_job(job_id)
-        if bq_job.running():
-            print("TODO but Job with id job_id is still running, check again later")
-        else:
-            if bq_job.done():
-                bq_job.reload()
-                print("TODO")
-                # return job.results()? 
+        def thread_func(widget_job, out):
+            while widget_job.done is False:
+                time.sleep(0.3)
+                result = widget_job.to_dataframe(
+                    bqstorage_client=bqstorage_client,
+                    create_bqstorage_client=False,
+                    progress_bar_type=progress_bar,
+                )
+                out.append_stdout("{} {} {}\n".format(result))
             else:
-                # send failed job codes? would this also be a valid return value of job.results/reload()?
+                result = widget_job.to_dataframe(
+                    bqstorage_client=None,
+                    create_bqstorage_client=False,
+                    progress_bar_type=progress_bar,
+                )
+            out.append_stdout("{} {} {}\n".format(result))
+            out.append_display_data(HTML("<em>Job complete!</em>"))
 
-        
+        out = widgets.Output()
+        display(out)
+
+        thread = threading.Thread(
+            target=thread_func, args=(f"Job status for job_id {widget_job.job_id}", out)
+        )
+        thread.start()
+        thread.join()
 
 
 def _split_args_line(line):

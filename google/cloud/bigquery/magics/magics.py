@@ -730,20 +730,13 @@ def _cell_magic(line, cell_body):
         widget_job = client.query(query, widget_job)
 
         def thread_func(widget_job, out):
-            while widget_job.done is False:
-                time.sleep(0.3)
-                result = widget_job.to_dataframe(
-                    bqstorage_client=bqstorage_client,
-                    create_bqstorage_client=False,
-                    progress_bar_type=progress_bar,
-                )
-                out.append_stdout("{} {} {}\n".format(result))
+            time_sec = 10.0
+            while widget_job.state != "DONE":
+                job_status = "Job is still running!"
+                out.append_stdout("{} {} {}\n".format(job_status))
+                time.sleep(time_sec)
             else:
-                result = widget_job.to_dataframe(
-                    bqstorage_client=None,
-                    create_bqstorage_client=False,
-                    progress_bar_type=progress_bar,
-                )
+                result = widget_job.to_dataframe()
             out.append_stdout("{} {} {}\n".format(result))
             out.append_display_data(HTML("<em>Job complete!</em>"))
 
@@ -754,7 +747,6 @@ def _cell_magic(line, cell_body):
             target=thread_func, args=(f"Job status for job_id {widget_job.job_id}", out)
         )
         thread.start()
-        thread.join()
 
 
 def _split_args_line(line):

@@ -735,6 +735,7 @@ def _cell_magic(line, cell_body):
                 job_status = "Job is still running!"
                 out.append_stdout("{} {} {}\n".format(job_status))
                 time.sleep(time_sec)
+                widget_job.reload()
             else:
                 result = widget_job.to_dataframe()
             out.append_stdout("{} {} {}\n".format(result))

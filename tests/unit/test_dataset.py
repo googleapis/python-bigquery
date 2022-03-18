@@ -21,6 +21,7 @@ from google.cloud.bigquery.dataset import (
     AccessEntry,
     Dataset,
     DatasetReference,
+    Table,
     TableReference,
 )
 
@@ -195,6 +196,17 @@ class TestAccessEntry(unittest.TestCase):
         view_ref = TableReference.from_string(f"{project}.{dataset}.{table}")
         entry = self._make_one(None)
         entry.view = f"{project}.{dataset}.{table}"
+        resource = entry.to_api_repr()
+        exp_resource = {"view": view_ref, "role": None}
+        self.assertEqual(resource, exp_resource)
+
+    def test_view_getter_setter_table(self):
+        project = "my_project"
+        dataset = "my_dataset"
+        table = "my_table"
+        view_ref = Table.from_string(f"{project}.{dataset}.{table}")
+        entry = self._make_one(None)
+        entry.view = view_ref
         resource = entry.to_api_repr()
         exp_resource = {"view": view_ref, "role": None}
         self.assertEqual(resource, exp_resource)

@@ -73,13 +73,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument(
-        "--launch-browser",
-        help="Use a local server flow to authenticate. ",
-        action="store_true",
-    )
     parser.add_argument("project", help="Project to use for BigQuery billing.")
-
     args = parser.parse_args()
-
-    main(args.project, launch_browser=args.launch_browser)
+    main(args.project)

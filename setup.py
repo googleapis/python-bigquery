@@ -33,8 +33,9 @@ dependencies = [
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-api-core[grpc] >= 1.29.0, <3.0.0dev",
+    "google-api-core[grpc] >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
     "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
+    "proto-plus >= 1.15.0",
     # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
@@ -43,7 +44,7 @@ dependencies = [
     "packaging >= 14.3",
     "proto-plus >= 1.10.0",  # For the legacy proto-based types.
     "protobuf >= 3.12.0",  # For the legacy proto-based types.
-    "pyarrow >= 3.0.0, < 7.0dev",
+    "pyarrow >= 3.0.0, < 8.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]
 extras = {
@@ -52,6 +53,7 @@ extras = {
     "bqstorage": [],
     "pandas": ["pandas>=1.0.0", "db-dtypes>=0.3.0,<2.0.0dev"],
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
+    "ipython": ["ipython>=7.0.1,!=8.1.0"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
         "opentelemetry-api >= 1.1.0",

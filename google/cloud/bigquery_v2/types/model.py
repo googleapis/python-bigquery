@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2020 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -341,8 +341,8 @@ class Model(proto.Message):
                 threshold.
             f1_score (google.protobuf.wrappers_pb2.DoubleValue):
                 The F1 score is an average of recall and
-                precision. For multiclass this is a macro-
-                averaged metric.
+                precision. For multiclass this is a
+                macro-averaged metric.
             log_loss (google.protobuf.wrappers_pb2.DoubleValue):
                 Logarithmic Loss. For multiclass this is a
                 macro-averaged metric.

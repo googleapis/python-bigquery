@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC
+# Copyright 2016-2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,25 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
-IPython = pytest.importorskip("IPython")
-
-
-@pytest.fixture
-def base_visitor():
-    from google.cloud.bigquery.magics.line_arg_parser.visitors import NodeVisitor
-
-    return NodeVisitor()
+# [START bigquery_cancel_job]
+from google.cloud import bigquery
 
 
-def test_unknown_node(base_visitor):
-    from google.cloud.bigquery.magics.line_arg_parser.parser import ParseNode
+def cancel_job(
+    client: bigquery.Client, location: str = "us", job_id: str = "abcd-efgh-ijkl-mnop",
+):
+    job = client.cancel_job(job_id, location=location)
+    print(f"{job.location}:{job.job_id} cancelled")
 
-    class UnknownNode(ParseNode):
-        pass
 
-    node = UnknownNode()
-
-    with pytest.raises(Exception, match=r"No visit_UnknownNode method"):
-        base_visitor.visit(node)
+# [END bigquery_cancel_job]

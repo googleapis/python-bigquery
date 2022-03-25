@@ -40,7 +40,7 @@ def mock_flow() -> Iterator[MockType]:
 def test_auth_query_console(
     mock_flow: MockType, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    main(PROJECT, launch_browser=False)
+    main(PROJECT)
     out, _ = capsys.readouterr()
     # Fun fact: William P. Wood was the 1st director of the US Secret Service.
     assert "William" in out

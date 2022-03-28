@@ -273,6 +273,46 @@ def test_build_resource(object_under_test, resource, filter_fields, expected):
     assert got == expected
 
 
+def test_feature_columns(object_under_test):
+    from google.cloud.bigquery import standard_sql
+
+    object_under_test._properties["featureColumns"] = [
+        {"name": "col_1", "type": {"typeKind": "STRING"}},
+        {"name": "col_2", "type": {"typeKind": "FLOAT64"}},
+    ]
+    expected = [
+        standard_sql.StandardSqlField(
+            "col_1",
+            standard_sql.StandardSqlDataType(standard_sql.StandardSqlTypeNames.STRING),
+        ),
+        standard_sql.StandardSqlField(
+            "col_2",
+            standard_sql.StandardSqlDataType(standard_sql.StandardSqlTypeNames.FLOAT64),
+        ),
+    ]
+    assert object_under_test.feature_columns == expected
+
+
+def test_label_columns(object_under_test):
+    from google.cloud.bigquery import standard_sql
+
+    object_under_test._properties["labelColumns"] = [
+        {"name": "col_1", "type": {"typeKind": "STRING"}},
+        {"name": "col_2", "type": {"typeKind": "FLOAT64"}},
+    ]
+    expected = [
+        standard_sql.StandardSqlField(
+            "col_1",
+            standard_sql.StandardSqlDataType(standard_sql.StandardSqlTypeNames.STRING),
+        ),
+        standard_sql.StandardSqlField(
+            "col_2",
+            standard_sql.StandardSqlDataType(standard_sql.StandardSqlTypeNames.FLOAT64),
+        ),
+    ]
+    assert object_under_test.label_columns == expected
+
+
 def test_set_description(object_under_test):
     assert not object_under_test.description
     object_under_test.description = "A model description."

@@ -77,7 +77,7 @@ def _get_routine_reference(self, routine_id):
         }
     )
 
- 
+
 class DatasetReference(object):
     """DatasetReferences are pointers to datasets.
 
@@ -373,7 +373,7 @@ class AccessEntry(object):
     @property
     def view(self) -> Optional[TableReference]:
         """API resource representation of a view reference."""
-        value = typing.cast(Optional[Dict],self._properties.get("view"))
+        value = typing.cast(Optional[Dict], self._properties.get("view"))
         return TableReference.from_api_repr(value) if value else None
 
     @view.setter

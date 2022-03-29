@@ -94,10 +94,10 @@ from concurrent import futures
 
 try:
     import IPython  # type: ignore
-    from IPython import display, HTML  # type: ignore
+    from IPython.display import HTML  # type: ignore
     from IPython.core import magic_arguments  # type: ignore
 except ImportError:  # pragma: NO COVER
-    raise ImportError("This module can only be loaded in IPython.")
+    raise # ImportError("This module can only be loaded in IPython.")
 import ipywidgets as widgets
 from google.api_core import client_info
 from google.api_core import client_options
@@ -507,7 +507,6 @@ def _create_dataset_if_necessary(client, dataset_id):
 @magic_arguments.argument(
     "--send_widget_job",
     action="store_true",
-    type=str,
     default=False,
     help=(
         "Shows current status of a job as a progress bar in a widget."
@@ -610,7 +609,7 @@ def _cell_magic(line, cell_body):
         else:
             max_results = None
 
-        query = query.strip()
+        query = args.query.strip()
 
         if not query:
             error = ValueError("Query is missing.")

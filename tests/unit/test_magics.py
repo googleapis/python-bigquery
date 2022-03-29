@@ -33,7 +33,7 @@ from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 try:
     from google.cloud.bigquery.magics import magics
 except ImportError:
-    magics = None
+    raise # magics = None
 
 bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
 IPython = pytest.importorskip("IPython")
@@ -1971,19 +1971,28 @@ def test_bigquery_magic_create_dataset_fails():
 
     assert close_transports.called
 
+
 @pytest.mark.usefixtures("ipython_interactive")
 def test_bigquery_magic_send_widget_job():
-    """
+
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
 
     credentials_mock = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
-    default_patch = mock.patch(
-        "google.auth.default", return_value=(credentials_mock, "general-project")
-    )
+    # default_patch = mock.patch(
+    #    "google.auth.default", return_value=(credentials_mock, "general-project")
+    # )
+    sql = "SELECT @foo AS FOO"
 
+    exc_pattern = r".*[Uu]nrecognized input.*option values correct\?.*567.*"
+
+    with pytest.raises(ValueError, match=exc_pattern):
+        cell_magic_args = "--send-widget-job"
+        ip.run_cell_magic("bigquery", cell_magic_args, sql)
+
+    """
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query",
         autospec=True,
@@ -1998,6 +2007,8 @@ def test_bigquery_magic_send_widget_job():
     assert "Traceback (most recent call last)" not in output
     assert "Syntax error" not in captured_io.stdout
 """
+
+
 """
 ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")

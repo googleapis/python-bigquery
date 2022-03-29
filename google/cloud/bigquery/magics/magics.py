@@ -94,10 +94,10 @@ from concurrent import futures
 
 try:
     import IPython  # type: ignore
-    from IPython.display import HTML  # type: ignore
+    from IPython import display  # type: ignore
     from IPython.core import magic_arguments  # type: ignore
 except ImportError:  # pragma: NO COVER
-    raise # ImportError("This module can only be loaded in IPython.")
+    raise  # ImportError("This module can only be loaded in IPython.")
 import ipywidgets as widgets
 from google.api_core import client_info
 from google.api_core import client_options
@@ -513,7 +513,7 @@ def _create_dataset_if_necessary(client, dataset_id):
         "For use with longer-running jobs such as BQML queries."
     ),
 )
-def _cell_magic(line, cell_body):
+def _cell_magic(line, query):
     """Underlying function for bigquery cell magic
 
     Note:
@@ -609,7 +609,7 @@ def _cell_magic(line, cell_body):
         else:
             max_results = None
 
-        query = args.query.strip()
+        query = query.strip()
 
         if not query:
             error = ValueError("Query is missing.")
@@ -741,19 +741,19 @@ def _cell_magic(line, cell_body):
         job_config = bigquery.job.query.QueryJobConfig()
         job_config.query_parameters = params
 
-        widget_job = client.query(query, widget_job)
+        widget_job = client.query(query, job_config=job_config)
 
         def thread_func(widget_job, out):
             time_sec = 10.0
             while widget_job.state != "DONE":
                 job_status = "Job is still running!"
-                out.append_stdout("{} {} {}\n".format(job_status))
+                out.append_stdout(f"{job_status}")
                 time.sleep(time_sec)
                 widget_job.reload()
             else:
                 result = widget_job.to_dataframe()
-            out.append_stdout("{} {} {}\n".format(result))
-            out.append_display_data(HTML("<em>Job complete!</em>"))
+            out.append_stdout(f"{result}")
+            out.append_display_data(display.HTML("<em>Job complete!</em>"))
 
         out = widgets.Output()
         display(out)

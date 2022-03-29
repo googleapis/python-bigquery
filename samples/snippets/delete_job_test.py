@@ -28,7 +28,8 @@ def test_delete_job_metadata(
     table_id_us_east1: str,
 ) -> None:
     query_job: bigquery.QueryJob = bigquery_client.query(
-        f"SELECT COUNT(*) FROM `{table_id_us_east1}`", location="us-east1",
+        f"SELECT COUNT(*) FROM `{table_id_us_east1}`",
+        location="us-east1",
     )
     query_job.result()
     assert query_job.job_id is not None

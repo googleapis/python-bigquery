@@ -618,7 +618,10 @@ def test_load_table_from_dataframe_w_explicit_schema_source_format_csv(
         [
             ("bool_col", [True, None, False]),
             ("bytes_col", ["abc", None, "def"]),
-            ("date_col", [datetime.date(1, 1, 1), None, datetime.date(9999, 12, 31)],),
+            (
+                "date_col",
+                [datetime.date(1, 1, 1), None, datetime.date(9999, 12, 31)],
+            ),
             (
                 "dt_col",
                 [
@@ -1000,7 +1003,11 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
 
 
 @pytest.mark.parametrize(
-    ("max_results",), ((None,), (10,),)  # Use BQ Storage API.  # Use REST API.
+    ("max_results",),
+    (
+        (None,),
+        (10,),
+    ),  # Use BQ Storage API.  # Use REST API.
 )
 def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_results):
     # TODO(GH#836): Avoid INTERVAL columns until they are supported by the
@@ -1021,7 +1028,9 @@ def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_r
     ]
 
     df = bigquery_client.list_rows(
-        scalars_table, max_results=max_results, selected_fields=schema,
+        scalars_table,
+        max_results=max_results,
+        selected_fields=schema,
     ).to_dataframe()
 
     assert df.dtypes["bool_col"].name == "boolean"
@@ -1042,7 +1051,11 @@ def test_list_rows_nullable_scalars_dtypes(bigquery_client, scalars_table, max_r
 
 
 @pytest.mark.parametrize(
-    ("max_results",), ((None,), (10,),)  # Use BQ Storage API.  # Use REST API.
+    ("max_results",),
+    (
+        (None,),
+        (10,),
+    ),  # Use BQ Storage API.  # Use REST API.
 )
 def test_list_rows_nullable_scalars_extreme_dtypes(
     bigquery_client, scalars_extreme_table, max_results
@@ -1065,7 +1078,9 @@ def test_list_rows_nullable_scalars_extreme_dtypes(
     ]
 
     df = bigquery_client.list_rows(
-        scalars_extreme_table, max_results=max_results, selected_fields=schema,
+        scalars_extreme_table,
+        max_results=max_results,
+        selected_fields=schema,
     ).to_dataframe()
 
     # Extreme values are out-of-bounds for pandas datetime64 values, which use

@@ -206,7 +206,9 @@ class TableReference(_TableBase):
             dataset_ref.dataset_id,
         )
         _helpers._set_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["table_id"], table_id,
+            self._properties,
+            self._PROPERTY_TO_API_FIELD["table_id"],
+            table_id,
         )
 
     @classmethod
@@ -880,7 +882,9 @@ class Table(_TableBase):
 
         api_field = self._PROPERTY_TO_API_FIELD["mview_refresh_interval"]
         _helpers._set_sub_prop(
-            self._properties, [api_field, "refreshIntervalMs"], refresh_interval_ms,
+            self._properties,
+            [api_field, "refreshIntervalMs"],
+            refresh_interval_ms,
         )
 
     @property
@@ -1581,7 +1585,8 @@ class RowIterator(HTTPIterator):
         return self._total_rows
 
     def _maybe_warn_max_results(
-        self, bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"],
+        self,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"],
     ):
         """Issue a warning if BQ Storage client is not ``None`` with ``max_results`` set.
 

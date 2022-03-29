@@ -23,7 +23,9 @@ if typing.TYPE_CHECKING:
 
 
 def test_update_table_require_partition_filter(
-    capsys: "pytest.CaptureFixture[str]", random_table_id: str, client: bigquery.Client,
+    capsys: "pytest.CaptureFixture[str]",
+    random_table_id: str,
+    client: bigquery.Client,
 ) -> None:
 
     # Make a partitioned table.

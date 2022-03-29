@@ -98,7 +98,8 @@ class TestSchemaField(unittest.TestCase):
 
         policy = PolicyTagList(names=("foo", "bar"))
         self.assertEqual(
-            policy.to_api_repr(), {"names": ["foo", "bar"]},
+            policy.to_api_repr(),
+            {"names": ["foo", "bar"]},
         )
 
         field = self._make_one(
@@ -546,7 +547,11 @@ class TestSchemaField(unittest.TestCase):
     def test___repr__evaluable_with_policy_tags(self):
         policy_tags = PolicyTagList(names=["foo", "bar"])
         field = self._make_one(
-            "field1", "STRING", "REQUIRED", "Description", policy_tags=policy_tags,
+            "field1",
+            "STRING",
+            "REQUIRED",
+            "Description",
+            policy_tags=policy_tags,
         )
         field_repr = repr(field)
         SchemaField = self._get_target_class()  # needed for eval  # noqa
@@ -630,10 +635,12 @@ class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
         resource = self._call_fut([full_name, age])
         self.assertEqual(len(resource), 2)
         self.assertEqual(
-            resource[0], {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+            resource[0],
+            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
         )
         self.assertEqual(
-            resource[1], {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
+            resource[1],
+            {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
         )
 
     def test_w_description(self):
@@ -683,7 +690,8 @@ class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
         resource = self._call_fut([full_name, phone])
         self.assertEqual(len(resource), 2)
         self.assertEqual(
-            resource[0], {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+            resource[0],
+            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
         )
         self.assertEqual(
             resource[1],
@@ -796,11 +804,13 @@ class TestPolicyTags(unittest.TestCase):
     def test_to_api_repr(self):
         taglist = self._make_one(names=["foo", "bar"])
         self.assertEqual(
-            taglist.to_api_repr(), {"names": ["foo", "bar"]},
+            taglist.to_api_repr(),
+            {"names": ["foo", "bar"]},
         )
         taglist2 = self._make_one(names=("foo", "bar"))
         self.assertEqual(
-            taglist2.to_api_repr(), {"names": ["foo", "bar"]},
+            taglist2.to_api_repr(),
+            {"names": ["foo", "bar"]},
         )
 
     def test___eq___wrong_type(self):
@@ -937,11 +947,22 @@ def test_from_api_repr_parameterized(api, expect, key2):
         ),
         (
             dict(name="n", field_type="NUMERIC", precision=9),
-            dict(name="n", type="NUMERIC", mode="NULLABLE", precision=9,),
+            dict(
+                name="n",
+                type="NUMERIC",
+                mode="NULLABLE",
+                precision=9,
+            ),
         ),
         (
             dict(name="n", field_type="NUMERIC", precision=9, scale=2),
-            dict(name="n", type="NUMERIC", mode="NULLABLE", precision=9, scale=2,),
+            dict(
+                name="n",
+                type="NUMERIC",
+                mode="NULLABLE",
+                precision=9,
+                scale=2,
+            ),
         ),
         (
             dict(name="n", field_type="BIGNUMERIC"),
@@ -949,11 +970,22 @@ def test_from_api_repr_parameterized(api, expect, key2):
         ),
         (
             dict(name="n", field_type="BIGNUMERIC", precision=40),
-            dict(name="n", type="BIGNUMERIC", mode="NULLABLE", precision=40,),
+            dict(
+                name="n",
+                type="BIGNUMERIC",
+                mode="NULLABLE",
+                precision=40,
+            ),
         ),
         (
             dict(name="n", field_type="BIGNUMERIC", precision=40, scale=2),
-            dict(name="n", type="BIGNUMERIC", mode="NULLABLE", precision=40, scale=2,),
+            dict(
+                name="n",
+                type="BIGNUMERIC",
+                mode="NULLABLE",
+                precision=40,
+                scale=2,
+            ),
         ),
         (
             dict(name="n", field_type="STRING"),
@@ -961,7 +993,12 @@ def test_from_api_repr_parameterized(api, expect, key2):
         ),
         (
             dict(name="n", field_type="STRING", max_length=9),
-            dict(name="n", type="STRING", mode="NULLABLE", maxLength=9,),
+            dict(
+                name="n",
+                type="STRING",
+                mode="NULLABLE",
+                maxLength=9,
+            ),
         ),
         (
             dict(name="n", field_type="BYTES"),
@@ -969,7 +1006,12 @@ def test_from_api_repr_parameterized(api, expect, key2):
         ),
         (
             dict(name="n", field_type="BYTES", max_length=9),
-            dict(name="n", type="BYTES", mode="NULLABLE", maxLength=9,),
+            dict(
+                name="n",
+                type="BYTES",
+                mode="NULLABLE",
+                maxLength=9,
+            ),
         ),
     ],
 )

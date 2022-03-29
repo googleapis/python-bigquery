@@ -59,7 +59,8 @@ def entity_id(bigquery_client: bigquery.Client, dataset_id: str) -> str:
 
 @pytest.fixture(scope="session")
 def dataset_id_us_east1(
-    bigquery_client: bigquery.Client, project_id: str,
+    bigquery_client: bigquery.Client,
+    project_id: str,
 ) -> Iterator[str]:
     dataset_id = prefixer.create_prefix()
     full_dataset_id = f"{project_id}.{dataset_id}"

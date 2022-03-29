@@ -96,7 +96,8 @@ class TestStandardSqlDataType:
                 StandardSqlField(
                     "employee_info",
                     StandardSqlDataType(
-                        type_kind=TypeNames.STRUCT, struct_type=person_type,
+                        type_kind=TypeNames.STRUCT,
+                        struct_type=person_type,
                     ),
                 ),
             ]
@@ -402,7 +403,11 @@ class TestStandardSqlField:
     @pytest.mark.parametrize(
         ("attr_name", "value", "value2"),
         (
-            ("name", "foo", "bar",),
+            (
+                "name",
+                "foo",
+                "bar",
+            ),
             (
                 "type",
                 bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.INTERVAL),
@@ -542,7 +547,8 @@ class TestStandardSqlTableType:
         assert len(result.columns) == 2
 
         expected = StandardSqlField(
-            name=None, type=StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.BOOL),
+            name=None,
+            type=StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.BOOL),
         )
         assert result.columns[0] == expected
 

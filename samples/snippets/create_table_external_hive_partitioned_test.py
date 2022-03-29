@@ -23,8 +23,10 @@ if typing.TYPE_CHECKING:
 def test_create_table_external_hive_partitioned(
     capsys: "pytest.CaptureFixture[str]", random_table_id: str
 ) -> None:
-    table = create_table_external_hive_partitioned.create_table_external_hive_partitioned(
-        random_table_id
+    table = (
+        create_table_external_hive_partitioned.create_table_external_hive_partitioned(
+            random_table_id
+        )
     )
 
     out, _ = capsys.readouterr()

@@ -312,10 +312,8 @@ class AccessEntry(object):
     @property
     def dataset(self) -> Optional[DatasetReference]:
         """API resource representation of a dataset reference."""
-        return typing.cast(
-            Optional[DatasetReference],
-            _helpers._get_sub_prop(self._properties, ["dataset", "dataset"]),
-        )
+        value = _helpers._get_sub_prop(self._properties, ["dataset", "dataset"])
+        return DatasetReference.from_api_repr(value) if value else None
 
     @dataset.setter
     def dataset(self, value):
@@ -323,14 +321,12 @@ class AccessEntry(object):
             raise ValueError(
                 "Role must be None for a dataset. Current " "role: %r" % (self.role)
             )
-        if isinstance(value, dict):
-            value = DatasetReference.from_api_repr(value)
 
         if isinstance(value, str):
-            value = DatasetReference.from_string(value)
+            value = DatasetReference.from_string(value).to_api_repr()
 
         if isinstance(value, (Dataset, DatasetListItem)):
-            value = value.reference
+            value = value.reference.to_api_repr()
 
         _helpers._set_sub_prop(self._properties, ["dataset", "dataset"], value)
         _helpers._set_sub_prop(
@@ -356,7 +352,8 @@ class AccessEntry(object):
     @property
     def routine(self) -> Optional[RoutineReference]:
         """API resource representation of a routine reference."""
-        return typing.cast(Optional[RoutineReference], self._properties.get("routine"))
+        value = typing.cast(Optional[Dict], self._properties.get("routine"))
+        return RoutineReference.from_api_repr(value) if value else None
 
     @routine.setter
     def routine(self, value):
@@ -365,21 +362,19 @@ class AccessEntry(object):
                 "Role must be None for a routine. Current " "role: %r" % (self.role)
             )
 
-        if isinstance(value, Dict):
-            value = RoutineReference.from_api_repr(value)
-
         if isinstance(value, str):
-            value = RoutineReference.from_string(value)
+            value = RoutineReference.from_string(value).to_api_repr()
 
         if isinstance(value, Routine):
-            value = value.reference
+            value = value.reference.to_api_repr()
 
         self._properties["routine"] = value
 
     @property
     def view(self) -> Optional[TableReference]:
         """API resource representation of a view reference."""
-        return typing.cast(Optional[TableReference], self._properties.get("view"))
+        value = typing.cast(Optional[Dict],self._properties.get("view"))
+        return TableReference.from_api_repr(value) if value else None
 
     @view.setter
     def view(self, value):
@@ -387,14 +382,12 @@ class AccessEntry(object):
             raise ValueError(
                 "Role must be None for a view. Current " "role: %r" % (self.role)
             )
-        if isinstance(value, dict):
-            value = TableReference.from_api_repr(value)
 
         if isinstance(value, str):
-            value = TableReference.from_string(value)
+            value = TableReference.from_string(value).to_api_repr()
 
         if isinstance(value, Table):
-            value = value.reference
+            value = value.reference.to_api_repr()
 
         self._properties["view"] = value
 
@@ -457,7 +450,7 @@ class AccessEntry(object):
         return f"<AccessEntry: role={self.role}, {self._entity_type}={self.entity_id}>"
 
     def _key(self):
-        """ A tuple key that uniquely describes this field.
+        """A tuple key that uniquely describes this field.
         Used to compute this instance's hashcode and evaluate equality.
         Returns:
             Tuple: The contents of this :class:`~google.cloud.bigquery.dataset.AccessEntry`.

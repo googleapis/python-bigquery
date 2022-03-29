@@ -1979,3 +1979,82 @@ def test_bigquery_magic_create_dataset_fails():
         )
 
     assert close_transports.called
+
+@pytest.mark.usefixtures("ipython_interactive")
+def test_bigquery_magic_send_widget_job():
+    """
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+
+    credentials_mock = mock.create_autospec(
+        google.auth.credentials.Credentials, instance=True
+    )
+    default_patch = mock.patch(
+        "google.auth.default", return_value=(credentials_mock, "general-project")
+    )
+
+    run_query_patch = mock.patch(
+        "google.cloud.bigquery.magics.magics._run_query",
+        autospec=True,
+        side_effect=exceptions.BadRequest("Syntax error in SQL query"),
+    )
+
+    with run_query_patch, default_patch, io.capture_output() as captured_io:
+        ip.run_cell_magic("bigquery", "", "SELECT foo FROM WHERE LIMIT bar")
+
+    output = captured_io.stderr
+    assert "400 Syntax error in SQL query" in output
+    assert "Traceback (most recent call last)" not in output
+    assert "Syntax error" not in captured_io.stdout
+"""
+"""
+ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    magics.context.credentials = mock.create_autospec(
+        google.auth.credentials.Credentials, instance=True
+    )
+
+    sql = "SELECT @foo AS foo"
+
+    exc_pattern = r".*[Uu]nrecognized input.*option values correct\?.*567.*"
+
+    with pytest.raises(ValueError, match=exc_pattern):
+        cell_magic_args = "params_dict_df --max_results 10 567"
+        ip.run_cell_magic("bigquery", cell_magic_args, sql)
+"""
+"""
+ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    magics.context.credentials = mock.create_autospec(
+        google.auth.credentials.Credentials, instance=True
+    )
+
+    ipython_ns_cleanup.append((ip, "custom_query"))
+    ipython_ns_cleanup.append((ip, "query_results_df"))
+
+    run_query_patch = mock.patch(
+        "google.cloud.bigquery.magics.magics._run_query", autospec=True
+    )
+    query_job_mock = mock.create_autospec(
+        google.cloud.bigquery.job.QueryJob, instance=True
+    )
+    mock_result = pandas.DataFrame([42], columns=["answer"])
+    query_job_mock.to_dataframe.return_value = mock_result
+
+    ip.user_ns["custom_query"] = raw_sql
+    cell_body = "$custom_query"  # Referring to an existing variable name (custom_query)
+    assert "query_results_df" not in ip.user_ns
+
+    with run_query_patch as run_query_mock:
+        run_query_mock.return_value = query_job_mock
+
+        ip.run_cell_magic("bigquery", "query_results_df", cell_body)
+
+        run_query_mock.assert_called_once_with(mock.ANY, raw_sql, mock.ANY)
+
+    assert "query_results_df" in ip.user_ns  # verify that the variable exists
+    df = ip.user_ns["query_results_df"]
+    assert len(df) == len(mock_result)  # verify row count
+    assert list(df) == list(mock_result)  # verify column names
+    assert list(df["answer"]) == [42]
+"""

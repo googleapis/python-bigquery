@@ -22,7 +22,7 @@ import re
 import typing
 
 from google.cloud import bigquery
-from google.cloud.bigquery import table, enums, query
+from google.cloud.bigquery import table, query
 from google.cloud.bigquery.dbapi import exceptions
 
 
@@ -48,7 +48,7 @@ def _parameter_type(name, value, query_parameter_type=None, value_doc=""):
         query_parameter_type = type_parameters_re.sub("", query_parameter_type)
         try:
             parameter_type = getattr(
-                enums.SqlParameterScalarTypes, query_parameter_type.upper()
+                query.SqlParameterScalarTypes, query_parameter_type.upper()
             )._type
         except AttributeError:
             raise exceptions.ProgrammingError(
@@ -185,7 +185,7 @@ def _parse_type(
         # Strip type parameters
         type_ = type_parameters_re.sub("", type_).strip()
         try:
-            type_ = getattr(enums.SqlParameterScalarTypes, type_.upper())
+            type_ = getattr(query.SqlParameterScalarTypes, type_.upper())
         except AttributeError:
             raise exceptions.ProgrammingError(
                 f"The given parameter type, {type_},"
@@ -486,8 +486,7 @@ def raise_on_closed(
     """Make public instance methods raise an error if the instance is closed."""
 
     def _raise_on_closed(method):
-        """Make a non-static method raise an error if its containing instance is closed.
-        """
+        """Make a non-static method raise an error if its containing instance is closed."""
 
         def with_closed_check(self, *args, **kwargs):
             if getattr(self, closed_attr_name):
@@ -498,8 +497,7 @@ def raise_on_closed(
         return with_closed_check
 
     def decorate_public_methods(klass):
-        """Apply ``_raise_on_closed()`` decorator to public instance methods.
-        """
+        """Apply ``_raise_on_closed()`` decorator to public instance methods."""
         for name in dir(klass):
             if name.startswith("_") and name != "__iter__":
                 continue

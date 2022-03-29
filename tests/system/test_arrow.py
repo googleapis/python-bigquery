@@ -16,15 +16,11 @@
 
 from typing import Optional
 
+import pyarrow
 import pytest
 
 from google.cloud import bigquery
 from google.cloud.bigquery import enums
-
-
-pyarrow = pytest.importorskip(
-    "pyarrow", minversion="3.0.0"
-)  # Needs decimal256 for BIGNUMERIC columns.
 
 
 @pytest.mark.parametrize(
@@ -65,7 +61,9 @@ def test_list_rows_nullable_scalars_dtypes(
     ]
 
     arrow_table = bigquery_client.list_rows(
-        table_id, max_results=max_results, selected_fields=schema,
+        table_id,
+        max_results=max_results,
+        selected_fields=schema,
     ).to_arrow()
 
     schema = arrow_table.schema

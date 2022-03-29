@@ -5,6 +5,95 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.0.0](https://github.com/googleapis/python-bigquery/compare/v2.34.3...v3.0.0) (2022-03-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* BigQuery Storage and pyarrow are required dependencies (#776)
+* use nullable `Int64` and `boolean` dtypes in `to_dataframe` (#786)
+* destination tables are no-longer removed by `create_job` (#891)
+* In `to_dataframe`, use `dbdate` and `dbtime` dtypes from db-dtypes package for BigQuery DATE and TIME columns (#972)
+* automatically convert out-of-bounds dates in `to_dataframe`, remove `date_as_object` argument (#972)
+* mark the package as type-checked (#1058)
+* default to DATETIME type when loading timezone-naive datetimes from Pandas (#1061)
+* remove out-of-date BigQuery ML protocol buffers (#1178)
+
+### Features
+
+* add `api_method` parameter to `Client.query` to select `INSERT` or `QUERY` API ([#967](https://github.com/googleapis/python-bigquery/issues/967)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+* default to DATETIME type when loading timezone-naive datetimes from Pandas ([#1061](https://github.com/googleapis/python-bigquery/issues/1061)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+* destination tables are no-longer removed by `create_job` ([#891](https://github.com/googleapis/python-bigquery/issues/891)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+* In `to_dataframe`, use `dbdate` and `dbtime` dtypes from db-dtypes package for BigQuery DATE and TIME columns ([#972](https://github.com/googleapis/python-bigquery/issues/972)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+* mark the package as type-checked ([#1058](https://github.com/googleapis/python-bigquery/issues/1058)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+* use `StandardSqlField` class for `Model.feature_columns` and `Model.label_columns` ([#1117](https://github.com/googleapis/python-bigquery/issues/1117)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+
+
+### Bug Fixes
+
+* automatically convert out-of-bounds dates in `to_dataframe`, remove `date_as_object` argument ([#972](https://github.com/googleapis/python-bigquery/issues/972)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+* improve type annotations for mypy validation ([#1081](https://github.com/googleapis/python-bigquery/issues/1081)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+* remove out-of-date BigQuery ML protocol buffers ([#1178](https://github.com/googleapis/python-bigquery/issues/1178)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+* use nullable `Int64` and `boolean` dtypes in `to_dataframe` ([#786](https://github.com/googleapis/python-bigquery/issues/786)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+
+
+### Documentation
+
+* Add migration guide from version 2.x to 3.x ([#1027](https://github.com/googleapis/python-bigquery/issues/1027)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+
+
+### Dependencies
+
+* BigQuery Storage and pyarrow are required dependencies ([#776](https://github.com/googleapis/python-bigquery/issues/776)) ([76d88fb](https://github.com/googleapis/python-bigquery/commit/76d88fbb1316317a61fa1a63c101bc6f42f23af8))
+
+### [2.34.3](https://github.com/googleapis/python-bigquery/compare/v2.34.2...v2.34.3) (2022-03-29)
+
+
+### Bug Fixes
+
+* update content-type header ([#1171](https://github.com/googleapis/python-bigquery/issues/1171)) ([921b440](https://github.com/googleapis/python-bigquery/commit/921b440fdd151e88ee5b3e0d9fb90177877dc11a))
+
+### [2.34.2](https://github.com/googleapis/python-bigquery/compare/v2.34.1...v2.34.2) (2022-03-05)
+
+
+### Bug Fixes
+
+* **deps:** require google-api-core>=1.31.5, >=2.3.2 ([#1157](https://github.com/googleapis/python-bigquery/issues/1157)) ([0c15790](https://github.com/googleapis/python-bigquery/commit/0c15790720ff573a501cfe760dd74ee166e1a353))
+* **deps:** require proto-plus>=1.15.0 ([0c15790](https://github.com/googleapis/python-bigquery/commit/0c15790720ff573a501cfe760dd74ee166e1a353))
+
+### [2.34.1](https://github.com/googleapis/python-bigquery/compare/v2.34.0...v2.34.1) (2022-03-02)
+
+
+### Dependencies
+
+* add "extra" for IPython, exclude bad IPython release ([#1151](https://github.com/googleapis/python-bigquery/issues/1151)) ([0fbe12d](https://github.com/googleapis/python-bigquery/commit/0fbe12d1ababa45aa774b026a93c0af9e8f343d9))
+* allow pyarrow 7.0 ([#1112](https://github.com/googleapis/python-bigquery/issues/1112)) ([57f8ea9](https://github.com/googleapis/python-bigquery/commit/57f8ea95e152dc238e7a4941f96c54be53f7eaf3))
+
+## [2.34.0](https://github.com/googleapis/python-bigquery/compare/v2.33.0...v2.34.0) (2022-02-18)
+
+
+### Features
+
+* support BI Engine statistics in query job ([#1144](https://github.com/googleapis/python-bigquery/issues/1144)) ([7482549](https://github.com/googleapis/python-bigquery/commit/7482549cb42ed5302634ab4fb7b4efcd97b35c68))
+
+## [2.33.0](https://github.com/googleapis/python-bigquery/compare/v2.32.0...v2.33.0) (2022-02-16)
+
+
+### Features
+
+* add `--no_query_cache` option to `%%bigquery` magics to disable query cache ([#1141](https://github.com/googleapis/python-bigquery/issues/1141)) ([7dd30af](https://github.com/googleapis/python-bigquery/commit/7dd30af41b8a595b96176c964ba14aa41645ef0d))
+
+
+### Bug Fixes
+
+* return 403 when VPC-SC violation happens ([#1131](https://github.com/googleapis/python-bigquery/issues/1131)) ([f5daa9b](https://github.com/googleapis/python-bigquery/commit/f5daa9b41377a58cb3220bb2ab7c72adc6462196))
+
+
+### Documentation
+
+* reference BigQuery REST API defaults in `LoadJobConfig` descrip… ([#1132](https://github.com/googleapis/python-bigquery/issues/1132)) ([18d9580](https://github.com/googleapis/python-bigquery/commit/18d958062721d6be81e7bd7a5bd66f277344a864))
+* show common job properties in `get_job` and `cancel_job` samples ([#1137](https://github.com/googleapis/python-bigquery/issues/1137)) ([8edc10d](https://github.com/googleapis/python-bigquery/commit/8edc10d019bd96defebc4f92a47774901e9b956f))
+
 ## [2.32.0](https://github.com/googleapis/python-bigquery/compare/v2.31.0...v2.32.0) (2022-01-12)
 
 

@@ -12,8 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import typing
 
-def load_table_file(file_path, table_id):
+if typing.TYPE_CHECKING:
+    from google.cloud import bigquery
+
+
+def load_table_file(file_path: str, table_id: str) -> "bigquery.Table":
 
     # [START bigquery_load_from_file]
     from google.cloud import bigquery
@@ -25,7 +30,9 @@ def load_table_file(file_path, table_id):
     # table_id = "your-project.your_dataset.your_table_name"
 
     job_config = bigquery.LoadJobConfig(
-        source_format=bigquery.SourceFormat.CSV, skip_leading_rows=1, autodetect=True,
+        source_format=bigquery.SourceFormat.CSV,
+        skip_leading_rows=1,
+        autodetect=True,
     )
 
     with open(file_path, "rb") as source_file:

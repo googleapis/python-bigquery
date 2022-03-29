@@ -294,12 +294,14 @@ class SchemaField(object):
             sql_type.type_kind = StandardSqlTypeNames.ARRAY
         else:
             sql_type.type_kind = LEGACY_TO_STANDARD_TYPES.get(
-                self.field_type, StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
+                self.field_type,
+                StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
             )
 
         if sql_type.type_kind == StandardSqlTypeNames.ARRAY:  # noqa: E721
             array_element_type = LEGACY_TO_STANDARD_TYPES.get(
-                self.field_type, StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
+                self.field_type,
+                StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
             )
             sql_type.array_element_type = standard_sql.StandardSqlDataType(
                 type_kind=array_element_type
@@ -308,8 +310,10 @@ class SchemaField(object):
             # ARRAY cannot directly contain other arrays, only scalar types and STRUCTs
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#array-type
             if array_element_type == StandardSqlTypeNames.STRUCT:  # noqa: E721
-                sql_type.array_element_type.struct_type = standard_sql.StandardSqlStructType(
-                    fields=(field.to_standard_sql() for field in self.fields)
+                sql_type.array_element_type.struct_type = (
+                    standard_sql.StandardSqlStructType(
+                        fields=(field.to_standard_sql() for field in self.fields)
+                    )
                 )
         elif sql_type.type_kind == StandardSqlTypeNames.STRUCT:  # noqa: E721
             sql_type.struct_type = standard_sql.StandardSqlStructType(
@@ -411,8 +415,7 @@ class PolicyTagList(object):
 
     @property
     def names(self):
-        """Tuple[str]: Policy tags associated with this definition.
-        """
+        """Tuple[str]: Policy tags associated with this definition."""
         return self._properties.get("names", ())
 
     def _key(self):

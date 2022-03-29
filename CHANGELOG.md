@@ -5,6 +5,54 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+### [2.34.3](https://github.com/googleapis/python-bigquery/compare/v2.34.2...v2.34.3) (2022-03-29)
+
+
+### Bug Fixes
+
+* update content-type header ([#1171](https://github.com/googleapis/python-bigquery/issues/1171)) ([921b440](https://github.com/googleapis/python-bigquery/commit/921b440fdd151e88ee5b3e0d9fb90177877dc11a))
+
+### [2.34.2](https://github.com/googleapis/python-bigquery/compare/v2.34.1...v2.34.2) (2022-03-05)
+
+
+### Bug Fixes
+
+* **deps:** require google-api-core>=1.31.5, >=2.3.2 ([#1157](https://github.com/googleapis/python-bigquery/issues/1157)) ([0c15790](https://github.com/googleapis/python-bigquery/commit/0c15790720ff573a501cfe760dd74ee166e1a353))
+* **deps:** require proto-plus>=1.15.0 ([0c15790](https://github.com/googleapis/python-bigquery/commit/0c15790720ff573a501cfe760dd74ee166e1a353))
+
+### [2.34.1](https://github.com/googleapis/python-bigquery/compare/v2.34.0...v2.34.1) (2022-03-02)
+
+
+### Dependencies
+
+* add "extra" for IPython, exclude bad IPython release ([#1151](https://github.com/googleapis/python-bigquery/issues/1151)) ([0fbe12d](https://github.com/googleapis/python-bigquery/commit/0fbe12d1ababa45aa774b026a93c0af9e8f343d9))
+* allow pyarrow 7.0 ([#1112](https://github.com/googleapis/python-bigquery/issues/1112)) ([57f8ea9](https://github.com/googleapis/python-bigquery/commit/57f8ea95e152dc238e7a4941f96c54be53f7eaf3))
+
+## [2.34.0](https://github.com/googleapis/python-bigquery/compare/v2.33.0...v2.34.0) (2022-02-18)
+
+
+### Features
+
+* support BI Engine statistics in query job ([#1144](https://github.com/googleapis/python-bigquery/issues/1144)) ([7482549](https://github.com/googleapis/python-bigquery/commit/7482549cb42ed5302634ab4fb7b4efcd97b35c68))
+
+## [2.33.0](https://github.com/googleapis/python-bigquery/compare/v2.32.0...v2.33.0) (2022-02-16)
+
+
+### Features
+
+* add `--no_query_cache` option to `%%bigquery` magics to disable query cache ([#1141](https://github.com/googleapis/python-bigquery/issues/1141)) ([7dd30af](https://github.com/googleapis/python-bigquery/commit/7dd30af41b8a595b96176c964ba14aa41645ef0d))
+
+
+### Bug Fixes
+
+* return 403 when VPC-SC violation happens ([#1131](https://github.com/googleapis/python-bigquery/issues/1131)) ([f5daa9b](https://github.com/googleapis/python-bigquery/commit/f5daa9b41377a58cb3220bb2ab7c72adc6462196))
+
+
+### Documentation
+
+* reference BigQuery REST API defaults in `LoadJobConfig` descrip… ([#1132](https://github.com/googleapis/python-bigquery/issues/1132)) ([18d9580](https://github.com/googleapis/python-bigquery/commit/18d958062721d6be81e7bd7a5bd66f277344a864))
+* show common job properties in `get_job` and `cancel_job` samples ([#1137](https://github.com/googleapis/python-bigquery/issues/1137)) ([8edc10d](https://github.com/googleapis/python-bigquery/commit/8edc10d019bd96defebc4f92a47774901e9b956f))
+
 ## [2.32.0](https://github.com/googleapis/python-bigquery/compare/v2.31.0...v2.32.0) (2022-01-12)
 
 

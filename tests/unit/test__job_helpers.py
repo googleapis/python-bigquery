@@ -184,7 +184,11 @@ def test__to_query_job_dry_run():
 
 
 @pytest.mark.parametrize(
-    ("completed", "expected_state"), ((True, "DONE"), (False, "PENDING"),),
+    ("completed", "expected_state"),
+    (
+        (True, "DONE"),
+        (False, "PENDING"),
+    ),
 )
 def test__to_query_job_sets_state(completed, expected_state):
     mock_client = mock.create_autospec(Client)
@@ -278,7 +282,11 @@ def test_query_jobs_query_sets_format_options():
 
 @pytest.mark.parametrize(
     ("timeout", "expected_timeout"),
-    ((-1, 0), (0, 0), (1, 1000 - _job_helpers._TIMEOUT_BUFFER_MILLIS),),
+    (
+        (-1, 0),
+        (0, 0),
+        (1, 1000 - _job_helpers._TIMEOUT_BUFFER_MILLIS),
+    ),
 )
 def test_query_jobs_query_sets_timeout(timeout, expected_timeout):
     mock_client = mock.create_autospec(Client)

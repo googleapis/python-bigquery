@@ -23,7 +23,9 @@ if typing.TYPE_CHECKING:
 
 
 def test_client_query_relax_column(
-    capsys: "pytest.CaptureFixture[str]", random_table_id: str, client: bigquery.Client,
+    capsys: "pytest.CaptureFixture[str]",
+    random_table_id: str,
+    client: bigquery.Client,
 ) -> None:
 
     schema = [

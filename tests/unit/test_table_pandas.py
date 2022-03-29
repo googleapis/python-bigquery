@@ -145,7 +145,8 @@ def test_to_dataframe_nullable_scalars_with_custom_dtypes(
         ]
     )
     arrow_table = pyarrow.Table.from_pydict(
-        {"int64_col": [1000], "other_int_col": [-7]}, schema=arrow_schema,
+        {"int64_col": [1000], "other_int_col": [-7]},
+        schema=arrow_schema,
     )
 
     nullable_schema = [
@@ -173,7 +174,8 @@ def test_to_dataframe_arrays(monkeypatch, class_under_test):
         [pyarrow.field("int64_repeated", pyarrow.list_(pyarrow.int64()))]
     )
     arrow_table = pyarrow.Table.from_pydict(
-        {"int64_repeated": [[-1, 0, 2]]}, schema=arrow_schema,
+        {"int64_repeated": [[-1, 0, 2]]},
+        schema=arrow_schema,
     )
 
     nullable_schema = [

@@ -296,9 +296,15 @@ def test_query_statistics(bigquery_client, query_api_method):
                 StructQueryParameter(
                     "hitchhiker",
                     ScalarQueryParameter(
-                        name="question", type_="STRING", value="What is the answer?",
+                        name="question",
+                        type_="STRING",
+                        value="What is the answer?",
                     ),
-                    ScalarQueryParameter(name="answer", type_="INT64", value=42,),
+                    ScalarQueryParameter(
+                        name="answer",
+                        type_="INT64",
+                        value=42,
+                    ),
                 ),
             ],
         ),
@@ -412,7 +418,9 @@ def test_query_parameters(
     jconfig = bigquery.QueryJobConfig()
     jconfig.query_parameters = query_parameters
     query_job = bigquery_client.query(
-        sql, job_config=jconfig, api_method=query_api_method,
+        sql,
+        job_config=jconfig,
+        api_method=query_api_method,
     )
     rows = list(query_job.result())
     assert len(rows) == 1

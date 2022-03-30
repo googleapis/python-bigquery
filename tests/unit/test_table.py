@@ -26,6 +26,8 @@ import pytest
 import google.api_core.exceptions
 from test_utils.imports import maybe_fail_import
 
+from google.cloud.bigquery.table import TableReference
+
 try:
     from google.cloud import bigquery_storage
     from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
@@ -1419,6 +1421,12 @@ class TestTable(unittest.TestCase, _SchemaBase):
         )
         self.assertEqual(repr(table1), expected)
 
+# *************************************added  code below*****
+    # second attemp
+    def test___str__(self):
+        dataset = DatasetReference("project1", "dataset1")
+        table1 = self._make_one(TableReference(dataset, "table1"))
+        self.assertEqual(str(table1), "project1.dataset1.table1")
 
 class Test_row_from_mapping(unittest.TestCase, _SchemaBase):
 

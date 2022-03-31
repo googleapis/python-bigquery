@@ -24,7 +24,7 @@ import nox
 
 MYPY_VERSION = "mypy==0.910"
 PYTYPE_VERSION = "pytype==2021.4.9"
-BLACK_VERSION = "black==19.10b0"
+BLACK_VERSION = "black==22.3.0"
 BLACK_PATHS = ("docs", "google", "samples", "tests", "noxfile.py", "setup.py")
 
 DEFAULT_PYTHON_VERSION = "3.8"
@@ -43,6 +43,7 @@ nox.options.sessions = [
     "lint_setup_py",
     "blacken",
     "mypy",
+    "mypy_samples",
     "pytype",
     "docs",
 ]
@@ -122,7 +123,10 @@ def mypy(session):
     # Just install the dependencies' type info directly, since "mypy --install-types"
     # might require an additional pass.
     session.install(
-        "types-protobuf", "types-python-dateutil", "types-requests", "types-setuptools",
+        "types-protobuf",
+        "types-python-dateutil",
+        "types-requests",
+        "types-setuptools",
     )
     session.run("mypy", "google/cloud")
 
@@ -179,6 +183,28 @@ def system(session):
 
     # Run py.test against the system tests.
     session.run("py.test", "--quiet", os.path.join("tests", "system"), *session.posargs)
+
+
+@nox.session(python=DEFAULT_PYTHON_VERSION)
+def mypy_samples(session):
+    """Run type checks with mypy."""
+    session.install("-e", ".[all]")
+
+    session.install("ipython", "pytest")
+    session.install(MYPY_VERSION)
+
+    # Just install the dependencies' type info directly, since "mypy --install-types"
+    # might require an additional pass.
+    session.install("types-mock", "types-pytz")
+    session.install("typing-extensions")  # for TypedDict in pre-3.8 Python versions
+
+    session.run(
+        "mypy",
+        "--config-file",
+        str(CURRENT_DIRECTORY / "samples" / "mypy.ini"),
+        "--no-incremental",  # Required by warn-unused-configs from mypy.ini to work
+        "samples/",
+    )
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)

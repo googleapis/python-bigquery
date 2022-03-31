@@ -586,7 +586,9 @@ def _cell_magic(line, query):
             bqstorage_client_options.api_endpoint = args.bqstorage_api_endpoint
 
     bqstorage_client = _make_bqstorage_client(
-        client, use_bqstorage_api, bqstorage_client_options,
+        client,
+        use_bqstorage_api,
+        bqstorage_client_options,
     )
 
     close_transports = functools.partial(_close_transports, client, bqstorage_client)
@@ -637,7 +639,8 @@ def _cell_magic(line, query):
                 return
 
             result = rows.to_dataframe(
-                bqstorage_client=bqstorage_client, create_bqstorage_client=False,
+                bqstorage_client=bqstorage_client,
+                create_bqstorage_client=False,
             )
             if args.destination_var:
                 IPython.get_ipython().push({args.destination_var: result})
@@ -740,17 +743,6 @@ def _split_args_line(line):
 def _make_bqstorage_client(client, use_bqstorage_api, client_options):
     if not use_bqstorage_api:
         return None
-
-    try:
-        from google.cloud import bigquery_storage  # noqa: F401
-    except ImportError as err:
-        customized_error = ImportError(
-            "The default BigQuery Storage API client cannot be used, install "
-            "the missing google-cloud-bigquery-storage and pyarrow packages "
-            "to use it. Alternatively, use the classic REST API by specifying "
-            "the --use_rest_api magic option."
-        )
-        raise customized_error from err
 
     try:
         from google.api_core.gapic_v1 import client_info as gapic_client_info

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def table_insert_rows_explicit_none_insert_ids(table_id):
+def table_insert_rows_explicit_none_insert_ids(table_id: str) -> None:
 
     # [START bigquery_table_insert_rows_explicit_none_insert_ids]
     from google.cloud import bigquery
@@ -25,8 +25,8 @@ def table_insert_rows_explicit_none_insert_ids(table_id):
     # table_id = "your-project.your_dataset.your_table"
 
     rows_to_insert = [
-        {u"full_name": u"Phred Phlyntstone", u"age": 32},
-        {u"full_name": u"Wylma Phlyntstone", u"age": 29},
+        {"full_name": "Phred Phlyntstone", "age": 32},
+        {"full_name": "Wylma Phlyntstone", "age": 29},
     ]
 
     errors = client.insert_rows_json(

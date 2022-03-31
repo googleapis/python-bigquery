@@ -29,6 +29,8 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 
+import pyarrow  # type: ignore
+
 try:
     import geopandas  # type: ignore
 except ImportError:
@@ -43,18 +45,12 @@ except ImportError:
 else:
     _read_wkt = shapely.geos.WKTReader(shapely.geos.lgeos).read
 
-try:
-    import pyarrow  # type: ignore
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator
 
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
@@ -67,15 +63,10 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     # they are not None, avoiding false "no attribute" errors.
     import pandas
     import geopandas
-    import pyarrow
     from google.cloud import bigquery_storage
     from google.cloud.bigquery.dataset import DatasetReference
 
 
-_NO_PANDAS_ERROR = (
-    "The pandas library is not installed, please install "
-    "pandas to use the to_dataframe() function."
-)
 _NO_GEOPANDAS_ERROR = (
     "The geopandas library is not installed, please install "
     "geopandas to use the to_geodataframe() function."
@@ -83,10 +74,6 @@ _NO_GEOPANDAS_ERROR = (
 _NO_SHAPELY_ERROR = (
     "The shapely library is not installed, please install "
     "shapely to use the geography_as_object option."
-)
-_NO_PYARROW_ERROR = (
-    "The pyarrow library is not installed, please install "
-    "pyarrow to use the to_arrow() function."
 )
 
 _TABLE_HAS_NO_SCHEMA = 'Table has no schema:  call "client.get_table()"'
@@ -213,7 +200,9 @@ class TableReference(_TableBase):
             dataset_ref.dataset_id,
         )
         _helpers._set_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["table_id"], table_id,
+            self._properties,
+            self._PROPERTY_TO_API_FIELD["table_id"],
+            table_id,
         )
 
     @classmethod
@@ -274,6 +263,7 @@ class TableReference(_TableBase):
         project = resource["projectId"]
         dataset_id = resource["datasetId"]
         table_id = resource["tableId"]
+
         return cls(DatasetReference(project, dataset_id), table_id)
 
     def to_api_repr(self) -> dict:
@@ -375,7 +365,7 @@ class Table(_TableBase):
         "require_partition_filter": "requirePartitionFilter",
     }
 
-    def __init__(self, table_ref, schema=None):
+    def __init__(self, table_ref, schema=None) -> None:
         table_ref = _table_arg_to_table_ref(table_ref)
         self._properties = {"tableReference": table_ref.to_api_repr(), "labels": {}}
         # Let the @property do validation.
@@ -886,7 +876,9 @@ class Table(_TableBase):
 
         api_field = self._PROPERTY_TO_API_FIELD["mview_refresh_interval"]
         _helpers._set_sub_prop(
-            self._properties, [api_field, "refreshIntervalMs"], refresh_interval_ms,
+            self._properties,
+            [api_field, "refreshIntervalMs"],
+            refresh_interval_ms,
         )
 
     @property
@@ -1326,7 +1318,7 @@ class Row(object):
     # Choose unusual field names to try to avoid conflict with schema fields.
     __slots__ = ("_xxx_values", "_xxx_field_to_index")
 
-    def __init__(self, values, field_to_index):
+    def __init__(self, values, field_to_index) -> None:
         self._xxx_values = values
         self._xxx_field_to_index = field_to_index
 
@@ -1554,17 +1546,6 @@ class RowIterator(HTTPIterator):
         if self.max_results is not None:
             return False
 
-        try:
-            from google.cloud import bigquery_storage  # noqa: F401
-        except ImportError:
-            return False
-
-        try:
-            _helpers.BQ_STORAGE_VERSIONS.verify_version()
-        except LegacyBigQueryStorageError as exc:
-            warnings.warn(str(exc))
-            return False
-
         return True
 
     def _get_next_page_response(self):
@@ -1600,7 +1581,8 @@ class RowIterator(HTTPIterator):
         return self._total_rows
 
     def _maybe_warn_max_results(
-        self, bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"],
+        self,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"],
     ):
         """Issue a warning if BQ Storage client is not ``None`` with ``max_results`` set.
 
@@ -1663,15 +1645,8 @@ class RowIterator(HTTPIterator):
             pyarrow.RecordBatch:
                 A generator of :class:`~pyarrow.RecordBatch`.
 
-        Raises:
-            ValueError:
-                If the :mod:`pyarrow` library cannot be imported.
-
         .. versionadded:: 2.31.0
         """
-        if pyarrow is None:
-            raise ValueError(_NO_PYARROW_ERROR)
-
         self._maybe_warn_max_results(bqstorage_client)
 
         bqstorage_download = functools.partial(
@@ -1697,7 +1672,7 @@ class RowIterator(HTTPIterator):
     def to_arrow(
         self,
         progress_bar_type: str = None,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         create_bqstorage_client: bool = True,
     ) -> "pyarrow.Table":
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
@@ -1726,8 +1701,7 @@ class RowIterator(HTTPIterator):
                 A BigQuery Storage API client. If supplied, use the faster BigQuery
                 Storage API to fetch rows from BigQuery. This API is a billable API.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 This method only  exposes a subset of the capabilities of the
                 BigQuery Storage API.  For full access to all features
@@ -1748,14 +1722,8 @@ class RowIterator(HTTPIterator):
                 headers from the query results. The column headers are derived
                 from the destination table's schema.
 
-        Raises:
-            ValueError: If the :mod:`pyarrow` library cannot be imported.
-
         .. versionadded:: 1.17.0
         """
-        if pyarrow is None:
-            raise ValueError(_NO_PYARROW_ERROR)
-
         self._maybe_warn_max_results(bqstorage_client)
 
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
@@ -1805,7 +1773,7 @@ class RowIterator(HTTPIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
     ) -> "pandas.DataFrame":
@@ -1816,8 +1784,7 @@ class RowIterator(HTTPIterator):
                 A BigQuery Storage API client. If supplied, use the faster
                 BigQuery Storage API to fetch rows from BigQuery.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 This method only exposes a subset of the capabilities of the
                 BigQuery Storage API. For full access to all features
@@ -1847,8 +1814,8 @@ class RowIterator(HTTPIterator):
             ValueError:
                 If the :mod:`pandas` library cannot be imported.
         """
-        if pandas is None:
-            raise ValueError(_NO_PANDAS_ERROR)
+        _pandas_helpers.verify_pandas_imports()
+
         if dtypes is None:
             dtypes = {}
 
@@ -1882,11 +1849,10 @@ class RowIterator(HTTPIterator):
     # changes to job.QueryJob.to_dataframe()
     def to_dataframe(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         geography_as_object: bool = False,
     ) -> "pandas.DataFrame":
         """Create a pandas DataFrame by loading all pages of a query.
@@ -1896,8 +1862,7 @@ class RowIterator(HTTPIterator):
                 A BigQuery Storage API client. If supplied, use the faster
                 BigQuery Storage API to fetch rows from BigQuery.
 
-                This method requires the ``pyarrow`` and
-                ``google-cloud-bigquery-storage`` libraries.
+                This method requires ``google-cloud-bigquery-storage`` library.
 
                 This method only exposes a subset of the capabilities of the
                 BigQuery Storage API. For full access to all features
@@ -1937,12 +1902,6 @@ class RowIterator(HTTPIterator):
 
                 .. versionadded:: 1.24.0
 
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
-
-                .. versionadded:: 1.26.0
-
             geography_as_object (Optional[bool]):
                 If ``True``, convert GEOGRAPHY data to :mod:`shapely`
                 geometry objects. If ``False`` (default), don't cast
@@ -1965,8 +1924,8 @@ class RowIterator(HTTPIterator):
                 :mod:`shapely` library cannot be imported.
 
         """
-        if pandas is None:
-            raise ValueError(_NO_PANDAS_ERROR)
+        _pandas_helpers.verify_pandas_imports()
+
         if geography_as_object and shapely is None:
             raise ValueError(_NO_SHAPELY_ERROR)
 
@@ -1985,30 +1944,43 @@ class RowIterator(HTTPIterator):
             create_bqstorage_client=create_bqstorage_client,
         )
 
-        # When converting timestamp values to nanosecond precision, the result
+        # When converting date or timestamp values to nanosecond precision, the result
         # can be out of pyarrow bounds. To avoid the error when converting to
-        # Pandas, we set the timestamp_as_object parameter to True, if necessary.
-        types_to_check = {
-            pyarrow.timestamp("us"),
-            pyarrow.timestamp("us", tz=datetime.timezone.utc),
-        }
+        # Pandas, we set the date_as_object or timestamp_as_object parameter to True,
+        # if necessary.
+        date_as_object = not all(
+            self.__can_cast_timestamp_ns(col)
+            for col in record_batch
+            # Type can be date32 or date64 (plus units).
+            # See: https://arrow.apache.org/docs/python/api/datatypes.html
+            if str(col.type).startswith("date")
+        )
 
-        for column in record_batch:
-            if column.type in types_to_check:
-                try:
-                    column.cast("timestamp[ns]")
-                except pyarrow.lib.ArrowInvalid:
-                    timestamp_as_object = True
-                    break
+        timestamp_as_object = not all(
+            self.__can_cast_timestamp_ns(col)
+            for col in record_batch
+            # Type can be timestamp (plus units and time zone).
+            # See: https://arrow.apache.org/docs/python/api/datatypes.html
+            if str(col.type).startswith("timestamp")
+        )
+
+        if len(record_batch) > 0:
+            df = record_batch.to_pandas(
+                date_as_object=date_as_object,
+                timestamp_as_object=timestamp_as_object,
+                integer_object_nulls=True,
+                types_mapper=_pandas_helpers.default_types_mapper(
+                    date_as_object=date_as_object
+                ),
+            )
         else:
-            timestamp_as_object = False
-
-        extra_kwargs = {"timestamp_as_object": timestamp_as_object}
-
-        df = record_batch.to_pandas(date_as_object=date_as_object, **extra_kwargs)
+            # Avoid "ValueError: need at least one array to concatenate" on
+            # older versions of pandas when converting empty RecordBatch to
+            # DataFrame. See: https://github.com/pandas-dev/pandas/issues/41241
+            df = pandas.DataFrame([], columns=record_batch.schema.names)
 
         for column in dtypes:
-            df[column] = pandas.Series(df[column], dtype=dtypes[column])
+            df[column] = pandas.Series(df[column], dtype=dtypes[column], copy=False)
 
         if geography_as_object:
             for field in self.schema:
@@ -2016,6 +1988,15 @@ class RowIterator(HTTPIterator):
                     df[field.name] = df[field.name].dropna().apply(_read_wkt)
 
         return df
+
+    @staticmethod
+    def __can_cast_timestamp_ns(column):
+        try:
+            column.cast("timestamp[ns]")
+        except pyarrow.lib.ArrowInvalid:
+            return False
+        else:
+            return True
 
     # If changing the signature of this method, make sure to apply the same
     # changes to job.QueryJob.to_geodataframe()
@@ -2025,7 +2006,6 @@ class RowIterator(HTTPIterator):
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
-        date_as_object: bool = True,
         geography_column: Optional[str] = None,
     ) -> "geopandas.GeoDataFrame":
         """Create a GeoPandas GeoDataFrame by loading all pages of a query.
@@ -2072,10 +2052,6 @@ class RowIterator(HTTPIterator):
                 ``bqstorage_client`` parameter for more information.
 
                 This argument does nothing if ``bqstorage_client`` is supplied.
-
-            date_as_object (Optional[bool]):
-                If ``True`` (default), cast dates to objects. If ``False``, convert
-                to datetime64[ns] dtype.
 
             geography_column (Optional[str]):
                 If there are more than one GEOGRAPHY column,
@@ -2132,7 +2108,6 @@ class RowIterator(HTTPIterator):
             dtypes,
             progress_bar_type,
             create_bqstorage_client,
-            date_as_object,
             geography_as_object=True,
         )
 
@@ -2181,8 +2156,6 @@ class _EmptyRowIterator(RowIterator):
         Returns:
             pyarrow.Table: An empty :class:`pyarrow.Table`.
         """
-        if pyarrow is None:
-            raise ValueError(_NO_PYARROW_ERROR)
         return pyarrow.Table.from_arrays(())
 
     def to_dataframe(
@@ -2191,7 +2164,6 @@ class _EmptyRowIterator(RowIterator):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
-        date_as_object=True,
         geography_as_object=False,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
@@ -2201,13 +2173,11 @@ class _EmptyRowIterator(RowIterator):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
-            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
         """
-        if pandas is None:
-            raise ValueError(_NO_PANDAS_ERROR)
+        _pandas_helpers.verify_pandas_imports()
         return pandas.DataFrame()
 
     def to_geodataframe(
@@ -2216,7 +2186,6 @@ class _EmptyRowIterator(RowIterator):
         dtypes=None,
         progress_bar_type=None,
         create_bqstorage_client=True,
-        date_as_object=True,
         geography_column: Optional[str] = None,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
@@ -2226,7 +2195,6 @@ class _EmptyRowIterator(RowIterator):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
-            date_as_object (bool): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -2265,8 +2233,7 @@ class _EmptyRowIterator(RowIterator):
             ValueError:
                 If the :mod:`pandas` library cannot be imported.
         """
-        if pandas is None:
-            raise ValueError(_NO_PANDAS_ERROR)
+        _pandas_helpers.verify_pandas_imports()
         return iter((pandas.DataFrame(),))
 
     def to_arrow_iterable(
@@ -2287,13 +2254,7 @@ class _EmptyRowIterator(RowIterator):
 
         Returns:
             An iterator yielding a single empty :class:`~pyarrow.RecordBatch`.
-
-        Raises:
-            ValueError:
-                If the :mod:`pyarrow` library cannot be imported.
         """
-        if pyarrow is None:
-            raise ValueError(_NO_PYARROW_ERROR)
         return iter((pyarrow.record_batch([]),))
 
     def __iter__(self):
@@ -2324,7 +2285,7 @@ class PartitionRange(object):
             Private. Used to construct object from API resource.
     """
 
-    def __init__(self, start=None, end=None, interval=None, _properties=None):
+    def __init__(self, start=None, end=None, interval=None, _properties=None) -> None:
         if _properties is None:
             _properties = {}
         self._properties = _properties
@@ -2399,10 +2360,10 @@ class RangePartitioning(object):
             Private. Used to construct object from API resource.
     """
 
-    def __init__(self, range_=None, field=None, _properties=None):
+    def __init__(self, range_=None, field=None, _properties=None) -> None:
         if _properties is None:
             _properties = {}
-        self._properties = _properties
+        self._properties: Dict[str, Any] = _properties
 
         if range_ is not None:
             self.range_ = range_
@@ -2508,8 +2469,8 @@ class TimePartitioning(object):
 
     def __init__(
         self, type_=None, field=None, expiration_ms=None, require_partition_filter=None
-    ):
-        self._properties = {}
+    ) -> None:
+        self._properties: Dict[str, Any] = {}
         if type_ is None:
             self.type_ = TimePartitioningType.DAY
         else:

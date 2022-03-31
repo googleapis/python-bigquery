@@ -363,8 +363,7 @@ class StructQueryParameterType(_AbstractQueryParameterType):
 
 
 class _AbstractQueryParameter(object):
-    """Base class for named / positional query parameters.
-    """
+    """Base class for named / positional query parameters."""
 
     @classmethod
     def from_api_repr(cls, resource: dict) -> "_AbstractQueryParameter":
@@ -398,7 +397,7 @@ class ScalarQueryParameter(_AbstractQueryParameter):
         type_:
             Name of parameter type. See
             :class:`google.cloud.bigquery.enums.SqlTypeNames` and
-            :class:`google.cloud.bigquery.enums.SqlParameterScalarTypes` for
+            :class:`google.cloud.bigquery.query.SqlParameterScalarTypes` for
             supported types.
 
         value:
@@ -520,7 +519,7 @@ class ArrayQueryParameter(_AbstractQueryParameter):
         values (List[appropriate type]): The parameter array values.
     """
 
-    def __init__(self, name, array_type, values):
+    def __init__(self, name, array_type, values) -> None:
         self.name = name
         self.values = values
 
@@ -683,10 +682,13 @@ class StructQueryParameter(_AbstractQueryParameter):
         ]]): The sub-parameters for the struct
     """
 
-    def __init__(self, name, *sub_params):
+    def __init__(self, name, *sub_params) -> None:
         self.name = name
-        types = self.struct_types = OrderedDict()
-        values = self.struct_values = {}
+        self.struct_types: Dict[str, Any] = OrderedDict()
+        self.struct_values: Dict[str, Any] = {}
+
+        types = self.struct_types
+        values = self.struct_values
         for sub in sub_params:
             if isinstance(sub, self.__class__):
                 types[sub.name] = "STRUCT"
@@ -807,6 +809,28 @@ class StructQueryParameter(_AbstractQueryParameter):
 
     def __repr__(self):
         return "StructQueryParameter{}".format(self._key())
+
+
+class SqlParameterScalarTypes:
+    """Supported scalar SQL query parameter types as type objects."""
+
+    BOOL = ScalarQueryParameterType("BOOL")
+    BOOLEAN = ScalarQueryParameterType("BOOL")
+    BIGDECIMAL = ScalarQueryParameterType("BIGNUMERIC")
+    BIGNUMERIC = ScalarQueryParameterType("BIGNUMERIC")
+    BYTES = ScalarQueryParameterType("BYTES")
+    DATE = ScalarQueryParameterType("DATE")
+    DATETIME = ScalarQueryParameterType("DATETIME")
+    DECIMAL = ScalarQueryParameterType("NUMERIC")
+    FLOAT = ScalarQueryParameterType("FLOAT64")
+    FLOAT64 = ScalarQueryParameterType("FLOAT64")
+    GEOGRAPHY = ScalarQueryParameterType("GEOGRAPHY")
+    INT64 = ScalarQueryParameterType("INT64")
+    INTEGER = ScalarQueryParameterType("INT64")
+    NUMERIC = ScalarQueryParameterType("NUMERIC")
+    STRING = ScalarQueryParameterType("STRING")
+    TIME = ScalarQueryParameterType("TIME")
+    TIMESTAMP = ScalarQueryParameterType("TIMESTAMP")
 
 
 class _QueryResults(object):

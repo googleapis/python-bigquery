@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-def update_dataset_access(dataset_id: str, entity_id: str):
+def update_dataset_access(dataset_id: str, entity_id: str) -> None:
     original_dataset_id = dataset_id
     original_entity_id = entity_id
 
@@ -59,7 +59,11 @@ def update_dataset_access(dataset_id: str, entity_id: str):
 
     entries = list(dataset.access_entries)
     entries.append(
-        bigquery.AccessEntry(role=role, entity_type=entity_type, entity_id=entity_id,)
+        bigquery.AccessEntry(
+            role=role,
+            entity_type=entity_type,
+            entity_id=entity_id,
+        )
     )
     dataset.access_entries = entries
 

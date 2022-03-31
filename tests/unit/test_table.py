@@ -29,14 +29,10 @@ import google.api_core.exceptions
 
 from google.cloud.bigquery.table import TableReference
 
-try:
-    from google.cloud import bigquery_storage
-    from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
-        grpc as big_query_read_grpc_transport,
-    )
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
-    big_query_read_grpc_transport = None
+from google.cloud import bigquery_storage
+from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+    grpc as big_query_read_grpc_transport,
+)
 
 try:
     import pandas
@@ -1416,8 +1412,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
         )
         self.assertEqual(repr(table1), expected)
 
-# *************************************added  code below*****
-    # second attemp
     def test___str__(self):
         dataset = DatasetReference("project1", "dataset1")
         table1 = self._make_one(TableReference(dataset, "table1"))

@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+### [1.28.1](https://github.com/googleapis/python-bigquery/compare/v1.28.0...v1.28.1) (2022-04-04)
+
+
+### Bug Fixes
+
+* **deps:** require google-api-core >= 1.31.5, >= 2.3.2 on v1 release ([#1166](https://github.com/googleapis/python-bigquery/issues/1166)) ([34d9bec](https://github.com/googleapis/python-bigquery/commit/34d9beca7d9aab5a4871c819a5cd2434f48a090d))
+
 ## [1.28.0](https://www.github.com/googleapis/python-bigquery/compare/v1.27.2...v1.28.0) (2020-09-22)
 
 

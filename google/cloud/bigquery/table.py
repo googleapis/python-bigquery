@@ -1020,7 +1020,8 @@ class Table(_TableBase):
         return "Table({})".format(repr(self.reference))
 
     def __str__(self):
-        return f"{self.project}.{self.dataset_id}.{self.table_id}"  
+        return f"{self.project}.{self.dataset_id}.{self.table_id}"
+
 
 class TableListItem(_TableBase):
     """A read-only table resource from a list operation.

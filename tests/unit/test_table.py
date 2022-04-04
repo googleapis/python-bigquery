@@ -1416,7 +1416,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
         dataset = DatasetReference("project1", "dataset1")
         table1 = self._make_one(TableReference(dataset, "table1"))
         self.assertEqual(str(table1), "project1.dataset1.table1")
-    
+
+
 class Test_row_from_mapping(unittest.TestCase, _SchemaBase):
 
     PROJECT = "prahj-ekt"

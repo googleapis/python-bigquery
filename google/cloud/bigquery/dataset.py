@@ -366,6 +366,9 @@ class AccessEntry(object):
         if isinstance(value, str):
             value = RoutineReference.from_string(value).to_api_repr()
 
+        if isinstance(value, RoutineReference):
+            value = value.to_api_repr()
+
         if isinstance(value, Routine):
             value = value.reference.to_api_repr()
 

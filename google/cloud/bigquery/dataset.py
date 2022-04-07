@@ -346,8 +346,7 @@ class AccessEntry(object):
 
     @dataset_target_types.setter
     def dataset_target_types(self, value):
-        if "dataset" not in self._properties:
-            self._properties["dataset"] = {}
+        self._properties.setdefault("dataset", {})
         _helpers._set_sub_prop(self._properties, ["dataset", "targetTypes"], value)
 
     @property

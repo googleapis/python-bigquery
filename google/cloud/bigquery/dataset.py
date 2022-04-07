@@ -17,6 +17,7 @@
 from __future__ import absolute_import
 
 import copy
+from typing import Dict, Any
 
 import typing
 
@@ -31,7 +32,7 @@ from google.cloud.bigquery.encryption_configuration import EncryptionConfigurati
 from typing import Optional, List, Dict, Any, Union
 
 
-def _get_table_reference(self, table_id):
+def _get_table_reference(self, table_id: str) -> TableReference:
     """Constructs a TableReference.
 
     Args:
@@ -521,7 +522,7 @@ class Dataset(object):
         "default_encryption_configuration": "defaultEncryptionConfiguration",
     }
 
-    def __init__(self, dataset_ref):
+    def __init__(self, dataset_ref) -> None:
         if isinstance(dataset_ref, str):
             dataset_ref = DatasetReference.from_string(dataset_ref)
         self._properties = {"datasetReference": dataset_ref.to_api_repr(), "labels": {}}

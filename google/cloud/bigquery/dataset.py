@@ -387,6 +387,9 @@ class AccessEntry(object):
         if isinstance(value, str):
             value = TableReference.from_string(value).to_api_repr()
 
+        if isinstance(value, TableReference):
+            value = value.to_api_repr()
+
         if isinstance(value, Table):
             value = value.reference.to_api_repr()
 

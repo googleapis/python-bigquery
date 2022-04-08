@@ -346,8 +346,7 @@ class AccessEntry(object):
 
     @dataset_target_types.setter
     def dataset_target_types(self, value):
-        if "dataset" not in self._properties:
-            self._properties["dataset"] = {}
+        self._properties.setdefault("dataset", {})
         _helpers._set_sub_prop(self._properties, ["dataset", "targetTypes"], value)
 
     @property
@@ -365,6 +364,9 @@ class AccessEntry(object):
 
         if isinstance(value, str):
             value = RoutineReference.from_string(value).to_api_repr()
+
+        if isinstance(value, RoutineReference):
+            value = value.to_api_repr()
 
         if isinstance(value, Routine):
             value = value.reference.to_api_repr()
@@ -386,6 +388,9 @@ class AccessEntry(object):
 
         if isinstance(value, str):
             value = TableReference.from_string(value).to_api_repr()
+
+        if isinstance(value, TableReference):
+            value = value.to_api_repr()
 
         if isinstance(value, Table):
             value = value.reference.to_api_repr()

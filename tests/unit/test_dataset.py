@@ -224,11 +224,16 @@ class TestAccessEntry(unittest.TestCase):
         project = "my_project"
         dataset = "my_dataset"
         table = "my_table"
+        view = {
+            "projectId": project,
+            "datasetId": dataset,
+            "tableId": table,
+        }
         view_ref = TableReference.from_string(f"{project}.{dataset}.{table}")
         entry = self._make_one(None)
         entry.view = view_ref
         resource = entry.to_api_repr()
-        exp_resource = {"view": view_ref, "role": None}
+        exp_resource = {"view": view, "role": None}
         self.assertEqual(resource, exp_resource)
 
     def test_view_getter_setter_incorrect_role(self):
@@ -353,12 +358,11 @@ class TestAccessEntry(unittest.TestCase):
             "datasetId": "my_dataset",
             "routineId": "my_routine",
         }
-        routine_ref = RoutineReference.from_api_repr(routine)
         entry = self._make_one(None)
         entry.routine = RoutineReference.from_api_repr(routine)
         resource = entry.to_api_repr()
         exp_resource = {
-            "routine": routine_ref,
+            "routine": routine,
             "role": None,
         }
         self.assertEqual(resource, exp_resource)

@@ -19,6 +19,7 @@ import datetime
 import decimal
 import math
 import re
+import os
 from typing import Optional, Union
 
 from dateutil import relativedelta
@@ -29,7 +30,6 @@ from google.cloud._helpers import _RFC3339_MICROS
 from google.cloud._helpers import _RFC3339_NO_FRACTION
 from google.cloud._helpers import _to_bytes
 import packaging.version
-
 
 _RFC3339_MICROS_NO_ZULU = "%Y-%m-%dT%H:%M:%S.%f"
 _TIMEONLY_WO_MICROS = "%H:%M:%S"
@@ -51,6 +51,14 @@ _INTERVAL_PATTERN = re.compile(
 
 _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
 
+STORAGE_EMULATOR_ENV_VAR = "STORAGE_EMULATOR_HOST"
+"""Environment variable defining host for Storage emulator."""
+
+_DEFAULT_STORAGE_HOST = "https://storage.googleapis.com"
+"""Default storage host for JSON API."""
+
+def _get_storage_host():
+    return os.environ.get(STORAGE_EMULATOR_ENV_VAR, _DEFAULT_STORAGE_HOST)
 
 class BQStorageVersions:
     """Version comparisons for google-cloud-bigqueyr-storage package."""

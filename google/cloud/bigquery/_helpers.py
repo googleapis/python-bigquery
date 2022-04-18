@@ -29,6 +29,7 @@ from google.cloud._helpers import _datetime_from_microseconds
 from google.cloud._helpers import _RFC3339_MICROS
 from google.cloud._helpers import _RFC3339_NO_FRACTION
 from google.cloud._helpers import _to_bytes
+
 import packaging.version
 
 _RFC3339_MICROS_NO_ZULU = "%Y-%m-%dT%H:%M:%S.%f"
@@ -51,14 +52,14 @@ _INTERVAL_PATTERN = re.compile(
 
 _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
 
-STORAGE_EMULATOR_ENV_VAR = "STORAGE_EMULATOR_HOST"
-"""Environment variable defining host for Storage emulator."""
+BIGQUERY_EMULATOR_HOST = "BIGQUERY_EMULATOR_HOST"
+"""Environment variable defining host for emulator."""
 
-_DEFAULT_STORAGE_HOST = "https://storage.googleapis.com"
-"""Default storage host for JSON API."""
+_DEFAULT_HOST = "https://bigquery.googleapis.com"
+"""Default host for JSON API."""
 
-def _get_storage_host():
-    return os.environ.get(STORAGE_EMULATOR_ENV_VAR, _DEFAULT_STORAGE_HOST)
+def _get_host():
+    return os.environ.get(BIGQUERY_EMULATOR_HOST, _DEFAULT_HOST)
 
 class BQStorageVersions:
     """Version comparisons for google-cloud-bigqueyr-storage package."""

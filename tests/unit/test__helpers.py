@@ -1292,24 +1292,24 @@ def test_decimal_as_float_api_repr():
 class Test__get_storage_host(unittest.TestCase):
     @staticmethod
     def _call_fut():
-        from google.cloud.storage._helpers import _get_storage_host
+        from google.cloud.bigquery._helpers import _get_host
 
-        return _get_storage_host()
+        return _get_host()
 
     def test_wo_env_var(self):
-        from google.cloud.storage._helpers import _DEFAULT_STORAGE_HOST
+        from google.cloud.bigquery._helpers import _DEFAULT_HOST
 
         with mock.patch("os.environ", {}):
             host = self._call_fut()
 
-        self.assertEqual(host, _DEFAULT_STORAGE_HOST)
+        self.assertEqual(host, _DEFAULT_HOST)
 
     def test_w_env_var(self):
-        from google.cloud.storage._helpers import STORAGE_EMULATOR_ENV_VAR
+        from google.cloud.bigquery._helpers import BIGQUERY_EMULATOR_HOST
 
         HOST = "https://api.example.com"
     
-        with mock.patch("os.environ", {STORAGE_EMULATOR_ENV_VAR: HOST}):
+        with mock.patch("os.environ", {BIGQUERY_EMULATOR_HOST: HOST}):
             host = self._call_fut()
 
         self.assertEqual(host, HOST)

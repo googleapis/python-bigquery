@@ -231,10 +231,10 @@ class Client(ClientWithProject):
         )
 
         kw_args = {"client_info": client_info}
-        # 
+        #
         storage_host = _get_host()
         kw_args["api_endpoint"] = (
-            storage_host if storage_host != _DEFAULT_STORAGE_HOST else None
+            storage_host if storage_host != _DEFAULT_HOST else None
         )
         if client_options:
             if type(client_options) == dict:

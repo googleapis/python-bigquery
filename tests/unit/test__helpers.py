@@ -1289,6 +1289,7 @@ def test_decimal_as_float_api_repr():
         "name": "x",
     }
 
+
 class Test__get_storage_host(unittest.TestCase):
     @staticmethod
     def _call_fut():
@@ -1308,7 +1309,7 @@ class Test__get_storage_host(unittest.TestCase):
         from google.cloud.bigquery._helpers import BIGQUERY_EMULATOR_HOST
 
         HOST = "https://api.example.com"
-    
+
         with mock.patch("os.environ", {BIGQUERY_EMULATOR_HOST: HOST}):
             host = self._call_fut()
 

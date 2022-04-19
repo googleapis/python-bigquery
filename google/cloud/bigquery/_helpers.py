@@ -58,8 +58,10 @@ BIGQUERY_EMULATOR_HOST = "BIGQUERY_EMULATOR_HOST"
 _DEFAULT_HOST = "https://bigquery.googleapis.com"
 """Default host for JSON API."""
 
+
 def _get_host():
     return os.environ.get(BIGQUERY_EMULATOR_HOST, _DEFAULT_HOST)
+
 
 class BQStorageVersions:
     """Version comparisons for google-cloud-bigqueyr-storage package."""

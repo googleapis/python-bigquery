@@ -1290,12 +1290,12 @@ def test_decimal_as_float_api_repr():
     }
 
 
-class Test__get_storage_host(unittest.TestCase):
+class Test__get_bigquery_host(unittest.TestCase):
     @staticmethod
     def _call_fut():
-        from google.cloud.bigquery._helpers import _get_host
+        from google.cloud.bigquery._helpers import _get_bigquery_host
 
-        return _get_host()
+        return _get_bigquery_host()
 
     def test_wo_env_var(self):
         from google.cloud.bigquery._helpers import _DEFAULT_HOST
@@ -1314,3 +1314,10 @@ class Test__get_storage_host(unittest.TestCase):
             host = self._call_fut()
 
         self.assertEqual(host, HOST)
+
+    def test_api_val(self):
+        return 
+        #if there is an emulator check that BIGQUERY_EMULATOR_HOST value is passed correctly to api
+        #if there is not an emulator check that _DEFAULT_HOST value is passed correctly to api
+        # where is the value moved to api? 
+        #the endpoint is set in client_options

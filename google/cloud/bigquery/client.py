@@ -66,7 +66,7 @@ from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery._helpers import _verify_job_config_type
-from google.cloud.bigquery._helpers import _get_host
+from google.cloud.bigquery._helpers import _get_bigquery_host
 from google.cloud.bigquery._helpers import _DEFAULT_HOST
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
@@ -231,10 +231,9 @@ class Client(ClientWithProject):
         )
 
         kw_args = {"client_info": client_info}
-        #
-        storage_host = _get_host()
+        bq_host = _get_bigquery_host()
         kw_args["api_endpoint"] = (
-            storage_host if storage_host != _DEFAULT_HOST else None
+            bq_host if bq_host != _DEFAULT_HOST else None
         )
         if client_options:
             if type(client_options) == dict:

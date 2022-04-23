@@ -1315,9 +1315,25 @@ class Test__get_bigquery_host(unittest.TestCase):
 
         self.assertEqual(host, HOST)
 
-    def test_api_val(self):
-        return 
-        #if there is an emulator check that BIGQUERY_EMULATOR_HOST value is passed correctly to api
-        #if there is not an emulator check that _DEFAULT_HOST value is passed correctly to api
-        # where is the value moved to api? 
-        #the endpoint is set in client_options
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.client import Client
+
+        return Client
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_default_endpoint(self):
+        from google.cloud.bigquery._helpers import _DEFAULT_HOST
+
+        client = self._make_one()
+
+        self.assertEqual(client._connection.API_BASE_URL, _DEFAULT_HOST)
+
+    def test_bigquery_emulator_host(self):
+        client_options = {"api_endpoint": "https://www.foo-googleapis.com"}
+        client = self._make_one(client_options=client_options)
+        self.assertEqual(
+            client._connection.API_BASE_URL, "https://www.foo-googleapis.com"
+        )

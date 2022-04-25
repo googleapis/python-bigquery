@@ -21,3 +21,9 @@ def test_query_with_parameters() -> None:
     df = query_params_scalars.query_with_parameters()
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 10
+
+
+def test_query_with_parameters_as_reference() -> None:
+    df = query_params_scalars.query_with_parameters_as_reference()
+    assert isinstance(df, pandas.DataFrame)
+    assert len(df) == 10

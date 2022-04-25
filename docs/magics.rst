@@ -27,6 +27,19 @@ Running a parameterized query:
    :start-after: [START bigquery_jupyter_query_params_scalars]
    :end-before: [END bigquery_jupyter_query_params_scalars]
 
+Running a parameterized query with parameters passed as a reference to a variable:
+
+.. literalinclude:: ./samples/magics/query_params_scalars.py
+   :dedent: 4
+   :start-after: [START bigquery_jupyter_query_params_as_reference_scalars_sample1]
+   :end-before: [END bigquery_jupyter_query_params_as_reference_scalars_sample1]
+
+.. literalinclude:: ./samples/magics/query_params_scalars.py
+   :dedent: 4
+   :start-after: [START bigquery_jupyter_query_params_as_reference_scalars_sample2]
+   :end-before: [END bigquery_jupyter_query_params_as_reference_scalars_sample2]
+
+
 API Reference
 -------------
 

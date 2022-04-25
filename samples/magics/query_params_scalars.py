@@ -41,3 +41,32 @@ def query_with_parameters() -> "pandas.DataFrame":
     result.raise_error()  # Throws an exception if the cell failed.
     df = ip.user_ns["_"]  # Retrieves last returned object in notebook session
     return df
+
+
+def query_with_parameters_as_reference() -> "pandas.DataFrame":
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+
+    sample1 = """
+    # [START bigquery_jupyter_query_params_as_reference_scalars_sample1]
+    my_params = {"corpus_name": "hamlet", "limit": 10}
+    # [END bigquery_jupyter_query_params_as_reference_scalars_sample1]
+    """
+    result = ip.run_cell(_helpers.strip_region_tags(sample1))
+    result.raise_error()  # Throws an exception if the cell failed.
+
+    sample2 = """
+    # [START bigquery_jupyter_query_params_as_reference_scalars_sample2]
+    %%bigquery --params $my_params
+    SELECT word, SUM(word_count) as count
+    FROM `bigquery-public-data.samples.shakespeare`
+    WHERE corpus = @corpus_name
+    GROUP BY word
+    ORDER BY count DESC
+    LIMIT @limit
+    # [END bigquery_jupyter_query_params_as_reference_scalars_sample2]
+    """
+    result = ip.run_cell(_helpers.strip_region_tags(sample2))
+    result.raise_error()  # Throws an exception if the cell failed.
+    df = ip.user_ns["_"]  # Retrieves last returned object in notebook session
+    return df

@@ -59,13 +59,12 @@
         * :class:`str` - A JSON string representation of a dictionary in the
           format ``{"param_name": "param_value"}`` (ex. ``{"num": 17}``). Use
           of the parameter in the query should be indicated with
-          ``@param_name``. See ``In[5]`` in the Examples section below.
+          ``@param_name``.
 
         * :class:`dict` reference - A reference to a ``dict`` in the format
           ``{"param_name": "param_value"}``, where the value types must be JSON
           serializable. The variable reference is indicated by a ``$`` before
-          the variable name (ex. ``$my_dict_var``). See ``In[6]`` and ``In[7]``
-          in the Examples section below.
+          the variable name (ex. ``$my_dict_var``).
 
     * ``<query>`` (required, cell argument):
         SQL query to run. If the query does not contain any whitespace (aside

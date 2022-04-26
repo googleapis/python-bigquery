@@ -1314,26 +1314,3 @@ class Test__get_bigquery_host(unittest.TestCase):
             host = self._call_fut()
 
         self.assertEqual(host, HOST)
-
-    @staticmethod
-    def _get_target_class():
-        from google.cloud.bigquery.client import Client
-
-        return Client
-
-    def _make_one(self, *args, **kw):
-        return self._get_target_class()(*args, **kw)
-
-    def test_default_endpoint(self):
-        from google.cloud.bigquery._helpers import _DEFAULT_HOST
-
-        client = self._make_one()
-
-        self.assertEqual(client._connection.API_BASE_URL, _DEFAULT_HOST)
-
-    def test_bigquery_emulator_host(self):
-        client_options = {"api_endpoint": "https://www.foo-googleapis.com"}
-        client = self._make_one(client_options=client_options)
-        self.assertEqual(
-            client._connection.API_BASE_URL, "https://www.foo-googleapis.com"
-        )

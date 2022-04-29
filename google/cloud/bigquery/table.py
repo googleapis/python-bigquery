@@ -1033,6 +1033,9 @@ class Table(_TableBase):
     def __repr__(self):
         return "Table({})".format(repr(self.reference))
 
+    def __str__(self):
+        return f"{self.project}.{self.dataset_id}.{self.table_id}"
+
 
 class TableListItem(_TableBase):
     """A read-only table resource from a list operation.
@@ -2017,7 +2020,7 @@ class RowIterator(HTTPIterator):
 
         if geography_as_object:
             for field in self.schema:
-                if field.field_type.upper() == "GEOGRAPHY":
+                if field.field_type.upper() == "GEOGRAPHY" and field.mode != "REPEATED":
                     df[field.name] = df[field.name].dropna().apply(_read_wkt)
 
         return df

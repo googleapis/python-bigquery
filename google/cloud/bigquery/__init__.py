@@ -49,6 +49,7 @@ from google.cloud.bigquery.external_config import BigtableColumn
 from google.cloud.bigquery.external_config import CSVOptions
 from google.cloud.bigquery.external_config import GoogleSheetsOptions
 from google.cloud.bigquery.external_config import ExternalSourceFormat
+from google.cloud.bigquery.external_config import HivePartitioningOptions
 from google.cloud.bigquery.format_options import AvroOptions
 from google.cloud.bigquery.format_options import ParquetOptions
 from google.cloud.bigquery.job.base import SessionInfo
@@ -100,6 +101,7 @@ from google.cloud.bigquery.table import PartitionRange
 from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import Row
 from google.cloud.bigquery.table import SnapshotDefinition
+from google.cloud.bigquery.table import CloneDefinition
 from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import TimePartitioningType
@@ -131,6 +133,7 @@ __all__ = [
     "RangePartitioning",
     "Row",
     "SnapshotDefinition",
+    "CloneDefinition",
     "TimePartitioning",
     "TimePartitioningType",
     # Jobs
@@ -161,6 +164,7 @@ __all__ = [
     "DmlStats",
     "CSVOptions",
     "GoogleSheetsOptions",
+    "HivePartitioningOptions",
     "ParquetOptions",
     "ScriptOptions",
     "TransactionInfo",

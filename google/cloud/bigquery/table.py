@@ -1317,6 +1317,7 @@ class SnapshotDefinition:
                 resource["snapshotTime"]
             )
 
+
 class CloneDefinition:
     """Information about base table and clone time of the clone.
 
@@ -1338,6 +1339,7 @@ class CloneDefinition:
             self.clone_time = google.cloud._helpers._rfc3339_to_datetime(
                 resource["cloneTime"]
             )
+
 
 class Row(object):
     """A BigQuery row.

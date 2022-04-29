@@ -2191,6 +2191,7 @@ def test_table_snapshots(dataset_id):
     rows = sorted(row.values() for row in rows_iter)
     assert rows == [(1, "one"), (2, "two")]
 
+
 def test_table_clones(dataset_id):
     from google.cloud.bigquery import CopyJobConfig
     from google.cloud.bigquery import OperationType
@@ -2214,7 +2215,7 @@ def test_table_clones(dataset_id):
     load_job = Config.CLIENT.load_table_from_json(rows, source_table)
     load_job.result()
 
-    # Now create a clone before modifying the original table data.
+    # Now create a clone.
     copy_config = CopyJobConfig()
     copy_config.operation_type = OperationType.CLONE
 
@@ -2225,33 +2226,11 @@ def test_table_clones(dataset_id):
     )
     copy_job.result()
 
-    # Modify data in original table.
-    sql = f'INSERT INTO `{source_table_path}`(foo, bar) VALUES (3, "three")'
-    query_job = client.query(sql)
-    query_job.result()
-
     # List rows from the source table and compare them to rows from the clone.
     rows_iter = client.list_rows(source_table_path)
     rows = sorted(row.values() for row in rows_iter)
-    assert rows == [(1, "one"), (2, "two"), (3, "three")]
-
-    rows_iter = client.list_rows(clone_table_path)
-    rows = sorted(row.values() for row in rows_iter)
     assert rows == [(1, "one"), (2, "two")]
 
-    # Now restore the table from the clone and it should again contain the old
-    # set of rows.
-    copy_config = CopyJobConfig()
-    copy_config.operation_type = OperationType.RESTORE
-    copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-
-    copy_job = client.copy_table(
-        sources=clone_table_path,
-        destination=source_table_path,
-        job_config=copy_config,
-    )
-    copy_job.result()
-
-    rows_iter = client.list_rows(source_table_path)
+    rows_iter = client.list_rows(clone_table_path)
     rows = sorted(row.values() for row in rows_iter)
     assert rows == [(1, "one"), (2, "two")]

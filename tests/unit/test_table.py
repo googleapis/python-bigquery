@@ -1822,6 +1822,7 @@ class TestSnapshotDefinition:
         expected_time = datetime.datetime(2005, 6, 7, 19, 35, 2, 123000, tzinfo=UTC)
         assert instance.snapshot_time == expected_time
 
+
 class TestCloneDefinition:
     @staticmethod
     def _get_target_class():
@@ -1860,6 +1861,7 @@ class TestCloneDefinition:
 
         expected_time = datetime.datetime(2005, 6, 7, 19, 35, 2, 123000, tzinfo=UTC)
         assert instance.clone_time == expected_time
+
 
 class TestRow(unittest.TestCase):
     def test_row(self):

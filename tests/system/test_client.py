@@ -2212,6 +2212,7 @@ def test_table_clones(dataset_id):
 
     # Populate the table with initial data.
     rows = [{"foo": 1, "bar": "one"}, {"foo": 2, "bar": "two"}]
+    print(rows)
     load_job = Config.CLIENT.load_table_from_json(rows, source_table)
     load_job.result()
 
@@ -2234,11 +2235,11 @@ def test_table_clones(dataset_id):
     # List rows from the source table and compare them to rows from the clone.
     rows_iter = client.list_rows(source_table_path)
     rows = sorted(row.values() for row in rows_iter)
-    assert rows == [(1, "one"), (2, "two"), (3, "three")]
+    assert rows == [(1, "one"), (2, "two")]
 
     rows_iter = client.list_rows(clone_table_path)
     rows = sorted(row.values() for row in rows_iter)
-    assert rows == [(1, "one"), (2, "two"), (3, "three")]
+    assert rows == [(1, "one"), (2, "two")]
 
     # Now restore the table from the clone and it should again contain the old
     # set of rows.

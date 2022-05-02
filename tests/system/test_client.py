@@ -2192,13 +2192,13 @@ def test_table_snapshots(dataset_id):
     assert rows == [(1, "one"), (2, "two")]
 
 
-def test_table_clones(dataset_id):
+def test_table_clones(self):
     from google.cloud.bigquery import CopyJobConfig
     from google.cloud.bigquery import OperationType
 
     client = Config.CLIENT
 
-    source_table_path = f"{client.project}.{dataset_id}.test_table"
+    source_table_path = f"{client.project}.{Config.DATASET}.test_table"
     clone_table_path = f"{source_table_path}_clone"
 
     # Create the table before loading so that the column order is predictable.
@@ -2209,13 +2209,14 @@ def test_table_clones(dataset_id):
     source_table = helpers.retry_403(Config.CLIENT.create_table)(
         Table(source_table_path, schema=schema)
     )
+    self.to_delete.insert(0, source_table)
 
     # Populate the table with initial data.
     rows = [{"foo": 1, "bar": "one"}, {"foo": 2, "bar": "two"}]
     load_job = Config.CLIENT.load_table_from_json(rows, source_table)
     load_job.result()
 
-    # Now create a clone.
+    # Now create a clone before modifying the original table data.
     copy_config = CopyJobConfig()
     copy_config.operation_type = OperationType.CLONE
 
@@ -2226,11 +2227,80 @@ def test_table_clones(dataset_id):
     )
     copy_job.result()
 
+    clone_table = client.get_table(clone_table_path)
+    self.to_delete.insert(0, clone_table)
+
+    # Modify data in original table.
+    sql = f'INSERT INTO `{source_table_path}`(foo, bar) VALUES (3, "three")'
+    query_job = client.query(sql)
+    query_job.result()
+
     # List rows from the source table and compare them to rows from the clone.
     rows_iter = client.list_rows(source_table_path)
     rows = sorted(row.values() for row in rows_iter)
-    assert rows == [(1, "one"), (2, "two")]
+    assert rows == [(1, "one"), (2, "two"), (3, "three")]
 
     rows_iter = client.list_rows(clone_table_path)
     rows = sorted(row.values() for row in rows_iter)
     assert rows == [(1, "one"), (2, "two")]
+
+    # # Now restore the table from the snapshot and it should again contain the old
+    # # set of rows.
+    # copy_config = CopyJobConfig()
+    # copy_config.operation_type = OperationType.RESTORE
+    # copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+
+    # copy_job = client.copy_table(
+    #     sources=snapshot_table_path,
+    #     destination=source_table_path,
+    #     job_config=copy_config,
+    # )
+    # copy_job.result()
+
+    # rows_iter = client.list_rows(source_table_path)
+    # rows = sorted(row.values() for row in rows_iter)
+    # assert rows == [(1, "one"), (2, "two")]
+
+
+# def test_table_clones(dataset_id):
+#     from google.cloud.bigquery import CopyJobConfig
+#     from google.cloud.bigquery import OperationType
+
+#     client = Config.CLIENT
+
+#     source_table_path = f"{client.project}.{dataset_id}.test_table"
+#     clone_table_path = f"{source_table_path}_clone"
+
+#     # Create the table before loading so that the column order is predictable.
+#     schema = [
+#         bigquery.SchemaField("foo", "INTEGER"),
+#         bigquery.SchemaField("bar", "STRING"),
+#     ]
+#     source_table = helpers.retry_403(Config.CLIENT.create_table)(
+#         Table(source_table_path, schema=schema)
+#     )
+
+#     # Populate the table with initial data.
+#     rows = [{"foo": 1, "bar": "one"}, {"foo": 2, "bar": "two"}]
+#     load_job = Config.CLIENT.load_table_from_json(rows, source_table)
+#     load_job.result()
+
+#     # Now create a clone.
+#     copy_config = CopyJobConfig()
+#     copy_config.operation_type = OperationType.CLONE
+
+#     copy_job = client.copy_table(
+#         sources=source_table_path,
+#         destination=clone_table_path,
+#         job_config=copy_config,
+#     )
+#     copy_job.result()
+
+#     # List rows from the source table and compare them to rows from the clone.
+#     rows_iter = client.list_rows(source_table_path)
+#     rows = sorted(row.values() for row in rows_iter)
+#     assert rows == [(1, "one"), (2, "two")]
+
+#     rows_iter = client.list_rows(clone_table_path)
+#     rows = sorted(row.values() for row in rows_iter)
+#     assert rows == [(1, "one"), (2, "two")]

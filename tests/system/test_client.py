@@ -2244,22 +2244,22 @@ def test_table_clones(self):
     rows = sorted(row.values() for row in rows_iter)
     assert rows == [(1, "one"), (2, "two")]
 
-    # # Now restore the table from the snapshot and it should again contain the old
-    # # set of rows.
-    # copy_config = CopyJobConfig()
-    # copy_config.operation_type = OperationType.RESTORE
-    # copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+    # Now restore the table from the clone and it should again contain the old
+    # set of rows.
+    copy_config = CopyJobConfig()
+    copy_config.operation_type = OperationType.RESTORE
+    copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
 
-    # copy_job = client.copy_table(
-    #     sources=snapshot_table_path,
-    #     destination=source_table_path,
-    #     job_config=copy_config,
-    # )
-    # copy_job.result()
+    copy_job = client.copy_table(
+        sources=clone_table_path,
+        destination=source_table_path,
+        job_config=copy_config,
+    )
+    copy_job.result()
 
-    # rows_iter = client.list_rows(source_table_path)
-    # rows = sorted(row.values() for row in rows_iter)
-    # assert rows == [(1, "one"), (2, "two")]
+    rows_iter = client.list_rows(source_table_path)
+    rows = sorted(row.values() for row in rows_iter)
+    assert rows == [(1, "one"), (2, "two")]
 
 
 # def test_table_clones(dataset_id):

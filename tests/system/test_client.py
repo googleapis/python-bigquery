@@ -2244,6 +2244,7 @@ def test_table_clones(dataset_id):
     # set of rows.
     # copy_config = CopyJobConfig()
     # copy_config.operation_type = OperationType.RESTORE
+    # checking something
     copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
 
     # copy_job = client.copy_table(

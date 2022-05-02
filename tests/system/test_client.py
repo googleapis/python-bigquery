@@ -2212,7 +2212,6 @@ def test_table_clones(dataset_id):
 
     # Populate the table with initial data.
     rows = [{"foo": 1, "bar": "one"}, {"foo": 2, "bar": "two"}]
-    print(rows)
     load_job = Config.CLIENT.load_table_from_json(rows, source_table)
     load_job.result()
 

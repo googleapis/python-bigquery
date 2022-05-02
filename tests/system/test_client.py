@@ -2212,6 +2212,7 @@ def test_table_clones(dataset_id):
 
     # Populate the table with initial data.
     rows = [{"foo": 1, "bar": "one"}, {"foo": 2, "bar": "two"}]
+
     load_job = Config.CLIENT.load_table_from_json(rows, source_table)
     load_job.result()
 
@@ -2242,7 +2243,7 @@ def test_table_clones(dataset_id):
 
     # Now restore the table from the clone and it should again contain the old
     # set of rows.
-    # copy_config = CopyJobConfig()
+    copy_config = CopyJobConfig()
     # copy_config.operation_type = OperationType.RESTORE
     # checking something
     copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE

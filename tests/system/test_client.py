@@ -2198,7 +2198,7 @@ def test_table_clones(dataset_id):
 
     client = Config.CLIENT
 
-    table_path_source = f"{client.project}.{dataset_id}.test_table"
+    table_path_source = f"{client.project}.{dataset_id}.test_table_clone"
     clone_table_path = f"{table_path_source}_clone"
 
     # Create the table before loading so that the column order is predictable.

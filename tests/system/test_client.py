@@ -2198,8 +2198,8 @@ def test_table_clones(dataset_id):
 
     client = Config.CLIENT
 
-    table_path = f"{client.project}.{dataset_id}.test_table"
-    clone_table_path = f"{table_path}_clone"
+    table_path_source = f"{client.project}.{dataset_id}.test_table"
+    clone_table_path = f"{table_path_source}_clone"
 
     # Create the table before loading so that the column order is predictable.
     schema = [
@@ -2207,7 +2207,7 @@ def test_table_clones(dataset_id):
         bigquery.SchemaField("bar", "STRING"),
     ]
     source_table = helpers.retry_403(Config.CLIENT.create_table)(
-        Table(table_path, schema=schema)
+        Table(table_path_source, schema=schema)
     )
 
     # Populate the table with initial data.
@@ -2221,7 +2221,7 @@ def test_table_clones(dataset_id):
     copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
 
     copy_job = client.copy_table(
-        sources=table_path,
+        sources=table_path_source,
         destination=clone_table_path,
         job_config=copy_config,
     )
@@ -2233,7 +2233,7 @@ def test_table_clones(dataset_id):
     # query_job.result()
 
     # List rows from the source table and compare them to rows from the clone.
-    rows_iter = client.list_rows(table_path)
+    rows_iter = client.list_rows(table_path_source)
     rows = sorted(row.values() for row in rows_iter)
     assert rows == [(1, "one"), (2, "two")]
 

@@ -2219,6 +2219,7 @@ def test_table_clones(dataset_id):
     # Now create a clone before modifying the original table data.
     copy_config = CopyJobConfig()
     copy_config.operation_type = OperationType.CLONE
+    copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
 
     copy_job = client.copy_table(
         sources=source_table_path,
@@ -2243,10 +2244,10 @@ def test_table_clones(dataset_id):
 
     # Now restore the table from the clone and it should again contain the old
     # set of rows.
-    copy_config = CopyJobConfig()
+    # copy_config = CopyJobConfig()
     # copy_config.operation_type = OperationType.RESTORE
     # checking something
-    copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+    # copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
 
     # copy_job = client.copy_table(
     #     sources=clone_table_path,

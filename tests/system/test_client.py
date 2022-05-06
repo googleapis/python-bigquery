@@ -2235,3 +2235,12 @@ def test_table_clones(dataset_id):
     rows_iter = client.list_rows(clone_table_path)
     rows = sorted(row.values() for row in rows_iter)
     assert rows == [(1, "one"), (2, "two")]
+
+    # Compare properties of the source and clone table.
+    source_table = client.get_table(table_path_source)
+    clone_table = client.get_table(clone_table_path)
+
+    assert(source_table, clone_table)
+    
+
+

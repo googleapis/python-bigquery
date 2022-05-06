@@ -2241,3 +2241,6 @@ def test_table_clones(dataset_id):
     clone_table_props = client.get_table(clone_table_path)
 
     assert source_table_props.schema == clone_table_props.schema
+    assert source_table_props.num_bytes == clone_table_props.num_bytes
+    assert source_table_props.num_rows == clone_table_props.num_rows
+    assert source_table_props.description == clone_table_props.description

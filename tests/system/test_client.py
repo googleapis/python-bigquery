@@ -2237,10 +2237,7 @@ def test_table_clones(dataset_id):
     assert rows == [(1, "one"), (2, "two")]
 
     # Compare properties of the source and clone table.
-    source_table = client.get_table(table_path_source)
-    clone_table = client.get_table(clone_table_path)
+    source_table_props = client.get_table(table_path_source)
+    clone_table_props = client.get_table(clone_table_path)
 
-    assert(source_table, clone_table)
-    
-
-
+    assert source_table_props.schema == clone_table_props.schema

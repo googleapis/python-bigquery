@@ -2754,7 +2754,11 @@ class Client(ClientWithProject):
 
         job_config.source_format = job.SourceFormat.NEWLINE_DELIMITED_JSON
 
-        if job_config.schema is None:
+        # check whether the table already exists with a schema
+        # if it does already have a schema, we will not tell the `backend to use autodetect.
+        if job_config.schema:
+            job_config.autodetect = False
+        else:
             job_config.autodetect = True
 
         if project is None:

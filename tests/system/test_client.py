@@ -859,6 +859,42 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(tuple(table.schema), table_schema)
         self.assertEqual(table.num_rows, 2)
 
+    def test_load_table_from_json_bug_check(self):
+        table_schema=(
+            bigquery.SchemaField("name", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("age", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("birthday", "DATE", mode="REQUIRED"),
+            bigquery.SchemaField("is_awesome", "BOOLEAN", mode="REQUIRED"),
+        )
+
+        json_rows = [
+            {"name": "John", "age": 18, "birthday": "2001-10-15", "is_awesome": False},
+            {"name": "Chuck", "age": 79, "birthday": "1940-03-10", "is_awesome": True},
+        ]
+
+        dataset_id = _make_dataset_id("bq_system_test")
+        self.temp_dataset(dataset_id)
+        table_id = "{}.{}.load_table_from_json_bug_check".format(
+            Config.CLIENT.project, dataset_id
+        )
+
+        # Create the table before loading so that schema mismatch errors are
+        # identified.
+        table = helpers.retry_403(Config.CLIENT.create_table)(
+            Table(table_id, schema=table_schema)
+        )
+        self.to_delete.insert(0, table)
+
+        job_config = bigquery.LoadJobConfig(schema=table_schema)
+        load_job = Config.CLIENT.load_table_from_json(
+            json_rows, table_id, job_config=job_config
+        )
+        load_job.result()
+
+        table = Config.CLIENT.get_table(table)
+        self.assertEqual(tuple(table.schema), table_schema)
+        self.assertEqual(table.schema, table_schema)
+
     def test_load_table_from_json_schema_autodetect(self):
         json_rows = [
             {"name": "John", "age": 18, "birthday": "2001-10-15", "is_awesome": False},

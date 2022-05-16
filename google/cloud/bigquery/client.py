@@ -22,6 +22,7 @@ import copy
 import datetime
 import functools
 import gzip
+from http import client
 import io
 import itertools
 import json
@@ -43,6 +44,8 @@ from typing import (
 )
 import uuid
 import warnings
+
+from numpy import true_divide
 
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore
@@ -2759,10 +2762,16 @@ class Client(ClientWithProject):
 
         # check whether the table already exists with a schema
         # if it does already have a schema, we will not tell the `backend to use autodetect.
+        # table = self.load_table_from_json()
+        # table = self.get_table(table)
+        # if table.schema is not None:
+        #     job_config.autodetect = False
+        #     job_config.schema = table.schema
+        # else:
+        #     job_config.autodetect = True
         if job_config.schema is None:
             job_config.autodetect = True
-        else:
-            job_config.schema = Table.schema
+            
 
         if project is None:
             project = self.project

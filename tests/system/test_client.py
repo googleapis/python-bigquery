@@ -860,7 +860,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(table.num_rows, 2)
 
     def test_load_table_from_json_bug_check(self):
-        table_schema=(
+        table_schema = (
             bigquery.SchemaField("name", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("age", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("birthday", "DATE", mode="REQUIRED"),

@@ -868,8 +868,18 @@ class TestBigQuery(unittest.TestCase):
         )
 
         json_rows = [
-            {"name": "John", "age": 18, "birthday": "2001-10-15", "is_awesome": False},
-            {"name": "Chuck", "age": 79, "birthday": "1940-03-10", "is_awesome": True},
+            {
+                "name": "John",
+                "age": "18",
+                "birthday": "2001-10-15",
+                "is_awesome": False,
+            },
+            {
+                "name": "Chuck",
+                "age": "79",
+                "birthday": "1940-03-10",
+                "is_awesome": True,
+            },
         ]
 
         dataset_id = _make_dataset_id("bq_system_test")

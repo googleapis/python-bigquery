@@ -8153,7 +8153,7 @@ class TestClientUpload(object):
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.NEWLINE_DELIMITED_JSON
-        # assert sent_config.schema == schema
+        assert sent_config.schema == schema
         assert not sent_config.autodetect
         # all properties should have been cloned and sent to the backend
         assert sent_config._properties.get("load", {}).get("unknown_field") == "foobar"

@@ -21,6 +21,7 @@ import json
 import operator
 import os
 import pathlib
+import string
 import time
 import unittest
 import uuid
@@ -903,7 +904,6 @@ class TestBigQuery(unittest.TestCase):
 
         table = Config.CLIENT.get_table(table)
         self.assertEqual(tuple(table.schema), table_schema)
-        self.assertEqual(table.schema, table_schema)
 
     def test_load_table_from_json_schema_autodetect(self):
         json_rows = [

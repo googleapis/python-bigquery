@@ -22,7 +22,6 @@ import copy
 import datetime
 import functools
 import gzip
-from http import client
 import io
 import itertools
 import json
@@ -44,8 +43,6 @@ from typing import (
 )
 import uuid
 import warnings
-
-from numpy import true_divide
 
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore

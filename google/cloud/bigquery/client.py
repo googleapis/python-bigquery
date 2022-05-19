@@ -2762,7 +2762,7 @@ class Client(ClientWithProject):
         table = _table_arg_to_table(destination, default_project=self.project)
         if table.schema:
             job_config.autodetect = False
-            job_config.schema = table.schema
+            # job_config.schema = table.schema this is not necessary.
         else:
             job_config.autodetect = True
 

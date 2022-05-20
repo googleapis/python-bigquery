@@ -875,10 +875,8 @@ class TestBigQuery(unittest.TestCase):
             Config.CLIENT.project, dataset_id
         )
 
-        # create an empty table with no schema 
-        table = helpers.retry_403(Config.CLIENT.create_table)(
-            Table(table_id)
-        )
+        # create an empty table with no schema
+        table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
         self.to_delete.insert(0, table)
 
         job_config = bigquery.LoadJobConfig()
@@ -889,10 +887,10 @@ class TestBigQuery(unittest.TestCase):
 
         table = Config.CLIENT.get_table(table)
         # schema should be inferred from the json data
-        self.assertEqual(tuple(table.schema), (
-            bigquery.SchemaField("age", "STRING", mode="NULLABLE"),
-        ))
-        
+        self.assertEqual(
+            tuple(table.schema),
+            (bigquery.SchemaField("age", "STRING", mode="NULLABLE"),),
+        )
 
     def test_load_table_from_json_bug_check_with_no_schema(self):
         json_rows = [
@@ -923,8 +921,6 @@ class TestBigQuery(unittest.TestCase):
 
         table = Config.CLIENT.get_table(table)
         assert type(table.schema[0].field_type) is str
-        
-
 
     def test_load_table_from_json_schema_autodetect(self):
         json_rows = [
@@ -2257,4 +2253,3 @@ def test_table_snapshots(dataset_id):
     rows_iter = client.list_rows(source_table_path)
     rows = sorted(row.values() for row in rows_iter)
     assert rows == [(1, "one"), (2, "two")]
-

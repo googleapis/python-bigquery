@@ -862,16 +862,10 @@ class TestBigQuery(unittest.TestCase):
     def test_load_table_from_json_bug_check_with_schema(self):
         json_rows = [
             {
-                "name": "John",
                 "age": "18",
-                "birthday": "2001-10-15",
-                "is_awesome": False,
             },
             {
-                "name": "Chuck",
                 "age": "79",
-                "birthday": "1940-03-10",
-                "is_awesome": True,
             },
         ]
 
@@ -896,26 +890,17 @@ class TestBigQuery(unittest.TestCase):
         table = Config.CLIENT.get_table(table)
         # schema should be inferred from the json data
         self.assertEqual(tuple(table.schema), (
-            bigquery.SchemaField("name", "STRING", mode="NULLABLE"),
             bigquery.SchemaField("age", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("birthday", "DATE", mode="NULLABLE"),
-            bigquery.SchemaField("is_awesome", "BOOLEAN", mode="NULLABLE"),
         ))
         
 
     def test_load_table_from_json_bug_check_with_no_schema(self):
         json_rows = [
             {
-                # "name": "John",
                 "age": "18",
-                # "birthday": "2001-10-15",
-                # "is_awesome": False,
             },
             {
-                # "name": "Chuck",
                 "age": "79",
-                # "birthday": "1940-03-10",
-                # "is_awesome": True,
             },
         ]
 
@@ -937,8 +922,8 @@ class TestBigQuery(unittest.TestCase):
         load_job.result()
 
         table = Config.CLIENT.get_table(table)
-        # self.assertEqual(tuple(table.schema.SchemaField), (bigquery.SchemaField("field_type", "STRING"),))
-        assert type(table.schema[0][0]["age"]) is str
+        assert type(table.schema[0].field_type) is str
+        
 
 
     def test_load_table_from_json_schema_autodetect(self):

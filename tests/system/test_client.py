@@ -906,16 +906,16 @@ class TestBigQuery(unittest.TestCase):
     def test_load_table_from_json_bug_check_with_no_schema(self):
         json_rows = [
             {
-                "name": "John",
+                # "name": "John",
                 "age": "18",
-                "birthday": "2001-10-15",
-                "is_awesome": False,
+                # "birthday": "2001-10-15",
+                # "is_awesome": False,
             },
             {
-                "name": "Chuck",
+                # "name": "Chuck",
                 "age": "79",
-                "birthday": "1940-03-10",
-                "is_awesome": True,
+                # "birthday": "1940-03-10",
+                # "is_awesome": True,
             },
         ]
 
@@ -937,7 +937,8 @@ class TestBigQuery(unittest.TestCase):
         load_job.result()
 
         table = Config.CLIENT.get_table(table)
-        self.assertEqual(tuple(table.schema.field_type), (bigquery.SchemaField("field_type", "STRING"),))
+        # self.assertEqual(tuple(table.schema.SchemaField), (bigquery.SchemaField("field_type", "STRING"),))
+        assert type(table.schema[0][0]["age"]) is str
 
 
     def test_load_table_from_json_schema_autodetect(self):
@@ -2271,3 +2272,4 @@ def test_table_snapshots(dataset_id):
     rows_iter = client.list_rows(source_table_path)
     rows = sorted(row.values() for row in rows_iter)
     assert rows == [(1, "one"), (2, "two")]
+

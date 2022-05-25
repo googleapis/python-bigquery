@@ -901,7 +901,6 @@ class TestBigQuery(unittest.TestCase):
                 "age": "79",
             },
         ]
-
         dataset_id = _make_dataset_id("bq_system_test")
         self.temp_dataset(dataset_id)
         table_id = "{}.{}.load_table_from_json_bug_check".format(
@@ -914,12 +913,14 @@ class TestBigQuery(unittest.TestCase):
         self.to_delete.insert(0, table)
 
         job_config = bigquery.LoadJobConfig()
+        print(job_config.schema)
         load_job = Config.CLIENT.load_table_from_json(
             json_rows, table_id, job_config=job_config
         )
         load_job.result()
 
         table = Config.CLIENT.get_table(table)
+        print(table.schema)
         assert type(table.schema[0].field_type) is str
 
     def test_load_table_from_json_schema_autodetect(self):

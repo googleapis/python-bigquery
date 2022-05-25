@@ -43,9 +43,7 @@ from typing import (
 )
 import uuid
 import warnings
-from h11 import CLIENT
 
-import jsonschema
 
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore
@@ -73,7 +71,7 @@ from google.cloud.bigquery._helpers import _get_bigquery_host
 from google.cloud.bigquery._helpers import _DEFAULT_HOST
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
-from google.cloud.bigquery.dataset import Dataset, _get_table_reference
+from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums

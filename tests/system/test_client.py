@@ -875,7 +875,7 @@ class TestBigQuery(unittest.TestCase):
             Config.CLIENT.project, dataset_id
         )
 
-        # create an empty table with no schema
+        # create an empty table with schema
         table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
         self.to_delete.insert(0, table)
 
@@ -913,15 +913,12 @@ class TestBigQuery(unittest.TestCase):
         self.to_delete.insert(0, table)
 
         job_config = bigquery.LoadJobConfig()
-        print(job_config.schema)
-        load_job = Config.CLIENT.load_table_from_json(
-            json_rows, table_id, job_config=job_config
-        )
+        job_config.autodetect = True
+        load_job = Config.CLIENT.load_table_from_json(json_rows, table_id)
         load_job.result()
 
         table = Config.CLIENT.get_table(table)
-        print(table.schema)
-        assert type(table.schema[0].field_type) is str
+        self.assertTrue(job_config.autodetect)
 
     def test_load_table_from_json_schema_autodetect(self):
         json_rows = [

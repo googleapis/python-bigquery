@@ -2763,7 +2763,7 @@ class Client(ClientWithProject):
         # if it does already have a schema, we will not tell the `backend to use autodetect.
         table = _table_arg_to_table(destination, default_project=self.project)
         if table.schema:
-            job_config.autodetect = False
+            job_config.autodetect = True
         else:
             job_config.autodetect = True
 

@@ -35,14 +35,14 @@ dependencies = [
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core[grpc] >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
-    "proto-plus >= 1.15.0",
+    "proto-plus >= 1.15.0, <2.0.0dev",
     # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-cloud-core >= 1.4.1, <3.0.0dev",
     "google-resumable-media >= 0.6.0, < 3.0dev",
-    "packaging >= 14.3",
-    "protobuf >= 3.12.0",
+    "packaging >= 14.3, <22.0dev",
+    "protobuf >= 3.12.0, <4.0.0dev",
     "python-dateutil >= 2.7.2, <3.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]

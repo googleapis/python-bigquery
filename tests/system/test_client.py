@@ -908,11 +908,9 @@ class TestBigQuery(unittest.TestCase):
         table_id = "{}.{}.load_table_from_json_bug_check".format(
             Config.CLIENT.project, dataset_id
         )
-        
+
         # Create the table with no schema
-        table = helpers.retry_403(Config.CLIENT.create_table)(
-            Table(table_id)
-        )
+        table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
         self.to_delete.insert(0, table)
 
         # job_config = bigquery.LoadJobConfig()

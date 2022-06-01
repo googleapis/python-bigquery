@@ -2767,7 +2767,7 @@ class Client(ClientWithProject):
 
         try:
             table = self.get_table(destination)  # Make an API request.
-            print("Table {} already exists.".format(table.table_id))
+            # print("Table {} already exists.".format(table.table_id))
         except NotFound:
             print("Table {} is not found.".format(table.table_id))
         # need an if here. if there is no table then set autodetect to True

@@ -51,6 +51,7 @@ from google.resumable_media.requests import ResumableUpload
 
 import google.api_core.client_options
 import google.api_core.exceptions as core_exceptions
+from google.api_core.exceptions import NotFound
 from google.api_core.iam import Policy
 from google.api_core import page_iterator
 from google.api_core import retry as retries
@@ -2759,12 +2760,19 @@ class Client(ClientWithProject):
 
         job_config.source_format = job.SourceFormat.NEWLINE_DELIMITED_JSON
 
-        # check whether the table already exists with a schema
-        # if it does already have a schema, we will not tell the `backend to use autodetect.
-        table = _table_arg_to_table(destination, default_project=self.project)
-        if table.schema:
-            job_config.autodetect = True
-        else:
+        # table = _table_arg_to_table(destination, default_project=self.project)
+        # table = self.get_table(destination)
+        # call self
+        # check if table exists
+
+        try:
+            table = self.get_table(destination)  # Make an API request.
+            print("Table {} already exists.".format(table.table_id))
+        except NotFound:
+            print("Table {} is not found.".format(table.table_id))
+        # need an if here. if there is no table then set autodetect to True
+        # if not, then set autodetect to False
+        if table is None:
             job_config.autodetect = True
 
         if project is None:

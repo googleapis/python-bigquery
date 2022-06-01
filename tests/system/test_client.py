@@ -893,6 +893,7 @@ class TestBigQuery(unittest.TestCase):
         )
 
     def test_load_table_from_json_bug_check_with_no_schema(self):
+        table_schema = (bigquery.SchemaField("age", "INTEGER", mode="REQUIRED"),)
         json_rows = [
             {
                 "age": "18",
@@ -909,7 +910,10 @@ class TestBigQuery(unittest.TestCase):
 
         # Create the table before loading so that schema mismatch errors are
         # identified.
-        table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
+        # table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
+        table = helpers.retry_403(Config.CLIENT.create_table)(
+            Table(table_id, schema=table_schema)
+        )
         self.to_delete.insert(0, table)
 
         job_config = bigquery.LoadJobConfig()

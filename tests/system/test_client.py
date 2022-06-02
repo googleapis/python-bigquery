@@ -859,7 +859,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(tuple(table.schema), table_schema)
         self.assertEqual(table.num_rows, 2)
 
-    def test_load_table_from_json_bug_check_with_schema(self):
+    def test_load_table_from_json_table_exists(self):
         table_schema = (bigquery.SchemaField("age", "INTEGER", mode="REQUIRED"),)
         json_rows = [
             {
@@ -894,7 +894,7 @@ class TestBigQuery(unittest.TestCase):
         # )
         assert type(table.schema[0].field_type) is str
 
-    def test_load_table_from_json_bug_check_with_no_schema(self):
+    def test_load_table_from_json_bug_table_not_exists(self):
         json_rows = [
             {
                 "age": "18",
@@ -910,10 +910,9 @@ class TestBigQuery(unittest.TestCase):
         )
 
         # Create the table with no schema
-        table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
-        self.to_delete.insert(0, table)
+        # table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
+        # self.to_delete.insert(0, table)
 
-        # job_config = bigquery.LoadJobConfig()
         job_config = bigquery.LoadJobConfig()
         job_config.autodetect = True
         load_job = Config.CLIENT.load_table_from_json(json_rows, table_id)

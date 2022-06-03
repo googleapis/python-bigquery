@@ -832,8 +832,8 @@ class TestBigQuery(unittest.TestCase):
         )
 
         json_rows = [
-            {"name": "John", "age": 18, "birthday": "2001-10-15", "is_awesome": False},
-            {"name": "Chuck", "age": 79, "birthday": "1940-03-10", "is_awesome": True},
+            {"name": "John", "age": "18", "birthday": "2001-10-15", "is_awesome": False},
+            {"name": "Chuck", "age": "79", "birthday": "1940-03-10", "is_awesome": True},
         ]
 
         dataset_id = _make_dataset_id("bq_system_test")
@@ -876,7 +876,7 @@ class TestBigQuery(unittest.TestCase):
             Config.CLIENT.project, dataset_id
         )
 
-        # create an empty table with schema
+        # create an empty table
         table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
         self.to_delete.insert(0, table)
 
@@ -887,14 +887,13 @@ class TestBigQuery(unittest.TestCase):
         load_job.result()
 
         table = Config.CLIENT.get_table(table)
-        # schema should be inferred from the json data
-        # self.assertEqual(
-        #     tuple(table.schema),
-        #     (bigquery.SchemaField("age", "STRING", mode="NULLABLE"),),
-        # )
+        fetched = self._fetch_single_page(table)
+        row_tuples = [r.values() for r in fetched]
         assert type(table.schema[0].field_type) is str
+        assert type(row_tuples[0][0]) is str
 
     def test_load_table_from_json_bug_table_not_exists(self):
+        client = Config.CLIENT
         json_rows = [
             {
                 "age": "18",
@@ -912,13 +911,15 @@ class TestBigQuery(unittest.TestCase):
         # Create the table with no schema
         # table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
         # self.to_delete.insert(0, table)
-
+        destination = f"{client.project}.{dataset_id}.test_table"
         job_config = bigquery.LoadJobConfig()
         job_config.autodetect = True
         load_job = Config.CLIENT.load_table_from_json(json_rows, table_id)
         load_job.result()
 
         table = Config.CLIENT.get_table(table)
+        #check that autodetect was used by api rather than job config
+        
         self.assertTrue(job_config.autodetect)
 
     def test_load_table_from_json_schema_autodetect(self):

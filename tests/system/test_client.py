@@ -832,8 +832,18 @@ class TestBigQuery(unittest.TestCase):
         )
 
         json_rows = [
-            {"name": "John", "age": "18", "birthday": "2001-10-15", "is_awesome": False},
-            {"name": "Chuck", "age": "79", "birthday": "1940-03-10", "is_awesome": True},
+            {
+                "name": "John",
+                "age": "18",
+                "birthday": "2001-10-15",
+                "is_awesome": False,
+            },
+            {
+                "name": "Chuck",
+                "age": "79",
+                "birthday": "1940-03-10",
+                "is_awesome": True,
+            },
         ]
 
         dataset_id = _make_dataset_id("bq_system_test")
@@ -893,7 +903,7 @@ class TestBigQuery(unittest.TestCase):
         assert type(row_tuples[0][0]) is str
 
     def test_load_table_from_json_bug_table_not_exists(self):
-        client = Config.CLIENT
+        table_schema = (bigquery.SchemaField("age", "INTEGER", mode="NULLABLE"),)
         json_rows = [
             {
                 "age": "18",
@@ -908,19 +918,14 @@ class TestBigQuery(unittest.TestCase):
             Config.CLIENT.project, dataset_id
         )
 
-        # Create the table with no schema
-        # table = helpers.retry_403(Config.CLIENT.create_table)(Table(table_id))
-        # self.to_delete.insert(0, table)
-        destination = f"{client.project}.{dataset_id}.test_table"
         job_config = bigquery.LoadJobConfig()
         job_config.autodetect = True
         load_job = Config.CLIENT.load_table_from_json(json_rows, table_id)
         load_job.result()
 
-        table = Config.CLIENT.get_table(table)
-        #check that autodetect was used by api rather than job config
-        
-        self.assertTrue(job_config.autodetect)
+        table = Config.CLIENT.get_table(table_id)
+        self.assertTrue(table.schema)
+        self.assertEqual(tuple(table.schema), table_schema)
 
     def test_load_table_from_json_schema_autodetect(self):
         json_rows = [

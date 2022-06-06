@@ -2760,19 +2760,14 @@ class Client(ClientWithProject):
 
         job_config.source_format = job.SourceFormat.NEWLINE_DELIMITED_JSON
 
-        # table = _table_arg_to_table(destination, default_project=self.project)
-        # table = self.get_table(destination)
-        # call self
+        # make table id
+        # table_id = "your-project.your_dataset.your_table"
+        destination = _table_arg_to_table_ref(destination, default_project=self.project)
         # check if table exists
-
         try:
-            table = self.get_table(destination)  # Make an API request.
-            # print("Table {} already exists.".format(table.table_id))
+            self.get_table(destination)  # Make an API request.
+            job_config.autodetect = False
         except NotFound:
-            print("Table {} is not found.".format(table.table_id))
-        # need an if here. if there is no table then set autodetect to True
-        # if not, then set autodetect to False
-        if table is None:
             job_config.autodetect = True
 
         if project is None:
@@ -2780,8 +2775,6 @@ class Client(ClientWithProject):
 
         if location is None:
             location = self.location
-
-        destination = _table_arg_to_table_ref(destination, default_project=self.project)
 
         data_str = "\n".join(json.dumps(item, ensure_ascii=False) for item in json_rows)
         encoded_str = data_str.encode()

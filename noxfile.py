@@ -206,7 +206,7 @@ def blacken(session):
 def docs(session):
     """Build the docs."""
 
-    session.install("ipython", "recommonmark", "sphinx<3.0.0", "sphinx_rtd_theme")
+    session.install("ipython", "recommonmark", "sphinx<3.0.0", "jinja2<3.1", "sphinx_rtd_theme")
     session.install("google-cloud-storage")
     session.install("-e", ".[all]")
 

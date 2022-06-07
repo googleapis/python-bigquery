@@ -34,6 +34,7 @@ dependencies = [
     "google-cloud-core >= 1.4.1, < 3.0dev",
     "google-resumable-media >= 0.6.0, < 2.0dev",
     "six >=1.13.0,< 2.0.0dev",
+    "protobuf<4.0.0dev",
 ]
 extras = {
     "bqstorage": [

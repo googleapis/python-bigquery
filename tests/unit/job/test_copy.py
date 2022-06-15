@@ -52,8 +52,7 @@ class TestCopyJobConfig(_Base):
         snapshot_operation = OperationType.SNAPSHOT
 
         today = datetime.date.today()
-        year = today.year + 1
-        destination_expiration_time = f"{year}-01-01T00:00:00Z"
+        destination_expiration_time = f"{today.year + 1}-01-01T00:00:00Z"
 
         config = self._get_target_class()(
             create_disposition=create_disposition,

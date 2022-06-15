@@ -2156,9 +2156,8 @@ def test_table_snapshots(dataset_id):
     copy_config.operation_type = OperationType.SNAPSHOT
 
     today = datetime.date.today()
-    year = today.year + 1
-    destination_expiration_time = f"{year}-01-01T00:00:00Z"
-
+    destination_expiration_time = f"{today.year + 1}-01-01T00:00:00Z"
+    
     copy_config.destination_expiration_time = destination_expiration_time
 
     copy_job = client.copy_table(

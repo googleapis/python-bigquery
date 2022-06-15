@@ -16,16 +16,16 @@
 def create_table_snapshot(source_table_id: str, snapshot_table_id: str) -> None:
     original_source_table_id = source_table_id
     original_snapshot_table_id = snapshot_table_id
-    # [START create_table_snapshot]
+    # [START bigquery_create_table_snapshot]
     from google.cloud import bigquery
 
     # TODO(developer): Set table_id to the ID of the table to create.
     source_table_id = "your-project.your_dataset.your_table_name"
     snapshot_table_id = "your-project.your_dataset.snapshot_table_name"
-    # [END create_table_snapshot]
+    # [END bigquery_create_table_snapshot]
     source_table_id = original_source_table_id
     snapshot_table_id = original_snapshot_table_id
-    # [START create_table_snapshot]
+    # [START bigquery_create_table_snapshot]
 
     # Construct a BigQuery client object.
     client = bigquery.Client()
@@ -40,4 +40,4 @@ def create_table_snapshot(source_table_id: str, snapshot_table_id: str) -> None:
     copy_job.result()
 
     print("Created table snapshot {}".format(snapshot_table_id))
-    # [END create_table_snapshot]
+    # [END bigquery_create_table_snapshot]

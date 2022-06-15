@@ -23,7 +23,6 @@ import os
 import pathlib
 import time
 import unittest
-import pytz
 import uuid
 from typing import Optional
 
@@ -427,7 +426,6 @@ class TestBigQuery(unittest.TestCase):
         self.assertCountEqual(
             list(table.schema[1].policy_tags.names), [child_policy_tag.name]
         )
-
 
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning
@@ -2157,7 +2155,7 @@ def test_table_snapshots(dataset_id):
 
     today = datetime.date.today()
     destination_expiration_time = f"{today.year + 1}-01-01T00:00:00Z"
-    
+
     copy_config.destination_expiration_time = destination_expiration_time
 
     copy_job = client.copy_table(

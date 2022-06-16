@@ -137,7 +137,7 @@ class CopyJobConfig(_JobConfig):
         return self._get_sub_prop("destinationExpirationTime")
 
     @destination_expiration_time.setter
-    def destination_expiration_time(self, value):
+    def destination_expiration_time(self, value: str):
         self._set_sub_prop("destinationExpirationTime", value)
 
 

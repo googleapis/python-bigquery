@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2016-2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-class BigQueryError(Exception):
-    """Base class for all custom exceptions defined by the BigQuery client."""
-
-
-class LegacyBigQueryStorageError(BigQueryError):
-    """Raised when too old a version of BigQuery Storage extra is detected at runtime."""
+# [START bigquery_cancel_job]
+from google.cloud import bigquery
 
 
-class LegacyPyarrowError(BigQueryError):
-    """Raised when too old a version of pyarrow package is detected at runtime."""
+def cancel_job(
+    client: bigquery.Client,
+    location: str = "us",
+    job_id: str = "abcd-efgh-ijkl-mnop",
+) -> None:
+    job = client.cancel_job(job_id, location=location)
+    print(f"{job.location}:{job.job_id} cancelled")
+
+
+# [END bigquery_cancel_job]

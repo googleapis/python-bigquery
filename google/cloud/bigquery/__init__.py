@@ -41,8 +41,7 @@ from google.cloud.bigquery.enums import AutoRowIDs
 from google.cloud.bigquery.enums import DecimalTargetType
 from google.cloud.bigquery.enums import KeyResultStatementKind
 from google.cloud.bigquery.enums import SqlTypeNames
-from google.cloud.bigquery.enums import StandardSqlDataTypes
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+from google.cloud.bigquery.enums import StandardSqlTypeNames
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.external_config import BigtableOptions
 from google.cloud.bigquery.external_config import BigtableColumnFamily
@@ -50,6 +49,7 @@ from google.cloud.bigquery.external_config import BigtableColumn
 from google.cloud.bigquery.external_config import CSVOptions
 from google.cloud.bigquery.external_config import GoogleSheetsOptions
 from google.cloud.bigquery.external_config import ExternalSourceFormat
+from google.cloud.bigquery.external_config import HivePartitioningOptions
 from google.cloud.bigquery.format_options import AvroOptions
 from google.cloud.bigquery.format_options import ParquetOptions
 from google.cloud.bigquery.job.base import SessionInfo
@@ -81,6 +81,7 @@ from google.cloud.bigquery.query import ArrayQueryParameterType
 from google.cloud.bigquery.query import ConnectionProperty
 from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.query import ScalarQueryParameterType
+from google.cloud.bigquery.query import SqlParameterScalarTypes
 from google.cloud.bigquery.query import StructQueryParameter
 from google.cloud.bigquery.query import StructQueryParameterType
 from google.cloud.bigquery.query import UDFResource
@@ -90,12 +91,17 @@ from google.cloud.bigquery.routine import Routine
 from google.cloud.bigquery.routine import RoutineArgument
 from google.cloud.bigquery.routine import RoutineReference
 from google.cloud.bigquery.routine import RoutineType
-from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery.schema import PolicyTagList
+from google.cloud.bigquery.schema import SchemaField
+from google.cloud.bigquery.standard_sql import StandardSqlDataType
+from google.cloud.bigquery.standard_sql import StandardSqlField
+from google.cloud.bigquery.standard_sql import StandardSqlStructType
+from google.cloud.bigquery.standard_sql import StandardSqlTableType
 from google.cloud.bigquery.table import PartitionRange
 from google.cloud.bigquery.table import RangePartitioning
 from google.cloud.bigquery.table import Row
 from google.cloud.bigquery.table import SnapshotDefinition
+from google.cloud.bigquery.table import CloneDefinition
 from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import TimePartitioningType
@@ -114,6 +120,7 @@ __all__ = [
     "StructQueryParameter",
     "ArrayQueryParameterType",
     "ScalarQueryParameterType",
+    "SqlParameterScalarTypes",
     "StructQueryParameterType",
     # Datasets
     "Dataset",
@@ -126,6 +133,7 @@ __all__ = [
     "RangePartitioning",
     "Row",
     "SnapshotDefinition",
+    "CloneDefinition",
     "TimePartitioning",
     "TimePartitioningType",
     # Jobs
@@ -156,10 +164,16 @@ __all__ = [
     "DmlStats",
     "CSVOptions",
     "GoogleSheetsOptions",
+    "HivePartitioningOptions",
     "ParquetOptions",
     "ScriptOptions",
     "TransactionInfo",
     "DEFAULT_RETRY",
+    # Standard SQL types
+    "StandardSqlDataType",
+    "StandardSqlField",
+    "StandardSqlStructType",
+    "StandardSqlTableType",
     # Enum Constants
     "enums",
     "AutoRowIDs",
@@ -177,12 +191,10 @@ __all__ = [
     "SchemaUpdateOption",
     "SourceFormat",
     "SqlTypeNames",
-    "StandardSqlDataTypes",
+    "StandardSqlTypeNames",
     "WriteDisposition",
     # EncryptionConfiguration
     "EncryptionConfiguration",
-    # Custom exceptions
-    "LegacyBigQueryStorageError",
 ]
 
 

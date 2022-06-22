@@ -17,31 +17,30 @@ import re
 from concurrent import futures
 import warnings
 
-import mock
-import pytest
-
-try:
-    import pandas
-except ImportError:  # pragma: NO COVER
-    pandas = None
-
 from google.api_core import exceptions
 import google.auth.credentials
+import mock
+import pytest
+from tests.unit.helpers import make_connection
+from test_utils.imports import maybe_fail_import
 
 from google.cloud import bigquery
 from google.cloud.bigquery import job
 from google.cloud.bigquery import table
-from google.cloud.bigquery.magics import magics
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
-from tests.unit.helpers import make_connection
-from test_utils.imports import maybe_fail_import
 
 
-IPython = pytest.importorskip("IPython")
-io = pytest.importorskip("IPython.utils.io")
-tools = pytest.importorskip("IPython.testing.tools")
-interactiveshell = pytest.importorskip("IPython.terminal.interactiveshell")
+try:
+    from google.cloud.bigquery.magics import magics
+except ImportError:
+    magics = None
+
 bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
+IPython = pytest.importorskip("IPython")
+interactiveshell = pytest.importorskip("IPython.terminal.interactiveshell")
+tools = pytest.importorskip("IPython.testing.tools")
+io = pytest.importorskip("IPython.utils.io")
+pandas = pytest.importorskip("pandas")
 
 
 @pytest.fixture(scope="session")
@@ -75,19 +74,6 @@ def ipython_ns_cleanup():
     for ip, name in names_to_clean:
         if name in ip.user_ns:
             del ip.user_ns[name]
-
-
-@pytest.fixture(scope="session")
-def missing_bq_storage():
-    """Provide a patcher that can make the bigquery storage import to fail."""
-
-    def fail_if(name, globals, locals, fromlist, level):
-        # NOTE: *very* simplified, assuming a straightforward absolute import
-        return "bigquery_storage" in name or (
-            fromlist is not None and "bigquery_storage" in fromlist
-        )
-
-    return maybe_fail_import(predicate=fail_if)
 
 
 @pytest.fixture(scope="session")
@@ -325,9 +311,6 @@ def test__make_bqstorage_client_false():
     assert got is None
 
 
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 def test__make_bqstorage_client_true():
     credentials_mock = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
@@ -339,53 +322,6 @@ def test__make_bqstorage_client_true():
     assert isinstance(got, bigquery_storage.BigQueryReadClient)
 
 
-def test__make_bqstorage_client_true_raises_import_error(missing_bq_storage):
-    credentials_mock = mock.create_autospec(
-        google.auth.credentials.Credentials, instance=True
-    )
-    test_client = bigquery.Client(
-        project="test_project", credentials=credentials_mock, location="test_location"
-    )
-
-    with pytest.raises(ImportError) as exc_context, missing_bq_storage:
-        magics._make_bqstorage_client(test_client, True, {})
-
-    error_msg = str(exc_context.value)
-    assert "google-cloud-bigquery-storage" in error_msg
-    assert "pyarrow" in error_msg
-
-
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
-def test__make_bqstorage_client_true_obsolete_dependency():
-    from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
-    credentials_mock = mock.create_autospec(
-        google.auth.credentials.Credentials, instance=True
-    )
-    test_client = bigquery.Client(
-        project="test_project", credentials=credentials_mock, location="test_location"
-    )
-
-    patcher = mock.patch(
-        "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
-        side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
-    )
-    with patcher, warnings.catch_warnings(record=True) as warned:
-        got = magics._make_bqstorage_client(test_client, True, {})
-
-    assert got is None
-
-    matching_warnings = [
-        warning for warning in warned if "BQ Storage too old" in str(warning)
-    ]
-    assert matching_warnings, "Obsolete dependency warning not raised."
-
-
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test__make_bqstorage_client_true_missing_gapic(missing_grpcio_lib):
     credentials_mock = mock.create_autospec(
@@ -441,9 +377,6 @@ def test_extension_load():
 
 @pytest.mark.usefixtures("ipython_interactive")
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 def test_bigquery_magic_without_optional_arguments(monkeypatch):
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
@@ -572,7 +505,8 @@ def test_bigquery_magic_does_not_clear_display_in_verbose_mode():
     )
 
     clear_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics.display.clear_output", autospec=True,
+        "google.cloud.bigquery.magics.magics.display.clear_output",
+        autospec=True,
     )
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
@@ -592,7 +526,8 @@ def test_bigquery_magic_clears_display_in_non_verbose_mode():
     )
 
     clear_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics.display.clear_output", autospec=True,
+        "google.cloud.bigquery.magics.magics.display.clear_output",
+        autospec=True,
     )
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
@@ -604,10 +539,9 @@ def test_bigquery_magic_clears_display_in_non_verbose_mode():
 
 
 @pytest.mark.usefixtures("ipython_interactive")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
+    pandas = pytest.importorskip("pandas")
+
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
     mock_credentials = mock.create_autospec(
@@ -670,10 +604,9 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
 
 
 @pytest.mark.usefixtures("ipython_interactive")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 def test_bigquery_magic_with_rest_client_requested(monkeypatch):
+    pandas = pytest.importorskip("pandas")
+
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
     mock_credentials = mock.create_autospec(
@@ -786,7 +719,8 @@ def test_bigquery_magic_w_max_results_query_job_results_fails():
         "google.cloud.bigquery.client.Client.query", autospec=True
     )
     close_transports_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics._close_transports", autospec=True,
+        "google.cloud.bigquery.magics.magics._close_transports",
+        autospec=True,
     )
 
     sql = "SELECT 17 AS num"
@@ -897,9 +831,6 @@ def test_bigquery_magic_w_table_id_and_destination_var(ipython_ns_cleanup):
 
 
 @pytest.mark.usefixtures("ipython_interactive")
-@pytest.mark.skipif(
-    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
-)
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_bigquery_magic_w_table_id_and_bqstorage_client():
     ip = IPython.get_ipython()
@@ -939,7 +870,8 @@ def test_bigquery_magic_w_table_id_and_bqstorage_client():
 
         ip.run_cell_magic("bigquery", "--max_results=5", table_id)
         row_iterator_mock.to_dataframe.assert_called_once_with(
-            bqstorage_client=bqstorage_instance_mock, create_bqstorage_client=mock.ANY,
+            bqstorage_client=bqstorage_instance_mock,
+            create_bqstorage_client=mock.ANY,
         )
 
 
@@ -1215,6 +1147,64 @@ def test_bigquery_magic_w_maximum_bytes_billed_w_context_setter():
     _, req = conn.api_request.call_args_list[0]
     sent_config = req["data"]["configuration"]["query"]
     assert sent_config["maximumBytesBilled"] == "10203"
+
+
+@pytest.mark.usefixtures("ipython_interactive")
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_bigquery_magic_with_no_query_cache(monkeypatch):
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    conn = make_connection()
+    monkeypatch.setattr(magics.context, "_connection", conn)
+    monkeypatch.setattr(magics.context, "project", "project-from-context")
+
+    # --no_query_cache option should override context.
+    monkeypatch.setattr(
+        magics.context.default_query_job_config, "use_query_cache", True
+    )
+
+    ip.run_cell_magic("bigquery", "--no_query_cache", QUERY_STRING)
+
+    conn.api_request.assert_called_with(
+        method="POST",
+        path="/projects/project-from-context/jobs",
+        data=mock.ANY,
+        timeout=DEFAULT_TIMEOUT,
+    )
+    jobs_insert_call = [
+        call
+        for call in conn.api_request.call_args_list
+        if call[1]["path"] == "/projects/project-from-context/jobs"
+    ][0]
+    assert not jobs_insert_call[1]["data"]["configuration"]["query"]["useQueryCache"]
+
+
+@pytest.mark.usefixtures("ipython_interactive")
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_context_with_no_query_cache_from_context(monkeypatch):
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    conn = make_connection()
+    monkeypatch.setattr(magics.context, "_connection", conn)
+    monkeypatch.setattr(magics.context, "project", "project-from-context")
+    monkeypatch.setattr(
+        magics.context.default_query_job_config, "use_query_cache", False
+    )
+
+    ip.run_cell_magic("bigquery", "", QUERY_STRING)
+
+    conn.api_request.assert_called_with(
+        method="POST",
+        path="/projects/project-from-context/jobs",
+        data=mock.ANY,
+        timeout=DEFAULT_TIMEOUT,
+    )
+    jobs_insert_call = [
+        call
+        for call in conn.api_request.call_args_list
+        if call[1]["path"] == "/projects/project-from-context/jobs"
+    ][0]
+    assert not jobs_insert_call[1]["data"]["configuration"]["query"]["useQueryCache"]
 
 
 @pytest.mark.usefixtures("ipython_interactive")
@@ -1966,7 +1956,8 @@ def test_bigquery_magic_create_dataset_fails():
         side_effect=OSError,
     )
     close_transports_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics._close_transports", autospec=True,
+        "google.cloud.bigquery.magics.magics._close_transports",
+        autospec=True,
     )
 
     with pytest.raises(

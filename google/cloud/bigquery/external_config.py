@@ -22,7 +22,7 @@ from __future__ import absolute_import
 
 import base64
 import copy
-from typing import FrozenSet, Iterable, Optional, Union
+from typing import Any, Dict, FrozenSet, Iterable, Optional, Union
 
 from google.cloud.bigquery._helpers import _to_bytes
 from google.cloud.bigquery._helpers import _bytes_to_json
@@ -289,8 +289,7 @@ class BigtableColumnFamily(object):
 
 
 class BigtableOptions(object):
-    """Options that describe how to treat Bigtable tables as BigQuery tables.
-    """
+    """Options that describe how to treat Bigtable tables as BigQuery tables."""
 
     _SOURCE_FORMAT = "BIGTABLE"
     _RESOURCE_NAME = "bigtableOptions"
@@ -557,7 +556,11 @@ _OPTION_CLASSES = (
 )
 
 OptionsType = Union[
-    AvroOptions, BigtableOptions, CSVOptions, GoogleSheetsOptions, ParquetOptions,
+    AvroOptions,
+    BigtableOptions,
+    CSVOptions,
+    GoogleSheetsOptions,
+    ParquetOptions,
 ]
 
 
@@ -572,8 +575,8 @@ class HivePartitioningOptions(object):
     https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#HivePartitioningOptions
     """
 
-    def __init__(self):
-        self._properties = {}
+    def __init__(self) -> None:
+        self._properties: Dict[str, Any] = {}
 
     @property
     def mode(self):
@@ -654,7 +657,7 @@ class ExternalConfig(object):
             See :attr:`source_format`.
     """
 
-    def __init__(self, source_format):
+    def __init__(self, source_format) -> None:
         self._properties = {"sourceFormat": source_format}
 
     @property

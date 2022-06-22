@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2020 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ from google.protobuf import wrappers_pb2  # type: ignore
 
 
 __protobuf__ = proto.module(
-    package="google.cloud.bigquery.v2", manifest={"EncryptionConfiguration",},
+    package="google.cloud.bigquery.v2",
+    manifest={
+        "EncryptionConfiguration",
+    },
 )
 
 
@@ -36,7 +39,9 @@ class EncryptionConfiguration(proto.Message):
     """
 
     kms_key_name = proto.Field(
-        proto.MESSAGE, number=1, message=wrappers_pb2.StringValue,
+        proto.MESSAGE,
+        number=1,
+        message=wrappers_pb2.StringValue,
     )
 
 

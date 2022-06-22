@@ -18,7 +18,13 @@ Retries for nearly all API requests were [added in 2017](https://github.com/goog
 
 ### jobs.insert and jobs.query API requests
 
-By default, the Python client starts a query using the [jobs.insert REST API method](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert). Support for the [jobs.query REST API method](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query) was [added via the api\_method parameter](https://github.com/googleapis/python-bigquery/pull/967) and (will be) included in version 3.0 of the Python client library.
+By default, the Python client starts a query using the [jobs.insert REST API
+method](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert).
+Support for the [jobs.query REST API
+method](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query)
+was [added via the `api_method`
+parameter](https://github.com/googleapis/python-bigquery/pull/967) and is
+included in version 3.0 of the Python client library.
 
 The jobs.query REST API method differs from jobs.insert in that it does not accept a job ID. Instead, the [requestId parameter](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#QueryRequest.FIELDS.request_id) provides a window of idempotency for duplicate requests.
 
@@ -27,14 +33,25 @@ The jobs.query REST API method differs from jobs.insert in that it does not acce
 
 The ability to re-issue a query automatically was a [long](https://github.com/googleapis/google-cloud-python/issues/5555) [requested](https://github.com/googleapis/python-bigquery/issues/14) [feature](https://github.com/googleapis/python-bigquery/issues/539). As work ramped up on the SQLAlchemy connector, it became clear that this feature was necessary to keep the test suite, which issues hundreds of queries, from being [too flakey](https://github.com/googleapis/python-bigquery-sqlalchemy/issues?q=is%3Aissue+is%3Aclosed+author%3Aapp%2Fflaky-bot+sort%3Acreated-asc).
 
-This feature was difficult to implement. In many cases the client library does not "know" about a query job failure until it tries to fetch the query results. Eventually a [solution was found](https://github.com/googleapis/python-bigquery/pull/837), in which the client re-issues a query as it was originally issued only if the query job has failed for a retryable reason.
+Retrying a query is not as simple as retrying a single API request. In many
+cases the client library does not "know" about a query job failure until it
+tries to fetch the query results.  To solve this, the [client re-issues a
+query](https://github.com/googleapis/python-bigquery/pull/837) as it was
+originally issued only if the query job has failed for a retryable reason.
 
 
 ### getQueryResults error behavior
 
 The client library uses [the jobs.getQueryResults REST API method](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults) to wait for a query to finish. This REST API has a unique behavior in that it translates query job failures into HTTP error status codes. To disambiguate these error responses from one that may have occurred further up the REST API stack (such as from the Google load balancer), the client library inspects the error response body.
 
-When the error corresponds to a query job failure, BigQuery populates the "errors" array field, with the first element in the list corresponding to the error which directly caused the job failure. There are many [error response messages](https://cloud.google.com/bigquery/docs/error-messages), but only some of them indicate that re-issuing the query job may help. For example, if a query job fails due to "backendError" or "rateLimitExceeded", we know that the job did not successfully execute but not because the query text or some other parameter was incorrect.
+When the error corresponds to a query job failure, BigQuery populates the
+"errors" array field, with the first element in the list corresponding to the
+error which directly caused the job failure. There are many [error response
+messages](https://cloud.google.com/bigquery/docs/error-messages), but only some
+of them indicate that re-issuing the query job may help. For example, if the
+job fails due to invalid query syntax, re-issuing the query won't help. If a
+query job fails due to "backendError" or "rateLimitExceeded", we know that the
+job did not successfully execute for some other reason.
 
 
 ## Detailed design
@@ -46,27 +63,45 @@ A developer can configure when to retry an API request (corresponding to #1 "iss
 
 ### Retrying API requests via the `retry` parameter
 
+The first set of retries are at the API layer. The client library sends an
+identical request if the request is idempotent.
 
 #### Retrying the jobs.insert API via the retry parameter
 
-When the `api_method` parameter is set to `"INSERT"`, which is the default value, the client library uses the jobs.insert REST API to start a query job. Before it issues this request, it sets a job ID. This job ID remains constant across query retries.
+When the `api_method` parameter is set to `"INSERT"`, which is the default
+value, the client library uses the jobs.insert REST API to start a query job.
+Before it issues this request, it sets a job ID. This job ID remains constant
+across API retries.
 
 If the job ID was randomly generated, and the jobs.insert request and all retries fail, the client library sends a request to the jobs.get API. This covers the case when a query request succeeded, but there was a transient issue that prevented the client from receiving a successful response.
 
 
 #### Retrying the jobs.query API via the retry parameter
 
-When the `api_method` parameter is set to `"QUERY"` (available in version 3 of the client library), the client library sends a request to the jobs.query REST API. The client library automatically populates the `requestId` parameter in the request body. The `requestId` remains constant across retries, ensuring that requests are idempotent.
+When the `api_method` parameter is set to `"QUERY"` (available in version 3 of
+the client library), the client library sends a request to the jobs.query REST
+API. The client library automatically populates the `requestId` parameter in
+the request body. The `requestId` remains constant across API retries, ensuring
+that requests are idempotent.
 
 As there is no job ID available, the client library cannot call jobs.get if the query happened to succeed, but all retries resulted in an error response. In this case, the client library throws an exception.
 
 
 #### Retrying the jobs.getQueryResults API via the retry parameter
 
-The jobs.getQueryResults REST API is read-only. Thus, it is always safe to retry. As noted in the "Background" section, HTTP error response codes can indicate that the job itself has failed, so this may retry more often than is strictly needed (https://github.com/googleapis/python-bigquery/issues/1122 has been opened to investigate this).
+The jobs.getQueryResults REST API is read-only. Thus, it is always safe to
+retry. As noted in the "Background" section, HTTP error response codes can
+indicate that the job itself has failed, so this may retry more often than is
+strictly needed ([Issue
+#1122](https://github.com/googleapis/python-bigquery/issues/1122) has been
+opened to investigate this).
 
 
 ### Re-issuing queries via the `job_retry` parameter
+
+The first set of retries are at the "job" layer, called "re-issue" in this
+document. The client library sends an identical query request (except for the
+job or request identifier) if the query job has failed for a re-issuable reason.
 
 
 #### Deciding when it is safe to re-issue a query

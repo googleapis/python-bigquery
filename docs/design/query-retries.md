@@ -92,9 +92,9 @@ As there is no job ID available, the client library cannot call jobs.get if the 
 The jobs.getQueryResults REST API is read-only. Thus, it is always safe to
 retry. As noted in the "Background" section, HTTP error response codes can
 indicate that the job itself has failed, so this may retry more often than is
-strictly needed ([Issue
-#1122](https://github.com/googleapis/python-bigquery/issues/1122) has been
-opened to investigate this).
+strictly needed 
+([Issue #1122](https://github.com/googleapis/python-bigquery/issues/1122)
+has been opened to investigate this).
 
 
 ### Re-issuing queries via the `job_retry` parameter

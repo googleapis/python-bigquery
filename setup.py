@@ -44,14 +44,19 @@ dependencies = [
     "packaging >= 14.3, <22.0.0dev",
     "protobuf >= 3.12.0, <4.0.0dev",  # For the legacy proto-based types.
     "python-dateutil >= 2.7.2, <3.0dev",
-    "pyarrow >= 3.0.0, < 9.0dev",
+    # "pyarrow >= 3.0.0, < 9.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]
 extras = {
     # Keep the no-op bqstorage extra for backward compatibility.
     # See: https://github.com/googleapis/python-bigquery/issues/757
     "bqstorage": [],
-    "pandas": ["pandas>=1.0.0", "db-dtypes>=0.3.0,<2.0.0dev"],
+    "pandas": [
+        "pandas>=1.0.0",
+        "pyarrow == 5.0.0, < 9.0dev",
+        "db-dtypes>=0.3.0,<2.0.0dev",
+    ],
+    "bignumeric_type": ["pyarrow >= 5.0.0, < 9.0dev"],
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
     "ipython": ["ipython>=7.0.1,!=8.1.0"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],

@@ -1,25 +1,22 @@
-Python Client for Google BigQuery
-=================================
+Python Client for Google Cloud BigQuery API
+===========================================
 
-|GA| |pypi| |versions|
+|stable| |pypi| |versions|
 
-Querying massive datasets can be time consuming and expensive without the
-right hardware and infrastructure. Google `BigQuery`_ solves this problem by
-enabling super-fast, SQL queries against append-mostly tables, using the
-processing power of Google's infrastructure.
+`Google Cloud BigQuery API`_: 
 
--  `Client Library Documentation`_
--  `Product Documentation`_
+- `Client Library Documentation`_
+- `Product Documentation`_
 
-.. |GA| image:: https://img.shields.io/badge/support-GA-gold.svg
-   :target: https://github.com/googleapis/google-cloud-python/blob/main/README.rst#general-availability
+.. |stable| image:: https://img.shields.io/badge/support-stable-gold.svg
+   :target: https://github.com/googleapis/google-cloud-python/blob/main/README.rst#stability-levels
 .. |pypi| image:: https://img.shields.io/pypi/v/google-cloud-bigquery.svg
    :target: https://pypi.org/project/google-cloud-bigquery/
 .. |versions| image:: https://img.shields.io/pypi/pyversions/google-cloud-bigquery.svg
    :target: https://pypi.org/project/google-cloud-bigquery/
-.. _BigQuery: https://cloud.google.com/bigquery/what-is-bigquery
-.. _Client Library Documentation: https://googleapis.dev/python/bigquery/latest
-.. _Product Documentation: https://cloud.google.com/bigquery/docs/reference/v2/
+.. _Google Cloud BigQuery API: https://cloud.google.com/bigquery
+.. _Client Library Documentation: https://cloud.google.com/python/docs/reference/bigquery/latest
+.. _Product Documentation:  https://cloud.google.com/bigquery
 
 Quick Start
 -----------
@@ -50,16 +47,25 @@ dependencies.
 .. _`virtualenv`: https://virtualenv.pypa.io/en/latest/
 
 
+Code samples and snippets
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Code samples and snippets live in the `samples/` folder.
+
+
 Supported Python Versions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-Python >= 3.6, < 3.11
+Our client libraries are compatible with all current [active](https://devguide.python.org/devcycle/#in-development-main-branch) and [maintenance](https://devguide.python.org/devcycle/#maintenance-branches) versions of
+Python.
+
+Python >= 3.7
 
 Unsupported Python Versions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Python == 2.7, Python == 3.5.
+Python <= 3.6
 
-The last version of this library compatible with Python 2.7 and 3.5 is
-`google-cloud-bigquery==1.28.0`.
+If you are using an [end-of-life](https://devguide.python.org/devcycle/#end-of-life-branches)
+version of Python, we recommend that you update as soon as possible to an actively supported version.
 
 
 Mac/Linux
@@ -83,60 +89,15 @@ Windows
     <your-env>\Scripts\activate
     <your-env>\Scripts\pip.exe install google-cloud-bigquery
 
-Example Usage
--------------
+Next Steps
+~~~~~~~~~~
 
-Perform a query
-~~~~~~~~~~~~~~~
+-  Read the `Client Library Documentation`_ for Google Cloud BigQuery API
+   to see other available methods on the client.
+-  Read the `Google Cloud BigQuery API Product documentation`_ to learn
+   more about the product and see How-to Guides.
+-  View this `README`_ to see the full list of Cloud
+   APIs that we cover.
 
-.. code:: python
-
-    from google.cloud import bigquery
-
-    client = bigquery.Client()
-
-    # Perform a query.
-    QUERY = (
-        'SELECT name FROM `bigquery-public-data.usa_names.usa_1910_2013` '
-        'WHERE state = "TX" '
-        'LIMIT 100')
-    query_job = client.query(QUERY)  # API request
-    rows = query_job.result()  # Waits for query to finish
-
-    for row in rows:
-        print(row.name)
-
-Instrumenting With OpenTelemetry
---------------------------------
-
-This application uses `OpenTelemetry`_ to output tracing data from
-API calls to BigQuery. To enable OpenTelemetry tracing in
-the BigQuery client the following PyPI packages need to be installed:
-
-.. _OpenTelemetry: https://opentelemetry.io
-
-.. code-block:: console
-
-    pip install google-cloud-bigquery[opentelemetry] opentelemetry-exporter-google-cloud
-
-After installation, OpenTelemetry can be used in the BigQuery
-client and in BigQuery jobs. First, however, an exporter must be
-specified for where the trace data will be outputted to. An
-example of this can be found here:
-
-.. code-block:: python
-
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchExportSpanProcessor
-    from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-    trace.set_tracer_provider(TracerProvider())
-    trace.get_tracer_provider().add_span_processor(
-        BatchExportSpanProcessor(CloudTraceSpanExporter())
-    )
-
-In this example all tracing data will be published to the Google
-`Cloud Trace`_ console. For more information on OpenTelemetry, please consult the `OpenTelemetry documentation`_.
-
-.. _OpenTelemetry documentation: https://opentelemetry-python.readthedocs.io
-.. _Cloud Trace: https://cloud.google.com/trace
+.. _Google Cloud BigQuery API Product documentation:  https://cloud.google.com/bigquery
+.. _README: https://github.com/googleapis/google-cloud-python/blob/main/README.rst

@@ -3,7 +3,9 @@ Python Client for Google Cloud BigQuery API
 
 |stable| |pypi| |versions|
 
-`Google Cloud BigQuery API`_: 
+`Google Cloud BigQuery API`_: is a fully managed, NoOps, low cost data analytics service.
+Data can be streamed into BigQuery at millions of rows per second to enable real-time analysis.
+With BigQuery you can easily deploy Petabyte-scale Databases.
 
 - `Client Library Documentation`_
 - `Product Documentation`_

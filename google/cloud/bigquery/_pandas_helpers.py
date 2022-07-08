@@ -21,6 +21,9 @@ from itertools import islice
 import logging
 import queue
 import warnings
+from packaging import version
+
+from google.cloud.bigquery import _helpers
 
 try:
     import pandas  # type: ignore
@@ -43,9 +46,14 @@ except ImportError as exc:  # pragma: NO COVER
     db_dtypes_import_exception = exc
     date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 
+try:
+    import pyarrow # type: ignore
+    import pyarrow.parquet # type: ignore
+except ImportError:  # pragma: NO COVER
+    pyarrow = None
 
-import pyarrow  # type: ignore
-import pyarrow.parquet  # type: ignore
+# import pyarrow  # type: ignore
+# import pyarrow.parquet  # type: ignore
 
 try:
     # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
@@ -83,7 +91,6 @@ else:
     # Having BQ Storage available implies that pyarrow >=1.0.0 is available, too.
     _ARROW_COMPRESSION_SUPPORT = True
 
-from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
 
 
@@ -130,13 +137,15 @@ def pyarrow_datetime():
 
 
 def pyarrow_numeric():
-    return pyarrow.decimal128(38, 9)
+    if pyarrow:
+        return pyarrow.decimal128(38, 9)
 
 
 def pyarrow_bignumeric():
-    # 77th digit is partial.
-    # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
-    return pyarrow.decimal256(76, 38)
+    if pyarrow:
+        # 77th digit is partial.
+        # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
+        return pyarrow.decimal256(76, 38)
 
 
 def pyarrow_time():
@@ -147,52 +156,65 @@ def pyarrow_timestamp():
     return pyarrow.timestamp("us", tz="UTC")
 
 
-# This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
-# When modifying it be sure to update it there as well.
-BQ_TO_ARROW_SCALARS = {
-    "BIGNUMERIC": pyarrow_bignumeric,
-    "BOOL": pyarrow.bool_,
-    "BOOLEAN": pyarrow.bool_,
-    "BYTES": pyarrow.binary,
-    "DATE": pyarrow.date32,
-    "DATETIME": pyarrow_datetime,
-    "FLOAT": pyarrow.float64,
-    "FLOAT64": pyarrow.float64,
-    "GEOGRAPHY": pyarrow.string,
-    "INT64": pyarrow.int64,
-    "INTEGER": pyarrow.int64,
-    "NUMERIC": pyarrow_numeric,
-    "STRING": pyarrow.string,
-    "TIME": pyarrow_time,
-    "TIMESTAMP": pyarrow_timestamp,
-}
-ARROW_SCALAR_IDS_TO_BQ = {
-    # https://arrow.apache.org/docs/python/api/datatypes.html#type-classes
-    pyarrow.bool_().id: "BOOL",
-    pyarrow.int8().id: "INT64",
-    pyarrow.int16().id: "INT64",
-    pyarrow.int32().id: "INT64",
-    pyarrow.int64().id: "INT64",
-    pyarrow.uint8().id: "INT64",
-    pyarrow.uint16().id: "INT64",
-    pyarrow.uint32().id: "INT64",
-    pyarrow.uint64().id: "INT64",
-    pyarrow.float16().id: "FLOAT64",
-    pyarrow.float32().id: "FLOAT64",
-    pyarrow.float64().id: "FLOAT64",
-    pyarrow.time32("ms").id: "TIME",
-    pyarrow.time64("ns").id: "TIME",
-    pyarrow.timestamp("ns").id: "TIMESTAMP",
-    pyarrow.date32().id: "DATE",
-    pyarrow.date64().id: "DATETIME",  # because millisecond resolution
-    pyarrow.binary().id: "BYTES",
-    pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
-    # The exact scale and precision don't matter, see below.
-    pyarrow.decimal128(38, scale=9).id: "NUMERIC",
-    # The exact decimal's scale and precision are not important, as only
-    # the type ID matters, and it's the same for all decimal256 instances.
-    pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
-}
+if pyarrow:
+    # This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
+    # When modifying it be sure to update it there as well.
+    BQ_TO_ARROW_SCALARS = {
+        "BOOL": pyarrow.bool_,
+        "BOOLEAN": pyarrow.bool_,
+        "BYTES": pyarrow.binary,
+        "DATE": pyarrow.date32,
+        "DATETIME": pyarrow_datetime,
+        "FLOAT": pyarrow.float64,
+        "FLOAT64": pyarrow.float64,
+        "GEOGRAPHY": pyarrow.string,
+        "INT64": pyarrow.int64,
+        "INTEGER": pyarrow.int64,
+        "NUMERIC": pyarrow_numeric,
+        "STRING": pyarrow.string,
+        "TIME": pyarrow_time,
+        "TIMESTAMP": pyarrow_timestamp,
+    }
+    ARROW_SCALAR_IDS_TO_BQ = {
+        # https://arrow.apache.org/docs/python/api/datatypes.html#type-classes
+        pyarrow.bool_().id: "BOOL",
+        pyarrow.int8().id: "INT64",
+        pyarrow.int16().id: "INT64",
+        pyarrow.int32().id: "INT64",
+        pyarrow.int64().id: "INT64",
+        pyarrow.uint8().id: "INT64",
+        pyarrow.uint16().id: "INT64",
+        pyarrow.uint32().id: "INT64",
+        pyarrow.uint64().id: "INT64",
+        pyarrow.float16().id: "FLOAT64",
+        pyarrow.float32().id: "FLOAT64",
+        pyarrow.float64().id: "FLOAT64",
+        pyarrow.time32("ms").id: "TIME",
+        pyarrow.time64("ns").id: "TIME",
+        pyarrow.timestamp("ns").id: "TIMESTAMP",
+        pyarrow.date32().id: "DATE",
+        pyarrow.date64().id: "DATETIME",  # because millisecond resolution
+        pyarrow.binary().id: "BYTES",
+        pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
+        # The exact scale and precision don't matter, see below.
+        pyarrow.decimal128(38, scale=9).id: "NUMERIC",
+    }
+
+    if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
+        BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
+        # The exact decimal's scale and precision are not important, as only
+        # the type ID matters, and it's the same for all decimal256 instances.
+        ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
+        _BIGNUMERIC_SUPPORT = True
+    else:
+        _BIGNUMERIC_SUPPORT = False
+
+else:  # pragma: NO COVER
+    BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
+    ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
+    _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
+
+
 BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {
     "GEOGRAPHY": {
         b"ARROW:extension:name": b"google:sqlType:geography",
@@ -486,6 +508,13 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     # If schema detection was not successful for all columns, also try with
     # pyarrow, if available.
     if unknown_type_fields:
+        if not pyarrow:
+            msg = "Could not determine the type of columns: {}".format(
+                ", ".join(field.name for field in unknown_type_fields)
+            )
+            warnings.warn(msg)
+            return None  # We cannot detect the schema in full.
+
         # The augment_schema() helper itself will also issue unknown type
         # warnings if detection still fails for any of the fields.
         bq_schema_out = augment_schema(dataframe, bq_schema_out)
@@ -660,6 +689,9 @@ def dataframe_to_parquet(
 
             This argument is ignored for ``pyarrow`` versions earlier than ``4.0.0``.
     """
+    global pyarrow
+    if pyarrow is None:
+        raise ValueError("pyarrow is required for BigQuery schema conversion.")
     import pyarrow.parquet  # type: ignore
 
     kwargs = (

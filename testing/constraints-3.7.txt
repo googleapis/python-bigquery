@@ -19,7 +19,7 @@ opentelemetry-sdk==1.1.0
 pandas==1.1.0
 proto-plus==1.15.0
 protobuf==3.12.0
-pyarrow==3.0.0
+pyarrow==5.0.0
 python-dateutil==2.7.3
 requests==2.18.0
 Shapely==1.6.4.post2

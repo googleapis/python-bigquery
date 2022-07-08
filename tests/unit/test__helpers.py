@@ -19,7 +19,13 @@ import unittest
 
 import mock
 
+try:
+    from google.cloud import bigquery_storage  # type: ignore
+except ImportError:  # pragma: NO COVER
+    bigquery_storage = None
 
+
+@unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")
 class TestBQStorageVersions(unittest.TestCase):
     def tearDown(self):
         from google.cloud.bigquery import _helpers
@@ -31,6 +37,37 @@ class TestBQStorageVersions(unittest.TestCase):
         from google.cloud.bigquery import _helpers
 
         return _helpers.BQStorageVersions()
+
+    def _call_fut(self):
+        from google.cloud.bigquery import _helpers
+
+        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
+        return _helpers.BQ_STORAGE_VERSIONS.verify_version()
+
+    def test_raises_no_error_w_recent_bqstorage(self):
+        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+
+        with mock.patch("google.cloud.bigquery_storage.__version__", new="2.0.0"):
+            try:
+                self._call_fut()
+            except LegacyBigQueryStorageError:  # pragma: NO COVER
+                self.fail("Legacy error raised with a non-legacy dependency version.")
+
+    def test_raises_error_w_legacy_bqstorage(self):
+        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+
+        with mock.patch("google.cloud.bigquery_storage.__version__", new="1.9.9"):
+            with self.assertRaises(LegacyBigQueryStorageError):
+                self._call_fut()
+
+    def test_raises_error_w_unknown_bqstorage_version(self):
+        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+
+        with mock.patch("google.cloud.bigquery_storage", autospec=True) as fake_module:
+            del fake_module.__version__
+            error_pattern = r"version found: 0.0.0"
+            with self.assertRaisesRegex(LegacyBigQueryStorageError, error_pattern):
+                self._call_fut()
 
     def test_installed_version_returns_cached(self):
         versions = self._object_under_test()

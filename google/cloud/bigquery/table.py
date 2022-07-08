@@ -29,7 +29,10 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 
-import pyarrow  # type: ignore
+try:
+    import pyarrow # type: ignore
+except ImportError:  # pragma: NO COVER
+    pyarrow = None
 
 try:
     import geopandas  # type: ignore
@@ -62,7 +65,8 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
     # they are not None, avoiding false "no attribute" errors.
     import pandas
-    import geopandas
+    import pyarrow
+    import geopandas # type: ignore
     from google.cloud import bigquery_storage
     from google.cloud.bigquery.dataset import DatasetReference
 
@@ -70,6 +74,10 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
 _NO_GEOPANDAS_ERROR = (
     "The geopandas library is not installed, please install "
     "geopandas to use the to_geodataframe() function."
+)
+_NO_PYARROW_ERROR = (
+    "The pyarrow library is not installed, please install "
+    "pyarrow to use the to_arrow() function."
 )
 _NO_SHAPELY_ERROR = (
     "The shapely library is not installed, please install "
@@ -1584,6 +1592,17 @@ class RowIterator(HTTPIterator):
         if self.max_results is not None:
             return False
 
+        # try:
+        #     from google.cloud import bigquery_storage  # noqa: F401
+        # except ImportError:
+        #     return False
+
+        # try:
+        #     _helpers.BQ_STORAGE_VERSIONS.verify_version()
+        # except LegacyBigQueryStorageError as exc:
+        #     warnings.warn(str(exc))
+        #     return False
+
         return True
 
     def _get_next_page_response(self):
@@ -1760,8 +1779,15 @@ class RowIterator(HTTPIterator):
                 headers from the query results. The column headers are derived
                 from the destination table's schema.
 
+        Raises:
+            ValueError: If the :mod:`pyarrow` library cannot be imported.
+
+
         .. versionadded:: 1.17.0
         """
+        if pyarrow is None:
+            raise ValueError(_NO_PYARROW_ERROR)
+
         self._maybe_warn_max_results(bqstorage_client)
 
         if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
@@ -2194,6 +2220,8 @@ class _EmptyRowIterator(RowIterator):
         Returns:
             pyarrow.Table: An empty :class:`pyarrow.Table`.
         """
+        if pyarrow is None:
+            raise ValueError(_NO_PYARROW_ERROR)
         return pyarrow.Table.from_arrays(())
 
     def to_dataframe(

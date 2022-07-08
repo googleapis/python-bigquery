@@ -46,7 +46,7 @@ import uuid
 import warnings
 
 try:
-    import pyarrow # type: ignore
+    import pyarrow  # type: ignore
 
     _PYARROW_VERSION = packaging.version.parse(pyarrow.__version__)
 except ImportError:  # pragma: NO COVER
@@ -70,7 +70,7 @@ try:
         DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
     )
 except ImportError:
-    DEFAULT_BQSTORAGE_CLIENT_INFO = None # type: ignore
+    DEFAULT_BQSTORAGE_CLIENT_INFO = None  # type: ignore
 
 
 from google.cloud.bigquery import _job_helpers

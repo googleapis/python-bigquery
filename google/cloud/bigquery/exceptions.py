@@ -16,5 +16,10 @@
 class BigQueryError(Exception):
     """Base class for all custom exceptions defined by the BigQuery client."""
 
+
+class LegacyBigQueryStorageError(BigQueryError):
+    """Raised when too old a version of BigQuery Storage extra is detected at runtime."""
+
+
 class LegacyPyarrowError(BigQueryError):
     """Raised when too old a version of pyarrow package is detected at runtime."""

@@ -30,7 +30,7 @@ except ImportError:  # pragma: NO COVER
     pandas = None
 
 try:
-    import pyarrow # type: ignore
+    import pyarrow  # type: ignore
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
@@ -66,7 +66,7 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     # they are not None, avoiding false "no attribute" errors.
     import pandas
     import pyarrow
-    import geopandas # type: ignore
+    import geopandas  # type: ignore
     from google.cloud import bigquery_storage
     from google.cloud.bigquery.dataset import DatasetReference
 

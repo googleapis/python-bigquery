@@ -32,8 +32,6 @@ from google.cloud._helpers import _to_bytes
 
 import packaging.version
 
-# from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
 from google.cloud.bigquery.exceptions import (
     LegacyBigQueryStorageError,
     LegacyPyarrowError,
@@ -60,7 +58,6 @@ _INTERVAL_PATTERN = re.compile(
 _MIN_BQ_STORAGE_VERSION = packaging.version.Version("2.0.0")
 
 _MIN_PYARROW_VERSION = packaging.version.Version("3.0.0")
-# _MIN_BQ_STORAGE_VERSION = packaging.version.Version("2.0.0")
 
 _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
 

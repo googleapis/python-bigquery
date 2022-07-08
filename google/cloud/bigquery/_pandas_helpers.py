@@ -52,9 +52,6 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
-# import pyarrow  # type: ignore
-# import pyarrow.parquet  # type: ignore
-
 try:
     # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
     from shapely.geometry.base import BaseGeometry as _BaseGeometry  # type: ignore

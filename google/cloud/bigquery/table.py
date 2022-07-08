@@ -1592,17 +1592,6 @@ class RowIterator(HTTPIterator):
         if self.max_results is not None:
             return False
 
-        # try:
-        #     from google.cloud import bigquery_storage  # noqa: F401
-        # except ImportError:
-        #     return False
-
-        # try:
-        #     _helpers.BQ_STORAGE_VERSIONS.verify_version()
-        # except LegacyBigQueryStorageError as exc:
-        #     warnings.warn(str(exc))
-        #     return False
-
         return True
 
     def _get_next_page_response(self):

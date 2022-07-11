@@ -34,7 +34,7 @@ dependencies = [
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core[grpc] >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
-    "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
+    # "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
     "proto-plus >= 1.15.0, <2.0.0dev",
     # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
     # Until this issue is closed
@@ -49,7 +49,17 @@ dependencies = [
 extras = {
     # Keep the no-op bqstorage extra for backward compatibility.
     # See: https://github.com/googleapis/python-bigquery/issues/757
-    "bqstorage": [],
+    "bqstorage": [
+        "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
+        # Due to an issue in pip's dependency resolver, the `grpc` extra is not
+        # installed, even though `google-cloud-bigquery-storage` specifies it
+        # as `google-api-core[grpc]`. We thus need to explicitly specify it here.
+        # See: https://github.com/googleapis/python-bigquery/issues/83 The
+        # grpc.Channel.close() method isn't added until 1.32.0.
+        # https://github.com/grpc/grpc/pull/15254
+        "grpcio >= 1.38.1, < 2.0dev",
+        "pyarrow >= 1.0.0, < 5.0dev",
+    ],
     "pandas": [
         "pandas>=1.0.0",
         "pyarrow == 5.0.0, < 9.0dev",
@@ -69,6 +79,11 @@ extras = {
 all_extras = []
 
 for extra in extras:
+    # Exclude this extra from all to avoid overly strict dependencies on core
+    # libraries such as pyarrow.
+    # https://github.com/googleapis/python-bigquery/issues/563
+    if extra in {"bignumeric_type"}:
+        continue
     all_extras.extend(extras[extra])
 
 extras["all"] = all_extras

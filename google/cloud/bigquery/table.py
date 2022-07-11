@@ -54,6 +54,7 @@ from google.api_core.page_iterator import HTTPIterator
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
@@ -67,7 +68,7 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     import pandas
     import pyarrow
     import geopandas  # type: ignore
-    from google.cloud import bigquery_storage
+    from google.cloud import bigquery_storage  # type: ignore
     from google.cloud.bigquery.dataset import DatasetReference
 
 
@@ -1592,6 +1593,17 @@ class RowIterator(HTTPIterator):
         if self.max_results is not None:
             return False
 
+        try:
+            from google.cloud import bigquery_storage  # noqa: F401
+        except ImportError:
+            return False
+
+        try:
+            _helpers.BQ_STORAGE_VERSIONS.verify_version()
+        except LegacyBigQueryStorageError as exc:
+            warnings.warn(str(exc))
+            return False
+    
         return True
 
     def _get_next_page_response(self):
@@ -1628,7 +1640,7 @@ class RowIterator(HTTPIterator):
 
     def _maybe_warn_max_results(
         self,
-        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"],
+        bqstorage_client: "bigquery_storage.BigQueryReadClient",
     ):
         """Issue a warning if BQ Storage client is not ``None`` with ``max_results`` set.
 
@@ -1718,7 +1730,7 @@ class RowIterator(HTTPIterator):
     def to_arrow(
         self,
         progress_bar_type: str = None,
-        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         create_bqstorage_client: bool = True,
     ) -> "pyarrow.Table":
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
@@ -1826,7 +1838,7 @@ class RowIterator(HTTPIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         dtypes: Dict[str, Any] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
     ) -> "pandas.DataFrame":
@@ -1902,7 +1914,7 @@ class RowIterator(HTTPIterator):
     # changes to job.QueryJob.to_dataframe()
     def to_dataframe(
         self,
-        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
@@ -2263,7 +2275,7 @@ class _EmptyRowIterator(RowIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         dtypes: Optional[Dict[str, Any]] = None,
         max_queue_size: Optional[int] = None,
     ) -> Iterator["pandas.DataFrame"]:
@@ -2284,7 +2296,7 @@ class _EmptyRowIterator(RowIterator):
         Returns:
             An iterator yielding a single empty :class:`~pandas.DataFrame`.
 
-        Raises:
+        Raises: 
             ValueError:
                 If the :mod:`pandas` library cannot be imported.
         """
@@ -2293,7 +2305,7 @@ class _EmptyRowIterator(RowIterator):
 
     def to_arrow_iterable(
         self,
-        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
+        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
         max_queue_size: Optional[int] = None,
     ) -> Iterator["pyarrow.RecordBatch"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.

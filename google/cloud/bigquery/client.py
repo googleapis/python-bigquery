@@ -80,6 +80,7 @@ from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery._helpers import _verify_job_config_type
 from google.cloud.bigquery._helpers import _get_bigquery_host
+from google.cloud.bigquery._helpers import BQ_STORAGE_VERSIONS
 from google.cloud.bigquery._helpers import _DEFAULT_HOST
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
@@ -88,6 +89,7 @@ from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
+from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (
@@ -535,8 +537,20 @@ class Client(ClientWithProject):
         Returns:
             A BigQuery Storage API client.
         """
-        from google.cloud import bigquery_storage  # type: ignore
+        try:
+            from google.cloud import bigquery_storage # type: ignore
+        except ImportError:
+            warnings.warn(
+                "Cannot create BigQuery Storage client, the dependency "
+                "google-cloud-bigquery-storage is not installed."
+            )
+            return None
 
+        try:
+            BQ_STORAGE_VERSIONS.verify_version()
+        except LegacyBigQueryStorageError as exc:
+            warnings.warn(str(exc))
+            return None
         if bqstorage_client is None:
             bqstorage_client = bigquery_storage.BigQueryReadClient(
                 credentials=self._credentials,

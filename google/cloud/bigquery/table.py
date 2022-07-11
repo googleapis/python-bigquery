@@ -1603,7 +1603,7 @@ class RowIterator(HTTPIterator):
         except LegacyBigQueryStorageError as exc:
             warnings.warn(str(exc))
             return False
-    
+
         return True
 
     def _get_next_page_response(self):
@@ -2296,7 +2296,7 @@ class _EmptyRowIterator(RowIterator):
         Returns:
             An iterator yielding a single empty :class:`~pandas.DataFrame`.
 
-        Raises: 
+        Raises:
             ValueError:
                 If the :mod:`pandas` library cannot be imported.
         """

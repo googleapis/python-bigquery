@@ -64,6 +64,8 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 
 from google.cloud.bigquery.dataset import DatasetReference
 
+PYARROW_TIMESTAMP_VERSION = pkg_resources.parse_version("2.0.0")
+
 
 def _mock_client():
     from google.cloud.bigquery import client
@@ -2349,6 +2351,7 @@ class TestRowIterator(unittest.TestCase):
             [[{"name": "Bepples Phlyntstone", "age": 0}, {"name": "Dino", "age": 4}]],
         )
 
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
@@ -2624,6 +2627,9 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(child_field.type.value_type[1].name, "age")
 
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_to_arrow_max_results_w_explicit_bqstorage_client_warning(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -2664,10 +2670,6 @@ class TestRowIterator(unittest.TestCase):
         )
         mock_client._ensure_bqstorage_client.assert_not_called()
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_to_arrow_max_results_w_create_bqstorage_client_no_warning(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3201,7 +3203,10 @@ class TestRowIterator(unittest.TestCase):
 
         df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
-        tzinfo = datetime.timezone.utc
+        tzinfo = None
+        if PYARROW_VERSION >= PYARROW_TIMESTAMP_VERSION:
+            tzinfo = datetime.timezone.utc
+
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 2)  # verify the number of rows
         self.assertEqual(list(df.columns), ["some_timestamp"])
@@ -3238,7 +3243,6 @@ class TestRowIterator(unittest.TestCase):
         )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(tqdm is None, "Requires `tqdm`")
     @mock.patch("tqdm.tqdm_gui")
     @mock.patch("tqdm.tqdm_notebook")
@@ -3935,6 +3939,9 @@ class TestRowIterator(unittest.TestCase):
         self.assertTrue(got.index.is_unique)
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(tqdm is None, "Requires `tqdm`")
     @mock.patch("tqdm.tqdm")

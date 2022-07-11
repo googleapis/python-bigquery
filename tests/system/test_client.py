@@ -37,7 +37,6 @@ from google.api_core.exceptions import ServiceUnavailable
 from google.api_core.exceptions import TooManyRequests
 from google.api_core.iam import Policy
 from google.cloud import bigquery
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.table import Table
@@ -56,7 +55,7 @@ from test_utils.system import unique_resource_id
 from . import helpers
 
 try:
-    from google.cloud import bigquery_storage 
+    from google.cloud import bigquery_storage
 except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 

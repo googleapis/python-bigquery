@@ -58,7 +58,7 @@ extras = {
         # grpc.Channel.close() method isn't added until 1.32.0.
         # https://github.com/grpc/grpc/pull/15254
         "grpcio >= 1.38.1, < 2.0dev",
-        "pyarrow >= 1.0.0, < 5.0dev",
+        "pyarrow == 5.0.0, < 9.0dev",
     ],
     "pandas": [
         "pandas>=1.0.0",

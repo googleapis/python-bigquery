@@ -36,6 +36,9 @@ from . import helpers
 pandas = pytest.importorskip("pandas", minversion="0.23.0")
 numpy = pytest.importorskip("numpy")
 
+bigquery_storage = pytest.importorskip(
+    "google.cloud.bigquery_storage", minversion="2.0.0"
+)
 
 PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 PANDAS_INT64_VERSION = pkg_resources.parse_version("1.0.0")
@@ -373,11 +376,12 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         bigquery.SchemaField("geo_col", "GEOGRAPHY"),
         bigquery.SchemaField("int_col", "INTEGER"),
         bigquery.SchemaField("num_col", "NUMERIC"),
-        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
     )
+    if _BIGNUMERIC_SUPPORT:
+        table_schema += (bigquery.SchemaField("bignum_col", "BIGNUMERIC"),)
 
     num_rows = 100
     nulls = [None] * num_rows
@@ -390,11 +394,12 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         ("geo_col", nulls),
         ("int_col", nulls),
         ("num_col", nulls),
-        ("bignum_col", nulls),
         ("str_col", nulls),
         ("time_col", nulls),
         ("ts_col", nulls),
     ]
+    if _BIGNUMERIC_SUPPORT:
+        df_data.append(("bignum_col", nulls))
     df_data = collections.OrderedDict(df_data)
     dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
 
@@ -469,11 +474,12 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         bigquery.SchemaField("geo_col", "GEOGRAPHY"),
         bigquery.SchemaField("int_col", "INTEGER"),
         bigquery.SchemaField("num_col", "NUMERIC"),
-        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
     )
+    if _BIGNUMERIC_SUPPORT:
+        table_schema += (bigquery.SchemaField("bignum_col", "BIGNUMERIC"),)
 
     df_data = [
         ("row_num", [1, 2, 3]),

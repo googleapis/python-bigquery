@@ -538,7 +538,7 @@ class Client(ClientWithProject):
             A BigQuery Storage API client.
         """
         try:
-            from google.cloud import bigquery_storage # type: ignore
+            from google.cloud import bigquery_storage  # type: ignore
         except ImportError:
             warnings.warn(
                 "Cannot create BigQuery Storage client, the dependency "

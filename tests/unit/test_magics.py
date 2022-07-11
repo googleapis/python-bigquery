@@ -385,7 +385,6 @@ def test__make_bqstorage_client_true_obsolete_dependency():
 @pytest.mark.skipif(
     bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
 )
-
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test__make_bqstorage_client_true_missing_gapic(missing_grpcio_lib):
     credentials_mock = mock.create_autospec(

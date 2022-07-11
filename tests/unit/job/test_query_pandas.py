@@ -19,8 +19,8 @@ import json
 import mock
 import pytest
 
-import google.cloud.bigquery_storage_v1.reader
-import google.cloud.bigquery_storage_v1.services.big_query_read.client
+# import google.cloud.bigquery_storage_v1.reader
+# import google.cloud.bigquery_storage_v1.services.big_query_read.client
 
 try:
     import pyarrow
@@ -28,6 +28,8 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     pyarrow = None
 try:
     from google.cloud import bigquery_storage
+    import google.cloud.bigquery_storage_v1.reader
+    import google.cloud.bigquery_storage_v1.services.big_query_read.client
 except (ImportError, AttributeError):  # pragma: NO COVER
     bigquery_storage = None
 
@@ -368,6 +370,7 @@ def test_to_arrow_w_tqdm_w_query_plan():
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
 
+
 @pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
 def test_to_arrow_w_tqdm_w_pending_status():
@@ -419,6 +422,7 @@ def test_to_arrow_w_tqdm_w_pending_status():
     result_patch_tqdm.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
+
 
 @pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")

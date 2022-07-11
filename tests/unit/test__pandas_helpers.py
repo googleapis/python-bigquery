@@ -46,11 +46,18 @@ except ImportError:  # pragma: NO COVER
 import pytest
 
 from google import api_core
-from google.cloud import bigquery_storage
+
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
+
+try:
+    from google.cloud import bigquery_storage
+
+    _helpers.BQ_STORAGE_VERSIONS.verify_version()
+except ImportError:  # pragma: NO COVER
+    bigquery_storage = None
 
 PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
 

@@ -25,6 +25,7 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 
 
+@unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")
 class TestBQStorageVersions(unittest.TestCase):
     def tearDown(self):
         from google.cloud.bigquery import _helpers

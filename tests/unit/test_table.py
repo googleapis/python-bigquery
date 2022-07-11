@@ -38,10 +38,6 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
     big_query_read_grpc_transport = None
 
-from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
-    grpc as big_query_read_grpc_transport,
-)
-
 try:
     import pyarrow
     import pyarrow.types
@@ -2353,6 +2349,9 @@ class TestRowIterator(unittest.TestCase):
             [[{"name": "Bepples Phlyntstone", "age": 0}, {"name": "Dino", "age": 4}]],
         )
 
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_to_arrow_iterable_w_bqstorage(self):
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut

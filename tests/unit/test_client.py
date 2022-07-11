@@ -63,11 +63,16 @@ import google.api_core.exceptions
 from google.api_core import client_info
 import google.cloud._helpers
 from google.cloud import bigquery
-from google.cloud import bigquery_storage
+
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 from google.cloud.bigquery import ParquetOptions
 
+try:
+    from google.cloud import bigquery_storage
+except (ImportError, AttributeError):  # pragma: NO COVER
+    bigquery_storage = None
+from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
 
 PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
@@ -620,6 +625,9 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_ensure_bqstorage_client_creating_new_instance(self):
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client_instance = object()
@@ -642,6 +650,55 @@ class TestClient(unittest.TestCase):
             client_info=mock.sentinel.client_info,
         )
 
+    def test_ensure_bqstorage_client_missing_dependency(self):
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+
+        def fail_bqstorage_import(name, globals, locals, fromlist, level):
+            # NOTE: *very* simplified, assuming a straightforward absolute import
+            return "bigquery_storage" in name or (
+                fromlist is not None and "bigquery_storage" in fromlist
+            )
+
+        no_bqstorage = maybe_fail_import(predicate=fail_bqstorage_import)
+
+        with no_bqstorage, warnings.catch_warnings(record=True) as warned:
+            bqstorage_client = client._ensure_bqstorage_client()
+
+        self.assertIsNone(bqstorage_client)
+        matching_warnings = [
+            warning
+            for warning in warned
+            if "not installed" in str(warning)
+            and "google-cloud-bigquery-storage" in str(warning)
+        ]
+        assert matching_warnings, "Missing dependency warning not raised."
+
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    def test_ensure_bqstorage_client_obsolete_dependency(self):
+        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+
+        patcher = mock.patch(
+            "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
+            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+        )
+        with patcher, warnings.catch_warnings(record=True) as warned:
+            bqstorage_client = client._ensure_bqstorage_client()
+
+        self.assertIsNone(bqstorage_client)
+        matching_warnings = [
+            warning for warning in warned if "BQ Storage too old" in str(warning)
+        ]
+        assert matching_warnings, "Obsolete dependency warning not raised."
+
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_ensure_bqstorage_client_existing_client_check_passes(self):
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
@@ -652,6 +709,29 @@ class TestClient(unittest.TestCase):
         )
 
         self.assertIs(bqstorage_client, mock_storage_client)
+
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    def test_ensure_bqstorage_client_existing_client_check_fails(self):
+        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+        mock_storage_client = mock.sentinel.mock_storage_client
+
+        patcher = mock.patch(
+            "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
+            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+        )
+        with patcher, warnings.catch_warnings(record=True) as warned:
+            bqstorage_client = client._ensure_bqstorage_client(mock_storage_client)
+
+        self.assertIsNone(bqstorage_client)
+        matching_warnings = [
+            warning for warning in warned if "BQ Storage too old" in str(warning)
+        ]
+        assert matching_warnings, "Obsolete dependency warning not raised."
 
     def test_create_routine_w_minimal_resource(self):
         from google.cloud.bigquery.routine import Routine

@@ -45,7 +45,7 @@ def browse_table_data(table_id: str) -> None:
 
     rows = list(rows_iter)
     print("Downloaded {} rows from table {}".format(len(rows), table_id))
-    
+
     # Print row data in tabular format.
     rows_iter = client.list_rows(table_id, max_results=10)
     format_string = "{!s:<16} " * len(rows_iter.schema)

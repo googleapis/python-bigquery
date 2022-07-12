@@ -508,14 +508,6 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
                 decimal.Decimal("99999999999999999999999999999.999999999"),
             ],
         ),
-        (
-            "bignum_col",
-            [
-                decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
-                None,
-                decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
-            ],
-        ),
         ("str_col", ["abc", None, "def"]),
         (
             "time_col",
@@ -532,6 +524,17 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
             ],
         ),
     ]
+    if _BIGNUMERIC_SUPPORT:
+        df_data.append(
+            (
+                "bignum_col",
+                [
+                    decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
+                    None,
+                    decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
+                ],
+            )
+        )
     df_data = collections.OrderedDict(df_data)
     dataframe = pandas.DataFrame(df_data, dtype="object", columns=df_data.keys())
 

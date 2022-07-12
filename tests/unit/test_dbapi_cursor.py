@@ -338,7 +338,6 @@ class TestCursor(unittest.TestCase):
     @unittest.skipIf(
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_fetchall_w_bqstorage_client_fetch_no_rows(self):
         from google.cloud.bigquery import dbapi
 
@@ -364,7 +363,6 @@ class TestCursor(unittest.TestCase):
     @unittest.skipIf(
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_fetchall_w_bqstorage_client_fetch_error_no_fallback(self):
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table

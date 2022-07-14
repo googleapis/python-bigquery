@@ -49,8 +49,11 @@ except ImportError as exc:  # pragma: NO COVER
 try:
     import pyarrow  # type: ignore
     import pyarrow.parquet  # type: ignore
-except ImportError:  # pragma: NO COVER
+
+    pyarrow_import_exception = None
+except ImportError as exc:  # pragma: NO COVER
     pyarrow = None
+    pyarrow_import_exception = exc
 
 try:
     # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
@@ -99,6 +102,7 @@ _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage dow
 
 _NO_PANDAS_ERROR = "Please install the 'pandas' package to use this function."
 _NO_DB_TYPES_ERROR = "Please install the 'db-dtypes' package to use this function."
+_NO_PYARROW_ERROR = "Please install the 'pyarrow' package to use this function."
 
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
@@ -1014,6 +1018,8 @@ def dataframe_to_json_generator(dataframe):
 
 
 def verify_pandas_imports():
+    if pyarrow is None:
+        raise ValueError(_NO_PYARROW_ERROR) from pyarrow_import_exception
     if pandas is None:
         raise ValueError(_NO_PANDAS_ERROR) from pandas_import_exception
     if db_dtypes is None:

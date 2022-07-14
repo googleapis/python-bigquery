@@ -4,4 +4,4 @@
 #
 # NOTE: Not comprehensive yet, will eventually be maintained semi-automatically by
 # the renovate bot.
-pyarrow==5.0.0
+pyarrow>=5.0.0

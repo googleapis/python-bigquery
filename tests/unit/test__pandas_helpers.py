@@ -44,10 +44,10 @@ from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
-if pyarrow:
+try:
+    import pyarrow
     import pyarrow.types
-else:  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
     # Mock out pyarrow when missing, because methods from pyarrow.types are
     # used in test parameterization.
     pyarrow = mock.Mock()

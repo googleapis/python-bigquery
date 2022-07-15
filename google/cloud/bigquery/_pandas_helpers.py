@@ -134,7 +134,8 @@ class _DownloadState(object):
 
 
 def pyarrow_datetime():
-    return pyarrow.timestamp("us", tz=None)
+    if pyarrow:
+        return pyarrow.timestamp("us", tz=None)
 
 
 def pyarrow_numeric():

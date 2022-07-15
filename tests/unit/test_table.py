@@ -28,6 +28,7 @@ import google.api_core.exceptions
 from test_utils.imports import maybe_fail_import
 
 from google.cloud.bigquery.table import TableReference
+from google.cloud.bigquery.dataset import DatasetReference
 
 try:
     from google.cloud import bigquery_storage
@@ -38,14 +39,15 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
     big_query_read_grpc_transport = None
 
-try:
-    import pyarrow
+from google.cloud.bigquery import _helpers
+
+
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
+if pyarrow:
     import pyarrow.types
 
     PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-    PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
 
 try:
     import pandas
@@ -61,8 +63,6 @@ try:
     from tqdm import tqdm
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
-
-from google.cloud.bigquery.dataset import DatasetReference
 
 PYARROW_TIMESTAMP_VERSION = pkg_resources.parse_version("2.0.0")
 

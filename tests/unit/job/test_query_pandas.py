@@ -22,16 +22,15 @@ import pytest
 # import google.cloud.bigquery_storage_v1.reader
 # import google.cloud.bigquery_storage_v1.services.big_query_read.client
 
-try:
-    import pyarrow
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pyarrow = None
+
 try:
     from google.cloud import bigquery_storage
     import google.cloud.bigquery_storage_v1.reader
     import google.cloud.bigquery_storage_v1.services.big_query_read.client
 except (ImportError, AttributeError):  # pragma: NO COVER
     bigquery_storage = None
+
+from google.cloud.bigquery import _helpers
 
 try:
     import pandas
@@ -55,6 +54,8 @@ from .helpers import _make_client
 from .helpers import _make_job_resource
 
 pandas = pytest.importorskip("pandas")
+
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
 
 @pytest.fixture

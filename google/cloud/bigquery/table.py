@@ -1640,7 +1640,7 @@ class RowIterator(HTTPIterator):
 
     def _maybe_warn_max_results(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient",
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"],
     ):
         """Issue a warning if BQ Storage client is not ``None`` with ``max_results`` set.
 

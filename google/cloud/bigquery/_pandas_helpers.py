@@ -47,8 +47,8 @@ except ImportError as exc:  # pragma: NO COVER
     date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 
 try:
-    import pyarrow
-    import pyarrow.parquet
+    import pyarrow # type: ignore
+    import pyarrow.parquet # type: ignore
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 

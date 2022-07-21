@@ -93,7 +93,6 @@ def is_datetime(type_):
     )(type_)
 
 
-@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def is_numeric(type_):
     # See: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#numeric-type
     return all_(
@@ -129,6 +128,7 @@ def all_(*functions):
     return functools.partial(do_all, functions)
 
 
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_is_datetime():
     assert is_datetime(pyarrow.timestamp("us", tz=None))
     assert not is_datetime(pyarrow.timestamp("ms", tz=None))
@@ -1830,6 +1830,7 @@ def test_table_data_listpage_to_dataframe_skips_stop_iteration(module_under_test
     assert isinstance(dataframe, pandas.DataFrame)
 
 
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_bq_to_arrow_field_type_override(module_under_test):
     # When loading pandas data, we may need to override the type
     # decision based on data contents, because GEOGRAPHY data can be
@@ -1862,6 +1863,7 @@ def test_bq_to_arrow_field_type_override(module_under_test):
         ),
     ],
 )
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_bq_to_arrow_field_metadata(module_under_test, field_type, metadata):
     assert (
         module_under_test.bq_to_arrow_field(

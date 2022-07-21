@@ -1927,6 +1927,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 0)
 
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_to_arrow_iterable(self):
         row_iterator = self._make_one()
         arrow_iter = row_iterator.to_arrow_iterable()
@@ -2430,6 +2431,7 @@ class TestRowIterator(unittest.TestCase):
         # Don't close the client if it was passed in.
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_to_arrow(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -2670,6 +2672,10 @@ class TestRowIterator(unittest.TestCase):
         )
         mock_client._ensure_bqstorage_client.assert_not_called()
 
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test_to_arrow_max_results_w_create_bqstorage_client_no_warning(self):
         from google.cloud.bigquery.schema import SchemaField
 

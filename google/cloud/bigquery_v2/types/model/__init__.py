@@ -36,6 +36,18 @@ __protobuf__ = proto.module(
 )
 
 
+from .requests import (
+    GetModelRequest,
+    PatchModelRequest,
+    DeleteModelRequest,
+    ListModelsRequest,
+)
+
+from .responses import (
+    ListModelsResponse,
+)
+
+
 class Model(proto.Message):
     r"""
 
@@ -1837,157 +1849,6 @@ class Model(proto.Message):
     best_trial_id = proto.Field(
         proto.INT64,
         number=19,
-    )
-
-
-class GetModelRequest(proto.Message):
-    r"""
-
-    Attributes:
-        project_id (str):
-            Required. Project ID of the requested model.
-        dataset_id (str):
-            Required. Dataset ID of the requested model.
-        model_id (str):
-            Required. Model ID of the requested model.
-    """
-
-    project_id = proto.Field(
-        proto.STRING,
-        number=1,
-    )
-    dataset_id = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id = proto.Field(
-        proto.STRING,
-        number=3,
-    )
-
-
-class PatchModelRequest(proto.Message):
-    r"""
-
-    Attributes:
-        project_id (str):
-            Required. Project ID of the model to patch.
-        dataset_id (str):
-            Required. Dataset ID of the model to patch.
-        model_id (str):
-            Required. Model ID of the model to patch.
-        model (google.cloud.bigquery_v2.types.Model):
-            Required. Patched model.
-            Follows RFC5789 patch semantics. Missing fields
-            are not updated. To clear a field, explicitly
-            set to default value.
-    """
-
-    project_id = proto.Field(
-        proto.STRING,
-        number=1,
-    )
-    dataset_id = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id = proto.Field(
-        proto.STRING,
-        number=3,
-    )
-    model = proto.Field(
-        proto.MESSAGE,
-        number=4,
-        message="Model",
-    )
-
-
-class DeleteModelRequest(proto.Message):
-    r"""
-
-    Attributes:
-        project_id (str):
-            Required. Project ID of the model to delete.
-        dataset_id (str):
-            Required. Dataset ID of the model to delete.
-        model_id (str):
-            Required. Model ID of the model to delete.
-    """
-
-    project_id = proto.Field(
-        proto.STRING,
-        number=1,
-    )
-    dataset_id = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id = proto.Field(
-        proto.STRING,
-        number=3,
-    )
-
-
-class ListModelsRequest(proto.Message):
-    r"""
-
-    Attributes:
-        project_id (str):
-            Required. Project ID of the models to list.
-        dataset_id (str):
-            Required. Dataset ID of the models to list.
-        max_results (google.protobuf.wrappers_pb2.UInt32Value):
-            The maximum number of results to return in a
-            single response page. Leverage the page tokens
-            to iterate through the entire collection.
-        page_token (str):
-            Page token, returned by a previous call to
-            request the next page of results
-    """
-
-    project_id = proto.Field(
-        proto.STRING,
-        number=1,
-    )
-    dataset_id = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    max_results = proto.Field(
-        proto.MESSAGE,
-        number=3,
-        message=wrappers_pb2.UInt32Value,
-    )
-    page_token = proto.Field(
-        proto.STRING,
-        number=4,
-    )
-
-
-class ListModelsResponse(proto.Message):
-    r"""
-
-    Attributes:
-        models (Sequence[google.cloud.bigquery_v2.types.Model]):
-            Models in the requested dataset. Only the following fields
-            are populated: model_reference, model_type, creation_time,
-            last_modified_time and labels.
-        next_page_token (str):
-            A token to request the next page of results.
-    """
-
-    @property
-    def raw_page(self):
-        return self
-
-    models = proto.RepeatedField(
-        proto.MESSAGE,
-        number=1,
-        message="Model",
-    )
-    next_page_token = proto.Field(
-        proto.STRING,
-        number=2,
     )
 
 

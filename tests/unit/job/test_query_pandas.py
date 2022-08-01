@@ -27,8 +27,6 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     bigquery_storage = None
 
-from google.cloud.bigquery import _helpers
-
 try:
     import pandas
 except (ImportError, AttributeError):  # pragma: NO COVER

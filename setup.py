@@ -34,7 +34,6 @@ dependencies = [
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core[grpc] >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
-    # "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
     "proto-plus >= 1.15.0, <2.0.0dev",
     # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
     # Until this issue is closed
@@ -58,11 +57,11 @@ extras = {
         # grpc.Channel.close() method isn't added until 1.32.0.
         # https://github.com/grpc/grpc/pull/15254
         "grpcio >= 1.38.1, < 2.0dev",
-        "pyarrow >= 5.0.0, < 9.0dev",
+        "pyarrow >= 3.0.0, < 9.0dev",
     ],
     "pandas": [
         "pandas>=1.0.0",
-        "pyarrow >= 5.0.0, < 9.0dev",
+        "pyarrow >= 3.0.0, < 9.0dev",
         "db-dtypes>=0.3.0,<2.0.0dev",
     ],
     "bignumeric_type": ["pyarrow == 5.0.0, < 9.0dev"],

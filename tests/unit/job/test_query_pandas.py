@@ -19,9 +19,6 @@ import json
 import mock
 import pytest
 
-# import google.cloud.bigquery_storage_v1.reader
-# import google.cloud.bigquery_storage_v1.services.big_query_read.client
-
 
 try:
     from google.cloud import bigquery_storage
@@ -54,8 +51,8 @@ from .helpers import _make_client
 from .helpers import _make_job_resource
 
 pandas = pytest.importorskip("pandas")
-
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+pyarrow = pytest.importorskip("pyarrow")
+# pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
 
 @pytest.fixture

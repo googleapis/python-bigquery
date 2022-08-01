@@ -48,7 +48,6 @@ except ImportError as exc:  # pragma: NO COVER
 
 try:
     import pyarrow  # type: ignore
-    import pyarrow.parquet  # type: ignore
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
@@ -696,7 +695,7 @@ def dataframe_to_parquet(
     """
     pyarrow = _helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
 
-    import pyarrow.parquet
+    import pyarrow.parquet  # type: ignore
 
     kwargs = (
         {"use_compliant_nested_type": parquet_use_compliant_nested_type}

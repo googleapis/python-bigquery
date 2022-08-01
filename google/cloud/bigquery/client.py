@@ -2600,7 +2600,7 @@ class Client(ClientWithProject):
             )
 
         if pyarrow is None and job_config.source_format == job.SourceFormat.PARQUET:
-            # pyarrow is now the only supported  parquet engine.
+            # pyarrow is now the only supported parquet engine.
             raise ValueError("This method requires pyarrow to be installed")
 
         if location is None:

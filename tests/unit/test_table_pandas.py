@@ -16,7 +16,17 @@ import datetime
 import decimal
 from unittest import mock
 
-import pyarrow
+from google.cloud.bigquery import _helpers
+import pkg_resources
+
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
+if pyarrow:
+    import pyarrow.types
+
+    PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
+
+
 import pytest
 
 from google.cloud import bigquery

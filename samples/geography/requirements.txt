@@ -9,7 +9,8 @@ dataclasses==0.8; python_version < '3.7'
 db-dtypes==1.0.2
 Fiona==1.8.21
 geojson==2.5.0
-geopandas==0.11.1
+geopandas===0.10.2; python_version == '3.7'
+geopandas==0.11.1; python_version >= '3.8'
 google-api-core==2.8.2
 google-auth==2.9.1
 google-cloud-bigquery==3.3.0

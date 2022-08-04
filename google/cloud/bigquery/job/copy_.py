@@ -40,6 +40,9 @@ class OperationType:
     SNAPSHOT = "SNAPSHOT"
     """The source table type is TABLE and the destination table type is SNAPSHOT."""
 
+    CLONE = "CLONE"
+    """The source table type is TABLE and the destination table type is CLONE."""
+
     RESTORE = "RESTORE"
     """The source table type is SNAPSHOT and the destination table type is TABLE."""
 
@@ -122,6 +125,20 @@ class CopyJobConfig(_JobConfig):
         if value is None:
             value = OperationType.OPERATION_TYPE_UNSPECIFIED
         self._set_sub_prop("operationType", value)
+
+    @property
+    def destination_expiration_time(self) -> str:
+        """google.cloud.bigquery.job.DestinationExpirationTime: The time when the
+        destination table expires. Expired tables will be deleted and their storage reclaimed.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationTableCopy.FIELDS.destination_expiration_time
+        """
+        return self._get_sub_prop("destinationExpirationTime")
+
+    @destination_expiration_time.setter
+    def destination_expiration_time(self, value: str):
+        self._set_sub_prop("destinationExpirationTime", value)
 
 
 class CopyJob(_AsyncJob):

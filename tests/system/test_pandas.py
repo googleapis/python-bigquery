@@ -380,9 +380,8 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
+        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
     )
-    # if _BIGNUMERIC_SUPPORT:
-    table_schema += (bigquery.SchemaField("bignum_col", "BIGNUMERIC"),)
 
     num_rows = 100
     nulls = [None] * num_rows
@@ -398,9 +397,8 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         ("str_col", nulls),
         ("time_col", nulls),
         ("ts_col", nulls),
+        ("bignum_col", nulls),
     ]
-    # if _BIGNUMERIC_SUPPORT:
-    df_data.append(("bignum_col", nulls))
     df_data = collections.OrderedDict(df_data)
     dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
 
@@ -478,9 +476,8 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
+        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
     )
-    # if _BIGNUMERIC_SUPPORT:
-    table_schema += (bigquery.SchemaField("bignum_col", "BIGNUMERIC"),)
 
     df_data = [
         ("row_num", [1, 2, 3]),
@@ -524,9 +521,6 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
                 ),
             ],
         ),
-    ]
-    # if _BIGNUMERIC_SUPPORT:
-    df_data.append(
         (
             "bignum_col",
             [
@@ -534,8 +528,8 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
                 None,
                 decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
             ],
-        )
-    )
+        ),
+    ]
     df_data = collections.OrderedDict(df_data)
     dataframe = pandas.DataFrame(df_data, dtype="object", columns=df_data.keys())
 

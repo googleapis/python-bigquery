@@ -42,9 +42,9 @@ dependencies = [
     "google-cloud-core >= 1.4.1, <3.0.0dev",
     "google-resumable-media >= 0.6.0, < 3.0dev",
     "packaging >= 14.3, <22.0.0dev",
-    "protobuf >=4.21.4, <4.22.0",  # For the legacy proto-based types.
+    "protobuf >= 3.12.0, <4.0.0dev",  # For the legacy proto-based types.
     "python-dateutil >= 2.7.2, <3.0dev",
-    "pyarrow >=9, <9.1",
+    "pyarrow >= 3.0.0, < 9.0dev",
     "requests >= 2.18.0, < 3.0.0dev",
 ]
 extras = {

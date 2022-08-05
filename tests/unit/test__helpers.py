@@ -29,6 +29,8 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
+# pyarrow = _helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
+
 
 @unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")
 class TestBQStorageVersions(unittest.TestCase):

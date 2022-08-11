@@ -27,9 +27,9 @@ def create_job() -> "bigquery.QueryJob":
     client = bigquery.Client()
 
     query_job = client.create_job(
-        # Specify a job configuration, providing both query 
+        # Specify a job configuration, providing both query
         # and to set optional job resource properties, if needed.
-        # The job instance can be a LoadJob, CopyJob, ExtractJob, QueryJob 
+        # The job instance can be a LoadJob, CopyJob, ExtractJob, QueryJob
         # Here, we demonstrate a "query" job.
         # Reference: https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.client.Client.html#google.cloud.bigquery.client.Client.create_job
         #
@@ -37,20 +37,19 @@ def create_job() -> "bigquery.QueryJob":
         #   client.query()
         #   client.extract_table()
         #   client.copy_table()
-        #   client.load_table_file(), client.load_table_from_dataframe(), etc  
+        #   client.load_table_file(), client.load_table_from_dataframe(), etc
 
         job_config={
-            "query": { 
-                "query": 
-                   """
-                   SELECT country_name
-                   FROM `bigquery-public-data.utility_us.country_code_iso`
-                   LIMIT 5
-                   """,
-                },
+            "query": {
+                "query": """
+                         SELECT country_name
+                         FROM `bigquery-public-data.utility_us.country_code_iso`
+                         LIMIT 5
+                         """,
+            },
             "labels": {"example-label": "example-value"},
-            "maximum_bytes_billed": 10000000  
-        }   
+            "maximum_bytes_billed": 10000000
+        }
     )  # Make an API request.
 
     print("Started job: {}".format(query_job.job_id))

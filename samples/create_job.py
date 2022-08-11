@@ -31,6 +31,8 @@ def create_job() -> "bigquery.QueryJob":
         # and to set optional job resource properties, if needed.
         # The job instance can be a LoadJob, CopyJob, ExtractJob, QueryJob 
         # Here, we demonstrate a "query" job.
+        # Reference: https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.client.Client.html#google.cloud.bigquery.client.Client.create_job
+        #
         # NOTE: the preferred approach is to use one of the dedicated API calls:
         #   client.query()
         #   client.extract_table()

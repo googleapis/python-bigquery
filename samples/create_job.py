@@ -26,20 +26,26 @@ def create_job() -> "bigquery.QueryJob":
     # Construct a BigQuery client object.
     client = bigquery.Client()
 
-    query_job = client.query(
-        "SELECT country_name from `bigquery-public-data.utility_us.country_code_iso`",
-        # Explicitly force job execution to be routed to a specific processing
-        # location.
-        location="US",
-        # Specify a job configuration to set optional job resource properties.
-        job_config=bigquery.QueryJobConfig(
-            labels={"example-label": "example-value"}, maximum_bytes_billed=1000000
-        ),
-        # The client libraries automatically generate a job ID. Override the
-        # generated ID with either the job_id_prefix or job_id parameters.
-        job_id_prefix="code_sample_",
+    query_job = client.create_job(
+        # Specify a job configuration, providing both query 
+        # and to set optional job resource properties, if needed.
+        # The job instance can be a LoadJob, CopyJob, ExtractJob, QueryJob 
+        # Here, we demonstrate a "query" job.
+        job_config={
+            "query": { 
+                "query": 
+                   """
+                   SELECT country_name
+                   FROM `bigquery-public-data.utility_us.country_code_iso`
+                   LIMIT 5
+                   """,
+                },
+            "labels": {"example-label": "example-value"},
+            "maximum_bytes_billed": 10000000  
+        }   
     )  # Make an API request.
 
     print("Started job: {}".format(query_job.job_id))
     # [END bigquery_create_job]
+
     return query_job

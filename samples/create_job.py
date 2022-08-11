@@ -31,6 +31,12 @@ def create_job() -> "bigquery.QueryJob":
         # and to set optional job resource properties, if needed.
         # The job instance can be a LoadJob, CopyJob, ExtractJob, QueryJob 
         # Here, we demonstrate a "query" job.
+        # NOTE: the preferred approach is to use one of the dedicated API calls:
+        #   client.query()
+        #   client.extract_table()
+        #   client.copy_table()
+        #   client.load_table_file(), client.load_table_from_dataframe(), etc  
+
         job_config={
             "query": { 
                 "query": 

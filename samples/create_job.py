@@ -38,7 +38,6 @@ def create_job() -> "bigquery.QueryJob":
         #   client.extract_table()
         #   client.copy_table()
         #   client.load_table_file(), client.load_table_from_dataframe(), etc
-
         job_config={
             "query": {
                 "query": """
@@ -48,7 +47,7 @@ def create_job() -> "bigquery.QueryJob":
                          """,
             },
             "labels": {"example-label": "example-value"},
-            "maximum_bytes_billed": 10000000
+            "maximum_bytes_billed": 10000000,
         }
     )  # Make an API request.
 

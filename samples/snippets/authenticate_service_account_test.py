@@ -23,14 +23,8 @@ if typing.TYPE_CHECKING:
     import pytest
 
 
-# def mock_credentials(*args: Any, **kwargs: Any) -> google.auth.credentials.Credentials:
-#     credentials, _ = google.auth.default(
-#         ["https://www.googleapis.com/auth/cloud-platform"]
-#     )
-#     return credentials
-
-def mock_credentials() -> google.auth.credentials.Credentials:
-    credentials, _ = credentials, _ = google.auth.default(
+def mock_credentials(*args: Any, **kwargs: Any) -> google.auth.credentials.Credentials:
+    credentials, _ = google.auth.default(
         ["https://www.googleapis.com/auth/cloud-platform"]
     )
     return credentials

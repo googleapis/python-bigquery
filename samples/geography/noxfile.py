@@ -44,7 +44,7 @@ TEST_CONFIG = {
     "ignored_versions": [],
     # Old samples are opted out of enforcing Python type hints
     # All new samples should feature them
-    "enforce_type_hints": True,
+    "enforce_type_hints": False,
     # An envvar key for determining the project id to use. Change it
     # to 'BUILD_SPECIFIC_GCLOUD_PROJECT' if you want to opt in using a
     # build specific Cloud project. You can also use your own string

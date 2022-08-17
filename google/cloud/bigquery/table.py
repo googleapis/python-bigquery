@@ -1854,6 +1854,8 @@ class RowIterator(HTTPIterator):
         """
         _pandas_helpers.verify_pandas_imports()
 
+        # TODO: add to_arrow_iterable()
+
         if dtypes is None:
             dtypes = {}
 
@@ -1982,40 +1984,9 @@ class RowIterator(HTTPIterator):
             create_bqstorage_client=create_bqstorage_client,
         )
 
-        # When converting date or timestamp values to nanosecond precision, the result
-        # can be out of pyarrow bounds. To avoid the error when converting to
-        # Pandas, we set the date_as_object or timestamp_as_object parameter to True,
-        # if necessary.
-        date_as_object = not all(
-            self.__can_cast_timestamp_ns(col)
-            for col in record_batch
-            # Type can be date32 or date64 (plus units).
-            # See: https://arrow.apache.org/docs/python/api/datatypes.html
-            if str(col.type).startswith("date")
+        df = _pandas_helpers.arrow_to_dataframe_with_bq_schema_and_other_options(
+            record_batch
         )
-
-        timestamp_as_object = not all(
-            self.__can_cast_timestamp_ns(col)
-            for col in record_batch
-            # Type can be timestamp (plus units and time zone).
-            # See: https://arrow.apache.org/docs/python/api/datatypes.html
-            if str(col.type).startswith("timestamp")
-        )
-
-        if len(record_batch) > 0:
-            df = record_batch.to_pandas(
-                date_as_object=date_as_object,
-                timestamp_as_object=timestamp_as_object,
-                integer_object_nulls=True,
-                types_mapper=_pandas_helpers.default_types_mapper(
-                    date_as_object=date_as_object
-                ),
-            )
-        else:
-            # Avoid "ValueError: need at least one array to concatenate" on
-            # older versions of pandas when converting empty RecordBatch to
-            # DataFrame. See: https://github.com/pandas-dev/pandas/issues/41241
-            df = pandas.DataFrame([], columns=record_batch.schema.names)
 
         for column in dtypes:
             df[column] = pandas.Series(df[column], dtype=dtypes[column], copy=False)
@@ -2026,15 +1997,6 @@ class RowIterator(HTTPIterator):
                     df[field.name] = df[field.name].dropna().apply(_read_wkt)
 
         return df
-
-    @staticmethod
-    def __can_cast_timestamp_ns(column):
-        try:
-            column.cast("timestamp[ns]")
-        except pyarrow.lib.ArrowInvalid:
-            return False
-        else:
-            return True
 
     # If changing the signature of this method, make sure to apply the same
     # changes to job.QueryJob.to_geodataframe()

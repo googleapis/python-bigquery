@@ -5,6 +5,21 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.3.2](https://github.com/googleapis/python-bigquery/compare/v3.3.1...v3.3.2) (2022-08-16)
+
+
+### Bug Fixes
+
+* **deps:** require proto-plus >= 1.22.0 ([1de7a52](https://github.com/googleapis/python-bigquery/commit/1de7a52cb85d4876e4aa87346aff5725c8294c4e))
+* **deps:** require protobuf >=3.19, < 5.0.0 ([#1311](https://github.com/googleapis/python-bigquery/issues/1311)) ([1de7a52](https://github.com/googleapis/python-bigquery/commit/1de7a52cb85d4876e4aa87346aff5725c8294c4e))
+
+## [3.3.1](https://github.com/googleapis/python-bigquery/compare/v3.3.0...v3.3.1) (2022-08-09)
+
+
+### Bug Fixes
+
+* **deps:** allow pyarrow < 10 ([#1304](https://github.com/googleapis/python-bigquery/issues/1304)) ([13616a9](https://github.com/googleapis/python-bigquery/commit/13616a910ba2e9b7bc3595847229b56e70c99f84))
+
 ## [3.3.0](https://github.com/googleapis/python-bigquery/compare/v3.2.0...v3.3.0) (2022-07-25)
 
 

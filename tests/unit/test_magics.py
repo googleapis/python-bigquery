@@ -36,10 +36,10 @@ except ImportError:
     raise  # magics = None
 
 bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
-IPython = pytest.importorskip("IPython")
-interactiveshell = pytest.importorskip("IPython.terminal.interactiveshell")
-tools = pytest.importorskip("IPython.testing.tools")
-io = pytest.importorskip("IPython.utils.io")
+IPython = pytest.importorskip("ipython")
+interactiveshell = pytest.importorskip("ipython.terminal.interactiveshell")
+tools = pytest.importorskip("ipython.testing.tools")
+io = pytest.importorskip("ipython.utils.io")
 pandas = pytest.importorskip("pandas")
 
 

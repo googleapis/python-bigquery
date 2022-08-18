@@ -96,9 +96,10 @@ try:
     import IPython  # type: ignore
     from IPython import display  # type: ignore
     from IPython.core import magic_arguments  # type: ignore
+    import ipywidgets as widgets  # type: ignore
 except ImportError:  # pragma: NO COVER
     raise  # ImportError("This module can only be loaded in IPython.")
-import ipywidgets as widgets
+
 from google.api_core import client_info
 from google.api_core import client_options
 from google.api_core.exceptions import NotFound

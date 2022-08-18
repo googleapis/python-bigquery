@@ -33,7 +33,7 @@ from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 try:
     from google.cloud.bigquery.magics import magics
 except ImportError:
-    raise  # magics = None
+    magics = None
 
 bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
 IPython = pytest.importorskip("ipython")
@@ -1981,8 +1981,9 @@ def test_bigquery_magic_send_widget_job():
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
+    long_query = "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo"
 
     with run_query_patch as query_mock:
         cell_magic_args = "--send_widget_job"
-        ip.run_cell_magic("bigquery", cell_magic_args, "SELECT 1")
+        ip.run_cell_magic("bigquery", cell_magic_args, long_query)
         assert query_mock.call_count == 1

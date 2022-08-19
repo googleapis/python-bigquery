@@ -98,11 +98,13 @@ try:
     from IPython import display  # type: ignore
     from IPython.core import magic_arguments  # type: ignore
 except ImportError:  # pragma: NO COVER
-    raise  ImportError("This module can only be loaded in IPython.")
+    raise ImportError("This module can only be loaded in IPython.")
 try:
     import ipywidgets as widgets  # type: ignore
 except ImportError:  # pragma: NO COVER
-    raise  ImportError("This module can only be loaded in IPython with ipywidgets installed.")
+    raise ImportError(
+        "This module can only be loaded in IPython with ipywidgets installed."
+    )
 
 
 from google.api_core import client_info

@@ -254,7 +254,7 @@ def cover(session):
     test runs (not system test runs), and then erases coverage data.
     """
     session.install("coverage", "pytest-cov")
-    session.run("coverage", "report", "--show-missing", "--fail-under=0")
+    session.run("coverage", "report", "--show-missing", "--fail-under=100")
     session.run("coverage", "erase")
 
 
@@ -268,7 +268,7 @@ def prerelease_deps(session):
     # https://arrow.apache.org/docs/python/install.html#installing-nightly-packages
     session.install(
         "--extra-index-url",
-        "https://pypi.fury.io/arrow-nightlies/",
+        "https://repo.fury.io/arrow-nightlies/",
         "--prefer-binary",
         "--pre",
         "--upgrade",
@@ -290,7 +290,7 @@ def prerelease_deps(session):
         "google-cloud-bigquery-storage",
         "google-cloud-core",
         "google-resumable-media",
-        "grpcio",
+        "grpcio>=1.48.0rc1, !=1.49.0rc1",
     )
     session.install(
         "freezegun",

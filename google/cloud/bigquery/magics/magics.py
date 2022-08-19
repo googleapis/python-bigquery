@@ -753,11 +753,10 @@ def _cell_magic(line, query):
                 widget_job.reload()
             else:
                 result = widget_job.to_dataframe()
-            out.append_stdout(f"{result}")
-            out.append_display_data(display.HTML("<em>Job complete!</em>"))
-
-        out = widgets.Output()
-        display(out)
+                out.append_stdout(f"{result}")
+                out.append_display_data(display.HTML("<em>Job complete!</em>"))
+            out = widgets.Output()
+            display(out)
 
         thread = threading.Thread(
             target=thread_func, args=(f"Job status for job_id {widget_job.job_id}", out)

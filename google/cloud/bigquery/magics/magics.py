@@ -737,20 +737,13 @@ def _cell_magic(line, query):
         close_transports()
 
     if args.send_widget_job:
-        client = bigquery.Client(
-            project=project,
-            credentials=context.credentials,
-            default_query_job_config=context.default_query_job_config,
-            client_info=client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
-            client_options=bigquery_client_options,
-        )
         job_config = bigquery.job.query.QueryJobConfig()
         job_config.query_parameters = params
 
         widget_job = client.query(query, job_config=job_config)
 
         def thread_func(widget_job, out):
-            time_sec = 10.0
+            time_sec = 1.0
             while widget_job.state != "DONE":
                 job_status = "Job is still running!"
                 out.append_stdout(f"{job_status}")

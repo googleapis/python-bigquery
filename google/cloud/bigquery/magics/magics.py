@@ -745,7 +745,7 @@ def _cell_magic(line, query):
         widget_job = client.query(query, job_config=job_config)
 
         def thread_func(widget_job, out):
-            time_sec = 1.0
+            time_sec = 10.0
             while widget_job.state != "DONE":
                 job_status = "Job is still running!"
                 out.append_stdout(f"{job_status}")
@@ -755,12 +755,11 @@ def _cell_magic(line, query):
                 result = widget_job.to_dataframe()
                 out.append_stdout(f"{result}")
                 out.append_display_data(display.HTML("<em>Job complete!</em>"))
-            out = widgets.Output()
-            display(out)
 
-        thread = threading.Thread(
-            target=thread_func, args=(f"Job status for job_id {widget_job.job_id}", out)
-        )
+        out = widgets.Output()
+        display(out)
+
+        thread = threading.Thread(target=thread_func, args=(widget_job, out))
         thread.start()
 
 

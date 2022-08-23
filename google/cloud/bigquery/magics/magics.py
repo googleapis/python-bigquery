@@ -95,7 +95,7 @@ from concurrent import futures
 
 try:
     import IPython  # type: ignore
-    from IPython import display  # type: ignore
+    from IPython.display import display, HTML  # type: ignore
     from IPython.core import magic_arguments  # type: ignore
 except ImportError:  # pragma: NO COVER
     raise ImportError("This module can only be loaded in IPython.")
@@ -513,11 +513,11 @@ def _create_dataset_if_necessary(client, dataset_id):
     ),
 )
 @magic_arguments.argument(
-    "--send_widget_job",
+    "--send_long_job",
     action="store_true",
     default=False,
     help=(
-        "Shows current status of a job as a progress bar in a widget."
+        "Shows current status of a job in a widget."
         "For use with longer-running jobs such as BQML queries."
     ),
 )
@@ -738,26 +738,29 @@ def _cell_magic(line, query):
     finally:
         close_transports()
 
-    if args.send_widget_job:
+    if args.send_long_job:
         job_config = bigquery.job.query.QueryJobConfig()
         job_config.query_parameters = params
 
         widget_job = client.query(query, job_config=job_config)
+        out = widgets.Output()
+
+        display(out)
 
         def thread_func(widget_job, out):
             time_sec = 10.0
+            new_line = "\n"
             while widget_job.state != "DONE":
-                job_status = "Job is still running!"
-                out.append_stdout(f"{job_status}")
+                job_status = (
+                    f"Job {widget_job.job_id} status is {widget_job.state}{new_line}"
+                )
+                out.append_display_data(HTML(f"{job_status}"))
                 time.sleep(time_sec)
                 widget_job.reload()
             else:
                 result = widget_job.to_dataframe()
                 out.append_stdout(f"{result}")
-                out.append_display_data(display.HTML("<em>Job complete!</em>"))
-
-        out = widgets.Output()
-        display(out)
+                out.append_display_data(HTML("<em>Job complete!</em>"))
 
         thread = threading.Thread(target=thread_func, args=(widget_job, out))
         thread.start()

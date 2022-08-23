@@ -1973,7 +1973,7 @@ def test_bigquery_magic_create_dataset_fails():
 
 
 @pytest.mark.usefixtures("ipython_interactive")
-def test_bigquery_magic_send_widget_job():
+def test_bigquery_magic_send_long_job():
 
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
@@ -1984,6 +1984,6 @@ def test_bigquery_magic_send_widget_job():
     long_query = "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo"
 
     with run_query_patch as query_mock:
-        cell_magic_args = "--send_widget_job"
+        cell_magic_args = "--send_long_job"
         ip.run_cell_magic("bigquery", cell_magic_args, long_query)
         assert query_mock.call_count == 1

@@ -517,7 +517,7 @@ def _create_dataset_if_necessary(client, dataset_id):
     action="store_true",
     default=False,
     help=(
-        "Shows current status of a job in a widget."
+        "Shows current status of a job in a widget and does not block the execution of the next cell."
         "For use with longer-running jobs such as BQML queries."
     ),
 )
@@ -735,39 +735,39 @@ def _cell_magic(line, query):
             IPython.get_ipython().push({args.destination_var: result})
         else:
             return result
+
+        if args.send_long_job:
+            job_config = bigquery.job.query.QueryJobConfig()
+            job_config.query_parameters = params
+
+            widget_job = client.query(query, job_config=job_config)
+            out = widgets.Output()
+
+            display(out)
+
+            def thread_func(widget_job, out):
+                time_sec = 10.0
+                new_line = "\n"
+                tab = "\t"
+                job_state = widget_job.state
+                job_status = f"Job {widget_job.job_id} status is {job_state}{new_line}"
+                out.append_display_data(HTML(f"{job_status}"))
+                while widget_job.state != "DONE":
+                    if widget_job.state != job_state:
+                        out.append_display_data(HTML(f"Job is {widget_job.state}{tab}"))
+                        job_state = widget_job.state
+                    time.sleep(time_sec)
+                    widget_job.reload()
+                else:
+                    result = widget_job.to_dataframe()
+                    print(result)
+                    out.append_stdout(f"{result}")
+                    out.append_display_data(HTML("<em>Job complete!</em>"))
+
+            thread = threading.Thread(target=thread_func, args=(widget_job, out))
+            thread.start()
     finally:
         close_transports()
-
-    if args.send_long_job:
-        job_config = bigquery.job.query.QueryJobConfig()
-        job_config.query_parameters = params
-
-        widget_job = client.query(query, job_config=job_config)
-        out = widgets.Output()
-
-        display(out)
-
-        def thread_func(widget_job, out):
-            time_sec = 10.0
-            new_line = "\n"
-            tab = "\t"
-            job_state = widget_job.state
-            job_status = f"Job {widget_job.job_id} status is {job_state}{new_line}"
-            out.append_display_data(HTML(f"{job_status}"))
-            while widget_job.state != "DONE":
-                if widget_job.state != job_state:
-                    out.append_display_data(HTML(f"Job is {widget_job.state}{tab}"))
-                    job_state = widget_job.state
-                time.sleep(time_sec)
-                widget_job.reload()
-            else:
-                result = widget_job.to_dataframe()
-                print(result)
-                out.append_stdout(f"{result}")
-                out.append_display_data(HTML("<em>Job complete!</em>"))
-
-        thread = threading.Thread(target=thread_func, args=(widget_job, out))
-        thread.start()
 
 
 def _split_args_line(line):

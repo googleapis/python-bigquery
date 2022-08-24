@@ -612,9 +612,9 @@ def _cell_magic(line, query):
     close_transports = functools.partial(_close_transports, client, bqstorage_client)
 
     if args.send_long_job:
-        params = []
         job_config = bigquery.job.query.QueryJobConfig()
         job_config.query_parameters = params
+        job_config.dry_run = args.dry_run
         widget_job = client.query(query, job_config=job_config)
         out = widgets.Output()
 
@@ -728,7 +728,7 @@ def _cell_magic(line, query):
             job_config.maximum_bytes_billed = value
 
         try:
-            query_job = _run_query(client, query, job_config=job_config)
+            query_job = _run_query(client, query, job_config=job_config)  # HERE
         except Exception as ex:
             _handle_error(ex, args.destination_var)
             return

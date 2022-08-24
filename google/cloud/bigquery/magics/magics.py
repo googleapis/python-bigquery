@@ -315,7 +315,7 @@ def _handle_error(error, destination_var=None):
     print("\nERROR:\n", str(error), file=sys.stderr)
 
 
-def _run_query(client, query, job_config=None):
+def _run_query(client, query, args, job_config=None):
     """Runs a query while printing status updates
 
     Args:
@@ -326,6 +326,8 @@ def _run_query(client, query, job_config=None):
             Use the ``job_config`` parameter to change dialects.
         job_config (Optional[google.cloud.bigquery.job.QueryJobConfig]):
             Extra configuration options for the job.
+        args (TODO):
+            Allows you to vary query execution behavior based on specific magics arguments
 
     Returns:
         google.cloud.bigquery.job.QueryJob: the query job created
@@ -342,6 +344,9 @@ def _run_query(client, query, job_config=None):
     query_job = client.query(query, job_config=job_config)
 
     if job_config and job_config.dry_run:
+        return query_job
+
+    if args.send_long_job:
         return query_job
 
     print("Executing query with job ID: {}".format(query_job.job_id))
@@ -728,7 +733,7 @@ def _cell_magic(line, query):
             job_config.maximum_bytes_billed = value
 
         try:
-            query_job = _run_query(client, query, job_config=job_config)  # HERE
+            query_job = _run_query(client, query, args, job_config=job_config)  # HERE
         except Exception as ex:
             _handle_error(ex, args.destination_var)
             return

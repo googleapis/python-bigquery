@@ -611,6 +611,37 @@ def _cell_magic(line, query):
 
     close_transports = functools.partial(_close_transports, client, bqstorage_client)
 
+    if args.send_long_job:
+        params = []
+        job_config = bigquery.job.query.QueryJobConfig()
+        job_config.query_parameters = params
+        widget_job = client.query(query, job_config=job_config)
+        out = widgets.Output()
+
+        display(out)
+
+        def thread_func(widget_job, out):
+            time_sec = 10.0
+            new_line = "\n"
+            tab = "\t"
+            job_state = widget_job.state
+            job_status = f"Job {widget_job.job_id} status is {job_state}{new_line}"
+            out.append_display_data(HTML(f"{job_status}"))
+            while widget_job.state != "DONE":
+                if widget_job.state != job_state:
+                    out.append_display_data(HTML(f"Job is {widget_job.state}{tab}"))
+                    job_state = widget_job.state
+                time.sleep(time_sec)
+                widget_job.reload()
+            else:
+                result = widget_job.to_dataframe()
+                print(result)
+                out.append_stdout(f"{result}")
+                out.append_display_data(HTML("<em>Job complete!</em>"))
+
+        thread = threading.Thread(target=thread_func, args=(widget_job, out))
+        thread.start()
+
     try:
         if args.max_results:
             max_results = int(args.max_results)
@@ -736,36 +767,6 @@ def _cell_magic(line, query):
         else:
             return result
 
-        if args.send_long_job:
-            job_config = bigquery.job.query.QueryJobConfig()
-            job_config.query_parameters = params
-
-            widget_job = client.query(query, job_config=job_config)
-            out = widgets.Output()
-
-            display(out)
-
-            def thread_func(widget_job, out):
-                time_sec = 10.0
-                new_line = "\n"
-                tab = "\t"
-                job_state = widget_job.state
-                job_status = f"Job {widget_job.job_id} status is {job_state}{new_line}"
-                out.append_display_data(HTML(f"{job_status}"))
-                while widget_job.state != "DONE":
-                    if widget_job.state != job_state:
-                        out.append_display_data(HTML(f"Job is {widget_job.state}{tab}"))
-                        job_state = widget_job.state
-                    time.sleep(time_sec)
-                    widget_job.reload()
-                else:
-                    result = widget_job.to_dataframe()
-                    print(result)
-                    out.append_stdout(f"{result}")
-                    out.append_display_data(HTML("<em>Job complete!</em>"))
-
-            thread = threading.Thread(target=thread_func, args=(widget_job, out))
-            thread.start()
     finally:
         close_transports()
 

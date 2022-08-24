@@ -95,7 +95,7 @@ from concurrent import futures
 
 try:
     import IPython  # type: ignore
-    from IPython.display import display, HTML  # type: ignore
+    from IPython.display import display, HTML, clear_output  # type: ignore
     from IPython.core import magic_arguments  # type: ignore
 except ImportError:  # pragma: NO COVER
     raise ImportError("This module can only be loaded in IPython.")
@@ -703,7 +703,7 @@ def _cell_magic(line, query):
             return
 
         if not args.verbose:
-            display.clear_output()
+            clear_output()
 
         if args.dry_run and args.destination_var:
             IPython.get_ipython().push({args.destination_var: query_job})

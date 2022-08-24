@@ -750,15 +750,19 @@ def _cell_magic(line, query):
         def thread_func(widget_job, out):
             time_sec = 10.0
             new_line = "\n"
+            tab = "\t"
+            job_state = widget_job.state
+            job_status = f"Job {widget_job.job_id} status is {job_state}{new_line}"
+            out.append_display_data(HTML(f"{job_status}"))
             while widget_job.state != "DONE":
-                job_status = (
-                    f"Job {widget_job.job_id} status is {widget_job.state}{new_line}"
-                )
-                out.append_display_data(HTML(f"{job_status}"))
+                if widget_job.state != job_state:
+                    out.append_display_data(HTML(f"Job is {widget_job.state}{tab}"))
+                    job_state = widget_job.state
                 time.sleep(time_sec)
                 widget_job.reload()
             else:
                 result = widget_job.to_dataframe()
+                print(result)
                 out.append_stdout(f"{result}")
                 out.append_display_data(HTML("<em>Job complete!</em>"))
 

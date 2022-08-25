@@ -315,6 +315,25 @@ def _handle_error(error, destination_var=None):
     print("\nERROR:\n", str(error), file=sys.stderr)
 
 
+def _thread_func(query_job, out, time_sec):
+    new_line = "\n"
+    tab = "\t"
+    job_state = query_job.state
+    job_status = f"Job {query_job.job_id} status is {job_state}{new_line}"
+    out.append_display_data(HTML(f"{job_status}"))
+    while query_job.state != "DONE":
+        if query_job.state != job_state:
+            out.append_display_data(HTML(f"Job is {query_job.state}{tab}"))
+            job_state = query_job.state
+            time.sleep(time_sec)
+            query_job.reload()
+        else:
+            result = query_job.to_dataframe()
+            print(result)
+            out.append_stdout(f"{result}")
+            out.append_display_data(HTML("<em>Job complete!</em>"))
+
+
 def _run_query(client, query, args, job_config=None):
     """Runs a query while printing status updates
 
@@ -347,11 +366,17 @@ def _run_query(client, query, args, job_config=None):
         return query_job
 
     if args.send_long_job:
-        return query_job
+        out = widgets.Output()
+        time_sec = 10.0
+
+        display(out)
+
+        thread = threading.Thread(target=_thread_func, args=(query_job, out, time_sec))
+        thread.start()
 
     print("Executing query with job ID: {}".format(query_job.job_id))
 
-    while True:
+    while True and args.send_long_job is False:
         print("\rQuery executing: {:0.2f}s".format(time.time() - start_time), end="")
         try:
             query_job.result(timeout=0.5)
@@ -616,37 +641,6 @@ def _cell_magic(line, query):
 
     close_transports = functools.partial(_close_transports, client, bqstorage_client)
 
-    if args.send_long_job:
-        job_config = bigquery.job.query.QueryJobConfig()
-        job_config.query_parameters = params
-        job_config.dry_run = args.dry_run
-        widget_job = client.query(query, job_config=job_config)
-        out = widgets.Output()
-
-        display(out)
-
-        def thread_func(widget_job, out):
-            time_sec = 10.0
-            new_line = "\n"
-            tab = "\t"
-            job_state = widget_job.state
-            job_status = f"Job {widget_job.job_id} status is {job_state}{new_line}"
-            out.append_display_data(HTML(f"{job_status}"))
-            while widget_job.state != "DONE":
-                if widget_job.state != job_state:
-                    out.append_display_data(HTML(f"Job is {widget_job.state}{tab}"))
-                    job_state = widget_job.state
-                time.sleep(time_sec)
-                widget_job.reload()
-            else:
-                result = widget_job.to_dataframe()
-                print(result)
-                out.append_stdout(f"{result}")
-                out.append_display_data(HTML("<em>Job complete!</em>"))
-
-        thread = threading.Thread(target=thread_func, args=(widget_job, out))
-        thread.start()
-
     try:
         if args.max_results:
             max_results = int(args.max_results)
@@ -733,7 +727,7 @@ def _cell_magic(line, query):
             job_config.maximum_bytes_billed = value
 
         try:
-            query_job = _run_query(client, query, args, job_config=job_config)  # HERE
+            query_job = _run_query(client, query, args, job_config=job_config)
         except Exception as ex:
             _handle_error(ex, args.destination_var)
             return

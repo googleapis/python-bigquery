@@ -316,22 +316,18 @@ def _handle_error(error, destination_var=None):
 
 
 def _thread_func(query_job, out, time_sec):
+    # needs note
     new_line = "\n"
-    tab = "\t"
     job_state = query_job.state
-    job_status = f"Job {query_job.job_id} status is {job_state}{new_line}"
+    job_status = f"Job {query_job.job_id} started and status is {job_state}{new_line}"
     out.append_display_data(HTML(f"{job_status}"))
     while query_job.state != "DONE":
-        if query_job.state != job_state:
-            out.append_display_data(HTML(f"Job is {query_job.state}{tab}"))
-            job_state = query_job.state
-            time.sleep(time_sec)
-            query_job.reload()
-        else:
-            result = query_job.to_dataframe()
-            print(result)
-            out.append_stdout(f"{result}")
-            out.append_display_data(HTML("<em>Job complete!</em>"))
+        time.sleep(time_sec)
+        query_job.reload()
+    else:
+        result = query_job.to_dataframe()
+        out.append_stdout(f"{result}")
+        out.append_display_data(HTML("<em>Job complete!</em>"))
 
 
 def _run_query(client, query, args, job_config=None):
@@ -345,8 +341,8 @@ def _run_query(client, query, args, job_config=None):
             Use the ``job_config`` parameter to change dialects.
         job_config (Optional[google.cloud.bigquery.job.QueryJobConfig]):
             Extra configuration options for the job.
-        args (TODO):
-            Allows you to vary query execution behavior based on specific magics arguments
+        args (Any):
+            Allows you to vary query execution behavior based on specific magics arguments.
 
     Returns:
         google.cloud.bigquery.job.QueryJob: the query job created
@@ -735,6 +731,11 @@ def _cell_magic(line, query):
 
         if not args.verbose:
             clear_output()
+
+        if args.send_long_job:
+            if args.destination_var:
+                IPython.get_ipython().push({args.destination_var: result})
+            return
 
         if args.dry_run and args.destination_var:
             IPython.get_ipython().push({args.destination_var: query_job})

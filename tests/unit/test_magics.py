@@ -41,6 +41,9 @@ interactiveshell = pytest.importorskip("ipython.terminal.interactiveshell")
 tools = pytest.importorskip("ipython.testing.tools")
 io = pytest.importorskip("ipython.utils.io")
 pandas = pytest.importorskip("pandas")
+widgets = pytest.importorskip("ipywidgets")
+display = pytest.importorskip("ipython.core.display")
+HTML = pytest.importorskip("ipython.core.HTML")
 
 
 @pytest.fixture(scope="session")
@@ -247,11 +250,35 @@ def test_context_with_custom_connection():
     context_conn.api_request.assert_has_calls([begin_call, query_results_call])
 
 
+@pytest.mark.usefixtures("ipython_interactive")
+@pytest.mark.skipif(widgets is None, reason="Requires `ipywidgets`")
+@pytest.mark.skipif(display is None, reason="Requires `IPython.core.display`")
+@pytest.mark.skipif(HTML is None, reason="Requires `IPython.core.HTML`")
+def test__thread_func():
+    magics.context._credentials = None
+
+    job_id = "job_1234"
+
+    time_sec = 10.0
+    out = widgets.Output()
+    long_sql = "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo"
+
+    client_mock = mock.patch(
+        "google.cloud.bigquery.magics.magics.bigquery.Client", autospec=True
+    )
+    query_job = client_mock().query(long_sql)
+
+    magics._thread_func(query_job, out, time_sec)
+    assert query_job.job_id == job_id
+
+
 def test__run_query():
     magics.context._credentials = None
 
     job_id = "job_1234"
-    sql = "SELECT 17"
+    short_sql = "SELECT 17"
+    long_sql = "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo"
+    args = {"send_long_job": "--send_long_job"}
     responses = [
         futures.TimeoutError,
         futures.TimeoutError,
@@ -262,10 +289,11 @@ def test__run_query():
         "google.cloud.bigquery.magics.magics.bigquery.Client", autospec=True
     )
     with client_patch as client_mock, io.capture_output() as captured:
-        client_mock().query(sql).result.side_effect = responses
-        client_mock().query(sql).job_id = job_id
+        client_mock().query(short_sql).result.side_effect = responses
+        client_mock().query(short_sql).job_id = job_id
 
-        query_job = magics._run_query(client_mock(), sql)
+        query_job = magics._run_query(client_mock(), short_sql)
+        long_query_job = magics._run_query(client_mock(), long_sql, args)
 
     lines = re.split("\n|\r", captured.stdout)
     # Removes blanks & terminal code (result of display clearing)
@@ -279,6 +307,8 @@ def test__run_query():
     for line in execution_updates:
         assert re.match("Query executing: .*s", line)
     assert re.match("Query complete after .*s", updates[-1])
+    assert client_mock.call_count == 2
+    assert long_query_job.job_id == job_id
 
 
 def test__run_query_dry_run_without_errors_is_silent():
@@ -1970,20 +2000,3 @@ def test_bigquery_magic_create_dataset_fails():
         )
 
     assert close_transports.called
-
-
-@pytest.mark.usefixtures("ipython_interactive")
-def test_bigquery_magic_send_long_job():
-
-    ip = IPython.get_ipython()
-    ip.extension_manager.load_extension("google.cloud.bigquery")
-
-    run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics._run_query", autospec=True
-    )
-    long_query = "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo"
-
-    with run_query_patch as query_mock:
-        cell_magic_args = "--send_long_job"
-        ip.run_cell_magic("bigquery", cell_magic_args, long_query)
-        assert query_mock.call_count == 1

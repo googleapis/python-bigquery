@@ -373,10 +373,11 @@ def _run_query(client, query, args, job_config=None):
 
         thread = threading.Thread(target=_thread_func, args=(query_job, out, time_sec))
         thread.start()
+        return
 
     print("Executing query with job ID: {}".format(query_job.job_id))
 
-    while True and args.send_long_job is False:
+    while True:
         print("\rQuery executing: {:0.2f}s".format(time.time() - start_time), end="")
         try:
             query_job.result(timeout=0.5)

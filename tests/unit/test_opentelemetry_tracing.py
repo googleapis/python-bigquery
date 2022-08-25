@@ -183,7 +183,7 @@ def test_optional_job_attributes(setup):
             TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, job_ref=test_job_ref
         ) as span:
             assert span is not None
-            for key, val in span.attributes:
+            for val in span.attributes.values():
                 assert val is not None
 
 

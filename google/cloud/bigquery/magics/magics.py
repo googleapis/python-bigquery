@@ -749,7 +749,7 @@ def _cell_magic(line, query):
 
         progress_bar = context.progress_bar_type or args.progress_bar_type
 
-        if max_results:
+        if max_results and args.send_long_job is False:
             result = query_job.result(max_results=max_results).to_dataframe(
                 bqstorage_client=None,
                 create_bqstorage_client=False,

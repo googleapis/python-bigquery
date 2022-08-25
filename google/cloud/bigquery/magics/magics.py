@@ -734,7 +734,7 @@ def _cell_magic(line, query):
 
         if args.send_long_job:
             if args.destination_var:
-                IPython.get_ipython().push({args.destination_var: result})
+                IPython.get_ipython().push({args.destination_var: query_job})
             return
 
         if args.dry_run and args.destination_var:

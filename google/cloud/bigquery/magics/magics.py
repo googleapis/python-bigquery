@@ -373,7 +373,7 @@ def _run_query(client, query, args, job_config=None):
 
         thread = threading.Thread(target=_thread_func, args=(query_job, out, time_sec))
         thread.start()
-        return
+        return query_job
 
     print("Executing query with job ID: {}".format(query_job.job_id))
 
@@ -749,7 +749,7 @@ def _cell_magic(line, query):
 
         progress_bar = context.progress_bar_type or args.progress_bar_type
 
-        if max_results and args.send_long_job is False:
+        if max_results:
             result = query_job.result(max_results=max_results).to_dataframe(
                 bqstorage_client=None,
                 create_bqstorage_client=False,

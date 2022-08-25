@@ -163,6 +163,7 @@ def test_default_job_attributes(setup):
             assert span.name == TEST_SPAN_NAME
             assert span.attributes == expected_attributes
 
+
 @pytest.mark.skipif(opentelemetry is None, reason="Require `opentelemetry`")
 def test_optional_job_attributes(setup):
     # This test ensures we don't propagate unset values into span attributes
@@ -178,6 +179,8 @@ def test_optional_job_attributes(setup):
         test_job_ref.project = "test_project_id"
         test_job_ref.created = time_created
         test_job_ref.state = "some_job_state"
+        test_job_ref.num_child_jobs = None
+        test_job_ref.parent_job_id = None
 
         with opentelemetry_tracing.create_span(
             TEST_SPAN_NAME, attributes=TEST_SPAN_ATTRIBUTES, job_ref=test_job_ref

@@ -535,7 +535,7 @@ def test_bigquery_magic_does_not_clear_display_in_verbose_mode():
     )
 
     clear_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics.display.clear_output",
+        "google.cloud.bigquery.magics.magics.clear_output",
         autospec=True,
     )
     run_query_patch = mock.patch(
@@ -556,7 +556,7 @@ def test_bigquery_magic_clears_display_in_non_verbose_mode():
     )
 
     clear_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics.display.clear_output",
+        "google.cloud.bigquery.magics.magics.clear_output",
         autospec=True,
     )
     run_query_patch = mock.patch(

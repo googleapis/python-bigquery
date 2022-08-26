@@ -32,7 +32,7 @@ from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 
 try:
     from google.cloud.bigquery.magics import magics
-except ImportError:
+except ImportError: # pragma NO COVER
     magics = None
 
 bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
@@ -43,7 +43,7 @@ io = pytest.importorskip("ipython.utils.io")
 pandas = pytest.importorskip("pandas")
 widgets = pytest.importorskip("ipywidgets")
 display = pytest.importorskip("ipython.core.display")
-HTML = pytest.importorskip("ipython.core.HTML")
+html = pytest.importorskip("ipython.core.HTML")
 
 
 @pytest.fixture(scope="session")
@@ -249,11 +249,11 @@ def test_context_with_custom_connection():
     )
     context_conn.api_request.assert_has_calls([begin_call, query_results_call])
 
-
+"""
 @pytest.mark.usefixtures("ipython_interactive")
 @pytest.mark.skipif(widgets is None, reason="Requires `ipywidgets`")
 @pytest.mark.skipif(display is None, reason="Requires `IPython.core.display`")
-@pytest.mark.skipif(HTML is None, reason="Requires `IPython.core.HTML`")
+@pytest.mark.skipif(html is None, reason="Requires `IPython.core.HTML`")
 def test__thread_func():
     magics.context._credentials = None
 
@@ -270,7 +270,7 @@ def test__thread_func():
 
     magics._thread_func(query_job, out, time_sec)
     assert query_job.job_id == job_id
-
+"""
 
 def test__run_query():
     magics.context._credentials = None

@@ -32,18 +32,18 @@ from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 
 try:
     from google.cloud.bigquery.magics import magics
-except ImportError: # pragma NO COVER
+except ImportError: # pragma: NO COVER
     magics = None
 
 bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
-IPython = pytest.importorskip("ipython")
-interactiveshell = pytest.importorskip("ipython.terminal.interactiveshell")
-tools = pytest.importorskip("ipython.testing.tools")
-io = pytest.importorskip("ipython.utils.io")
+IPython = pytest.importorskip("IPython")
+interactiveshell = pytest.importorskip("IPython.terminal.interactiveshell")
+tools = pytest.importorskip("IPython.testing.tools")
+io = pytest.importorskip("IPython.utils.io")
 pandas = pytest.importorskip("pandas")
 widgets = pytest.importorskip("ipywidgets")
-display = pytest.importorskip("ipython.core.display")
-html = pytest.importorskip("ipython.core.HTML")
+display = pytest.importorskip("IPython.core.display")
+html = pytest.importorskip("IPython.core.HTML")
 
 
 @pytest.fixture(scope="session")

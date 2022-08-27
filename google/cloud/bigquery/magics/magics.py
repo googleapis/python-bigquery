@@ -318,19 +318,23 @@ def _handle_error(error, destination_var=None):
 def _thread_func(query_job, out, time_sec):
     # needs note
     new_line = "\n"
+    tab = "\t"
     job_state = query_job.state
-    job_status = f"Job {query_job.job_id} started and status is {job_state}{new_line}"
+    job_status = f"Job {query_job.job_id} status is {job_state}{new_line}"
     out.append_display_data(HTML(f"{job_status}"))
     while query_job.state != "DONE":
-        time.sleep(time_sec)
-        query_job.reload()
-    else:
-        result = query_job.to_dataframe()
-        out.append_stdout(f"{result}")
-        out.append_display_data(HTML("<em>Job complete!</em>"))
+        if query_job.state != job_state:
+            out.append_display_data(HTML(f"Job is {query_job.state}{tab}"))
+            job_state = query_job.state
+            time.sleep(time_sec)
+            query_job.reload()
+        else:
+            result = query_job.to_dataframe()
+            out.append_stdout(f"{result}")
+            out.append_display_data(HTML("<em>Job complete!</em>"))
 
 
-def _run_query(client, query, args, job_config=None):
+def _run_query(client, query, args=None, job_config=None):
     """Runs a query while printing status updates
 
     Args:
@@ -361,7 +365,7 @@ def _run_query(client, query, args, job_config=None):
     if job_config and job_config.dry_run:
         return query_job
 
-    if args.send_long_job:
+    if args and args.send_long_job:
         out = widgets.Output()
         time_sec = 10.0
 
@@ -369,7 +373,6 @@ def _run_query(client, query, args, job_config=None):
 
         thread = threading.Thread(target=_thread_func, args=(query_job, out, time_sec))
         thread.start()
-        return query_job
 
     print("Executing query with job ID: {}".format(query_job.job_id))
 
@@ -724,7 +727,7 @@ def _cell_magic(line, query):
             job_config.maximum_bytes_billed = value
 
         try:
-            query_job = _run_query(client, query, args, job_config=job_config)
+            query_job = _run_query(client, query, args=args, job_config=job_config)
         except Exception as ex:
             _handle_error(ex, args.destination_var)
             return

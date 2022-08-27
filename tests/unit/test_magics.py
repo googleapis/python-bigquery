@@ -32,7 +32,7 @@ from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 
 try:
     from google.cloud.bigquery.magics import magics
-except ImportError: # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
     magics = None
 
 bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
@@ -41,10 +41,6 @@ interactiveshell = pytest.importorskip("IPython.terminal.interactiveshell")
 tools = pytest.importorskip("IPython.testing.tools")
 io = pytest.importorskip("IPython.utils.io")
 pandas = pytest.importorskip("pandas")
-widgets = pytest.importorskip("ipywidgets")
-display = pytest.importorskip("IPython.core.display")
-html = pytest.importorskip("IPython.core.HTML")
-
 
 @pytest.fixture(scope="session")
 def ipython():
@@ -249,13 +245,14 @@ def test_context_with_custom_connection():
     )
     context_conn.api_request.assert_has_calls([begin_call, query_results_call])
 
+
 """
-@pytest.mark.usefixtures("ipython_interactive")
-@pytest.mark.skipif(widgets is None, reason="Requires `ipywidgets`")
-@pytest.mark.skipif(display is None, reason="Requires `IPython.core.display`")
-@pytest.mark.skipif(html is None, reason="Requires `IPython.core.HTML`")
 def test__thread_func():
     magics.context._credentials = None
+    widgets = pytest.importorskip("ipywidgets")
+    display = pytest.importorskip("IPython.core.display")
+    html = pytest.importorskip("IPython.core.HTML")
+
 
     job_id = "job_1234"
 
@@ -266,19 +263,20 @@ def test__thread_func():
     client_mock = mock.patch(
         "google.cloud.bigquery.magics.magics.bigquery.Client", autospec=True
     )
+    # this is incomplete and won't run I think
     query_job = client_mock().query(long_sql)
 
     magics._thread_func(query_job, out, time_sec)
     assert query_job.job_id == job_id
 """
 
-def test__run_query():
-    magics.context._credentials = None
 
+@pytest.mark.usefixtures("ipython_interactive")
+def test__run_query(ipython_ns_cleanup):
+    # Once working refactor as two tests
+    magics.context._credentials = None
     job_id = "job_1234"
-    short_sql = "SELECT 17"
-    long_sql = "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo"
-    args = {"send_long_job": "--send_long_job"}
+    sql = "SELECT 17"
     responses = [
         futures.TimeoutError,
         futures.TimeoutError,
@@ -289,15 +287,36 @@ def test__run_query():
         "google.cloud.bigquery.magics.magics.bigquery.Client", autospec=True
     )
     with client_patch as client_mock, io.capture_output() as captured:
-        client_mock().query(short_sql).result.side_effect = responses
-        client_mock().query(short_sql).job_id = job_id
+        client_mock().query(sql).result.side_effect = responses
+        client_mock().query(sql).job_id = job_id
 
-        query_job = magics._run_query(client_mock(), short_sql)
-        long_query_job = magics._run_query(client_mock(), long_sql, args)
+        query_job = magics._run_query(client_mock(), sql)
 
     lines = re.split("\n|\r", captured.stdout)
     # Removes blanks & terminal code (result of display clearing)
     updates = list(filter(lambda x: bool(x) and x != "\x1b[2K", lines))
+
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    magics.context.credentials = mock.create_autospec(
+        google.auth.credentials.Credentials, instance=True
+    )
+    ipython_ns_cleanup.append((ip, "long_job"))
+
+    run_query_patch = mock.patch(
+        "google.cloud.bigquery.magics.magics._run_query", autospec=True
+    )
+    query_job_mock = mock.create_autospec(
+        google.cloud.bigquery.job.QueryJob, instance=True
+    )
+    with run_query_patch as run_query_mock:
+        run_query_mock.return_value = query_job_mock
+        long_job_result = ip.run_cell_magic(
+            "bigquery",
+            "long_job"
+            "--send_long_job",
+            "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo",
+        )
 
     assert query_job.job_id == job_id
     expected_first_line = "Executing query with job ID: {}".format(job_id)
@@ -307,8 +326,11 @@ def test__run_query():
     for line in execution_updates:
         assert re.match("Query executing: .*s", line)
     assert re.match("Query complete after .*s", updates[-1])
-    assert client_mock.call_count == 2
-    assert long_query_job.job_id == job_id
+    assert client_mock.call_count == 3
+    # assert not long_job_result == None # you have to set the query_job_mock result and thus run the query
+    assert "long_job" in ip.user_ns
+    long_job = ip.user_ns["long_job"]
+    assert not long_job == None # this only works if the query mock is executing
 
 
 def test__run_query_dry_run_without_errors_is_silent():

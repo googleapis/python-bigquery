@@ -16,7 +16,6 @@ import typing
 from typing import Union
 
 if typing.TYPE_CHECKING:
-    from google.cloud import bigquery
     from google.cloud.bigquery import LoadJob, CopyJob, ExtractJob, QueryJob
 
 

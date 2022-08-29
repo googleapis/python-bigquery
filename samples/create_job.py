@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import typing
+from typing import Union
 
 if typing.TYPE_CHECKING:
     from google.cloud import bigquery
+    from google.cloud.bigquery import LoadJob, CopyJob, ExtractJob, QueryJob
 
 
-def create_job() -> "bigquery.QueryJob":
+def create_job() -> "Union[LoadJob, CopyJob, ExtractJob, QueryJob]":
 
     # [START bigquery_create_job]
     from google.cloud import bigquery

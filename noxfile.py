@@ -288,7 +288,7 @@ def prerelease_deps(session):
         "google-cloud-bigquery-storage",
         "google-cloud-core",
         "google-resumable-media",
-        "grpcio==1.48.0rc1",
+        "grpcio!=1.49.0rc1",
     )
     session.install(
         "freezegun",

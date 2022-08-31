@@ -52,7 +52,7 @@ def create_job() -> "Union[LoadJob, CopyJob, ExtractJob, QueryJob]":
         }
     )  # Make an API request.
 
-    print("Started job: {}".format(query_job.job_id))
+    print(f"Started job: {query_job.job_id}")
     # [END bigquery_create_job]
 
     return query_job

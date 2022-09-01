@@ -40,7 +40,7 @@ def create_job() -> "Union[LoadJob, CopyJob, ExtractJob, QueryJob]":
         #      been added to one of the manually written job configuration
         #      classes yet
         #
-        # NOTE: unless it is necessary to create a job in this way, the 
+        # NOTE: unless it is necessary to create a job in this way, the
         # preferred approach is to use one of the dedicated API calls:
         #   client.query()
         #   client.extract_table()

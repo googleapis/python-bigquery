@@ -28,13 +28,20 @@ def create_job() -> "Union[LoadJob, CopyJob, ExtractJob, QueryJob]":
     client = bigquery.Client()
 
     query_job = client.create_job(
-        # Specify a job configuration, providing both query
-        # and to set optional job resource properties, if needed.
+        # Specify a job configuration, providing a query
+        # and/or optional job resource properties, as needed.
         # The job instance can be a LoadJob, CopyJob, ExtractJob, QueryJob
         # Here, we demonstrate a "query" job.
         # Reference: https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.client.Client.html#google.cloud.bigquery.client.Client.create_job
         #
-        # NOTE: the preferred approach is to use one of the dedicated API calls:
+        # Example use cases for .create_job() include:
+        #    * to retry failed jobs
+        #    * to generate jobs with an experimental API property that hasn't
+        #      been added to one of the manually written job configuration
+        #      classes yet
+        #
+        # NOTE: unless it is necessary to create a job in this way, the 
+        # preferred approach is to use one of the dedicated API calls:
         #   client.query()
         #   client.extract_table()
         #   client.copy_table()

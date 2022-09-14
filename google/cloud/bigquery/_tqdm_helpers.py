@@ -22,6 +22,7 @@ import warnings
 
 try:
     import tqdm  # type: ignore
+    from tqdm import notebook
 except ImportError:  # pragma: NO COVER
     tqdm = None
 

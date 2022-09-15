@@ -47,7 +47,7 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 try:
     import tqdm
     from tqdm import notebook
-    from tqdm.std import TqdmDeprecationWarning 
+    from tqdm.std import TqdmDeprecationWarning
 
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
@@ -3284,7 +3284,10 @@ class TestRowIterator(unittest.TestCase):
             # Warn that a progress bar was requested, but creating the tqdm
             # progress bar failed.
             for warning in warned:
-                self.assertIn(warning.category, [UserWarning, DeprecationWarning, TqdmDeprecationWarning])
+                self.assertIn(
+                    warning.category,
+                    [UserWarning, DeprecationWarning, TqdmDeprecationWarning],
+                )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_w_empty_results(self):

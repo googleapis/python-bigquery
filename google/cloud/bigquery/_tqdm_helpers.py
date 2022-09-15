@@ -106,7 +106,7 @@ def wait_for_query(
             )
             progress_bar.update(default_total)
             progress_bar.set_description(
-                "Query complete after {:0.2f}s".format(time.time() - start_time),
+                "BigQuery job ID {} successfully executed".format(query_job.job_id),
             )
             break
         except concurrent.futures.TimeoutError:

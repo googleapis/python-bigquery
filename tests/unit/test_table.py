@@ -46,7 +46,6 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 
 try:
     import tqdm
-    from tqdm import notebook
     from tqdm.std import TqdmDeprecationWarning
 
 except (ImportError, AttributeError):  # pragma: NO COVER

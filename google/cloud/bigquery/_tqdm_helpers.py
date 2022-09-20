@@ -15,6 +15,7 @@
 """Shared helper functions for tqdm progress bar."""
 
 import concurrent.futures
+import sys
 import time
 import typing
 from typing import Optional
@@ -46,9 +47,9 @@ def get_progress_bar(progress_bar_type, description, total, unit):
 
     try:
         if progress_bar_type == "tqdm":
-            return tqdm.tqdm(desc=description, total=total, unit=unit)
+            return tqdm.tqdm(colour="green", desc=description, file=sys.stdout, total=total, unit=unit)
         elif progress_bar_type == "tqdm_notebook":
-            return tqdm.tqdm_notebook(desc=description, total=total, unit=unit)
+            return tqdm.tqdm_notebook(desc=description, file=sys.stdout, total=total, unit=unit)
         elif progress_bar_type == "tqdm_gui":
             return tqdm.tqdm_gui(desc=description, total=total, unit=unit)
     except (KeyError, TypeError):
@@ -106,7 +107,7 @@ def wait_for_query(
             )
             progress_bar.update(default_total)
             progress_bar.set_description(
-                "BigQuery job ID {} successfully executed".format(query_job.job_id),
+                "Job ID {} successfully executed".format(query_job.job_id),
             )
             break
         except concurrent.futures.TimeoutError:

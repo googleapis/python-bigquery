@@ -344,7 +344,7 @@ def _run_query(client, query, job_config=None):
             break
         except futures.TimeoutError:
             continue
-    print("\nQuery complete after {:0.2f}s".format(time.time() - start_time))
+    print("\nJob ID {} successfully executed after {:0.2f}s".format(query_job.job_id, time.time() - start_time), file=sys.stdout)
     return query_job
 
 

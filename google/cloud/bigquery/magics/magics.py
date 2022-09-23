@@ -338,13 +338,21 @@ def _run_query(client, query, job_config=None):
     print("Executing query with job ID: {}".format(query_job.job_id))
 
     while True:
-        print("\rQuery executing: {:0.2f}s".format(time.perf_counter() - start_time), end="")
+        print(
+            "\rQuery executing: {:0.2f}s".format(time.perf_counter() - start_time),
+            end="",
+        )
         try:
             query_job.result(timeout=0.5)
             break
         except futures.TimeoutError:
             continue
-    print("\nJob ID {} successfully executed after {:0.2f}s".format(query_job.job_id, time.perf_counter() - start_time), file=sys.stdout)
+    print(
+        "\nJob ID {} successfully executed after {:0.2f}s".format(
+            query_job.job_id, time.perf_counter() - start_time
+        ),
+        file=sys.stdout,
+    )
     return query_job
 
 

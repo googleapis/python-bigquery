@@ -125,7 +125,7 @@ class Context(object):
         self._default_query_job_config = bigquery.QueryJobConfig()
         self._bigquery_client_options = client_options.ClientOptions()
         self._bqstorage_client_options = client_options.ClientOptions()
-        self._progress_bar_type = "tqdm"
+        self._progress_bar_type = "tqdm_notebook"
 
     @property
     def credentials(self):
@@ -329,7 +329,7 @@ def _run_query(client, query, job_config=None):
         Query complete after 2.07s
         'bf633912-af2c-4780-b568-5d868058632b'
     """
-    start_time = time.time()
+    start_time = time.perf_counter()
     query_job = client.query(query, job_config=job_config)
 
     if job_config and job_config.dry_run:
@@ -338,13 +338,13 @@ def _run_query(client, query, job_config=None):
     print("Executing query with job ID: {}".format(query_job.job_id))
 
     while True:
-        print("\rQuery executing: {:0.2f}s".format(time.time() - start_time), end="")
+        print("\rQuery executing: {:0.2f}s".format(time.perf_counter() - start_time), end="")
         try:
             query_job.result(timeout=0.5)
             break
         except futures.TimeoutError:
             continue
-    print("\nJob ID {} successfully executed after {:0.2f}s".format(query_job.job_id, time.time() - start_time), file=sys.stdout)
+    print("\nJob ID {} successfully executed after {:0.2f}s".format(query_job.job_id, time.perf_counter() - start_time), file=sys.stdout)
     return query_job
 
 

@@ -597,7 +597,7 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     query_job_mock.to_dataframe.assert_called_once_with(
         bqstorage_client=bqstorage_instance_mock,
         create_bqstorage_client=mock.ANY,
-        progress_bar_type="tqdm",
+        progress_bar_type="tqdm_notebook",
     )
 
     assert isinstance(return_value, pandas.DataFrame)
@@ -641,7 +641,7 @@ def test_bigquery_magic_with_rest_client_requested(monkeypatch):
         query_job_mock.to_dataframe.assert_called_once_with(
             bqstorage_client=None,
             create_bqstorage_client=False,
-            progress_bar_type="tqdm",
+            progress_bar_type="tqdm_notebook",
         )
 
     assert isinstance(return_value, pandas.DataFrame)

@@ -278,7 +278,7 @@ def test__run_query():
     assert len(execution_updates) == 3  # one update per API response
     for line in execution_updates:
         assert re.match("Query executing: .*s", line)
-    assert re.match("Query complete after .*s", updates[-1])
+    assert re.match("Job ID * successfully executed after .*s", updates[-1])
 
 
 def test__run_query_dry_run_without_errors_is_silent():

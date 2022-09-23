@@ -48,13 +48,22 @@ def get_progress_bar(progress_bar_type, description, total, unit):
 
     try:
         if progress_bar_type == "tqdm":
-            return tqdm.tqdm(bar_format="{l_bar}{bar}|", colour="green",
-                             desc=description, file=sys.stdout,
-                             total=total, unit=unit)
+            return tqdm.tqdm(
+                bar_format="{l_bar}{bar}|",
+                colour="green",
+                desc=description,
+                file=sys.stdout,
+                total=total,
+                unit=unit,
+            )
         elif progress_bar_type == "tqdm_notebook":
-            return tqdm.notebook.tqdm(bar_format="{l_bar}{bar}|",
-                                      desc=description, file=sys.stdout,
-                                      total=total, unit=unit)
+            return tqdm.notebook.tqdm(
+                bar_format="{l_bar}{bar}|",
+                desc=description,
+                file=sys.stdout,
+                total=total,
+                unit=unit,
+            )
         elif progress_bar_type == "tqdm_gui":
             return tqdm.tqdm_gui(desc=description, total=total, unit=unit)
     except (KeyError, TypeError):

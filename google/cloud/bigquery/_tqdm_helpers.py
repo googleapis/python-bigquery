@@ -52,7 +52,7 @@ def get_progress_bar(progress_bar_type, description, total, unit):
                              desc=description, file=sys.stdout,
                              total=total, unit=unit)
         elif progress_bar_type == "tqdm_notebook":
-            return tqdm.tqdm_notebook(bar_format="{l_bar}{bar}|",
+            return tqdm.notebook.tqdm(bar_format="{l_bar}{bar}|",
                                       desc=description, file=sys.stdout,
                                       total=total, unit=unit)
         elif progress_bar_type == "tqdm_gui":

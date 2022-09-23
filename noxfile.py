@@ -227,7 +227,7 @@ def snippets(session):
     session.install("grpcio", "-c", constraints_path)
 
     if session.python == "3.10":
-        extras = "[bqstorage,pandas,tqdm,ipywidgets,opentelemetry]"
+        extras = "[bqstorage,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)

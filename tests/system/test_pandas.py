@@ -28,7 +28,6 @@ import pytest
 
 from google.cloud import bigquery
 
-# from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 from google.cloud.bigquery import enums
 
 from . import helpers

@@ -43,11 +43,10 @@ from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import schema
 
-
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
-if pyarrow:
+try:
+    pyarrow = pytest.importorskip("pyarrow", minversion="1.0.1")
     import pyarrow.types
-else:  # pragma: NO COVER
+except ImportError:  # pragma: NO COVER
     # Mock out pyarrow when missing, because methods from pyarrow.types are
     # used in test parameterization.
     pyarrow = mock.Mock()

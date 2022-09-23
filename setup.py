@@ -57,15 +57,15 @@ extras = {
         # grpc.Channel.close() method isn't added until 1.32.0.
         # https://github.com/grpc/grpc/pull/15254
         "grpcio >= 1.38.1, < 2.0dev",
-        "pyarrow >= 3.0.0, < 9.0dev",
+        "pyarrow >= 1.0.1, < 9.0dev",
     ],
     "pandas": [
         "pandas>=1.0.0",
-        "pyarrow >= 3.0.0, < 9.0dev",
+        "pyarrow >= 1.0.1, < 9.0dev",
         "db-dtypes>=0.3.0,<2.0.0dev",
     ],
-    "bignumeric_type": ["pyarrow >= 3.0.0, < 9.0dev"],
-    "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
+    "bignumeric_type": ["pyarrow >= 1.0.1, < 9.0dev"],
+    # "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
     "ipython": ["ipython>=7.0.1,!=8.1.0"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [

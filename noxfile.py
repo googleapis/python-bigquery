@@ -178,7 +178,7 @@ def system(session):
     session.install("google-cloud-datacatalog", "-c", constraints_path)
 
     if session.python == "3.10":
-        extras = "[bqstorage,pandas,tqdm,opentelemetry]"
+        extras = "[bqstorage,pandas,tqdm,ipywidgets,opentelemetry]"
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)

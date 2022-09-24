@@ -22,6 +22,8 @@ import logging
 import queue
 import warnings
 
+from packaging import version
+
 from google.cloud.bigquery import _helpers
 
 try:
@@ -203,14 +205,19 @@ if pyarrow:
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
     }
 
-    BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
-    # The exact decimal's scale and precision are not important, as only
-    # the type ID matters, and it's the same for all decimal256 instances.
-    ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
+    if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
+        BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
+        # The exact decimal's scale and precision are not important, as only
+        # the type ID matters, and it's the same for all decimal256 instances.
+        ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
+        _BIGNUMERIC_SUPPORT = True
+    else:
+        _BIGNUMERIC_SUPPORT = False
 
 else:  # pragma: NO COVER
     BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
     ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
+    _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
 
 
 BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {

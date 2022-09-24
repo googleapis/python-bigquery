@@ -49,9 +49,14 @@ from .helpers import _make_client
 from .helpers import _make_job_resource
 
 pandas = pytest.importorskip("pandas")
-pyarrow = pytest.importorskip("pyarrow")
-# pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
+try:
+    pyarrow = pytest.importorskip("pyarrow", minversion="1.0.1")
+    import pyarrow.types
+except ImportError:  # pragma: NO COVER
+    # Mock out pyarrow when missing, because methods from pyarrow.types are
+    # used in test parameterization.
+    pyarrow = mock.Mock()
 
 @pytest.fixture
 def table_read_options_kwarg():

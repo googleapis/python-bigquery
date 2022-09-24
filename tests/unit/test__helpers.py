@@ -16,6 +16,7 @@ import base64
 import datetime
 import decimal
 import unittest
+import pytest
 
 import mock
 
@@ -25,11 +26,11 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 
 try:
-    import pyarrow
+    pyarrow = pytest.importorskip("pyarrow", minversion="1.0.1")
 except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
-# pyarrow = _helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
+    # Mock out pyarrow when missing, because methods from pyarrow.types are
+    # used in test parameterization.
+    pyarrow = mock.Mock()
 
 
 @unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")

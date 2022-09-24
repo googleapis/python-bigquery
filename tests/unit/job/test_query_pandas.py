@@ -58,6 +58,7 @@ except ImportError:  # pragma: NO COVER
     # used in test parameterization.
     pyarrow = mock.Mock()
 
+
 @pytest.fixture
 def table_read_options_kwarg():
     # Create a BigQuery Storage table read options object with pyarrow compression

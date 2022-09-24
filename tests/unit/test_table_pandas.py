@@ -16,9 +16,6 @@ import datetime
 import decimal
 from unittest import mock
 
-from google.cloud.bigquery import _helpers
-import pkg_resources
-
 import pytest
 
 from google.cloud import bigquery

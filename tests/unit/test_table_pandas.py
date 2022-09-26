@@ -21,7 +21,7 @@ import pytest
 from google.cloud import bigquery
 
 try:
-    pyarrow = pytest.importorskip("pyarrow", minversion="1.0.1")
+    pyarrow = pytest.importorskip("pyarrow", minversion="3.0.0")
     import pyarrow.types
 except ImportError:  # pragma: NO COVER
     # Mock out pyarrow when missing, because methods from pyarrow.types are

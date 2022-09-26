@@ -25,6 +25,7 @@ import warnings
 from packaging import version
 
 from google.cloud.bigquery import _helpers
+from google.cloud.bigquery import schema
 
 try:
     import pandas  # type: ignore
@@ -47,10 +48,7 @@ except ImportError as exc:  # pragma: NO COVER
     db_dtypes_import_exception = exc
     date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 
-try:
-    import pyarrow  # type: ignore
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+pyarrow = _helpers.PYARROW_VERSIONS.try_import()
 
 try:
     # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
@@ -88,10 +86,6 @@ else:
     # Having BQ Storage available implies that pyarrow >=1.0.0 is available, too.
     _ARROW_COMPRESSION_SUPPORT = True
 
-from google.cloud.bigquery import schema
-
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
-
 _LOGGER = logging.getLogger(__name__)
 
 _PROGRESS_INTERVAL = 0.2  # Maximum time between download status checks, in seconds.
@@ -100,12 +94,6 @@ _MAX_QUEUE_SIZE_DEFAULT = object()  # max queue size sentinel for BQ Storage dow
 
 _NO_PANDAS_ERROR = "Please install the 'pandas' package to use this function."
 _NO_DB_TYPES_ERROR = "Please install the 'db-dtypes' package to use this function."
-_NO_PYARROW_ERROR = "Please install the 'pyarrow' package to use this function."
-
-_NO_BQSTORAGE_ERROR = (
-    "The google-cloud-bigquery-storage library is not installed, "
-    "please install google-cloud-bigquery-storage to use bqstorage features."
-)
 
 _PANDAS_DTYPE_TO_BQ = {
     "bool": "BOOLEAN",
@@ -137,20 +125,17 @@ class _DownloadState(object):
 
 
 def pyarrow_datetime():
-    if pyarrow:
-        return pyarrow.timestamp("us", tz=None)
+    return pyarrow.timestamp("us", tz=None)
 
 
 def pyarrow_numeric():
-    if pyarrow:
-        return pyarrow.decimal128(38, 9)
+    return pyarrow.decimal128(38, 9)
 
 
 def pyarrow_bignumeric():
-    if pyarrow:
-        # 77th digit is partial.
-        # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
-        return pyarrow.decimal256(76, 38)
+    # 77th digit is partial.
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
+    return pyarrow.decimal256(76, 38)
 
 
 def pyarrow_time():
@@ -212,7 +197,7 @@ if pyarrow:
         ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
         _BIGNUMERIC_SUPPORT = True
     else:
-        _BIGNUMERIC_SUPPORT = False
+        _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
 
 else:  # pragma: NO COVER
     BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER

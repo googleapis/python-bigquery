@@ -45,7 +45,9 @@ from google.cloud.bigquery import schema
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
 pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+
 if pyarrow:
+    import pyarrow.parquet
     import pyarrow.types
 else:  # pragma: NO COVER
     # Mock out pyarrow when missing, because methods from pyarrow.types are
@@ -69,8 +71,11 @@ else:
 
 
 skip_if_no_bignumeric = pytest.mark.skipif(
-    not _BIGNUMERIC_SUPPORT, reason="BIGNUMERIC support requires pyarrow>=3.0.0",
+    not _BIGNUMERIC_SUPPORT,
+    reason="BIGNUMERIC support requires pyarrow>=3.0.0",
 )
+
+
 @pytest.fixture
 def module_under_test():
     from google.cloud.bigquery import _pandas_helpers
@@ -246,7 +251,8 @@ def test_all_():
         pytest.param(
             "BIGNUMERIC",
             "REPEATED",
-            all_(pyarrow.types.is_list, lambda type_: is_bignumeric(type_.value_type)), marks=skip_if_no_bignumeric,
+            all_(pyarrow.types.is_list, lambda type_: is_bignumeric(type_.value_type)),
+            marks=skip_if_no_bignumeric,
         ),
         (
             "BOOLEAN",

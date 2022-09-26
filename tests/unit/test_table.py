@@ -41,14 +41,13 @@ except ImportError:  # pragma: NO COVER
 
 from google.cloud.bigquery import _helpers
 
-
 pyarrow = _helpers.PYARROW_VERSIONS.try_import()
-PYARROW_VERSION = pkg_resources.parse_version("1.0.1")
+PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
+
 if pyarrow:
     import pyarrow.types
 
     PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
-
 
 try:
     import pandas
@@ -3212,10 +3211,7 @@ class TestRowIterator(unittest.TestCase):
 
         df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
-        tzinfo = None
-        if PYARROW_VERSION >= PYARROW_TIMESTAMP_VERSION:
-            tzinfo = datetime.timezone.utc
-
+        tzinfo = datetime.timezone.utc
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 2)  # verify the number of rows
         self.assertEqual(list(df.columns), ["some_timestamp"])

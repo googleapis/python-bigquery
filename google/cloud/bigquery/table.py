@@ -1728,8 +1728,8 @@ class RowIterator(HTTPIterator):
                   No progress bar.
                 ``'tqdm'``
                   Use the :func:`tqdm.tqdm` function to print a progress bar
-                  to :data:`sys.stderr`.
-                ``'tqdm_notebook'``
+                  to :data:`sys.stdout`.
+                ``'tqdm.notebook.tqdm'``
                   Use the :func:`tqdm.notebook.tqdm` function to display a
                   progress bar as a Jupyter notebook widget.
                 ``'tqdm_gui'``
@@ -1921,9 +1921,9 @@ class RowIterator(HTTPIterator):
                   No progress bar.
                 ``'tqdm'``
                   Use the :func:`tqdm.tqdm` function to print a progress bar
-                  to :data:`sys.stderr`.
-                ``'tqdm_notebook'``
-                  Use the :func:`tqdm.notebok.tqdm` function to display a
+                  to :data:`sys.stdout`.
+                ``'tqdm.notebook.tqdm'``
+                  Use the :func:`tqdm.notebook.tqdm` function to display a
                   progress bar as a Jupyter notebook widget.
                 ``'tqdm_gui'``
                   Use the :func:`tqdm.tqdm_gui` function to display a
@@ -2075,8 +2075,8 @@ class RowIterator(HTTPIterator):
                   No progress bar.
                 ``'tqdm'``
                   Use the :func:`tqdm.tqdm` function to print a progress bar
-                  to :data:`sys.stderr`.
-                ``'tqdm_notebook'``
+                  to :data:`sys.stdout`.
+                ``'tqdm.notebook.tqdm'``
                   Use the :func:`tqdm.notebook.tqdm` function to display a
                   progress bar as a Jupyter notebook widget.
                 ``'tqdm_gui'``

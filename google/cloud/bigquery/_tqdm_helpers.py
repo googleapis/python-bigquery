@@ -109,11 +109,7 @@ def wait_for_query(
             current_stage = query_job.query_plan[i]
             progress_bar.total = len(query_job.query_plan)
             progress_bar.set_description(
-                "Query executing stage {} and status {} : {:0.2f}s".format(
-                    current_stage.name,
-                    current_stage.status,
-                    time.time() - start_time,
-                ),
+                f"Query executing stage {current_stage.name} and status {current_stage.status} : {time.time() - start_time:.2f}s"
             )
         try:
             query_result = query_job.result(
@@ -121,7 +117,7 @@ def wait_for_query(
             )
             progress_bar.update(default_total)
             progress_bar.set_description(
-                "Job ID {} successfully executed".format(query_job.job_id),
+                f"Job ID {query_job.job_id} successfully executed",
             )
             break
         except concurrent.futures.TimeoutError:
@@ -134,5 +130,4 @@ def wait_for_query(
             continue
 
     progress_bar.close()
-    sys.stdout.flush()
     return query_result

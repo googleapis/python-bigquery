@@ -335,11 +335,11 @@ def _run_query(client, query, job_config=None):
     if job_config and job_config.dry_run:
         return query_job
 
-    print("Executing query with job ID: {}".format(query_job.job_id))
+    print(f"Executing query with job ID: {query_job.job_id}")
 
     while True:
         print(
-            "\rQuery executing: {:0.2f}s".format(time.perf_counter() - start_time),
+            f"\rQuery executing: {time.perf_counter() - start_time:.2f}s".format(),
             end="",
         )
         try:
@@ -348,9 +348,7 @@ def _run_query(client, query, job_config=None):
         except futures.TimeoutError:
             continue
     print(
-        "\nJob ID {} successfully executed after {:0.2f}s".format(
-            query_job.job_id, time.perf_counter() - start_time
-        ),
+        f"\nJob ID {query_job.job_id} successfully executed after {time.perf_counter() - start_time:.2f}s",
         file=sys.stdout,
     )
     return query_job
@@ -373,7 +371,7 @@ def _create_dataset_if_necessary(client, dataset_id):
         pass
     dataset = bigquery.Dataset(dataset_reference)
     dataset.location = client.location
-    print("Creating dataset: {}".format(dataset_id))
+    print(f"Creating dataset: {dataset_id}")
     dataset = client.create_dataset(dataset)
 
 

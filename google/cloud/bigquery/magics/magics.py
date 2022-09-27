@@ -286,7 +286,7 @@ def _handle_error(error, destination_var=None):
 
     Args:
         error (Exception):
-            An exception that ocurred during the query exectution.
+            An exception that ocurred during the query execution.
         destination_var (Optional[str]):
             The name of the IPython session variable to store the query job.
     """

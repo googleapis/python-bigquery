@@ -269,7 +269,7 @@ class Context(object):
             Manually setting the progress_bar_type:
 
             >>> from google.cloud.bigquery import magics
-            >>> magics.context.progress_bar_type = "tqdm"
+            >>> magics.context.progress_bar_type = "tqdm_notebook"
         """
         return self._progress_bar_type
 
@@ -506,7 +506,7 @@ def _create_dataset_if_necessary(client, dataset_id):
     default=None,
     help=(
         "Sets progress bar type to display a progress bar while executing the query."
-        "Defaults to use tqdm. Install the ``tqdm`` package to use this feature."
+        "Defaults to use tqdm_notebook. Install the ``tqdm`` package to use this feature."
     ),
 )
 def _cell_magic(line, query):

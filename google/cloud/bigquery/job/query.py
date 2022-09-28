@@ -1557,7 +1557,7 @@ class QueryJob(_AsyncJob):
                 ``'tqdm'``
                   Use the :func:`tqdm.tqdm` function to print a progress bar
                   to :data:`sys.stdout`.
-                ``'tqdm.notebook.tqdm'``
+                ``'tqdm_notebook'``
                   Use the :func:`tqdm.notebook.tqdm` function to display a
                   progress bar as a Jupyter notebook widget.
                 ``'tqdm_gui'``

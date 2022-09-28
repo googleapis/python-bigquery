@@ -125,7 +125,7 @@ class Context(object):
         self._default_query_job_config = bigquery.QueryJobConfig()
         self._bigquery_client_options = client_options.ClientOptions()
         self._bqstorage_client_options = client_options.ClientOptions()
-        self._progress_bar_type = "tqdm_notebook"
+        self._progress_bar_type = "tqdm"
 
     @property
     def credentials(self):
@@ -348,9 +348,7 @@ def _run_query(client, query, job_config=None):
         except futures.TimeoutError:
             continue
     print(
-        f"\nJob ID {query_job.job_id} successfully executed after {time.perf_counter() - start_time:.2f}s",
-        file=sys.stdout,
-    )
+        f"\nJob ID {query_job.job_id} successfully executed")
     return query_job
 
 

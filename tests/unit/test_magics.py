@@ -277,8 +277,6 @@ def test__run_query():
     assert len(execution_updates) == 3  # one update per API response
     for line in execution_updates:
         assert re.match("Query executing: .*s", line)
-    assert re.match("Job ID * successfully executed", job_id)
-
 
 def test__run_query_dry_run_without_errors_is_silent():
     magics.context._credentials = None
@@ -596,7 +594,7 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     query_job_mock.to_dataframe.assert_called_once_with(
         bqstorage_client=bqstorage_instance_mock,
         create_bqstorage_client=mock.ANY,
-        progress_bar_type="tqdm_notebook",
+        progress_bar_type="tqdm",
     )
 
     assert isinstance(return_value, pandas.DataFrame)
@@ -640,7 +638,7 @@ def test_bigquery_magic_with_rest_client_requested(monkeypatch):
         query_job_mock.to_dataframe.assert_called_once_with(
             bqstorage_client=None,
             create_bqstorage_client=False,
-            progress_bar_type="tqdm_notebook",
+            progress_bar_type="tqdm",
         )
 
     assert isinstance(return_value, pandas.DataFrame)

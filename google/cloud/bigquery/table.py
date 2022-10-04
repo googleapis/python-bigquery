@@ -43,7 +43,9 @@ try:
 except ImportError:
     shapely = None
 else:
-    _read_wkt = shapely.geos.WKTReader(shapely.geos.lgeos).read
+    #_read_wkt = shapely.geos.WKTReader(shapely.geos.lgeos).read
+    _read_wkt = shapely.io.from_wkt
+
 
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator

@@ -81,7 +81,7 @@ def default(session, install_extras=True):
     )
 
     if install_extras and session.python == "3.10":
-        install_target = ".[bqstorage,pandas,tqdm,opentelemetry]"
+        install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     elif install_extras:
         install_target = ".[all]"
     else:
@@ -186,7 +186,7 @@ def system(session):
     session.install("google-cloud-datacatalog", "-c", constraints_path)
 
     if session.python == "3.10":
-        extras = "[bqstorage,pandas,tqdm,opentelemetry]"
+        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)
@@ -235,7 +235,7 @@ def snippets(session):
     session.install("grpcio", "-c", constraints_path)
 
     if session.python == "3.10":
-        extras = "[bqstorage,pandas,tqdm,opentelemetry]"
+        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)

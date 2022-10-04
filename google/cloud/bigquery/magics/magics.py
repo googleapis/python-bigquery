@@ -125,7 +125,7 @@ class Context(object):
         self._default_query_job_config = bigquery.QueryJobConfig()
         self._bigquery_client_options = client_options.ClientOptions()
         self._bqstorage_client_options = client_options.ClientOptions()
-        self._progress_bar_type = "tqdm"
+        self._progress_bar_type = "tqdm_notebook"
 
     @property
     def credentials(self):

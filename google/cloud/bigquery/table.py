@@ -43,7 +43,7 @@ try:
 except ImportError:
     shapely = None
 else:
-    _read_wkt = shapely.io.from_wkt
+    _read_wkt = shapely.wkt.loads
 
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator

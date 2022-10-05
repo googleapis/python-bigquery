@@ -57,7 +57,7 @@ else:
     if pandas is not None:  # pragma: NO COVER
 
         def _to_wkb():
-            from shapely import wkb
+            from shapely import wkb  # type: ignore
 
             write = wkb.dumps
             notnull = pandas.notnull

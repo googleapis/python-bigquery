@@ -38,7 +38,6 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     geopandas = None
 try:
     from tqdm import tqdm
-    import tqdm.notebook as notebook
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
@@ -721,7 +720,7 @@ def test_to_dataframe_column_date_dtypes():
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-@mock.patch("notebook.tqdm")
+@mock.patch("tqdm.tqdm")
 def test_to_dataframe_with_progress_bar(tqdm_mock):
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -747,7 +746,7 @@ def test_to_dataframe_with_progress_bar(tqdm_mock):
     job.to_dataframe(progress_bar_type=None, create_bqstorage_client=False)
     tqdm_mock.assert_not_called()
 
-    job.to_dataframe(progress_bar_type="tqdm_notebook", create_bqstorage_client=False)
+    job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
     tqdm_mock.assert_called()
 
 

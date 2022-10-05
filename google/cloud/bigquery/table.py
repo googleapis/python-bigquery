@@ -39,7 +39,7 @@ else:
     _COORDINATE_REFERENCE_SYSTEM = "EPSG:4326"
 
 try:
-    import shapely # type: ignore
+    import shapely  # type: ignore
 except ImportError:
     shapely = None
 else:

@@ -25,7 +25,15 @@ import nox
 MYPY_VERSION = "mypy==0.910"
 PYTYPE_VERSION = "pytype==2021.4.9"
 BLACK_VERSION = "black==22.3.0"
-BLACK_PATHS = ("docs", "google", "samples", "tests", "noxfile.py", "setup.py")
+BLACK_PATHS = (
+    "docs",
+    "google",
+    "samples",
+    "samples/tests",
+    "tests",
+    "noxfile.py",
+    "setup.py",
+)
 
 DEFAULT_PYTHON_VERSION = "3.8"
 SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.10"]
@@ -162,7 +170,9 @@ def system(session):
         session.skip("Credentials must be set via environment variable.")
 
     # Use pre-release gRPC for system tests.
-    session.install("--pre", "grpcio", "-c", constraints_path)
+    # Exclude version 1.49.0rc1 which has a known issue.
+    # See https://github.com/grpc/grpc/pull/30642
+    session.install("--pre", "grpcio!=1.49.0rc1", "-c", constraints_path)
 
     # Install all test dependencies, then install local packages in place.
     session.install(
@@ -290,7 +300,12 @@ def prerelease_deps(session):
         "google-cloud-bigquery-storage",
         "google-cloud-core",
         "google-resumable-media",
+<<<<<<< HEAD
         "grpcio>=1.48.0rc1, !=1.49.0rc1",
+=======
+        # Exclude version 1.49.0rc1 which has a known issue. See https://github.com/grpc/grpc/pull/30642
+        "grpcio!=1.49.0rc1",
+>>>>>>> 2afd278febe1eb247adc6278ab59903962a5bb6c
     )
     session.install(
         "freezegun",

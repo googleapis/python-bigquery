@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import concurrent.futures
 import copy
 import json
 
@@ -339,8 +338,6 @@ def test_to_arrow_w_tqdm_w_query_plan():
     result_patch = mock.patch(
         "google.cloud.bigquery.job.QueryJob.result",
         side_effect=[
-            concurrent.futures.TimeoutError,
-            concurrent.futures.TimeoutError,
             row_iterator,
         ],
     )
@@ -348,7 +345,7 @@ def test_to_arrow_w_tqdm_w_query_plan():
     with result_patch as result_patch_tqdm, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 3
+    assert result_patch_tqdm.call_count == 1
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
     result_patch_tqdm.assert_called_with(
@@ -394,13 +391,13 @@ def test_to_arrow_w_tqdm_w_pending_status():
     )
     result_patch = mock.patch(
         "google.cloud.bigquery.job.QueryJob.result",
-        side_effect=[concurrent.futures.TimeoutError, row_iterator],
+        side_effect=[row_iterator],
     )
 
     with result_patch as result_patch_tqdm, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
+    assert result_patch_tqdm.call_count == 1
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
     result_patch_tqdm.assert_called_with(
@@ -437,13 +434,13 @@ def test_to_arrow_w_tqdm_wo_query_plan():
     )
     result_patch = mock.patch(
         "google.cloud.bigquery.job.QueryJob.result",
-        side_effect=[concurrent.futures.TimeoutError, row_iterator],
+        side_effect=[row_iterator],
     )
 
     with result_patch as result_patch_tqdm, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
+    assert result_patch_tqdm.call_count == 1
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
     result_patch_tqdm.assert_called()
@@ -790,13 +787,13 @@ def test_to_dataframe_w_tqdm_pending():
     )
     result_patch = mock.patch(
         "google.cloud.bigquery.job.QueryJob.result",
-        side_effect=[concurrent.futures.TimeoutError, row_iterator],
+        side_effect=[row_iterator],
     )
 
     with result_patch as result_patch_tqdm, reload_patch:
         df = job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
+    assert result_patch_tqdm.call_count == 1
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
     assert list(df) == ["name", "age"]  # verify the column names
@@ -846,8 +843,6 @@ def test_to_dataframe_w_tqdm():
     result_patch = mock.patch(
         "google.cloud.bigquery.job.QueryJob.result",
         side_effect=[
-            concurrent.futures.TimeoutError,
-            concurrent.futures.TimeoutError,
             row_iterator,
         ],
     )
@@ -855,7 +850,7 @@ def test_to_dataframe_w_tqdm():
     with result_patch as result_patch_tqdm, reload_patch:
         df = job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 3
+    assert result_patch_tqdm.call_count == 1
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
     assert list(df), ["name", "age"]  # verify the column names
@@ -899,7 +894,7 @@ def test_to_dataframe_w_tqdm_max_results():
     )
     result_patch = mock.patch(
         "google.cloud.bigquery.job.QueryJob.result",
-        side_effect=[concurrent.futures.TimeoutError, row_iterator],
+        side_effect=[row_iterator],
     )
 
     with result_patch as result_patch_tqdm, reload_patch:
@@ -907,7 +902,7 @@ def test_to_dataframe_w_tqdm_max_results():
             progress_bar_type="tqdm", create_bqstorage_client=False, max_results=3
         )
 
-    assert result_patch_tqdm.call_count == 2
+    assert result_patch_tqdm.call_count == 1
     result_patch_tqdm.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=3
     )

@@ -95,7 +95,7 @@ def wait_for_query(
     """
     default_total = 1
     current_stage = None
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     progress_bar = get_progress_bar(
         progress_bar_type, "Query is running", default_total, "query"
@@ -110,7 +110,7 @@ def wait_for_query(
             current_stage = query_job.query_plan[i]
             progress_bar.total = len(query_job.query_plan)
             progress_bar.set_description(
-                f"Query executing stage {current_stage.name} and status {current_stage.status} : {time.time() - start_time:.2f}s"
+                f"Query executing stage {current_stage.name} and status {current_stage.status} : {time.perf_counter() - start_time:.2f}s"
             )
         try:
             query_result = query_job.result(

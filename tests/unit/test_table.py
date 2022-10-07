@@ -45,7 +45,7 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     geopandas = None
 
 try:
-    from tqdm import tqdm
+    import tqdm
     from tqdm.std import TqdmDeprecationWarning
 
 except (ImportError, AttributeError):  # pragma: NO COVER

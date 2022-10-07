@@ -796,7 +796,7 @@ def test_to_dataframe_w_tqdm_pending():
     with result_patch as result_patch_tqdm, reload_patch:
         df = job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 1
+    assert result_patch_tqdm.call_count == 2
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
     assert list(df) == ["name", "age"]  # verify the column names

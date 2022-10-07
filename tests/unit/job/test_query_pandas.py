@@ -348,12 +348,12 @@ def test_to_arrow_w_tqdm_w_query_plan():
     with result_patch as result_patch_tqdm, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 3
-    assert isinstance(tbl, pyarrow.Table)
-    assert tbl.num_rows == 2
     result_patch_tqdm.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
+    assert result_patch_tqdm.call_count == 3
+    assert isinstance(tbl, pyarrow.Table)
+    assert tbl.num_rows == 2
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
@@ -400,12 +400,12 @@ def test_to_arrow_w_tqdm_w_pending_status():
     with result_patch as result_patch_tqdm, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
-    assert isinstance(tbl, pyarrow.Table)
-    assert tbl.num_rows == 2
     result_patch_tqdm.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
+    assert result_patch_tqdm.call_count == 2
+    assert isinstance(tbl, pyarrow.Table)
+    assert tbl.num_rows == 2
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
@@ -720,7 +720,7 @@ def test_to_dataframe_column_date_dtypes():
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-@mock.patch("tqdm")
+@mock.patch("tqdm.tqdm")
 def test_to_dataframe_with_progress_bar(tqdm_mock):
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -747,7 +747,7 @@ def test_to_dataframe_with_progress_bar(tqdm_mock):
     tqdm_mock.assert_not_called()
 
     job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
-    tqdm_mock.assert_called()
+    tqdm_mock.call_count == 2
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
@@ -796,13 +796,13 @@ def test_to_dataframe_w_tqdm_pending():
     with result_patch as result_patch_tqdm, reload_patch:
         df = job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
 
+    result_patch_tqdm.assert_called_with(
+        timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
+    )
     assert result_patch_tqdm.call_count == 2
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
     assert list(df) == ["name", "age"]  # verify the column names
-    result_patch_tqdm.assert_called_with(
-        timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
-    )
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
@@ -855,13 +855,13 @@ def test_to_dataframe_w_tqdm():
     with result_patch as result_patch_tqdm, reload_patch:
         df = job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
 
+    result_patch_tqdm.assert_called_with(
+        timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
+    )
     assert result_patch_tqdm.call_count == 3
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
     assert list(df), ["name", "age"]  # verify the column names
-    result_patch_tqdm.assert_called_with(
-        timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
-    )
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
@@ -907,10 +907,10 @@ def test_to_dataframe_w_tqdm_max_results():
             progress_bar_type="tqdm", create_bqstorage_client=False, max_results=3
         )
 
-    assert result_patch_tqdm.call_count == 2
     result_patch_tqdm.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=3
     )
+    assert result_patch_tqdm.call_count == 2
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

@@ -22,8 +22,8 @@ from typing import Optional
 import warnings
 
 try:
-    import tqdm # type: ignore
-    import tqdm.notebook as notebook # type: ignore
+    import tqdm  # type: ignore
+    import tqdm.notebook as notebook  # type: ignore
 
 except ImportError:  # pragma: NO COVER
     tqdm = None

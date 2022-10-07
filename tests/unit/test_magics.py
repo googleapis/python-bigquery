@@ -138,6 +138,7 @@ def test_context_with_default_credentials():
 
     assert default_mock.call_count == 2
 
+
 @pytest.mark.usefixtures("ipython_interactive")
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_context_with_default_connection():
@@ -277,6 +278,7 @@ def test__run_query():
     assert len(execution_updates) == 3  # one update per API response
     for line in execution_updates:
         assert re.match("Query executing: .*s", line)
+
 
 def test__run_query_dry_run_without_errors_is_silent():
     magics.context._credentials = None

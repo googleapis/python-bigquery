@@ -910,9 +910,7 @@ def test_to_dataframe_w_tqdm_max_results(tqdm_mock):
         )
 
     assert tqdm_mock.call_count == 2
-    tqdm_mock.assert_called_with(
-        timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=3
-    )
+    tqdm_mock.assert_called_with(timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=3)
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

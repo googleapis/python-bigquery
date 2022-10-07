@@ -344,14 +344,14 @@ def test_to_arrow_w_tqdm_w_query_plan():
             row_iterator,
         ],
     )
-
-    with result_patch as result_patch_tqdm, reload_patch:
+    tqdm_mock = mock.patch("tqdm.tqdm")
+    with result_patch as tqdm_mock, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 3
+    assert tqdm_mock.call_count == 3
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
-    result_patch_tqdm.assert_called_with(
+    tqdm_mock.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
 
@@ -396,14 +396,14 @@ def test_to_arrow_w_tqdm_w_pending_status():
         "google.cloud.bigquery.job.QueryJob.result",
         side_effect=[concurrent.futures.TimeoutError, row_iterator],
     )
-
-    with result_patch as result_patch_tqdm, reload_patch:
+    tqdm_mock = mock.patch("tqdm.tqdm")
+    with result_patch as tqdm_mock, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
+    assert tqdm_mock.call_count == 2
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
-    result_patch_tqdm.assert_called_with(
+    tqdm_mock.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
 
@@ -439,14 +439,14 @@ def test_to_arrow_w_tqdm_wo_query_plan():
         "google.cloud.bigquery.job.QueryJob.result",
         side_effect=[concurrent.futures.TimeoutError, row_iterator],
     )
-
-    with result_patch as result_patch_tqdm, reload_patch:
+    tqdm_mock = mock.patch("tqdm.tqdm")
+    with result_patch as tqdm_mock, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
+    assert tqdm_mock.call_count == 2
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
-    result_patch_tqdm.assert_called()
+    tqdm_mock.assert_called()
 
 
 def _make_job(schema=(), rows=()):
@@ -720,8 +720,7 @@ def test_to_dataframe_column_date_dtypes():
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-@mock.patch("tqdm.tqdm")
-def test_to_dataframe_with_progress_bar(tqdm_mock):
+def test_to_dataframe_with_progress_bar():
     from google.cloud.bigquery.job import QueryJob as target_class
 
     begun_resource = _make_job_resource(job_type="query")
@@ -742,6 +741,7 @@ def test_to_dataframe_with_progress_bar(tqdm_mock):
     )
     client = _make_client(connection=connection)
     job = target_class.from_api_repr(begun_resource, client)
+    tqdm_mock = mock.patch("tqdm.tqdm")
 
     job.to_dataframe(progress_bar_type=None, create_bqstorage_client=False)
     tqdm_mock.assert_not_called()
@@ -756,6 +756,7 @@ def test_to_dataframe_w_tqdm_pending():
     from google.cloud.bigquery.job import QueryJob as target_class
     from google.cloud.bigquery.schema import SchemaField
     from google.cloud.bigquery._tqdm_helpers import _PROGRESS_BAR_UPDATE_INTERVAL
+    from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 
     begun_resource = _make_job_resource(job_type="query")
     schema = [
@@ -793,14 +794,16 @@ def test_to_dataframe_w_tqdm_pending():
         side_effect=[concurrent.futures.TimeoutError, row_iterator],
     )
 
-    with result_patch as result_patch_tqdm, reload_patch:
+    tqdm_mock = mock.patch("tqdm.tqdm")
+
+    with result_patch as tqdm_mock, reload_patch:
         df = job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
+    assert tqdm_mock.call_count == 2
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
     assert list(df) == ["name", "age"]  # verify the column names
-    result_patch_tqdm.assert_called_with(
+    tqdm_mock.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
 
@@ -852,14 +855,16 @@ def test_to_dataframe_w_tqdm():
         ],
     )
 
-    with result_patch as result_patch_tqdm, reload_patch:
+    tqdm_mock = mock.patch("tqdm.tqdm")
+
+    with result_patch as tqdm_mock, reload_patch:
         df = job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 3
+    assert tqdm_mock.call_count == 3
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
     assert list(df), ["name", "age"]  # verify the column names
-    result_patch_tqdm.assert_called_with(
+    tqdm_mock.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
 
@@ -901,14 +906,14 @@ def test_to_dataframe_w_tqdm_max_results():
         "google.cloud.bigquery.job.QueryJob.result",
         side_effect=[concurrent.futures.TimeoutError, row_iterator],
     )
-
-    with result_patch as result_patch_tqdm, reload_patch:
+    tqdm_mock = mock.patch("tqdm.tqdm")
+    with result_patch as tqdm_mock, reload_patch:
         job.to_dataframe(
             progress_bar_type="tqdm", create_bqstorage_client=False, max_results=3
         )
 
-    assert result_patch_tqdm.call_count == 2
-    result_patch_tqdm.assert_called_with(
+    assert tqdm_mock.call_count == 2
+    tqdm_mock.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=3
     )
 

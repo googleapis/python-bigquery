@@ -21,7 +21,6 @@ import pyarrow
 import pytest
 
 from google.cloud import bigquery_storage
-from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 import google.cloud.bigquery_storage_v1.reader
 import google.cloud.bigquery_storage_v1.services.big_query_read.client
 

@@ -5,6 +5,34 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.3.4](https://github.com/googleapis/python-bigquery/compare/v3.3.3...v3.3.4) (2022-09-29)
+
+
+### Bug Fixes
+
+* **deps:** Require protobuf >= 3.20.2 ([#1369](https://github.com/googleapis/python-bigquery/issues/1369)) ([f13383a](https://github.com/googleapis/python-bigquery/commit/f13383a22d7b1a0a714dc1b1210ad970146bd094))
+
+## [3.3.3](https://github.com/googleapis/python-bigquery/compare/v3.3.2...v3.3.3) (2022-09-28)
+
+
+### Bug Fixes
+
+* Refactors code to account for a tdqm code deprecation ([#1357](https://github.com/googleapis/python-bigquery/issues/1357)) ([1369a9d](https://github.com/googleapis/python-bigquery/commit/1369a9d937b85d6a2a6bf9a672c71620648b1e3e))
+* Validate opentelemetry span job attributes have values ([#1327](https://github.com/googleapis/python-bigquery/issues/1327)) ([8287af1](https://github.com/googleapis/python-bigquery/commit/8287af1299169546f847126f03ae04e48890139e))
+
+
+### Documentation
+
+* **samples:** uses function (create_job) more appropriate to the described sample intent ([5aeedaa](https://github.com/googleapis/python-bigquery/commit/5aeedaa2f4e6a0200d50521dfd90f39f9a24d0cc))
+
+## [3.3.2](https://github.com/googleapis/python-bigquery/compare/v3.3.1...v3.3.2) (2022-08-16)
+
+
+### Bug Fixes
+
+* **deps:** require proto-plus >= 1.22.0 ([1de7a52](https://github.com/googleapis/python-bigquery/commit/1de7a52cb85d4876e4aa87346aff5725c8294c4e))
+* **deps:** require protobuf >=3.19, < 5.0.0 ([#1311](https://github.com/googleapis/python-bigquery/issues/1311)) ([1de7a52](https://github.com/googleapis/python-bigquery/commit/1de7a52cb85d4876e4aa87346aff5725c8294c4e))
+
 ## [3.3.1](https://github.com/googleapis/python-bigquery/compare/v3.3.0...v3.3.1) (2022-08-09)
 
 

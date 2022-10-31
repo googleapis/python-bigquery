@@ -1969,7 +1969,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
         df = row_iterator.to_geodataframe(create_bqstorage_client=False)
         self.assertIsInstance(df, geopandas.GeoDataFrame)
         self.assertEqual(len(df), 0)  # verify the number of rows
-        self.assertIsNone(df.crs)
+        assert not hasattr(df, "crs")
 
 
 class TestRowIterator(unittest.TestCase):

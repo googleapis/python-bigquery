@@ -40,6 +40,7 @@ else:
 
 try:
     import shapely  # type: ignore
+    from shapely import wkt  # type: ignore
 except ImportError:
     shapely = None
 else:

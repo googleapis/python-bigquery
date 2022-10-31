@@ -346,6 +346,7 @@ def prerelease_deps(session):
     session.run("py.test", "tests/unit")
     session.run("py.test", "tests/system")
     session.run("py.test", "samples/tests")
+    # Run py.test against the unit tests.
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)

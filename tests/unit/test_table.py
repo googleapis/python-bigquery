@@ -1971,9 +1971,9 @@ class Test_EmptyRowIterator(unittest.TestCase):
         self.assertIsInstance(df, geopandas.GeoDataFrame)
         self.assertEqual(len(df), 0)  # verify the number of rows
         if version_info.major == 3 and version_info.minor > 7:
-            assert not hasattr(df, "crs")  # used with Python == 3.7
+            assert not hasattr(df, "crs")  # used with Python > 3.7
         else:
-            self.assertIsNone(df.crs)  # used with Python > 3.7
+            self.assertIsNone(df.crs)  # used with Python == 3.7
 
 
 class TestRowIterator(unittest.TestCase):

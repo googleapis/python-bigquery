@@ -315,7 +315,7 @@ def _handle_error(error, destination_var=None):
     print("\nERROR:\n", str(error), file=sys.stderr)
 
 
-def _thread_func(query_job, out, time_sec):
+def _thread_func(query_job, out, time_sec): # pragma: NO COVER
     # needs note
     new_line = "\n"
     tab = "\t"
@@ -365,7 +365,7 @@ def _run_query(client, query, args=None, job_config=None):
     if job_config and job_config.dry_run:
         return query_job
 
-    if args and args.send_long_job:
+    if args and args.send_long_job: # pragma: NO COVER
         out = widgets.Output()
         time_sec = 10.0
 
@@ -738,7 +738,7 @@ def _cell_magic(line, query):
         if not args.verbose:
             clear_output()
 
-        if args.send_long_job:
+        if args.send_long_job: # pragma: NO COVER
             if args.destination_var:
                 IPython.get_ipython().push({args.destination_var: query_job})
             return

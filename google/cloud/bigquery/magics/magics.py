@@ -563,7 +563,7 @@ def _cell_magic(line, query):
 
     Args:
         line (str): "%%bigquery" followed by arguments as required
-        cell_body (str): SQL query or other command to run TODO
+        query (str): SQL query to run
 
     Returns:
         pandas.DataFrame: the query results.

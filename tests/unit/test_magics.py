@@ -303,37 +303,6 @@ def test__run_query(ipython_ns_cleanup):
     for line in execution_updates:
         assert re.match("Query executing: .*s", line)
     assert re.match("Query complete after .*s", updates[-1])
-    assert client_mock.call_count == 3
-
-    
-@pytest.mark.usefixtures("ipython_interactive")
-def test__run_query_long_job(ipython_ns_cleanup):
-    ip = IPython.get_ipython()
-    ip.extension_manager.load_extension("google.cloud.bigquery")
-    magics.context.credentials = mock.create_autospec(
-        google.auth.credentials.Credentials, instance=True
-    )
-    ipython_ns_cleanup.append((ip, "long_job"))
-
-    run_query_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics._run_query", autospec=True
-    )
-    query_job_mock = mock.create_autospec(
-        google.cloud.bigquery.job.QueryJob, instance=True
-    )
-    with run_query_patch as run_query_mock:
-        run_query_mock.return_value = query_job_mock
-        long_job_result = ip.run_cell_magic(
-            "bigquery",
-            "long_job"
-            "--send_long_job",
-            "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo",
-        )
-    assert not long_job_result == None # you have to set the query_job_mock result and thus run the query
-    assert "long_job" in ip.user_ns
-    long_job = ip.user_ns["long_job"]
-    assert not long_job == None # this only works if the query mock is executing
-
 
 
 def test__run_query_dry_run_without_errors_is_silent():
@@ -652,7 +621,7 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     query_job_mock.to_dataframe.assert_called_once_with(
         bqstorage_client=bqstorage_instance_mock,
         create_bqstorage_client=mock.ANY,
-        progress_bar_type="tqdm",
+        progress_bar_type="tqdm_notebook",
     )
 
     assert isinstance(return_value, pandas.DataFrame)
@@ -696,7 +665,7 @@ def test_bigquery_magic_with_rest_client_requested(monkeypatch):
         query_job_mock.to_dataframe.assert_called_once_with(
             bqstorage_client=None,
             create_bqstorage_client=False,
-            progress_bar_type="tqdm",
+            progress_bar_type="tqdm_notebook",
         )
 
     assert isinstance(return_value, pandas.DataFrame)

@@ -42,6 +42,7 @@ tools = pytest.importorskip("IPython.testing.tools")
 io = pytest.importorskip("IPython.utils.io")
 pandas = pytest.importorskip("pandas")
 
+
 @pytest.fixture(scope="session")
 def ipython():
     config = tools.default_config()
@@ -246,34 +247,7 @@ def test_context_with_custom_connection():
     context_conn.api_request.assert_has_calls([begin_call, query_results_call])
 
 
-"""
-def test__thread_func():
-    magics.context._credentials = None
-    widgets = pytest.importorskip("ipywidgets")
-    display = pytest.importorskip("IPython.core.display")
-    html = pytest.importorskip("IPython.core.HTML")
-
-
-    job_id = "job_1234"
-
-    time_sec = 10.0
-    out = widgets.Output()
-    long_sql = "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo"
-
-    client_mock = mock.patch(
-        "google.cloud.bigquery.magics.magics.bigquery.Client", autospec=True
-    )
-    # this is incomplete and won't run I think
-    query_job = client_mock().query(long_sql)
-
-    magics._thread_func(query_job, out, time_sec)
-    assert query_job.job_id == job_id
-"""
-
-
-@pytest.mark.usefixtures("ipython_interactive")
-def test__run_query(ipython_ns_cleanup):
-    magics.context._credentials = None
+def test__run_query():
     job_id = "job_1234"
     sql = "SELECT 17"
     responses = [
@@ -302,7 +276,6 @@ def test__run_query(ipython_ns_cleanup):
     assert len(execution_updates) == 3  # one update per API response
     for line in execution_updates:
         assert re.match("Query executing: .*s", line)
-    assert re.match("Query complete after .*s", updates[-1])
 
 
 def test__run_query_dry_run_without_errors_is_silent():
@@ -1472,7 +1445,9 @@ def test_bigquery_magic_with_string_params(ipython_ns_cleanup):
 
         ip.run_cell_magic("bigquery", "params_string_df --params='{\"num\":17}'", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=17), mock.ANY, mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=17), mock.ANY, mock.ANY
+        )
 
     assert "params_string_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_string_df"]
@@ -1513,7 +1488,9 @@ def test_bigquery_magic_with_dict_params(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=17), mock.ANY, mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=17), mock.ANY, mock.ANY
+        )
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1620,7 +1597,9 @@ def test_bigquery_magic_with_dict_params_negative_value(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY
+        )
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1660,7 +1639,9 @@ def test_bigquery_magic_with_dict_params_array_value(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY
+        )
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1700,7 +1681,9 @@ def test_bigquery_magic_with_dict_params_tuple_value(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY
+        )
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]

@@ -374,7 +374,7 @@ def _run_query(client, query, args=None, job_config=None):
         thread = threading.Thread(target=_thread_func, args=(query_job, out, time_sec))
         thread.start()
 
-    print("Executing query with job ID: {}".format(query_job.job_id))
+    print(f"Executing query with job ID: {query_job.job_id}")
 
     while True:
         print(

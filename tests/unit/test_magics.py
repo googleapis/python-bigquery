@@ -273,7 +273,6 @@ def test__thread_func():
 
 @pytest.mark.usefixtures("ipython_interactive")
 def test__run_query(ipython_ns_cleanup):
-    # Once working refactor as two tests
     magics.context._credentials = None
     job_id = "job_1234"
     sql = "SELECT 17"
@@ -296,6 +295,19 @@ def test__run_query(ipython_ns_cleanup):
     # Removes blanks & terminal code (result of display clearing)
     updates = list(filter(lambda x: bool(x) and x != "\x1b[2K", lines))
 
+    assert query_job.job_id == job_id
+    expected_first_line = "Executing query with job ID: {}".format(job_id)
+    assert updates[0] == expected_first_line
+    execution_updates = updates[1:-1]
+    assert len(execution_updates) == 3  # one update per API response
+    for line in execution_updates:
+        assert re.match("Query executing: .*s", line)
+    assert re.match("Query complete after .*s", updates[-1])
+    assert client_mock.call_count == 3
+
+    
+@pytest.mark.usefixtures("ipython_interactive")
+def test__run_query_long_job(ipython_ns_cleanup):
     ip = IPython.get_ipython()
     ip.extension_manager.load_extension("google.cloud.bigquery")
     magics.context.credentials = mock.create_autospec(
@@ -317,20 +329,11 @@ def test__run_query(ipython_ns_cleanup):
             "--send_long_job",
             "SELECT Count(*) FROM Unnest(Generate_array(1,1000000)), Unnest(Generate_array(1, 1000)) AS foo",
         )
-
-    assert query_job.job_id == job_id
-    expected_first_line = "Executing query with job ID: {}".format(job_id)
-    assert updates[0] == expected_first_line
-    execution_updates = updates[1:-1]
-    assert len(execution_updates) == 3  # one update per API response
-    for line in execution_updates:
-        assert re.match("Query executing: .*s", line)
-    assert re.match("Query complete after .*s", updates[-1])
-    assert client_mock.call_count == 3
-    # assert not long_job_result == None # you have to set the query_job_mock result and thus run the query
+    assert not long_job_result == None # you have to set the query_job_mock result and thus run the query
     assert "long_job" in ip.user_ns
     long_job = ip.user_ns["long_job"]
     assert not long_job == None # this only works if the query mock is executing
+
 
 
 def test__run_query_dry_run_without_errors_is_silent():
@@ -1500,7 +1503,7 @@ def test_bigquery_magic_with_string_params(ipython_ns_cleanup):
 
         ip.run_cell_magic("bigquery", "params_string_df --params='{\"num\":17}'", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=17), mock.ANY)
+        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=17), mock.ANY, mock.ANY)
 
     assert "params_string_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_string_df"]
@@ -1541,7 +1544,7 @@ def test_bigquery_magic_with_dict_params(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=17), mock.ANY)
+        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=17), mock.ANY, mock.ANY)
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1648,7 +1651,7 @@ def test_bigquery_magic_with_dict_params_negative_value(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY)
+        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY)
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1688,7 +1691,7 @@ def test_bigquery_magic_with_dict_params_array_value(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY)
+        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY)
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1728,7 +1731,7 @@ def test_bigquery_magic_with_dict_params_tuple_value(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY)
+        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY)
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1785,7 +1788,7 @@ def test_bigquery_magic_valid_query_in_existing_variable(ipython_ns_cleanup, raw
 
         ip.run_cell_magic("bigquery", "query_results_df", cell_body)
 
-        run_query_mock.assert_called_once_with(mock.ANY, raw_sql, mock.ANY)
+        run_query_mock.assert_called_once_with(mock.ANY, raw_sql, mock.ANY, mock.ANY)
 
     assert "query_results_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["query_results_df"]

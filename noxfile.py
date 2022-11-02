@@ -300,12 +300,8 @@ def prerelease_deps(session):
         "google-cloud-bigquery-storage",
         "google-cloud-core",
         "google-resumable-media",
-<<<<<<< HEAD
-        "grpcio>=1.48.0rc1, !=1.49.0rc1",
-=======
         # Exclude version 1.49.0rc1 which has a known issue. See https://github.com/grpc/grpc/pull/30642
         "grpcio!=1.49.0rc1",
->>>>>>> 2afd278febe1eb247adc6278ab59903962a5bb6c
     )
     session.install(
         "freezegun",

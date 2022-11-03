@@ -1052,6 +1052,122 @@ class TestBigQuery(unittest.TestCase):
                 table_ref, "gs://{}/letters-us.csv".format(bucket_name), location="US"
             ).result()
 
+    # @pytest.fixture(autouse=True)
+    # def test_external_table_reference_file_schema_uri_for_avro(self,
+    #         temp_dataset_id,
+    #         temp_table_id,
+    #         temp_bigquery_client,
+    #         temp_project_id,
+    #         dataset_client
+    #     ):
+    #     # import pdb
+    #     # temp_table_name = destination table name
+    #     # table_reference = bigquery.TableReference.from_string(
+    #     #     table_id=temp_table_id, default_project=temp_project_id
+    #     # )
+    #     # # can also do bigquery.TableReference(DatasetReference, table_id)
+        
+    #     DATASET_ID = _make_dataset_id("ext_table_ref_file_avro")
+    #     TABLE_NAME = "test_external_table"
+    #     dataset_ref = bigquery.DatasetReference(temp_project_id, DATASET_ID)
+        
+    #     # dataset = self.temp_dataset(DATASET_ID)
+    #     # table_ref = Table(dataset.table(TABLE_NAME))
+    #     table_ref = bigquery.TableReference(dataset_ref=dataset_ref, table_id=TABLE_NAME)
+        
+        # external_configuration = bigquery.ExternalConfig(
+        #     source_format = bigquery.ExternalSourceFormat.AVRO
+        # )        
+
+        # dataset = dataset_client
+        # table_id = temp_table_id
+        # dataset_ref = temp_bigquery_client.dataset = dataset
+
+        # table_ref = temp_bigquery_client.dataset.DatasetReference(project_id, temp_dataset_id).table(temp_table_id)
+
+
+        # # pdb.set_trace()
+
+        # expected_schema = [
+        #     bigquery.SchemaField("username", "STRING", mode="NULLABLE"),
+        #     bigquery.SchemaField(
+        #         "tweet", "STRING", mode="NULLABLE"),
+        #     bigquery.SchemaField("timestamp", "STRING", mode="NULLABLE"),
+        #     bigquery.SchemaField("likes", "INT64", mode="NULLABLE"),
+        # ]
+
+        # source_uri = [
+        #     "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/*.avro",
+        # ]
+        # # dataset = self.temp_dataset(table.dataset_id)
+        # # Because reference_file_schema_uri is set as a-twitter,
+        # # the table will have the a-twitter schema
+        # reference_file_schema_uri = "gs://{SAMPLES_BUCKET}/bigquery/federated-formats-reference-file-schema/a-twitter.avro"
+
+
+        # dataset_ref = temp_bigquery_client.dataset(dataset)
+        # table_ref = temp_bigquery_client.TableReference(project_id, temp_dataset_id).table(temp_table_id)
+        # created_table = temp_bigquery_client.create_table(temp_bigquery_client.Table(temp_bigquery_client.project_id))
+        # pdb.set_trace()
+        # external_source_format = bigquery.ExternalSourceFormat("AVRO")
+        # external_config = bigquery.ExternalConfig(source_format=bigquery.ExternalSourceFormat.AVRO)
+        # # pdb.set_trace()
+        # external_config.source_uris = source_uri
+        # external_config.reference_file_schema_uri = reference_file_schema_uri
+        # table =  Config.CLIENT.create_table(table_ref)
+        # # pdb.set_trace()
+        # created_table = temp_bigquery_client.create_table(temp_table_id, external_config)
+        # created_table.external_data_configuration = external_config
+
+
+        # pdb.set_trace()
+
+        # created_table.external_data_configuration(external_config)
+        # generated_table = temp_bigquery_client.get_table(created_table)
+
+        # self.assertEqual(expected_schema, generated_table.external_data_configuration.schema)
+
+        # self.to_delete.insert(0, created_table)
+
+
+    def test_reference_file_schema_uri_for_avro(self):
+        dataset_id = "test_reference_file_avro"
+        self.temp_dataset(dataset_id)
+        client = Config.CLIENT
+        dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
+        table_id = "test_ref_file_avro"
+        table_ref = bigquery.TableReference(dataset_ref=dataset_ref, table_id=table_id)
+
+        expected_schema = [
+            bigquery.SchemaField("username", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField(
+                "tweet", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("timestamp", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("likes", "INTEGER", mode="NULLABLE"),
+        ]
+
+        source_uris = ["gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro",
+            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro",
+            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.avro",
+        ]
+
+        reference_file_schema_uri = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro"
+        load_job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.AVRO)
+        load_job_config.reference_file_schema_uri = reference_file_schema_uri
+        load_job_config = load_job_config
+
+        load_job = client.load_table_from_uri(source_uris=source_uris, destination=table_ref, job_config=load_job_config)
+        # Wait for load job to complete
+        load_job.result()
+
+        # Get table created by the load job
+        generated_table = client.get_table(table_ref)
+        self.assertEqual(generated_table.schema, expected_schema)
+        
+        self.to_delete.insert(0, generated_table)
+
+
+
     def _write_csv_to_storage(self, bucket_name, blob_name, header_row, data_rows):
         from google.cloud._testing import _NamedTemporaryFile
 

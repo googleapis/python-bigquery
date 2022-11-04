@@ -139,7 +139,9 @@ class TestLoadJob(_Base):
         else:
             self.assertIsNone(job.skip_leading_rows)
         if "referenceFileSchemaUri" in config:
-            self.assertEqual(job.reference_file_schema_uri, config["referenceFileSchemaUri"])
+            self.assertEqual(
+                job.reference_file_schema_uri, config["referenceFileSchemaUri"]
+            )
         else:
             self.assertIsNone(job.reference_file_schema_uri)
 
@@ -468,7 +470,7 @@ class TestLoadJob(_Base):
                             "datasetId": self.DS_ID,
                             "tableId": self.TABLE_ID,
                         },
-                        "referenceFileSchemaUri": self.REFERENCE_FILE_SCHEMA_URI
+                        "referenceFileSchemaUri": self.REFERENCE_FILE_SCHEMA_URI,
                     }
                 },
             },

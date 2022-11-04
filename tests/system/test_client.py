@@ -1054,7 +1054,7 @@ class TestBigQuery(unittest.TestCase):
 
     def test_create_external_table_with_reference_file_schema_uri_avro(self):
         client = Config.CLIENT
-        dataset_id = "test_external_table_reference_file_avro"
+        dataset_id = _make_dataset_id("external_reference_file_avro")
         self.temp_dataset(dataset_id)
         dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
         table_id = "test_ref_file_avro"
@@ -1098,7 +1098,7 @@ class TestBigQuery(unittest.TestCase):
         self.to_delete.insert(0, generated_table)
 
     def test_load_table_from_uri_with_reference_file_schema_uri_avro(self):
-        dataset_id = "test_reference_file_avro"
+        dataset_id = _make_dataset_id("test_reference_file_avro")
         self.temp_dataset(dataset_id)
         client = Config.CLIENT
         dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
@@ -1146,7 +1146,7 @@ class TestBigQuery(unittest.TestCase):
 
     def test_create_external_table_with_reference_file_schema_uri_parquet(self):
         client = Config.CLIENT
-        dataset_id = "test_external_table_reference_file_parquet"
+        dataset_id = _make_dataset_id("external_table_ref_file_parquet")
         self.temp_dataset(dataset_id)
         dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
         table_id = "test_ref_file_parquet"
@@ -1190,7 +1190,7 @@ class TestBigQuery(unittest.TestCase):
         self.to_delete.insert(0, generated_table)
 
     def test_load_table_from_uri_with_reference_file_schema_uri_parquet(self):
-        dataset_id = "test_reference_file_parquet"
+        dataset_id = _make_dataset_id("test_reference_file_parquet")
         self.temp_dataset(dataset_id)
         client = Config.CLIENT
         dataset_ref = bigquery.DatasetReference(client.project, dataset_id)

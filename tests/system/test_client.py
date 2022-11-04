@@ -1092,7 +1092,14 @@ class TestBigQuery(unittest.TestCase):
 
         # Get table created by the create_table API call
         generated_table = client.get_table(table_ref)
+
         self.assertEqual(generated_table.schema, expected_schema)
+        self.assertEqual(
+            generated_table.external_data_configuration._properties[
+                "referenceFileSchemaUri"
+            ],
+            reference_file_schema_uri,
+        )
 
         # Clean up test
         self.to_delete.insert(0, generated_table)
@@ -1135,11 +1142,15 @@ class TestBigQuery(unittest.TestCase):
             source_uris=source_uris, destination=table_ref, job_config=load_job_config
         )
         # Wait for load job to complete
-        load_job.result()
+        result = load_job.result()
 
         # Get table created by the load job
         generated_table = client.get_table(table_ref)
         self.assertEqual(generated_table.schema, expected_schema)
+        self.assertEqual(
+            result._properties["configuration"]["load"]["referenceFileSchemaUri"],
+            reference_file_schema_uri,
+        )
 
         # Clean up test
         self.to_delete.insert(0, generated_table)
@@ -1185,6 +1196,12 @@ class TestBigQuery(unittest.TestCase):
         # Get table created by the create_table API call
         generated_table = client.get_table(table_ref)
         self.assertEqual(generated_table.schema, expected_schema)
+        self.assertEqual(
+            generated_table.external_data_configuration._properties[
+                "referenceFileSchemaUri"
+            ],
+            reference_file_schema_uri,
+        )
 
         # Clean up test
         self.to_delete.insert(0, generated_table)
@@ -1227,11 +1244,15 @@ class TestBigQuery(unittest.TestCase):
             source_uris=source_uris, destination=table_ref, job_config=load_job_config
         )
         # Wait for load job to complete
-        load_job.result()
+        result = load_job.result()
 
         # Get table created by the load job
         generated_table = client.get_table(table_ref)
         self.assertEqual(generated_table.schema, expected_schema)
+        self.assertEqual(
+            result._properties["configuration"]["load"]["referenceFileSchemaUri"],
+            reference_file_schema_uri,
+        )
 
         # Clean up test
         self.to_delete.insert(0, generated_table)

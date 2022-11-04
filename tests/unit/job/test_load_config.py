@@ -733,6 +733,11 @@ class TestLoadJobConfig(_Base):
         config = self._get_target_class()()
         self.assertIsNone(config.reference_file_schema_uri)
 
+    def test_reference_file_schema_uri_setter(self):
+        config = self._get_target_class()()
+        config.reference_file_schema_uri = "gs://path/to/reference"
+        self.assertTrue(config._properties["load"]["referenceFileSchemaUri"])
+
     def test_reference_file_schema_uri_provided(self):
         reference_file_schema_uri = "/path/to/reference"
         config = self._get_target_class()()

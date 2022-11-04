@@ -451,15 +451,6 @@ class TestLoadJobConfig(_Base):
         config.quote_character = quote_character
         self.assertEqual(config._properties["load"]["quote"], quote_character)
 
-    def test_reference_file_schema_uri(self):
-        config = self._get_target_class()
-        reference_file_schema_uri = "gs://path/to/reference"
-        config.reference_file_schema_uri = reference_file_schema_uri
-        self.assertEqual(
-            config._properties["load"]["referenceFileSchemaUri"],
-            reference_file_schema_uri,
-        )
-
     def test_schema_missing(self):
         config = self._get_target_class()()
         self.assertIsNone(config.schema)

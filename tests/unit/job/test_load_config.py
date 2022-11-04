@@ -729,6 +729,16 @@ class TestLoadJobConfig(_Base):
         config.use_avro_logical_types = True
         self.assertTrue(config._properties["load"]["useAvroLogicalTypes"])
 
+    def test_reference_file_schema_uri_not_set(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.reference_file_schema_uri)
+
+    def test_reference_file_schema_uri_provided(self):
+        reference_file_schema_uri = "/path/to/reference"
+        config = self._get_target_class()()
+        config._properties["load"]["referenceFileSchemaUri"] = reference_file_schema_uri
+        self.assertEqual(config.reference_file_schema_uri, reference_file_schema_uri)
+
     def test_write_disposition_missing(self):
         config = self._get_target_class()()
         self.assertIsNone(config.write_disposition)

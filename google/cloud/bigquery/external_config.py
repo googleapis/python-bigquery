@@ -764,7 +764,7 @@ class ExternalConfig(object):
 
         AVRO, PARQUET, ORC
         """
-        return self._properties.get["referenceFileSchema"]
+        return self._properties.get("referenceFileSchemaUri")
 
     @reference_file_schema_uri.setter
     def reference_file_schema_uri(self, value):

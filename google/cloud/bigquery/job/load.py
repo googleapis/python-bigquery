@@ -391,7 +391,7 @@ class LoadJobConfig(_JobConfig):
 
     @reference_file_schema_uri.setter
     def reference_file_schema_uri(self, value):
-        self._set_sub_prop("referenceFileSchemaUri", value)
+        return self._set_sub_prop("referenceFileSchemaUri", value)
 
     @property
     def schema(self):
@@ -670,6 +670,7 @@ class LoadJob(_AsyncJob):
         """See:
         attr:`google.cloud.bigquery.job.LoadJobConfig.reference_file_schema_uri`.
         """
+        return self._configuration.reference_file_schema_uri
 
     @property
     def skip_leading_rows(self):

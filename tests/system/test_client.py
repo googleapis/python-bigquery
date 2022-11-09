@@ -97,6 +97,15 @@ TIME_PARTITIONING_CLUSTERING_FIELDS_SCHEMA = [
     ),
 ]
 
+SOURCE_URIS = [
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro",
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro",
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.avro",
+]
+REFERENCE_FILE_SCHEMA_URI = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro"
+
+
+
 # The VPC-SC team maintains a mirror of the GCS bucket used for code
 # samples. The public bucket crosses the configured security boundary.
 # See: https://github.com/googleapis/google-cloud-python/issues/8550
@@ -1067,23 +1076,18 @@ class TestBigQuery(unittest.TestCase):
             bigquery.SchemaField("likes", "INTEGER", mode="NULLABLE"),
         ]
 
-        # By default, the table should have the c-twitter schema because it is lexicographically last:
+        # By default, the table should have the c-twitter schema because it is lexicographically last
+        # in the `SOURCE_URIs` list:
         # a-twitter schema: (username, tweet, timestamp, likes)
         # b-twitter schema: (username, tweet, timestamp)
         # c-twitter schema: (username, tweet)
-        source_uris = [
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro",
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro",
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.avro",
-        ]
 
-        # Because referenceFileSchemaUri is set as a-twitter, the table will have a-twitter schema
-        reference_file_schema_uri = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro"
+        # Because `referenceFileSchemaUri` is set as a-twitter, the table will have a-twitter schema
 
         # Create external data configuration
         external_config = bigquery.ExternalConfig(bigquery.ExternalSourceFormat.AVRO)
-        external_config.source_uris = source_uris
-        external_config.reference_file_schema_uri = reference_file_schema_uri
+        external_config.source_uris = SOURCE_URIS
+        external_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI
 
         table = bigquery.Table(table_ref)
         table.external_data_configuration = external_config
@@ -1098,7 +1102,7 @@ class TestBigQuery(unittest.TestCase):
             generated_table.external_data_configuration._properties[
                 "referenceFileSchemaUri"
             ],
-            reference_file_schema_uri,
+            REFERENCE_FILE_SCHEMA_URI,
         )
 
         # Clean up test
@@ -1119,27 +1123,22 @@ class TestBigQuery(unittest.TestCase):
             bigquery.SchemaField("likes", "INTEGER", mode="NULLABLE"),
         ]
 
-        # By default, the table should have the c-twitter schema because it is lexicographically last:
+        # By default, the table should have the c-twitter schema because it is lexicographically last
+        # in the `SOURCE_URIS` list:
         # a-twitter schema: (username, tweet, timestamp, likes)
         # b-twitter schema: (username, tweet, timestamp)
         # c-twitter schema: (username, tweet)
-        source_uris = [
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro",
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro",
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.avro",
-        ]
 
-        # Because referenceFileSchemaUri is set as a-twitter, the table will have a-twitter schema
-        reference_file_schema_uri = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro"
+        # Because `referenceFileSchemaUri` is set as a-twitter, the table will have a-twitter schema
 
         # Create load job configuration
         load_job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.AVRO
         )
-        load_job_config.reference_file_schema_uri = reference_file_schema_uri
+        load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI
 
         load_job = client.load_table_from_uri(
-            source_uris=source_uris, destination=table_ref, job_config=load_job_config
+            source_uris=SOURCE_URIS, destination=table_ref, job_config=load_job_config
         )
         # Wait for load job to complete
         result = load_job.result()
@@ -1149,7 +1148,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(generated_table.schema, expected_schema)
         self.assertEqual(
             result._properties["configuration"]["load"]["referenceFileSchemaUri"],
-            reference_file_schema_uri,
+            REFERENCE_FILE_SCHEMA_URI,
         )
 
         # Clean up test
@@ -1170,23 +1169,18 @@ class TestBigQuery(unittest.TestCase):
             bigquery.SchemaField("likes", "INTEGER", mode="NULLABLE"),
         ]
 
-        # By default, the table should have the c-twitter schema because it is lexicographically last:
+        # By default, the table should have the c-twitter schema because it is lexicographically last
+        # in the `SOURCE_URIS` list:
         # a-twitter schema: (username, tweet, timestamp, likes)
         # b-twitter schema: (username, tweet, timestamp)
         # c-twitter schema: (username, tweet)
-        source_uris = [
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.parquet",
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.parquet",
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.parquet",
-        ]
 
-        # Because referenceFileSchemaUri is set as a-twitter, the table will have a-twitter schema
-        reference_file_schema_uri = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.parquet"
+        # Because `referenceFileSchemaUri` is set as a-twitter, the table will have a-twitter schema
 
         # Create external data configuration
         external_config = bigquery.ExternalConfig(bigquery.ExternalSourceFormat.PARQUET)
-        external_config.source_uris = source_uris
-        external_config.reference_file_schema_uri = reference_file_schema_uri
+        external_config.source_uris = SOURCE_URIS
+        external_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI
 
         table = bigquery.Table(table_ref)
         table.external_data_configuration = external_config
@@ -1200,7 +1194,7 @@ class TestBigQuery(unittest.TestCase):
             generated_table.external_data_configuration._properties[
                 "referenceFileSchemaUri"
             ],
-            reference_file_schema_uri,
+            REFERENCE_FILE_SCHEMA_URI,
         )
 
         # Clean up test
@@ -1221,27 +1215,22 @@ class TestBigQuery(unittest.TestCase):
             bigquery.SchemaField("likes", "INTEGER", mode="NULLABLE"),
         ]
 
-        # By default, the table should have the c-twitter schema because it is lexicographically last:
+        # By default, the table should have the c-twitter schema because it is lexicographically last
+        # in the `SOURCE_URIS` list:
         # a-twitter schema: (username, tweet, timestamp, likes)
         # b-twitter schema: (username, tweet, timestamp)
         # c-twitter schema: (username, tweet)
-        source_uris = [
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.parquet",
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.parquet",
-            "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.parquet",
-        ]
 
-        # Because referenceFileSchemaUri is set as a-twitter, the table will have a-twitter schema
-        reference_file_schema_uri = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.parquet"
+        # Because `referenceFileSchemaUri` is set as a-twitter, the table will have a-twitter schema
 
         # Create load job configuration
         load_job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.PARQUET
         )
-        load_job_config.reference_file_schema_uri = reference_file_schema_uri
+        load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI
 
         load_job = client.load_table_from_uri(
-            source_uris=source_uris, destination=table_ref, job_config=load_job_config
+            source_uris=SOURCE_URIS, destination=table_ref, job_config=load_job_config
         )
         # Wait for load job to complete
         result = load_job.result()
@@ -1251,7 +1240,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(generated_table.schema, expected_schema)
         self.assertEqual(
             result._properties["configuration"]["load"]["referenceFileSchemaUri"],
-            reference_file_schema_uri,
+            REFERENCE_FILE_SCHEMA_URI,
         )
 
         # Clean up test

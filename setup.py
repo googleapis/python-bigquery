@@ -51,7 +51,7 @@ extras = {
     "pandas": ["pandas>=0.23.0"],
     "pyarrow": [
         # pyarrow 1.0.0 is required for the use of timestamp_as_object keyword.
-        "pyarrow >= 1.0.0, < 2.0de ; python_version>='3.5'",
+        "pyarrow >= 1.0.0, < 2.0dev ; python_version>='3.5'",
         "pyarrow >= 0.16.0, < 0.17.0dev ; python_version<'3.5'",
     ],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],

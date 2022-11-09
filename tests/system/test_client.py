@@ -427,6 +427,59 @@ class TestBigQuery(unittest.TestCase):
             list(table.schema[1].policy_tags.names), [child_policy_tag.name]
         )
 
+    def test_create_table_with_default_value_expression(self):
+        from google.cloud.bigquery.schema import PolicyTagList
+
+        dataset = self.temp_dataset(
+            _make_dataset_id("create_table_with_default_value_expression")
+        )
+
+        table_id = "test_table"
+        string_field_name = "String field with default value expression"
+        timestamp_field_name = "Timestamp field with default value expression"
+
+        string_default_val_expression = "'FOO'"
+        timestamp_default_val_expression = "CURRENT_TIMESTAMP"
+
+        schema = [
+            bigquery.SchemaField(
+                string_field_name,
+                "STRING",
+                mode="REQUIRED",
+                default_value_expression=string_default_val_expression,
+            ),
+            bigquery.SchemaField(
+                timestamp_field_name,
+                "INTEGER",
+                mode="REQUIRED",
+                default_value_expression=timestamp_default_val_expression,
+            ),
+        ]
+        table_arg = Table(dataset.table(table_id), schema=schema)
+        self.assertFalse(_table_exists(table_arg))
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+        self.assertEqual(policy_1, table.schema[1].policy_tags)
+
+        # # Amend the schema to replace the policy tags
+        # new_schema = table.schema[:]
+        # old_field = table.schema[1]
+        # new_schema[1] = bigquery.SchemaField(
+        #     name=old_field.name,
+        #     field_type=old_field.field_type,
+        #     mode=old_field.mode,
+        #     description=old_field.description,
+        #     fields=old_field.fields,
+        #     policy_tags=policy_2,
+        # )
+
+        # table.schema = new_schema
+        # table2 = Config.CLIENT.update_table(table, ["schema"])
+        # self.assertEqual(policy_2, table2.schema[1].policy_tags)
+
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning
         from google.cloud.bigquery.table import TimePartitioningType

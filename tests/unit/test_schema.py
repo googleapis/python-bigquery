@@ -47,10 +47,12 @@ class TestSchemaField(unittest.TestCase):
         self.assertIsNone(field.policy_tags)
 
     def test_constructor_explicit(self):
+        FIELD_DEFAULT_VALUE_EXPRESSION = "This is the default value for this field"
         field = self._make_one(
             "test",
             "STRING",
             mode="REQUIRED",
+            default_value_expression=FIELD_DEFAULT_VALUE_EXPRESSION,
             description="Testing",
             policy_tags=PolicyTagList(
                 names=(
@@ -62,6 +64,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.name, "test")
         self.assertEqual(field.field_type, "STRING")
         self.assertEqual(field.mode, "REQUIRED")
+        self.assertEqual(field.default_value_expression, FIELD_DEFAULT_VALUE_EXPRESSION)
         self.assertEqual(field.description, "Testing")
         self.assertEqual(field.fields, ())
         self.assertEqual(

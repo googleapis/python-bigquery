@@ -80,6 +80,30 @@ class SchemaField(object):
             Defaults to ``'NULLABLE'``. The mode of the field. See
             https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.mode
 
+        default_value_expression: str, Optional
+            Used to specify the default value of a field using a SQL expression. It can only be set for
+            top level fields (columns).
+
+            You can use a struct or array expression to specify default value for the entire struct or
+            array. The valid SQL expressions are:
+
+            - Literals for all data types, including STRUCT and ARRAY.
+
+            - The following functions:
+
+                `CURRENT_TIMESTAMP`
+                `CURRENT_TIME`
+                `CURRENT_DATE`
+                `CURRENT_DATETIME`
+                `GENERATE_UUID`
+                `RAND`
+                `SESSION_USER`
+                `ST_GEOPOINT`
+
+            - Struct or array composed with the above allowed functions, for example:
+
+                "[CURRENT_DATE(), DATE '2020-01-01'"]
+
         description: Description for the field.
 
         fields: Subfields (requires ``field_type`` of 'RECORD').
@@ -99,6 +123,7 @@ class SchemaField(object):
         self,
         name: str,
         field_type: str,
+        default_value_expression: str,
         mode: str = "NULLABLE",
         description: Union[str, _DefaultSentinel] = _DEFAULT_VALUE,
         fields: Iterable["SchemaField"] = (),
@@ -113,6 +138,8 @@ class SchemaField(object):
         }
         if mode is not None:
             self._properties["mode"] = mode.upper()
+        if default_value_expression is not None:
+            self._properties["defaultValueExpression"] = default_value_expression
         if description is not _DEFAULT_VALUE:
             self._properties["description"] = description
         if precision is not _DEFAULT_VALUE:
@@ -154,6 +181,9 @@ class SchemaField(object):
         fields = api_repr.get("fields", ())
         policy_tags = api_repr.get("policyTags", _DEFAULT_VALUE)
 
+        if default_value_expression is not None:
+            default_value_expression = api_repr.get("defaultValueExpression")
+
         if policy_tags is not None and policy_tags is not _DEFAULT_VALUE:
             policy_tags = PolicyTagList.from_api_repr(policy_tags)
 
@@ -161,6 +191,7 @@ class SchemaField(object):
             field_type=field_type,
             fields=[cls.from_api_repr(f) for f in fields],
             mode=mode.upper(),
+            default_value_expression=default_value_expression,
             description=description,
             name=api_repr["name"],
             policy_tags=policy_tags,
@@ -196,6 +227,11 @@ class SchemaField(object):
     def is_nullable(self):
         """bool: whether 'mode' is 'nullable'."""
         return self.mode == "NULLABLE"
+
+    @property
+    def default_value_expression(self):
+        """Optional[str] default value of a field, using an SQL expression"""
+        return self._properties.get("defaultValueExpression")
 
     @property
     def description(self):
@@ -260,7 +296,7 @@ class SchemaField(object):
         field_type = self.field_type.upper() if self.field_type is not None else None
 
         # Type can temporarily be set to None if the code needs a SchemaField instance,
-        # but has npt determined the exact type of the field yet.
+        # but has not determined the exact type of the field yet.
         if field_type is not None:
             if field_type == "STRING" or field_type == "BYTES":
                 if self.max_length is not None:
@@ -281,6 +317,7 @@ class SchemaField(object):
             field_type,
             # Mode is always str, if not given it defaults to a str value
             self.mode.upper(),  # pytype: disable=attribute-error
+            self.default_value_expression,
             self.description,
             self._fields,
             policy_tags,

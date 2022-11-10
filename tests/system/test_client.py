@@ -105,7 +105,6 @@ SOURCE_URIS = [
 REFERENCE_FILE_SCHEMA_URI = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro"
 
 
-
 # The VPC-SC team maintains a mirror of the GCS bucket used for code
 # samples. The public bucket crosses the configured security boundary.
 # See: https://github.com/googleapis/google-cloud-python/issues/8550

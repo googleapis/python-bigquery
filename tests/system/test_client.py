@@ -97,12 +97,18 @@ TIME_PARTITIONING_CLUSTERING_FIELDS_SCHEMA = [
     ),
 ]
 
-SOURCE_URIS = [
+SOURCE_URIS_AVRO = [
     "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro",
     "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro",
     "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.avro",
 ]
-REFERENCE_FILE_SCHEMA_URI = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro"
+SOURCE_URIS_PARQUET = [
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.parquet",
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.parquet",
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.parquet",
+]
+REFERENCE_FILE_SCHEMA_URI_AVRO = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro"
+REFERENCE_FILE_SCHEMA_URI_PARQUET = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.parquet"
 
 
 # The VPC-SC team maintains a mirror of the GCS bucket used for code
@@ -1085,8 +1091,8 @@ class TestBigQuery(unittest.TestCase):
 
         # Create external data configuration
         external_config = bigquery.ExternalConfig(bigquery.ExternalSourceFormat.AVRO)
-        external_config.source_uris = SOURCE_URIS
-        external_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI
+        external_config.source_uris = SOURCE_URIS_AVRO
+        external_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_AVRO
 
         table = bigquery.Table(table_ref)
         table.external_data_configuration = external_config
@@ -1101,7 +1107,7 @@ class TestBigQuery(unittest.TestCase):
             generated_table.external_data_configuration._properties[
                 "referenceFileSchemaUri"
             ],
-            REFERENCE_FILE_SCHEMA_URI,
+            REFERENCE_FILE_SCHEMA_URI_AVRO,
         )
 
         # Clean up test
@@ -1134,10 +1140,10 @@ class TestBigQuery(unittest.TestCase):
         load_job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.AVRO
         )
-        load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI
+        load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_AVRO
 
         load_job = client.load_table_from_uri(
-            source_uris=SOURCE_URIS, destination=table_ref, job_config=load_job_config
+            source_uris=SOURCE_URIS_AVRO, destination=table_ref, job_config=load_job_config
         )
         # Wait for load job to complete
         result = load_job.result()
@@ -1147,7 +1153,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(generated_table.schema, expected_schema)
         self.assertEqual(
             result._properties["configuration"]["load"]["referenceFileSchemaUri"],
-            REFERENCE_FILE_SCHEMA_URI,
+            REFERENCE_FILE_SCHEMA_URI_AVRO,
         )
 
         # Clean up test
@@ -1178,8 +1184,8 @@ class TestBigQuery(unittest.TestCase):
 
         # Create external data configuration
         external_config = bigquery.ExternalConfig(bigquery.ExternalSourceFormat.PARQUET)
-        external_config.source_uris = SOURCE_URIS
-        external_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI
+        external_config.source_uris = SOURCE_URIS_PARQUET
+        external_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_PARQUET
 
         table = bigquery.Table(table_ref)
         table.external_data_configuration = external_config
@@ -1193,7 +1199,7 @@ class TestBigQuery(unittest.TestCase):
             generated_table.external_data_configuration._properties[
                 "referenceFileSchemaUri"
             ],
-            REFERENCE_FILE_SCHEMA_URI,
+            REFERENCE_FILE_SCHEMA_URI_PARQUET,
         )
 
         # Clean up test
@@ -1226,10 +1232,10 @@ class TestBigQuery(unittest.TestCase):
         load_job_config = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.PARQUET
         )
-        load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI
+        load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_PARQUET
 
         load_job = client.load_table_from_uri(
-            source_uris=SOURCE_URIS, destination=table_ref, job_config=load_job_config
+            source_uris=SOURCE_URIS_PARQUET, destination=table_ref, job_config=load_job_config
         )
         # Wait for load job to complete
         result = load_job.result()
@@ -1239,7 +1245,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(generated_table.schema, expected_schema)
         self.assertEqual(
             result._properties["configuration"]["load"]["referenceFileSchemaUri"],
-            REFERENCE_FILE_SCHEMA_URI,
+            REFERENCE_FILE_SCHEMA_URI_PARQUET,
         )
 
         # Clean up test

@@ -1143,7 +1143,9 @@ class TestBigQuery(unittest.TestCase):
         load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_AVRO
 
         load_job = client.load_table_from_uri(
-            source_uris=SOURCE_URIS_AVRO, destination=table_ref, job_config=load_job_config
+            source_uris=SOURCE_URIS_AVRO,
+            destination=table_ref,
+            job_config=load_job_config,
         )
         # Wait for load job to complete
         result = load_job.result()
@@ -1235,7 +1237,9 @@ class TestBigQuery(unittest.TestCase):
         load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_PARQUET
 
         load_job = client.load_table_from_uri(
-            source_uris=SOURCE_URIS_PARQUET, destination=table_ref, job_config=load_job_config
+            source_uris=SOURCE_URIS_PARQUET,
+            destination=table_ref,
+            job_config=load_job_config,
         )
         # Wait for load job to complete
         result = load_job.result()

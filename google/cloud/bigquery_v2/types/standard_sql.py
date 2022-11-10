@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import MutableMapping, MutableSequence
+
 import proto  # type: ignore
 
 
@@ -78,18 +80,18 @@ class StandardSqlDataType(proto.Message):
         ARRAY = 16
         STRUCT = 17
 
-    type_kind = proto.Field(
+    type_kind: TypeKind = proto.Field(
         proto.ENUM,
         number=1,
         enum=TypeKind,
     )
-    array_element_type = proto.Field(
+    array_element_type: "StandardSqlDataType" = proto.Field(
         proto.MESSAGE,
         number=2,
         oneof="sub_type",
         message="StandardSqlDataType",
     )
-    struct_type = proto.Field(
+    struct_type: "StandardSqlStructType" = proto.Field(
         proto.MESSAGE,
         number=3,
         oneof="sub_type",
@@ -112,11 +114,11 @@ class StandardSqlField(proto.Message):
             this "type" field).
     """
 
-    name = proto.Field(
+    name: str = proto.Field(
         proto.STRING,
         number=1,
     )
-    type = proto.Field(
+    type_: "StandardSqlDataType" = proto.Field(
         proto.MESSAGE,
         number=2,
         message="StandardSqlDataType",
@@ -127,11 +129,11 @@ class StandardSqlStructType(proto.Message):
     r"""
 
     Attributes:
-        fields (Sequence[google.cloud.bigquery_v2.types.StandardSqlField]):
+        fields (MutableSequence[google.cloud.bigquery_v2.types.StandardSqlField]):
 
     """
 
-    fields = proto.RepeatedField(
+    fields: MutableSequence["StandardSqlField"] = proto.RepeatedField(
         proto.MESSAGE,
         number=1,
         message="StandardSqlField",
@@ -142,11 +144,11 @@ class StandardSqlTableType(proto.Message):
     r"""A table type
 
     Attributes:
-        columns (Sequence[google.cloud.bigquery_v2.types.StandardSqlField]):
+        columns (MutableSequence[google.cloud.bigquery_v2.types.StandardSqlField]):
             The columns in this table type
     """
 
-    columns = proto.RepeatedField(
+    columns: MutableSequence["StandardSqlField"] = proto.RepeatedField(
         proto.MESSAGE,
         number=1,
         message="StandardSqlField",

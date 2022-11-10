@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import MutableMapping, MutableSequence
+
 import proto  # type: ignore
 
 from google.protobuf import wrappers_pb2  # type: ignore
@@ -38,7 +40,7 @@ class EncryptionConfiguration(proto.Message):
             this encryption key.
     """
 
-    kms_key_name = proto.Field(
+    kms_key_name: wrappers_pb2.StringValue = proto.Field(
         proto.MESSAGE,
         number=1,
         message=wrappers_pb2.StringValue,

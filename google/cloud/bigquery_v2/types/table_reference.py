@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import MutableMapping, MutableSequence
+
 import proto  # type: ignore
 
 
@@ -40,38 +42,38 @@ class TableReference(proto.Message):
             maximum length is 1,024 characters. Certain operations allow
             suffixing of the table ID with a partition decorator, such
             as ``sample_table$20190123``.
-        project_id_alternative (Sequence[str]):
+        project_id_alternative (MutableSequence[str]):
             The alternative field that will be used when ESF is not able
             to translate the received data to the project_id field.
-        dataset_id_alternative (Sequence[str]):
+        dataset_id_alternative (MutableSequence[str]):
             The alternative field that will be used when ESF is not able
             to translate the received data to the project_id field.
-        table_id_alternative (Sequence[str]):
+        table_id_alternative (MutableSequence[str]):
             The alternative field that will be used when ESF is not able
             to translate the received data to the project_id field.
     """
 
-    project_id = proto.Field(
+    project_id: str = proto.Field(
         proto.STRING,
         number=1,
     )
-    dataset_id = proto.Field(
+    dataset_id: str = proto.Field(
         proto.STRING,
         number=2,
     )
-    table_id = proto.Field(
+    table_id: str = proto.Field(
         proto.STRING,
         number=3,
     )
-    project_id_alternative = proto.RepeatedField(
+    project_id_alternative: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=4,
     )
-    dataset_id_alternative = proto.RepeatedField(
+    dataset_id_alternative: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=5,
     )
-    table_id_alternative = proto.RepeatedField(
+    table_id_alternative: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=6,
     )

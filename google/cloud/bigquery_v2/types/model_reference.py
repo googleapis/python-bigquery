@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import MutableMapping, MutableSequence
+
 import proto  # type: ignore
 
 
@@ -40,15 +42,15 @@ class ModelReference(proto.Message):
             maximum length is 1,024 characters.
     """
 
-    project_id = proto.Field(
+    project_id: str = proto.Field(
         proto.STRING,
         number=1,
     )
-    dataset_id = proto.Field(
+    dataset_id: str = proto.Field(
         proto.STRING,
         number=2,
     )
-    model_id = proto.Field(
+    model_id: str = proto.Field(
         proto.STRING,
         number=3,
     )

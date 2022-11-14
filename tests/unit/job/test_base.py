@@ -943,7 +943,6 @@ class Test_AsyncJob(unittest.TestCase):
         conn = make_connection(
             _make_retriable_exception(),
             begun_job_resource,
-            _make_retriable_exception(),
             done_job_resource,
         )
         client = _make_client(project=self.PROJECT, connection=conn)

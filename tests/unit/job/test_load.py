@@ -596,7 +596,6 @@ class TestLoadJob(_Base):
         config.use_avro_logical_types = True
         config.write_disposition = WriteDisposition.WRITE_TRUNCATE
         config.schema_update_options = [SchemaUpdateOption.ALLOW_FIELD_ADDITION]
-        config.reference_file_schema_uri = "gs://path/to/reference"
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:

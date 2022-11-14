@@ -29,8 +29,8 @@ description = "Google BigQuery API client library"
 # 'Development Status :: 5 - Production/Stable'
 release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
-    "grpcio >= 1.47.0, < 2.0dev",  # https://github.com/googleapis/python-bigquery/issues/1262
-    "google-api-core[grpc] >= 2.10.0, <3.0.0dev",
+    "grpcio >= 1.50.0, < 2.0dev",  # https://github.com/googleapis/python-bigquery/issues/1262
+    "google-api-core[grpc] >= 2.10.2, <3.0.0dev",
     "google-cloud-bigquery-storage >= 2.5.0, <3.0.0dev",
     "proto-plus >= 1.22.0, <2.0.0dev",
     "google-cloud-core >= 2.3.2, <3.0.0dev",

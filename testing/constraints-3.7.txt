@@ -7,11 +7,11 @@
 # Then this file should have foo==1.14.0
 db-dtypes==0.3.0
 geopandas==0.9.0
-google-api-core==2.10.0
+google-api-core==2.10.2
 google-cloud-bigquery-storage==2.0.0
 google-cloud-core==1.4.1
 google-resumable-media==2.4.0
-grpcio==1.47.0
+grpcio==1.50.0
 ipywidgets==7.7.1
 ipython==7.0.1
 opentelemetry-api==1.1.0

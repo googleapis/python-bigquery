@@ -80,6 +80,20 @@ class SchemaField(object):
             Defaults to ``'NULLABLE'``. The mode of the field. See
             https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.mode
 
+        description: Description for the field.
+
+        fields: Subfields (requires ``field_type`` of 'RECORD').
+
+        policy_tags: The policy tag list for the field.
+
+        precision:
+            Precison (number of digits) of fields with NUMERIC or BIGNUMERIC type.
+
+        scale:
+            Scale (digits after decimal) of fields with NUMERIC or BIGNUMERIC type.
+
+        max_length: Maximum length of fields with STRING or BYTES type.
+
         default_value_expression: str, Optional
             Used to specify the default value of a field using a SQL expression. It can only be set for
             top level fields (columns).
@@ -103,27 +117,12 @@ class SchemaField(object):
             - Struct or array composed with the above allowed functions, for example:
 
                 "[CURRENT_DATE(), DATE '2020-01-01'"]
-
-        description: Description for the field.
-
-        fields: Subfields (requires ``field_type`` of 'RECORD').
-
-        policy_tags: The policy tag list for the field.
-
-        precision:
-            Precison (number of digits) of fields with NUMERIC or BIGNUMERIC type.
-
-        scale:
-            Scale (digits after decimal) of fields with NUMERIC or BIGNUMERIC type.
-
-        max_length: Maximum length of fields with STRING or BYTES type.
     """
 
     def __init__(
         self,
         name: str,
         field_type: str,
-        default_value_expression: str = None,
         mode: str = "NULLABLE",
         description: Union[str, _DefaultSentinel] = _DEFAULT_VALUE,
         fields: Iterable["SchemaField"] = (),
@@ -131,6 +130,7 @@ class SchemaField(object):
         precision: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
+        default_value_expression: str = None,
     ):
         self._properties: Dict[str, Any] = {
             "name": name,
@@ -138,10 +138,10 @@ class SchemaField(object):
         }
         if mode is not None:
             self._properties["mode"] = mode.upper()
-        if default_value_expression is not None:
-            self._properties["defaultValueExpression"] = default_value_expression
         if description is not _DEFAULT_VALUE:
             self._properties["description"] = description
+        if default_value_expression is not None:
+            self._properties["defaultValueExpression"] = default_value_expression
         if precision is not _DEFAULT_VALUE:
             self._properties["precision"] = precision
         if scale is not _DEFAULT_VALUE:
@@ -190,13 +190,13 @@ class SchemaField(object):
             field_type=field_type,
             fields=[cls.from_api_repr(f) for f in fields],
             mode=mode.upper(),
-            default_value_expression=default_value_expression,
             description=description,
             name=api_repr["name"],
             policy_tags=policy_tags,
             precision=cls.__get_int(api_repr, "precision"),
             scale=cls.__get_int(api_repr, "scale"),
             max_length=cls.__get_int(api_repr, "maxLength"),
+            default_value_expression=default_value_expression,
         )
 
     @property
@@ -316,10 +316,10 @@ class SchemaField(object):
             field_type,
             # Mode is always str, if not given it defaults to a str value
             self.mode.upper(),  # pytype: disable=attribute-error
-            self.default_value_expression,
             self.description,
             self._fields,
             policy_tags,
+            self.default_value_expression,
         )
 
     def to_standard_sql(self) -> standard_sql.StandardSqlField:

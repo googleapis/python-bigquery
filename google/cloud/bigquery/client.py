@@ -3360,13 +3360,7 @@ class Client(ClientWithProject):
 
         BigQuery will reject insertAll payloads that exceed a defined limit (10MB).
         Additionally, if a payload vastly exceeds this limit, the request is rejected
-        by the intermediate architecture.
-
-        413 Payload Too Large
-
-        The 413 (Payload Too Large) status code indicates that the server is
-        refusing to process a request because the request payload is larger
-        than the server is willing or able to process.
+        by the intermediate architecture, which returns a 413 (Payload Too Large) status code.
 
 
         See
@@ -3440,7 +3434,7 @@ class Client(ClientWithProject):
 
         BigQuery will reject insertAll payloads that exceed a defined limit (10MB).
         Additionally, if a payload vastly exceeds this limit, the request is rejected
-        by the intermediate architecture.
+        by the intermediate architecture, which returns a 413 (Payload Too Large) status code.
 
         See
         https://cloud.google.com/bigquery/quotas#streaming_inserts
@@ -3508,7 +3502,7 @@ class Client(ClientWithProject):
 
         BigQuery will reject insertAll payloads that exceed a defined limit (10MB).
         Additionally, if a payload vastly exceeds this limit, the request is rejected
-        by the intermediate architecture.
+        by the intermediate architecture, which returns a 413 (Payload Too Large) status code.
 
         See
         https://cloud.google.com/bigquery/quotas#streaming_inserts

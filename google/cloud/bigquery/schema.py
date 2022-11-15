@@ -123,7 +123,7 @@ class SchemaField(object):
         self,
         name: str,
         field_type: str,
-        default_value_expression: str,
+        default_value_expression: str = None,
         mode: str = "NULLABLE",
         description: Union[str, _DefaultSentinel] = _DEFAULT_VALUE,
         fields: Iterable["SchemaField"] = (),
@@ -181,8 +181,7 @@ class SchemaField(object):
         fields = api_repr.get("fields", ())
         policy_tags = api_repr.get("policyTags", _DEFAULT_VALUE)
 
-        if default_value_expression is not None:
-            default_value_expression = api_repr.get("defaultValueExpression")
+        default_value_expression = api_repr.get("defaultValueExpression", None)
 
         if policy_tags is not None and policy_tags is not _DEFAULT_VALUE:
             policy_tags = PolicyTagList.from_api_repr(policy_tags)

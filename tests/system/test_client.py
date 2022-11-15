@@ -449,23 +449,20 @@ class TestBigQuery(unittest.TestCase):
         )
 
         table_id = "test_table"
-        string_field_name = "String field with default value expression"
-        timestamp_field_name = "Timestamp field with default value expression"
+        timestamp_field_name = "timestamp_field_with_default_value_expression"
 
         string_default_val_expression = "'FOO'"
         timestamp_default_val_expression = "CURRENT_TIMESTAMP"
 
         schema = [
             bigquery.SchemaField(
-                string_field_name,
+                "username",
                 "STRING",
-                mode="REQUIRED",
                 default_value_expression=string_default_val_expression,
             ),
             bigquery.SchemaField(
                 timestamp_field_name,
-                "INTEGER",
-                mode="REQUIRED",
+                "TIMESTAMP",
                 default_value_expression=timestamp_default_val_expression,
             ),
         ]
@@ -476,23 +473,37 @@ class TestBigQuery(unittest.TestCase):
         self.to_delete.insert(0, table)
 
         self.assertTrue(_table_exists(table))
-        self.assertEqual(policy_1, table.schema[1].policy_tags)
 
-        # # Amend the schema to replace the policy tags
-        # new_schema = table.schema[:]
-        # old_field = table.schema[1]
-        # new_schema[1] = bigquery.SchemaField(
-        #     name=old_field.name,
-        #     field_type=old_field.field_type,
-        #     mode=old_field.mode,
-        #     description=old_field.description,
-        #     fields=old_field.fields,
-        #     policy_tags=policy_2,
-        # )
+        # Fetch the created table and its metadata to verify that the default
+        # value expression is assigned to fields
+        remote_table = Config.CLIENT.get_table(table)
+        remote_schema = remote_table.schema
+        self.assertEqual(remote_schema, schema)
 
-        # table.schema = new_schema
-        # table2 = Config.CLIENT.update_table(table, ["schema"])
-        # self.assertEqual(policy_2, table2.schema[1].policy_tags)
+        for field in remote_schema:
+            if field.name == string_default_val_expression:
+                self.assertEqual("'FOO'", field.default_value_expression)
+            if field.name == timestamp_default_val_expression:
+                self.assertEqual("CURRENT_TIMESTAMP", field.default_value_expression)
+
+        # Insert rows into the created table to verify default values are populated
+        # when value is not provided
+        NOW_SECONDS = 1448911495.484366
+        NOW = datetime.datetime.utcfromtimestamp(NOW_SECONDS).replace(tzinfo=UTC)
+
+        # Rows to insert. Row #1 will have default `TIMESTAMP` defaultValueExpression CURRENT_TIME
+        # Row #2 will have default `STRING` defaultValueExpression "'FOO"
+        ROWS = [{"username": "john_doe"}, {timestamp_field_name: NOW}]
+
+        errors = Config.CLIENT.insert_rows(table, ROWS)
+        self.assertEqual(len(errors), 0)
+
+        # Get list of inserted rows
+        row_1, row_2 = [row for row in list(Config.CLIENT.list_rows(table))]
+
+        # Assert that row values are populated with default value expression
+        self.assertIsInstance(row_1.get(timestamp_field_name), datetime.datetime)
+        self.assertEqual("FOO", row_2.get("username"))
 
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning

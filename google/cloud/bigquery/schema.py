@@ -124,13 +124,13 @@ class SchemaField(object):
         name: str,
         field_type: str,
         mode: str = "NULLABLE",
+        default_value_expression: str = None,
         description: Union[str, _DefaultSentinel] = _DEFAULT_VALUE,
         fields: Iterable["SchemaField"] = (),
         policy_tags: Union["PolicyTagList", None, _DefaultSentinel] = _DEFAULT_VALUE,
         precision: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
-        default_value_expression: str = None,
     ):
         self._properties: Dict[str, Any] = {
             "name": name,
@@ -190,13 +190,13 @@ class SchemaField(object):
             field_type=field_type,
             fields=[cls.from_api_repr(f) for f in fields],
             mode=mode.upper(),
+            default_value_expression=default_value_expression,
             description=description,
             name=api_repr["name"],
             policy_tags=policy_tags,
             precision=cls.__get_int(api_repr, "precision"),
             scale=cls.__get_int(api_repr, "scale"),
             max_length=cls.__get_int(api_repr, "maxLength"),
-            default_value_expression=default_value_expression,
         )
 
     @property
@@ -316,10 +316,10 @@ class SchemaField(object):
             field_type,
             # Mode is always str, if not given it defaults to a str value
             self.mode.upper(),  # pytype: disable=attribute-error
+            self.default_value_expression,
             self.description,
             self._fields,
             policy_tags,
-            self.default_value_expression,
         )
 
     def to_standard_sql(self) -> standard_sql.StandardSqlField:

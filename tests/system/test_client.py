@@ -442,8 +442,6 @@ class TestBigQuery(unittest.TestCase):
         )
 
     def test_create_table_with_default_value_expression(self):
-        from google.cloud.bigquery.schema import PolicyTagList
-
         dataset = self.temp_dataset(
             _make_dataset_id("create_table_with_default_value_expression")
         )

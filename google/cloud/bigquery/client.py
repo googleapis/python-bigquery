@@ -3358,6 +3358,20 @@ class Client(ClientWithProject):
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
 
+        BigQuery will reject insertAll payloads that exceed a defined limit (10MB).
+        Additionally, if a payload vastly exceeds this limit, the request is rejected
+        by the intermediate architecture.
+
+        413 Payload Too Large
+
+        The 413 (Payload Too Large) status code indicates that the server is
+        refusing to process a request because the request payload is larger
+        than the server is willing or able to process.
+
+
+        See
+        https://cloud.google.com/bigquery/quotas#streaming_inserts
+
         Args:
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
@@ -3424,6 +3438,13 @@ class Client(ClientWithProject):
     ) -> Sequence[Sequence[dict]]:
         """Insert rows into a table from a dataframe via the streaming API.
 
+        BigQuery will reject insertAll payloads that exceed a defined limit (10MB).
+        Additionally, if a payload vastly exceeds this limit, the request is rejected
+        by the intermediate architecture.
+
+        See
+        https://cloud.google.com/bigquery/quotas#streaming_inserts
+
         Args:
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
@@ -3484,6 +3505,13 @@ class Client(ClientWithProject):
 
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
+
+        BigQuery will reject insertAll payloads that exceed a defined limit (10MB).
+        Additionally, if a payload vastly exceeds this limit, the request is rejected
+        by the intermediate architecture.
+
+        See
+        https://cloud.google.com/bigquery/quotas#streaming_inserts
 
         Args:
             table (Union[ \

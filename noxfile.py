@@ -25,7 +25,15 @@ import nox
 MYPY_VERSION = "mypy==0.910"
 PYTYPE_VERSION = "pytype==2021.4.9"
 BLACK_VERSION = "black==22.3.0"
-BLACK_PATHS = ("docs", "google", "samples", "tests", "noxfile.py", "setup.py")
+BLACK_PATHS = (
+    "docs",
+    "google",
+    "samples",
+    "samples/tests",
+    "tests",
+    "noxfile.py",
+    "setup.py",
+)
 
 DEFAULT_PYTHON_VERSION = "3.8"
 SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.10"]
@@ -73,7 +81,7 @@ def default(session, install_extras=True):
     )
 
     if install_extras and session.python == "3.10":
-        install_target = ".[bqstorage,pandas,tqdm,opentelemetry]"
+        install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     elif install_extras:
         install_target = ".[all]"
     else:
@@ -178,7 +186,7 @@ def system(session):
     session.install("google-cloud-datacatalog", "-c", constraints_path)
 
     if session.python == "3.10":
-        extras = "[bqstorage,pandas,tqdm,opentelemetry]"
+        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)
@@ -227,7 +235,7 @@ def snippets(session):
     session.install("grpcio", "-c", constraints_path)
 
     if session.python == "3.10":
-        extras = "[bqstorage,pandas,tqdm,opentelemetry]"
+        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)
@@ -379,7 +387,7 @@ def blacken(session):
 def docs(session):
     """Build the docs."""
 
-    session.install("recommonmark", "sphinx==4.0.1", "sphinx_rtd_theme")
+    session.install("recommonmark", "sphinx==4.0.2", "sphinx_rtd_theme")
     session.install("google-cloud-storage")
     session.install("-e", ".[all]")
 
@@ -404,7 +412,7 @@ def docfx(session):
 
     session.install("-e", ".")
     session.install(
-        "sphinx==4.0.1", "alabaster", "recommonmark", "gcp-sphinx-docfx-yaml"
+        "sphinx==4.0.2", "alabaster", "recommonmark", "gcp-sphinx-docfx-yaml"
     )
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)

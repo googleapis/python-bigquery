@@ -25,7 +25,7 @@ def test_create_table_external_data_configuration(
     capsys: "pytest.CaptureFixture[str]",
     random_table_id: str,
     avro_source_uris: List[str],
-    external_source_format="AVRO",
+    external_source_format: str = "AVRO",
 ) -> None:
     create_table_external_data_configuration.create_table_external_data_configuration(
         random_table_id, avro_source_uris, external_source_format

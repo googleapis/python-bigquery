@@ -23,6 +23,7 @@ def create_table_external_data_configuration(
     """Create a table using an external data source"""
 
     # [START bigquery_create_table_external_data_configuration]
+    # [START bigquery_create_external_table_definition]
     from google.cloud import bigquery
 
     # Construct a BigQuery client object.
@@ -50,6 +51,7 @@ def create_table_external_data_configuration(
     # You have the option to set a reference_file_schema_uri, which points to
     # a reference file for the table schema
     # external_config.reference_file_schema_uri = "path/to/your/reference/file/schema/uri"
+    # [END bigquery_create_external_table_definition]
 
     table = bigquery.Table(table_id)
     # Set the external data configuration of the table

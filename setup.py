@@ -44,7 +44,7 @@ dependencies = [
     "packaging >= 14.3, <22.0.0dev",
     "protobuf>=3.19.5,<5.0.0dev,!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",  # For the legacy proto-based types.
     "python-dateutil >= 2.7.2, <3.0dev",
-    "pyarrow >= 3.0.0, < 11.0dev",
+    "pyarrow >= 3.0.0, <10.1.0",
     "requests >= 2.21.0, < 3.0.0dev",
 ]
 extras = {
@@ -116,6 +116,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Operating System :: OS Independent",
         "Topic :: Internet",
     ],

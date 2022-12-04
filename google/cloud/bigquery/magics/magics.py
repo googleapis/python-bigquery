@@ -89,14 +89,23 @@ import functools
 import sys
 import time
 import warnings
+
+import threading
 from concurrent import futures
 
 try:
     import IPython  # type: ignore
-    from IPython import display  # type: ignore
+    from IPython.display import display, HTML, clear_output  # type: ignore
     from IPython.core import magic_arguments  # type: ignore
 except ImportError:  # pragma: NO COVER
     raise ImportError("This module can only be loaded in IPython.")
+try:
+    import ipywidgets as widgets  # type: ignore
+except ImportError:  # pragma: NO COVER
+    raise ImportError(
+        "This module can only be loaded in IPython with ipywidgets installed."
+    )
+
 
 from google.api_core import client_info
 from google.api_core import client_options
@@ -306,7 +315,26 @@ def _handle_error(error, destination_var=None):
     print("\nERROR:\n", str(error), file=sys.stderr)
 
 
-def _run_query(client, query, job_config=None):
+def _thread_func(query_job, out, time_sec):  # pragma: NO COVER
+    # needs note
+    new_line = "\n"
+    tab = "\t"
+    job_state = query_job.state
+    job_status = f"Job {query_job.job_id} status is {job_state}{new_line}"
+    out.append_display_data(HTML(f"{job_status}"))
+    while query_job.state != "DONE":
+        if query_job.state != job_state:
+            out.append_display_data(HTML(f"Job is {query_job.state}{tab}"))
+            job_state = query_job.state
+            time.sleep(time_sec)
+            query_job.reload()
+        else:
+            result = query_job.to_dataframe()
+            out.append_stdout(f"{result}")
+            out.append_display_data(HTML("<em>Job complete!</em>"))
+
+
+def _run_query(client, query, args=None, job_config=None):
     """Runs a query while printing status updates
 
     Args:
@@ -317,6 +345,8 @@ def _run_query(client, query, job_config=None):
             Use the ``job_config`` parameter to change dialects.
         job_config (Optional[google.cloud.bigquery.job.QueryJobConfig]):
             Extra configuration options for the job.
+        args (Any):
+            Allows you to vary query execution behavior based on specific magics arguments.
 
     Returns:
         google.cloud.bigquery.job.QueryJob: the query job created
@@ -334,6 +364,15 @@ def _run_query(client, query, job_config=None):
 
     if job_config and job_config.dry_run:
         return query_job
+
+    if args and args.send_long_job:  # pragma: NO COVER
+        out = widgets.Output()
+        time_sec = 10.0
+
+        display(out)
+
+        thread = threading.Thread(target=_thread_func, args=(query_job, out, time_sec))
+        thread.start()
 
     print(f"Executing query with job ID: {query_job.job_id}")
 
@@ -504,6 +543,15 @@ def _create_dataset_if_necessary(client, dataset_id):
     help=(
         "Sets progress bar type to display a progress bar while executing the query."
         "Defaults to use tqdm_notebook. Install the ``tqdm`` package to use this feature."
+    ),
+)
+@magic_arguments.argument(
+    "--send_long_job",
+    action="store_true",
+    default=False,
+    help=(
+        "Shows current status of a job in a widget and does not block the execution of the next cell."
+        "For use with longer-running jobs such as BQML queries."
     ),
 )
 def _cell_magic(line, query):
@@ -682,13 +730,18 @@ def _cell_magic(line, query):
             job_config.maximum_bytes_billed = value
 
         try:
-            query_job = _run_query(client, query, job_config=job_config)
+            query_job = _run_query(client, query, args=args, job_config=job_config)
         except Exception as ex:
             _handle_error(ex, args.destination_var)
             return
 
         if not args.verbose:
-            display.clear_output()
+            clear_output()
+
+        if args.send_long_job:  # pragma: NO COVER
+            if args.destination_var:
+                IPython.get_ipython().push({args.destination_var: query_job})
+            return
 
         if args.dry_run and args.destination_var:
             IPython.get_ipython().push({args.destination_var: query_job})
@@ -720,6 +773,7 @@ def _cell_magic(line, query):
             IPython.get_ipython().push({args.destination_var: result})
         else:
             return result
+
     finally:
         close_transports()
 

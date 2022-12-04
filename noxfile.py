@@ -115,9 +115,11 @@ def unit_noextras(session):
 
     # Install optional dependencies that are out-of-date.
     # https://github.com/googleapis/python-bigquery/issues/933
-    # There is no pyarrow 1.0.0 package for Python 3.9.
+    # These dependencies are needed for Python 3.7 and 3.10, which are the current oldest and newest versions of Python. These dependencies may need to be updated when the Python versions change.
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        session.install("pyarrow==1.0.0")
+        session.install("ipython", "ipywidgets")
+    elif session.python == UNIT_TEST_PYTHON_VERSIONS[-1]:
+        session.install("ipython", "ipywidgets")
 
     default(session, install_extras=False)
 
@@ -276,7 +278,7 @@ def prerelease_deps(session):
     # https://arrow.apache.org/docs/python/install.html#installing-nightly-packages
     session.install(
         "--extra-index-url",
-        "https://pypi.fury.io/arrow-nightlies/",
+        "https://repo.fury.io/arrow-nightlies/",
         "--prefer-binary",
         "--pre",
         "--upgrade",
@@ -307,6 +309,7 @@ def prerelease_deps(session):
         "google-cloud-storage",
         "google-cloud-testutils",
         "IPython",
+        "ipywidgets",
         "mock",
         "psutil",
         "pytest",

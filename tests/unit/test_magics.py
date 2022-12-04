@@ -32,7 +32,7 @@ from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 
 try:
     from google.cloud.bigquery.magics import magics
-except ImportError:
+except ImportError:  # pragma: NO COVER
     magics = None
 
 bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
@@ -248,8 +248,6 @@ def test_context_with_custom_connection():
 
 
 def test__run_query():
-    magics.context._credentials = None
-
     job_id = "job_1234"
     sql = "SELECT 17"
     responses = [
@@ -504,7 +502,7 @@ def test_bigquery_magic_does_not_clear_display_in_verbose_mode():
     )
 
     clear_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics.display.clear_output",
+        "google.cloud.bigquery.magics.magics.clear_output",
         autospec=True,
     )
     run_query_patch = mock.patch(
@@ -525,7 +523,7 @@ def test_bigquery_magic_clears_display_in_non_verbose_mode():
     )
 
     clear_patch = mock.patch(
-        "google.cloud.bigquery.magics.magics.display.clear_output",
+        "google.cloud.bigquery.magics.magics.clear_output",
         autospec=True,
     )
     run_query_patch = mock.patch(
@@ -1447,7 +1445,9 @@ def test_bigquery_magic_with_string_params(ipython_ns_cleanup):
 
         ip.run_cell_magic("bigquery", "params_string_df --params='{\"num\":17}'", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=17), mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=17), mock.ANY, mock.ANY
+        )
 
     assert "params_string_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_string_df"]
@@ -1488,7 +1488,9 @@ def test_bigquery_magic_with_dict_params(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=17), mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=17), mock.ANY, mock.ANY
+        )
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1595,7 +1597,9 @@ def test_bigquery_magic_with_dict_params_negative_value(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY
+        )
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1635,7 +1639,9 @@ def test_bigquery_magic_with_dict_params_array_value(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY
+        )
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1675,7 +1681,9 @@ def test_bigquery_magic_with_dict_params_tuple_value(ipython_ns_cleanup):
         ip.user_ns["params"] = params
         ip.run_cell_magic("bigquery", "params_dict_df --params $params", sql)
 
-        run_query_mock.assert_called_once_with(mock.ANY, sql.format(num=-17), mock.ANY)
+        run_query_mock.assert_called_once_with(
+            mock.ANY, sql.format(num=-17), mock.ANY, mock.ANY
+        )
 
     assert "params_dict_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["params_dict_df"]
@@ -1732,7 +1740,7 @@ def test_bigquery_magic_valid_query_in_existing_variable(ipython_ns_cleanup, raw
 
         ip.run_cell_magic("bigquery", "query_results_df", cell_body)
 
-        run_query_mock.assert_called_once_with(mock.ANY, raw_sql, mock.ANY)
+        run_query_mock.assert_called_once_with(mock.ANY, raw_sql, mock.ANY, mock.ANY)
 
     assert "query_results_df" in ip.user_ns  # verify that the variable exists
     df = ip.user_ns["query_results_df"]

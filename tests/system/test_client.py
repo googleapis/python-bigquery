@@ -104,6 +104,20 @@ TIME_PARTITIONING_CLUSTERING_FIELDS_SCHEMA = [
     ),
 ]
 
+SOURCE_URIS_AVRO = [
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro",
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro",
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.avro",
+]
+SOURCE_URIS_PARQUET = [
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.parquet",
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.parquet",
+    "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.parquet",
+]
+REFERENCE_FILE_SCHEMA_URI_AVRO = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro"
+REFERENCE_FILE_SCHEMA_URI_PARQUET = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.parquet"
+
+
 # The VPC-SC team maintains a mirror of the GCS bucket used for code
 # samples. The public bucket crosses the configured security boundary.
 # See: https://github.com/googleapis/google-cloud-python/issues/8550
@@ -433,6 +447,68 @@ class TestBigQuery(unittest.TestCase):
         self.assertCountEqual(
             list(table.schema[1].policy_tags.names), [child_policy_tag.name]
         )
+
+    def test_create_table_with_default_value_expression(self):
+        dataset = self.temp_dataset(
+            _make_dataset_id("create_table_with_default_value_expression")
+        )
+
+        table_id = "test_table"
+        timestamp_field_name = "timestamp_field_with_default_value_expression"
+
+        string_default_val_expression = "'FOO'"
+        timestamp_default_val_expression = "CURRENT_TIMESTAMP"
+
+        schema = [
+            bigquery.SchemaField(
+                "username",
+                "STRING",
+                default_value_expression=string_default_val_expression,
+            ),
+            bigquery.SchemaField(
+                timestamp_field_name,
+                "TIMESTAMP",
+                default_value_expression=timestamp_default_val_expression,
+            ),
+        ]
+        table_arg = Table(dataset.table(table_id), schema=schema)
+        self.assertFalse(_table_exists(table_arg))
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table))
+
+        # Fetch the created table and its metadata to verify that the default
+        # value expression is assigned to fields
+        remote_table = Config.CLIENT.get_table(table)
+        remote_schema = remote_table.schema
+        self.assertEqual(remote_schema, schema)
+
+        for field in remote_schema:
+            if field.name == string_default_val_expression:
+                self.assertEqual("'FOO'", field.default_value_expression)
+            if field.name == timestamp_default_val_expression:
+                self.assertEqual("CURRENT_TIMESTAMP", field.default_value_expression)
+
+        # Insert rows into the created table to verify default values are populated
+        # when value is not provided
+        NOW_SECONDS = 1448911495.484366
+        NOW = datetime.datetime.utcfromtimestamp(NOW_SECONDS).replace(tzinfo=UTC)
+
+        # Rows to insert. Row #1 will have default `TIMESTAMP` defaultValueExpression CURRENT_TIME
+        # Row #2 will have default `STRING` defaultValueExpression "'FOO"
+        ROWS = [{"username": "john_doe"}, {timestamp_field_name: NOW}]
+
+        errors = Config.CLIENT.insert_rows(table, ROWS)
+        self.assertEqual(len(errors), 0)
+
+        # Get list of inserted rows
+        row_1, row_2 = [row for row in list(Config.CLIENT.list_rows(table))]
+
+        # Assert that row values are populated with default value expression
+        self.assertIsInstance(row_1.get(timestamp_field_name), datetime.datetime)
+        self.assertEqual("FOO", row_2.get("username"))
 
     def test_create_table_w_time_partitioning_w_clustering_fields(self):
         from google.cloud.bigquery.table import TimePartitioning
@@ -1058,6 +1134,195 @@ class TestBigQuery(unittest.TestCase):
             client.extract_table(
                 table_ref, "gs://{}/letters-us.csv".format(bucket_name), location="US"
             ).result()
+
+    def test_create_external_table_with_reference_file_schema_uri_avro(self):
+        client = Config.CLIENT
+        dataset_id = _make_dataset_id("external_reference_file_avro")
+        self.temp_dataset(dataset_id)
+        dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
+        table_id = "test_ref_file_avro"
+        table_ref = bigquery.TableReference(dataset_ref=dataset_ref, table_id=table_id)
+
+        expected_schema = [
+            bigquery.SchemaField("username", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("tweet", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("timestamp", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("likes", "INTEGER", mode="NULLABLE"),
+        ]
+
+        # By default, the table should have the c-twitter schema because it is lexicographically last
+        # in the `SOURCE_URIs` list:
+        # a-twitter schema: (username, tweet, timestamp, likes)
+        # b-twitter schema: (username, tweet, timestamp)
+        # c-twitter schema: (username, tweet)
+
+        # Because `referenceFileSchemaUri` is set as a-twitter, the table will have a-twitter schema
+
+        # Create external data configuration
+        external_config = bigquery.ExternalConfig(bigquery.ExternalSourceFormat.AVRO)
+        external_config.source_uris = SOURCE_URIS_AVRO
+        external_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_AVRO
+
+        table = bigquery.Table(table_ref)
+        table.external_data_configuration = external_config
+
+        table = client.create_table(table)
+
+        # Get table created by the create_table API call
+        generated_table = client.get_table(table_ref)
+
+        self.assertEqual(generated_table.schema, expected_schema)
+        self.assertEqual(
+            generated_table.external_data_configuration._properties[
+                "referenceFileSchemaUri"
+            ],
+            REFERENCE_FILE_SCHEMA_URI_AVRO,
+        )
+
+        # Clean up test
+        self.to_delete.insert(0, generated_table)
+
+    def test_load_table_from_uri_with_reference_file_schema_uri_avro(self):
+        dataset_id = _make_dataset_id("test_reference_file_avro")
+        self.temp_dataset(dataset_id)
+        client = Config.CLIENT
+        dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
+        table_id = "test_ref_file_avro"
+        table_ref = bigquery.TableReference(dataset_ref=dataset_ref, table_id=table_id)
+
+        expected_schema = [
+            bigquery.SchemaField("username", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("tweet", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("timestamp", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("likes", "INTEGER", mode="NULLABLE"),
+        ]
+
+        # By default, the table should have the c-twitter schema because it is lexicographically last
+        # in the `SOURCE_URIS` list:
+        # a-twitter schema: (username, tweet, timestamp, likes)
+        # b-twitter schema: (username, tweet, timestamp)
+        # c-twitter schema: (username, tweet)
+
+        # Because `referenceFileSchemaUri` is set as a-twitter, the table will have a-twitter schema
+
+        # Create load job configuration
+        load_job_config = bigquery.LoadJobConfig(
+            source_format=bigquery.SourceFormat.AVRO
+        )
+        load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_AVRO
+
+        load_job = client.load_table_from_uri(
+            source_uris=SOURCE_URIS_AVRO,
+            destination=table_ref,
+            job_config=load_job_config,
+        )
+        # Wait for load job to complete
+        result = load_job.result()
+
+        # Get table created by the load job
+        generated_table = client.get_table(table_ref)
+        self.assertEqual(generated_table.schema, expected_schema)
+        self.assertEqual(
+            result._properties["configuration"]["load"]["referenceFileSchemaUri"],
+            REFERENCE_FILE_SCHEMA_URI_AVRO,
+        )
+
+        # Clean up test
+        self.to_delete.insert(0, generated_table)
+
+    def test_create_external_table_with_reference_file_schema_uri_parquet(self):
+        client = Config.CLIENT
+        dataset_id = _make_dataset_id("external_table_ref_file_parquet")
+        self.temp_dataset(dataset_id)
+        dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
+        table_id = "test_ref_file_parquet"
+        table_ref = bigquery.TableReference(dataset_ref=dataset_ref, table_id=table_id)
+
+        expected_schema = [
+            bigquery.SchemaField("username", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("tweet", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("timestamp", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("likes", "INTEGER", mode="NULLABLE"),
+        ]
+
+        # By default, the table should have the c-twitter schema because it is lexicographically last
+        # in the `SOURCE_URIS` list:
+        # a-twitter schema: (username, tweet, timestamp, likes)
+        # b-twitter schema: (username, tweet, timestamp)
+        # c-twitter schema: (username, tweet)
+
+        # Because `referenceFileSchemaUri` is set as a-twitter, the table will have a-twitter schema
+
+        # Create external data configuration
+        external_config = bigquery.ExternalConfig(bigquery.ExternalSourceFormat.PARQUET)
+        external_config.source_uris = SOURCE_URIS_PARQUET
+        external_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_PARQUET
+
+        table = bigquery.Table(table_ref)
+        table.external_data_configuration = external_config
+
+        table = client.create_table(table)
+
+        # Get table created by the create_table API call
+        generated_table = client.get_table(table_ref)
+        self.assertEqual(generated_table.schema, expected_schema)
+        self.assertEqual(
+            generated_table.external_data_configuration._properties[
+                "referenceFileSchemaUri"
+            ],
+            REFERENCE_FILE_SCHEMA_URI_PARQUET,
+        )
+
+        # Clean up test
+        self.to_delete.insert(0, generated_table)
+
+    def test_load_table_from_uri_with_reference_file_schema_uri_parquet(self):
+        dataset_id = _make_dataset_id("test_reference_file_parquet")
+        self.temp_dataset(dataset_id)
+        client = Config.CLIENT
+        dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
+        table_id = "test_ref_file_parquet"
+        table_ref = bigquery.TableReference(dataset_ref=dataset_ref, table_id=table_id)
+
+        expected_schema = [
+            bigquery.SchemaField("username", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("tweet", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("timestamp", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("likes", "INTEGER", mode="NULLABLE"),
+        ]
+
+        # By default, the table should have the c-twitter schema because it is lexicographically last
+        # in the `SOURCE_URIS` list:
+        # a-twitter schema: (username, tweet, timestamp, likes)
+        # b-twitter schema: (username, tweet, timestamp)
+        # c-twitter schema: (username, tweet)
+
+        # Because `referenceFileSchemaUri` is set as a-twitter, the table will have a-twitter schema
+
+        # Create load job configuration
+        load_job_config = bigquery.LoadJobConfig(
+            source_format=bigquery.SourceFormat.PARQUET
+        )
+        load_job_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_PARQUET
+
+        load_job = client.load_table_from_uri(
+            source_uris=SOURCE_URIS_PARQUET,
+            destination=table_ref,
+            job_config=load_job_config,
+        )
+        # Wait for load job to complete
+        result = load_job.result()
+
+        # Get table created by the load job
+        generated_table = client.get_table(table_ref)
+        self.assertEqual(generated_table.schema, expected_schema)
+        self.assertEqual(
+            result._properties["configuration"]["load"]["referenceFileSchemaUri"],
+            REFERENCE_FILE_SCHEMA_URI_PARQUET,
+        )
+
+        # Clean up test
+        self.to_delete.insert(0, generated_table)
 
     def _write_csv_to_storage(self, bucket_name, blob_name, header_row, data_rows):
         from google.cloud._testing import _NamedTemporaryFile

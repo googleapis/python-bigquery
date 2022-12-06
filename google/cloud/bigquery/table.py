@@ -42,11 +42,12 @@ else:
     _COORDINATE_REFERENCE_SYSTEM = "EPSG:4326"
 
 try:
-    import shapely.geos  # type: ignore
+    import shapely  # type: ignore
+    from shapely import wkt  # type: ignore
 except ImportError:
     shapely = None
 else:
-    _read_wkt = shapely.geos.WKTReader(shapely.geos.lgeos).read
+    _read_wkt = wkt.loads
 
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator
@@ -1429,7 +1430,7 @@ class Row(object):
             >>> Row(('a', 'b'), {'x': 0, 'y': 1}).get('z')
             None
 
-            The default value can be overrided with the ``default`` parameter.
+            The default value can be overridden with the ``default`` parameter.
 
             >>> Row(('a', 'b'), {'x': 0, 'y': 1}).get('z', '')
             ''
@@ -1748,9 +1749,9 @@ class RowIterator(HTTPIterator):
                   No progress bar.
                 ``'tqdm'``
                   Use the :func:`tqdm.tqdm` function to print a progress bar
-                  to :data:`sys.stderr`.
+                  to :data:`sys.stdout`.
                 ``'tqdm_notebook'``
-                  Use the :func:`tqdm.tqdm_notebook` function to display a
+                  Use the :func:`tqdm.notebook.tqdm` function to display a
                   progress bar as a Jupyter notebook widget.
                 ``'tqdm_gui'``
                   Use the :func:`tqdm.tqdm_gui` function to display a
@@ -1948,9 +1949,9 @@ class RowIterator(HTTPIterator):
                   No progress bar.
                 ``'tqdm'``
                   Use the :func:`tqdm.tqdm` function to print a progress bar
-                  to :data:`sys.stderr`.
+                  to :data:`sys.stdout`.
                 ``'tqdm_notebook'``
-                  Use the :func:`tqdm.tqdm_notebook` function to display a
+                  Use the :func:`tqdm.notebook.tqdm` function to display a
                   progress bar as a Jupyter notebook widget.
                 ``'tqdm_gui'``
                   Use the :func:`tqdm.tqdm_gui` function to display a
@@ -2102,9 +2103,9 @@ class RowIterator(HTTPIterator):
                   No progress bar.
                 ``'tqdm'``
                   Use the :func:`tqdm.tqdm` function to print a progress bar
-                  to :data:`sys.stderr`.
+                  to :data:`sys.stdout`.
                 ``'tqdm_notebook'``
-                  Use the :func:`tqdm.tqdm_notebook` function to display a
+                  Use the :func:`tqdm.notebook.tqdm` function to display a
                   progress bar as a Jupyter notebook widget.
                 ``'tqdm_gui'``
                   Use the :func:`tqdm.tqdm_gui` function to display a

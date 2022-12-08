@@ -2851,7 +2851,10 @@ class TestRowIterator(unittest.TestCase):
         def mock_verify_version():
             raise _helpers.LegacyBigQueryStorageError("no bqstorage")
 
-        with mock.patch("google.cloud.bigquery._helpers.BQ_STORAGE_VERSIONS.verify_version", mock_verify_version):
+        with mock.patch(
+            "google.cloud.bigquery._helpers.BQ_STORAGE_VERSIONS.verify_version",
+            mock_verify_version,
+        ):
             tbl = row_iterator.to_arrow(create_bqstorage_client=True)
 
         mock_client._ensure_bqstorage_client.assert_not_called()

@@ -16,7 +16,6 @@ import base64
 import datetime
 import decimal
 import unittest
-import pytest
 
 import mock
 
@@ -26,7 +25,7 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 
 try:
-    pyarrow = pytest.importorskip("pyarrow", minversion="1.0.1")
+    import pyarrow
 except ImportError:  # pragma: NO COVER
     # Mock out pyarrow when missing, because methods from pyarrow.types are
     # used in test parameterization.

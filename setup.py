@@ -61,12 +61,12 @@ extras = {
         pyarrow_dependency,
     ],
     "pandas": [
-        "pandas>=1.0.0",
+        "pandas>=1.1.0",
         pyarrow_dependency,
         "db-dtypes>=0.3.0,<2.0.0dev",
     ],
     "ipywidgets": ["ipywidgets==7.7.1"],
-    "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
+    "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.8.4, <2.0dev"],
     "ipython": ["ipython>=7.0.1,!=8.1.0"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [

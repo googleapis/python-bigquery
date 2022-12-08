@@ -2846,14 +2846,15 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
 
         mock_client = _mock_client()
-        mock_client._ensure_bqstorage_client.return_value = None
         row_iterator = self._make_one(mock_client, api_request, path, schema)
 
-        tbl = row_iterator.to_arrow(create_bqstorage_client=True)
+        def mock_verify_version():
+            raise _helpers.LegacyBigQueryStorageError("no bqstorage")
 
-        # The client attempted to create a BQ Storage client, and even though
-        # that was not possible, results were still returned without errors.
-        mock_client._ensure_bqstorage_client.assert_called_once()
+        with mock.patch("google.cloud.bigquery._helpers.BQ_STORAGE_VERSIONS.verify_version", mock_verify_version):
+            tbl = row_iterator.to_arrow(create_bqstorage_client=True)
+
+        mock_client._ensure_bqstorage_client.assert_not_called()
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 2)
 

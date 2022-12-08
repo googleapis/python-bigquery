@@ -1839,7 +1839,7 @@ class RowIterator(HTTPIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
     ) -> "pandas.DataFrame":
@@ -1915,7 +1915,7 @@ class RowIterator(HTTPIterator):
     # changes to job.QueryJob.to_dataframe()
     def to_dataframe(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,
@@ -2276,7 +2276,7 @@ class _EmptyRowIterator(RowIterator):
 
     def to_dataframe_iterable(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Optional[Dict[str, Any]] = None,
         max_queue_size: Optional[int] = None,
     ) -> Iterator["pandas.DataFrame"]:
@@ -2306,7 +2306,7 @@ class _EmptyRowIterator(RowIterator):
 
     def to_arrow_iterable(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         max_queue_size: Optional[int] = None,
     ) -> Iterator["pyarrow.RecordBatch"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.

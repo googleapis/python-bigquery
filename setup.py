@@ -65,7 +65,6 @@ extras = {
         pyarrow_dependency,
         "db-dtypes>=0.3.0,<2.0.0dev",
     ],
-    "bignumeric_type": [pyarrow_dependency],
     "ipywidgets": ["ipywidgets==7.7.1"],
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
     "ipython": ["ipython>=7.0.1,!=8.1.0"],
@@ -80,11 +79,6 @@ extras = {
 all_extras = []
 
 for extra in extras:
-    # Exclude this extra from all to avoid overly strict dependencies on core
-    # libraries such as pyarrow.
-    # https://github.com/googleapis/python-bigquery/issues/563
-    if extra in {"bignumeric_type"}:
-        continue
     all_extras.extend(extras[extra])
 
 extras["all"] = all_extras

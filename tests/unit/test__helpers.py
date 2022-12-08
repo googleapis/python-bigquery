@@ -27,9 +27,7 @@ except ImportError:  # pragma: NO COVER
 try:
     import pyarrow
 except ImportError:  # pragma: NO COVER
-    # Mock out pyarrow when missing, because methods from pyarrow.types are
-    # used in test parameterization.
-    pyarrow = mock.Mock()
+    pyarrow = None
 
 
 @unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")

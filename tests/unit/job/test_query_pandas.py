@@ -51,12 +51,10 @@ from .helpers import _make_job_resource
 pandas = pytest.importorskip("pandas")
 
 try:
-    pyarrow = pytest.importorskip("pyarrow", minversion="1.0.1")
+    import pyarrow
     import pyarrow.types
 except ImportError:  # pragma: NO COVER
-    # Mock out pyarrow when missing, because methods from pyarrow.types are
-    # used in test parameterization.
-    pyarrow = mock.Mock()
+    pyarrow = None
 
 
 @pytest.fixture

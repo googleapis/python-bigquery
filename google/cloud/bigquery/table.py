@@ -1674,7 +1674,7 @@ class RowIterator(HTTPIterator):
 
     def to_arrow_iterable(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
     ) -> Iterator["pyarrow.RecordBatch"]:
         """[Beta] Create an iterable of class:`pyarrow.RecordBatch`, to process the table as a stream.
@@ -1731,7 +1731,7 @@ class RowIterator(HTTPIterator):
     def to_arrow(
         self,
         progress_bar_type: str = None,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         create_bqstorage_client: bool = True,
     ) -> "pyarrow.Table":
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
@@ -2068,7 +2068,7 @@ class RowIterator(HTTPIterator):
     # changes to job.QueryJob.to_geodataframe()
     def to_geodataframe(
         self,
-        bqstorage_client: "bigquery_storage.BigQueryReadClient" = None,
+        bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
         progress_bar_type: str = None,
         create_bqstorage_client: bool = True,

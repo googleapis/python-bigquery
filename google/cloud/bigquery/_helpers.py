@@ -121,7 +121,7 @@ class BQStorageVersions:
         if self.installed_version < _MIN_BQ_STORAGE_VERSION:
             msg = (
                 "Dependency google-cloud-bigquery-storage is outdated, please upgrade "
-                f"it to version >= 2.0.0 (version found: {self.installed_version})."
+                f"it to version >= {_MIN_BQ_STORAGE_VERSION} (version found: {self.installed_version})."
             )
             raise LegacyBigQueryStorageError(msg)
 

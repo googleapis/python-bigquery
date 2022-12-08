@@ -43,9 +43,9 @@ dependencies = [
     "packaging >= 14.3, <22.0.0dev",
     "protobuf>=3.19.5,<5.0.0dev,!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",  # For the legacy proto-based types.
     "python-dateutil >= 2.7.2, <3.0dev",
-    "pyarrow >= 3.0.0, < 11.0dev",
     "requests >= 2.21.0, < 3.0.0dev",
 ]
+pyarrow_dependency = "pyarrow >= 3.0.0"
 extras = {
     # Keep the no-op bqstorage extra for backward compatibility.
     # See: https://github.com/googleapis/python-bigquery/issues/757
@@ -57,15 +57,15 @@ extras = {
         # See: https://github.com/googleapis/python-bigquery/issues/83 The
         # grpc.Channel.close() method isn't added until 1.32.0.
         # https://github.com/grpc/grpc/pull/15254
-        "grpcio >= 1.38.1, < 2.0dev",
-        "pyarrow >= 3.0.0, < 9.0dev",
+        "grpcio >= 1.47.0, < 2.0dev",
+        pyarrow_dependency,
     ],
     "pandas": [
         "pandas>=1.0.0",
-        "pyarrow >= 3.0.0, < 9.0dev",
+        pyarrow_dependency,
         "db-dtypes>=0.3.0,<2.0.0dev",
     ],
-    "bignumeric_type": ["pyarrow >= 3.0.0, < 9.0dev"],
+    "bignumeric_type": [pyarrow_dependency],
     "ipywidgets": ["ipywidgets==7.7.1"],
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
     "ipython": ["ipython>=7.0.1,!=8.1.0"],

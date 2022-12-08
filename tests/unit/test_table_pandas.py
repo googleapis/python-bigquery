@@ -20,15 +20,8 @@ import pytest
 
 from google.cloud import bigquery
 
-try:
-    pyarrow = pytest.importorskip("pyarrow", minversion="3.0.0")
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    # Mock out pyarrow when missing, because methods from pyarrow.types are
-    # used in test parameterization.
-    pyarrow = mock.Mock()
-
 pandas = pytest.importorskip("pandas")
+pyarrow = pytest.importorskip("pyarrow", minversion="3.0.0")
 
 
 TEST_PATH = "/v1/project/test-proj/dataset/test-dset/table/test-tbl/data"

@@ -105,12 +105,15 @@ class BQStorageVersions:
     def verify_version(self):
         """Verify that a recent enough version of BigQuery Storage extra is
         installed.
+
         The function assumes that google-cloud-bigquery-storage extra is
         installed, and should thus be used in places where this assumption
         holds.
+
         Because `pip` can install an outdated version of this extra despite the
         constraints in `setup.py`, the calling code can use this helper to
         verify the version compatibility at runtime.
+
         Raises:
             LegacyBigQueryStorageError:
                 If the google-cloud-bigquery-storage package is outdated.
@@ -152,13 +155,17 @@ class PyarrowVersions:
     def try_import(self, raise_if_error: bool = False) -> Any:
         """Verify that a recent enough version of pyarrow extra is
         installed.
+
         The function assumes that pyarrow extra is installed, and should thus
         be used in places where this assumption holds.
+
         Because `pip` can install an outdated version of this extra despite the
         constraints in `setup.py`, the calling code can use this helper to
         verify the version compatibility at runtime.
+
         Returns:
             The ``pyarrow`` module or ``None``.
+
         Raises:
             LegacyPyarrowError:
                 If the pyarrow package is outdated and ``raise_if_error`` is ``True``.

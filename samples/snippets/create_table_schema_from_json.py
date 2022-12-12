@@ -15,10 +15,10 @@
 import pathlib
 
 
-def create_table(table_id: str):
+def create_table(table_id: str) -> None:
     orig_table_id = table_id
     current_directory = pathlib.Path(__file__).parent
-    orig_schema_path = current_directory / "schema.json"
+    orig_schema_path = str(current_directory / "schema.json")
     # [START bigquery_schema_file_create]
     from google.cloud import bigquery
 

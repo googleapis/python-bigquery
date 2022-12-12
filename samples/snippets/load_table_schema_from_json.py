@@ -15,11 +15,11 @@
 import pathlib
 
 
-def load_table(table_id: str):
+def load_table(table_id: str) -> None:
     orig_uri = "gs://cloud-samples-data/bigquery/us-states/us-states.csv"
     orig_table_id = table_id
     current_directory = pathlib.Path(__file__).parent
-    orig_schema_path = current_directory / "schema_us_states.json"
+    orig_schema_path = str(current_directory / "schema_us_states.json")
     # [START bigquery_schema_file_load]
     from google.cloud import bigquery
 

@@ -34,7 +34,7 @@ def create_table_external_data_configuration(
     Set table_id to the ID of the table to create.
     table_id = "your-project.your_dataset.your_table_name"
 
-    Set the external source format of your table. # Note that the
+    Set the external source format of your table. Note that the
     set of allowed values for external data sources is different than the set used
     for loading data (see :class:`~google.cloud.bigquery.job.SourceFormat`).
     external_source_format = "your-source-format"
@@ -50,6 +50,7 @@ def create_table_external_data_configuration(
 
     # You have the option to set a reference_file_schema_uri, which points to
     # a reference file for the table schema
+
     # external_config.reference_file_schema_uri = "path/to/your/reference/file/schema/uri"
     # [END bigquery_create_external_table_definition]
 

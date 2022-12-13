@@ -24,7 +24,6 @@ def create_table(table_id: str) -> None:
 
     client = bigquery.Client()
 
-    # current_directory = pathlib.Path(__file__).parent
     # TODO(dev): Change table_id to the full name of the table you want to create.
     table_id = "your-project.your_dataset.your_table_name"
     # TODO(dev): Change schema_path variable to the path of your schema file.

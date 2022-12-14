@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 def get_table_make_schema(table_id: str, schema_path: str) -> None:
     orig_table_id = table_id
     orig_schema_path = schema_path

@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
+## [1.28.3](https://github.com/googleapis/python-bigquery/compare/v1.28.2...v1.28.3) (2022-12-14)
+
+
+### Bug Fixes
+
+* Fix invalid version specification of pyarrow ([#1403](https://github.com/googleapis/python-bigquery/issues/1403)) ([4812d82](https://github.com/googleapis/python-bigquery/commit/4812d82dfa5ef146bda4555c638b6f1a650e6967))
+
 ## [1.28.2](https://github.com/googleapis/python-bigquery/compare/v1.28.1...v1.28.2) (2022-06-07)
 
 

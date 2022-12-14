@@ -58,6 +58,12 @@ def avro_source_uris() -> List[str]:
 
 
 @pytest.fixture
+def reference_file_schema_uri() -> str:
+    reference_file_schema_uri = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro"
+    return reference_file_schema_uri
+
+
+@pytest.fixture
 def random_dataset_id(client: bigquery.Client) -> Iterator[str]:
     now = datetime.datetime.now()
     random_dataset_id = "example_dataset_{}_{}".format(

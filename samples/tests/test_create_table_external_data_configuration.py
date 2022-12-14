@@ -23,12 +23,15 @@ if typing.TYPE_CHECKING:
 
 def test_create_table_external_data_configuration(
     capsys: "pytest.CaptureFixture[str]",
-    random_table_id: str,
-    avro_source_uris: List[str],
-    external_source_format: str = "AVRO",
+    table_id: str,
 ) -> None:
+
+    # avro_source_uris: List[str],
+    # reference_file_schema_uri: str,
+    # external_source_format: str = "AVRO",
+
     create_table_external_data_configuration.create_table_external_data_configuration(
-        random_table_id, avro_source_uris, external_source_format
+        table_id
     )
     out, err = capsys.readouterr()
-    assert f"Created table with external source format {external_source_format}" in out
+    assert f"Created table with external source format 'AVRO'" in out

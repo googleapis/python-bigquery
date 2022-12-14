@@ -17,8 +17,6 @@ from typing import List
 
 def create_table_external_data_configuration(
     table_id: str,
-    source_uris: List[str],
-    external_source_format: str,
 ) -> None:
     """Create a table using an external data source"""
 
@@ -29,29 +27,33 @@ def create_table_external_data_configuration(
     # Construct a BigQuery client object.
     client = bigquery.Client()
 
-    """
-    TODO(developer):
-    Set table_id to the ID of the table to create.
+    # TODO(developer): Set table_id to the ID of the table to create.
     table_id = "your-project.your_dataset.your_table_name"
 
-    Set the external source format of your table. Note that the
-    set of allowed values for external data sources is different than the set used
-    for loading data (see :class:`~google.cloud.bigquery.job.SourceFormat`).
-    external_source_format = "your-source-format"
+    # TODO(developer): Set the external source format of your table.
+    # Note that the set of allowed values for external data sources is
+    # different than the set used for loading data (see :class:`~google.cloud.bigquery.job.SourceFormat`).
+    external_source_format = "AVRO"
 
-    Set the source_uris to point to your data in Google Cloud
-    source_uris = ["your", "source", "uris"]
-    """
+    # TODO(developer): Set the source_uris to point to your data in Google Cloud
+    source_uris = [
+        "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro",
+        "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro",
+        "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/c-twitter.avro",
+    ]
 
     # Create ExternalConfig object with external source format
     external_config = bigquery.ExternalConfig(external_source_format)
     # Set source_uris that point to your data in Google Cloud
     external_config.source_uris = source_uris
 
-    # You have the option to set a reference_file_schema_uri, which points to
+    # TODO(developer) You have the option to set a reference_file_schema_uri, which points to
     # a reference file for the table schema
+    reference_file_schema_uri = (
+        "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro",
+    )
 
-    # external_config.reference_file_schema_uri = "path/to/your/reference/file/schema/uri"
+    external_config.reference_file_schema_uri = reference_file_schema_uri
     # [END bigquery_create_external_table_definition]
 
     table = bigquery.Table(table_id)

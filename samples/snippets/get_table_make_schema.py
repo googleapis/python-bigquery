@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 def get_table_make_schema(table_id: str, schema_path: str) -> None:
     orig_table_id = table_id
     orig_schema_path = schema_path
@@ -19,7 +20,7 @@ def get_table_make_schema(table_id: str, schema_path: str) -> None:
 
     client = bigquery.Client()
 
-    # TODO(dev): Change table-_id to the full name of the
+    # TODO(dev): Change the table_id variable to the full name of the
     # table you want to get schema from.
     table_id = "your-project.your_dataset.your_table_name"
 

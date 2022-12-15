@@ -29,9 +29,9 @@ def create_table_external_data_configuration(
 
     # TODO(developer): Set table_id to the ID of the table to create.
     table_id = "your-project.your_dataset.your_table_name"
-    # [END bigquery_create_external_table_configuration]
+    # [END bigquery_create_table_external_data_configuration]
     table_id = orig_table_id
-    # [START bigquery_create_external_table_configuration]
+    # [START bigquery_create_table_external_data_configuration]
 
     # TODO(developer): Set the external source format of your table.
     # Note that the set of allowed values for external data sources is

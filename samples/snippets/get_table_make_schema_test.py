@@ -27,7 +27,7 @@ def test_get_table_make_schema(
     table_id: str,
     tmp_path: "pathlib.Path",
 ) -> None:
-    schema_path = tmp_path / "test_schema.json"
+    schema_path = str(tmp_path / "test_schema.json")
 
     get_table_make_schema.get_table_make_schema(table_id, schema_path)
 

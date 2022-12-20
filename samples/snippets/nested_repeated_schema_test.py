@@ -19,6 +19,7 @@ import nested_repeated_schema
 if typing.TYPE_CHECKING:
     import pytest
 
+
 def test_create_table(
     capsys: "pytest.CaptureFixture[str]",
     random_table_id: str,

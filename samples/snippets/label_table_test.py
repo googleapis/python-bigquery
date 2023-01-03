@@ -19,7 +19,7 @@ import label_table
 if typing.TYPE_CHECKING:
     import pytest
 
-# unsure what method to use here for testing
+
 def test_label_table(
     capsys: "pytest.CaptureFixture[str]",
     table_id: str,

@@ -33,5 +33,5 @@ def label_table(table_id: str) -> None:
 
     table = client.update_table(table, ["labels"])  # API request
 
-    print(f'Added {table.labels} to {table_id}.')
+    print(f"Added {table.labels} to {table_id}.")
     # [END bigquery_label_table]

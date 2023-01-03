@@ -28,5 +28,5 @@ def test_label_table(
     label_table.label_table(table_id)
 
     out, _ = capsys.readouterr()
-    assert 'color' in out
+    assert "color" in out
     assert table_id in out

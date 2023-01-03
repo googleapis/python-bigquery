@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
-
 
 def create_table_external_data_configuration(
     table_id: str,

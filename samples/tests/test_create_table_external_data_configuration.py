@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import typing
-from typing import List
 
 from .. import create_table_external_data_configuration
 
@@ -34,4 +33,4 @@ def test_create_table_external_data_configuration(
         random_table_id
     )
     out, _ = capsys.readouterr()
-    assert f"Created table with external source format AVRO" in out
+    assert "Created table with external source format AVRO" in out

@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright 2019 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    import pkg_resources
+import typing
 
-    pkg_resources.declare_namespace(__name__)
-except ImportError:
-    import pkgutil
+import label_table
 
-    __path__ = pkgutil.extend_path(__path__, __name__)  # type: ignore
+if typing.TYPE_CHECKING:
+    import pytest
+
+
+def test_label_table(
+    capsys: "pytest.CaptureFixture[str]",
+    table_id: str,
+) -> None:
+
+    label_table.label_table(table_id)
+
+    out, _ = capsys.readouterr()
+    assert "color" in out
+    assert table_id in out

@@ -208,7 +208,7 @@ def mypy_samples(session):
     # Just install the dependencies' type info directly, since "mypy --install-types"
     # might require an additional pass.
     session.install(
-        "types-mock", 
+        "types-mock",
         "types-pytz",
         "types-protobuf",
         "types-python-dateutil",
@@ -222,7 +222,7 @@ def mypy_samples(session):
         "mypy",
         "--config-file",
         str(CURRENT_DIRECTORY / "samples" / "mypy.ini"),
-        "--no-incremental", # Required by warn-unused-configs from mypy.ini to work
+        "--no-incremental",  # Required by warn-unused-configs from mypy.ini to work
         "samples/",
     )
 

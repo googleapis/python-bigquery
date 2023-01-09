@@ -1,5 +1,5 @@
 db-dtypes==1.0.5
-google-cloud-bigquery==3.3.5
+google-cloud-bigquery==3.3.6
 google-cloud-bigquery-storage==2.16.2
 google-auth-oauthlib==0.7.0
 grpcio==1.50.0

@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright 2019 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    import pkg_resources
+import typing
 
-    pkg_resources.declare_namespace(__name__)
-except ImportError:
-    import pkgutil
+import get_table_make_schema
 
-    __path__ = pkgutil.extend_path(__path__, __name__)  # type: ignore
+if typing.TYPE_CHECKING:
+    import pathlib
+
+    import pytest
+
+
+def test_get_table_make_schema(
+    capsys: "pytest.CaptureFixture[str]",
+    table_id: str,
+    tmp_path: "pathlib.Path",
+) -> None:
+    schema_path = str(tmp_path / "test_schema.json")
+
+    get_table_make_schema.get_table_make_schema(table_id, schema_path)
+
+    out, _ = capsys.readouterr()
+    assert "Got table" in out
+    assert table_id in out

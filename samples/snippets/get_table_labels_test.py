@@ -27,12 +27,9 @@ def test_get_table_labels(
     table_id: str,
     bigquery_client: bigquery.Client,
 ) -> None:
-
     table = bigquery_client.get_table(table_id)
-
     table.labels = {"color": "green"}
-
-    table = bigquery_client.update_table(table, ["labels"])
+    bigquery_client.update_table(table, ["labels"])
 
     get_table_labels.get_table_labels(table_id)
 

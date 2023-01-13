@@ -14,6 +14,8 @@
 
 import typing
 
+from google.cloud import bigquery
+
 import get_table_labels
 
 if typing.TYPE_CHECKING:
@@ -21,6 +23,25 @@ if typing.TYPE_CHECKING:
 
 
 def test_get_table_labels(
+    capsys: "pytest.CaptureFixture[str]",
+    table_id: str,
+    bigquery_client: bigquery.Client,
+) -> None:
+
+    table = bigquery_client.get_table(table_id)
+
+    table.labels = {"color": "green"}
+
+    table = bigquery_client.update_table(table, ["labels"])
+
+    get_table_labels.get_table_labels(table_id)
+
+    out, _ = capsys.readouterr()
+    assert table_id in out
+    assert "color" in out
+
+
+def test_get_table_labels_no_label(
     capsys: "pytest.CaptureFixture[str]",
     table_id: str,
 ) -> None:

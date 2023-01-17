@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright 2019 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    import pkg_resources
+import typing
 
-    pkg_resources.declare_namespace(__name__)
-except ImportError:
-    import pkgutil
+import create_table_cmek
 
-    __path__ = pkgutil.extend_path(__path__, __name__)  # type: ignore
+if typing.TYPE_CHECKING:
+    import pytest
+
+
+def test_create_table(
+    capsys: "pytest.CaptureFixture[str]",
+    random_table_id: str,
+) -> None:
+
+    kms_key_name = (
+        "projects/cloud-samples-tests/locations/us/keyRings/test/cryptoKeys/test"
+    )
+
+    create_table_cmek.create_table_cmek(random_table_id, kms_key_name)
+
+    out, _ = capsys.readouterr()
+    assert "Created" in out
+    assert random_table_id in out
+    assert kms_key_name in out

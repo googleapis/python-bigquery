@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:
     import pytest
 
 
-def test_label_table(
+def test_delete_label_table(
     capsys: "pytest.CaptureFixture[str]",
     table_id: str,
 ) -> None:

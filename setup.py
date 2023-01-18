@@ -30,30 +30,45 @@ description = "Google BigQuery API client library"
 release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
     "grpcio >= 1.47.0, < 2.0dev",  # https://github.com/googleapis/python-bigquery/issues/1262
+    "grpcio >= 1.49.1, < 2.0dev; python_version>='3.11'",
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core[grpc] >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
-    "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
-    "proto-plus >= 1.22.0, <2.0.0dev",
+    "proto-plus >= 1.15.0, <2.0.0dev",
     # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-cloud-core >= 1.4.1, <3.0.0dev",
     "google-resumable-media >= 0.6.0, < 3.0dev",
-    "packaging >= 14.3, <22.0.0dev",
+    "packaging >= 20.0.0",
     "protobuf>=3.19.5,<5.0.0dev,!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",  # For the legacy proto-based types.
     "python-dateutil >= 2.7.2, <3.0dev",
-    "pyarrow >= 3.0.0, < 10.0dev",
     "requests >= 2.21.0, < 3.0.0dev",
 ]
+pyarrow_dependency = "pyarrow >= 3.0.0"
 extras = {
     # Keep the no-op bqstorage extra for backward compatibility.
     # See: https://github.com/googleapis/python-bigquery/issues/757
-    "bqstorage": [],
-    "pandas": ["pandas>=1.0.0", "db-dtypes>=0.3.0,<2.0.0dev"],
+    "bqstorage": [
+        "google-cloud-bigquery-storage >= 2.0.0, <3.0.0dev",
+        # Due to an issue in pip's dependency resolver, the `grpc` extra is not
+        # installed, even though `google-cloud-bigquery-storage` specifies it
+        # as `google-api-core[grpc]`. We thus need to explicitly specify it here.
+        # See: https://github.com/googleapis/python-bigquery/issues/83 The
+        # grpc.Channel.close() method isn't added until 1.32.0.
+        # https://github.com/grpc/grpc/pull/15254
+        "grpcio >= 1.47.0, < 2.0dev",
+        "grpcio >= 1.49.1, < 2.0dev; python_version>='3.11'",
+        pyarrow_dependency,
+    ],
+    "pandas": [
+        "pandas>=1.1.0",
+        pyarrow_dependency,
+        "db-dtypes>=0.3.0,<2.0.0dev",
+    ],
     "ipywidgets": ["ipywidgets==7.7.1"],
-    "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.6.0, <2.0dev"],
+    "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.8.4, <2.0dev"],
     "ipython": ["ipython>=7.0.1,!=8.1.0"],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
@@ -116,6 +131,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Operating System :: OS Independent",
         "Topic :: Internet",
     ],
@@ -124,7 +140,7 @@ setuptools.setup(
     namespace_packages=namespaces,
     install_requires=dependencies,
     extras_require=extras,
-    python_requires=">=3.7, <3.11",
+    python_requires=">=3.7",
     include_package_data=True,
     zip_safe=False,
 )

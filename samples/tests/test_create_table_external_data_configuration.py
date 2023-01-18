@@ -25,10 +25,6 @@ def test_create_table_external_data_configuration(
     random_table_id: str,
 ) -> None:
 
-    # avro_source_uris: List[str],
-    # reference_file_schema_uri: str,
-    # external_source_format: str = "AVRO",
-
     create_table_external_data_configuration.create_table_external_data_configuration(
         random_table_id
     )

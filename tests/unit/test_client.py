@@ -628,7 +628,7 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "google-cloud-bigquery-storage",
         minversion=BQSTORAGE_MINIMUM_VERSION,
         reason="Requires `google-cloud-bigquery-storage`",
@@ -679,7 +679,7 @@ class TestClient(unittest.TestCase):
         ]
         assert matching_warnings, "Missing dependency warning not raised."
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "google-cloud-bigquery-storage",
         minversion=BQSTORAGE_MINIMUM_VERSION,
         reason="Requires `google-cloud-bigquery-storage`",
@@ -703,7 +703,7 @@ class TestClient(unittest.TestCase):
         ]
         assert matching_warnings, "Obsolete dependency warning not raised."
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "google-cloud-bigquery-storage",
         minversion=BQSTORAGE_MINIMUM_VERSION,
         reason="Requires `google-cloud-bigquery-storage`",
@@ -719,7 +719,7 @@ class TestClient(unittest.TestCase):
 
         self.assertIs(bqstorage_client, mock_storage_client)
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "google-cloud-bigquery-storage",
         minversion=BQSTORAGE_MINIMUM_VERSION,
         reason="Requires `google-cloud-bigquery-storage`",
@@ -812,7 +812,7 @@ class TestClient(unittest.TestCase):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "opentelemetry",
         minversion=OPENTELEMETRY_MINIMUM_VERSION,
         reason="Requires `opentelemetry`",
@@ -5524,7 +5524,7 @@ class TestClient(unittest.TestCase):
                 timeout=DEFAULT_TIMEOUT,
             )
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
@@ -5615,7 +5615,7 @@ class TestClient(unittest.TestCase):
             )
             assert call == expected_call
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
@@ -5687,7 +5687,7 @@ class TestClient(unittest.TestCase):
             )
             assert call == expected_call
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
@@ -5744,7 +5744,7 @@ class TestClient(unittest.TestCase):
         assert len(actual_calls) == 1
         assert actual_calls[0] == expected_call
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
@@ -6949,12 +6949,12 @@ class TestClientUpload(object):
         err_msg = str(exc.value)
         assert "Expected an instance of LoadJobConfig" in err_msg
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7053,12 +7053,12 @@ class TestClientUpload(object):
             # (not passed in via job_config)
             assert "description" not in field
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7106,12 +7106,12 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7169,12 +7169,12 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7233,12 +7233,12 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7293,12 +7293,12 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.parquet_options.enable_list_inference is True
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7361,12 +7361,12 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7430,12 +7430,12 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7458,12 +7458,12 @@ class TestClientUpload(object):
 
         assert "Got unexpected source_format:" in str(exc.value)
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7567,12 +7567,12 @@ class TestClientUpload(object):
             SchemaField("time_col", "TIME"),
         )
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7635,12 +7635,12 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema is None
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7705,12 +7705,12 @@ class TestClientUpload(object):
         ]
         assert sent_schema == expected_sent_schema
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7749,12 +7749,12 @@ class TestClientUpload(object):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7802,7 +7802,7 @@ class TestClientUpload(object):
             SchemaField("x", "INT64", "NULLABLE", None),
         )
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
@@ -7850,12 +7850,12 @@ class TestClientUpload(object):
             SchemaField("x", "INT64", "NULLABLE", None),
         )
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7918,12 +7918,12 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema == schema
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -7991,12 +7991,12 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema == schema
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -8062,12 +8062,12 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema == expected_schema
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -8154,12 +8154,12 @@ class TestClientUpload(object):
             SchemaField("bytes_col", "BYTES"),
         )
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -8199,12 +8199,12 @@ class TestClientUpload(object):
         assert "bq_schema contains fields not present in dataframe" in message
         assert "unknown_col" in message
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -8240,12 +8240,12 @@ class TestClientUpload(object):
         assert call_args is not None
         assert call_args.kwargs.get("parquet_compression") == "LZ4"
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -8315,12 +8315,12 @@ class TestClientUpload(object):
         assert "pyarrow 2.0.0" in msg
         assert "data corruption" in msg
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
     )
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
         reason="Requires `pyarrow`",
@@ -8368,7 +8368,7 @@ class TestClientUpload(object):
         assert sent_config.schema == schema
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",
@@ -8390,7 +8390,7 @@ class TestClientUpload(object):
         err_msg = str(exc.value)
         assert "Expected an instance of LoadJobConfig" in err_msg
 
-    @pytest.importerskip(
+    @pytest.importorskip(
         "pandas",
         minversion=PANDAS_MINIMUM_VERSION,
         reason="Requires `pandas`",

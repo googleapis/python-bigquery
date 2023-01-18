@@ -386,6 +386,7 @@ class TestBigQuery(unittest.TestCase):
         table2 = Config.CLIENT.update_table(table, ["schema"])
         self.assertEqual(policy_2, table2.schema[1].policy_tags)
 
+    @unittest.skip("https://github.com/googleapis/python-bigquery/issues/1468")
     def test_create_table_with_real_custom_policy(self):
         from google.cloud.bigquery.schema import PolicyTagList
 

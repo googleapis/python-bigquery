@@ -5,6 +5,50 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.4.2](https://github.com/googleapis/python-bigquery/compare/v3.4.1...v3.4.2) (2023-01-13)
+
+
+### Bug Fixes
+
+* Add support for python 3.11 ([#1463](https://github.com/googleapis/python-bigquery/issues/1463)) ([730a1de](https://github.com/googleapis/python-bigquery/commit/730a1dec8be49df26a3d805ebd4ad185ba72170d))
+* Require grpcio &gt;= 1.49.1 for python 3.11 ([72b25c5](https://github.com/googleapis/python-bigquery/commit/72b25c52bc4b9a92c4cb187b6230b280d4af905c))
+
+
+### Dependencies
+
+* Remove upper bound on packaging dependency ([#1440](https://github.com/googleapis/python-bigquery/issues/1440)) ([6088129](https://github.com/googleapis/python-bigquery/commit/60881296a35067e7aa025d92b2425572f10fd4ec))
+
+
+### Documentation
+
+* Create sample to write schema file from table ([#1439](https://github.com/googleapis/python-bigquery/issues/1439)) ([093cc68](https://github.com/googleapis/python-bigquery/commit/093cc6852ada29898c4a4d047fd216544ef15bba))
+* Created samples for load table and create table from schema file ([#1436](https://github.com/googleapis/python-bigquery/issues/1436)) ([8ad2e5b](https://github.com/googleapis/python-bigquery/commit/8ad2e5bc1c04bf16fffe4c8773e722b68117c916))
+* Revise create table cmek sample ([#1452](https://github.com/googleapis/python-bigquery/issues/1452)) ([57740e4](https://github.com/googleapis/python-bigquery/commit/57740e49af7418449aec73a6fdd307fcb588c655))
+* Revise get table labels code sample, add TODO to clean up snipp… ([#1464](https://github.com/googleapis/python-bigquery/issues/1464)) ([b5ccbfe](https://github.com/googleapis/python-bigquery/commit/b5ccbfe4eee91d7f481d9708084cd29d0c85e666))
+* Revise label table code samples ([#1451](https://github.com/googleapis/python-bigquery/issues/1451)) ([14ae1f2](https://github.com/googleapis/python-bigquery/commit/14ae1f20538ea00829a1325f91f5e8524234bd0c))
+* Revise sample for nested schema ([#1446](https://github.com/googleapis/python-bigquery/issues/1446)) ([a097631](https://github.com/googleapis/python-bigquery/commit/a0976318fc5ad1620a68250c3e059e2a51d4946d))
+
+## [3.4.1](https://github.com/googleapis/python-bigquery/compare/v3.4.0...v3.4.1) (2022-12-09)
+
+
+### Documentation
+
+* Add info about streaming quota limits to `insert_rows*` methods ([#1409](https://github.com/googleapis/python-bigquery/issues/1409)) ([0f08e9a](https://github.com/googleapis/python-bigquery/commit/0f08e9a8ff638e78006d71acd974de2dff89b5d9))
+
+
+### Dependencies
+
+* make pyarrow and BQ Storage optional dependencies ([e1aa921](https://github.com/googleapis/python-bigquery/commit/e1aa9218ad22f85c9a6cab8b61d013779376a582))
+
+## [3.4.0](https://github.com/googleapis/python-bigquery/compare/v3.3.6...v3.4.0) (2022-11-17)
+
+
+### Features
+
+* Add `reference_file_schema_uri` to LoadJobConfig, ExternalConfig ([#1399](https://github.com/googleapis/python-bigquery/issues/1399)) ([931285f](https://github.com/googleapis/python-bigquery/commit/931285ff85842ab07a0ef2ff9db808181ea3c5e4))
+* Add default value expression ([#1408](https://github.com/googleapis/python-bigquery/issues/1408)) ([207aa50](https://github.com/googleapis/python-bigquery/commit/207aa506ab634bdb13256fa5bd8745ec9de23290))
+* Add More Specific Type Annotations for Row Dictionaries ([#1295](https://github.com/googleapis/python-bigquery/issues/1295)) ([eb49873](https://github.com/googleapis/python-bigquery/commit/eb49873176dee478617eb50472d44703abca53b5))
+
 ## [3.3.6](https://github.com/googleapis/python-bigquery/compare/v3.3.4...v3.3.6) (2022-11-02)
 
 

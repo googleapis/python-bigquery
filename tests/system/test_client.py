@@ -54,6 +54,10 @@ from test_utils.system import unique_resource_id
 
 from . import helpers
 
+# declare the minimum versions of optional dependencies necessary for testing.
+BQSTORAGE_MINIMUM_VERSION = pkg_resources.parse_version("2.0.0")
+PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("3.0.0")
+
 try:
     from google.cloud import bigquery_storage
 except ImportError:  # pragma: NO COVER
@@ -1694,10 +1698,16 @@ class TestBigQuery(unittest.TestCase):
         row_tuples = [r.values() for r in rows]
         self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    @pytest.importorskip(
+        "google-cloud-bigquery-storage",
+        minversion=BQSTORAGE_MINIMUM_VERSION,
+        reason="Requires `google-cloud-bigquery-storage`",
     )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @pytest.importorskip(
+        "pyarrow",
+        minversion=PYARROW_MINIMUM_VERSION,
+        reason="Requires `pyarrow`",
+    )
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
@@ -1756,8 +1766,10 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertEqual(list(rows), [])
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    @pytest.importorskip(
+        "google-cloud-bigquery-storage",
+        minversion=BQSTORAGE_MINIMUM_VERSION,
+        reason="Requires `google-cloud-bigquery-storage`",
     )
     def test_dbapi_connection_does_not_leak_sockets(self):
         current_process = psutil.Process()
@@ -2226,9 +2238,15 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(found[7], e_favtime)
             self.assertEqual(found[8], decimal.Decimal(expected["FavoriteNumber"]))
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    @pytest.importorskip(
+        "pyarrow",
+        minversion=PYARROW_MINIMUM_VERSION,
+        reason="Requires `pyarrow`",
+    )
+    @pytest.importorskip(
+        "google-cloud-bigquery-storage",
+        minversion=BQSTORAGE_MINIMUM_VERSION,
+        reason="Requires `google-cloud-bigquery-storage`",
     )
     def test_nested_table_to_arrow(self):
         from google.cloud.bigquery.job import SourceFormat

@@ -18,6 +18,12 @@ import decimal
 import unittest
 
 import mock
+import pkg_resources
+import pytest
+
+# declare the minimum versions of optional dependencies necessary for testing.
+BQSTORAGE_MINIMUM_VERSION = pkg_resources.parse_version("2.0.0")
+PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("3.0.0")
 
 try:
     from google.cloud import bigquery_storage  # type: ignore
@@ -29,8 +35,11 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
-
-@unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")
+@pytest.importorskip(
+    "google-cloud-bigquery-storage",
+    minversion=BQSTORAGE_MINIMUM_VERSION,
+    reason="Requires `google-cloud-bigquery-storage`",
+)
 class TestBQStorageVersions(unittest.TestCase):
     def tearDown(self):
         from google.cloud.bigquery import _helpers
@@ -100,7 +109,11 @@ class TestBQStorageVersions(unittest.TestCase):
             assert not versions.is_read_session_optional
 
 
-@unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+@pytest.importorskip(
+    "pyarrow",
+    minversion=PYARROW_MINIMUM_VERSION,
+    reason="Requires `pyarrow`",
+)
 class TestPyarrowVersions(unittest.TestCase):
     def tearDown(self):
         from google.cloud.bigquery import _helpers

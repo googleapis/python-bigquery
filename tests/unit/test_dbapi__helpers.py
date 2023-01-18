@@ -21,6 +21,9 @@ import unittest
 
 import pytest
 
+# declare the minimum versions of optional dependencies necessary for testing.
+PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("3.0.0")
+
 try:
     import pyarrow
 except ImportError:  # pragma: NO COVER
@@ -215,7 +218,11 @@ class TestToBqTableRows(unittest.TestCase):
         result = _helpers.to_bq_table_rows(rows_iterable)
         self.assertEqual(list(result), [])
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @pytest.importorskip(
+        "pyarrow",
+        minversion=PYARROW_MINIMUM_VERSION,
+        reason="Requires `pyarrow`",
+    )
     def test_non_empty_iterable(self):
         rows_iterable = [
             dict(

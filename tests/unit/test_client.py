@@ -32,6 +32,12 @@ import requests
 import pytest
 import pkg_resources
 
+# declare the minimum versions of optional dependencies necessary for testing.
+BQSTORAGE_MINIMUM_VERSION = pkg_resources.parse_version("2.0.0")
+OPENTELEMETRY_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
+PANDAS_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
+PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("3.0.0")
+
 try:
     import pandas
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -74,11 +80,6 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     bigquery_storage = None
 from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
-
-BQSTORAGE_MINIMUM_VERSION = pkg_resources.parse_version("2.0.0")
-PANDAS_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
-OPENTELEMETRY_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
-PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("3.0.0")
 
 if pandas is not None:
     PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version

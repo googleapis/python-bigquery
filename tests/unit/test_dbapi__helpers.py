@@ -20,6 +20,7 @@ import re
 import unittest
 
 import pytest
+import pkg_resources
 
 # declare the minimum versions of optional dependencies necessary for testing.
 PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("3.0.0")

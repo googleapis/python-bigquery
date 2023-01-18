@@ -2287,7 +2287,6 @@ class TestRowIterator(unittest.TestCase):
         ]
         assert matching_warnings, "Obsolete dependency warning not raised."
 
-
     @pytest.importorskip(
         "pyarrow",
         minversion=PYARROW_MINIMUM_VERSION,
@@ -3583,7 +3582,6 @@ class TestRowIterator(unittest.TestCase):
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(len(df), 0)  # verify the number of rows
         self.assertEqual(list(df), ["name", "age"])  # verify the column names
-
 
     @pytest.importorskip(
         "pandas",

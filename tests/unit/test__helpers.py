@@ -35,6 +35,7 @@ try:
 except ImportError:  # pragma: NO COVER
     pyarrow = None
 
+
 @pytest.importorskip(
     "google-cloud-bigquery-storage",
     minversion=BQSTORAGE_MINIMUM_VERSION,

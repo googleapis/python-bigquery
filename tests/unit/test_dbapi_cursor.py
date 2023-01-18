@@ -17,6 +17,8 @@ import operator as op
 import unittest
 
 import pytest
+import pkg_resources
+
 
 # declare the minimum versions of optional dependencies necessary for testing.
 BQSTORAGE_MINIMUM_VERSION = pkg_resources.parse_version("2.0.0")

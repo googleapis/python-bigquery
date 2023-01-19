@@ -45,7 +45,6 @@ from google.cloud.bigquery import dbapi, enums
 from google.cloud import storage
 from google.cloud.datacatalog_v1 import types as datacatalog_types
 from google.cloud.datacatalog_v1 import PolicyTagManagerClient
-import pkg_resources
 import psutil
 import pytest
 from test_utils.retry import RetryErrors
@@ -54,10 +53,6 @@ from test_utils.retry import RetryResult
 from test_utils.system import unique_resource_id
 
 from . import helpers
-
-# declare the minimum versions of optional dependencies necessary for testing.
-BQSTORAGE_MINIMUM_VERSION = pkg_resources.parse_version("2.0.0")
-PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("3.0.0")
 
 try:
     from google.cloud import bigquery_storage

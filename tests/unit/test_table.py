@@ -42,24 +42,6 @@ except ImportError:  # pragma: NO COVER
 
 from google.cloud.bigquery import _helpers
 
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
-PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
-
-if pyarrow:
-    import pyarrow.types
-
-    PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
-
-
-try:
-    import tqdm
-    from tqdm.std import TqdmDeprecationWarning
-
-except (ImportError, AttributeError):  # pragma: NO COVER
-    tqdm = None
-
-PYARROW_TIMESTAMP_VERSION = pkg_resources.parse_version("2.0.0")
-
 
 def _mock_client():
     from google.cloud.bigquery import client
@@ -1915,14 +1897,14 @@ class Test_EmptyRowIterator(unittest.TestCase):
             row_iterator.to_arrow()
 
     def test_to_arrow(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         row_iterator = self._make_one()
         tbl = row_iterator.to_arrow()
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 0)
 
     def test_to_arrow_iterable(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         row_iterator = self._make_one()
         arrow_iter = row_iterator.to_arrow_iterable()
 
@@ -1941,7 +1923,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
             row_iterator.to_dataframe()
 
     def test_to_dataframe(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         row_iterator = self._make_one()
         df = row_iterator.to_dataframe(create_bqstorage_client=False)
         self.assertIsInstance(df, pandas.DataFrame)
@@ -1954,7 +1936,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
             row_iterator.to_dataframe_iterable()
 
     def test_to_dataframe_iterable(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         row_iterator = self._make_one()
         df_iter = row_iterator.to_dataframe_iterable()
 
@@ -1979,7 +1961,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
 
     def test_to_geodataframe(self):
-        pytest.importorskip("geopandas")
+        geopandas = pytest.importorskip("geopandas")
         row_iterator = self._make_one()
         df = row_iterator.to_geodataframe(create_bqstorage_client=False)
         self.assertIsInstance(df, geopandas.GeoDataFrame)
@@ -2247,7 +2229,7 @@ class TestRowIterator(unittest.TestCase):
         assert matching_warnings, "Obsolete dependency warning not raised."
 
     def test_to_arrow_iterable(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2348,7 +2330,7 @@ class TestRowIterator(unittest.TestCase):
         )
 
     def test_to_arrow_iterable_w_bqstorage(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google-cloud-bigquery-storage")
 
         from google.cloud.bigquery import schema
@@ -2426,7 +2408,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     def test_to_arrow(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2508,7 +2490,7 @@ class TestRowIterator(unittest.TestCase):
         )
 
     def test_to_arrow_w_nulls(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [SchemaField("name", "STRING"), SchemaField("age", "INTEGER")]
@@ -2541,7 +2523,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(ages, [32, 29, None, 111])
 
     def test_to_arrow_w_unknown_type(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2584,7 +2566,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertTrue("sport" in str(warning))
 
     def test_to_arrow_w_empty_table(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2811,7 +2793,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_called_once()
 
     def test_to_arrow_ensure_bqstorage_client_wo_bqstorage(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2930,7 +2912,7 @@ class TestRowIterator(unittest.TestCase):
             row_iterator.to_arrow()
 
     def test_to_dataframe_iterable(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2972,7 +2954,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df_2["age"][0], 33)
 
     def test_to_dataframe_iterable_with_dtypes(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3014,7 +2996,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df_2["age"][0], 33)
 
     def test_to_dataframe_iterable_w_bqstorage(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         pytest.importorskip("pyarrow")
         pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
@@ -3084,7 +3066,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     def test_to_dataframe_iterable_w_bqstorage_max_results_warning(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
 
@@ -3154,7 +3136,7 @@ class TestRowIterator(unittest.TestCase):
             row_iterator.to_dataframe_iterable()
 
     def test_to_dataframe(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3180,7 +3162,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.age.dtype.name, "Int64")
 
     def test_to_dataframe_timestamp_out_of_pyarrow_bounds(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3208,7 +3190,7 @@ class TestRowIterator(unittest.TestCase):
         )
 
     def test_to_dataframe_datetime_out_of_pyarrow_bounds(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3237,7 +3219,7 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_progress_bar(
         self, tqdm_mock, tqdm_notebook_mock, tqdm_gui_mock
     ):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         pytest.importorskip("tqdm")
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3274,7 +3256,7 @@ class TestRowIterator(unittest.TestCase):
 
     @mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm", new=None)
     def test_to_dataframe_no_tqdm_no_progress_bar(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3302,7 +3284,7 @@ class TestRowIterator(unittest.TestCase):
 
     @mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm", new=None)
     def test_to_dataframe_no_tqdm(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3338,8 +3320,9 @@ class TestRowIterator(unittest.TestCase):
     @mock.patch("tqdm.notebook.tqdm", new=None)  # will raise TypeError on call
     @mock.patch("tqdm.tqdm", new=None)  # will raise TypeError on call
     def test_to_dataframe_tqdm_error(self):
-        pytest.importorskip("pandas")
-        pytest.importorskip("tqdm")
+        pandas = pytest.importorskip("pandas")
+        tqdm = pytest.importorskip("tqdm")
+        from tqdm.std import TqdmDeprecationWarning
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3375,7 +3358,7 @@ class TestRowIterator(unittest.TestCase):
                 )
 
     def test_to_dataframe_w_empty_results(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3392,7 +3375,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(list(df), ["name", "age"])  # verify the column names
 
     def test_to_dataframe_w_various_types_nullable(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         import datetime
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3433,7 +3416,7 @@ class TestRowIterator(unittest.TestCase):
                 self.assertIsInstance(row.date, datetime.date)
 
     def test_to_dataframe_column_dtypes(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3482,7 +3465,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.date.dtype.name, "dbdate")
 
     def test_to_dataframe_datetime_objects(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         # When converting date or timestamp values to nanosecond
         # precision, the result can be out of pyarrow bounds. To avoid
         # the error when converting to Pandas, we use object type if
@@ -3532,7 +3515,7 @@ class TestRowIterator(unittest.TestCase):
 
     @mock.patch("google.cloud.bigquery.table.shapely", new=None)
     def test_to_dataframe_error_if_shapely_is_none(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         with self.assertRaisesRegex(
             ValueError,
             re.escape(
@@ -3543,7 +3526,7 @@ class TestRowIterator(unittest.TestCase):
             self._make_one_from_data().to_dataframe(geography_as_object=True)
 
     def test_to_dataframe_max_results_w_bqstorage_warning(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3579,7 +3562,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(len(matches), 1, msg="User warning was not emitted.")
 
     def test_to_dataframe_max_results_w_explicit_bqstorage_client_warning(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3620,7 +3603,7 @@ class TestRowIterator(unittest.TestCase):
         mock_client._ensure_bqstorage_client.assert_not_called()
 
     def test_to_dataframe_max_results_w_create_bqstorage_client_no_warning(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3657,7 +3640,7 @@ class TestRowIterator(unittest.TestCase):
         mock_client._ensure_bqstorage_client.assert_not_called()
 
     def test_to_dataframe_w_bqstorage_creates_client(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
@@ -3686,8 +3669,8 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_called_once()
 
     def test_to_dataframe_w_bqstorage_no_streams(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pandas")
+        pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
 
@@ -3738,7 +3721,8 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_bqstorage_empty_streams(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pandas")
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
         from google.cloud.bigquery_storage_v1 import reader
@@ -3791,7 +3775,7 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_bqstorage_nonempty(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pandas")
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
         from google.cloud.bigquery_storage_v1 import reader
@@ -3869,7 +3853,7 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_bqstorage_multiple_streams_return_unique_index(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pandas")
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
         from google.cloud.bigquery_storage_v1 import reader
@@ -3922,7 +3906,7 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_bqstorage_updates_progress_bar(self, tqdm_mock):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pandas")
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("tqdm")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
@@ -3998,7 +3982,7 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_bqstorage_exits_on_keyboardinterrupt(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pandas")
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
         from google.cloud.bigquery_storage_v1 import reader
@@ -4082,7 +4066,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertLessEqual(mock_page.to_dataframe.call_count, 2)
 
     def test_to_dataframe_tabledata_list_w_multiple_pages_return_unique_index(self):
-        pytest.importorskip("pandas")
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
 
@@ -4116,6 +4100,7 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_bqstorage_raises_auth_error(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pandas")
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery import table as mut
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
@@ -4172,7 +4157,8 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_concat_categorical_dtype_w_pyarrow(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pandas")
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
         from google.cloud.bigquery_storage_v1 import reader
@@ -4281,7 +4267,8 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     def test_to_dataframe_geography_as_object(self):
-        pytest.importorskip("geopandas")
+        pandas = pytest.importorskip("pandas")
+        geopandas = pytest.importorskip("geopandas")
         row_iterator = self._make_one_from_data(
             (("name", "STRING"), ("geog", "GEOGRAPHY")),
             (
@@ -4316,7 +4303,7 @@ class TestRowIterator(unittest.TestCase):
             self._make_one_from_data().to_geodataframe()
 
     def test_to_geodataframe(self):
-        pytest.importorskip("geopandas")
+        geopandas = pytest.importorskip("geopandas")
         row_iterator = self._make_one_from_data(
             (("name", "STRING"), ("geog", "GEOGRAPHY")),
             (
@@ -4391,7 +4378,8 @@ class TestRowIterator(unittest.TestCase):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
 
     def test_to_geodataframe_w_geography_column(self):
-        pytest.importorskip("geopandas")
+        pandas = pytest.importorskip("pandas")
+        geopandas = pytest.importorskip("geopandas")
         row_iterator = self._make_one_from_data(
             (("name", "STRING"), ("geog", "GEOGRAPHY"), ("geog2", "GEOGRAPHY")),
             (
@@ -4438,13 +4426,14 @@ class TestRowIterator(unittest.TestCase):
 
     @mock.patch("google.cloud.bigquery.table.RowIterator.to_dataframe")
     def test_rowiterator_to_geodataframe_delegation(self, to_dataframe):
-        pytest.importorskip("geopandas")
         """
         RowIterator.to_geodataframe just delegates to RowIterator.to_dataframe.
 
         This test just demonstrates that. We don't need to test all the
         variations, which are tested for to_dataframe.
         """
+        pandas = pytest.importorskip("pandas")
+        geopandas = pytest.importorskip("geopandas")
         import numpy
         from shapely import wkt
 

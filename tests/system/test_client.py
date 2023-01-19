@@ -45,6 +45,7 @@ from google.cloud.bigquery import dbapi, enums
 from google.cloud import storage
 from google.cloud.datacatalog_v1 import types as datacatalog_types
 from google.cloud.datacatalog_v1 import PolicyTagManagerClient
+import pkg_resources
 import psutil
 import pytest
 from test_utils.retry import RetryErrors

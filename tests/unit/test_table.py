@@ -2403,6 +2403,8 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow(self):
         pyarrow = pytest.importorskip("pyarrow")
+        pyarrow.types = pytest.importorskip("pyarrow.types")
+
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2796,6 +2798,8 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow_ensure_bqstorage_client_wo_bqstorage(self):
         pyarrow = pytest.importorskip("pyarrow")
+        pyarrow.types = pytest.importorskip("pyarrow.types")
+
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2826,10 +2830,11 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(tbl.num_rows, 2)
 
     def test_to_arrow_w_bqstorage_no_streams(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         session = bigquery_storage.types.ReadSession()

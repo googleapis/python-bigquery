@@ -18,17 +18,7 @@ import unittest
 
 import pytest
 
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
 from google.api_core import exceptions
-
-try:
-    from google.cloud import bigquery_storage
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
 
 from tests.unit.helpers import _to_pyarrow
 
@@ -76,6 +66,8 @@ class TestCursor(unittest.TestCase):
         return mock_client
 
     def _mock_bqstorage_client(self, rows=None, stream_count=0):
+        from google.cloud import bigquery_storage
+
         if rows is None:
             rows = []
 
@@ -391,6 +383,7 @@ class TestCursor(unittest.TestCase):
     def test_fetchall_w_bqstorage_client_no_arrow_compression(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pyarrow")
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table
 

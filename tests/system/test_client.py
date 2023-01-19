@@ -54,16 +54,6 @@ from test_utils.system import unique_resource_id
 
 from . import helpers
 
-try:
-    from google.cloud import bigquery_storage
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
-
-try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
 
 JOB_TIMEOUT = 120  # 2 minutes
 DATA_PATH = pathlib.Path(__file__).parent.parent / "data"
@@ -1697,6 +1687,8 @@ class TestBigQuery(unittest.TestCase):
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pyarrow")
+        from google.cloud import bigquery_storage
+
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
@@ -2225,6 +2217,8 @@ class TestBigQuery(unittest.TestCase):
     def test_nested_table_to_arrow(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow.types")
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery.job import SourceFormat
         from google.cloud.bigquery.job import WriteDisposition
 

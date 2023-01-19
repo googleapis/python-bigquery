@@ -20,16 +20,6 @@ import unittest
 import mock
 import pytest
 
-try:
-    from google.cloud import bigquery_storage  # type: ignore
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
-
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
 
 class TestBQStorageVersions(unittest.TestCase):
     pytest.importorskip("google-cloud-bigquery-storage")

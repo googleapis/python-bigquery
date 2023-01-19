@@ -32,10 +32,6 @@ import requests
 import pytest
 import pkg_resources
 
-try:
-    import pandas
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pandas = None
 
 try:
     import opentelemetry
@@ -54,10 +50,6 @@ if opentelemetry is not None:
         msg = "Error importing from opentelemetry, is the installed version compatible?"
         raise ImportError(msg) from exc
 
-try:
-    import pyarrow
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pyarrow = None
 
 import google.api_core.exceptions
 from google.api_core import client_info
@@ -68,10 +60,6 @@ from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 from google.cloud.bigquery import ParquetOptions
 
-try:
-    from google.cloud import bigquery_storage
-except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage = None
 from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
 
@@ -625,6 +613,8 @@ class TestClient(unittest.TestCase):
 
     def test_ensure_bqstorage_client_creating_new_instance(self):
         pytest.importorskip("google-cloud-bigquery-storage")
+        from google.cloud import bigquery_storage
+
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client_instance = object()
         mock_client.return_value = mock_client_instance

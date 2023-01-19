@@ -50,15 +50,6 @@ if pyarrow:
 
     PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
 
-try:
-    import pandas
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pandas = None
-
-try:
-    import geopandas
-except (ImportError, AttributeError):  # pragma: NO COVER
-    geopandas = None
 
 try:
     import tqdm

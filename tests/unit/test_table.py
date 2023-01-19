@@ -31,15 +31,6 @@ from test_utils.imports import maybe_fail_import
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
-try:
-    from google.cloud import bigquery_storage
-    from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
-        grpc as big_query_read_grpc_transport,
-    )
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
-    big_query_read_grpc_transport = None
-
 from google.cloud.bigquery import _helpers
 
 
@@ -2332,10 +2323,13 @@ class TestRowIterator(unittest.TestCase):
     def test_to_arrow_iterable_w_bqstorage(self):
         pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google-cloud-bigquery-storage")
-
+        from google.cloud import bigquery_storage
+        from google.cloud.bigquery_storage_v1 import reader
+        from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+            grpc as big_query_read_grpc_transport,
+        )
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
-        from google.cloud.bigquery_storage_v1 import reader
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         bqstorage_client._transport = mock.create_autospec(
@@ -2685,11 +2679,15 @@ class TestRowIterator(unittest.TestCase):
         mock_client._ensure_bqstorage_client.assert_not_called()
 
     def test_to_arrow_w_bqstorage(self):
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery_storage_v1 import reader
+        from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+            grpc as big_query_read_grpc_transport,
+        )
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         bqstorage_client._transport = mock.create_autospec(
@@ -2768,6 +2766,10 @@ class TestRowIterator(unittest.TestCase):
         pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
+        from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+            grpc as big_query_read_grpc_transport,
+        )
 
         mock_client = _mock_client()
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
@@ -2997,11 +2999,15 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_dataframe_iterable_w_bqstorage(self):
         pandas = pytest.importorskip("pandas")
-        pytest.importorskip("pyarrow")
+        pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery_storage_v1 import reader
+        from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+            grpc as big_query_read_grpc_transport,
+        )
 
         arrow_fields = [
             pyarrow.field("colA", pyarrow.int64()),
@@ -3067,8 +3073,10 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_dataframe_iterable_w_bqstorage_max_results_warning(self):
         pandas = pytest.importorskip("pandas")
+        pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
 
@@ -3644,6 +3652,10 @@ class TestRowIterator(unittest.TestCase):
         pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
+        from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+            grpc as big_query_read_grpc_transport,
+        )
 
         mock_client = _mock_client()
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
@@ -3673,6 +3685,7 @@ class TestRowIterator(unittest.TestCase):
         pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         session = bigquery_storage.types.ReadSession()
@@ -3700,6 +3713,7 @@ class TestRowIterator(unittest.TestCase):
         pytest.importorskip("pandas")
         pytest.importorskip("pyarrow")
         from google.cloud.bigquery.table import Table
+        from google.cloud import bigquery_storage
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         session = bigquery_storage.types.ReadSession()
@@ -3778,7 +3792,11 @@ class TestRowIterator(unittest.TestCase):
         pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery_storage_v1 import reader
+        from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+            grpc as big_query_read_grpc_transport,
+        )
 
         arrow_fields = [
             pyarrow.field("colA", pyarrow.int64()),
@@ -4161,7 +4179,11 @@ class TestRowIterator(unittest.TestCase):
         from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery_storage_v1 import reader
+        from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+            grpc as big_query_read_grpc_transport,
+        )
 
         arrow_fields = [
             # Not alphabetical to test column order.

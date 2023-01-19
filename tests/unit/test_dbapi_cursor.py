@@ -284,17 +284,9 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0], (1,))
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_fetchall_w_bqstorage_client_fetch_success(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table
 
@@ -347,12 +339,8 @@ class TestCursor(unittest.TestCase):
 
         self.assertEqual(sorted_row_data, expected_row_data)
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
     def test_fetchall_w_bqstorage_client_fetch_no_rows(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import dbapi
 
         mock_client = self._mock_client(rows=[])
@@ -374,12 +362,8 @@ class TestCursor(unittest.TestCase):
         # check the data returned
         self.assertEqual(rows, [])
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
     def test_fetchall_w_bqstorage_client_fetch_error_no_fallback(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table
 
@@ -410,17 +394,9 @@ class TestCursor(unittest.TestCase):
         # the default client was not used
         mock_client.list_rows.assert_not_called()
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_fetchall_w_bqstorage_client_no_arrow_compression(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery import dbapi
         from google.cloud.bigquery import table
 

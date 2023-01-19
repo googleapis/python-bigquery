@@ -36,12 +36,9 @@ except ImportError:  # pragma: NO COVER
     pyarrow = None
 
 
-@pytest.importorskip(
-    "google-cloud-bigquery-storage",
-    minversion=BQSTORAGE_MINIMUM_VERSION,
-    reason="Requires `google-cloud-bigquery-storage`",
-)
 class TestBQStorageVersions(unittest.TestCase):
+    pytest.importorskip("google-cloud-bigquery-storage")
+
     def tearDown(self):
         from google.cloud.bigquery import _helpers
 
@@ -110,12 +107,9 @@ class TestBQStorageVersions(unittest.TestCase):
             assert not versions.is_read_session_optional
 
 
-@pytest.importorskip(
-    "pyarrow",
-    minversion=PYARROW_MINIMUM_VERSION,
-    reason="Requires `pyarrow`",
-)
 class TestPyarrowVersions(unittest.TestCase):
+    pytest.importorskip("pyarrow")
+
     def tearDown(self):
         from google.cloud.bigquery import _helpers
 

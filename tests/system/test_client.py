@@ -1699,17 +1699,9 @@ class TestBigQuery(unittest.TestCase):
         row_tuples = [r.values() for r in rows]
         self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("pyarrow")
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
@@ -1767,12 +1759,8 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertEqual(list(rows), [])
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
     def test_dbapi_connection_does_not_leak_sockets(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         current_process = psutil.Process()
         conn_count_start = len(current_process.connections())
 
@@ -2239,17 +2227,9 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(found[7], e_favtime)
             self.assertEqual(found[8], decimal.Decimal(expected["FavoriteNumber"]))
 
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
     def test_nested_table_to_arrow(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.job import SourceFormat
         from google.cloud.bigquery.job import WriteDisposition
 

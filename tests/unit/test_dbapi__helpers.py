@@ -20,21 +20,11 @@ import re
 import unittest
 
 import pytest
-import pkg_resources
-
-# declare the minimum versions of optional dependencies necessary for testing.
-PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("3.0.0")
-
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
 
 import google.cloud._helpers
 from google.cloud.bigquery import query, table
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.dbapi import exceptions
-from tests.unit.helpers import _to_pyarrow
 
 
 class TestQueryParameters(unittest.TestCase):
@@ -219,12 +209,10 @@ class TestToBqTableRows(unittest.TestCase):
         result = _helpers.to_bq_table_rows(rows_iterable)
         self.assertEqual(list(result), [])
 
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_non_empty_iterable(self):
+        pytest.importorskip("pyarrow")
+        from tests.unit.helpers import _to_pyarrow
+
         rows_iterable = [
             dict(
                 one=_to_pyarrow(1.1),

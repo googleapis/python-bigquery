@@ -32,12 +32,6 @@ import requests
 import pytest
 import pkg_resources
 
-# declare the minimum versions of optional dependencies necessary for testing.
-BQSTORAGE_MINIMUM_VERSION = pkg_resources.parse_version("2.0.0")
-OPENTELEMETRY_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
-PANDAS_MINIMUM_VERSION = pkg_resources.parse_version("1.0.0")
-PYARROW_MINIMUM_VERSION = pkg_resources.parse_version("3.0.0")
-
 try:
     import pandas
 except (ImportError, AttributeError):  # pragma: NO COVER
@@ -629,12 +623,8 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
     def test_ensure_bqstorage_client_creating_new_instance(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client_instance = object()
         mock_client.return_value = mock_client_instance
@@ -680,12 +670,8 @@ class TestClient(unittest.TestCase):
         ]
         assert matching_warnings, "Missing dependency warning not raised."
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
     def test_ensure_bqstorage_client_obsolete_dependency(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 
         creds = _make_credentials()
@@ -704,12 +690,8 @@ class TestClient(unittest.TestCase):
         ]
         assert matching_warnings, "Obsolete dependency warning not raised."
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
     def test_ensure_bqstorage_client_existing_client_check_passes(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         mock_storage_client = mock.sentinel.mock_storage_client
@@ -720,12 +702,8 @@ class TestClient(unittest.TestCase):
 
         self.assertIs(bqstorage_client, mock_storage_client)
 
-    @pytest.importorskip(
-        "google-cloud-bigquery-storage",
-        minversion=BQSTORAGE_MINIMUM_VERSION,
-        reason="Requires `google-cloud-bigquery-storage`",
-    )
     def test_ensure_bqstorage_client_existing_client_check_fails(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 
         creds = _make_credentials()
@@ -813,12 +791,8 @@ class TestClient(unittest.TestCase):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @pytest.importorskip(
-        "opentelemetry",
-        minversion=OPENTELEMETRY_MINIMUM_VERSION,
-        reason="Requires `opentelemetry`",
-    )
     def test_span_status_is_set(self):
+        pytest.importorskip("opentelemetry")
         from google.cloud.bigquery.routine import Routine
 
         tracer_provider = TracerProvider()
@@ -5525,12 +5499,8 @@ class TestClient(unittest.TestCase):
                 timeout=DEFAULT_TIMEOUT,
             )
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
     def test_insert_rows_from_dataframe(self):
+        pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -5616,12 +5586,8 @@ class TestClient(unittest.TestCase):
             )
             assert call == expected_call
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
     def test_insert_rows_from_dataframe_nan(self):
+        pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -5688,12 +5654,8 @@ class TestClient(unittest.TestCase):
             )
             assert call == expected_call
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
     def test_insert_rows_from_dataframe_many_columns(self):
+        pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -5745,12 +5707,8 @@ class TestClient(unittest.TestCase):
         assert len(actual_calls) == 1
         assert actual_calls[0] == expected_call
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
     def test_insert_rows_from_dataframe_w_explicit_none_insert_ids(self):
+        pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -6950,17 +6908,9 @@ class TestClientUpload(object):
         err_msg = str(exc.value)
         assert "Expected an instance of LoadJobConfig" in err_msg
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import PolicyTagList, SchemaField
@@ -7054,17 +7004,9 @@ class TestClientUpload(object):
             # (not passed in via job_config)
             assert "description" not in field
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_client_location(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7107,17 +7049,9 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_custom_job_config_wihtout_source_format(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7170,17 +7104,9 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_custom_job_config_w_source_format(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7234,17 +7160,9 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_parquet_options_none(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7294,17 +7212,9 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.parquet_options.enable_list_inference is True
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_list_inference_none(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7362,17 +7272,9 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_list_inference_false(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7431,17 +7333,9 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_custom_job_config_w_wrong_source_format(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery import job
 
         client = self._make_client()
@@ -7459,17 +7353,9 @@ class TestClientUpload(object):
 
         assert "Got unexpected source_format:" in str(exc.value)
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_automatic_schema(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7568,17 +7454,9 @@ class TestClientUpload(object):
             SchemaField("time_col", "TIME"),
         )
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_automatic_schema_detection_fails(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
 
@@ -7636,17 +7514,9 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema is None
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_index_and_auto_schema(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7706,17 +7576,9 @@ class TestClientUpload(object):
         ]
         assert sent_schema == expected_sent_schema
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_unknown_table(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
 
         client = self._make_client()
@@ -7750,17 +7612,9 @@ class TestClientUpload(object):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7803,12 +7657,8 @@ class TestClientUpload(object):
             SchemaField("x", "INT64", "NULLABLE", None),
         )
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
     def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
+        pytest.importorskip("pandas")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7851,17 +7701,9 @@ class TestClientUpload(object):
             SchemaField("x", "INT64", "NULLABLE", None),
         )
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_struct_fields(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7919,21 +7761,13 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema == schema
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_array_fields(self):
         """Test that a DataFrame with array columns can be uploaded correctly.
 
         See: https://github.com/googleapis/python-bigquery/issues/19
         """
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7992,21 +7826,13 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema == schema
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_array_fields_w_auto_schema(self):
         """Test that a DataFrame with array columns can be uploaded correctly.
 
         See: https://github.com/googleapis/python-bigquery/issues/19
         """
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8063,17 +7889,9 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema == expected_schema
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_partial_schema(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8155,17 +7973,9 @@ class TestClientUpload(object):
             SchemaField("bytes_col", "BYTES"),
         )
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_partial_schema_extra_types(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
 
@@ -8200,17 +8010,9 @@ class TestClientUpload(object):
         assert "bq_schema contains fields not present in dataframe" in message
         assert "unknown_col" in message
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_schema_arrow_custom_compression(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
 
@@ -8241,17 +8043,9 @@ class TestClientUpload(object):
         assert call_args is not None
         assert call_args.kwargs.get("parquet_compression") == "LZ4"
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_wo_pyarrow_raises_error(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         client = self._make_client()
         records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
         dataframe = pandas.DataFrame(records)
@@ -8316,22 +8110,14 @@ class TestClientUpload(object):
         assert "pyarrow 2.0.0" in msg
         assert "data corruption" in msg
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
-    @pytest.importorskip(
-        "pyarrow",
-        minversion=PYARROW_MINIMUM_VERSION,
-        reason="Requires `pyarrow`",
-    )
     def test_load_table_from_dataframe_w_nulls(self):
         """Test that a DataFrame with null columns can be uploaded if a
         BigQuery schema is specified.
 
         See: https://github.com/googleapis/google-cloud-python/issues/7370
         """
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -8369,12 +8155,8 @@ class TestClientUpload(object):
         assert sent_config.schema == schema
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
     def test_load_table_from_dataframe_w_invaild_job_config(self):
+        pytest.importorskip("pandas")
         from google.cloud.bigquery import job
 
         client = self._make_client()
@@ -8391,12 +8173,8 @@ class TestClientUpload(object):
         err_msg = str(exc.value)
         assert "Expected an instance of LoadJobConfig" in err_msg
 
-    @pytest.importorskip(
-        "pandas",
-        minversion=PANDAS_MINIMUM_VERSION,
-        reason="Requires `pandas`",
-    )
     def test_load_table_from_dataframe_with_csv_source_format(self):
+        pytest.importorskip("pandas")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField

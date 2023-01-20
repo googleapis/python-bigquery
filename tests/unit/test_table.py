@@ -22,7 +22,6 @@ import unittest
 import warnings
 
 import mock
-import pkg_resources
 import pytest
 
 import google.api_core.exceptions
@@ -2869,10 +2868,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(actual_table.schema[1].name, "colC")
         self.assertEqual(actual_table.schema[2].name, "colB")
 
-    @mock.patch("tqdm.tqdm_gui")
-    @mock.patch("tqdm.notebook.tqdm")
-    @mock.patch("tqdm.tqdm")
-    def test_to_arrow_progress_bar(self, tqdm_mock, tqdm_notebook_mock, tqdm_gui_mock):
+    def test_to_arrow_progress_bar(self):
         pytest.importorskip("pyarrow")
         pytest.importorskip("tqdm")
         from google.cloud.bigquery.schema import SchemaField
@@ -2891,12 +2887,12 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
 
         progress_bars = (
-            ("tqdm", tqdm_mock),
-            ("tqdm_notebook", tqdm_notebook_mock),
-            ("tqdm_gui", tqdm_gui_mock),
+            ("tqdm", mock.patch("tqdm.tqdm")),
+            ("tqdm_notebook", mock.patch("tqdm.notebook.tqdm")),
+            ("tqdm_gui", mock.patch("tqdm.tqdm_gui")),
         )
-
-        for progress_bar_type, progress_bar_mock in progress_bars:
+        for progress_bar_type, bar_patch in progress_bars:
+            progress_bar_mock = bar_patch.start()
             row_iterator = self._make_one(_mock_client(), api_request, path, schema)
             tbl = row_iterator.to_arrow(
                 progress_bar_type=progress_bar_type,
@@ -2907,6 +2903,7 @@ class TestRowIterator(unittest.TestCase):
             progress_bar_mock().update.assert_called()
             progress_bar_mock().close.assert_called_once()
             self.assertEqual(tbl.num_rows, 4)
+            progress_bar_mock.stop()
 
     @mock.patch("google.cloud.bigquery.table.pyarrow", new=None)
     def test_to_arrow_w_pyarrow_none(self):
@@ -3227,14 +3224,9 @@ class TestRowIterator(unittest.TestCase):
             [datetime.datetime(4567, 1, 1), datetime.datetime(9999, 12, 31)],
         )
 
-    @mock.patch("tqdm.tqdm_gui")
-    @mock.patch("tqdm.notebook.tqdm")
-    @mock.patch("tqdm.tqdm")
-    def test_to_dataframe_progress_bar(
-        self, tqdm_mock, tqdm_notebook_mock, tqdm_gui_mock
-    ):
+    def test_to_dataframe_progress_bar(self):
         pandas = pytest.importorskip("pandas")
-        pytest.importorskip("tqdm")
+        tqdm = pytest.importorskip("tqdm")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3251,12 +3243,13 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
 
         progress_bars = (
-            ("tqdm", tqdm_mock),
-            ("tqdm_notebook", tqdm_notebook_mock),
-            ("tqdm_gui", tqdm_gui_mock),
+            ("tqdm", mock.patch("tqdm.tqdm")),
+            ("tqdm_notebook", mock.patch("tqdm.notebook.tqdm")),
+            ("tqdm_gui", mock.patch("tqdm.tqdm_gui")),
         )
 
-        for progress_bar_type, progress_bar_mock in progress_bars:
+        for progress_bar_type, bar_patch in progress_bars:
+            progress_bar_mock = bar_patch.start()
             row_iterator = self._make_one(_mock_client(), api_request, path, schema)
             df = row_iterator.to_dataframe(
                 progress_bar_type=progress_bar_type,
@@ -3267,6 +3260,7 @@ class TestRowIterator(unittest.TestCase):
             progress_bar_mock().update.assert_called()
             progress_bar_mock().close.assert_called_once()
             self.assertEqual(len(df), 4)
+            progress_bar_mock.stop()
 
     @mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm", new=None)
     def test_to_dataframe_no_tqdm_no_progress_bar(self):
@@ -3330,12 +3324,12 @@ class TestRowIterator(unittest.TestCase):
         # should still work.
         self.assertEqual(len(df), 4)
 
-    @mock.patch("tqdm.tqdm_gui", new=None)  # will raise TypeError on call
-    @mock.patch("tqdm.notebook.tqdm", new=None)  # will raise TypeError on call
-    @mock.patch("tqdm.tqdm", new=None)  # will raise TypeError on call
     def test_to_dataframe_tqdm_error(self):
         pandas = pytest.importorskip("pandas")
         tqdm = pytest.importorskip("tqdm")
+        mock.patch("tqdm.tqdm_gui", new=None)
+        mock.patch("tqdm.notebook.tqdm", new=None)
+        mock.patch("tqdm.tqdm", new=None)
         from tqdm.std import TqdmDeprecationWarning
         from google.cloud.bigquery.schema import SchemaField
 

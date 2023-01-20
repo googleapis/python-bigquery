@@ -2224,6 +2224,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow_iterable(self):
         pyarrow = pytest.importorskip("pyarrow")
+        PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2406,6 +2407,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow(self):
         pyarrow = pytest.importorskip("pyarrow")
+        PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2488,6 +2490,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow_w_nulls(self):
         pyarrow = pytest.importorskip("pyarrow")
+        PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
         import pyarrow.types
         from google.cloud.bigquery.schema import SchemaField
 
@@ -2522,6 +2525,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow_w_unknown_type(self):
         pyarrow = pytest.importorskip("pyarrow")
+        PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [

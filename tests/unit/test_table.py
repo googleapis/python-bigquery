@@ -2401,8 +2401,8 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     def test_to_arrow(self):
-        pyarrow = pytest.importorskip("pyarrow")
-
+        pytest.importorskip("pyarrow")
+        pyarrow = _helpers.PYARROW_VERSIONS.try_import()
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2796,6 +2796,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_called_once()
 
     def test_to_arrow_ensure_bqstorage_client_wo_bqstorage(self):
+        # pytest.importorskip("google-cloud-bigquery-storage")
         pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
@@ -2867,7 +2868,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow_progress_bar(self):
         pytest.importorskip("pyarrow")
-        pytest.importorskip("tqdm")
+        tqdm=pytest.importorskip("tqdm")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3917,8 +3918,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(len(got.index), total_rows)
         self.assertTrue(got.index.is_unique)
 
-    @mock.patch("tqdm.tqdm")
-    def test_to_dataframe_w_bqstorage_updates_progress_bar(self, tqdm_mock):
+    def test_to_dataframe_w_bqstorage_updates_progress_bar(self):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
@@ -3977,22 +3977,22 @@ class TestRowIterator(unittest.TestCase):
             table=mut.TableReference.from_string("proj.dset.tbl"),
             selected_fields=schema,
         )
+        with mock.patch("tqdm.tqdm") as tqdm_mock:
+            row_iterator.to_dataframe(
+                bqstorage_client=bqstorage_client, progress_bar_type="tqdm"
+            )
 
-        row_iterator.to_dataframe(
-            bqstorage_client=bqstorage_client, progress_bar_type="tqdm"
-        )
-
-        # Make sure that this test updated the progress bar once per page from
-        # each stream.
-        total_pages = len(streams) * len(mock_pages)
-        expected_total_rows = total_pages * len(page_items)
-        progress_updates = [
-            args[0] for args, kwargs in tqdm_mock().update.call_args_list
-        ]
-        # Should have sent >1 update due to delay in blocking_to_arrow.
-        self.assertGreater(len(progress_updates), 1)
-        self.assertEqual(sum(progress_updates), expected_total_rows)
-        tqdm_mock().close.assert_called_once()
+            # Make sure that this test updated the progress bar once per page from
+            # each stream.
+            total_pages = len(streams) * len(mock_pages)
+            expected_total_rows = total_pages * len(page_items)
+            progress_updates = [
+                args[0] for args, kwargs in tqdm_mock().update.call_args_list
+            ]
+            # Should have sent >1 update due to delay in blocking_to_arrow.
+            self.assertGreater(len(progress_updates), 1)
+            self.assertEqual(sum(progress_updates), expected_total_rows)
+            tqdm_mock().close.assert_called_once()
 
     def test_to_dataframe_w_bqstorage_exits_on_keyboardinterrupt(self):
         pytest.importorskip("google-cloud-bigquery-storage")

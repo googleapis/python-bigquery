@@ -22,6 +22,7 @@ import unittest
 import warnings
 
 import mock
+import pkg_resources
 import pytest
 
 import google.api_core.exceptions
@@ -32,6 +33,7 @@ from google.cloud.bigquery.dataset import DatasetReference
 
 from google.cloud.bigquery import _helpers
 
+PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
 
 def _mock_client():
     from google.cloud.bigquery import client
@@ -1888,6 +1890,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
 
     def test_to_arrow(self):
         pyarrow = pytest.importorskip("pyarrow")
+        PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
         row_iterator = self._make_one()
         tbl = row_iterator.to_arrow()
         self.assertIsInstance(tbl, pyarrow.Table)
@@ -1895,6 +1898,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
 
     def test_to_arrow_iterable(self):
         pyarrow = pytest.importorskip("pyarrow")
+        PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
         row_iterator = self._make_one()
         arrow_iter = row_iterator.to_arrow_iterable()
 
@@ -2401,8 +2405,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     def test_to_arrow(self):
-        pytest.importorskip("pyarrow")
-        pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+        pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2562,6 +2565,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow_w_empty_table(self):
         pyarrow = pytest.importorskip("pyarrow")
+        PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [

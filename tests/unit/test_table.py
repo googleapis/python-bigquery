@@ -2402,7 +2402,6 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow(self):
         pyarrow = pytest.importorskip("pyarrow")
-        pyarrow.types = pytest.importorskip("pyarrow.types")
 
         from google.cloud.bigquery.schema import SchemaField
 
@@ -2520,7 +2519,6 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow_w_unknown_type(self):
         pyarrow = pytest.importorskip("pyarrow")
-        import pyarrow.types
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2799,7 +2797,6 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow_ensure_bqstorage_client_wo_bqstorage(self):
         pyarrow = pytest.importorskip("pyarrow")
-        import pyarrow.types
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [

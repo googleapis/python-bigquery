@@ -621,9 +621,9 @@ class TestDatasetReference(unittest.TestCase):
         dataset = self._make_one("project1", "dataset1")
         expected = "DatasetReference('project1', 'dataset1')"
         self.assertEqual(repr(dataset), expected)
-    
+
     def test___str__(self):
-        dataset = self._make_one("project1","dataset1")
+        dataset = self._make_one("project1", "dataset1")
         self.assertEqual(str(dataset), "project1.dataset1")
 
 

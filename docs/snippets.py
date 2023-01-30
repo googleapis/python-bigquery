@@ -164,8 +164,6 @@ def test_create_partitioned_table(client, to_delete):
         "https://github.com/GoogleCloudPlatform/google-cloud-python/issues/5589"
     )
 )
-
-
 @pytest.mark.skip(
     reason=(
         "update_table() is flaky "

@@ -3345,7 +3345,7 @@ class TestRowIterator(unittest.TestCase):
         mock.patch("tqdm.tqdm_gui", new=None)
         mock.patch("tqdm.notebook.tqdm", new=None)
         mock.patch("tqdm.tqdm", new=None)
-        from tqdm.tqdm.std import TqdmDeprecationWarning
+        from tqdm import TqdmDeprecationWarning
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [

@@ -18,7 +18,6 @@ import re
 from typing import Tuple
 
 import pytest
-import packaging.version
 import test_utils.prefixer
 
 from google.cloud import bigquery

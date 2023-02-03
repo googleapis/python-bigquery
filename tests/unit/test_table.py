@@ -2410,8 +2410,8 @@ class TestRowIterator(unittest.TestCase):
         # Don't close the client if it was passed in.
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
-    def test_to_arrow(self, minversion=self.PYARROW_MINIMUM_VERSION):
-        pyarrow = pytest.importorskip("pyarrow")
+    def test_to_arrow(self):
+        pyarrow = pytest.importorskip("pyarrow", minversion=self.PYARROW_MINIMUM_VERSION)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2885,6 +2885,7 @@ class TestRowIterator(unittest.TestCase):
     def test_to_arrow_progress_bar(self):
         pytest.importorskip("pyarrow")
         tqdm = pytest.importorskip("tqdm")
+        pytest.importorskip("tqdm.notebook")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [

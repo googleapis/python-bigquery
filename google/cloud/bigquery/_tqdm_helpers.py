@@ -23,8 +23,7 @@ import warnings
 
 try:
     import tqdm  # type: ignore
-
-    # import tqdm.notebook as notebook  # type: ignore
+    import tqdm.notebook as notebook  # type: ignore
 
 except ImportError:  # pragma: NO COVER
     tqdm = None
@@ -59,7 +58,7 @@ def get_progress_bar(progress_bar_type, description, total, unit):
                 unit=unit,
             )
         elif progress_bar_type == "tqdm_notebook":
-            return tqdm.notebook.tqdm(
+            return notebook.tqdm(
                 bar_format="{l_bar}{bar}|",
                 desc=description,
                 file=sys.stdout,

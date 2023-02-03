@@ -22,7 +22,6 @@ import unittest
 import warnings
 
 import mock
-import pkg_resources
 import pytest
 
 import google.api_core.exceptions
@@ -33,7 +32,6 @@ from google.cloud.bigquery.dataset import DatasetReference
 
 from google.cloud.bigquery import _helpers
 
-PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
 
 
 def _mock_client():
@@ -1874,6 +1872,9 @@ class TestRow(unittest.TestCase):
 
 
 class Test_EmptyRowIterator(unittest.TestCase):
+
+    PYARROW_MINIMUM_VERSION = str(_helpers._MIN_PYARROW_VERSION)
+
     def _make_one(self):
         from google.cloud.bigquery.table import _EmptyRowIterator
 
@@ -1891,14 +1892,13 @@ class Test_EmptyRowIterator(unittest.TestCase):
 
     def test_to_arrow(self):
         pyarrow = pytest.importorskip("pyarrow")
-        PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
         row_iterator = self._make_one()
         tbl = row_iterator.to_arrow()
         self.assertIsInstance(tbl, pyarrow.Table)
         self.assertEqual(tbl.num_rows, 0)
 
-    def test_to_arrow_iterable(self, PYARROW_MINIMUM_VERSION):
-        pyarrow = pytest.importorskip("pyarrow", minversion=PYARROW_MINIMUM_VERSION)
+    def test_to_arrow_iterable(self):
+        pyarrow = pytest.importorskip("pyarrow", minversion=self.PYARROW_MINIMUM_VERSION)
         row_iterator = self._make_one()
         arrow_iter = row_iterator.to_arrow_iterable()
 
@@ -1967,6 +1967,9 @@ class Test_EmptyRowIterator(unittest.TestCase):
 
 
 class TestRowIterator(unittest.TestCase):
+
+    PYARROW_MINIMUM_VERSION = str(_helpers._MIN_PYARROW_VERSION)
+
     def _class_under_test(self):
         from google.cloud.bigquery.table import RowIterator
 
@@ -2222,8 +2225,8 @@ class TestRowIterator(unittest.TestCase):
         ]
         assert matching_warnings, "Obsolete dependency warning not raised."
 
-    def test_to_arrow_iterable(self, PYARROW_MINIMUM_VERSION):
-        pyarrow = pytest.importorskip("pyarrow", minversion=PYARROW_MINIMUM_VERSION)
+    def test_to_arrow_iterable(self):
+        pyarrow = pytest.importorskip("pyarrow", minversion=self.PYARROW_MINIMUM_VERSION)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2406,7 +2409,6 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_arrow(self):
         pyarrow = pytest.importorskip("pyarrow")
-        PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2487,8 +2489,8 @@ class TestRowIterator(unittest.TestCase):
             ],
         )
 
-    def test_to_arrow_w_nulls(self, PYARROW_MINIMUM_VERSION):
-        pyarrow = pytest.importorskip("pyarrow", minversion=PYARROW_MINIMUM_VERSION)
+    def test_to_arrow_w_nulls(self):
+        pyarrow = pytest.importorskip("pyarrow", minversion=self.PYARROW_MINIMUM_VERSION)
         import pyarrow.types
         from google.cloud.bigquery.schema import SchemaField
 
@@ -2521,8 +2523,8 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(names, ["Donkey", "Diddy", "Dixie", None])
         self.assertEqual(ages, [32, 29, None, 111])
 
-    def test_to_arrow_w_unknown_type(self, PYARROW_MINIMUM_VERSION):
-        pyarrow = pytest.importorskip("pyarrow", minversion=PYARROW_MINIMUM_VERSION)
+    def test_to_arrow_w_unknown_type(self):
+        pyarrow = pytest.importorskip("pyarrow", minversion=self.PYARROW_MINIMUM_VERSION)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2564,8 +2566,8 @@ class TestRowIterator(unittest.TestCase):
         warning = warned[0]
         self.assertTrue("sport" in str(warning))
 
-    def test_to_arrow_w_empty_table(self, PYARROW_MINIMUM_VERSION):
-        pyarrow = pytest.importorskip("pyarrow", minversion=PYARROW_MINIMUM_VERSION)
+    def test_to_arrow_w_empty_table(self):
+        pyarrow = pytest.importorskip("pyarrow", minversion=self.PYARROW_MINIMUM_VERSION)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -2800,9 +2802,9 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_called_once()
 
     def test_to_arrow_ensure_bqstorage_client_wo_bqstorage(
-        self, PYARROW_MINIMUM_VERSION
+        self
     ):
-        pyarrow = pytest.importorskip("pyarrow", minversion=PYARROW_MINIMUM_VERSION)
+        pyarrow = pytest.importorskip("pyarrow", minversion=self.PYARROW_MINIMUM_VERSION)
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [

@@ -3345,7 +3345,7 @@ class TestRowIterator(unittest.TestCase):
         mock.patch("tqdm.tqdm_gui", new=None)
         mock.patch("tqdm.notebook.tqdm", new=None)
         mock.patch("tqdm.tqdm", new=None)
-        from tqdm import TqdmDeprecationWarning
+        
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3377,7 +3377,7 @@ class TestRowIterator(unittest.TestCase):
             for warning in warned:
                 self.assertIn(
                     warning.category,
-                    [UserWarning, DeprecationWarning, TqdmDeprecationWarning],
+                    [UserWarning, DeprecationWarning],
                 )
 
     def test_to_dataframe_w_empty_results(self):

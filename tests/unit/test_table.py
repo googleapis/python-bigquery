@@ -2407,7 +2407,7 @@ class TestRowIterator(unittest.TestCase):
         # Don't close the client if it was passed in.
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
-    def test_to_arrow(self):
+    def test_to_arrow(self, minversion=self.PYARROW_MINIMUM_VERSION):
         pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3335,7 +3335,7 @@ class TestRowIterator(unittest.TestCase):
         mock.patch("tqdm.tqdm_gui", new=None)
         mock.patch("tqdm.notebook.tqdm", new=None)
         mock.patch("tqdm.tqdm", new=None)
-        from tqdm.std import TqdmDeprecationWarning
+        from tqdm.tqdm.std import TqdmDeprecationWarning
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [

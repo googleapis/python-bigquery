@@ -248,6 +248,7 @@ class TestExternalConfig(unittest.TestCase):
                     "allowQuotedNewlines": True,
                     "allowJaggedRows": False,
                     "encoding": "encoding",
+                    "preserveAsciiControlCharacters" : False
                 },
             },
         )
@@ -263,6 +264,7 @@ class TestExternalConfig(unittest.TestCase):
         self.assertEqual(ec.options.allow_quoted_newlines, True)
         self.assertEqual(ec.options.allow_jagged_rows, False)
         self.assertEqual(ec.options.encoding, "encoding")
+        self.assertEqual(ec.options.preserve_ascii_control_characters, False)
 
         got_resource = ec.to_api_repr()
 

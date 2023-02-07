@@ -15,9 +15,7 @@
 """Create / interact with Google BigQuery connections."""
 
 import os
-import packaging.version
 
-import google.cloud.version
 from google.cloud import _http  # type: ignore  # pytype: disable=import-error
 from google.cloud.bigquery import __version__
 

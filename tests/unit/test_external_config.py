@@ -854,7 +854,7 @@ class CSVOptions(unittest.TestCase):
         options.allow_quoted_newlines = True
         options.allow_jagged_rows = False
         options.encoding = "UTF-8"
-        options.preserve_ascii_control_characters = "False"
+        options.preserve_ascii_control_characters = False
 
         resource = options.to_api_repr()
 

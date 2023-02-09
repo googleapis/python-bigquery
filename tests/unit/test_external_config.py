@@ -518,7 +518,7 @@ class TestExternalConfig(unittest.TestCase):
         from google.cloud.bigquery.external_config import CSVOptions
 
         options = CSVOptions.from_api_repr(
-            {"allowJaggedRows": True, "allowQuotedNewlines": False, "preserveAsciiControlCharacters": False}
+            {"allowJaggedRows": True, "allowQuotedNewlines": False, "preserveAsciiControlCharacters": False,}
         )
         ec = external_config.ExternalConfig(external_config.ExternalSourceFormat.CSV)
 

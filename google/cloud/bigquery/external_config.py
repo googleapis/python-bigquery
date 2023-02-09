@@ -420,7 +420,7 @@ class CSVOptions(object):
 
     @property
     def preserve_ascii_control_characters(self):
-        """bool: Indicates if the embedded ASCII control characters 
+        """bool: Indicates if the embedded ASCII control characters
         (the first 32 characters in the ASCII-table, from '\x00' to '\x1F') are preserved.
 
         See

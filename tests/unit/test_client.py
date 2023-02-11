@@ -6642,6 +6642,7 @@ class TestClientUpload(object):
             _DEFAULT_NUM_RETRIES,
             DEFAULT_TIMEOUT,
             project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
+            checksum="md5",
         )
 
         # the original config object should not have been modified
@@ -6675,6 +6676,7 @@ class TestClientUpload(object):
             _DEFAULT_NUM_RETRIES,
             DEFAULT_TIMEOUT,
             project="other-project",
+            checksum="md5",
         )
 
     def test_load_table_from_file_w_client_location(self):
@@ -6709,6 +6711,7 @@ class TestClientUpload(object):
             _DEFAULT_NUM_RETRIES,
             DEFAULT_TIMEOUT,
             project="other-project",
+            checksum="md5",
         )
 
     def test_load_table_from_file_resumable_metadata(self):
@@ -6771,6 +6774,7 @@ class TestClientUpload(object):
             _DEFAULT_NUM_RETRIES,
             DEFAULT_TIMEOUT,
             project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
+            checksum="md5",
         )
 
     def test_load_table_from_file_multipart(self):
@@ -6800,6 +6804,7 @@ class TestClientUpload(object):
             _DEFAULT_NUM_RETRIES,
             DEFAULT_TIMEOUT,
             project=self.PROJECT,
+            checksum="md5",
         )
 
     def test_load_table_from_file_with_retries(self):
@@ -6825,6 +6830,7 @@ class TestClientUpload(object):
             num_retries,
             DEFAULT_TIMEOUT,
             project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
+            checksum="md5",
         )
 
     def test_load_table_from_file_with_rewind(self):
@@ -6862,6 +6868,7 @@ class TestClientUpload(object):
             _DEFAULT_NUM_RETRIES,
             DEFAULT_TIMEOUT,
             project=self.EXPECTED_CONFIGURATION["jobReference"]["projectId"],
+            checksum="md5",
         )
 
     def test_load_table_from_file_with_writable_gzip(self):
@@ -6987,6 +6994,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_file = load_table_from_file.mock_calls[0][1][1]
@@ -7051,6 +7059,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_file = load_table_from_file.mock_calls[0][1][1]
@@ -7105,6 +7114,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7161,6 +7171,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7217,6 +7228,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7274,6 +7286,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7335,6 +7348,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7450,6 +7464,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7518,6 +7533,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7573,6 +7589,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7620,6 +7637,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
     @unittest.skipIf(
@@ -7662,6 +7680,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7710,6 +7729,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7772,6 +7792,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7837,6 +7858,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7900,6 +7922,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -7975,6 +7998,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -8166,6 +8190,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -8232,6 +8257,7 @@ class TestClientUpload(object):
             project=None,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_file = load_table_from_file.mock_calls[0][1][1]
@@ -8270,6 +8296,7 @@ class TestClientUpload(object):
             project=client.project,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -8323,6 +8350,7 @@ class TestClientUpload(object):
             project="project-x",
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
@@ -8383,6 +8411,7 @@ class TestClientUpload(object):
             project=client.project,
             job_config=mock.ANY,
             timeout=DEFAULT_TIMEOUT,
+            checksum="md5",
         )
 
         sent_data_file = load_table_from_file.mock_calls[0][1][1]

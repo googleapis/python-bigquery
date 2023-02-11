@@ -162,6 +162,11 @@ TIMEOUT_HEADER = "X-Server-Timeout"
 # https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
 _PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
 
+# MD5 is chosen because it offers universally reasonable performance. crc32c
+# depends on native libraries only available for some platforms to get
+# good performance and when not present performance would be far worse then MD5.
+DEFAULT_CHECKSUM = "md5"
+
 
 class Project(object):
     """Wrapper for resource describing a BigQuery project.
@@ -2369,6 +2374,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: LoadJobConfig = None,
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
+        checksum: Optional[str] = DEFAULT_CHECKSUM,
     ) -> job.LoadJob:
         """Upload the contents of this table from a file-like object.
 
@@ -2412,6 +2418,10 @@ class Client(ClientWithProject):
 
                 Can also be passed as a tuple (connect_timeout, read_timeout).
                 See :meth:`requests.Session.request` documentation for details.
+            checksum:
+                The checksum to use to validate that bytes received by the server
+                are the same set for the client.  Supported values are "md5",
+                "crc32c" and None.  Default value is "md5".
 
         Returns:
             google.cloud.bigquery.job.LoadJob: A new load job.
@@ -2450,11 +2460,22 @@ class Client(ClientWithProject):
         try:
             if size is None or size >= _MAX_MULTIPART_SIZE:
                 response = self._do_resumable_upload(
-                    file_obj, job_resource, num_retries, timeout, project=project
+                    file_obj,
+                    job_resource,
+                    num_retries,
+                    timeout,
+                    project=project,
+                    checksum=checksum,
                 )
             else:
                 response = self._do_multipart_upload(
-                    file_obj, job_resource, size, num_retries, timeout, project=project
+                    file_obj,
+                    job_resource,
+                    size,
+                    num_retries,
+                    timeout,
+                    project=project,
+                    checksum=checksum,
                 )
         except resumable_media.InvalidResponse as exc:
             raise exceptions.from_http_response(exc.response)
@@ -2473,6 +2494,7 @@ class Client(ClientWithProject):
         job_config: LoadJobConfig = None,
         parquet_compression: str = "snappy",
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
+        checksum: Optional[str] = DEFAULT_CHECKSUM,
     ) -> job.LoadJob:
         """Upload the contents of a table from a pandas DataFrame.
 
@@ -2554,6 +2576,10 @@ class Client(ClientWithProject):
 
                 Can also be passed as a tuple (connect_timeout, read_timeout).
                 See :meth:`requests.Session.request` documentation for details.
+            checksum:
+                The checksum to use to validate that bytes received by the server
+                are the same set for the client.  Supported values are "md5",
+                "crc32c" and None.  Default value is "md5".
 
         Returns:
             google.cloud.bigquery.job.LoadJob: A new load job.
@@ -2716,6 +2742,7 @@ class Client(ClientWithProject):
                     project=project,
                     job_config=job_config,
                     timeout=timeout,
+                    checksum=checksum,
                 )
 
         finally:
@@ -2732,6 +2759,7 @@ class Client(ClientWithProject):
         project: str = None,
         job_config: LoadJobConfig = None,
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
+        checksum: Optional[str] = DEFAULT_CHECKSUM,
     ) -> job.LoadJob:
         """Upload the contents of a table from a JSON string or dict.
 
@@ -2784,6 +2812,10 @@ class Client(ClientWithProject):
 
                 Can also be passed as a tuple (connect_timeout, read_timeout).
                 See :meth:`requests.Session.request` documentation for details.
+            checksum:
+                The checksum to use to validate that bytes received by the server
+                are the same set for the client.  Supported values are "md5",
+                "crc32c" and None.  Default value is "md5".
 
         Returns:
             google.cloud.bigquery.job.LoadJob: A new load job.
@@ -2829,6 +2861,7 @@ class Client(ClientWithProject):
             project=project,
             job_config=job_config,
             timeout=timeout,
+            checksum=checksum,
         )
 
     def _do_resumable_upload(
@@ -2838,6 +2871,7 @@ class Client(ClientWithProject):
         num_retries: int,
         timeout: Optional[ResumableTimeoutType],
         project: Optional[str] = None,
+        checksum: Optional[str] = None,
     ) -> "requests.Response":
         """Perform a resumable upload.
 
@@ -2862,12 +2896,18 @@ class Client(ClientWithProject):
                 Project ID of the project of where to run the upload. Defaults
                 to the client's project.
 
+            checksum:
+                The checksum to use to validate that bytes received by the server
+                are the same set for the client.  Supported values are "md5",
+                "crc32c" and None.  Default value is None.
+
+
         Returns:
             The "200 OK" response object returned after the final chunk
             is uploaded.
         """
         upload, transport = self._initiate_resumable_upload(
-            stream, metadata, num_retries, timeout, project=project
+            stream, metadata, num_retries, timeout, project=project, checksum=checksum
         )
 
         while not upload.finished:
@@ -2882,6 +2922,7 @@ class Client(ClientWithProject):
         num_retries: int,
         timeout: Optional[ResumableTimeoutType],
         project: Optional[str] = None,
+        checksum: Optional[str] = None,
     ):
         """Initiate a resumable upload.
 
@@ -2905,6 +2946,11 @@ class Client(ClientWithProject):
             project:
                 Project ID of the project of where to run the upload. Defaults
                 to the client's project.
+
+            checksum:
+                The checksum to use to validate that bytes received by the server
+                are the same set for the client.  Supported values are "md5",
+                "crc32c" and None.  Default value is None.
 
         Returns:
             Tuple:
@@ -2932,7 +2978,9 @@ class Client(ClientWithProject):
 
         # TODO: modify ResumableUpload to take a retry.Retry object
         # that it can use for the initial RPC.
-        upload = ResumableUpload(upload_url, chunk_size, headers=headers)
+        upload = ResumableUpload(
+            upload_url, chunk_size, headers=headers, checksum=checksum
+        )
 
         if num_retries is not None:
             upload._retry_strategy = resumable_media.RetryStrategy(
@@ -2958,6 +3006,7 @@ class Client(ClientWithProject):
         num_retries: int,
         timeout: Optional[ResumableTimeoutType],
         project: Optional[str] = None,
+        checksum: Optional[str] = None,
     ):
         """Perform a multipart upload.
 
@@ -2986,6 +3035,12 @@ class Client(ClientWithProject):
             project:
                 Project ID of the project of where to run the upload. Defaults
                 to the client's project.
+
+            checksum:
+                The checksum to use to validate that bytes received by the server
+                are the same set for the client.  Supported values are "md5",
+                "crc32c" and None.  Default value is None.
+
 
         Returns:
             requests.Response:
@@ -3016,7 +3071,7 @@ class Client(ClientWithProject):
             else self._connection.get_api_base_url_for_mtls()
         )
         upload_url = _MULTIPART_URL_TEMPLATE.format(host=hostname, project=project)
-        upload = MultipartUpload(upload_url, headers=headers)
+        upload = MultipartUpload(upload_url, headers=headers, checksum=checksum)
 
         if num_retries is not None:
             upload._retry_strategy = resumable_media.RetryStrategy(

@@ -226,7 +226,6 @@ class Client(ClientWithProject):
     """
 
     SCOPE = (  # type: ignore
-        "https://www.googleapis.com/auth/bigquery",
         "https://www.googleapis.com/auth/cloud-platform",
     )
     """The scopes required for authenticating as a BigQuery consumer."""

@@ -207,6 +207,7 @@ def test_update_table_description(client, to_delete):
         "https://github.com/GoogleCloudPlatform/google-cloud-python/issues/5589"
     )
 )
+
 def test_update_table_expiration(client, to_delete):
     """Update a table's expiration time."""
     dataset_id = "update_table_expiration_dataset_{}".format(_millis())
@@ -220,6 +221,8 @@ def test_update_table_expiration(client, to_delete):
     table = bigquery.Table(dataset.table(table_id), schema=SCHEMA)
     table = client.create_table(table)
 
+# TODO(thejaredchapman): After code sample has been updated from cloud.google.com delete this.
+    
     # [START bigquery_update_table_expiration]
     import datetime
 

@@ -225,10 +225,7 @@ class Client(ClientWithProject):
             to acquire default credentials.
     """
 
-    SCOPE = (  # type: ignore
-        "https://www.googleapis.com/auth/bigquery",
-        "https://www.googleapis.com/auth/cloud-platform",
-    )
+    SCOPE = ("https://www.googleapis.com/auth/cloud-platform",)  # type: ignore
     """The scopes required for authenticating as a BigQuery consumer."""
 
     def __init__(
@@ -268,6 +265,17 @@ class Client(ClientWithProject):
     def location(self):
         """Default location for jobs / datasets / tables."""
         return self._location
+
+    @property
+    def default_query_job_config(self):
+        """Default ``QueryJobConfig``.
+        Will be merged into job configs passed into the ``query`` method.
+        """
+        return self._default_query_job_config
+
+    @default_query_job_config.setter
+    def default_query_job_config(self, value: QueryJobConfig):
+        self._default_query_job_config = copy.deepcopy(value)
 
     def close(self):
         """Close the underlying transport objects, releasing system resources.
@@ -329,11 +337,11 @@ class Client(ClientWithProject):
 
     def list_projects(
         self,
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """List projects for the project associated with this client.
 
@@ -395,11 +403,11 @@ class Client(ClientWithProject):
         project: str = None,
         include_all: bool = False,
         filter: str = None,
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """List datasets for the project associated with this client.
 
@@ -1324,11 +1332,11 @@ class Client(ClientWithProject):
     def list_models(
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """[Beta] List models in the dataset.
 
@@ -1401,11 +1409,11 @@ class Client(ClientWithProject):
     def list_routines(
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """[Beta] List routines in the dataset.
 
@@ -1478,11 +1486,11 @@ class Client(ClientWithProject):
     def list_tables(
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """List tables in the dataset.
 
@@ -1838,7 +1846,7 @@ class Client(ClientWithProject):
         job_id: str,
         retry: retries.Retry,
         project: str = None,
-        timeout_ms: int = None,
+        timeout_ms: Optional[int] = None,
         location: str = None,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> _QueryResults:
@@ -2163,7 +2171,7 @@ class Client(ClientWithProject):
         self,
         project: str = None,
         parent_job: Optional[Union[QueryJob, str]] = None,
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         all_users: bool = None,
         state_filter: str = None,
@@ -2171,7 +2179,7 @@ class Client(ClientWithProject):
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         min_creation_time: datetime.datetime = None,
         max_creation_time: datetime.datetime = None,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """List jobs for the project associated with this client.
 
@@ -2361,7 +2369,7 @@ class Client(ClientWithProject):
         file_obj: IO[bytes],
         destination: Union[Table, TableReference, TableListItem, str],
         rewind: bool = False,
-        size: int = None,
+        size: Optional[int] = None,
         num_retries: int = _DEFAULT_NUM_RETRIES,
         job_id: str = None,
         job_id_prefix: str = None,
@@ -3729,10 +3737,10 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableListItem, TableReference, str],
         selected_fields: Sequence[SchemaField] = None,
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
-        start_index: int = None,
-        page_size: int = None,
+        start_index: Optional[int] = None,
+        page_size: Optional[int] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> RowIterator:
@@ -3840,11 +3848,11 @@ class Client(ClientWithProject):
         location: str,
         project: str,
         schema: SchemaField,
-        total_rows: int = None,
+        total_rows: Optional[int] = None,
         destination: Union[Table, TableReference, TableListItem, str] = None,
-        max_results: int = None,
-        start_index: int = None,
-        page_size: int = None,
+        max_results: Optional[int] = None,
+        start_index: Optional[int] = None,
+        page_size: Optional[int] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> RowIterator:

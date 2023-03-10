@@ -5,6 +5,40 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.6.0](https://github.com/googleapis/python-bigquery/compare/v3.5.0...v3.6.0) (2023-02-22)
+
+
+### Features
+
+* Adding preserveAsciiControlCharacter to CSVOptions ([#1491](https://github.com/googleapis/python-bigquery/issues/1491)) ([f832e7a](https://github.com/googleapis/python-bigquery/commit/f832e7a0b79f3567a0773ff11630e2f48bed60db))
+
+
+### Bug Fixes
+
+* Annotate optional integer parameters with optional type ([#1487](https://github.com/googleapis/python-bigquery/issues/1487)) ([a190aaa](https://github.com/googleapis/python-bigquery/commit/a190aaa09ae73e8b6a83b7b213247f95fde57615))
+* Loosen ipywidget dependency ([#1504](https://github.com/googleapis/python-bigquery/issues/1504)) ([20d3276](https://github.com/googleapis/python-bigquery/commit/20d3276cc29e9467eef9476d5fd572099d9a3f6f))
+* Removes scope to avoid unnecessary duplication ([#1503](https://github.com/googleapis/python-bigquery/issues/1503)) ([665d7ba](https://github.com/googleapis/python-bigquery/commit/665d7ba74a1b45de1ef51cc75b6860125afc5fe6))
+
+
+### Dependencies
+
+* Update minimum google-cloud-core  to 1.6.0 ([a190aaa](https://github.com/googleapis/python-bigquery/commit/a190aaa09ae73e8b6a83b7b213247f95fde57615))
+
+## [3.5.0](https://github.com/googleapis/python-bigquery/compare/v3.4.2...v3.5.0) (2023-01-31)
+
+
+### Features
+
+* Add __str__ method to DatasetReference ([#1477](https://github.com/googleapis/python-bigquery/issues/1477)) ([f32df1f](https://github.com/googleapis/python-bigquery/commit/f32df1fb74e4aea24cd8a4099040ad2f7436e54d))
+* Add preserveAsciiControlCharacter to LoadJobConfig ([#1484](https://github.com/googleapis/python-bigquery/issues/1484)) ([bd1da9a](https://github.com/googleapis/python-bigquery/commit/bd1da9aa0a40b02b7d5409a0b094d8380e255c91))
+
+
+### Documentation
+
+* Adds snippet for creating table with external data config ([#1420](https://github.com/googleapis/python-bigquery/issues/1420)) ([f0ace2a](https://github.com/googleapis/python-bigquery/commit/f0ace2ac2307ef359511a235f80f5ce9e46264c1))
+* Revise delete label table code sample, add TODO to clean up sni… ([#1466](https://github.com/googleapis/python-bigquery/issues/1466)) ([0dab7d2](https://github.com/googleapis/python-bigquery/commit/0dab7d25ace4b63d2984485e7b0c5bb38f20476f))
+* **samples:** Table variable fix ([#1287](https://github.com/googleapis/python-bigquery/issues/1287)) ([a71888a](https://github.com/googleapis/python-bigquery/commit/a71888a60d1e5e5815ab459fe24368ad5b0d032a))
+
 ## [3.4.2](https://github.com/googleapis/python-bigquery/compare/v3.4.1...v3.4.2) (2023-01-13)
 
 

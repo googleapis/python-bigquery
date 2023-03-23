@@ -304,6 +304,7 @@ def prerelease_deps(session):
         "--pre",
         "--upgrade",
         "IPython",
+        "ipykernel",
         "ipywidgets",
         "tqdm",
         "git+https://github.com/pypa/packaging.git",

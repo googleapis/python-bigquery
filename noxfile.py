@@ -303,6 +303,9 @@ def prerelease_deps(session):
     session.install(
         "--pre",
         "--upgrade",
+        "IPython",
+        "ipywidgets",
+        "tqdm",
         "git+https://github.com/pypa/packaging.git",
     )
 
@@ -321,7 +324,6 @@ def prerelease_deps(session):
         "google-cloud-datacatalog",
         "google-cloud-storage",
         "google-cloud-testutils",
-        "IPython",
         "mock",
         "psutil",
         "pytest",

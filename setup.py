@@ -73,7 +73,7 @@ extras = {
     ],
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.8.4, <2.0dev"],
     "ipython": [
-        "ipython>=7.0.1,!=8.1.0",
+        "ipython>=7.23.1,!=8.1.0",
         "ipykernel>=6.0.0",
     ],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],

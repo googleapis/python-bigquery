@@ -392,6 +392,8 @@ class TestLoadJob(_Base):
         job = klass.from_api_repr(RESOURCE, client=client)
         self.assertIs(job._client, client)
         self._verifyResourceProperties(job, RESOURCE)
+        self.assertEqual(len(job.connection_properties), 0)
+        self.assertIsNone(job.create_session)
 
     def test_from_api_with_encryption(self):
         self._setUpConstants()
@@ -449,6 +451,7 @@ class TestLoadJob(_Base):
         conn = make_connection(RESOURCE)
         client = _make_client(project=self.PROJECT, connection=conn)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client)
+        job.configuration.reference_file_schema_uri = self.REFERENCE_FILE_SCHEMA_URI
         path = "/projects/{}/jobs".format(self.PROJECT)
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
@@ -496,6 +499,7 @@ class TestLoadJob(_Base):
         job = self._make_one(
             self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client, config
         )
+        job.configuration.reference_file_schema_uri = self.REFERENCE_FILE_SCHEMA_URI
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
@@ -552,19 +556,18 @@ class TestLoadJob(_Base):
             "sourceFormat": "CSV",
             "useAvroLogicalTypes": True,
             "writeDisposition": WriteDisposition.WRITE_TRUNCATE,
+            "referenceFileSchemaUri": "gs://path/to/reference",
             "schema": {
                 "fields": [
                     {
                         "name": "full_name",
                         "type": "STRING",
                         "mode": "REQUIRED",
-                        "description": None,
                     },
                     {
                         "name": "age",
                         "type": "INTEGER",
                         "mode": "REQUIRED",
-                        "description": None,
                     },
                 ]
             },

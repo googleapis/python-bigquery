@@ -5,6 +5,52 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.8.0](https://github.com/googleapis/python-bigquery/compare/v3.7.0...v3.8.0) (2023-03-24)
+
+
+### Features
+
+* Add bool, int, float, string dtype to to_dataframe ([#1529](https://github.com/googleapis/python-bigquery/issues/1529)) ([5e4465d](https://github.com/googleapis/python-bigquery/commit/5e4465d0975f54e8da885006686d9431ff9c5653))
+* Add default LoadJobConfig to Client ([#1526](https://github.com/googleapis/python-bigquery/issues/1526)) ([a2520ca](https://github.com/googleapis/python-bigquery/commit/a2520cabf7ec6bcb923c21e338188f1c10dc4d5d))
+* Expose configuration property on CopyJob, ExtractJob, LoadJob, QueryJob ([#1521](https://github.com/googleapis/python-bigquery/issues/1521)) ([8270a10](https://github.com/googleapis/python-bigquery/commit/8270a10df8f40750a7ac541a1781a71d7e79ce67))
+
+
+### Bug Fixes
+
+* Loosen ipywidgets restrictions further to address ipython compatibility issues ([#1531](https://github.com/googleapis/python-bigquery/issues/1531)) ([50e5026](https://github.com/googleapis/python-bigquery/commit/50e502674807b9771d7e26c0e784539bed8f9da6))
+
+## [3.7.0](https://github.com/googleapis/python-bigquery/compare/v3.6.0...v3.7.0) (2023-03-06)
+
+
+### Features
+
+* Add `connection_properties` and `create_session` to `LoadJobConfig` ([#1509](https://github.com/googleapis/python-bigquery/issues/1509)) ([cd0aaa1](https://github.com/googleapis/python-bigquery/commit/cd0aaa15960e9ca7a0aaf411c8e4990f95421816))
+* Add default_query_job_config property and property setter to BQ client ([#1511](https://github.com/googleapis/python-bigquery/issues/1511)) ([a23092c](https://github.com/googleapis/python-bigquery/commit/a23092cad834c6a016f455d46fefa13bb6cdbf0f))
+
+
+### Documentation
+
+* Remove &lt; 3.11 reference from README ([#1502](https://github.com/googleapis/python-bigquery/issues/1502)) ([c7417f4](https://github.com/googleapis/python-bigquery/commit/c7417f43563e20a3e6f1a57f46925fb274b28b07))
+
+## [3.6.0](https://github.com/googleapis/python-bigquery/compare/v3.5.0...v3.6.0) (2023-02-22)
+
+
+### Features
+
+* Adding preserveAsciiControlCharacter to CSVOptions ([#1491](https://github.com/googleapis/python-bigquery/issues/1491)) ([f832e7a](https://github.com/googleapis/python-bigquery/commit/f832e7a0b79f3567a0773ff11630e2f48bed60db))
+
+
+### Bug Fixes
+
+* Annotate optional integer parameters with optional type ([#1487](https://github.com/googleapis/python-bigquery/issues/1487)) ([a190aaa](https://github.com/googleapis/python-bigquery/commit/a190aaa09ae73e8b6a83b7b213247f95fde57615))
+* Loosen ipywidget dependency ([#1504](https://github.com/googleapis/python-bigquery/issues/1504)) ([20d3276](https://github.com/googleapis/python-bigquery/commit/20d3276cc29e9467eef9476d5fd572099d9a3f6f))
+* Removes scope to avoid unnecessary duplication ([#1503](https://github.com/googleapis/python-bigquery/issues/1503)) ([665d7ba](https://github.com/googleapis/python-bigquery/commit/665d7ba74a1b45de1ef51cc75b6860125afc5fe6))
+
+
+### Dependencies
+
+* Update minimum google-cloud-core  to 1.6.0 ([a190aaa](https://github.com/googleapis/python-bigquery/commit/a190aaa09ae73e8b6a83b7b213247f95fde57615))
+
 ## [3.5.0](https://github.com/googleapis/python-bigquery/compare/v3.4.2...v3.5.0) (2023-01-31)
 
 

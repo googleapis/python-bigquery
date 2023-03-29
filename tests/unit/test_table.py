@@ -3486,7 +3486,11 @@ class TestRowIterator(unittest.TestCase):
             create_bqstorage_client=False,
             bool_dtype=pandas.BooleanDtype(),
             int_dtype=pandas.Int32Dtype(),
-            float_dtype=pandas.Float64Dtype(),
+            float_dtype=(
+                pandas.Float64Dtype()
+                if hasattr(pandas, "Float64Dtype")
+                else pandas.StringDtype()
+            ),
             string_dtype=pandas.StringDtype(),
         )
 

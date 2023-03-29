@@ -3486,15 +3486,15 @@ class TestRowIterator(unittest.TestCase):
             create_bqstorage_client=False,
             bool_dtype=pandas.BooleanDtype(),
             int_dtype=pandas.Int32Dtype(),
-            float_dtype=pandas.StringDtype(),
-            string_dtype=pandas.StringDtype(),
+            float_dtype=pandas.Float64Dtype(),
+            string_dtype=pandas.StringDtype(storage="pyarrow"),
         )
 
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(df.complete.dtype.name, "boolean")
         self.assertEqual(df.age.dtype.name, "Int32")
         self.assertEqual(df.seconds.dtype.name, "Int32")
-        self.assertEqual(df.miles.dtype.name, "string")
+        self.assertEqual(df.miles.dtype.name, "Float64")
         self.assertEqual(df.name.dtype.name, "string")
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")

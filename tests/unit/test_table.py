@@ -3487,7 +3487,7 @@ class TestRowIterator(unittest.TestCase):
             bool_dtype=pandas.BooleanDtype(),
             int_dtype=pandas.Int32Dtype(),
             float_dtype=pandas.Float64Dtype(),
-            string_dtype=pandas.StringDtype(storage="pyarrow"),
+            string_dtype=pandas.StringDtype(),
         )
 
         self.assertIsInstance(df, pandas.DataFrame)

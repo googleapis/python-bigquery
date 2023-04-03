@@ -1324,6 +1324,10 @@ class QueryJob(_AsyncJob):
         # the timeout from the futures API is respected. See:
         # https://github.com/GoogleCloudPlatform/google-cloud-python/issues/4135
         timeout_ms = None
+
+        if type(self._done_timeout) == object:
+            self._done_timeout = None
+
         if self._done_timeout is not None:
             # Subtract a buffer for context switching, network latency, etc.
             api_timeout = self._done_timeout - _TIMEOUT_BUFFER_SECS

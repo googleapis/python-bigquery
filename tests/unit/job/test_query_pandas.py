@@ -62,8 +62,8 @@ def table_read_options_kwarg():
     # Create a BigQuery Storage table read options object with pyarrow compression
     # enabled if a recent-enough version of google-cloud-bigquery-storage dependency is
     # installed to support the compression.
-    if not hasattr(bigquery_storage, "ArrowSerializationOptions"):
-        return {}
+    #if not hasattr(bigquery_storage, "ArrowSerializationOptions"):
+    #    return {}
 
     read_options = bigquery_storage.ReadSession.TableReadOptions(
         arrow_serialization_options=bigquery_storage.ArrowSerializationOptions(

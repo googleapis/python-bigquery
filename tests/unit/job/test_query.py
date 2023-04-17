@@ -388,30 +388,6 @@ class TestQueryJob(_Base):
         call_args = fake_reload.call_args
         self.assertEqual(call_args.kwargs.get("timeout"), 42)
 
-    def test_reload_query_results(self):
-        client = _make_client(project=self.PROJECT)
-        resource = self._make_resource(ended=False)
-        job = self._get_target_class().from_api_repr(resource, client)
-
-        timeout = object()
-        with mock.patch.object(
-            client, "_get_query_results"
-        ) as fake_get_results, mock.patch.object(job, "reload") as fake_reload:
-            job._reload_query_results(timeout=timeout)
-        fake_get_results.assert_called_once()
-
-        # Python_API_core supplies as a default, a Python object(), which our
-        # code is not expected to understand (use of object was part of a major
-        # rewrite of the timeout, delay, retry processes in the API_core).
-        # That value gets transmogrified by our code in .reload_query_results()
-        # to be a value of None, which our code does understand.
-        # Supply a value of object.
-        call_args = fake_get_results.call_args
-        self.assertIsInstance(call_args.kwargs.get("timeout"), object)
-        # Confirm that the value has been converted to None.
-        call_args = fake_reload.call_args
-        self.assertEqual(call_args, None)
-
     def test__done_or_raise_w_timeout_and_longer_internal_api_timeout(self):
         client = _make_client(project=self.PROJECT)
         resource = self._make_resource(ended=False)

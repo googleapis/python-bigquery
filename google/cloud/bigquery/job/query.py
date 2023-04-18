@@ -1312,7 +1312,7 @@ class QueryJob(_AsyncJob):
             raise
 
     def _reload_query_results(
-        self, retry: "retries.Retry" = DEFAULT_RETRY, timeout: float = None
+        self, retry: "retries.Retry" = DEFAULT_RETRY, timeout: Optional[float] = None
     ):
         """Refresh the cached query results.
 
@@ -1400,7 +1400,7 @@ class QueryJob(_AsyncJob):
         page_size: Optional[int] = None,
         max_results: Optional[int] = None,
         retry: "retries.Retry" = DEFAULT_RETRY,
-        timeout: float = None,
+        timeout: Optional[float] = None,
         start_index: Optional[int] = None,
         job_retry: "retries.Retry" = DEFAULT_JOB_RETRY,
     ) -> Union["RowIterator", _EmptyRowIterator]:
@@ -1552,7 +1552,7 @@ class QueryJob(_AsyncJob):
     # that should only exist here in the QueryJob method.
     def to_arrow(
         self,
-        progress_bar_type: str = None,
+        progress_bar_type: Optional[str] = None,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         create_bqstorage_client: bool = True,
         max_results: Optional[int] = None,
@@ -1629,7 +1629,7 @@ class QueryJob(_AsyncJob):
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
-        progress_bar_type: str = None,
+        progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         max_results: Optional[int] = None,
         geography_as_object: bool = False,
@@ -1764,7 +1764,7 @@ class QueryJob(_AsyncJob):
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Dict[str, Any] = None,
-        progress_bar_type: str = None,
+        progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         max_results: Optional[int] = None,
         geography_column: Optional[str] = None,

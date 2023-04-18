@@ -307,7 +307,7 @@ class Client(ClientWithProject):
 
     def get_service_account_email(
         self,
-        project: str = None,
+        project: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> str:
@@ -354,7 +354,7 @@ class Client(ClientWithProject):
     def list_projects(
         self,
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -416,11 +416,11 @@ class Client(ClientWithProject):
 
     def list_datasets(
         self,
-        project: str = None,
+        project: Optional[str] = None,
         include_all: bool = False,
-        filter: str = None,
+        filter: Optional[str] = None,
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -497,7 +497,9 @@ class Client(ClientWithProject):
             page_size=page_size,
         )
 
-    def dataset(self, dataset_id: str, project: str = None) -> DatasetReference:
+    def dataset(
+        self, dataset_id: str, project: Optional[str] = None
+    ) -> DatasetReference:
         """Deprecated: Construct a reference to a dataset.
 
         .. deprecated:: 1.24.0
@@ -889,7 +891,7 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableReference, TableListItem, str],
         policy: Policy,
-        updateMask: str = None,
+        updateMask: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Policy:
@@ -1349,7 +1351,7 @@ class Client(ClientWithProject):
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -1426,7 +1428,7 @@ class Client(ClientWithProject):
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -1503,7 +1505,7 @@ class Client(ClientWithProject):
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -1861,9 +1863,9 @@ class Client(ClientWithProject):
         self,
         job_id: str,
         retry: retries.Retry,
-        project: str = None,
+        project: Optional[str] = None,
         timeout_ms: Optional[int] = None,
-        location: str = None,
+        location: Optional[str] = None,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> _QueryResults:
         """Get the query results object for a query job.
@@ -2037,8 +2039,8 @@ class Client(ClientWithProject):
     def get_job(
         self,
         job_id: Union[str, job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob],
-        project: str = None,
-        location: str = None,
+        project: Optional[str] = None,
+        location: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
@@ -2100,8 +2102,8 @@ class Client(ClientWithProject):
     def cancel_job(
         self,
         job_id: str,
-        project: str = None,
-        location: str = None,
+        project: Optional[str] = None,
+        location: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
@@ -2178,12 +2180,12 @@ class Client(ClientWithProject):
 
     def list_jobs(
         self,
-        project: str = None,
+        project: Optional[str] = None,
         parent_job: Optional[Union[QueryJob, str]] = None,
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         all_users: bool = None,
-        state_filter: str = None,
+        state_filter: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         min_creation_time: datetime.datetime = None,
@@ -2294,11 +2296,11 @@ class Client(ClientWithProject):
         self,
         source_uris: Union[str, Sequence[str]],
         destination: Union[Table, TableReference, TableListItem, str],
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: LoadJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[LoadJobConfig] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
@@ -2383,11 +2385,11 @@ class Client(ClientWithProject):
         rewind: bool = False,
         size: Optional[int] = None,
         num_retries: int = _DEFAULT_NUM_RETRIES,
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: LoadJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[LoadJobConfig] = None,
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of this table from a file-like object.
@@ -2491,11 +2493,11 @@ class Client(ClientWithProject):
         dataframe: "pandas.DataFrame",
         destination: Union[Table, TableReference, str],
         num_retries: int = _DEFAULT_NUM_RETRIES,
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: LoadJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[LoadJobConfig] = None,
         parquet_compression: str = "snappy",
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
@@ -2748,11 +2750,11 @@ class Client(ClientWithProject):
         json_rows: Iterable[Dict[str, Any]],
         destination: Union[Table, TableReference, TableListItem, str],
         num_retries: int = _DEFAULT_NUM_RETRIES,
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: LoadJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[LoadJobConfig] = None,
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of a table from a JSON string or dict.
@@ -3061,10 +3063,10 @@ class Client(ClientWithProject):
             Sequence[Union[Table, TableReference, TableListItem, str]],
         ],
         destination: Union[Table, TableReference, TableListItem, str],
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
         job_config: CopyJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
@@ -3167,10 +3169,10 @@ class Client(ClientWithProject):
         self,
         source: Union[Table, TableReference, TableListItem, Model, ModelReference, str],
         destination_uris: Union[str, Sequence[str]],
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
         job_config: ExtractJobConfig = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
@@ -3267,10 +3269,10 @@ class Client(ClientWithProject):
         self,
         query: str,
         job_config: QueryJobConfig = None,
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
@@ -3560,7 +3562,7 @@ class Client(ClientWithProject):
         ] = AutoRowIDs.GENERATE_UUID,
         skip_invalid_rows: bool = None,
         ignore_unknown_values: bool = None,
-        template_suffix: str = None,
+        template_suffix: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Sequence[dict]:
@@ -3752,7 +3754,7 @@ class Client(ClientWithProject):
         table: Union[Table, TableListItem, TableReference, str],
         selected_fields: Sequence[SchemaField] = None,
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         start_index: Optional[int] = None,
         page_size: Optional[int] = None,
         retry: retries.Retry = DEFAULT_RETRY,

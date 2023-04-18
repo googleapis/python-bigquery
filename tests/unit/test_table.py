@@ -1193,7 +1193,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)
-        table._properties["timePartitioning"] = {"expirationMs": None}
+        table.partition_expiration = None
         resource = table.to_api_repr()
 
         exp_resource = {

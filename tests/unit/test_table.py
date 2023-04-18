@@ -1189,6 +1189,20 @@ class TestTable(unittest.TestCase, _SchemaBase):
         }
         self.assertEqual(resource, exp_resource)
 
+    def test_to_api_repr_w_unsetting_expiration(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+        table._properties["timePartitioning"] = {"expirationMs": None}
+        resource = table.to_api_repr()
+
+        exp_resource = {
+            "tableReference": table_ref.to_api_repr(),
+            "labels": {},
+            "timePartitioning": {"expirationMs": None},
+        }
+        self.assertEqual(resource, exp_resource)
+
     def test__build_resource_w_custom_field(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)

@@ -179,7 +179,7 @@ def test_from_api_repr(target_class):
     assert actual_routine.determinism_level == "DETERMINISTIC"
     assert actual_routine.remote_function_options.endpoint == "https://some.endpoint"
     assert actual_routine.remote_function_options.connection == "connection_string"
-    assert actual_routine.remote_function_options.max_batching_factor == 50
+    assert actual_routine.remote_function_options.max_batching_rows == 50
     assert actual_routine.remote_function_options.user_defined_context == {"foo": "bar"}
 
 

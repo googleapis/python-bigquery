@@ -2082,6 +2082,32 @@ class TestBigQuery(unittest.TestCase):
         assert len(rows) == 1
         assert rows[0].max_value == 100.0
 
+
+    def test_create_remote_routine(self):
+        routine_name = "test_remote_routine"
+        dataset = self.temp_dataset(_make_dataset_id("create_routine"))
+        string_type = bigquery.StandardSqlDataType(
+            type_kind=bigquery.StandardSqlTypeNames.STRING
+        )
+
+        remote_options = bigquery.RemoteFunctionOptions(
+            endpoint="https://aaabbbccc-uc.a.run.app",
+            max_batching_rows=50,
+            user_defined_context={
+                "foo": "bar",
+            },
+        )
+        routine = bigquery.Routine(
+            dataset.routine(routine_name),
+            type_="SCALAR_FUNCTION",
+            return_type=string_type,
+            remote_function_options=remote_options,
+        )
+
+        routine = helpers.retry_403(Config.CLIENT.create_routine)(routine)
+        assert routine.endpoint == "https://aaabbbccc-uc.a.run.app"
+        assert routine.max_batching_rows == 50
+
     def test_create_tvf_routine(self):
         from google.cloud.bigquery import (
             Routine,

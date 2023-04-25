@@ -600,17 +600,26 @@ class RoutineReference(object):
 class RemoteFunctionOptions(object):
     """Configuration options for controlling remote BigQuery functions."""
 
-    def __init__(self, _properties=None) -> None:
+    def __init__(
+        self,
+        endpoint=None,
+        connection=None,
+        max_batching_rows=None,
+        user_defined_context=None,
+        _properties=None,
+    ) -> None:
         if _properties is None:
             _properties = {}
         self._properties = _properties
 
-        if start is not None:
-            self.start = start
-        if end is not None:
-            self.end = end
-        if interval is not None:
-            self.interval = interval
+        if endpoint is not None:
+            self.endpoint = endpoint
+        if connection is not None:
+            self.connection = connection
+        if max_batching_rows is not None:
+            self.max_batching_rows = max_batching_rows
+        if user_defined_context is not None:
+            self.user_defined_context = user_defined_context
 
     @property
     def connection(self):

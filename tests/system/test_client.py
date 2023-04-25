@@ -60,6 +60,11 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
 
 try:
+    from google.cloud import bigquery_connection_v1
+except ImportError:  # pragma: NO COVER
+    bigquery_connection = None
+
+try:
     import pyarrow
     import pyarrow.types
 except ImportError:  # pragma: NO COVER
@@ -2082,8 +2087,12 @@ class TestBigQuery(unittest.TestCase):
         assert len(rows) == 1
         assert rows[0].max_value == 100.0
 
-
+    @unittest.skipIf(
+        bigquery_connection is None, "Requires `google-cloud-bigquery-connection`"
+    )
     def test_create_remote_routine(self):
+        from google.cloud.bigquery import RemoteFunctionOptions
+
         routine_name = "test_remote_routine"
         dataset = self.temp_dataset(_make_dataset_id("create_routine"))
         string_type = bigquery.StandardSqlDataType(
@@ -2096,6 +2105,7 @@ class TestBigQuery(unittest.TestCase):
             user_defined_context={
                 "foo": "bar",
             },
+            # TODO: backend requires a valid connection
         )
         routine = bigquery.Routine(
             dataset.routine(routine_name),
@@ -2107,6 +2117,7 @@ class TestBigQuery(unittest.TestCase):
         routine = helpers.retry_403(Config.CLIENT.create_routine)(routine)
         assert routine.endpoint == "https://aaabbbccc-uc.a.run.app"
         assert routine.max_batching_rows == 50
+        assert routine.user_defined_context["foo"] == "bar"
 
     def test_create_tvf_routine(self):
         from google.cloud.bigquery import (

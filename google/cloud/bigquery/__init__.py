@@ -93,6 +93,7 @@ from google.cloud.bigquery.routine import Routine
 from google.cloud.bigquery.routine import RoutineArgument
 from google.cloud.bigquery.routine import RoutineReference
 from google.cloud.bigquery.routine import RoutineType
+from google.cloud.bigquery.routine import RemoteFunctionOptions
 from google.cloud.bigquery.schema import PolicyTagList
 from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery.standard_sql import StandardSqlDataType

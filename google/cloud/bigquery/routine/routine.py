@@ -600,6 +600,13 @@ class RoutineReference(object):
 class RemoteFunctionOptions(object):
     """Configuration options for controlling remote BigQuery functions."""
 
+    _PROPERTY_TO_API_FIELD = {
+        "endpoint": "endpoint",
+        "connection": "connection",
+        "max_batching_rows": "maxBatchingRows",
+        "user_defined_context": "userDefinedContext",
+    }
+
     def __init__(
         self,
         endpoint=None,
@@ -630,7 +637,7 @@ class RemoteFunctionOptions(object):
         return _helpers._str_or_none(self._properties.get("connection"))
 
     @connection.setter
-    def start(self, value):
+    def connection(self, value):
         self._properties["connection"] = _helpers._str_or_none(value)
 
     @property
@@ -659,7 +666,7 @@ class RemoteFunctionOptions(object):
 
     @property
     def user_defined_context(self):
-        """dict{string: string}: User-defined context as a set of key/value pairs,
+        """Dict[str, str]: User-defined context as a set of key/value pairs,
             which will be sent as function invocation context together with
         batched arguments in the requests to the remote service. The total
             number of bytes of keys and values must be less than 8KB.
@@ -667,17 +674,45 @@ class RemoteFunctionOptions(object):
         return self._properties.get("userDefinedContext")
 
     @user_defined_context.setter
-    def max_batching_rows(self, value):
+    def user_defined_context(self, value):
         if not isinstance(value, dict):
-            raise ValueError(
-                "value must be dictionary of string keys and values " "or None"
-            )
-        d = {}
-        for k, v in value.items():
-            k = _helpers._str_or_none(k)
-            v = _helpers._str_or_none(v)
+            raise ValueError("value must be dictionary")
+        self._properties["userDefinedContext"] = value
 
-            if k is None or v is None:
-                raise ValueError("value dictionary contains non-string members")
-            d[k] = v
-        self._properties["userDefinedContext"] = d
+    @classmethod
+    def from_api_repr(cls, resource: dict) -> "RemoteFunctionOptions":
+        """Factory: construct remote function options given its API representation.
+
+        Args:
+            resource (Dict[str, object]): Resource, as returned from the API.
+
+        Returns:
+            google.cloud.bigquery.routine.RemoteFunctionOptions:
+                Python object, as parsed from ``resource``.
+        """
+        ref = cls()
+        ref._properties = resource
+        return ref
+
+    def to_api_repr(self) -> dict:
+        """Construct the API resource representation of this RemoteFunctionOptions.
+
+        Returns:
+            Dict[str, object]: Remote function options represented as an API resource.
+        """
+        return self._properties
+
+    def __eq__(self, other):
+        if not isinstance(other, RemoteFunctionOptions):
+            return NotImplemented
+        return self._properties == other._properties
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __repr__(self):
+        all_properties = [
+            "{}={}".format(property_name, repr(getattr(self, property_name)))
+            for property_name in sorted(self._PROPERTY_TO_API_FIELD)
+        ]
+        return "RemoteFunctionOptions({})".format(", ".join(all_properties))

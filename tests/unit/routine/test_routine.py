@@ -75,6 +75,13 @@ def test_ctor_w_properties(target_class):
     description = "A routine description."
     determinism_level = bigquery.DeterminismLevel.NOT_DETERMINISTIC
 
+    options = bigquery.RemoteFunctionOptions(
+        endpoint="https://some.endpoint",
+        connection="connection_string",
+        max_batching_rows=99,
+        user_defined_context={"foo": "bar"},
+    )
+
     actual_routine = target_class(
         routine_id,
         arguments=arguments,
@@ -84,6 +91,7 @@ def test_ctor_w_properties(target_class):
         type_=type_,
         description=description,
         determinism_level=determinism_level,
+        remote_function_options=options,
     )
 
     ref = RoutineReference.from_string(routine_id)
@@ -97,6 +105,7 @@ def test_ctor_w_properties(target_class):
     assert (
         actual_routine.determinism_level == bigquery.DeterminismLevel.NOT_DETERMINISTIC
     )
+    assert actual_routine.remote_function_options == options
 
 
 def test_from_api_repr(target_class):
@@ -126,6 +135,14 @@ def test_from_api_repr(target_class):
         "someNewField": "someValue",
         "description": "A routine description.",
         "determinismLevel": bigquery.DeterminismLevel.DETERMINISTIC,
+        "remoteFunctionOptions": {
+            "endpoint": "https://some.endpoint",
+            "connection": "connection_string",
+            "maxBatchingRows": 50,
+            "userDefinedContext": {
+                "foo": "bar",
+            },
+        },
     }
     actual_routine = target_class.from_api_repr(resource)
 
@@ -160,6 +177,10 @@ def test_from_api_repr(target_class):
     assert actual_routine._properties["someNewField"] == "someValue"
     assert actual_routine.description == "A routine description."
     assert actual_routine.determinism_level == "DETERMINISTIC"
+    assert actual_routine.remote_function_options.endpoint == "https://some.endpoint"
+    assert actual_routine.remote_function_options.connection == "connection_string"
+    assert actual_routine.remote_function_options.max_batching_factor == 50
+    assert actual_routine.remote_function_options.user_defined_context == {"foo": "bar"}
 
 
 def test_from_api_repr_tvf_function(target_class):
@@ -261,6 +282,7 @@ def test_from_api_repr_w_minimal_resource(target_class):
     assert actual_routine.type_ is None
     assert actual_routine.description is None
     assert actual_routine.determinism_level is None
+    assert actual_routine.remote_function_options is None
 
 
 def test_from_api_repr_w_unknown_fields(target_class):

@@ -48,6 +48,10 @@ def test_ctor(target_class):
 def test_empty_ctor(target_class):
     options = target_class()
     assert options._properties == {}
+    options = target_class(_properties=None)
+    assert options._properties == {}
+    options = target_class(_properties={})
+    assert options._properties == {}
 
 
 def test_ctor_bad_context(target_class):
@@ -61,12 +65,14 @@ def test_from_api_repr(target_class):
         "connection": CONNECTION,
         "maxBatchingRows": MAX_BATCHING_ROWS,
         "userDefinedContext": USER_DEFINED_CONTEXT,
+        "someRandomField": "someValue",
     }
     options = target_class.from_api_repr(resource)
     assert options.endpoint == ENDPOINT
     assert options.connection == CONNECTION
     assert options.max_batching_rows == MAX_BATCHING_ROWS
     assert options.user_defined_context == USER_DEFINED_CONTEXT
+    assert options._properties["someRandomField"] == "someValue"
 
 
 def test_from_api_repr_w_minimal_resource(target_class):

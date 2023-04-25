@@ -113,7 +113,7 @@ def test_ctor_invalid_remote_function_options(target_class):
         ValueError,
         match=".*must be google.cloud.bigquery.routine.RemoteFunctionOptions.*",
     ):
-        bad_routine = target_class(
+        target_class(
             "my-proj.my_dset.my_routine",
             remote_function_options=object(),
         )
@@ -454,6 +454,24 @@ def test_from_api_repr_w_unknown_fields(target_class):
             ["someNewField"],
             {"someNewField": "someValue"},
         ),
+        (
+            {
+                "routineType": "SCALAR_FUNCTION",
+                "remoteFunctionOptions": {
+                    "endpoint": "https://some_endpoint",
+                    "connection": "connection_string",
+                    "max_batching_rows": 101,
+                },
+            },
+            ["remote_function_options"],
+            {
+                "remoteFunctionOptions": {
+                    "endpoint": "https://some_endpoint",
+                    "connection": "connection_string",
+                    "max_batching_rows": 101,
+                },
+            },
+        ),
     ],
 )
 def test_build_resource(object_under_test, resource, filter_fields, expected):
@@ -528,6 +546,12 @@ def test_set_description_w_none(object_under_test):
     object_under_test.description = None
     assert object_under_test.description is None
     assert object_under_test._properties["description"] is None
+
+
+def test_set_remote_function_options_w_none(object_under_test):
+    object_under_test.remote_function_options = None
+    assert object_under_test.remote_function_options is None
+    assert object_under_test._properties["remoteFunctionOptions"] is None
 
 
 def test_repr(target_class):

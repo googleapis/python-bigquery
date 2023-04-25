@@ -16,8 +16,6 @@
 
 import pytest
 
-from google.cloud import bigquery
-
 ENDPOINT = "https://some.endpoint"
 CONNECTION = "connection_string"
 MAX_BATCHING_ROWS = 50
@@ -54,7 +52,7 @@ def test_empty_ctor(target_class):
 
 def test_ctor_bad_context(target_class):
     with pytest.raises(ValueError, match="value must be dictionary"):
-        options = target_class(user_defined_context=[1, 2, 3, 4])
+        target_class(user_defined_context=[1, 2, 3, 4])
 
 
 def test_from_api_repr(target_class):

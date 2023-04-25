@@ -155,6 +155,7 @@ __all__ = [
     "Routine",
     "RoutineArgument",
     "RoutineReference",
+    "RemoteFunctionOptions",
     # Shared helpers
     "SchemaField",
     "PolicyTagList",

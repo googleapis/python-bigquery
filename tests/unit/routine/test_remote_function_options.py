@@ -47,6 +47,16 @@ def test_ctor(target_class):
     assert options.user_defined_context == USER_DEFINED_CONTEXT
 
 
+def test_empty_ctor(target_class):
+    options = target_class()
+    assert options._properties == {}
+
+
+def test_ctor_bad_context(target_class):
+    with pytest.raises(ValueError, match="value must be dictionary"):
+        options = target_class(user_defined_context=[1, 2, 3, 4])
+
+
 def test_from_api_repr(target_class):
     resource = {
         "endpoint": ENDPOINT,

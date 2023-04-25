@@ -108,6 +108,17 @@ def test_ctor_w_properties(target_class):
     assert actual_routine.remote_function_options == options
 
 
+def test_ctor_invalid_remote_function_options(target_class):
+    with pytest.raises(
+        ValueError,
+        match=".*must be google.cloud.bigquery.routine.RemoteFunctionOptions.*",
+    ):
+        bad_routine = target_class(
+            "my-proj.my_dset.my_routine",
+            remote_function_options=object(),
+        )
+
+
 def test_from_api_repr(target_class):
     from google.cloud.bigquery.routine import RoutineArgument
     from google.cloud.bigquery.routine import RoutineReference

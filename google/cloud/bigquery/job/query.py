@@ -58,6 +58,11 @@ try:
 except ImportError:  # pragma: NO COVER
     pandas = None
 
+try:
+    import db_dtypes  # type: ignore
+except ImportError:  # pragma: NO COVER
+    db_dtypes = None
+
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Assumption: type checks are only used by library developers and CI environments
     # that have all optional dependencies installed, thus no conditional imports.
@@ -764,7 +769,6 @@ class QueryJob(_AsyncJob):
             _helpers._set_sub_prop(
                 self._properties, ["configuration", "query", "query"], query
             )
-
         self._query_results = None
         self._done_timeout = None
         self._transport_timeout = None
@@ -1332,6 +1336,15 @@ class QueryJob(_AsyncJob):
         # the timeout from the futures API is respected. See:
         # https://github.com/GoogleCloudPlatform/google-cloud-python/issues/4135
         timeout_ms = None
+
+        # Python_API_core, as part of a major rewrite of the deadline, timeout,
+        # retry process sets the timeout value as a Python object().
+        # Our system does not natively handle that and instead expects
+        # either none or a numeric value. If passed a Python object, convert to
+        # None.
+        if type(self._done_timeout) == object:  # pragma: NO COVER
+            self._done_timeout = None
+
         if self._done_timeout is not None:
             # Subtract a buffer for context switching, network latency, etc.
             api_timeout = self._done_timeout - _TIMEOUT_BUFFER_SECS
@@ -1629,6 +1642,10 @@ class QueryJob(_AsyncJob):
         int_dtype: Union[Any, None] = DefaultPandasDTypes.INT_DTYPE,
         float_dtype: Union[Any, None] = None,
         string_dtype: Union[Any, None] = None,
+        date_dtype: Union[Any, None] = DefaultPandasDTypes.DATE_DTYPE,
+        datetime_dtype: Union[Any, None] = None,
+        time_dtype: Union[Any, None] = DefaultPandasDTypes.TIME_DTYPE,
+        timestamp_dtype: Union[Any, None] = None,
     ) -> "pandas.DataFrame":
         """Return a pandas DataFrame from a QueryJob
 
@@ -1689,7 +1706,7 @@ class QueryJob(_AsyncJob):
                 type can be found at:
                 https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#boolean_type
 
-                .. versionadded:: 3.7.1
+                .. versionadded:: 3.8.0
 
             int_dtype (Optional[pandas.Series.dtype, None]):
                 If set, indicate a pandas ExtensionDtype (e.g. ``pandas.Int64Dtype()``)
@@ -1699,7 +1716,7 @@ class QueryJob(_AsyncJob):
                 Integer types can be found at:
                 https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#integer_types
 
-                .. versionadded:: 3.7.1
+                .. versionadded:: 3.8.0
 
             float_dtype (Optional[pandas.Series.dtype, None]):
                 If set, indicate a pandas ExtensionDtype (e.g. ``pandas.Float32Dtype()``)
@@ -1709,7 +1726,7 @@ class QueryJob(_AsyncJob):
                 type can be found at:
                 https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#floating_point_types
 
-                .. versionadded:: 3.7.1
+                .. versionadded:: 3.8.0
 
             string_dtype (Optional[pandas.Series.dtype, None]):
                 If set, indicate a pandas ExtensionDtype (e.g. ``pandas.StringDtype()``) to
@@ -1719,7 +1736,50 @@ class QueryJob(_AsyncJob):
                 type can be found at:
                 https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#string_type
 
-                .. versionadded:: 3.7.1
+                .. versionadded:: 3.8.0
+
+            date_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g.
+                ``pandas.ArrowDtype(pyarrow.date32())``) to convert BigQuery Date
+                type, instead of relying on the default ``db_dtypes.DateDtype()``.
+                If you explicitly set the value to ``None``, then the data type will be
+                ``numpy.dtype("datetime64[ns]")`` or ``object`` if out of bound. BigQuery
+                Date type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#date_type
+
+                .. versionadded:: 3.10.0
+
+            datetime_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g.
+                ``pandas.ArrowDtype(pyarrow.timestamp("us"))``) to convert BigQuery Datetime
+                type, instead of relying on the default ``numpy.dtype("datetime64[ns]``.
+                If you explicitly set the value to ``None``, then the data type will be
+                ``numpy.dtype("datetime64[ns]")`` or ``object`` if out of bound. BigQuery
+                Datetime type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#datetime_type
+
+                .. versionadded:: 3.10.0
+
+            time_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g.
+                ``pandas.ArrowDtype(pyarrow.time64("us"))``) to convert BigQuery Time
+                type, instead of relying on the default ``db_dtypes.TimeDtype()``.
+                If you explicitly set the value to ``None``, then the data type will be
+                ``numpy.dtype("object")``. BigQuery Time type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#time_type
+
+                .. versionadded:: 3.10.0
+
+            timestamp_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g.
+                ``pandas.ArrowDtype(pyarrow.timestamp("us", tz="UTC"))``) to convert BigQuery Timestamp
+                type, instead of relying on the default ``numpy.dtype("datetime64[ns, UTC]")``.
+                If you explicitly set the value to ``None``, then the data type will be
+                ``numpy.dtype("datetime64[ns, UTC]")`` or ``object`` if out of bound. BigQuery
+                Datetime type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp_type
+
+                .. versionadded:: 3.10.0
 
         Returns:
             pandas.DataFrame:
@@ -1747,6 +1807,10 @@ class QueryJob(_AsyncJob):
             int_dtype=int_dtype,
             float_dtype=float_dtype,
             string_dtype=string_dtype,
+            date_dtype=date_dtype,
+            datetime_dtype=datetime_dtype,
+            time_dtype=time_dtype,
+            timestamp_dtype=timestamp_dtype,
         )
 
     # If changing the signature of this method, make sure to apply the same

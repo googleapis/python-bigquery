@@ -28,7 +28,7 @@ from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
-from google.cloud.bigquery.enums import KeyResultStatementKind
+from google.cloud.bigquery.enums import KeyResultStatementKind, DefaultPandasDTypes
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.query import (
@@ -52,6 +52,16 @@ from google.cloud.bigquery._tqdm_helpers import wait_for_query
 from google.cloud.bigquery.job.base import _AsyncJob
 from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
+
+try:
+    import pandas  # type: ignore
+except ImportError:  # pragma: NO COVER
+    pandas = None
+
+try:
+    import db_dtypes  # type: ignore
+except ImportError:  # pragma: NO COVER
+    db_dtypes = None
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Assumption: type checks are only used by library developers and CI environments
@@ -745,23 +755,20 @@ class QueryJob(_AsyncJob):
 
     _JOB_TYPE = "query"
     _UDF_KEY = "userDefinedFunctionResources"
+    _CONFIG_CLASS = QueryJobConfig
 
     def __init__(self, job_id, query, client, job_config=None):
         super(QueryJob, self).__init__(job_id, client)
 
-        if job_config is None:
-            job_config = QueryJobConfig()
-        if job_config.use_legacy_sql is None:
-            job_config.use_legacy_sql = False
-
-        self._properties["configuration"] = job_config._properties
-        self._configuration = job_config
+        if job_config is not None:
+            self._properties["configuration"] = job_config._properties
+        if self.configuration.use_legacy_sql is None:
+            self.configuration.use_legacy_sql = False
 
         if query:
             _helpers._set_sub_prop(
                 self._properties, ["configuration", "query", "query"], query
             )
-
         self._query_results = None
         self._done_timeout = None
         self._transport_timeout = None
@@ -771,7 +778,12 @@ class QueryJob(_AsyncJob):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.allow_large_results`.
         """
-        return self._configuration.allow_large_results
+        return self.configuration.allow_large_results
+
+    @property
+    def configuration(self) -> QueryJobConfig:
+        """The configuration for this query job."""
+        return typing.cast(QueryJobConfig, super().configuration)
 
     @property
     def connection_properties(self) -> List[ConnectionProperty]:
@@ -780,14 +792,14 @@ class QueryJob(_AsyncJob):
 
         .. versionadded:: 2.29.0
         """
-        return self._configuration.connection_properties
+        return self.configuration.connection_properties
 
     @property
     def create_disposition(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.create_disposition`.
         """
-        return self._configuration.create_disposition
+        return self.configuration.create_disposition
 
     @property
     def create_session(self) -> Optional[bool]:
@@ -796,21 +808,21 @@ class QueryJob(_AsyncJob):
 
         .. versionadded:: 2.29.0
         """
-        return self._configuration.create_session
+        return self.configuration.create_session
 
     @property
     def default_dataset(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.default_dataset`.
         """
-        return self._configuration.default_dataset
+        return self.configuration.default_dataset
 
     @property
     def destination(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.destination`.
         """
-        return self._configuration.destination
+        return self.configuration.destination
 
     @property
     def destination_encryption_configuration(self):
@@ -823,28 +835,28 @@ class QueryJob(_AsyncJob):
         See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.destination_encryption_configuration`.
         """
-        return self._configuration.destination_encryption_configuration
+        return self.configuration.destination_encryption_configuration
 
     @property
     def dry_run(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.dry_run`.
         """
-        return self._configuration.dry_run
+        return self.configuration.dry_run
 
     @property
     def flatten_results(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.flatten_results`.
         """
-        return self._configuration.flatten_results
+        return self.configuration.flatten_results
 
     @property
     def priority(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.priority`.
         """
-        return self._configuration.priority
+        return self.configuration.priority
 
     @property
     def query(self):
@@ -862,90 +874,90 @@ class QueryJob(_AsyncJob):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.query_parameters`.
         """
-        return self._configuration.query_parameters
+        return self.configuration.query_parameters
 
     @property
     def udf_resources(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.udf_resources`.
         """
-        return self._configuration.udf_resources
+        return self.configuration.udf_resources
 
     @property
     def use_legacy_sql(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.use_legacy_sql`.
         """
-        return self._configuration.use_legacy_sql
+        return self.configuration.use_legacy_sql
 
     @property
     def use_query_cache(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.use_query_cache`.
         """
-        return self._configuration.use_query_cache
+        return self.configuration.use_query_cache
 
     @property
     def write_disposition(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.write_disposition`.
         """
-        return self._configuration.write_disposition
+        return self.configuration.write_disposition
 
     @property
     def maximum_billing_tier(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.maximum_billing_tier`.
         """
-        return self._configuration.maximum_billing_tier
+        return self.configuration.maximum_billing_tier
 
     @property
     def maximum_bytes_billed(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.maximum_bytes_billed`.
         """
-        return self._configuration.maximum_bytes_billed
+        return self.configuration.maximum_bytes_billed
 
     @property
     def range_partitioning(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.range_partitioning`.
         """
-        return self._configuration.range_partitioning
+        return self.configuration.range_partitioning
 
     @property
     def table_definitions(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.table_definitions`.
         """
-        return self._configuration.table_definitions
+        return self.configuration.table_definitions
 
     @property
     def time_partitioning(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.time_partitioning`.
         """
-        return self._configuration.time_partitioning
+        return self.configuration.time_partitioning
 
     @property
     def clustering_fields(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.clustering_fields`.
         """
-        return self._configuration.clustering_fields
+        return self.configuration.clustering_fields
 
     @property
     def schema_update_options(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.schema_update_options`.
         """
-        return self._configuration.schema_update_options
+        return self.configuration.schema_update_options
 
     def to_api_repr(self):
         """Generate a resource for :meth:`_begin`."""
         # Use to_api_repr to allow for some configuration properties to be set
         # automatically.
-        configuration = self._configuration.to_api_repr()
+        configuration = self.configuration.to_api_repr()
         return {
             "jobReference": self._properties["jobReference"],
             "configuration": configuration,
@@ -1257,7 +1269,7 @@ class QueryJob(_AsyncJob):
         """
         template = "{message}\n\n{header}\n\n{ruler}\n{body}\n{ruler}"
 
-        lines = query.splitlines()
+        lines = query.splitlines() if query is not None else [""]
         max_line_len = max(len(line) for line in lines)
 
         header = "-----Query Job SQL Follows-----"
@@ -1324,6 +1336,15 @@ class QueryJob(_AsyncJob):
         # the timeout from the futures API is respected. See:
         # https://github.com/GoogleCloudPlatform/google-cloud-python/issues/4135
         timeout_ms = None
+
+        # Python_API_core, as part of a major rewrite of the deadline, timeout,
+        # retry process sets the timeout value as a Python object().
+        # Our system does not natively handle that and instead expects
+        # either none or a numeric value. If passed a Python object, convert to
+        # None.
+        if type(self._done_timeout) == object:  # pragma: NO COVER
+            self._done_timeout = None
+
         if self._done_timeout is not None:
             # Subtract a buffer for context switching, network latency, etc.
             api_timeout = self._done_timeout - _TIMEOUT_BUFFER_SECS
@@ -1617,6 +1638,14 @@ class QueryJob(_AsyncJob):
         create_bqstorage_client: bool = True,
         max_results: Optional[int] = None,
         geography_as_object: bool = False,
+        bool_dtype: Union[Any, None] = DefaultPandasDTypes.BOOL_DTYPE,
+        int_dtype: Union[Any, None] = DefaultPandasDTypes.INT_DTYPE,
+        float_dtype: Union[Any, None] = None,
+        string_dtype: Union[Any, None] = None,
+        date_dtype: Union[Any, None] = DefaultPandasDTypes.DATE_DTYPE,
+        datetime_dtype: Union[Any, None] = None,
+        time_dtype: Union[Any, None] = DefaultPandasDTypes.TIME_DTYPE,
+        timestamp_dtype: Union[Any, None] = None,
     ) -> "pandas.DataFrame":
         """Return a pandas DataFrame from a QueryJob
 
@@ -1669,6 +1698,89 @@ class QueryJob(_AsyncJob):
 
                 .. versionadded:: 2.24.0
 
+            bool_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g. ``pandas.BooleanDtype()``)
+                to convert BigQuery Boolean type, instead of relying on the default
+                ``pandas.BooleanDtype()``. If you explicitly set the value to ``None``,
+                then the data type will be ``numpy.dtype("bool")``. BigQuery Boolean
+                type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#boolean_type
+
+                .. versionadded:: 3.8.0
+
+            int_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g. ``pandas.Int64Dtype()``)
+                to convert BigQuery Integer types, instead of relying on the default
+                ``pandas.Int64Dtype()``. If you explicitly set the value to ``None``,
+                then the data type will be ``numpy.dtype("int64")``. A list of BigQuery
+                Integer types can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#integer_types
+
+                .. versionadded:: 3.8.0
+
+            float_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g. ``pandas.Float32Dtype()``)
+                to convert BigQuery Float type, instead of relying on the default
+                ``numpy.dtype("float64")``. If you explicitly set the value to ``None``,
+                then the data type will be ``numpy.dtype("float64")``. BigQuery Float
+                type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#floating_point_types
+
+                .. versionadded:: 3.8.0
+
+            string_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g. ``pandas.StringDtype()``) to
+                convert BigQuery String type, instead of relying on the default
+                ``numpy.dtype("object")``. If you explicitly set the value to ``None``,
+                then the data type will be ``numpy.dtype("object")``. BigQuery String
+                type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#string_type
+
+                .. versionadded:: 3.8.0
+
+            date_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g.
+                ``pandas.ArrowDtype(pyarrow.date32())``) to convert BigQuery Date
+                type, instead of relying on the default ``db_dtypes.DateDtype()``.
+                If you explicitly set the value to ``None``, then the data type will be
+                ``numpy.dtype("datetime64[ns]")`` or ``object`` if out of bound. BigQuery
+                Date type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#date_type
+
+                .. versionadded:: 3.10.0
+
+            datetime_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g.
+                ``pandas.ArrowDtype(pyarrow.timestamp("us"))``) to convert BigQuery Datetime
+                type, instead of relying on the default ``numpy.dtype("datetime64[ns]``.
+                If you explicitly set the value to ``None``, then the data type will be
+                ``numpy.dtype("datetime64[ns]")`` or ``object`` if out of bound. BigQuery
+                Datetime type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#datetime_type
+
+                .. versionadded:: 3.10.0
+
+            time_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g.
+                ``pandas.ArrowDtype(pyarrow.time64("us"))``) to convert BigQuery Time
+                type, instead of relying on the default ``db_dtypes.TimeDtype()``.
+                If you explicitly set the value to ``None``, then the data type will be
+                ``numpy.dtype("object")``. BigQuery Time type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#time_type
+
+                .. versionadded:: 3.10.0
+
+            timestamp_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g.
+                ``pandas.ArrowDtype(pyarrow.timestamp("us", tz="UTC"))``) to convert BigQuery Timestamp
+                type, instead of relying on the default ``numpy.dtype("datetime64[ns, UTC]")``.
+                If you explicitly set the value to ``None``, then the data type will be
+                ``numpy.dtype("datetime64[ns, UTC]")`` or ``object`` if out of bound. BigQuery
+                Datetime type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp_type
+
+                .. versionadded:: 3.10.0
+
         Returns:
             pandas.DataFrame:
                 A :class:`~pandas.DataFrame` populated with row data
@@ -1691,6 +1803,14 @@ class QueryJob(_AsyncJob):
             progress_bar_type=progress_bar_type,
             create_bqstorage_client=create_bqstorage_client,
             geography_as_object=geography_as_object,
+            bool_dtype=bool_dtype,
+            int_dtype=int_dtype,
+            float_dtype=float_dtype,
+            string_dtype=string_dtype,
+            date_dtype=date_dtype,
+            datetime_dtype=datetime_dtype,
+            time_dtype=time_dtype,
+            timestamp_dtype=timestamp_dtype,
         )
 
     # If changing the signature of this method, make sure to apply the same

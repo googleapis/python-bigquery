@@ -97,7 +97,12 @@ def _get_final_span_attributes(attributes=None, client=None, job_ref=None):
         final_attributes.update(job_attributes)
     if attributes:
         final_attributes.update(attributes)
-    return {k: v for k, v in final_attributes.items() if v}
+
+    filtered = {k: v for k, v in final_attributes.items() if v is not None}
+    final_attributes.clear()
+    final_attributes.update(filtered)
+
+    return final_attributes
 
 
 def _set_client_attributes(client):

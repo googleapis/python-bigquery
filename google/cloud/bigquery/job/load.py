@@ -14,6 +14,7 @@
 
 """Classes for load jobs."""
 
+import typing
 from typing import FrozenSet, List, Iterable, Optional
 
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
@@ -28,6 +29,7 @@ from google.cloud.bigquery.table import TimePartitioning
 from google.cloud.bigquery.job.base import _AsyncJob
 from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
+from google.cloud.bigquery.query import ConnectionProperty
 
 
 class LoadJobConfig(_JobConfig):
@@ -121,6 +123,25 @@ class LoadJobConfig(_JobConfig):
             self._del_sub_prop("clustering")
 
     @property
+    def connection_properties(self) -> List[ConnectionProperty]:
+        """Connection properties.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.connection_properties
+
+        .. versionadded:: 3.7.0
+        """
+        resource = self._get_sub_prop("connectionProperties", [])
+        return [ConnectionProperty.from_api_repr(prop) for prop in resource]
+
+    @connection_properties.setter
+    def connection_properties(self, value: Iterable[ConnectionProperty]):
+        self._set_sub_prop(
+            "connectionProperties",
+            [prop.to_api_repr() for prop in value],
+        )
+
+    @property
     def create_disposition(self):
         """Optional[google.cloud.bigquery.job.CreateDisposition]: Specifies behavior
         for creating tables.
@@ -133,6 +154,27 @@ class LoadJobConfig(_JobConfig):
     @create_disposition.setter
     def create_disposition(self, value):
         self._set_sub_prop("createDisposition", value)
+
+    @property
+    def create_session(self) -> Optional[bool]:
+        """[Preview] If :data:`True`, creates a new session, where
+        :attr:`~google.cloud.bigquery.job.LoadJob.session_info` will contain a
+        random server generated session id.
+
+        If :data:`False`, runs load job with an existing ``session_id`` passed in
+        :attr:`~google.cloud.bigquery.job.LoadJobConfig.connection_properties`,
+        otherwise runs load job in non-session mode.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.create_session
+
+        .. versionadded:: 3.7.0
+        """
+        return self._get_sub_prop("createSession")
+
+    @create_session.setter
+    def create_session(self, value: Optional[bool]):
+        self._set_sub_prop("createSession", value)
 
     @property
     def decimal_target_types(self) -> Optional[FrozenSet[str]]:
@@ -312,6 +354,19 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("nullMarker", value)
 
     @property
+    def preserve_ascii_control_characters(self):
+        """Optional[bool]: Preserves the embedded ASCII control characters when sourceFormat is set to CSV.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.preserve_ascii_control_characters
+        """
+        return self._get_sub_prop("preserveAsciiControlCharacters")
+
+    @preserve_ascii_control_characters.setter
+    def preserve_ascii_control_characters(self, value):
+        self._set_sub_prop("preserveAsciiControlCharacters", bool(value))
+
+    @property
     def projection_fields(self) -> Optional[List[str]]:
         """Optional[List[str]]: If
         :attr:`google.cloud.bigquery.job.LoadJobConfig.source_format` is set to
@@ -378,6 +433,20 @@ class LoadJobConfig(_JobConfig):
                 "Expected value to be RangePartitioning or None, got {}.".format(value)
             )
         self._set_sub_prop("rangePartitioning", resource)
+
+    @property
+    def reference_file_schema_uri(self):
+        """Optional[str]:
+        When creating an external table, the user can provide a reference file with the
+        table schema. This is enabled for the following formats:
+
+        AVRO, PARQUET, ORC
+        """
+        return self._get_sub_prop("referenceFileSchemaUri")
+
+    @reference_file_schema_uri.setter
+    def reference_file_schema_uri(self, value):
+        return self._set_sub_prop("referenceFileSchemaUri", value)
 
     @property
     def schema(self):
@@ -537,15 +606,13 @@ class LoadJob(_AsyncJob):
     """
 
     _JOB_TYPE = "load"
+    _CONFIG_CLASS = LoadJobConfig
 
     def __init__(self, job_id, source_uris, destination, client, job_config=None):
         super(LoadJob, self).__init__(job_id, client)
 
-        if not job_config:
-            job_config = LoadJobConfig()
-
-        self._configuration = job_config
-        self._properties["configuration"] = job_config._properties
+        if job_config is not None:
+            self._properties["configuration"] = job_config._properties
 
         if source_uris is not None:
             _helpers._set_sub_prop(
@@ -558,6 +625,11 @@ class LoadJob(_AsyncJob):
                 ["configuration", "load", "destinationTable"],
                 destination.to_api_repr(),
             )
+
+    @property
+    def configuration(self) -> LoadJobConfig:
+        """The configuration for this load job."""
+        return typing.cast(LoadJobConfig, super().configuration)
 
     @property
     def destination(self):
@@ -586,98 +658,123 @@ class LoadJob(_AsyncJob):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.allow_jagged_rows`.
         """
-        return self._configuration.allow_jagged_rows
+        return self.configuration.allow_jagged_rows
 
     @property
     def allow_quoted_newlines(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.allow_quoted_newlines`.
         """
-        return self._configuration.allow_quoted_newlines
+        return self.configuration.allow_quoted_newlines
 
     @property
     def autodetect(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.autodetect`.
         """
-        return self._configuration.autodetect
+        return self.configuration.autodetect
+
+    @property
+    def connection_properties(self) -> List[ConnectionProperty]:
+        """See
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.connection_properties`.
+
+        .. versionadded:: 3.7.0
+        """
+        return self.configuration.connection_properties
 
     @property
     def create_disposition(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.create_disposition`.
         """
-        return self._configuration.create_disposition
+        return self.configuration.create_disposition
+
+    @property
+    def create_session(self) -> Optional[bool]:
+        """See
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.create_session`.
+
+        .. versionadded:: 3.7.0
+        """
+        return self.configuration.create_session
 
     @property
     def encoding(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.encoding`.
         """
-        return self._configuration.encoding
+        return self.configuration.encoding
 
     @property
     def field_delimiter(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.field_delimiter`.
         """
-        return self._configuration.field_delimiter
+        return self.configuration.field_delimiter
 
     @property
     def ignore_unknown_values(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.ignore_unknown_values`.
         """
-        return self._configuration.ignore_unknown_values
+        return self.configuration.ignore_unknown_values
 
     @property
     def max_bad_records(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.max_bad_records`.
         """
-        return self._configuration.max_bad_records
+        return self.configuration.max_bad_records
 
     @property
     def null_marker(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.null_marker`.
         """
-        return self._configuration.null_marker
+        return self.configuration.null_marker
 
     @property
     def quote_character(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.quote_character`.
         """
-        return self._configuration.quote_character
+        return self.configuration.quote_character
+
+    @property
+    def reference_file_schema_uri(self):
+        """See:
+        attr:`google.cloud.bigquery.job.LoadJobConfig.reference_file_schema_uri`.
+        """
+        return self.configuration.reference_file_schema_uri
 
     @property
     def skip_leading_rows(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.skip_leading_rows`.
         """
-        return self._configuration.skip_leading_rows
+        return self.configuration.skip_leading_rows
 
     @property
     def source_format(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.source_format`.
         """
-        return self._configuration.source_format
+        return self.configuration.source_format
 
     @property
     def write_disposition(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.write_disposition`.
         """
-        return self._configuration.write_disposition
+        return self.configuration.write_disposition
 
     @property
     def schema(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.schema`.
         """
-        return self._configuration.schema
+        return self.configuration.schema
 
     @property
     def destination_encryption_configuration(self):
@@ -690,7 +787,7 @@ class LoadJob(_AsyncJob):
         See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.destination_encryption_configuration`.
         """
-        return self._configuration.destination_encryption_configuration
+        return self.configuration.destination_encryption_configuration
 
     @property
     def destination_table_description(self):
@@ -699,7 +796,7 @@ class LoadJob(_AsyncJob):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#DestinationTableProperties.FIELDS.description
         """
-        return self._configuration.destination_table_description
+        return self.configuration.destination_table_description
 
     @property
     def destination_table_friendly_name(self):
@@ -708,42 +805,42 @@ class LoadJob(_AsyncJob):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#DestinationTableProperties.FIELDS.friendly_name
         """
-        return self._configuration.destination_table_friendly_name
+        return self.configuration.destination_table_friendly_name
 
     @property
     def range_partitioning(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.range_partitioning`.
         """
-        return self._configuration.range_partitioning
+        return self.configuration.range_partitioning
 
     @property
     def time_partitioning(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.time_partitioning`.
         """
-        return self._configuration.time_partitioning
+        return self.configuration.time_partitioning
 
     @property
     def use_avro_logical_types(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.use_avro_logical_types`.
         """
-        return self._configuration.use_avro_logical_types
+        return self.configuration.use_avro_logical_types
 
     @property
     def clustering_fields(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.clustering_fields`.
         """
-        return self._configuration.clustering_fields
+        return self.configuration.clustering_fields
 
     @property
     def schema_update_options(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.schema_update_options`.
         """
-        return self._configuration.schema_update_options
+        return self.configuration.schema_update_options
 
     @property
     def input_file_bytes(self):

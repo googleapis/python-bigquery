@@ -419,6 +419,20 @@ class CSVOptions(object):
         self._properties["encoding"] = value
 
     @property
+    def preserve_ascii_control_characters(self):
+        """bool: Indicates if the embedded ASCII control characters
+        (the first 32 characters in the ASCII-table, from '\x00' to '\x1F') are preserved.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#CsvOptions.FIELDS.preserve_ascii_control_characters
+        """
+        return self._properties.get("preserveAsciiControlCharacters")
+
+    @preserve_ascii_control_characters.setter
+    def preserve_ascii_control_characters(self, value):
+        self._properties["preserveAsciiControlCharacters"] = value
+
+    @property
     def field_delimiter(self):
         """str: The separator for fields in a CSV file. Defaults to comma (',').
 
@@ -755,6 +769,20 @@ class ExternalConfig(object):
     def hive_partitioning(self, value):
         prop = value.to_api_repr() if value is not None else None
         self._properties["hivePartitioningOptions"] = prop
+
+    @property
+    def reference_file_schema_uri(self):
+        """Optional[str]:
+        When creating an external table, the user can provide a reference file with the
+        table schema. This is enabled for the following formats:
+
+        AVRO, PARQUET, ORC
+        """
+        return self._properties.get("referenceFileSchemaUri")
+
+    @reference_file_schema_uri.setter
+    def reference_file_schema_uri(self, value):
+        self._properties["referenceFileSchemaUri"] = value
 
     @property
     def ignore_unknown_values(self):

@@ -27,6 +27,7 @@ import itertools
 import json
 import math
 import os
+import packaging.version
 import tempfile
 import typing
 from typing import (
@@ -44,6 +45,12 @@ from typing import (
 import uuid
 import warnings
 
+try:
+    import pyarrow  # type: ignore
+
+    _PYARROW_VERSION = packaging.version.parse(pyarrow.__version__)
+except ImportError:  # pragma: NO COVER
+    pyarrow = None
 
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore
@@ -58,9 +65,14 @@ from google.api_core import retry as retries
 import google.cloud._helpers  # type: ignore
 from google.cloud import exceptions  # pytype: disable=import-error
 from google.cloud.client import ClientWithProject  # type: ignore  # pytype: disable=import-error
-from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
-    DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
-)
+
+try:
+    from google.cloud.bigquery_storage_v1.services.big_query_read.client import (
+        DEFAULT_CLIENT_INFO as DEFAULT_BQSTORAGE_CLIENT_INFO,
+    )
+except ImportError:
+    DEFAULT_BQSTORAGE_CLIENT_INFO = None  # type: ignore
+
 
 from google.cloud.bigquery import _job_helpers
 from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
@@ -69,6 +81,7 @@ from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery._helpers import _verify_job_config_type
 from google.cloud.bigquery._helpers import _get_bigquery_host
+from google.cloud.bigquery._helpers import BQ_STORAGE_VERSIONS
 from google.cloud.bigquery._helpers import _DEFAULT_HOST
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
@@ -77,6 +90,7 @@ from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
+from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (
@@ -147,6 +161,9 @@ _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
 TIMEOUT_HEADER = "X-Server-Timeout"
 
+# https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
+_PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
+
 
 class Project(object):
     """Wrapper for resource describing a BigQuery project.
@@ -195,6 +212,9 @@ class Client(ClientWithProject):
         default_query_job_config (Optional[google.cloud.bigquery.job.QueryJobConfig]):
             Default ``QueryJobConfig``.
             Will be merged into job configs passed into the ``query`` method.
+        default_load_job_config (Optional[google.cloud.bigquery.job.LoadJobConfig]):
+            Default ``LoadJobConfig``.
+            Will be merged into job configs passed into the ``load_table_*`` methods.
         client_info (Optional[google.api_core.client_info.ClientInfo]):
             The client info used to send a user-agent string along with API
             requests. If ``None``, then default info will be used. Generally,
@@ -210,10 +230,7 @@ class Client(ClientWithProject):
             to acquire default credentials.
     """
 
-    SCOPE = (  # type: ignore
-        "https://www.googleapis.com/auth/bigquery",
-        "https://www.googleapis.com/auth/cloud-platform",
-    )
+    SCOPE = ("https://www.googleapis.com/auth/cloud-platform",)  # type: ignore
     """The scopes required for authenticating as a BigQuery consumer."""
 
     def __init__(
@@ -223,6 +240,7 @@ class Client(ClientWithProject):
         _http=None,
         location=None,
         default_query_job_config=None,
+        default_load_job_config=None,
         client_info=None,
         client_options=None,
     ) -> None:
@@ -248,11 +266,34 @@ class Client(ClientWithProject):
         self._connection = Connection(self, **kw_args)
         self._location = location
         self._default_query_job_config = copy.deepcopy(default_query_job_config)
+        self._default_load_job_config = copy.deepcopy(default_load_job_config)
 
     @property
     def location(self):
         """Default location for jobs / datasets / tables."""
         return self._location
+
+    @property
+    def default_query_job_config(self):
+        """Default ``QueryJobConfig``.
+        Will be merged into job configs passed into the ``query`` method.
+        """
+        return self._default_query_job_config
+
+    @default_query_job_config.setter
+    def default_query_job_config(self, value: QueryJobConfig):
+        self._default_query_job_config = copy.deepcopy(value)
+
+    @property
+    def default_load_job_config(self):
+        """Default ``LoadJobConfig``.
+        Will be merged into job configs passed into the ``load_table_*`` methods.
+        """
+        return self._default_load_job_config
+
+    @default_load_job_config.setter
+    def default_load_job_config(self, value: LoadJobConfig):
+        self._default_load_job_config = copy.deepcopy(value)
 
     def close(self):
         """Close the underlying transport objects, releasing system resources.
@@ -314,11 +355,11 @@ class Client(ClientWithProject):
 
     def list_projects(
         self,
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """List projects for the project associated with this client.
 
@@ -380,11 +421,11 @@ class Client(ClientWithProject):
         project: str = None,
         include_all: bool = False,
         filter: str = None,
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """List datasets for the project associated with this client.
 
@@ -522,8 +563,20 @@ class Client(ClientWithProject):
         Returns:
             A BigQuery Storage API client.
         """
-        from google.cloud import bigquery_storage
+        try:
+            from google.cloud import bigquery_storage  # type: ignore
+        except ImportError:
+            warnings.warn(
+                "Cannot create BigQuery Storage client, the dependency "
+                "google-cloud-bigquery-storage is not installed."
+            )
+            return None
 
+        try:
+            BQ_STORAGE_VERSIONS.verify_version()
+        except LegacyBigQueryStorageError as exc:
+            warnings.warn(str(exc))
+            return None
         if bqstorage_client is None:
             bqstorage_client = bigquery_storage.BigQueryReadClient(
                 credentials=self._credentials,
@@ -1297,11 +1350,11 @@ class Client(ClientWithProject):
     def list_models(
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """[Beta] List models in the dataset.
 
@@ -1374,11 +1427,11 @@ class Client(ClientWithProject):
     def list_routines(
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """[Beta] List routines in the dataset.
 
@@ -1451,11 +1504,11 @@ class Client(ClientWithProject):
     def list_tables(
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """List tables in the dataset.
 
@@ -1811,7 +1864,7 @@ class Client(ClientWithProject):
         job_id: str,
         retry: retries.Retry,
         project: str = None,
-        timeout_ms: int = None,
+        timeout_ms: Optional[int] = None,
         location: str = None,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> _QueryResults:
@@ -1941,15 +1994,8 @@ class Client(ClientWithProject):
             )
             destination = _get_sub_prop(job_config, ["copy", "destinationTable"])
             destination = TableReference.from_api_repr(destination)
-            sources = []
-            source_configs = _get_sub_prop(job_config, ["copy", "sourceTables"])
-            if source_configs is None:
-                source_configs = [_get_sub_prop(job_config, ["copy", "sourceTable"])]
-            for source_config in source_configs:
-                table_ref = TableReference.from_api_repr(source_config)
-                sources.append(table_ref)
             return self.copy_table(
-                sources,
+                [],  # Source table(s) already in job_config resource.
                 destination,
                 job_config=typing.cast(CopyJobConfig, copy_job_config),
                 retry=retry,
@@ -2136,7 +2182,7 @@ class Client(ClientWithProject):
         self,
         project: str = None,
         parent_job: Optional[Union[QueryJob, str]] = None,
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
         all_users: bool = None,
         state_filter: str = None,
@@ -2144,7 +2190,7 @@ class Client(ClientWithProject):
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         min_creation_time: datetime.datetime = None,
         max_creation_time: datetime.datetime = None,
-        page_size: int = None,
+        page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """List jobs for the project associated with this client.
 
@@ -2302,8 +2348,8 @@ class Client(ClientWithProject):
 
         Raises:
             TypeError:
-                If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
-                class.
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.LoadJobConfig` class.
         """
         job_id = _make_job_id(job_id, job_id_prefix)
 
@@ -2320,11 +2366,14 @@ class Client(ClientWithProject):
 
         destination = _table_arg_to_table_ref(destination, default_project=self.project)
 
-        if job_config:
-            job_config = copy.deepcopy(job_config)
-            _verify_job_config_type(job_config, google.cloud.bigquery.job.LoadJobConfig)
+        if job_config is not None:
+            _verify_job_config_type(job_config, LoadJobConfig)
+        else:
+            job_config = job.LoadJobConfig()
 
-        load_job = job.LoadJob(job_ref, source_uris, destination, self, job_config)
+        new_job_config = job_config._fill_from_default(self._default_load_job_config)
+
+        load_job = job.LoadJob(job_ref, source_uris, destination, self, new_job_config)
         load_job._begin(retry=retry, timeout=timeout)
 
         return load_job
@@ -2334,7 +2383,7 @@ class Client(ClientWithProject):
         file_obj: IO[bytes],
         destination: Union[Table, TableReference, TableListItem, str],
         rewind: bool = False,
-        size: int = None,
+        size: Optional[int] = None,
         num_retries: int = _DEFAULT_NUM_RETRIES,
         job_id: str = None,
         job_id_prefix: str = None,
@@ -2396,8 +2445,8 @@ class Client(ClientWithProject):
                 mode.
 
             TypeError:
-                If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
-                class.
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.LoadJobConfig` class.
         """
         job_id = _make_job_id(job_id, job_id_prefix)
 
@@ -2409,10 +2458,15 @@ class Client(ClientWithProject):
 
         destination = _table_arg_to_table_ref(destination, default_project=self.project)
         job_ref = job._JobReference(job_id, project=project, location=location)
-        if job_config:
-            job_config = copy.deepcopy(job_config)
-            _verify_job_config_type(job_config, google.cloud.bigquery.job.LoadJobConfig)
-        load_job = job.LoadJob(job_ref, None, destination, self, job_config)
+
+        if job_config is not None:
+            _verify_job_config_type(job_config, LoadJobConfig)
+        else:
+            job_config = job.LoadJobConfig()
+
+        new_job_config = job_config._fill_from_default(self._default_load_job_config)
+
+        load_job = job.LoadJob(job_ref, None, destination, self, new_job_config)
         job_resource = load_job.to_api_repr()
 
         if rewind:
@@ -2532,42 +2586,46 @@ class Client(ClientWithProject):
             google.cloud.bigquery.job.LoadJob: A new load job.
 
         Raises:
+            ValueError:
+                If a usable parquet engine cannot be found. This method
+                requires :mod:`pyarrow` to be installed.
             TypeError:
-                If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
-                class.
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.LoadJobConfig` class.
         """
         job_id = _make_job_id(job_id, job_id_prefix)
 
-        if job_config:
-            _verify_job_config_type(job_config, google.cloud.bigquery.job.LoadJobConfig)
-            # Make a copy so that the job config isn't modified in-place.
-            job_config_properties = copy.deepcopy(job_config._properties)
-            job_config = job.LoadJobConfig()
-            job_config._properties = job_config_properties
-
+        if job_config is not None:
+            _verify_job_config_type(job_config, LoadJobConfig)
         else:
             job_config = job.LoadJobConfig()
 
+        new_job_config = job_config._fill_from_default(self._default_load_job_config)
+
         supported_formats = {job.SourceFormat.CSV, job.SourceFormat.PARQUET}
-        if job_config.source_format is None:
+        if new_job_config.source_format is None:
             # default value
-            job_config.source_format = job.SourceFormat.PARQUET
+            new_job_config.source_format = job.SourceFormat.PARQUET
 
         if (
-            job_config.source_format == job.SourceFormat.PARQUET
-            and job_config.parquet_options is None
+            new_job_config.source_format == job.SourceFormat.PARQUET
+            and new_job_config.parquet_options is None
         ):
             parquet_options = ParquetOptions()
             # default value
             parquet_options.enable_list_inference = True
-            job_config.parquet_options = parquet_options
+            new_job_config.parquet_options = parquet_options
 
-        if job_config.source_format not in supported_formats:
+        if new_job_config.source_format not in supported_formats:
             raise ValueError(
                 "Got unexpected source_format: '{}'. Currently, only PARQUET and CSV are supported".format(
-                    job_config.source_format
+                    new_job_config.source_format
                 )
             )
+
+        if pyarrow is None and new_job_config.source_format == job.SourceFormat.PARQUET:
+            # pyarrow is now the only supported parquet engine.
+            raise ValueError("This method requires pyarrow to be installed")
 
         if location is None:
             location = self.location
@@ -2576,8 +2634,8 @@ class Client(ClientWithProject):
         # schema, and check if dataframe schema is compatible with it - except
         # for WRITE_TRUNCATE jobs, the existing schema does not matter then.
         if (
-            not job_config.schema
-            and job_config.write_disposition != job.WriteDisposition.WRITE_TRUNCATE
+            not new_job_config.schema
+            and new_job_config.write_disposition != job.WriteDisposition.WRITE_TRUNCATE
         ):
             try:
                 table = self.get_table(destination)
@@ -2588,7 +2646,7 @@ class Client(ClientWithProject):
                     name
                     for name, _ in _pandas_helpers.list_columns_and_indexes(dataframe)
                 )
-                job_config.schema = [
+                new_job_config.schema = [
                     # Field description and policy tags are not needed to
                     # serialize a data frame.
                     SchemaField(
@@ -2602,11 +2660,11 @@ class Client(ClientWithProject):
                     if field.name in columns_and_indexes
                 ]
 
-        job_config.schema = _pandas_helpers.dataframe_to_bq_schema(
-            dataframe, job_config.schema
+        new_job_config.schema = _pandas_helpers.dataframe_to_bq_schema(
+            dataframe, new_job_config.schema
         )
 
-        if not job_config.schema:
+        if not new_job_config.schema:
             # the schema could not be fully detected
             warnings.warn(
                 "Schema could not be detected for all columns. Loading from a "
@@ -2617,20 +2675,30 @@ class Client(ClientWithProject):
             )
 
         tmpfd, tmppath = tempfile.mkstemp(
-            suffix="_job_{}.{}".format(job_id[:8], job_config.source_format.lower())
+            suffix="_job_{}.{}".format(job_id[:8], new_job_config.source_format.lower())
         )
         os.close(tmpfd)
 
         try:
 
-            if job_config.source_format == job.SourceFormat.PARQUET:
-                if job_config.schema:
+            if new_job_config.source_format == job.SourceFormat.PARQUET:
+                if _PYARROW_VERSION in _PYARROW_BAD_VERSIONS:
+                    msg = (
+                        "Loading dataframe data in PARQUET format with pyarrow "
+                        f"{_PYARROW_VERSION} can result in data corruption. It is "
+                        "therefore *strongly* advised to use a different pyarrow "
+                        "version or a different source format. "
+                        "See: https://github.com/googleapis/python-bigquery/issues/781"
+                    )
+                    warnings.warn(msg, category=RuntimeWarning)
+
+                if new_job_config.schema:
                     if parquet_compression == "snappy":  # adjust the default value
                         parquet_compression = parquet_compression.upper()
 
                     _pandas_helpers.dataframe_to_parquet(
                         dataframe,
-                        job_config.schema,
+                        new_job_config.schema,
                         tmppath,
                         parquet_compression=parquet_compression,
                         parquet_use_compliant_nested_type=True,
@@ -2670,7 +2738,7 @@ class Client(ClientWithProject):
                     job_id_prefix=job_id_prefix,
                     location=location,
                     project=project,
-                    job_config=job_config,
+                    job_config=new_job_config,
                     timeout=timeout,
                 )
 
@@ -2746,19 +2814,19 @@ class Client(ClientWithProject):
 
         Raises:
             TypeError:
-                If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
-                class.
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.LoadJobConfig` class.
         """
         job_id = _make_job_id(job_id, job_id_prefix)
 
-        if job_config:
-            _verify_job_config_type(job_config, google.cloud.bigquery.job.LoadJobConfig)
-            # Make a copy so that the job config isn't modified in-place.
-            job_config = copy.deepcopy(job_config)
+        if job_config is not None:
+            _verify_job_config_type(job_config, LoadJobConfig)
         else:
             job_config = job.LoadJobConfig()
 
-        job_config.source_format = job.SourceFormat.NEWLINE_DELIMITED_JSON
+        new_job_config = job_config._fill_from_default(self._default_load_job_config)
+
+        new_job_config.source_format = job.SourceFormat.NEWLINE_DELIMITED_JSON
 
         # make table id
         # table_id = "your-project.your_dataset.your_table"
@@ -2788,7 +2856,7 @@ class Client(ClientWithProject):
             job_id_prefix=job_id_prefix,
             location=location,
             project=project,
-            job_config=job_config,
+            job_config=new_job_config,
             timeout=timeout,
         )
 
@@ -3238,7 +3306,7 @@ class Client(ClientWithProject):
                 will be ignored if a ``job_id`` is also given.
             location (Optional[str]):
                 Location where to run the job. Must match the location of the
-                any table used in the query as well as the destination table.
+                table used in the query as well as the destination table.
             project (Optional[str]):
                 Project ID of the project of where to run the job. Defaults
                 to the client's project.
@@ -3357,14 +3425,22 @@ class Client(ClientWithProject):
     def insert_rows(
         self,
         table: Union[Table, TableReference, str],
-        rows: Union[Iterable[Tuple], Iterable[Dict]],
+        rows: Union[Iterable[Tuple], Iterable[Mapping[str, Any]]],
         selected_fields: Sequence[SchemaField] = None,
         **kwargs,
-    ) -> Sequence[dict]:
+    ) -> Sequence[Dict[str, Any]]:
         """Insert rows into a table via the streaming API.
 
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
+
+        BigQuery will reject insertAll payloads that exceed a defined limit (10MB).
+        Additionally, if a payload vastly exceeds this limit, the request is rejected
+        by the intermediate architecture, which returns a 413 (Payload Too Large) status code.
+
+
+        See
+        https://cloud.google.com/bigquery/quotas#streaming_inserts
 
         Args:
             table (Union[ \
@@ -3432,6 +3508,13 @@ class Client(ClientWithProject):
     ) -> Sequence[Sequence[dict]]:
         """Insert rows into a table from a dataframe via the streaming API.
 
+        BigQuery will reject insertAll payloads that exceed a defined limit (10MB).
+        Additionally, if a payload vastly exceeds this limit, the request is rejected
+        by the intermediate architecture, which returns a 413 (Payload Too Large) status code.
+
+        See
+        https://cloud.google.com/bigquery/quotas#streaming_inserts
+
         Args:
             table (Union[ \
                 google.cloud.bigquery.table.Table, \
@@ -3478,7 +3561,7 @@ class Client(ClientWithProject):
     def insert_rows_json(
         self,
         table: Union[Table, TableReference, TableListItem, str],
-        json_rows: Sequence[Dict],
+        json_rows: Sequence[Mapping[str, Any]],
         row_ids: Union[
             Iterable[Optional[str]], AutoRowIDs, None
         ] = AutoRowIDs.GENERATE_UUID,
@@ -3492,6 +3575,13 @@ class Client(ClientWithProject):
 
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
+
+        BigQuery will reject insertAll payloads that exceed a defined limit (10MB).
+        Additionally, if a payload vastly exceeds this limit, the request is rejected
+        by the intermediate architecture, which returns a 413 (Payload Too Large) status code.
+
+        See
+        https://cloud.google.com/bigquery/quotas#streaming_inserts
 
         Args:
             table (Union[ \
@@ -3668,10 +3758,10 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableListItem, TableReference, str],
         selected_fields: Sequence[SchemaField] = None,
-        max_results: int = None,
+        max_results: Optional[int] = None,
         page_token: str = None,
-        start_index: int = None,
-        page_size: int = None,
+        start_index: Optional[int] = None,
+        page_size: Optional[int] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> RowIterator:
@@ -3779,11 +3869,11 @@ class Client(ClientWithProject):
         location: str,
         project: str,
         schema: SchemaField,
-        total_rows: int = None,
+        total_rows: Optional[int] = None,
         destination: Union[Table, TableReference, TableListItem, str] = None,
-        max_results: int = None,
-        start_index: int = None,
-        page_size: int = None,
+        max_results: Optional[int] = None,
+        start_index: Optional[int] = None,
+        page_size: Optional[int] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> RowIterator:

@@ -99,6 +99,12 @@ class TestExternalConfig(unittest.TestCase):
         ec.connection_id = "path/to/connection"
         self.assertEqual(ec.connection_id, "path/to/connection")
 
+    def test_reference_file_schema_uri(self):
+        ec = external_config.ExternalConfig("")
+        self.assertIsNone(ec.reference_file_schema_uri)
+        ec.reference_file_schema_uri = "path/to/reference"
+        self.assertEqual(ec.reference_file_schema_uri, "path/to/reference")
+
     def test_schema_None(self):
         ec = external_config.ExternalConfig("")
         ec.schema = None
@@ -242,6 +248,7 @@ class TestExternalConfig(unittest.TestCase):
                     "allowQuotedNewlines": True,
                     "allowJaggedRows": False,
                     "encoding": "encoding",
+                    "preserveAsciiControlCharacters": False,
                 },
             },
         )
@@ -257,6 +264,7 @@ class TestExternalConfig(unittest.TestCase):
         self.assertEqual(ec.options.allow_quoted_newlines, True)
         self.assertEqual(ec.options.allow_jagged_rows, False)
         self.assertEqual(ec.options.encoding, "encoding")
+        self.assertEqual(ec.options.preserve_ascii_control_characters, False)
 
         got_resource = ec.to_api_repr()
 
@@ -277,6 +285,7 @@ class TestExternalConfig(unittest.TestCase):
         options.quote_character = "quote"
         options.skip_leading_rows = 123
         options.allow_jagged_rows = False
+        options.preserve_ascii_control_characters = False
         ec.csv_options = options
 
         exp_resource = {
@@ -288,6 +297,7 @@ class TestExternalConfig(unittest.TestCase):
                 "allowQuotedNewlines": True,
                 "allowJaggedRows": False,
                 "encoding": "encoding",
+                "preserveAsciiControlCharacters": False,
             },
         }
 
@@ -508,17 +518,23 @@ class TestExternalConfig(unittest.TestCase):
         from google.cloud.bigquery.external_config import CSVOptions
 
         options = CSVOptions.from_api_repr(
-            {"allowJaggedRows": True, "allowQuotedNewlines": False}
+            {
+                "allowJaggedRows": True,
+                "allowQuotedNewlines": False,
+                "preserveAsciiControlCharacters": False,
+            }
         )
         ec = external_config.ExternalConfig(external_config.ExternalSourceFormat.CSV)
 
         self.assertIsNone(ec.csv_options.allow_jagged_rows)
         self.assertIsNone(ec.csv_options.allow_quoted_newlines)
+        self.assertIsNone(ec.csv_options.preserve_ascii_control_characters)
 
         ec.csv_options = options
 
         self.assertTrue(ec.csv_options.allow_jagged_rows)
         self.assertFalse(ec.csv_options.allow_quoted_newlines)
+        self.assertFalse(ec.csv_options.preserve_ascii_control_characters)
         self.assertIs(ec.options._properties, ec._properties[CSVOptions._RESOURCE_NAME])
         self.assertIs(
             ec.csv_options._properties, ec._properties[CSVOptions._RESOURCE_NAME]
@@ -842,6 +858,7 @@ class CSVOptions(unittest.TestCase):
         options.allow_quoted_newlines = True
         options.allow_jagged_rows = False
         options.encoding = "UTF-8"
+        options.preserve_ascii_control_characters = False
 
         resource = options.to_api_repr()
 
@@ -854,6 +871,7 @@ class CSVOptions(unittest.TestCase):
                 "allowQuotedNewlines": True,
                 "allowJaggedRows": False,
                 "encoding": "UTF-8",
+                "preserveAsciiControlCharacters": False,
             },
         )
 

@@ -17,12 +17,15 @@ import copy
 import json
 
 import mock
-import pyarrow
 import pytest
 
-from google.cloud import bigquery_storage
-import google.cloud.bigquery_storage_v1.reader
-import google.cloud.bigquery_storage_v1.services.big_query_read.client
+
+try:
+    from google.cloud import bigquery_storage
+    import google.cloud.bigquery_storage_v1.reader
+    import google.cloud.bigquery_storage_v1.services.big_query_read.client
+except (ImportError, AttributeError):  # pragma: NO COVER
+    bigquery_storage = None
 
 try:
     import pandas
@@ -37,7 +40,7 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     geopandas = None
 try:
-    from tqdm import tqdm
+    import tqdm
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
@@ -47,15 +50,15 @@ from .helpers import _make_job_resource
 
 pandas = pytest.importorskip("pandas")
 
+try:
+    import pyarrow
+    import pyarrow.types
+except ImportError:  # pragma: NO COVER
+    pyarrow = None
+
 
 @pytest.fixture
 def table_read_options_kwarg():
-    # Create a BigQuery Storage table read options object with pyarrow compression
-    # enabled if a recent-enough version of google-cloud-bigquery-storage dependency is
-    # installed to support the compression.
-    if not hasattr(bigquery_storage, "ArrowSerializationOptions"):
-        return {}
-
     read_options = bigquery_storage.ReadSession.TableReadOptions(
         arrow_serialization_options=bigquery_storage.ArrowSerializationOptions(
             buffer_compression=bigquery_storage.ArrowSerializationOptions.CompressionCodec.LZ4_FRAME
@@ -89,6 +92,9 @@ def test__contains_order_by(query, expected):
         assert not mut._contains_order_by(query)
 
 
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
+)
 @pytest.mark.parametrize(
     "query",
     (
@@ -179,6 +185,7 @@ def test_to_dataframe_bqstorage_preserve_order(query, table_read_options_kwarg):
     )
 
 
+@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 def test_to_arrow():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -265,6 +272,7 @@ def test_to_arrow():
     ]
 
 
+@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 def test_to_arrow_max_results_no_progress_bar():
     from google.cloud.bigquery import table
     from google.cloud.bigquery.job import QueryJob as target_class
@@ -300,8 +308,10 @@ def test_to_arrow_max_results_no_progress_bar():
     assert tbl.num_rows == 2
 
 
+@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-def test_to_arrow_w_tqdm_w_query_plan():
+@mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm")
+def test_to_arrow_w_tqdm_w_query_plan(tqdm_mock):
     from google.cloud.bigquery import table
     from google.cloud.bigquery.job import QueryJob as target_class
     from google.cloud.bigquery.schema import SchemaField
@@ -344,20 +354,21 @@ def test_to_arrow_w_tqdm_w_query_plan():
             row_iterator,
         ],
     )
-
-    with result_patch as result_patch_tqdm, reload_patch:
+    with result_patch as tqdm_mock, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 3
+    assert tqdm_mock.call_count == 3
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
-    result_patch_tqdm.assert_called_with(
+    tqdm_mock.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
 
 
+@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-def test_to_arrow_w_tqdm_w_pending_status():
+@mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm")
+def test_to_arrow_w_tqdm_w_pending_status(tqdm_mock):
     from google.cloud.bigquery import table
     from google.cloud.bigquery.job import QueryJob as target_class
     from google.cloud.bigquery.schema import SchemaField
@@ -396,20 +407,21 @@ def test_to_arrow_w_tqdm_w_pending_status():
         "google.cloud.bigquery.job.QueryJob.result",
         side_effect=[concurrent.futures.TimeoutError, row_iterator],
     )
-
-    with result_patch as result_patch_tqdm, reload_patch:
+    with result_patch as tqdm_mock, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
+    assert tqdm_mock.call_count == 2
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
-    result_patch_tqdm.assert_called_with(
+    tqdm_mock.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
 
 
+@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-def test_to_arrow_w_tqdm_wo_query_plan():
+@mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm")
+def test_to_arrow_w_tqdm_wo_query_plan(tqdm_mock):
     from google.cloud.bigquery import table
     from google.cloud.bigquery.job import QueryJob as target_class
     from google.cloud.bigquery.schema import SchemaField
@@ -439,14 +451,13 @@ def test_to_arrow_w_tqdm_wo_query_plan():
         "google.cloud.bigquery.job.QueryJob.result",
         side_effect=[concurrent.futures.TimeoutError, row_iterator],
     )
-
-    with result_patch as result_patch_tqdm, reload_patch:
+    with result_patch as tqdm_mock, reload_patch:
         tbl = job.to_arrow(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
+    assert tqdm_mock.call_count == 2
     assert isinstance(tbl, pyarrow.Table)
     assert tbl.num_rows == 2
-    result_patch_tqdm.assert_called()
+    tqdm_mock.assert_called()
 
 
 def _make_job(schema=(), rows=()):
@@ -510,6 +521,9 @@ def test_to_dataframe_ddl_query():
     assert len(df) == 0
 
 
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
+)
 def test_to_dataframe_bqstorage(table_read_options_kwarg):
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -584,6 +598,9 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
     bqstorage_client.read_rows.assert_called_once_with(stream_id)
 
 
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
+)
 def test_to_dataframe_bqstorage_no_pyarrow_compression():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -629,6 +646,7 @@ def test_to_dataframe_bqstorage_no_pyarrow_compression():
     )
 
 
+@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 def test_to_dataframe_column_dtypes():
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -720,7 +738,7 @@ def test_to_dataframe_column_date_dtypes():
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-@mock.patch("tqdm.tqdm")
+@mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm")
 def test_to_dataframe_with_progress_bar(tqdm_mock):
     from google.cloud.bigquery.job import QueryJob as target_class
 
@@ -744,14 +762,15 @@ def test_to_dataframe_with_progress_bar(tqdm_mock):
     job = target_class.from_api_repr(begun_resource, client)
 
     job.to_dataframe(progress_bar_type=None, create_bqstorage_client=False)
-    tqdm_mock.assert_not_called()
+    tqdm_mock.tqdm.assert_not_called()
 
     job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
-    tqdm_mock.assert_called()
+    tqdm_mock.tqdm.assert_called()
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-def test_to_dataframe_w_tqdm_pending():
+@mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm")
+def test_to_dataframe_w_tqdm_pending(tqdm_mock):
     from google.cloud.bigquery import table
     from google.cloud.bigquery.job import QueryJob as target_class
     from google.cloud.bigquery.schema import SchemaField
@@ -780,7 +799,7 @@ def test_to_dataframe_w_tqdm_pending():
     job._properties["statistics"] = {
         "query": {
             "queryPlan": [
-                {"name": "S00: Input", "id": "0", "status": "PRNDING"},
+                {"name": "S00: Input", "id": "0", "status": "PENDING"},
                 {"name": "S01: Output", "id": "1", "status": "COMPLETE"},
             ]
         },
@@ -792,21 +811,21 @@ def test_to_dataframe_w_tqdm_pending():
         "google.cloud.bigquery.job.QueryJob.result",
         side_effect=[concurrent.futures.TimeoutError, row_iterator],
     )
-
-    with result_patch as result_patch_tqdm, reload_patch:
+    with result_patch as tqdm_mock, reload_patch:
         df = job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 2
+    assert tqdm_mock.call_count == 2
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
     assert list(df) == ["name", "age"]  # verify the column names
-    result_patch_tqdm.assert_called_with(
+    tqdm_mock.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-def test_to_dataframe_w_tqdm():
+@mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm")
+def test_to_dataframe_w_tqdm(tqdm_mock):
     from google.cloud.bigquery import table
     from google.cloud.bigquery.job import QueryJob as target_class
     from google.cloud.bigquery.schema import SchemaField
@@ -852,20 +871,21 @@ def test_to_dataframe_w_tqdm():
         ],
     )
 
-    with result_patch as result_patch_tqdm, reload_patch:
+    with result_patch as tqdm_mock, reload_patch:
         df = job.to_dataframe(progress_bar_type="tqdm", create_bqstorage_client=False)
 
-    assert result_patch_tqdm.call_count == 3
+    assert tqdm_mock.call_count == 3
     assert isinstance(df, pandas.DataFrame)
     assert len(df) == 4  # verify the number of rows
     assert list(df), ["name", "age"]  # verify the column names
-    result_patch_tqdm.assert_called_with(
+    tqdm_mock.assert_called_with(
         timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=None
     )
 
 
 @pytest.mark.skipif(tqdm is None, reason="Requires `tqdm`")
-def test_to_dataframe_w_tqdm_max_results():
+@mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm")
+def test_to_dataframe_w_tqdm_max_results(tqdm_mock):
     from google.cloud.bigquery import table
     from google.cloud.bigquery.job import QueryJob as target_class
     from google.cloud.bigquery.schema import SchemaField
@@ -901,16 +921,13 @@ def test_to_dataframe_w_tqdm_max_results():
         "google.cloud.bigquery.job.QueryJob.result",
         side_effect=[concurrent.futures.TimeoutError, row_iterator],
     )
-
-    with result_patch as result_patch_tqdm, reload_patch:
+    with result_patch as tqdm_mock, reload_patch:
         job.to_dataframe(
             progress_bar_type="tqdm", create_bqstorage_client=False, max_results=3
         )
 
-    assert result_patch_tqdm.call_count == 2
-    result_patch_tqdm.assert_called_with(
-        timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=3
-    )
+    assert tqdm_mock.call_count == 2
+    tqdm_mock.assert_called_with(timeout=_PROGRESS_BAR_UPDATE_INTERVAL, max_results=3)
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

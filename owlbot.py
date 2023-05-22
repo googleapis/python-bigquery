@@ -13,11 +13,14 @@
 # limitations under the License.
 
 """This script is used to synthesize generated parts of this library."""
+from pathlib import Path
 import textwrap
 
 import synthtool as s
 from synthtool import gcp
 from synthtool.languages import python
+
+REPO_ROOT = Path(__file__).parent.absolute()
 
 default_version = "v2"
 
@@ -68,6 +71,7 @@ s.move(
         # https://github.com/googleapis/python-bigquery/issues/191
         ".kokoro/presubmit/presubmit.cfg",
         ".github/workflows",  # exclude gh actions as credentials are needed for tests
+	"README.rst",
     ],
 )
 
@@ -120,3 +124,5 @@ s.replace(
 )
 
 s.shell.run(["nox", "-s", "blacken"], hide_output=False)
+for noxfile in REPO_ROOT.glob("samples/**/noxfile.py"):
+    s.shell.run(["nox", "-s", "blacken"], cwd=noxfile.parent, hide_output=False)

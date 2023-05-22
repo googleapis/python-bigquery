@@ -31,6 +31,11 @@ try:
 except (ImportError, AttributeError):
     pandas = None
 
+try:
+    import pyarrow
+except (ImportError, AttributeError):
+    pyarrow = None
+
 from google.api_core.exceptions import InternalServerError
 from google.api_core.exceptions import ServiceUnavailable
 from google.api_core.exceptions import TooManyRequests
@@ -113,78 +118,6 @@ def test_create_client_default_credentials():
     assert client is not None
 
 
-def test_create_table_nested_repeated_schema(client, to_delete):
-    dataset_id = "create_table_nested_repeated_{}".format(_millis())
-    project = client.project
-    dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    dataset = bigquery.Dataset(dataset_ref)
-    client.create_dataset(dataset)
-    to_delete.append(dataset)
-
-    # [START bigquery_nested_repeated_schema]
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-    # project = client.project
-    # dataset_ref = bigquery.DatasetReference(project, 'my_dataset')
-
-    schema = [
-        bigquery.SchemaField("id", "STRING", mode="NULLABLE"),
-        bigquery.SchemaField("first_name", "STRING", mode="NULLABLE"),
-        bigquery.SchemaField("last_name", "STRING", mode="NULLABLE"),
-        bigquery.SchemaField("dob", "DATE", mode="NULLABLE"),
-        bigquery.SchemaField(
-            "addresses",
-            "RECORD",
-            mode="REPEATED",
-            fields=[
-                bigquery.SchemaField("status", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("address", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("city", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("state", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("zip", "STRING", mode="NULLABLE"),
-                bigquery.SchemaField("numberOfYears", "STRING", mode="NULLABLE"),
-            ],
-        ),
-    ]
-    table_ref = dataset_ref.table("my_table")
-    table = bigquery.Table(table_ref, schema=schema)
-    table = client.create_table(table)  # API request
-
-    print("Created table {}".format(table.full_table_id))
-    # [END bigquery_nested_repeated_schema]
-
-
-def test_create_table_cmek(client, to_delete):
-    dataset_id = "create_table_cmek_{}".format(_millis())
-    project = client.project
-    dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    dataset = bigquery.Dataset(dataset_ref)
-    client.create_dataset(dataset)
-    to_delete.append(dataset)
-
-    # [START bigquery_create_table_cmek]
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-    # dataset_id = 'my_dataset'
-
-    table_ref = dataset.table("my_table")
-    table = bigquery.Table(table_ref)
-
-    # Set the encryption key to use for the table.
-    # TODO: Replace this key with a key you have created in Cloud KMS.
-    kms_key_name = "projects/{}/locations/{}/keyRings/{}/cryptoKeys/{}".format(
-        "cloud-samples-tests", "us", "test", "test"
-    )
-    table.encryption_configuration = bigquery.EncryptionConfiguration(
-        kms_key_name=kms_key_name
-    )
-
-    table = client.create_table(table)  # API request
-
-    assert table.encryption_configuration.kms_key_name == kms_key_name
-    # [END bigquery_create_table_cmek]
-
-
 def test_create_partitioned_table(client, to_delete):
     dataset_id = "create_table_partitioned_{}".format(_millis())
     project = client.project
@@ -231,76 +164,6 @@ def test_create_partitioned_table(client, to_delete):
         "https://github.com/GoogleCloudPlatform/google-cloud-python/issues/5589"
     )
 )
-def test_manage_table_labels(client, to_delete):
-    dataset_id = "label_table_dataset_{}".format(_millis())
-    table_id = "label_table_{}".format(_millis())
-    project = client.project
-    dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    dataset = bigquery.Dataset(dataset_ref)
-    client.create_dataset(dataset)
-    to_delete.append(dataset)
-
-    table = bigquery.Table(dataset.table(table_id), schema=SCHEMA)
-    table = client.create_table(table)
-
-    # [START bigquery_label_table]
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-    # project = client.project
-    # dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    # table_ref = dataset_ref.table('my_table')
-    # table = client.get_table(table_ref)  # API request
-
-    assert table.labels == {}
-    labels = {"color": "green"}
-    table.labels = labels
-
-    table = client.update_table(table, ["labels"])  # API request
-
-    assert table.labels == labels
-    # [END bigquery_label_table]
-
-    # [START bigquery_get_table_labels]
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-    # dataset_id = 'my_dataset'
-    # table_id = 'my_table'
-
-    project = client.project
-    dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    table_ref = dataset_ref.table(table_id)
-    table = client.get_table(table_ref)  # API Request
-
-    # View table labels
-    print("Table ID: {}".format(table_id))
-    print("Labels:")
-    if table.labels:
-        for label, value in table.labels.items():
-            print("\t{}: {}".format(label, value))
-    else:
-        print("\tTable has no labels defined.")
-    # [END bigquery_get_table_labels]
-    assert table.labels == labels
-
-    # [START bigquery_delete_label_table]
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-    # project = client.project
-    # dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    # table_ref = dataset_ref.table('my_table')
-    # table = client.get_table(table_ref)  # API request
-
-    # This example table starts with one label
-    assert table.labels == {"color": "green"}
-    # To delete a label from a table, set its value to None
-    table.labels["color"] = None
-
-    table = client.update_table(table, ["labels"])  # API request
-
-    assert table.labels == {}
-    # [END bigquery_delete_label_table]
-
-
 @pytest.mark.skip(
     reason=(
         "update_table() is flaky "

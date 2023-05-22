@@ -27,15 +27,19 @@ import pkg_resources
 import pytest
 
 from google.cloud import bigquery
-from google.cloud import bigquery_storage
+
 from google.cloud.bigquery import enums
 
 from . import helpers
 
 
 pandas = pytest.importorskip("pandas", minversion="0.23.0")
+pyarrow = pytest.importorskip("pyarrow")
 numpy = pytest.importorskip("numpy")
 
+bigquery_storage = pytest.importorskip(
+    "google.cloud.bigquery_storage", minversion="2.0.0"
+)
 
 PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 PANDAS_INT64_VERSION = pkg_resources.parse_version("1.0.0")
@@ -373,10 +377,10 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         bigquery.SchemaField("geo_col", "GEOGRAPHY"),
         bigquery.SchemaField("int_col", "INTEGER"),
         bigquery.SchemaField("num_col", "NUMERIC"),
-        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
+        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
     )
 
     num_rows = 100
@@ -390,10 +394,10 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
         ("geo_col", nulls),
         ("int_col", nulls),
         ("num_col", nulls),
-        ("bignum_col", nulls),
         ("str_col", nulls),
         ("time_col", nulls),
         ("ts_col", nulls),
+        ("bignum_col", nulls),
     ]
     df_data = collections.OrderedDict(df_data)
     dataframe = pandas.DataFrame(df_data, columns=df_data.keys())
@@ -469,10 +473,10 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
         bigquery.SchemaField("geo_col", "GEOGRAPHY"),
         bigquery.SchemaField("int_col", "INTEGER"),
         bigquery.SchemaField("num_col", "NUMERIC"),
-        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
         bigquery.SchemaField("str_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("ts_col", "TIMESTAMP"),
+        bigquery.SchemaField("bignum_col", "BIGNUMERIC"),
     )
 
     df_data = [
@@ -502,14 +506,6 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
                 decimal.Decimal("99999999999999999999999999999.999999999"),
             ],
         ),
-        (
-            "bignum_col",
-            [
-                decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
-                None,
-                decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
-            ],
-        ),
         ("str_col", ["abc", None, "def"]),
         (
             "time_col",
@@ -523,6 +519,14 @@ def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id
                 datetime.datetime(
                     9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc
                 ),
+            ],
+        ),
+        (
+            "bignum_col",
+            [
+                decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
+                None,
+                decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
             ],
         ),
     ]
@@ -1104,6 +1108,103 @@ def test_list_rows_nullable_scalars_extreme_dtypes(
     # pandas uses Python string and bytes objects.
     assert df.dtypes["bytes_col"].name == "object"
     assert df.dtypes["string_col"].name == "object"
+
+
+@pytest.mark.parametrize(
+    ("max_results",),
+    (
+        (None,),
+        (10,),
+    ),  # Use BQ Storage API.  # Use REST API.
+)
+def test_list_rows_nullable_scalars_extreme_dtypes_w_custom_dtype(
+    bigquery_client, scalars_extreme_table, max_results
+):
+    # TODO(GH#836): Avoid INTERVAL columns until they are supported by the
+    # BigQuery Storage API and pyarrow.
+    schema = [
+        bigquery.SchemaField("bool_col", enums.SqlTypeNames.BOOLEAN),
+        bigquery.SchemaField("bignumeric_col", enums.SqlTypeNames.BIGNUMERIC),
+        bigquery.SchemaField("bytes_col", enums.SqlTypeNames.BYTES),
+        bigquery.SchemaField("date_col", enums.SqlTypeNames.DATE),
+        bigquery.SchemaField("datetime_col", enums.SqlTypeNames.DATETIME),
+        bigquery.SchemaField("float64_col", enums.SqlTypeNames.FLOAT64),
+        bigquery.SchemaField("geography_col", enums.SqlTypeNames.GEOGRAPHY),
+        bigquery.SchemaField("int64_col", enums.SqlTypeNames.INT64),
+        bigquery.SchemaField("numeric_col", enums.SqlTypeNames.NUMERIC),
+        bigquery.SchemaField("string_col", enums.SqlTypeNames.STRING),
+        bigquery.SchemaField("time_col", enums.SqlTypeNames.TIME),
+        bigquery.SchemaField("timestamp_col", enums.SqlTypeNames.TIMESTAMP),
+    ]
+
+    df = bigquery_client.list_rows(
+        scalars_extreme_table,
+        max_results=max_results,
+        selected_fields=schema,
+    ).to_dataframe(
+        bool_dtype=pandas.BooleanDtype(),
+        int_dtype=pandas.Int64Dtype(),
+        float_dtype=(
+            pandas.Float64Dtype()
+            if hasattr(pandas, "Float64Dtype")
+            else pandas.StringDtype()
+        ),
+        string_dtype=pandas.StringDtype(),
+        date_dtype=(
+            pandas.ArrowDtype(pyarrow.date32())
+            if hasattr(pandas, "ArrowDtype")
+            else None
+        ),
+        datetime_dtype=(
+            pandas.ArrowDtype(pyarrow.timestamp("us"))
+            if hasattr(pandas, "ArrowDtype")
+            else None
+        ),
+        time_dtype=(
+            pandas.ArrowDtype(pyarrow.time64("us"))
+            if hasattr(pandas, "ArrowDtype")
+            else None
+        ),
+        timestamp_dtype=(
+            pandas.ArrowDtype(pyarrow.timestamp("us", tz="UTC"))
+            if hasattr(pandas, "ArrowDtype")
+            else None
+        ),
+    )
+
+    # These pandas dtypes are handled by the custom dtypes.
+    assert df.dtypes["bool_col"].name == "boolean"
+    assert df.dtypes["float64_col"].name == "Float64"
+    assert df.dtypes["int64_col"].name == "Int64"
+    assert df.dtypes["string_col"].name == "string"
+
+    assert (
+        df.dtypes["date_col"].name == "date32[day][pyarrow]"
+        if hasattr(pandas, "ArrowDtype")
+        else "datetime64[ns]"
+    )
+    assert (
+        df.dtypes["datetime_col"].name == "timestamp[us][pyarrow]"
+        if hasattr(pandas, "ArrowDtype")
+        else "object"
+    )
+    assert (
+        df.dtypes["timestamp_col"].name == "timestamp[us, tz=UTC][pyarrow]"
+        if hasattr(pandas, "ArrowDtype")
+        else "object"
+    )
+    assert (
+        df.dtypes["time_col"].name == "time64[us][pyarrow]"
+        if hasattr(pandas, "ArrowDtype")
+        else "object"
+    )
+
+    # decimal.Decimal is used to avoid loss of precision.
+    assert df.dtypes["numeric_col"].name == "object"
+    assert df.dtypes["bignumeric_col"].name == "object"
+
+    # pandas uses Python bytes objects.
+    assert df.dtypes["bytes_col"].name == "object"
 
 
 def test_upload_time_and_datetime_56(bigquery_client, dataset_id):

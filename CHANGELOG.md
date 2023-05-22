@@ -5,6 +5,209 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.10.0](https://github.com/googleapis/python-bigquery/compare/v3.9.0...v3.10.0) (2023-04-18)
+
+
+### Features
+
+* Add date, datetime, time, timestamp dtype to to_dataframe ([#1547](https://github.com/googleapis/python-bigquery/issues/1547)) ([64e913d](https://github.com/googleapis/python-bigquery/commit/64e913d73832f6363466cbea5ace2337c86fa58b))
+
+## [3.9.0](https://github.com/googleapis/python-bigquery/compare/v3.8.0...v3.9.0) (2023-03-28)
+
+
+### Features
+
+* Expose query job on dbapi cursor ([#1520](https://github.com/googleapis/python-bigquery/issues/1520)) ([339eb0e](https://github.com/googleapis/python-bigquery/commit/339eb0e86040a7c30d140800f34810ffc6a7c76b))
+
+
+### Bug Fixes
+
+* Keyerror when the load_table_from_dataframe accesses a unmapped dtype dataframe index ([#1535](https://github.com/googleapis/python-bigquery/issues/1535)) ([a69348a](https://github.com/googleapis/python-bigquery/commit/a69348a558f48cfc61d03d3e8bb7f9aee48bea86))
+
+## [3.8.0](https://github.com/googleapis/python-bigquery/compare/v3.7.0...v3.8.0) (2023-03-24)
+
+
+### Features
+
+* Add bool, int, float, string dtype to to_dataframe ([#1529](https://github.com/googleapis/python-bigquery/issues/1529)) ([5e4465d](https://github.com/googleapis/python-bigquery/commit/5e4465d0975f54e8da885006686d9431ff9c5653))
+* Add default LoadJobConfig to Client ([#1526](https://github.com/googleapis/python-bigquery/issues/1526)) ([a2520ca](https://github.com/googleapis/python-bigquery/commit/a2520cabf7ec6bcb923c21e338188f1c10dc4d5d))
+* Expose configuration property on CopyJob, ExtractJob, LoadJob, QueryJob ([#1521](https://github.com/googleapis/python-bigquery/issues/1521)) ([8270a10](https://github.com/googleapis/python-bigquery/commit/8270a10df8f40750a7ac541a1781a71d7e79ce67))
+
+
+### Bug Fixes
+
+* Loosen ipywidgets restrictions further to address ipython compatibility issues ([#1531](https://github.com/googleapis/python-bigquery/issues/1531)) ([50e5026](https://github.com/googleapis/python-bigquery/commit/50e502674807b9771d7e26c0e784539bed8f9da6))
+
+## [3.7.0](https://github.com/googleapis/python-bigquery/compare/v3.6.0...v3.7.0) (2023-03-06)
+
+
+### Features
+
+* Add `connection_properties` and `create_session` to `LoadJobConfig` ([#1509](https://github.com/googleapis/python-bigquery/issues/1509)) ([cd0aaa1](https://github.com/googleapis/python-bigquery/commit/cd0aaa15960e9ca7a0aaf411c8e4990f95421816))
+* Add default_query_job_config property and property setter to BQ client ([#1511](https://github.com/googleapis/python-bigquery/issues/1511)) ([a23092c](https://github.com/googleapis/python-bigquery/commit/a23092cad834c6a016f455d46fefa13bb6cdbf0f))
+
+
+### Documentation
+
+* Remove &lt; 3.11 reference from README ([#1502](https://github.com/googleapis/python-bigquery/issues/1502)) ([c7417f4](https://github.com/googleapis/python-bigquery/commit/c7417f43563e20a3e6f1a57f46925fb274b28b07))
+
+## [3.6.0](https://github.com/googleapis/python-bigquery/compare/v3.5.0...v3.6.0) (2023-02-22)
+
+
+### Features
+
+* Adding preserveAsciiControlCharacter to CSVOptions ([#1491](https://github.com/googleapis/python-bigquery/issues/1491)) ([f832e7a](https://github.com/googleapis/python-bigquery/commit/f832e7a0b79f3567a0773ff11630e2f48bed60db))
+
+
+### Bug Fixes
+
+* Annotate optional integer parameters with optional type ([#1487](https://github.com/googleapis/python-bigquery/issues/1487)) ([a190aaa](https://github.com/googleapis/python-bigquery/commit/a190aaa09ae73e8b6a83b7b213247f95fde57615))
+* Loosen ipywidget dependency ([#1504](https://github.com/googleapis/python-bigquery/issues/1504)) ([20d3276](https://github.com/googleapis/python-bigquery/commit/20d3276cc29e9467eef9476d5fd572099d9a3f6f))
+* Removes scope to avoid unnecessary duplication ([#1503](https://github.com/googleapis/python-bigquery/issues/1503)) ([665d7ba](https://github.com/googleapis/python-bigquery/commit/665d7ba74a1b45de1ef51cc75b6860125afc5fe6))
+
+
+### Dependencies
+
+* Update minimum google-cloud-core  to 1.6.0 ([a190aaa](https://github.com/googleapis/python-bigquery/commit/a190aaa09ae73e8b6a83b7b213247f95fde57615))
+
+## [3.5.0](https://github.com/googleapis/python-bigquery/compare/v3.4.2...v3.5.0) (2023-01-31)
+
+
+### Features
+
+* Add __str__ method to DatasetReference ([#1477](https://github.com/googleapis/python-bigquery/issues/1477)) ([f32df1f](https://github.com/googleapis/python-bigquery/commit/f32df1fb74e4aea24cd8a4099040ad2f7436e54d))
+* Add preserveAsciiControlCharacter to LoadJobConfig ([#1484](https://github.com/googleapis/python-bigquery/issues/1484)) ([bd1da9a](https://github.com/googleapis/python-bigquery/commit/bd1da9aa0a40b02b7d5409a0b094d8380e255c91))
+
+
+### Documentation
+
+* Adds snippet for creating table with external data config ([#1420](https://github.com/googleapis/python-bigquery/issues/1420)) ([f0ace2a](https://github.com/googleapis/python-bigquery/commit/f0ace2ac2307ef359511a235f80f5ce9e46264c1))
+* Revise delete label table code sample, add TODO to clean up sni… ([#1466](https://github.com/googleapis/python-bigquery/issues/1466)) ([0dab7d2](https://github.com/googleapis/python-bigquery/commit/0dab7d25ace4b63d2984485e7b0c5bb38f20476f))
+* **samples:** Table variable fix ([#1287](https://github.com/googleapis/python-bigquery/issues/1287)) ([a71888a](https://github.com/googleapis/python-bigquery/commit/a71888a60d1e5e5815ab459fe24368ad5b0d032a))
+
+## [3.4.2](https://github.com/googleapis/python-bigquery/compare/v3.4.1...v3.4.2) (2023-01-13)
+
+
+### Bug Fixes
+
+* Add support for python 3.11 ([#1463](https://github.com/googleapis/python-bigquery/issues/1463)) ([730a1de](https://github.com/googleapis/python-bigquery/commit/730a1dec8be49df26a3d805ebd4ad185ba72170d))
+* Require grpcio &gt;= 1.49.1 for python 3.11 ([72b25c5](https://github.com/googleapis/python-bigquery/commit/72b25c52bc4b9a92c4cb187b6230b280d4af905c))
+
+
+### Dependencies
+
+* Remove upper bound on packaging dependency ([#1440](https://github.com/googleapis/python-bigquery/issues/1440)) ([6088129](https://github.com/googleapis/python-bigquery/commit/60881296a35067e7aa025d92b2425572f10fd4ec))
+
+
+### Documentation
+
+* Create sample to write schema file from table ([#1439](https://github.com/googleapis/python-bigquery/issues/1439)) ([093cc68](https://github.com/googleapis/python-bigquery/commit/093cc6852ada29898c4a4d047fd216544ef15bba))
+* Created samples for load table and create table from schema file ([#1436](https://github.com/googleapis/python-bigquery/issues/1436)) ([8ad2e5b](https://github.com/googleapis/python-bigquery/commit/8ad2e5bc1c04bf16fffe4c8773e722b68117c916))
+* Revise create table cmek sample ([#1452](https://github.com/googleapis/python-bigquery/issues/1452)) ([57740e4](https://github.com/googleapis/python-bigquery/commit/57740e49af7418449aec73a6fdd307fcb588c655))
+* Revise get table labels code sample, add TODO to clean up snipp… ([#1464](https://github.com/googleapis/python-bigquery/issues/1464)) ([b5ccbfe](https://github.com/googleapis/python-bigquery/commit/b5ccbfe4eee91d7f481d9708084cd29d0c85e666))
+* Revise label table code samples ([#1451](https://github.com/googleapis/python-bigquery/issues/1451)) ([14ae1f2](https://github.com/googleapis/python-bigquery/commit/14ae1f20538ea00829a1325f91f5e8524234bd0c))
+* Revise sample for nested schema ([#1446](https://github.com/googleapis/python-bigquery/issues/1446)) ([a097631](https://github.com/googleapis/python-bigquery/commit/a0976318fc5ad1620a68250c3e059e2a51d4946d))
+
+## [3.4.1](https://github.com/googleapis/python-bigquery/compare/v3.4.0...v3.4.1) (2022-12-09)
+
+
+### Documentation
+
+* Add info about streaming quota limits to `insert_rows*` methods ([#1409](https://github.com/googleapis/python-bigquery/issues/1409)) ([0f08e9a](https://github.com/googleapis/python-bigquery/commit/0f08e9a8ff638e78006d71acd974de2dff89b5d9))
+
+
+### Dependencies
+
+* make pyarrow and BQ Storage optional dependencies ([e1aa921](https://github.com/googleapis/python-bigquery/commit/e1aa9218ad22f85c9a6cab8b61d013779376a582))
+
+## [3.4.0](https://github.com/googleapis/python-bigquery/compare/v3.3.6...v3.4.0) (2022-11-17)
+
+
+### Features
+
+* Add `reference_file_schema_uri` to LoadJobConfig, ExternalConfig ([#1399](https://github.com/googleapis/python-bigquery/issues/1399)) ([931285f](https://github.com/googleapis/python-bigquery/commit/931285ff85842ab07a0ef2ff9db808181ea3c5e4))
+* Add default value expression ([#1408](https://github.com/googleapis/python-bigquery/issues/1408)) ([207aa50](https://github.com/googleapis/python-bigquery/commit/207aa506ab634bdb13256fa5bd8745ec9de23290))
+* Add More Specific Type Annotations for Row Dictionaries ([#1295](https://github.com/googleapis/python-bigquery/issues/1295)) ([eb49873](https://github.com/googleapis/python-bigquery/commit/eb49873176dee478617eb50472d44703abca53b5))
+
+## [3.3.6](https://github.com/googleapis/python-bigquery/compare/v3.3.4...v3.3.6) (2022-11-02)
+
+
+### Features
+
+* Reconfigure tqdm progress bar in %%bigquery magic ([#1355](https://github.com/googleapis/python-bigquery/issues/1355)) ([506f781](https://github.com/googleapis/python-bigquery/commit/506f781c2dd775193336ab9432f32148250ed81d))
+
+
+### Bug Fixes
+
+* Corrects test for non-existent attribute ([#1395](https://github.com/googleapis/python-bigquery/issues/1395)) ([a80f436](https://github.com/googleapis/python-bigquery/commit/a80f436f2e75a8fb680316f17a22eecb31a7101d))
+* **deps:** Allow protobuf 3.19.5 ([#1379](https://github.com/googleapis/python-bigquery/issues/1379)) ([3e4a074](https://github.com/googleapis/python-bigquery/commit/3e4a074a981eb2920c5f9a711c253565d4844858))
+* **deps:** Allow pyarrow &lt; 11 ([#1393](https://github.com/googleapis/python-bigquery/issues/1393)) ([c898546](https://github.com/googleapis/python-bigquery/commit/c898546d3292f9ec1ba6120cd3f9e2805aa087bb))
+* **deps:** Require requests&gt;=2.21.0 ([#1388](https://github.com/googleapis/python-bigquery/issues/1388)) ([e398336](https://github.com/googleapis/python-bigquery/commit/e39833673582e4a7a34103cfc45603932c9c33b3))
+* Refactor to adapt to changes to shapely dependency ([#1376](https://github.com/googleapis/python-bigquery/issues/1376)) ([2afd278](https://github.com/googleapis/python-bigquery/commit/2afd278febe1eb247adc6278ab59903962a5bb6c))
+
+
+### Documentation
+
+* Fix typos ([#1372](https://github.com/googleapis/python-bigquery/issues/1372)) ([21cc525](https://github.com/googleapis/python-bigquery/commit/21cc525a86a06acfe73e5c5a74ec5f0b61e410f2))
+
+
+### Miscellaneous Chores
+
+* release 3.3.6 ([4fce1d9](https://github.com/googleapis/python-bigquery/commit/4fce1d93b1763703b115a0480a2b97021786aff7))
+
+## [3.3.4](https://github.com/googleapis/python-bigquery/compare/v3.3.3...v3.3.4) (2022-09-29)
+
+
+### Bug Fixes
+
+* **deps:** Require protobuf >= 3.20.2 ([#1369](https://github.com/googleapis/python-bigquery/issues/1369)) ([f13383a](https://github.com/googleapis/python-bigquery/commit/f13383a22d7b1a0a714dc1b1210ad970146bd094))
+
+## [3.3.3](https://github.com/googleapis/python-bigquery/compare/v3.3.2...v3.3.3) (2022-09-28)
+
+
+### Bug Fixes
+
+* Refactors code to account for a tdqm code deprecation ([#1357](https://github.com/googleapis/python-bigquery/issues/1357)) ([1369a9d](https://github.com/googleapis/python-bigquery/commit/1369a9d937b85d6a2a6bf9a672c71620648b1e3e))
+* Validate opentelemetry span job attributes have values ([#1327](https://github.com/googleapis/python-bigquery/issues/1327)) ([8287af1](https://github.com/googleapis/python-bigquery/commit/8287af1299169546f847126f03ae04e48890139e))
+
+
+### Documentation
+
+* **samples:** uses function (create_job) more appropriate to the described sample intent ([5aeedaa](https://github.com/googleapis/python-bigquery/commit/5aeedaa2f4e6a0200d50521dfd90f39f9a24d0cc))
+
+## [3.3.2](https://github.com/googleapis/python-bigquery/compare/v3.3.1...v3.3.2) (2022-08-16)
+
+
+### Bug Fixes
+
+* **deps:** require proto-plus >= 1.22.0 ([1de7a52](https://github.com/googleapis/python-bigquery/commit/1de7a52cb85d4876e4aa87346aff5725c8294c4e))
+* **deps:** require protobuf >=3.19, < 5.0.0 ([#1311](https://github.com/googleapis/python-bigquery/issues/1311)) ([1de7a52](https://github.com/googleapis/python-bigquery/commit/1de7a52cb85d4876e4aa87346aff5725c8294c4e))
+
+## [3.3.1](https://github.com/googleapis/python-bigquery/compare/v3.3.0...v3.3.1) (2022-08-09)
+
+
+### Bug Fixes
+
+* **deps:** allow pyarrow < 10 ([#1304](https://github.com/googleapis/python-bigquery/issues/1304)) ([13616a9](https://github.com/googleapis/python-bigquery/commit/13616a910ba2e9b7bc3595847229b56e70c99f84))
+
+## [3.3.0](https://github.com/googleapis/python-bigquery/compare/v3.2.0...v3.3.0) (2022-07-25)
+
+
+### Features
+
+* add destination_expiration_time property to copy job ([#1277](https://github.com/googleapis/python-bigquery/issues/1277)) ([728b07c](https://github.com/googleapis/python-bigquery/commit/728b07c9177532bbbbfd1890f23e98950aea3f02))
+
+
+### Bug Fixes
+
+* require python 3.7+ ([#1284](https://github.com/googleapis/python-bigquery/issues/1284)) ([52d9f14](https://github.com/googleapis/python-bigquery/commit/52d9f14fb1d183f64a62fee1fddc0bf576a0a3e9))
+
+
+### Documentation
+
+* **samples:** add table snapshot sample ([#1274](https://github.com/googleapis/python-bigquery/issues/1274)) ([e760d1b](https://github.com/googleapis/python-bigquery/commit/e760d1bcb76561b4247adde2fd06ae0b686befb9))
+* **samples:** explicitly add bq to samples reqs, upgrade grpc to fix bug on m1 ([#1290](https://github.com/googleapis/python-bigquery/issues/1290)) ([9b7e3e4](https://github.com/googleapis/python-bigquery/commit/9b7e3e424cbd08af8b08c91e6397a3f1b7811064))
+
 ## [3.2.0](https://github.com/googleapis/python-bigquery/compare/v3.1.0...v3.2.0) (2022-06-06)
 
 

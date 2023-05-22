@@ -432,11 +432,19 @@ class Test_AsyncJob(unittest.TestCase):
     def test__set_properties_no_stats(self):
         config = {"test": True}
         resource = {"configuration": config}
+        expected = resource.copy()
+        expected["statistics"] = {}
         job = self._set_properties_job()
+        original_resource = job._properties
 
         job._set_properties(resource)
 
-        self.assertEqual(job._properties, resource)
+        self.assertEqual(job._properties, expected)
+
+        # Make sure we don't mutate the object used in the request, as that
+        # makes debugging more difficult and leads to false positives in unit
+        # tests.
+        self.assertIsNot(job._properties, original_resource)
 
     def test__set_properties_w_creation_time(self):
         now, millis = self._datetime_and_millis()
@@ -546,6 +554,8 @@ class Test_AsyncJob(unittest.TestCase):
             },
             "configuration": {"test": True},
         }
+        expected = resource.copy()
+        expected["statistics"] = {}
         job = self._set_properties_job()
         builder = job.to_api_repr = mock.Mock()
         builder.return_value = resource
@@ -564,7 +574,7 @@ class Test_AsyncJob(unittest.TestCase):
             data=resource,
             timeout=None,
         )
-        self.assertEqual(job._properties, resource)
+        self.assertEqual(job._properties, expected)
 
     def test__begin_explicit(self):
         from google.cloud.bigquery.retry import DEFAULT_RETRY
@@ -578,6 +588,8 @@ class Test_AsyncJob(unittest.TestCase):
             },
             "configuration": {"test": True},
         }
+        expected = resource.copy()
+        expected["statistics"] = {}
         job = self._set_properties_job()
         builder = job.to_api_repr = mock.Mock()
         builder.return_value = resource
@@ -598,7 +610,7 @@ class Test_AsyncJob(unittest.TestCase):
             data=resource,
             timeout=7.5,
         )
-        self.assertEqual(job._properties, resource)
+        self.assertEqual(job._properties, expected)
 
     def test_exists_defaults_miss(self):
         from google.cloud.exceptions import NotFound
@@ -685,6 +697,8 @@ class Test_AsyncJob(unittest.TestCase):
             },
             "configuration": {"test": True},
         }
+        expected = resource.copy()
+        expected["statistics"] = {}
         job = self._set_properties_job()
         job._properties["jobReference"]["location"] = self.LOCATION
         call_api = job._client._call_api = mock.Mock()
@@ -703,7 +717,7 @@ class Test_AsyncJob(unittest.TestCase):
             query_params={"location": self.LOCATION},
             timeout=None,
         )
-        self.assertEqual(job._properties, resource)
+        self.assertEqual(job._properties, expected)
 
     def test_reload_explicit(self):
         from google.cloud.bigquery.retry import DEFAULT_RETRY
@@ -717,6 +731,8 @@ class Test_AsyncJob(unittest.TestCase):
             },
             "configuration": {"test": True},
         }
+        expected = resource.copy()
+        expected["statistics"] = {}
         job = self._set_properties_job()
         client = _make_client(project=other_project)
         call_api = client._call_api = mock.Mock()
@@ -736,7 +752,7 @@ class Test_AsyncJob(unittest.TestCase):
             query_params={},
             timeout=4.2,
         )
-        self.assertEqual(job._properties, resource)
+        self.assertEqual(job._properties, expected)
 
     def test_cancel_defaults(self):
         resource = {
@@ -747,6 +763,8 @@ class Test_AsyncJob(unittest.TestCase):
             },
             "configuration": {"test": True},
         }
+        expected = resource.copy()
+        expected["statistics"] = {}
         response = {"job": resource}
         job = self._set_properties_job()
         job._properties["jobReference"]["location"] = self.LOCATION
@@ -764,7 +782,7 @@ class Test_AsyncJob(unittest.TestCase):
             query_params={"location": self.LOCATION},
             timeout=None,
         )
-        self.assertEqual(job._properties, resource)
+        self.assertEqual(job._properties, expected)
 
     def test_cancel_explicit(self):
         other_project = "other-project-234"
@@ -776,6 +794,8 @@ class Test_AsyncJob(unittest.TestCase):
             },
             "configuration": {"test": True},
         }
+        expected = resource.copy()
+        expected["statistics"] = {}
         response = {"job": resource}
         job = self._set_properties_job()
         client = _make_client(project=other_project)
@@ -797,7 +817,7 @@ class Test_AsyncJob(unittest.TestCase):
             query_params={},
             timeout=7.5,
         )
-        self.assertEqual(job._properties, resource)
+        self.assertEqual(job._properties, expected)
 
     def test_cancel_w_custom_retry(self):
         from google.cloud.bigquery.retry import DEFAULT_RETRY
@@ -811,6 +831,8 @@ class Test_AsyncJob(unittest.TestCase):
             },
             "configuration": {"test": True},
         }
+        expected = resource.copy()
+        expected["statistics"] = {}
         response = {"job": resource}
         job = self._set_properties_job()
 
@@ -830,7 +852,7 @@ class Test_AsyncJob(unittest.TestCase):
             final_attributes.assert_called()
 
         self.assertTrue(result)
-        self.assertEqual(job._properties, resource)
+        self.assertEqual(job._properties, expected)
         self.assertEqual(
             fake_api_request.call_args_list,
             [
@@ -943,7 +965,6 @@ class Test_AsyncJob(unittest.TestCase):
         conn = make_connection(
             _make_retriable_exception(),
             begun_job_resource,
-            _make_retriable_exception(),
             done_job_resource,
         )
         client = _make_client(project=self.PROJECT, connection=conn)
@@ -963,9 +984,7 @@ class Test_AsyncJob(unittest.TestCase):
             query_params={"location": "US"},
             timeout=None,
         )
-        conn.api_request.assert_has_calls(
-            [begin_call, begin_call, reload_call, reload_call]
-        )
+        conn.api_request.assert_has_calls([begin_call, begin_call, reload_call])
 
     def test_result_w_retry_wo_state(self):
         begun_job_resource = _make_job_resource(
@@ -1085,7 +1104,7 @@ class Test_JobConfig(unittest.TestCase):
             config = self._make_one()
             config.wrong_name = None
 
-    def test_fill_from_default(self):
+    def test_fill_query_job_config_from_default(self):
         from google.cloud.bigquery import QueryJobConfig
 
         job_config = QueryJobConfig()
@@ -1101,6 +1120,22 @@ class Test_JobConfig(unittest.TestCase):
         self.assertTrue(final_job_config.use_query_cache)
         self.assertEqual(final_job_config.maximum_bytes_billed, 1000)
 
+    def test_fill_load_job_from_default(self):
+        from google.cloud.bigquery import LoadJobConfig
+
+        job_config = LoadJobConfig()
+        job_config.create_session = True
+        job_config.encoding = "UTF-8"
+
+        default_job_config = LoadJobConfig()
+        default_job_config.ignore_unknown_values = True
+        default_job_config.encoding = "ISO-8859-1"
+
+        final_job_config = job_config._fill_from_default(default_job_config)
+        self.assertTrue(final_job_config.create_session)
+        self.assertTrue(final_job_config.ignore_unknown_values)
+        self.assertEqual(final_job_config.encoding, "UTF-8")
+
     def test_fill_from_default_conflict(self):
         from google.cloud.bigquery import QueryJobConfig
 
@@ -1112,6 +1147,17 @@ class Test_JobConfig(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             basic_job_config._fill_from_default(conflicting_job_config)
+
+    def test_fill_from_empty_default_conflict(self):
+        from google.cloud.bigquery import QueryJobConfig
+
+        job_config = QueryJobConfig()
+        job_config.dry_run = True
+        job_config.maximum_bytes_billed = 1000
+
+        final_job_config = job_config._fill_from_default(default_job_config=None)
+        self.assertTrue(final_job_config.dry_run)
+        self.assertEqual(final_job_config.maximum_bytes_billed, 1000)
 
     @mock.patch("google.cloud.bigquery._helpers._get_sub_prop")
     def test__get_sub_prop_wo_default(self, _get_sub_prop):

@@ -21,6 +21,7 @@ from itertools import islice
 import logging
 import queue
 import warnings
+from typing import Any, Union
 
 from packaging import version
 
@@ -283,7 +284,17 @@ def bq_to_arrow_schema(bq_schema):
     return pyarrow.schema(arrow_fields)
 
 
-def default_types_mapper(date_as_object: bool = False):
+def default_types_mapper(
+    date_as_object: bool = False,
+    bool_dtype: Union[Any, None] = None,
+    int_dtype: Union[Any, None] = None,
+    float_dtype: Union[Any, None] = None,
+    string_dtype: Union[Any, None] = None,
+    date_dtype: Union[Any, None] = None,
+    datetime_dtype: Union[Any, None] = None,
+    time_dtype: Union[Any, None] = None,
+    timestamp_dtype: Union[Any, None] = None,
+):
     """Create a mapping from pyarrow types to pandas types.
 
     This overrides the pandas defaults to use null-safe extension types where
@@ -299,22 +310,43 @@ def default_types_mapper(date_as_object: bool = False):
     """
 
     def types_mapper(arrow_data_type):
-        if pyarrow.types.is_boolean(arrow_data_type):
-            return pandas.BooleanDtype()
+        if bool_dtype is not None and pyarrow.types.is_boolean(arrow_data_type):
+            return bool_dtype
+
+        elif int_dtype is not None and pyarrow.types.is_integer(arrow_data_type):
+            return int_dtype
+
+        elif float_dtype is not None and pyarrow.types.is_floating(arrow_data_type):
+            return float_dtype
+
+        elif string_dtype is not None and pyarrow.types.is_string(arrow_data_type):
+            return string_dtype
 
         elif (
             # If date_as_object is True, we know some DATE columns are
             # out-of-bounds of what is supported by pandas.
-            not date_as_object
+            date_dtype is not None
+            and not date_as_object
             and pyarrow.types.is_date(arrow_data_type)
         ):
-            return db_dtypes.DateDtype()
+            return date_dtype
 
-        elif pyarrow.types.is_integer(arrow_data_type):
-            return pandas.Int64Dtype()
+        elif (
+            datetime_dtype is not None
+            and pyarrow.types.is_timestamp(arrow_data_type)
+            and arrow_data_type.tz is None
+        ):
+            return datetime_dtype
 
-        elif pyarrow.types.is_time(arrow_data_type):
-            return db_dtypes.TimeDtype()
+        elif (
+            timestamp_dtype is not None
+            and pyarrow.types.is_timestamp(arrow_data_type)
+            and arrow_data_type.tz is not None
+        ):
+            return timestamp_dtype
+
+        elif time_dtype is not None and pyarrow.types.is_time(arrow_data_type):
+            return time_dtype
 
     return types_mapper
 
@@ -468,7 +500,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
         # pandas dtype.
         bq_type = _PANDAS_DTYPE_TO_BQ.get(dtype.name)
         if bq_type is None:
-            sample_data = _first_valid(dataframe[column])
+            sample_data = _first_valid(dataframe.reset_index()[column])
             if (
                 isinstance(sample_data, _BaseGeometry)
                 and sample_data is not None  # Paranoia
@@ -531,7 +563,7 @@ def augment_schema(dataframe, current_bq_schema):
             augmented_schema.append(field)
             continue
 
-        arrow_table = pyarrow.array(dataframe[field.name])
+        arrow_table = pyarrow.array(dataframe.reset_index()[field.name])
 
         if pyarrow.types.is_list(arrow_table.type):
             # `pyarrow.ListType`

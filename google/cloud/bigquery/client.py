@@ -1934,7 +1934,7 @@ class Client(ClientWithProject):
 
         Returns:
             Union[job.CopyJob, job.ExtractJob, job.LoadJob, job.QueryJob, job.UnknownJob]:
-                The :class:`~google.cloud.bigquery.job` instance, constructed via the resource.
+                The job instance, constructed via the resource.
         """
         config = resource.get("configuration", {})
         if "load" in config:
@@ -2067,7 +2067,7 @@ class Client(ClientWithProject):
 
         Returns:
             Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
-                :class:`~google.cloud.bigquery.job` instance, based on the resource returned by the API.
+                Job instance, based on the resource returned by the API.
         """
         extra_params = {"projection": "full"}
 

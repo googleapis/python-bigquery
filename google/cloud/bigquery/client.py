@@ -327,7 +327,8 @@ class Client(ClientWithProject):
                 before using ``retry``.
 
         Returns:
-            str: service account email address
+            str:
+                service account email address
 
         Example:
 
@@ -1934,7 +1935,8 @@ class Client(ClientWithProject):
             resource (Dict): one job resource from API response
 
         Returns:
-            The job instance, constructed via the resource.
+            Union[job.CopyJob, job.ExtractJob, job.LoadJob, job.QueryJob, job.UnknownJob]:
+                The job instance, constructed via the resource.
         """
         config = resource.get("configuration", {})
         if "load" in config:
@@ -2066,7 +2068,8 @@ class Client(ClientWithProject):
                 before using ``retry``.
 
         Returns:
-            Job instance, based on the resource returned by the API.
+            Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
+                Job instance, based on the resource returned by the API.
         """
         extra_params = {"projection": "full"}
 
@@ -3956,12 +3959,13 @@ class Client(ClientWithProject):
         """
         json.dump(schema_list, file_obj, indent=2, sort_keys=True)
 
-    def schema_from_json(self, file_or_path: "PathType"):
+    def schema_from_json(self, file_or_path: "PathType") -> List[SchemaField]:
         """Takes a file object or file path that contains json that describes
         a table schema.
 
         Returns:
-            List of schema field objects.
+            List[SchemaField]:
+                List of :class:`~google.cloud.bigquery.schema.SchemaField` objects.
         """
         if isinstance(file_or_path, io.IOBase):
             return self._schema_from_json_file_object(file_or_path)

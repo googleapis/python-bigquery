@@ -1722,10 +1722,22 @@ class TestBigQuery(unittest.TestCase):
         # requested by the BQ storage client, meaning that results should arrive
         # in the sorted order.
 
-        expected_data =  [
-            [('by', 'pg'), ('id', 1), ('timestamp', datetime.datetime(2006, 10, 9, 18, 21, 51, tzinfo=UTC))],
-            [('by', 'phyllis'), ('id', 2), ('timestamp', datetime.datetime(2006, 10, 9, 18, 30, 28, tzinfo=UTC))],
-            [('by', 'phyllis'), ('id', 3), ('timestamp', datetime.datetime(2006, 10, 9, 18, 40, 33, tzinfo=UTC))],
+        expected_data = [
+            [
+                ("by", "pg"),
+                ("id", 1),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 21, 51, tzinfo=UTC)),
+            ],
+            [
+                ("by", "phyllis"),
+                ("id", 2),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 30, 28, tzinfo=UTC)),
+            ],
+            [
+                ("by", "phyllis"),
+                ("id", 3),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 40, 33, tzinfo=UTC)),
+            ],
         ]
 
         self.assertEqual(fetched_data, expected_data)

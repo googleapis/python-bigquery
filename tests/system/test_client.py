@@ -1717,7 +1717,6 @@ class TestBigQuery(unittest.TestCase):
 
         field_name = operator.itemgetter(0)
         fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
-        print(fetched_data)
         # Since DB API is not thread safe, only a single result stream should be
         # requested by the BQ storage client, meaning that results should arrive
         # in the sorted order.

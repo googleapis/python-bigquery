@@ -92,7 +92,7 @@ class DatasetReference(object):
         ValueError: If either argument is not of type ``str``.
     """
 
-    def __init__(self, project, dataset_id):
+    def __init__(self, project: str, dataset_id: str):
         if not isinstance(project, str):
             raise ValueError("Pass a string for project")
         if not isinstance(dataset_id, str):

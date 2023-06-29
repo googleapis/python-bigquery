@@ -88,8 +88,8 @@ def create_span(name, attributes=None, client=None, job_ref=None):
 
 def _get_final_span_attributes(attributes=None, client=None, job_ref=None):
     """Compiles attributes from: client, job_ref, user-provided attributes.
-    
-    Attributes from all of these sources are merged together. Note the 
+
+    Attributes from all of these sources are merged together. Note the
     attributes are added sequentially based on perceived order of precendence:
     i.e. attributes added last may overwrite attributes added earlier.
 
@@ -97,7 +97,7 @@ def _get_final_span_attributes(attributes=None, client=None, job_ref=None):
         attributes (Optional[dict]):
             Additional attributes that pertain to
             the specific API call (i.e. not a default attribute)
-    
+
         client (Optional[google.cloud.bigquery.client.Client]):
             Pass in a Client object to extract any attributes that may be
             relevant to it and add them to the final_attributes
@@ -105,12 +105,12 @@ def _get_final_span_attributes(attributes=None, client=None, job_ref=None):
         job_ref (Optional[google.cloud.bigquery.job._AsyncJob])
             Pass in a _AsyncJob object to extract any attributes that may be
             relevant to it and add them to the final_attributes.
-    
+
     Returns: dict
     """
-    
+
     collected_attributes = _default_attributes.copy()
-    
+
     if client:
         collected_attributes.update(_set_client_attributes(client))
     if job_ref:

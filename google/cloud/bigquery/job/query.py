@@ -121,7 +121,7 @@ def _from_api_repr_udf_resources(resource):
 
 def _to_api_repr_udf_resources(value):
     return [{udf_resource.udf_type: udf_resource.value} for udf_resource in value]
-
+ 
 
 def _from_api_repr_table_defs(resource):
     return {k: ExternalConfig.from_api_repr(v) for k, v in resource.items()}
@@ -724,7 +724,7 @@ class QueryJobConfig(_JobConfig):
             Dict: A dictionary in the format used by the BigQuery API.
         """
         resource = copy.deepcopy(self._properties)
-
+        print(f"DINOSAUR: QUERYJOBCONFIG RESOURCE: {resource}")
         # Query parameters have an addition property associated with them
         # to indicate if the query is using named or positional parameters.
         query_parameters = resource["query"].get("queryParameters")
@@ -859,6 +859,19 @@ class QueryJob(_AsyncJob):
         return self.configuration.priority
 
     @property
+    def search_statistics(self):
+        print(f"DINOSAUR: Search Stats: {self._job_statistics().get('ddlTargetRoutine')}")
+        #print(f"DINOSAUR: {self._properties}")
+
+        raw = _helpers._get_sub_prop(self._properties, ["jobReference", "projectId"])
+        if raw:
+            return [entry for entry in raw]
+        else:
+            return raw
+
+
+
+    @property
     def query(self):
         """str: The query text used in this query job.
 
@@ -957,6 +970,7 @@ class QueryJob(_AsyncJob):
         """Generate a resource for :meth:`_begin`."""
         # Use to_api_repr to allow for some configuration properties to be set
         # automatically.
+        print("DINOSAUR: QUERYJOB")
         configuration = self.configuration.to_api_repr()
         return {
             "jobReference": self._properties["jobReference"],

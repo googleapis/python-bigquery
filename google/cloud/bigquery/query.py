@@ -976,6 +976,7 @@ class _QueryResults(object):
             Optional[List[google.cloud.bigquery.table.Row]]:
                 Rows containing the results of the query.
         """
+        print("ORANGUTAN")
         return _rows_from_json(self._properties.get("rows", ()), self.schema)
 
     @property
@@ -1019,3 +1020,4 @@ def _query_param_from_api_repr(resource):
     else:
         klass = ScalarQueryParameter
     return klass.from_api_repr(resource)
+

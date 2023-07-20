@@ -1426,8 +1426,6 @@ class TestBigQuery(unittest.TestCase):
         self.assertIn("Bharney Rhubble", got)
 
     def test_copy_table(self):
-        pytest.skip("b/210907595: copy fails for shakespeare table")
-
         # If we create a new table to copy from, the test won't work
         # because the new rows will be stored in the streaming buffer,
         # and copy jobs don't read the streaming buffer.
@@ -1774,8 +1772,8 @@ class TestBigQuery(unittest.TestCase):
 
         cursor.execute(
             """
-            SELECT id, `by`, time_ts
-            FROM `bigquery-public-data.hacker_news.comments`
+            SELECT id, `by`, timestamp
+            FROM `bigquery-public-data.hacker_news.full`
             ORDER BY `id` ASC
             LIMIT 100000
         """
@@ -1785,27 +1783,28 @@ class TestBigQuery(unittest.TestCase):
 
         field_name = operator.itemgetter(0)
         fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
-
         # Since DB API is not thread safe, only a single result stream should be
         # requested by the BQ storage client, meaning that results should arrive
         # in the sorted order.
+
         expected_data = [
             [
-                ("by", "sama"),
-                ("id", 15),
-                ("time_ts", datetime.datetime(2006, 10, 9, 19, 51, 1, tzinfo=UTC)),
+                ("by", "pg"),
+                ("id", 1),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 21, 51, tzinfo=UTC)),
             ],
             [
-                ("by", "pg"),
-                ("id", 17),
-                ("time_ts", datetime.datetime(2006, 10, 9, 19, 52, 45, tzinfo=UTC)),
+                ("by", "phyllis"),
+                ("id", 2),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 30, 28, tzinfo=UTC)),
             ],
             [
-                ("by", "pg"),
-                ("id", 22),
-                ("time_ts", datetime.datetime(2006, 10, 10, 2, 18, 22, tzinfo=UTC)),
+                ("by", "phyllis"),
+                ("id", 3),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 40, 33, tzinfo=UTC)),
             ],
         ]
+
         self.assertEqual(fetched_data, expected_data)
 
     def test_dbapi_dry_run_query(self):
@@ -1837,8 +1836,8 @@ class TestBigQuery(unittest.TestCase):
 
         cursor.execute(
             """
-            SELECT id, `by`, time_ts
-            FROM `bigquery-public-data.hacker_news.comments`
+            SELECT id, `by`, timestamp
+            FROM `bigquery-public-data.hacker_news.full`
             ORDER BY `id` ASC
             LIMIT 100000
         """

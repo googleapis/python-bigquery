@@ -5,6 +5,48 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.11.4](https://github.com/googleapis/python-bigquery/compare/v3.11.3...v3.11.4) (2023-07-19)
+
+
+### Bug Fixes
+
+* Updates typing in function definitions ([#1613](https://github.com/googleapis/python-bigquery/issues/1613)) ([db755ce](https://github.com/googleapis/python-bigquery/commit/db755ce5d2ae21e458f33f02cf63d2e5fbc45cf5))
+
+## [3.11.3](https://github.com/googleapis/python-bigquery/compare/v3.11.2...v3.11.3) (2023-06-27)
+
+
+### Bug Fixes
+
+* Type annotations include Optional when None is accepted ([#1554](https://github.com/googleapis/python-bigquery/issues/1554)) ([6c1ab80](https://github.com/googleapis/python-bigquery/commit/6c1ab802b09124ba837d6d5358962e3fce2d4a2c))
+
+## [3.11.2](https://github.com/googleapis/python-bigquery/compare/v3.11.1...v3.11.2) (2023-06-21)
+
+
+### Bug Fixes
+
+* Updates tests based on revised hacker_news tables ([#1591](https://github.com/googleapis/python-bigquery/issues/1591)) ([d73cf49](https://github.com/googleapis/python-bigquery/commit/d73cf495b8dfa032a43dc1d58599d0691aaa0efb))
+
+## [3.11.1](https://github.com/googleapis/python-bigquery/compare/v3.11.0...v3.11.1) (2023-06-09)
+
+
+### Documentation
+
+* Add/reformat return types for cloud RAD docs ([#1582](https://github.com/googleapis/python-bigquery/issues/1582)) ([6efdce1](https://github.com/googleapis/python-bigquery/commit/6efdce13cc3b25d37d22a856f2308daed569e637))
+
+## [3.11.0](https://github.com/googleapis/python-bigquery/compare/v3.10.0...v3.11.0) (2023-06-01)
+
+
+### Features
+
+* Add remote function options to routines ([#1558](https://github.com/googleapis/python-bigquery/issues/1558)) ([84ad11d](https://github.com/googleapis/python-bigquery/commit/84ad11d00d99d279e4e6e0fa4ca60e59575b1dad))
+
+
+### Bug Fixes
+
+* Filter None values from OpenTelemetry attributes ([#1567](https://github.com/googleapis/python-bigquery/issues/1567)) ([9ea2e21](https://github.com/googleapis/python-bigquery/commit/9ea2e21c35783782993d1ad2d3b910bbe9981ce2))
+* Handle case when expirationMs is None ([#1553](https://github.com/googleapis/python-bigquery/issues/1553)) ([fa6e13d](https://github.com/googleapis/python-bigquery/commit/fa6e13d5006caadb36899b4e2a24ca82b7f11b17))
+* Raise most recent exception when not able to fetch query job after starting the job ([#1362](https://github.com/googleapis/python-bigquery/issues/1362)) ([09cc1df](https://github.com/googleapis/python-bigquery/commit/09cc1df6babaf90ea0b0a6fd926f8013822a31ed))
+
 ## [3.10.0](https://github.com/googleapis/python-bigquery/compare/v3.9.0...v3.10.0) (2023-04-18)
 
 

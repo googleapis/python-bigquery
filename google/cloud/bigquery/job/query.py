@@ -121,7 +121,7 @@ def _from_api_repr_udf_resources(resource):
 
 def _to_api_repr_udf_resources(value):
     return [{udf_resource.udf_type: udf_resource.value} for udf_resource in value]
- 
+
 
 def _from_api_repr_table_defs(resource):
     return {k: ExternalConfig.from_api_repr(v) for k, v in resource.items()}
@@ -197,14 +197,15 @@ class DmlStats(typing.NamedTuple):
         )
         return cls(*args)
 
+
 class SearchReason(typing.NamedTuple):
     """docstring"""
-    
+
     code: str
     message: str
     baseTable: TableReference
     indexName: str
-    
+
     @classmethod
     def from_api_repr(cls, reason):
         code = reason.get("code")

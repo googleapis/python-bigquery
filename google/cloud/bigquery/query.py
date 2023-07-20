@@ -1019,4 +1019,3 @@ def _query_param_from_api_repr(resource):
     else:
         klass = ScalarQueryParameter
     return klass.from_api_repr(resource)
-

@@ -197,6 +197,38 @@ class DmlStats(typing.NamedTuple):
         )
         return cls(*args)
 
+class SearchReason(typing.NamedTuple):
+    """docstring"""
+    
+    code: str
+    message: str
+    baseTable: TableReference
+    indexName: str
+    
+    @classmethod
+    def from_api_repr(cls, reason):
+        code = reason.get("code")
+        message = reason.get("message")
+        baseTable = reason.get("baseTable")
+        indexName = reason.get("indexName")
+
+        return cls(code, message, baseTable, indexName)
+
+
+class SearchStats(typing.NamedTuple):
+    """docstring"""
+
+    mode: str
+    reason: list
+
+    @classmethod
+    def from_api_repr(cls, stats: Dict[str, Any]):
+        mode = stats.get("indexUsageMode", "INDEX_USAGE_MODE_UNSPECIFIED")
+        reason = [
+            SearchReason.from_api_repr(r) for r in stats.get("indexUnusedReasons")
+        ]
+        return cls(mode, reason)
+
 
 class ScriptOptions:
     """Options controlling the execution of scripts.
@@ -859,17 +891,11 @@ class QueryJob(_AsyncJob):
         return self.configuration.priority
 
     @property
-    def search_statistics(self):
-        print(f"DINOSAUR: Search Stats: {self._job_statistics().get('ddlTargetRoutine')}")
-        #print(f"DINOSAUR: {self._properties}")
+    def search_stats(self):
+        """docstring"""
 
-        raw = _helpers._get_sub_prop(self._properties, ["jobReference", "projectId"])
-        if raw:
-            return [entry for entry in raw]
-        else:
-            return raw
-
-
+        stats = self._job_statistics().get("searchStatistics")
+        return SearchStats.from_api_repr(stats)
 
     @property
     def query(self):

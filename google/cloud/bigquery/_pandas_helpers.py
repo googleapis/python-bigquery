@@ -377,7 +377,11 @@ def bq_to_arrow_array(series, bq_field):
         return pyarrow.ListArray.from_pandas(series, type=arrow_type)
     if field_type_upper in schema._STRUCT_TYPES:
         return pyarrow.StructArray.from_pandas(series, type=arrow_type)
-    return pyarrow.Array.from_pandas(series, type=arrow_type)
+    try:
+        return pyarrow.Array.from_pandas(series, type=arrow_type)
+    except Exception as e:
+        _LOGGER.error(f'Error converting Pandas column "{series.name}" to pyarrow Array')
+        raise e
 
 
 def get_column_or_index(dataframe, name):

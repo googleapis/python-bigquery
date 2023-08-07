@@ -2759,6 +2759,7 @@ class Client(ClientWithProject):
         project: Optional[str] = None,
         job_config: Optional[LoadJobConfig] = None,
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
+        json_dumps_kwargs: Optional[Dict[str, Any]] = None,
     ) -> job.LoadJob:
         """Upload the contents of a table from a JSON string or dict.
 
@@ -2811,7 +2812,8 @@ class Client(ClientWithProject):
 
                 Can also be passed as a tuple (connect_timeout, read_timeout).
                 See :meth:`requests.Session.request` documentation for details.
-
+            json_dumps_kwargs:
+                Extra keyword arguments for ``json.dumps``. Usefull when you want to parse datetime objects.
         Returns:
             google.cloud.bigquery.job.LoadJob: A new load job.
 
@@ -2842,7 +2844,13 @@ class Client(ClientWithProject):
 
         destination = _table_arg_to_table_ref(destination, default_project=self.project)
 
-        data_str = "\n".join(json.dumps(item, ensure_ascii=False) for item in json_rows)
+        if json_dumps_kwargs is None:
+            json_dumps_kwargs = {}
+
+        data_str = "\n".join(
+            json.dumps(item, ensure_ascii=False, **json_dumps_kwargs)
+            for item in json_rows
+        )
         encoded_str = data_str.encode()
         data_file = io.BytesIO(encoded_str)
         return self.load_table_from_file(

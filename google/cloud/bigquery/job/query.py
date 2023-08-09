@@ -219,8 +219,8 @@ class SearchReason(typing.NamedTuple):
 class SearchStats(typing.NamedTuple):
     """docstring"""
 
-    mode: str
-    reason: list
+    mode: str = "INDEX_USAGE_MODE_UNSPECIFIED"
+    reason: List[SearchReason] = []
 
     @classmethod
     def from_api_repr(cls, stats: Dict[str, Any]):
@@ -895,7 +895,8 @@ class QueryJob(_AsyncJob):
         """docstring"""
 
         stats = self._job_statistics().get("searchStatistics")
-        return SearchStats.from_api_repr(stats)
+        if stats is not None:
+            return SearchStats.from_api_repr(stats)
 
     @property
     def query(self):

@@ -913,7 +913,7 @@ class TestQueryJob(_Base):
 
     def test_search_stats(self):
         from google.cloud.bigquery.job.query import SearchStats
-        
+
         client = _make_client(project=self.PROJECT)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
         assert job.search_stats is None
@@ -924,8 +924,10 @@ class TestQueryJob(_Base):
         query_stats = statistics["query"] = {}
         assert job.search_stats is None
 
-        query_stats["searchStatistics"] = {"indexUsageMode": "INDEX_USAGE_MODE_UNSPECIFIED",
-                                           "indexUnusedReasons": []}
+        query_stats["searchStatistics"] = {
+            "indexUsageMode": "INDEX_USAGE_MODE_UNSPECIFIED",
+            "indexUnusedReasons": [],
+        }
         assert isinstance(job.search_stats, SearchStats)
         assert job.search_stats.mode == "INDEX_USAGE_MODE_UNSPECIFIED"
 

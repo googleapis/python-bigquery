@@ -107,10 +107,12 @@ class TestDmlStats:
         assert result.deleted_row_count == 25
         assert result.updated_row_count == 4
 
+
 class TestSearchStatistics:
     @staticmethod
     def _get_target_class():
         from google.cloud.bigquery.job.query import SearchStats
+
         return SearchStats
 
     def _make_one(self, *args, **kwargs):
@@ -119,42 +121,44 @@ class TestSearchStatistics:
     def test_ctor_defaults(self):
         search_stats = self._make_one()
         assert search_stats.mode == "INDEX_USAGE_MODE_UNSPECIFIED"
-        assert search_stats.reason == [] 
+        assert search_stats.reason == []
 
     def test_from_api_repr_unspecified(self):
         klass = self._get_target_class()
-        result = klass.from_api_repr({"indexUsageMode": "INDEX_USAGE_MODE_UNSPECIFIED",
-                                      "indexUnusedReasons": []})
+        result = klass.from_api_repr(
+            {"indexUsageMode": "INDEX_USAGE_MODE_UNSPECIFIED", "indexUnusedReasons": []}
+        )
 
         assert isinstance(result, klass)
-        assert result.mode == "INDEX_USAGE_MODE_UNSPECIFIED" 
+        assert result.mode == "INDEX_USAGE_MODE_UNSPECIFIED"
         assert result.reason == []
 
     def test_from_api_repr_unused(self):
         klass = self._get_target_class()
-        result = klass.from_api_repr({"indexUsageMode": "UNUSED",
-                                      "indexUnusedReasons": []})
+        result = klass.from_api_repr(
+            {"indexUsageMode": "UNUSED", "indexUnusedReasons": []}
+        )
         assert isinstance(result, klass)
-        assert result.mode == "UNUSED" 
+        assert result.mode == "UNUSED"
         assert result.reason == []
 
     def test_from_api_repr_unused(self):
         klass = self._get_target_class()
-        result = klass.from_api_repr({"indexUsageMode": "PARIALLY_USED",
-                                      "indexUnusedReasons": []})
+        result = klass.from_api_repr(
+            {"indexUsageMode": "PARIALLY_USED", "indexUnusedReasons": []}
+        )
         assert isinstance(result, klass)
-        assert result.mode == "PARTIALLY_USED" 
+        assert result.mode == "PARTIALLY_USED"
         assert result.reason == []
 
     def test_from_api_repr_unused(self):
         klass = self._get_target_class()
-        result = klass.from_api_repr({"indexUsageMode": "FULLY_USED",
-                                      "indexUnusedReasons": []})
+        result = klass.from_api_repr(
+            {"indexUsageMode": "FULLY_USED", "indexUnusedReasons": []}
+        )
         assert isinstance(result, klass)
-        assert result.mode == "FULLY_USED" 
-        assert result.reason == []        
-
-
+        assert result.mode == "FULLY_USED"
+        assert result.reason == []
 
 
 class TestQueryPlanEntryStep(_Base):

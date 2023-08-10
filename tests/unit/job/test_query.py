@@ -928,7 +928,7 @@ class TestQueryJob(_Base):
             "indexUsageMode": "INDEX_USAGE_MODE_UNSPECIFIED",
             "indexUnusedReasons": [],
         }
-        # job.search_stats is a daisy chain of calls and gets:
+        # job.search_stats is a daisy-chain of calls and gets:
         # job.search_stats << job._job_statistics << job._properties
         assert isinstance(job.search_stats, SearchStats)
         assert job.search_stats.mode == "INDEX_USAGE_MODE_UNSPECIFIED"

@@ -120,7 +120,7 @@ class TestSearchStatistics:
 
     def test_ctor_defaults(self):
         search_stats = self._make_one()
-        assert search_stats.mode == ''
+        assert search_stats.mode == ""
         assert search_stats.reason == []
 
     def test_from_api_repr_unspecified(self):

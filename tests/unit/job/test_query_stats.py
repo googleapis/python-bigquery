@@ -154,17 +154,26 @@ class TestSearchReasons:
     def test_from_api_repr_unspecified(self):
         klass = self._get_target_class()
         result = klass.from_api_repr(
-            {"code": "INDEX_CONFIG_NOT_AVAILABLE",
-             "message": "There is no search index...",
-             "baseTable": {'projectId': 'bigquery-public-data', 'datasetId': 'usa_names', 'tableId': 'usa_1910_current'},
-             "indexName": None,
+            {
+                "code": "INDEX_CONFIG_NOT_AVAILABLE",
+                "message": "There is no search index...",
+                "baseTable": {
+                    "projectId": "bigquery-public-data",
+                    "datasetId": "usa_names",
+                    "tableId": "usa_1910_current",
+                },
+                "indexName": None,
             }
         )
 
         assert isinstance(result, klass)
         assert result.code == "INDEX_CONFIG_NOT_AVAILABLE"
         assert result.message == "There is no search index..."
-        assert result.baseTable == {'projectId': 'bigquery-public-data', 'datasetId': 'usa_names', 'tableId': 'usa_1910_current'}
+        assert result.baseTable == {
+            "projectId": "bigquery-public-data",
+            "datasetId": "usa_names",
+            "tableId": "usa_1910_current",
+        }
         assert result.indexName == None
 
 

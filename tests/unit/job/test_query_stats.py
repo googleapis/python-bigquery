@@ -133,32 +133,41 @@ class TestSearchStatistics:
         assert result.mode == "INDEX_USAGE_MODE_UNSPECIFIED"
         assert result.reason == []
 
-    def test_from_api_repr_unused(self):
-        klass = self._get_target_class()
-        result = klass.from_api_repr(
-            {"indexUsageMode": "UNUSED", "indexUnusedReasons": []}
-        )
-        assert isinstance(result, klass)
-        assert result.mode == "UNUSED"
-        assert result.reason == []
+#############################################
+class TestSearchReasons:
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.job.query import SearchReason
 
-    def test_from_api_repr_unused(self):
-        klass = self._get_target_class()
-        result = klass.from_api_repr(
-            {"indexUsageMode": "PARIALLY_USED", "indexUnusedReasons": []}
-        )
-        assert isinstance(result, klass)
-        assert result.mode == "PARTIALLY_USED"
-        assert result.reason == []
+        return SearchReason
 
-    def test_from_api_repr_unused(self):
+    def _make_one(self, *args, **kwargs):
+        return self._get_target_class()(*args, **kwargs)
+
+    def test_ctor_defaults(self):
+        search_reason = self._make_one()
+        assert search_reason.code == ""
+        assert search_reason.message == ""
+        assert search_reason.baseTable == None
+        assert search_reason.indexName == ""
+
+    def test_from_api_repr_unspecified(self):
         klass = self._get_target_class()
         result = klass.from_api_repr(
-            {"indexUsageMode": "FULLY_USED", "indexUnusedReasons": []}
+            {"code": "INDEX_CONFIG_NOT_AVAILABLE",
+             "message": "There is no search index...",
+             "baseTable": {'projectId': 'bigquery-public-data', 'datasetId': 'usa_names', 'tableId': 'usa_1910_current'},
+             "indexName": None,
+            }
         )
+
         assert isinstance(result, klass)
-        assert result.mode == "FULLY_USED"
-        assert result.reason == []
+        assert result.code == "INDEX_CONFIG_NOT_AVAILABLE"
+        assert result.message == "There is no search index..."
+        assert result.baseTable == {'projectId': 'bigquery-public-data', 'datasetId': 'usa_names', 'tableId': 'usa_1910_current'}
+        assert result.indexName == None
+#############################################
+
 
 
 class TestQueryPlanEntryStep(_Base):

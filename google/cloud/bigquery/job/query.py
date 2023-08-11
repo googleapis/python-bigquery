@@ -201,10 +201,10 @@ class DmlStats(typing.NamedTuple):
 class SearchReason(typing.NamedTuple):
     """docstring"""
 
-    code: str
-    message: str
-    baseTable: TableReference
-    indexName: str
+    code: Optional[str] = ""
+    message: Optional[str] = ""
+    baseTable: Optional[TableReference] = None
+    indexName: Optional[str] = ""
 
     @classmethod
     def from_api_repr(cls, reason):
@@ -219,14 +219,14 @@ class SearchReason(typing.NamedTuple):
 class SearchStats(typing.NamedTuple):
     """docstring"""
 
-    mode: str = "INDEX_USAGE_MODE_UNSPECIFIED"
+    mode: str = ""
     reason: List[SearchReason] = []
 
     @classmethod
     def from_api_repr(cls, stats: Dict[str, Any]):
-        mode = stats.get("indexUsageMode", "INDEX_USAGE_MODE_UNSPECIFIED")
+        mode = stats.get("indexUsageMode", "")
         reason = [
-            SearchReason.from_api_repr(r) for r in stats.get("indexUnusedReasons")
+            SearchReason.from_api_repr(r) for r in stats.get("indexUnusedReasons", [])
         ]
         return cls(mode, reason)
 

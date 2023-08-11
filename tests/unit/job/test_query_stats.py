@@ -133,7 +133,7 @@ class TestSearchStatistics:
         assert result.mode == "INDEX_USAGE_MODE_UNSPECIFIED"
         assert result.reason == []
 
-#############################################
+
 class TestSearchReasons:
     @staticmethod
     def _get_target_class():
@@ -166,8 +166,6 @@ class TestSearchReasons:
         assert result.message == "There is no search index..."
         assert result.baseTable == {'projectId': 'bigquery-public-data', 'datasetId': 'usa_names', 'tableId': 'usa_1910_current'}
         assert result.indexName == None
-#############################################
-
 
 
 class TestQueryPlanEntryStep(_Base):

@@ -148,7 +148,7 @@ class TestSearchReasons:
         search_reason = self._make_one()
         assert search_reason.code == ""
         assert search_reason.message == ""
-        assert search_reason.baseTable == None
+        assert if search_reason.baseTable is None
         assert search_reason.indexName == ""
 
     def test_from_api_repr_unspecified(self):
@@ -174,7 +174,7 @@ class TestSearchReasons:
             "datasetId": "usa_names",
             "tableId": "usa_1910_current",
         }
-        assert result.indexName == None
+        assert if result.indexName is None
 
 
 class TestQueryPlanEntryStep(_Base):

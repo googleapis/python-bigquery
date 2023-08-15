@@ -148,7 +148,7 @@ class TestSearchReasons:
         search_reason = self._make_one()
         assert search_reason.code == ""
         assert search_reason.message == ""
-        assert if search_reason.baseTable is None
+        assert search_reason.baseTable is None
         assert search_reason.indexName == ""
 
     def test_from_api_repr_unspecified(self):

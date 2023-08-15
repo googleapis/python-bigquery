@@ -174,7 +174,7 @@ class TestSearchReasons:
             "datasetId": "usa_names",
             "tableId": "usa_1910_current",
         }
-        assert if result.indexName is None
+        assert result.indexName is None
 
 
 class TestQueryPlanEntryStep(_Base):

@@ -527,6 +527,7 @@ class Dataset(object):
         "default_table_expiration_ms": "defaultTableExpirationMs",
         "friendly_name": "friendlyName",
         "default_encryption_configuration": "defaultEncryptionConfiguration",
+        "storage_billing_model": "storageBillingModel",
     }
 
     def __init__(self, dataset_ref) -> None:
@@ -762,6 +763,26 @@ class Dataset(object):
         if value:
             api_repr = value.to_api_repr()
         self._properties["defaultEncryptionConfiguration"] = api_repr
+
+    @property
+    def storage_billing_model(self):
+        """Union[str, None]: StorageBillingModel of the dataset as set by the user
+        (defaults to :data:`None`).
+
+        Raises:
+            ValueError: for invalid value types.
+        """
+        return self._properties.get("storageBillingModel")
+
+    @storage_billing_model.setter
+    def storage_billing_model(self, value):
+        if not isinstance(value, str) and value is not None:
+            raise ValueError("Pass a string, or None")
+        if value:
+            api_repr = value.to_api_repr()
+            self._properties["storageBillingModel"] = api_repr
+        if value is None:
+            self._properties["storageBillingModel"] = "LOGICAL"
 
     @classmethod
     def from_string(cls, full_dataset_id: str) -> "Dataset":

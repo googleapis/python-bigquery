@@ -779,8 +779,7 @@ class Dataset(object):
         if not isinstance(value, str) and value is not None:
             raise ValueError("Pass a string, or None")
         if value:
-            api_repr = value.to_api_repr()
-            self._properties["storageBillingModel"] = api_repr
+            self._properties["storageBillingModel"] = value
         if value is None:
             self._properties["storageBillingModel"] = "LOGICAL"
 

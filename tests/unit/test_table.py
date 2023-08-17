@@ -14,6 +14,7 @@
 
 import datetime
 import logging
+import packaging.version
 import re
 from sys import version_info
 import time
@@ -3788,6 +3789,9 @@ class TestRowIterator(unittest.TestCase):
                 timestamp_dtype=numpy.dtype("datetime64[us]"),
             )
 
+    @pytest.mark.skipif(
+        packaging.version.parse(pandas.__version__).release >= (2, 0), reason=""
+    )
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_column_dtypes(self):
         from google.cloud.bigquery.schema import SchemaField

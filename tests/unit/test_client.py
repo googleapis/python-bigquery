@@ -484,18 +484,19 @@ class TestClient(unittest.TestCase):
         )
 
         # trigger the iterator to request data
-        with self.assertRaises(google.api_core.exceptions.NotFound):
+        with self.assertRaises(NotFound):
             iterator._get_next_page_response()
 
         conn.api_request.assert_called_once_with(
             method="GET",
             path=path,
-            query_params={'fields': 'jobReference,totalRows,pageToken,rows', 'location': None, 'formatOptions.useInt64Timestamp': True},
+            query_params={
+                "fields": "jobReference,totalRows,pageToken,rows",
+                "location": None,
+                "formatOptions.useInt64Timestamp": True,
+            },
             timeout=None,
         )
-
-
-
 
     def test__list_rows_from_query_results_w_default_timeout(self):
         import google.cloud.bigquery.client
@@ -518,13 +519,17 @@ class TestClient(unittest.TestCase):
         )
 
         # trigger the iterator to request data
-        with self.assertRaises(google.api_core.exceptions.NotFound):
+        with self.assertRaises(NotFound):
             iterator._get_next_page_response()
 
         conn.api_request.assert_called_once_with(
             method="GET",
             path=path,
-            query_params={'fields': 'jobReference,totalRows,pageToken,rows', 'location': None, 'formatOptions.useInt64Timestamp': True},
+            query_params={
+                "fields": "jobReference,totalRows,pageToken,rows",
+                "location": None,
+                "formatOptions.useInt64Timestamp": True,
+            },
             timeout=google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
         )
 

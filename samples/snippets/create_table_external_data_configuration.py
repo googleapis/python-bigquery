@@ -19,8 +19,6 @@ def create_table_external_data_configuration(
     """Create a table using an external data source"""
     orig_table_id = table_id
     # [START bigquery_query_external_gcs_perm]
-    # [START bigquery_create_table_external_data_configuration]
-    # [START bigquery_create_external_table_definition]
     from google.cloud import bigquery
 
     # Construct a BigQuery client object.
@@ -28,9 +26,9 @@ def create_table_external_data_configuration(
 
     # TODO(developer): Set table_id to the ID of the table to create.
     table_id = "your-project.your_dataset.your_table_name"
-    # [END bigquery_create_table_external_data_configuration]
+    # [END bigquery_query_external_gcs_perm]
     table_id = orig_table_id
-    # [START bigquery_create_table_external_data_configuration]
+    # [START bigquery_query_external_gcs_perm]
 
     # TODO(developer): Set the external source format of your table.
     # Note that the set of allowed values for external data sources is
@@ -54,7 +52,6 @@ def create_table_external_data_configuration(
     reference_file_schema_uri = "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/b-twitter.avro"
 
     external_config.reference_file_schema_uri = reference_file_schema_uri
-    # [END bigquery_create_external_table_definition]
 
     table = bigquery.Table(table_id)
     # Set the external data configuration of the table
@@ -64,5 +61,4 @@ def create_table_external_data_configuration(
     print(
         f"Created table with external source format {table.external_data_configuration.source_format}"
     )
-    # [END bigquery_create_table_external_data_configuration]
     # [END bigquery_query_external_gcs_perm]

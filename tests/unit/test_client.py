@@ -464,7 +464,6 @@ class TestClient(unittest.TestCase):
         self.assertTrue(query_results.complete)
 
     def test__list_rows_from_query_results_w_none_timeout(self):
-        import google.cloud.bigquery.client
         from google.cloud.exceptions import NotFound
         from google.cloud.bigquery.schema import SchemaField
 

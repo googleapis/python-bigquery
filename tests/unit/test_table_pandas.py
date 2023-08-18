@@ -27,9 +27,9 @@ pyarrow = pytest.importorskip("pyarrow", minversion="3.0.0")
 
 TEST_PATH = "/v1/project/test-proj/dataset/test-dset/table/test-tbl/data"
 
-if pandas is not None:
+if pandas is not None:  # pragma: NO COVER
     PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
-else:
+else:  # pragma: NO COVER
     PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
 
 

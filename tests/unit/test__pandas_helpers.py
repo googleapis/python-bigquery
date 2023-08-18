@@ -17,7 +17,6 @@ import datetime
 import decimal
 import functools
 import operator
-import packaging.version
 import queue
 import warnings
 import pkg_resources

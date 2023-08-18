@@ -548,7 +548,7 @@ def test_bq_to_arrow_array_w_nullable_scalars(module_under_test, bq_type, rows):
 )
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(
-    packaging.version.parse(pandas.__version__).release >= (2, 0), reason=""
+    PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
 )
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_bq_to_arrow_array_w_pandas_timestamp(module_under_test, bq_type, rows):

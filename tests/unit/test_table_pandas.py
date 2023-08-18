@@ -33,16 +33,16 @@ else:
     PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
 
 
-
 @pytest.fixture
 def class_under_test():
     from google.cloud.bigquery.table import RowIterator
 
     return RowIterator
 
+
 @pytest.mark.skipif(
-        PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
-    )
+    PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
+)
 def test_to_dataframe_nullable_scalars(monkeypatch, class_under_test):
     # See tests/system/test_arrow.py for the actual types we get from the API.
     arrow_schema = pyarrow.schema(

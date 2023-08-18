@@ -3789,10 +3789,10 @@ class TestRowIterator(unittest.TestCase):
                 timestamp_dtype=numpy.dtype("datetime64[us]"),
             )
 
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     @pytest.mark.skipif(
         packaging.version.parse(pandas.__version__).release >= (2, 0), reason=""
     )
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_to_dataframe_column_dtypes(self):
         from google.cloud.bigquery.schema import SchemaField
 

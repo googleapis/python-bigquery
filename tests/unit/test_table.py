@@ -81,6 +81,7 @@ if pandas is not None:
 else:
     PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
 
+
 def _mock_client():
     from google.cloud.bigquery import client
 

@@ -179,12 +179,13 @@ class DatasetReference(object):
                 )
         elif len(parts) == 2:
             output_project_id, output_dataset_id = parts
-        elif len(parts) > 2:
+        else:
             raise ValueError(
                 "Too many parts in dataset_id. Expected a fully-qualified "
-                "dataset ID in standard SQL format. e.g. "
-                '"project.dataset_id", got {}'.format(dataset_id)
+                "dataset ID in standard SQL format, "
+                'e.g. "project.dataset_id", got {}'.format(dataset_id)
             )
+
         return cls(output_project_id, output_dataset_id)
 
     def to_api_repr(self) -> dict:

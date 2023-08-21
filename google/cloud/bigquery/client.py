@@ -1894,6 +1894,14 @@ class Client(ClientWithProject):
 
         extra_params: Dict[str, Any] = {"maxResults": 0}
 
+        # Python_API_core, as part of a major rewrite of the deadline, timeout,
+        # and retry process sets the timeout value as a Python object().
+        # Our system does not natively handle that and instead expects
+        # either none or a numeric value. If passed a Python object, convert to
+        # None.
+        if type(timeout) == object:  # pragma: NO COVER
+            timeout = None
+
         if timeout is not None:
             timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 

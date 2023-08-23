@@ -1345,7 +1345,7 @@ class QueryJob(_AsyncJob):
         if isinstance(self._done_timeout, object):  # pragma: NO COVER
             self._done_timeout = None
 
-        if self._done_timeout is not None:  # pragma, NO COVER
+        if self._done_timeout is not None:  # pragma: NO COVER
             # Subtract a buffer for context switching, network latency, etc.
             api_timeout = self._done_timeout - _TIMEOUT_BUFFER_SECS
             api_timeout = max(min(api_timeout, 10), 0)

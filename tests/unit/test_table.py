@@ -14,7 +14,6 @@
 
 import datetime
 import logging
-import packaging.version
 import re
 from sys import version_info
 import time

@@ -651,6 +651,7 @@ def test_to_dataframe_bqstorage_no_pyarrow_compression():
         max_stream_count=0,
     )
 
+
 @pytest.mark.skipif(
     PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
 )

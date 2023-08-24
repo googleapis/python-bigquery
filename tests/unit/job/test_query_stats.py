@@ -134,7 +134,7 @@ class TestSearchStatistics:
         assert result.reason == []
 
 
-class TestSearchReasons:
+class TestIndexUnusedReason:
     @staticmethod
     def _get_target_class():
         from google.cloud.bigquery.job.query import IndexUnusedReason

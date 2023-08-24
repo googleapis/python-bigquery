@@ -137,9 +137,9 @@ class TestSearchStatistics:
 class TestSearchReasons:
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.job.query import SearchReason
+        from google.cloud.bigquery.job.query import IndexUnusedReason
 
-        return SearchReason
+        return IndexUnusedReason
 
     def _make_one(self, *args, **kwargs):
         return self._get_target_class()(*args, **kwargs)

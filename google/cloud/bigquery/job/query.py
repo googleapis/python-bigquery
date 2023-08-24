@@ -199,12 +199,25 @@ class DmlStats(typing.NamedTuple):
 
 
 class SearchReason(typing.NamedTuple):
-    """docstring"""
+    """Reason about why no search index was used in the search query (or sub-query).
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#indexunusedreason
+    """
 
     code: Optional[str] = ""
+    """Specifies the high-level reason for the scenario when no search index was used.
+    """
+
     message: Optional[str] = ""
+    """Free form human-readable reason for the scenario when no search index was used.
+    """
+
     baseTable: Optional[TableReference] = None
+    """Specifies the base table involved in the reason that no search index was used.
+    """
+    
     indexName: Optional[str] = ""
+    """Specifies the name of the unused search index, if available."""
 
     @classmethod
     def from_api_repr(cls, reason):
@@ -217,10 +230,16 @@ class SearchReason(typing.NamedTuple):
 
 
 class SearchStats(typing.NamedTuple):
-    """docstring"""
+    """Statistics related to Search Queries. Populated as part of JobStatistics2.
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#searchstatistics
+    """
 
     mode: str = ""
+    """Indicates the type of search index usage in the entire search query."""
+
     reason: List[SearchReason] = []
+    """Reason about why no search index was used in the search query (or sub-query)"""
 
     @classmethod
     def from_api_repr(cls, stats: Dict[str, Any]):

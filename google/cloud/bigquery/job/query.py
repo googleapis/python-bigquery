@@ -198,7 +198,7 @@ class DmlStats(typing.NamedTuple):
         return cls(*args)
 
 
-class SearchReason(typing.NamedTuple):
+class IndexUnusedReason(typing.NamedTuple):
     """Reason about why no search index was used in the search query (or sub-query).
 
     https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#indexunusedreason
@@ -215,7 +215,7 @@ class SearchReason(typing.NamedTuple):
     baseTable: Optional[TableReference] = None
     """Specifies the base table involved in the reason that no search index was used.
     """
-    
+
     indexName: Optional[str] = ""
     """Specifies the name of the unused search index, if available."""
 
@@ -238,14 +238,15 @@ class SearchStats(typing.NamedTuple):
     mode: str = ""
     """Indicates the type of search index usage in the entire search query."""
 
-    reason: List[SearchReason] = []
+    reason: List[IndexUnusedReason] = []
     """Reason about why no search index was used in the search query (or sub-query)"""
 
     @classmethod
     def from_api_repr(cls, stats: Dict[str, Any]):
         mode = stats.get("indexUsageMode", "")
         reason = [
-            SearchReason.from_api_repr(r) for r in stats.get("indexUnusedReasons", [])
+            IndexUnusedReason.from_api_repr(r)
+            for r in stats.get("indexUnusedReasons", [])
         ]
         return cls(mode, reason)
 
@@ -911,7 +912,7 @@ class QueryJob(_AsyncJob):
 
     @property
     def search_stats(self):
-        """docstring"""
+        """Generates a SearchStats object."""
 
         stats = self._job_statistics().get("searchStatistics")
         if stats is not None:

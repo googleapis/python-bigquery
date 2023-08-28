@@ -204,11 +204,11 @@ class IndexUnusedReason(typing.NamedTuple):
     https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#indexunusedreason
     """
 
-    code: Optional[str] = ""
+    code: Optional[str] = None
     """Specifies the high-level reason for the scenario when no search index was used.
     """
 
-    message: Optional[str] = ""
+    message: Optional[str] = None
     """Free form human-readable reason for the scenario when no search index was used.
     """
 
@@ -216,7 +216,7 @@ class IndexUnusedReason(typing.NamedTuple):
     """Specifies the base table involved in the reason that no search index was used.
     """
 
-    indexName: Optional[str] = ""
+    indexName: Optional[str] = None
     """Specifies the name of the unused search index, if available."""
 
     @classmethod
@@ -235,7 +235,7 @@ class SearchStats(typing.NamedTuple):
     https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#searchstatistics
     """
 
-    mode: str = ""
+    mode: Optional[str] = None
     """Indicates the type of search index usage in the entire search query."""
 
     reason: List[IndexUnusedReason] = []
@@ -911,12 +911,13 @@ class QueryJob(_AsyncJob):
         return self.configuration.priority
 
     @property
-    def search_stats(self):
-        """Generates a SearchStats object."""
+    def search_stats(self) -> Optional[SearchStats]:
+        """Returns a SearchStats object."""
 
         stats = self._job_statistics().get("searchStatistics")
         if stats is not None:
             return SearchStats.from_api_repr(stats)
+        return None
 
     @property
     def query(self):

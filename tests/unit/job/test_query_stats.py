@@ -120,7 +120,7 @@ class TestSearchStatistics:
 
     def test_ctor_defaults(self):
         search_stats = self._make_one()
-        assert search_stats.mode == ""
+        assert search_stats.mode == None
         assert search_stats.reason == []
 
     def test_from_api_repr_unspecified(self):
@@ -146,10 +146,10 @@ class TestIndexUnusedReason:
 
     def test_ctor_defaults(self):
         search_reason = self._make_one()
-        assert search_reason.code == ""
-        assert search_reason.message == ""
+        assert search_reason.code == None
+        assert search_reason.message == None
         assert search_reason.baseTable is None
-        assert search_reason.indexName == ""
+        assert search_reason.indexName == None
 
     def test_from_api_repr_unspecified(self):
         klass = self._get_target_class()

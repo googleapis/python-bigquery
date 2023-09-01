@@ -243,7 +243,7 @@ class SearchStats(typing.NamedTuple):
 
     @classmethod
     def from_api_repr(cls, stats: Dict[str, Any]):
-        mode = stats.get("indexUsageMode", "")
+        mode = stats.get("indexUsageMode", None)
         reason = [
             IndexUnusedReason.from_api_repr(r)
             for r in stats.get("indexUnusedReasons", [])

@@ -253,7 +253,7 @@ class Client(ClientWithProject):
         bq_host = _get_bigquery_host()
         kw_args["api_endpoint"] = bq_host if bq_host != _DEFAULT_HOST else None
         if client_options:
-            if type(client_options) == dict:
+            if isinstance(client_options, dict):
                 client_options = google.api_core.client_options.from_dict(
                     client_options
                 )
@@ -1895,7 +1895,10 @@ class Client(ClientWithProject):
         extra_params: Dict[str, Any] = {"maxResults": 0}
 
         if timeout is not None:
-            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
+            if type(timeout) == object:
+                timeout = _MIN_GET_QUERY_RESULTS_TIMEOUT
+            else:
+                timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if project is None:
             project = self.project
@@ -3924,7 +3927,10 @@ class Client(ClientWithProject):
         }
 
         if timeout is not None:
-            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
+            if type(timeout) == object:
+                timeout = _MIN_GET_QUERY_RESULTS_TIMEOUT
+            else:
+                timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if start_index is not None:
             params["startIndex"] = start_index

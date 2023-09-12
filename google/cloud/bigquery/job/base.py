@@ -179,7 +179,6 @@ class _JobConfig(object):
 
         e.g.
             job_config = bigquery.QueryJobConfig( jobtimeout = 5000 )
-            job_config = bigquery.QueryJobConfig()
             
                 or
 
@@ -188,7 +187,7 @@ class _JobConfig(object):
             ValueError: If ``value`` type is invalid.
         """
         
-        # None as this does is an optional parameter.
+        # None as this is an optional parameter.
         return None
 
     @jobtimeout.setter

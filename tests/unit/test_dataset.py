@@ -950,11 +950,19 @@ class TestDataset(unittest.TestCase):
     def test_storage_billing_model_setter(self):
         dataset = self._make_one(self.DS_REF)
         dataset.storage_billing_model = "PHYSICAL"
-        self.assertEqual(
-            dataset.storage_billing_model, "PHYSICAL"
-        )
-        dataset.default_encryption_configuration = None
-        self.assertIsNone(dataset.default_encryption_configuration)
+        self.assertEqual(dataset.storage_billing_model, "PHYSICAL")
+
+    def test_storage_billing_model_setter_with_none(self):
+        dataset = self._make_one(self.DS_REF)
+        dataset.storage_billing_model = None
+        self.assertEqual(dataset.storage_billing_model, "LOGICAL")
+
+    def test_storage_billing_model_setter_with_invalid_type(self):
+        dataset = self._make_one(self.DS_REF)
+        with self.assertRaises(ValueError) as raises:
+            dataset.storage_billing_model = object()
+
+        self.assertIn("storage_billing_model", str(raises.exception))
 
     def test_from_string(self):
         cls = self._get_target_class()

@@ -185,6 +185,20 @@ class Model:
         ]
 
     @property
+    def transform_columns(self) -> Sequence[Dict[str, Any]]:
+        """The input feature columns that were used to train this model.
+        The output transform columns used to train this model.
+        
+        Dictionaries are in REST API format. See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/models#transformcolumn
+
+        Read-only.
+        """
+        return typing.cast(
+            Sequence[Dict[str, Any]], self._properties.get("transformColumns", [])
+        )
+    
+    @property
     def label_columns(self) -> Sequence[standard_sql.StandardSqlField]:
         """Label columns that were used to train this model.
 
@@ -433,6 +447,61 @@ class ModelReference:
             self.project, self.dataset_id, self.model_id
         )
 
+class TransformColumn:
+    """TransformColumn represents a transform column feature.
+
+    See
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/models#transformcolumn
+
+    Args:
+        column_name:
+            The column name of the transform column.
+        column_type:
+            The column type of the transform column.
+        transform_sql:
+            The SQL expression of the transform column.
+    """
+    def __init__(self,resource: Dict[str, Any]):
+        self._properties = resource
+        self.name = resource.get("name")
+        type_json = resource.get("type")
+        if type_json is None:
+            self.type_ = None 
+        else:
+            self.type_ = standard_sql.StandardSqlDataType.from_api_repr(type_json)
+        self.transform_sql = resource.get("transformSql")
+        '''
+    @property
+    def name(self) -> Optional[str]:
+        """str: Name of the transform column."""
+        return self.resource.get("name")
+    
+    @property
+    def get_object_kind(self) -> Optional[standard_sql.StandardSqlDataType]:
+        """str: Type of the transform column."""
+        return self.resource.get("type")
+    
+    @property
+    def transform_sql(self) -> Optional[str]:
+        """str: SQL expression of the transform column."""
+        return self.resource.get("transformSql")
+        '''
+
+    @classmethod
+    def from_api_repr(cls, resource: Dict[str, Any]) -> "TransformColumn":
+        """Factory: construct a transform column feature given its API representation
+
+        Args:
+            resource:
+                Transform column feature representation from the API
+
+        Returns:
+            Transform column feature parsed from ``resource``.
+        """
+        this = cls(None)
+        resource = copy.deepcopy(resource)
+        this._properties = resource
+        return this
 
 def _model_arg_to_model_ref(value, default_project=None):
     """Helper to convert a string or Model to ModelReference.

@@ -18,7 +18,10 @@ import datetime
 
 import pytest
 
+import pkg_resources
+
 import google.cloud._helpers
+import google.cloud.bigquery.model
 
 KMS_KEY_NAME = "projects/1/locations/us/keyRings/1/cryptoKeys/1"
 
@@ -136,7 +139,7 @@ def test_from_api_repr(target_class):
         google.cloud._helpers._rfc3339_to_datetime(got.training_runs[2]["startTime"])
         == expiration_time
     )
-
+    assert got.transform_columns == []
 
 def test_from_api_repr_w_minimal_resource(target_class):
     from google.cloud.bigquery import ModelReference
@@ -292,6 +295,59 @@ def test_feature_columns(object_under_test):
     ]
     assert object_under_test.feature_columns == expected
 
+
+def test_transform_columns():
+    from google.cloud.bigquery import standard_sql
+    input_resource_ = {
+         "name": "is_male",
+      "type": {
+        "typeKind": "BOOL"
+      },
+      "transformSql": "is_male"
+    }
+    google.cloud.bigquery.model.TransformColumn(input_resource_)
+
+def test_transform_column_name():
+    transform_column = google.cloud.bigquery.model.TransformColumn({"name":"is_female"})
+    assert transform_column.name == "is_female"
+
+def test_transform_column_transform_sql():
+    transform_column = google.cloud.bigquery.model.TransformColumn({"transformSql": "is_female"})
+    assert transform_column.transform_sql == "is_female"
+
+def test_transform_column_type():
+    transform_column = google.cloud.bigquery.model.TransformColumn({"type":{"typeKind": "BOOL"}})
+    assert transform_column.type_.type_kind == "BOOL"
+
+def test_transform_column_type_none():
+    transform_column = google.cloud.bigquery.model.TransformColumn({"type":None})
+    assert transform_column.type_ is None
+
+def test_transform_column_properties ():
+    transform_column = google.cloud.bigquery.model.TransformColumn({"Salem":"Apprentice"})
+    assert transform_column._properties == {"Salem":"Apprentice"}
+""""
+    object_under_test._properties["transformColumns"] = [
+        {"name": "col_1", "type": {"name": "STRING"}},
+        {"name": "col_2", "type": {"typeKind": "INT64"}},
+        {"name": "col_3", "type": {"transform_sql": "STRING"}}
+    ]
+    expected = [
+    "name": "col_1",
+    "type": {"name": "STRING"},
+    "transform_sql": "STRING"
+    ,
+    "name": "col_2",
+    "type": {"typeKind": "INT64"},
+    "transform_sql": "STRING"
+    ,
+    "name": "col_3",
+    "type": {"transform_sql": "STRING"},
+    "transform_sql": "STRING"
+    ,
+    ]
+    assert object_under_test.transform_columns == expected
+""" 
 
 def test_label_columns(object_under_test):
     from google.cloud.bigquery import standard_sql

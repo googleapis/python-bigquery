@@ -12,21 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import typing
 
-from .. import create_table_external_data_configuration
+import update_table_expiration
 
 if typing.TYPE_CHECKING:
+    import pathlib
+
     import pytest
 
 
-def test_create_table_external_data_configuration(
+def test_update_table_expiration(
     capsys: "pytest.CaptureFixture[str]",
-    random_table_id: str,
+    table_id: str,
+    tmp_path: "pathlib.Path",
 ) -> None:
 
-    create_table_external_data_configuration.create_table_external_data_configuration(
-        random_table_id
+    # This was not needed for function, only for test
+    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+        days=5
     )
+
+    update_table_expiration.update_table_expiration(table_id, expiration)
+
     out, _ = capsys.readouterr()
-    assert "Created table with external source format AVRO" in out
+    assert "Updated" in out
+    assert table_id in out
+    assert str(expiration.day) in out
+    assert str(expiration.month) in out
+    assert str(expiration.year) in out

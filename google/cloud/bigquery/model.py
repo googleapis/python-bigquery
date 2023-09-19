@@ -470,22 +470,27 @@ class TransformColumn:
         else:
             self.type_ = standard_sql.StandardSqlDataType.from_api_repr(type_json)
         self.transform_sql = resource.get("transformSql")
-        '''
+        
     @property
-    def name(self) -> Optional[str]:
-        """str: Name of the transform column."""
-        return self.resource.get("name")
+    def name(self) -> str:
+        return self._properties.get("name")
+
+    @name.setter
+    def name(self, value: str):
+        self._properties["name"] = value
+
+    @property
+    def type_json(self) -> Any:
+        return self._properties.get("type")
     
     @property
-    def get_object_kind(self) -> Optional[standard_sql.StandardSqlDataType]:
-        """str: Type of the transform column."""
-        return self.resource.get("type")
+    def transform_sql(self) -> str:
+        return self._properties.get("transformSql")
     
-    @property
-    def transform_sql(self) -> Optional[str]:
-        """str: SQL expression of the transform column."""
-        return self.resource.get("transformSql")
-        '''
+    @transform_sql.setter
+    def transform_sql(self, value: str):
+        self._properties["transformSql"] = value
+        
 
     @classmethod
     def from_api_repr(cls, resource: Dict[str, Any]) -> "TransformColumn":

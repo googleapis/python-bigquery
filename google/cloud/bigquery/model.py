@@ -485,7 +485,7 @@ class TransformColumn:
         return self.resource.get("type")
     
     @property
-    def transform_sql(self,resource) -> str:
+    def transform_sql(self,resource) -> Optional[str]:
         return self.resource.get("transformSql")
         
     @classmethod

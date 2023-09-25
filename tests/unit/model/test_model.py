@@ -18,7 +18,6 @@ import datetime
 
 import pytest
 
-import pkg_resources
 
 import google.cloud._helpers
 import google.cloud.bigquery.model

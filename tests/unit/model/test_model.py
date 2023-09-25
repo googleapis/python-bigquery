@@ -296,38 +296,42 @@ def test_feature_columns(object_under_test):
     assert object_under_test.feature_columns == expected
 
 
-def test_transform_columns():
-    from google.cloud.bigquery import standard_sql
-    input_resource_ = {
+def test_from_api_repr_w_transform_columns(target_class, resource):
+    from google.cloud.bigquery import standard_sql 
+    from google.cloud.bigquery import ModelReference
+    resource = {
         "name": "is_male",
     "type": {
         "typeKind": "BOOL"
     },
     "transformSql": "is_male"
     }
-    google.cloud.bigquery.model.TransformColumn(input_resource_)
+    transform_column= google.cloud.bigquery.model.TransformColumn(resource)
+    got = target_class.from_api_repr(resource)
+    assert got.transform_column == resource
 
-def test_transform_column_name():
+
+def test_transform_column_name(resource):
     transform_column = google.cloud.bigquery.model.TransformColumn({"name":"is_female"})
     assert transform_column.name == "is_female"
 
-def test_transform_column_transform_sql():
+def test_transform_column_transform_sql(resource):
     transform_column = google.cloud.bigquery.model.TransformColumn({"transformSql": "is_female"})
     assert transform_column.transform_sql == "is_female"
 
-def test_transform_column_type():
+def test_transform_column_type(resource):
     transform_column = google.cloud.bigquery.model.TransformColumn({"type":{"typeKind": "BOOL"}})
     assert transform_column.type_.type_kind == "BOOL"
 
-def test_transform_column_type_none():
+def test_transform_column_type_none(resource):
     transform_column = google.cloud.bigquery.model.TransformColumn({"type":None})
     assert transform_column.type_ is None
 
-def test_transform_column_properties():
-    transform_column = google.cloud.bigquery.model.TransformColumn({"name": str,"type": {
-        "typeKind": bool},"transformSql":str})
-    assert transform_column._properties == {"name": str,"type": {
-    "typeKind": bool},"transformSql":str}
+def test_transform_column_properties(resource):
+    transform_column = google.cloud.bigquery.model.TransformColumn({"name": "is_female","type": {
+        "typeKind": "BOOL"},"transformSql":"is_female"})
+    assert transform_column._properties == {"name": "is_female","type": {
+    "typeKind":"BOOL"},"transformSql":"is_female"}
 
 
 def test_label_columns(object_under_test):

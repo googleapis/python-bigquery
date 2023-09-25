@@ -454,47 +454,43 @@ class TransformColumn:
     https://cloud.google.com/bigquery/docs/reference/rest/v2/models#transformcolumn
 
     Args:
-        column_name:
-            The column name of the transform column.
-        column_type:
-            The column type of the transform column.
+        resource:
+            A dictionary representing a transform column feature.
+        properties:
+            A dictionary representing the properties of a transform column feature.
+        name:
+            The name of the transform column feature.
+            type_:
+            The data type of the transform column feature.
         transform_sql:
-            The SQL expression of the transform column.
+            The SQL expression for the transform column feature.
     """
     def __init__(self,resource: Dict[str, Any]):
         self._properties = resource
-        self.name = resource.get("name")
-        type_json = resource.get("type")
-        if type_json is None:
+        self._properties["name"] = self.name
+        self._properties["type"] = self.type_
+        self._properties["transformSql"] = self.transform_sql
+
+    @property
+    def name(self,resource) -> Optional[str]:
+        return self.resource.get("name")
+
+    @property
+    def type_(self,resource) -> Any:
+        type_ = resource.get("type")
+        if type_ is None:
             self.type_ = None 
         else:
-            self.type_ = standard_sql.StandardSqlDataType.from_api_repr(type_json)
-        self.transform_sql = resource.get("transformSql")
-        
-    @property
-    def name(self) -> str:
-        return self._properties.get("name")
-
-    @name.setter
-    def name(self, value: str):
-        self._properties["name"] = value
-
-    @property
-    def type_json(self) -> Any:
-        return self._properties.get("type")
+            self.type_ = standard_sql.StandardSqlDataType.from_api_repr(type_)
+        return self.resource.get("type")
     
     @property
-    def transform_sql(self) -> str:
-        return self._properties.get("transformSql")
-    
-    @transform_sql.setter
-    def transform_sql(self, value: str):
-        self._properties["transformSql"] = value
+    def transform_sql(self,resource) -> str:
+        return self.resource.get("transformSql")
         
-
     @classmethod
     def from_api_repr(cls, resource: Dict[str, Any]) -> "TransformColumn":
-        """Factory: construct a transform column feature given its API representation
+        """Constructs a transform column feature given its API representation
 
         Args:
             resource:

@@ -456,14 +456,6 @@ class TransformColumn:
     Args:
         resource:
             A dictionary representing a transform column feature.
-        properties:
-            A dictionary representing the properties of a transform column feature.
-        name:
-            The name of the transform column feature.
-            type_:
-            The data type of the transform column feature.
-        transform_sql:
-            The SQL expression for the transform column feature.
     """
     def __init__(self,resource: Dict[str, Any]):
         self._properties = resource

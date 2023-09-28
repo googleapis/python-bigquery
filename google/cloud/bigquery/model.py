@@ -195,8 +195,9 @@ class Model:
         Read-only.
         """
         return typing.cast(
-            Sequence[Dict[str, Any]], self._properties.get("transformColumns", [])
+            Sequence[TransformColumn], self._properties.get("transformColumns", [])
         )
+
     
     @property
     def label_columns(self) -> Sequence[standard_sql.StandardSqlField]:
@@ -458,26 +459,23 @@ class TransformColumn:
             A dictionary representing a transform column feature.
     """
     def __init__(self,resource: Dict[str, Any]):
-        self._properties = resource
-        self._properties["name"] = self.name
-        self._properties["type"] = self.type_
-        self._properties["transformSql"] = self.transform_sql
+        self.resource = resource
 
     @property
-    def name(self,resource) -> Optional[str]:
+    def name(self) -> Optional[str]:
         return self.resource.get("name")
 
     @property
-    def type_(self,resource) -> Any:
-        type_ = resource.get("type")
-        if type_ is None:
-            self.type_ = None 
+    def type_json(self) -> standard_sql:
+        type_json = self.resource.get("type")
+        if type_json is None:
+            self.type_json = None 
         else:
-            self.type_ = standard_sql.StandardSqlDataType.from_api_repr(type_)
+            self.type_json = standard_sql.StandardSqlDataType.from_api_repr(type_json)
         return self.resource.get("type")
     
     @property
-    def transform_sql(self,resource) -> Optional[str]:
+    def transform_sql(self) -> Optional[str]:
         return self.resource.get("transformSql")
         
     @classmethod

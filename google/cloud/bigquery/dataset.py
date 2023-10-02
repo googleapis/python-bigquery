@@ -791,10 +791,7 @@ class Dataset(object):
                 "storage_billing_model must be a string (e.g. 'LOGICAL', 'PHYSICAL'), or None. "
                 f"Got {repr(value)}."
             )
-        if value:
-            self._properties["storageBillingModel"] = value
-        if value is None:
-            self._properties["storageBillingModel"] = "LOGICAL"
+        self._properties["storageBillingModel"] = value
 
     @classmethod
     def from_string(cls, full_dataset_id: str) -> "Dataset":

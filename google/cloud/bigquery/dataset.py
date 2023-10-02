@@ -769,9 +769,10 @@ class Dataset(object):
         """Union[str, None]: StorageBillingModel of the dataset as set by the user
         (defaults to :data:`None`).
 
-        Set the value to one of ``'LOGICAL'`` or ``'PHYSICAL'``. This change
-        takes 24 hours to take effect and you must wait 14 days before you can
-        change the storage billing model again.
+        Set the value to one of ``'LOGICAL'``, ``'PHYSICAL'``, or
+        ``'STORAGE_BILLING_MODEL_UNSPECIFIED'``. This change takes 24 hours to
+        take effect and you must wait 14 days before you can change the storage
+        billing model again.
 
         See `storage billing model
         <https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#Dataset.FIELDS.storage_billing_model>`_
@@ -788,8 +789,9 @@ class Dataset(object):
     def storage_billing_model(self, value):
         if not isinstance(value, str) and value is not None:
             raise ValueError(
-                "storage_billing_model must be a string (e.g. 'LOGICAL', 'PHYSICAL'), or None. "
-                f"Got {repr(value)}."
+                "storage_billing_model must be a string (e.g. 'LOGICAL',"
+                " 'PHYSICAL', 'STORAGE_BILLING_MODEL_UNSPECIFIED'), or None."
+                f" Got {repr(value)}."
             )
         self._properties["storageBillingModel"] = value
 

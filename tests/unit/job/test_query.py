@@ -911,6 +911,28 @@ class TestQueryJob(_Base):
         assert isinstance(job.dml_stats, DmlStats)
         assert job.dml_stats.inserted_row_count == 35
 
+    def test_search_stats(self):
+        from google.cloud.bigquery.job.query import SearchStats
+
+        client = _make_client(project=self.PROJECT)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+        assert job.search_stats is None
+
+        statistics = job._properties["statistics"] = {}
+        assert job.search_stats is None
+
+        query_stats = statistics["query"] = {}
+        assert job.search_stats is None
+
+        query_stats["searchStatistics"] = {
+            "indexUsageMode": "INDEX_USAGE_MODE_UNSPECIFIED",
+            "indexUnusedReasons": [],
+        }
+        # job.search_stats is a daisy-chain of calls and gets:
+        # job.search_stats << job._job_statistics << job._properties
+        assert isinstance(job.search_stats, SearchStats)
+        assert job.search_stats.mode == "INDEX_USAGE_MODE_UNSPECIFIED"
+
     def test_result(self):
         from google.cloud.bigquery.table import RowIterator
 
@@ -1229,7 +1251,7 @@ class TestQueryJob(_Base):
             query_request[1]["path"],
             "/projects/{}/queries/{}".format(self.PROJECT, self.JOB_ID),
         )
-        self.assertEqual(query_request[1]["query_params"]["timeoutMs"], 900)
+        self.assertEqual(query_request[1]["timeout"], 120)
         self.assertEqual(
             query_request[1]["timeout"],
             google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,

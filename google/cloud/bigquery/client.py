@@ -253,7 +253,7 @@ class Client(ClientWithProject):
         bq_host = _get_bigquery_host()
         kw_args["api_endpoint"] = bq_host if bq_host != _DEFAULT_HOST else None
         if client_options:
-            if type(client_options) == dict:
+            if isinstance(client_options, dict):
                 client_options = google.api_core.client_options.from_dict(
                     client_options
                 )
@@ -1895,7 +1895,10 @@ class Client(ClientWithProject):
         extra_params: Dict[str, Any] = {"maxResults": 0}
 
         if timeout is not None:
-            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
+            if not isinstance(timeout, (int, float)):
+                timeout = _MIN_GET_QUERY_RESULTS_TIMEOUT
+            else:
+                timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if project is None:
             project = self.project
@@ -3070,7 +3073,7 @@ class Client(ClientWithProject):
         job_id_prefix: Optional[str] = None,
         location: Optional[str] = None,
         project: Optional[str] = None,
-        job_config: CopyJobConfig = None,
+        job_config: Optional[CopyJobConfig] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.CopyJob:
@@ -3176,7 +3179,7 @@ class Client(ClientWithProject):
         job_id_prefix: Optional[str] = None,
         location: Optional[str] = None,
         project: Optional[str] = None,
-        job_config: ExtractJobConfig = None,
+        job_config: Optional[ExtractJobConfig] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         source_type: str = "Table",
@@ -3271,7 +3274,7 @@ class Client(ClientWithProject):
     def query(
         self,
         query: str,
-        job_config: QueryJobConfig = None,
+        job_config: Optional[QueryJobConfig] = None,
         job_id: Optional[str] = None,
         job_id_prefix: Optional[str] = None,
         location: Optional[str] = None,
@@ -3924,7 +3927,10 @@ class Client(ClientWithProject):
         }
 
         if timeout is not None:
-            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
+            if not isinstance(timeout, (int, float)):
+                timeout = _MIN_GET_QUERY_RESULTS_TIMEOUT
+            else:
+                timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if start_index is not None:
             params["startIndex"] = start_index

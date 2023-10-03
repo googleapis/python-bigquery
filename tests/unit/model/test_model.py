@@ -341,11 +341,11 @@ def test_set_friendly_name(object_under_test):
 
 
 def test_set_labels(object_under_test):
-    assert object_under_test.labels == {}
+    assert object_under_test.labels is {}
     object_under_test.labels["data_owner"] = "someteam"
     assert object_under_test.labels == {"data_owner": "someteam"}
     del object_under_test.labels["data_owner"]
-    assert object_under_test.labels == {}
+    assert object_under_test.labels is {}
 
 
 def test_replace_labels(object_under_test):

@@ -194,8 +194,10 @@ class Model:
 
         Read-only.
         """
+        resource: Dict[str, Any]
+        transform_columns = standard_sql.StandardSqlDataType.from_api_repr(resource)
         return typing.cast(
-            Sequence[TransformColumn], self._properties.get("transformColumns", [])
+            Sequence[Dict[TransformColumn]], self._properties.get("transformColumns", [])
         )
 
     
@@ -471,7 +473,7 @@ class TransformColumn:
         if type_json is None:
             self.type_json = None 
         else:
-            self.type_json = standard_sql.StandardSqlDataType.from_api_repr(type_json)
+            self.type_json = standard_sql.StandardSqlDataType(type_json)
         return self.resource.get("type")
     
     @property

@@ -25,6 +25,7 @@ import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
+import google.cloud.bigquery.model
 
 
 class Model:
@@ -167,9 +168,23 @@ class Model:
 
         Read-only.
         """
+
         return typing.cast(
             Sequence[Dict[str, Any]], self._properties.get("trainingRuns", [])
         )
+  
+    @property 
+    def transform_columns(self) -> Sequence[Dict[str, Any]]:
+
+        """
+        Output only. This field will be populated if a TRANSFORM clause was used to train a model. TRANSFORM clause (if used) takes featureColumns as input and outputs transformColumns. transformColumns then are used to train the model.
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/models#Model.FIELDS.transform_columns
+        Read-only.
+        """
+
+        return self._properties.get("transformColumns", [])
+    
+
 
     @property
     def feature_columns(self) -> Sequence[standard_sql.StandardSqlField]:
@@ -258,7 +273,7 @@ class Model:
         # TODO: Consider using typing.TypedDict when only Python 3.8+ is supported.
         self._properties["friendlyName"] = value  # type: ignore
 
-    @property
+    # @property
     def labels(self) -> Dict[str, str]:
         """Labels for the table.
 
@@ -268,8 +283,8 @@ class Model:
         """
         return self._properties.setdefault("labels", {})
 
-    @labels.setter
-    def labels(self, value: Optional[Dict[str, str]]):
+    # @labels.setter
+    def set_labels(self, value: Optional[Dict[str, str]]):
         if value is None:
             value = {}
         self._properties["labels"] = value
@@ -433,6 +448,20 @@ class ModelReference:
             self.project, self.dataset_id, self.model_id
         )
 
+class TransformColumn:
+    """ 
+    """
+
+def __init__(self, resource:Dict[str, Any]):
+    self._properties = resource 
+    self.name = resource.get("name")
+    not_resourced = resource.get("type")
+    if not_resourced is None:
+        self.type_ = None
+    else:
+        self.type_= standard_sql.StandardSqlDataType.from_api_repr(not_resourced)
+        self.transform_sql = resource.get("transformSQL")
+
 
 def _model_arg_to_model_ref(value, default_project=None):
     """Helper to convert a string or Model to ModelReference.
@@ -444,3 +473,5 @@ def _model_arg_to_model_ref(value, default_project=None):
     if isinstance(value, Model):
         return value.reference
     return value
+
+

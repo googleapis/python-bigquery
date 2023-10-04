@@ -349,9 +349,9 @@ def test_set_labels(object_under_test):
 
 
 def test_replace_labels(object_under_test):
-    assert object_under_test.labels == {}
-    object_under_test.labels = {"data_owner": "someteam"}
-    assert object_under_test.labels == {"data_owner": "someteam"}
+    assert object_under_test.labels() =={}
+    object_under_test.set_labels({"data_owner": "someteam"})
+    assert object_under_test.labels() == {"data_owner": "someteam"}
     labels = {}
     object_under_test.labels = labels
     assert object_under_test.labels is labels
@@ -378,6 +378,7 @@ def test_repr(target_class):
         "Model(reference=ModelReference("
         "project_id='my-proj', dataset_id='my_dset', model_id='my_model'))"
     )
+
 
 
 def test_to_api_repr(target_class):

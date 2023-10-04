@@ -244,6 +244,7 @@ class TestQueryJob(_Base):
         self.assertIsNone(job.destination_encryption_configuration)
         self.assertIsNone(job.range_partitioning)
         self.assertIsNone(job.time_partitioning)
+        self.assertIsNone(job.timeout_ms) //// 
         self.assertIsNone(job.clustering_fields)
         self.assertIsNone(job.schema_update_options)
 
@@ -688,6 +689,10 @@ class TestQueryJob(_Base):
         self.assertEqual(job.ddl_target_table.table_id, "targettable")
         self.assertEqual(job.ddl_target_table.dataset_id, "ddl_ds")
         self.assertEqual(job.ddl_target_table.project, self.PROJECT)
+
+    def test_jobtimeout_ms(self): 
+        self.assertIsInstance(job.timeout_ms, value)
+        self.assertEquals(job.value.int)
 
     def test_num_dml_affected_rows(self):
         num_rows = 1234

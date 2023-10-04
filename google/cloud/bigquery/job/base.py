@@ -172,17 +172,17 @@ class _JobConfig(object):
         super(_JobConfig, self).__setattr__(name, value)
 
     @property
-    def jobtimeout_ms(self):
+    def job_timeout_ms(self):
         """ Optional parameter. Job timeout in milliseconds. If this time limit is exceeded, BigQuery might attempt to stop the job.
 
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfiguration.FIELDS.job_timeout_ms
 
         e.g.
-            job_config = bigquery.QueryJobConfig( jobtimeout = 5000 )
+            job_config = bigquery.QueryJobConfig( job_timeout_ms = 5000 )
             
                 or
 
-            job_config.jobtimeout = 5000
+            job_config.job_timeout_ms = 5000
         Raises:
             ValueError: If ``value`` type is invalid.
         """
@@ -190,7 +190,7 @@ class _JobConfig(object):
         # None as this is an optional parameter.
         return None
 
-    @jobtimeout_ms.setter
+    @job_timeout_ms.setter
     def jobtimeout(self, value):
         if not isinstance(value, int):
             raise ValueError("Pass an int for jobTimeoutMs, e.g. 5000")

@@ -244,7 +244,7 @@ class TestQueryJob(_Base):
         self.assertIsNone(job.destination_encryption_configuration)
         self.assertIsNone(job.range_partitioning)
         self.assertIsNone(job.time_partitioning)
-        self.assertIsNone(job.timeout_ms) //// 
+        self.assertIsNone(job.timeout_ms) 
         self.assertIsNone(job.clustering_fields)
         self.assertIsNone(job.schema_update_options)
 

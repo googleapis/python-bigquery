@@ -194,7 +194,7 @@ class _JobConfig(object):
             raise ValueError("Pass an int for jobTimeoutMs, e.g. 5000")
 
         """ Docs indicate a string is expected by the API """
-        self._properties["jobTimeoutMs"] = str(value)        
+        self._properties["jobTimeoutMs"] = str(value)
 
     @property
     def labels(self):

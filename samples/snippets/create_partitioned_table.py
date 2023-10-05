@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def create_partitioned_table(client, to_delete):
-    
-    #[START bigquery_create_table_partitioned]
+
+def create_partitioned_table(table_id):
+    your_fully_qualified_table_id = table_id
+
+    # [START bigquery_create_table_partitioned]
     from google.cloud import bigquery
-    
+
     client = bigquery.Client()
 
-    table_id = "your-project.your_dataset.your_table_name"
+    # Use format "your-project.your_dataset.your_table_name" for table_id
+    table_id = your_fully_qualified_table_id
     schema = [
         bigquery.SchemaField("name", "STRING"),
         bigquery.SchemaField("post_abbr", "STRING"),
@@ -34,7 +37,9 @@ def create_partitioned_table(client, to_delete):
 
     table = client.create_table(table)
 
-    print(f"Created table {table.table_id}, partitioned on column {table.time_partitioning.field}.")
+    print(
+        f"Created table {table.project}.{table.dataset_id}.{table.table_id}, "
+        f"partitioned on column {table.time_partitioning.field}."
+    )
     # [END bigquery_create_table_partitioned]
-
- 
+    return table

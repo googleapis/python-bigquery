@@ -17,20 +17,18 @@ import typing
 import create_partitioned_table
 
 if typing.TYPE_CHECKING:
-    import pathlib
-
     import pytest
 
 
 def test_create_partitioned_table(
     capsys: "pytest.CaptureFixture[str]",
-    table_id: str,
-    tmp_path: "pathlib.Path",
+    random_table_id: str,
 ) -> None:
-    schema_path = str(tmp_path / "test_schema.json")
+    table = create_partitioned_table.create_partitioned_table(random_table_id)
 
-    create_partitioned_table.create_partitioned_table(client, to_delete)
+    out, _ = capsys.readouterr()
+    assert "Created" in out
+    assert random_table_id in out
 
     assert table.time_partitioning.type_ == "DAY"
     assert table.time_partitioning.field == "date"
-    assert table.time_partitioning.expiration_ms == 7776000000

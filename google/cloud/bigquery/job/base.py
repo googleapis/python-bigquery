@@ -176,9 +176,11 @@ class _JobConfig(object):
         """Optional parameter. Job timeout in milliseconds. If this time limit is exceeded, BigQuery might attempt to stop the job.
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfiguration.FIELDS.job_timeout_ms
         e.g.
+        
             job_config = bigquery.QueryJobConfig( jobtimeout = 5000 )
-                or
+            or
             job_config.jobtimeout = 5000
+        
         Raises:
             ValueError: If ``value`` type is invalid.
         """

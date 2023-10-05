@@ -192,8 +192,8 @@ class _JobConfig(object):
             return self._properties["jobTimeoutMs"]
         return None
 
-    @jobtimeout.setter
-    def jobtimeout(self, value):
+    @job_timeout_ms.setter
+    def job_timeout_ms(self, value):
         if not isinstance(value, int):
             raise ValueError("Pass an int for jobTimeoutMs, e.g. 5000")
         

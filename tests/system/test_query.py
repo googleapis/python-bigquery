@@ -106,6 +106,7 @@ def test_job_timeout_ms():
     job_config.job_timeout_ms = 5000
     assert job_config.job_timeout_ms == "5000"  # int is converted to string
 
+
 def test_job_timeout_ms_raises_valueerror():
     # Confirm that attempting to set a non-integer values will raise an Error.
     with pytest.raises(ValueError):

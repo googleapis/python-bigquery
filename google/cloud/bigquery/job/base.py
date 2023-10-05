@@ -188,6 +188,8 @@ class _JobConfig(object):
         """
         
         # None as this is an optional parameter.
+        if self._properties.get("jobTimeoutMs"):
+            return self._properties["jobTimeoutMs"]
         return None
 
     @jobtimeout.setter

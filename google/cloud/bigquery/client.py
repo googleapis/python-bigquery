@@ -44,10 +44,6 @@ from typing import (
 import uuid
 import warnings
 
-from google.cloud.bigquery import _pyarrow_helpers
-
-pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
-
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore
 from google.resumable_media.requests import ResumableUpload
@@ -117,7 +113,10 @@ from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
 from google.cloud.bigquery.format_options import ParquetOptions
+
 from google.cloud.bigquery import _pyarrow_helpers
+
+pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
 
 TimeoutType = Union[float, None]
 ResumableTimeoutType = Union[

@@ -23,25 +23,9 @@ import packaging.version
 _MIN_PYARROW_VERSION = packaging.version.Version("3.0.0")
 
 try:
-    import pyarrow
-except ImportError as exc:  # pragma: NO COVER
-    raise LegacyPyarrowError(
-        f"pyarrow package not found. Install pyarrow version >= {_MIN_PYARROW_VERSION}."
-    ) from exc
-
-# Use 0.0.0, since it is earlier than any released version.
-# Legacy versions also have the same property, but
-# creating a LegacyVersion has been deprecated.
-# https://github.com/pypa/packaging/issues/321
-_pyarrow_version = packaging.version.parse(getattr(pyarrow, "__version__", "0.0.0"))
-
-if _pyarrow_version < _MIN_PYARROW_VERSION:
-    msg = (
-        "Dependency pyarrow is outdated, please upgrade "
-        f"it to version >= {_MIN_PYARROW_VERSION} (version found: {_pyarrow_version})."
-    )
-    raise LegacyPyarrowError(msg)
-
+    import pyarrow  # type: ignore
+except:
+    pyarrow = None
 
 def pyarrow_datetime():
     return pyarrow.timestamp("us", tz=None)
@@ -65,52 +49,56 @@ def pyarrow_timestamp():
     return pyarrow.timestamp("us", tz="UTC")
 
 
-# This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
-# When modifying it be sure to update it there as well.
-# Note(todo!!): type "BIGNUMERIC"'s matching pyarrow type is added in _pandas_helpers.py
-_BQ_TO_ARROW_SCALARS = {
-    "BOOL": pyarrow.bool_,
-    "BOOLEAN": pyarrow.bool_,
-    "BYTES": pyarrow.binary,
-    "DATE": pyarrow.date32,
-    "DATETIME": pyarrow_datetime,
-    "FLOAT": pyarrow.float64,
-    "FLOAT64": pyarrow.float64,
-    "GEOGRAPHY": pyarrow.string,
-    "INT64": pyarrow.int64,
-    "INTEGER": pyarrow.int64,
-    "NUMERIC": pyarrow_numeric,
-    "STRING": pyarrow.string,
-    "TIME": pyarrow_time,
-    "TIMESTAMP": pyarrow_timestamp,
-    "BIGNUMERIC": pyarrow_bignumeric,
-}
+_BQ_TO_ARROW_SCALARS = {}
+_ARROW_SCALAR_IDS_TO_BQ = {}
 
-_ARROW_SCALAR_IDS_TO_BQ = {
-    # https://arrow.apache.org/docs/python/api/datatypes.html#type-classes
-    pyarrow.bool_().id: "BOOL",
-    pyarrow.int8().id: "INT64",
-    pyarrow.int16().id: "INT64",
-    pyarrow.int32().id: "INT64",
-    pyarrow.int64().id: "INT64",
-    pyarrow.uint8().id: "INT64",
-    pyarrow.uint16().id: "INT64",
-    pyarrow.uint32().id: "INT64",
-    pyarrow.uint64().id: "INT64",
-    pyarrow.float16().id: "FLOAT64",
-    pyarrow.float32().id: "FLOAT64",
-    pyarrow.float64().id: "FLOAT64",
-    pyarrow.time32("ms").id: "TIME",
-    pyarrow.time64("ns").id: "TIME",
-    pyarrow.timestamp("ns").id: "TIMESTAMP",
-    pyarrow.date32().id: "DATE",
-    pyarrow.date64().id: "DATETIME",  # because millisecond resolution
-    pyarrow.binary().id: "BYTES",
-    pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
-    # The exact scale and precision don't matter, see below.
-    pyarrow.decimal128(38, scale=9).id: "NUMERIC",
-    pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
-}
+if pyarrow:
+    # This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
+    # When modifying it be sure to update it there as well.
+    # Note(todo!!): type "BIGNUMERIC"'s matching pyarrow type is added in _pandas_helpers.py
+    _BQ_TO_ARROW_SCALARS = {
+        "BOOL": pyarrow.bool_,
+        "BOOLEAN": pyarrow.bool_,
+        "BYTES": pyarrow.binary,
+        "DATE": pyarrow.date32,
+        "DATETIME": pyarrow_datetime,
+        "FLOAT": pyarrow.float64,
+        "FLOAT64": pyarrow.float64,
+        "GEOGRAPHY": pyarrow.string,
+        "INT64": pyarrow.int64,
+        "INTEGER": pyarrow.int64,
+        "NUMERIC": pyarrow_numeric,
+        "STRING": pyarrow.string,
+        "TIME": pyarrow_time,
+        "TIMESTAMP": pyarrow_timestamp,
+        "BIGNUMERIC": pyarrow_bignumeric,
+    }
+
+    _ARROW_SCALAR_IDS_TO_BQ = {
+        # https://arrow.apache.org/docs/python/api/datatypes.html#type-classes
+        pyarrow.bool_().id: "BOOL",
+        pyarrow.int8().id: "INT64",
+        pyarrow.int16().id: "INT64",
+        pyarrow.int32().id: "INT64",
+        pyarrow.int64().id: "INT64",
+        pyarrow.uint8().id: "INT64",
+        pyarrow.uint16().id: "INT64",
+        pyarrow.uint32().id: "INT64",
+        pyarrow.uint64().id: "INT64",
+        pyarrow.float16().id: "FLOAT64",
+        pyarrow.float32().id: "FLOAT64",
+        pyarrow.float64().id: "FLOAT64",
+        pyarrow.time32("ms").id: "TIME",
+        pyarrow.time64("ns").id: "TIME",
+        pyarrow.timestamp("ns").id: "TIMESTAMP",
+        pyarrow.date32().id: "DATE",
+        pyarrow.date64().id: "DATETIME",  # because millisecond resolution
+        pyarrow.binary().id: "BYTES",
+        pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
+        # The exact scale and precision don't matter, see below.
+        pyarrow.decimal128(38, scale=9).id: "NUMERIC",
+        pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
+    }
 
 
 class PyarrowVersions:

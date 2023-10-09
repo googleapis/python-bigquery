@@ -26,6 +26,7 @@ from typing import Any, Union
 from packaging import version
 
 from google.cloud.bigquery import _helpers
+from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import schema
 
 try:
@@ -49,7 +50,11 @@ except ImportError as exc:  # pragma: NO COVER
     db_dtypes_import_exception = exc
     date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
+
+_BIGNUMERIC_SUPPORT = False
+if pyarrow is not None:
+    _BIGNUMERIC_SUPPORT = True
 
 try:
     # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
@@ -118,33 +123,6 @@ class _DownloadState(object):
         # the global interpreter lock).
         self.done = False
 
-
-### remove
-# if pyarrow:
-#     if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
-#         BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
-#         # The exact decimal's scale and precision are not important, as only
-#         # the type ID matters, and it's the same for all decimal256 instances.
-#         ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
-#         _BIGNUMERIC_SUPPORT = True
-#     else:
-#         _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
-
-# else:  # pragma: NO COVER
-#     BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
-#     ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
-#     _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
-## remove
-
-BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
-ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
-_BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
-
-if pyarrow:
-    BQ_TO_ARROW_SCALARS = _helpers.PYARROW_VERSIONS.bq_to_arrow_scalars
-    ARROW_SCALAR_IDS_TO_BQ = _helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq
-
-
 BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {
     "GEOGRAPHY": {
         b"ARROW:extension:name": b"google:sqlType:geography",
@@ -185,7 +163,7 @@ def bq_to_arrow_data_type(field):
     if field_type_upper in schema._STRUCT_TYPES:
         return bq_to_arrow_struct_data_type(field)
 
-    data_type_constructor = BQ_TO_ARROW_SCALARS.get(field_type_upper)
+    data_type_constructor = _pyarrow_helpers.PYARROW_VERSIONS.bq_to_arrow_scalars(field_type_upper)
     if data_type_constructor is None:
         return None
     return data_type_constructor()
@@ -513,7 +491,7 @@ def augment_schema(dataframe, current_bq_schema):
         if pyarrow.types.is_list(arrow_table.type):
             # `pyarrow.ListType`
             detected_mode = "REPEATED"
-            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.values.type.id)
+            detected_type = _pyarrow_helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq(arrow_table.values.type.id)
 
             # For timezone-naive datetimes, pyarrow assumes the UTC timezone and adds
             # it to such datetimes, causing them to be recognized as TIMESTAMP type.
@@ -529,7 +507,7 @@ def augment_schema(dataframe, current_bq_schema):
                     detected_type = "DATETIME"
         else:
             detected_mode = field.mode
-            detected_type = ARROW_SCALAR_IDS_TO_BQ.get(arrow_table.type.id)
+            detected_type = _pyarrow_helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq(arrow_table.type.id)
 
         if detected_type is None:
             unknown_type_fields.append(field)
@@ -650,13 +628,13 @@ def dataframe_to_parquet(
 
             This argument is ignored for ``pyarrow`` versions earlier than ``4.0.0``.
     """
-    pyarrow = _helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
+    pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
 
     import pyarrow.parquet  # type: ignore
 
     kwargs = (
         {"use_compliant_nested_type": parquet_use_compliant_nested_type}
-        if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+        if _pyarrow_helpers.PYARROW_VERSIONS.use_compliant_nested_type
         else {}
     )
 

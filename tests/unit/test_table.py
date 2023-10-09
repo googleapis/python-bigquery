@@ -41,8 +41,9 @@ except ImportError:  # pragma: NO COVER
     big_query_read_grpc_transport = None
 
 from google.cloud.bigquery import _helpers
+from google.cloud.bigquery import _pyarrow_helpers
 
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
 PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
 
 if pyarrow:

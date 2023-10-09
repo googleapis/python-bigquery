@@ -121,7 +121,7 @@ from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
 from google.cloud.bigquery.format_options import ParquetOptions
-from google.cloud.bigquery import _helpers
+from google.cloud.bigquery import _pyarrow_helpers
 
 TimeoutType = Union[float, None]
 ResumableTimeoutType = Union[
@@ -2716,7 +2716,7 @@ class Client(ClientWithProject):
                         compression=parquet_compression,
                         **(
                             {"use_compliant_nested_type": True}
-                            if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+                            if _pyarrow_helpers.PYARROW_VERSIONS.use_compliant_nested_type
                             else {}
                         ),
                     )

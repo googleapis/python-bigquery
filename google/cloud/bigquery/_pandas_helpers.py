@@ -119,85 +119,30 @@ class _DownloadState(object):
         self.done = False
 
 
-def pyarrow_datetime():
-    return pyarrow.timestamp("us", tz=None)
+### remove
+# if pyarrow:
+#     if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
+#         BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
+#         # The exact decimal's scale and precision are not important, as only
+#         # the type ID matters, and it's the same for all decimal256 instances.
+#         ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
+#         _BIGNUMERIC_SUPPORT = True
+#     else:
+#         _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
 
+# else:  # pragma: NO COVER
+#     BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
+#     ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
+#     _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
+## remove
 
-def pyarrow_numeric():
-    return pyarrow.decimal128(38, 9)
-
-
-def pyarrow_bignumeric():
-    # 77th digit is partial.
-    # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
-    return pyarrow.decimal256(76, 38)
-
-
-def pyarrow_time():
-    return pyarrow.time64("us")
-
-
-def pyarrow_timestamp():
-    return pyarrow.timestamp("us", tz="UTC")
-
+BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
+ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
+_BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
 
 if pyarrow:
-    # This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
-    # When modifying it be sure to update it there as well.
-    BQ_TO_ARROW_SCALARS = {
-        "BOOL": pyarrow.bool_,
-        "BOOLEAN": pyarrow.bool_,
-        "BYTES": pyarrow.binary,
-        "DATE": pyarrow.date32,
-        "DATETIME": pyarrow_datetime,
-        "FLOAT": pyarrow.float64,
-        "FLOAT64": pyarrow.float64,
-        "GEOGRAPHY": pyarrow.string,
-        "INT64": pyarrow.int64,
-        "INTEGER": pyarrow.int64,
-        "NUMERIC": pyarrow_numeric,
-        "STRING": pyarrow.string,
-        "TIME": pyarrow_time,
-        "TIMESTAMP": pyarrow_timestamp,
-    }
-    ARROW_SCALAR_IDS_TO_BQ = {
-        # https://arrow.apache.org/docs/python/api/datatypes.html#type-classes
-        pyarrow.bool_().id: "BOOL",
-        pyarrow.int8().id: "INT64",
-        pyarrow.int16().id: "INT64",
-        pyarrow.int32().id: "INT64",
-        pyarrow.int64().id: "INT64",
-        pyarrow.uint8().id: "INT64",
-        pyarrow.uint16().id: "INT64",
-        pyarrow.uint32().id: "INT64",
-        pyarrow.uint64().id: "INT64",
-        pyarrow.float16().id: "FLOAT64",
-        pyarrow.float32().id: "FLOAT64",
-        pyarrow.float64().id: "FLOAT64",
-        pyarrow.time32("ms").id: "TIME",
-        pyarrow.time64("ns").id: "TIME",
-        pyarrow.timestamp("ns").id: "TIMESTAMP",
-        pyarrow.date32().id: "DATE",
-        pyarrow.date64().id: "DATETIME",  # because millisecond resolution
-        pyarrow.binary().id: "BYTES",
-        pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
-        # The exact scale and precision don't matter, see below.
-        pyarrow.decimal128(38, scale=9).id: "NUMERIC",
-    }
-
-    if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
-        BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
-        # The exact decimal's scale and precision are not important, as only
-        # the type ID matters, and it's the same for all decimal256 instances.
-        ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
-        _BIGNUMERIC_SUPPORT = True
-    else:
-        _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
-
-else:  # pragma: NO COVER
-    BQ_TO_ARROW_SCALARS = {}  # pragma: NO COVER
-    ARROW_SCALAR_IDS_TO_BQ = {}  # pragma: NO_COVER
-    _BIGNUMERIC_SUPPORT = False  # pragma: NO COVER
+    BQ_TO_ARROW_SCALARS = _helpers.PYARROW_VERSIONS.bq_to_arrow_scalars
+    ARROW_SCALAR_IDS_TO_BQ = _helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq
 
 
 BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {

@@ -15,6 +15,7 @@
 """Shared helper functions for BigQuery API classes."""
 
 import base64
+import copy
 import datetime
 import decimal
 import math
@@ -126,6 +127,28 @@ class BQStorageVersions:
             raise LegacyBigQueryStorageError(msg)
 
 
+def pyarrow_datetime():
+    return pyarrow.timestamp("us", tz=None)
+
+
+def pyarrow_numeric():
+    return pyarrow.decimal128(38, 9)
+
+
+def pyarrow_bignumeric():
+    # 77th digit is partial.
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types
+    return pyarrow.decimal256(76, 38)
+
+
+def pyarrow_time():
+    return pyarrow.time64("us")
+
+
+def pyarrow_timestamp():
+    return pyarrow.timestamp("us", tz="UTC")
+
+
 class PyarrowVersions:
     """Version comparisons for pyarrow package."""
 
@@ -147,6 +170,26 @@ class PyarrowVersions:
             )
 
         return self._installed_version
+
+    @property
+    def bq_to_arrow_scalars(self) -> dict[str]:
+        """
+        Returns:
+            Dict[str, Any]:
+                A dictionary of the mapping from BigQuery scalar types to Arrow
+                scalar types.
+        """
+        return copy.deepcopy(self._BQ_TO_ARROW_SCALARS)
+
+    @property
+    def arrow_scalar_ids_to_bq(self) -> dict:
+        """
+        Returns:
+            Dict[Any, str]:
+                A dictionary of the mapping from Arrow scalar types to BigQuery
+                scalar types.
+        """
+        return copy.deepcopy(self._ARROW_SCALAR_IDS_TO_BQ)
 
     @property
     def use_compliant_nested_type(self) -> bool:
@@ -187,6 +230,52 @@ class PyarrowVersions:
                 )
                 raise LegacyPyarrowError(msg)
             return None
+
+        # This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
+        # When modifying it be sure to update it there as well.
+        # Note(todo!!): type "BIGNUMERIC"'s matching pyarrow type is added in _pandas_helpers.py
+        self._BQ_TO_ARROW_SCALARS = {
+            "BOOL": pyarrow.bool_,
+            "BOOLEAN": pyarrow.bool_,
+            "BYTES": pyarrow.binary,
+            "DATE": pyarrow.date32,
+            "DATETIME": pyarrow_datetime,
+            "FLOAT": pyarrow.float64,
+            "FLOAT64": pyarrow.float64,
+            "GEOGRAPHY": pyarrow.string,
+            "INT64": pyarrow.int64,
+            "INTEGER": pyarrow.int64,
+            "NUMERIC": pyarrow_numeric,
+            "STRING": pyarrow.string,
+            "TIME": pyarrow_time,
+            "TIMESTAMP": pyarrow_timestamp,
+            "BIGNUMERIC": pyarrow_bignumeric,
+        }
+        self._ARROW_SCALAR_IDS_TO_BQ = {
+            # https://arrow.apache.org/docs/python/api/datatypes.html#type-classes
+            pyarrow.bool_().id: "BOOL",
+            pyarrow.int8().id: "INT64",
+            pyarrow.int16().id: "INT64",
+            pyarrow.int32().id: "INT64",
+            pyarrow.int64().id: "INT64",
+            pyarrow.uint8().id: "INT64",
+            pyarrow.uint16().id: "INT64",
+            pyarrow.uint32().id: "INT64",
+            pyarrow.uint64().id: "INT64",
+            pyarrow.float16().id: "FLOAT64",
+            pyarrow.float32().id: "FLOAT64",
+            pyarrow.float64().id: "FLOAT64",
+            pyarrow.time32("ms").id: "TIME",
+            pyarrow.time64("ns").id: "TIME",
+            pyarrow.timestamp("ns").id: "TIMESTAMP",
+            pyarrow.date32().id: "DATE",
+            pyarrow.date64().id: "DATETIME",  # because millisecond resolution
+            pyarrow.binary().id: "BYTES",
+            pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
+            # The exact scale and precision don't matter, see below.
+            pyarrow.decimal128(38, scale=9).id: "NUMERIC",
+            pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
+        }
 
         return pyarrow
 

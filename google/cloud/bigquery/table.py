@@ -60,6 +60,7 @@ from google.api_core.page_iterator import HTTPIterator
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery.enums import DefaultPandasDTypes
 from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.schema import _build_schema_resource
@@ -73,7 +74,7 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
     # they are not None, avoiding false "no attribute" errors.
     import pandas
-    import pyarrow
+    pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
     import geopandas  # type: ignore
     from google.cloud import bigquery_storage  # type: ignore
     from google.cloud.bigquery.dataset import DatasetReference

@@ -44,13 +44,9 @@ from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pyarrow_helpers
 
 pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
-PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
 
 if pyarrow:
-    import pyarrow
     import pyarrow.types
-
-    PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
 
 try:
     import pandas
@@ -73,8 +69,6 @@ try:
 
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
-
-PYARROW_TIMESTAMP_VERSION = pkg_resources.parse_version("2.0.0")
 
 if pandas is not None:
     PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version

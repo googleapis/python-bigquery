@@ -27,7 +27,6 @@ import itertools
 import json
 import math
 import os
-import packaging.version
 import tempfile
 import typing
 from typing import (
@@ -45,12 +44,9 @@ from typing import (
 import uuid
 import warnings
 
-try:
-    import pyarrow  # type: ignore
+from google.cloud.bigquery import _pyarrow_helpers
 
-    _PYARROW_VERSION = packaging.version.parse(pyarrow.__version__)
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
 
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore
@@ -158,9 +154,6 @@ _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
 _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
 TIMEOUT_HEADER = "X-Server-Timeout"
-
-# https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
-_PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
 
 
 class Project(object):
@@ -2688,16 +2681,6 @@ class Client(ClientWithProject):
         try:
 
             if new_job_config.source_format == job.SourceFormat.PARQUET:
-                if _PYARROW_VERSION in _PYARROW_BAD_VERSIONS:
-                    msg = (
-                        "Loading dataframe data in PARQUET format with pyarrow "
-                        f"{_PYARROW_VERSION} can result in data corruption. It is "
-                        "therefore *strongly* advised to use a different pyarrow "
-                        "version or a different source format. "
-                        "See: https://github.com/googleapis/python-bigquery/issues/781"
-                    )
-                    warnings.warn(msg, category=RuntimeWarning)
-
                 if new_job_config.schema:
                     if parquet_compression == "snappy":  # adjust the default value
                         parquet_compression = parquet_compression.upper()
@@ -2722,7 +2705,6 @@ class Client(ClientWithProject):
                     )
 
             else:
-
                 dataframe.to_csv(
                     tmppath,
                     index=False,

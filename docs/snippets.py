@@ -125,6 +125,8 @@ def test_create_partitioned_table(client, to_delete):
     dataset = client.create_dataset(dataset_ref)
     to_delete.append(dataset)
 
+    # TODO(tswast): remove this snippet once cloud.google.com is updated to use
+    # samples/snippets/create_partitioned_table.py
     # [START bigquery_create_table_partitioned]
     # from google.cloud import bigquery
     # client = bigquery.Client()
@@ -263,6 +265,8 @@ def test_relax_column(client, to_delete):
     dataset = client.create_dataset(dataset)
     to_delete.append(dataset)
 
+    # TODO(tswast): remove code sample once references to it on
+    # cloud.google.com are updated to samples/snippets/relax_column.py
     # [START bigquery_relax_column]
     # from google.cloud import bigquery
     # client = bigquery.Client()

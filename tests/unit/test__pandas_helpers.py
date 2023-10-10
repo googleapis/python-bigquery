@@ -1118,7 +1118,9 @@ def test_dataframe_to_parquet_without_pyarrow(module_under_test, monkeypatch):
     mock_pyarrow_import.side_effect = exceptions.LegacyPyarrowError(
         "pyarrow not installed"
     )
-    monkeypatch.setattr(_pyarrow_helpers.PYARROW_VERSIONS, "try_import", mock_pyarrow_import)
+    monkeypatch.setattr(
+        _pyarrow_helpers.PYARROW_VERSIONS, "try_import", mock_pyarrow_import
+    )
 
     with pytest.raises(exceptions.LegacyPyarrowError):
         module_under_test.dataframe_to_parquet(pandas.DataFrame(), (), None)

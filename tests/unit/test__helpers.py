@@ -94,6 +94,7 @@ class TestBQStorageVersions(unittest.TestCase):
         with mock.patch("google.cloud.bigquery_storage.__version__", new="2.5.0"):
             assert not versions.is_read_session_optional
 
+
 class Test_not_null(unittest.TestCase):
     def _call_fut(self, value, field):
         from google.cloud.bigquery._helpers import _not_null

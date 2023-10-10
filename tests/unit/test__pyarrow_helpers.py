@@ -82,8 +82,11 @@ class TestPyarrowVersions(unittest.TestCase):
         from google.cloud.bigquery import _pyarrow_helpers
 
         versions = self._object_under_test()
-        
-        assert versions.bq_to_arrow_scalars("BIGNUMERIC") == _pyarrow_helpers.pyarrow_bignumeric
+
+        assert (
+            versions.bq_to_arrow_scalars("BIGNUMERIC")
+            == _pyarrow_helpers.pyarrow_bignumeric
+        )
         assert versions.bq_to_arrow_scalars("UNKNOWN_TYPE") is None
 
     def test_arrow_scalar_ids_to_bq(self):

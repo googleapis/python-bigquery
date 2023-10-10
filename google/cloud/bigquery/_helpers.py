@@ -15,13 +15,12 @@
 """Shared helper functions for BigQuery API classes."""
 
 import base64
-import copy
 import datetime
 import decimal
 import math
 import re
 import os
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from dateutil import relativedelta
 from google.cloud._helpers import UTC  # type: ignore
@@ -33,10 +32,7 @@ from google.cloud._helpers import _to_bytes
 
 import packaging.version
 
-from google.cloud.bigquery.exceptions import (
-    LegacyBigQueryStorageError,
-    LegacyPyarrowError,
-)
+from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 
 _RFC3339_MICROS_NO_ZULU = "%Y-%m-%dT%H:%M:%S.%f"
 _TIMEONLY_WO_MICROS = "%H:%M:%S"

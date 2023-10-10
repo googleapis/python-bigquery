@@ -23,8 +23,6 @@ import queue
 import warnings
 from typing import Any, Union
 
-from packaging import version
-
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import schema
@@ -123,6 +121,7 @@ class _DownloadState(object):
         # the global interpreter lock).
         self.done = False
 
+
 BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {
     "GEOGRAPHY": {
         b"ARROW:extension:name": b"google:sqlType:geography",
@@ -163,7 +162,9 @@ def bq_to_arrow_data_type(field):
     if field_type_upper in schema._STRUCT_TYPES:
         return bq_to_arrow_struct_data_type(field)
 
-    data_type_constructor = _pyarrow_helpers.PYARROW_VERSIONS.bq_to_arrow_scalars(field_type_upper)
+    data_type_constructor = _pyarrow_helpers.PYARROW_VERSIONS.bq_to_arrow_scalars(
+        field_type_upper
+    )
     if data_type_constructor is None:
         return None
     return data_type_constructor()
@@ -491,7 +492,9 @@ def augment_schema(dataframe, current_bq_schema):
         if pyarrow.types.is_list(arrow_table.type):
             # `pyarrow.ListType`
             detected_mode = "REPEATED"
-            detected_type = _pyarrow_helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq(arrow_table.values.type.id)
+            detected_type = _pyarrow_helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq(
+                arrow_table.values.type.id
+            )
 
             # For timezone-naive datetimes, pyarrow assumes the UTC timezone and adds
             # it to such datetimes, causing them to be recognized as TIMESTAMP type.
@@ -507,7 +510,9 @@ def augment_schema(dataframe, current_bq_schema):
                     detected_type = "DATETIME"
         else:
             detected_mode = field.mode
-            detected_type = _pyarrow_helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq(arrow_table.type.id)
+            detected_type = _pyarrow_helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq(
+                arrow_table.type.id
+            )
 
         if detected_type is None:
             unknown_type_fields.append(field)

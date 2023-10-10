@@ -24,8 +24,9 @@ _MIN_PYARROW_VERSION = packaging.version.Version("3.0.0")
 
 try:
     import pyarrow  # type: ignore
-except:
+except ImportError:  # pragma: NO COVER
     pyarrow = None
+
 
 def pyarrow_datetime():
     return pyarrow.timestamp("us", tz=None)
@@ -133,7 +134,7 @@ class PyarrowVersions:
         return _BQ_TO_ARROW_SCALARS.get(bq_scalar)
 
     @staticmethod
-    def arrow_scalar_ids_to_bq(arrow_scalar: any) -> str:
+    def arrow_scalar_ids_to_bq(arrow_scalar: Any):
         """
         Returns:
             The BigQuery scalar type that the input arrow scalar type maps to.
@@ -182,5 +183,6 @@ class PyarrowVersions:
             return None
 
         return pyarrow
+
 
 PYARROW_VERSIONS = PyarrowVersions()

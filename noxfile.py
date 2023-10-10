@@ -112,13 +112,6 @@ def unit(session):
 @nox.session(python=[UNIT_TEST_PYTHON_VERSIONS[0], UNIT_TEST_PYTHON_VERSIONS[-1]])
 def unit_noextras(session):
     """Run the unit test suite."""
-
-    # Install optional dependencies that are out-of-date.
-    # https://github.com/googleapis/python-bigquery/issues/933
-    # There is no pyarrow 1.0.0 package for Python 3.9.
-    if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        session.install("pyarrow==1.0.0")
-
     default(session, install_extras=False)
 
 

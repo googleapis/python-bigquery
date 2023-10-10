@@ -27,7 +27,6 @@ import unittest
 import warnings
 
 import mock
-import packaging
 import requests
 import pytest
 import pkg_resources

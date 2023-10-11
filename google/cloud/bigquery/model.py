@@ -190,18 +190,15 @@ class Model:
     def transform_columns(self) -> Sequence[TransformColumn]:
         """The input feature columns that were used to train this model.
         The output transform columns used to train this model.
-        
+
         See REST API:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/models#transformcolumn
 
         Read-only.
         """
-        resources = self._properties.get("transformColumns",[])
-        return [
-            TransformColumn(resource)
-            for resource in resources
-        ]
-    
+        resources = self._properties.get("transformColumns", [])
+        return [TransformColumn(resource) for resource in resources]
+
     @property
     def label_columns(self) -> Sequence[standard_sql.StandardSqlField]:
         """Label columns that were used to train this model.
@@ -451,6 +448,7 @@ class ModelReference:
             self.project, self.dataset_id, self.model_id
         )
 
+
 class TransformColumn:
     """TransformColumn represents a transform column feature.
 
@@ -461,7 +459,8 @@ class TransformColumn:
         resource:
             A dictionary representing a transform column feature.
     """
-    def __init__(self,resource: Dict[str, Any]):
+
+    def __init__(self, resource: Dict[str, Any]):
         self._properties = resource
 
     @property
@@ -478,7 +477,7 @@ class TransformColumn:
     @property
     def transform_sql(self) -> Optional[str]:
         return self._properties.get("transformSql")
-        
+
     @classmethod
     def from_api_repr(cls, resource: Dict[str, Any]) -> "TransformColumn":
         """Constructs a transform column feature given its API representation
@@ -494,6 +493,7 @@ class TransformColumn:
         resource = copy.deepcopy(resource)
         this._properties = resource
         return this
+
 
 def _model_arg_to_model_ref(value, default_project=None):
     """Helper to convert a string or Model to ModelReference.

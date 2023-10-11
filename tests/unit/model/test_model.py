@@ -295,9 +295,17 @@ def test_feature_columns(object_under_test):
     assert object_under_test.feature_columns == expected
 
 
-def test_from_api_repr_w_transform_columns(object_under_test):
-    transform_columns = google.cloud.bigquery.model.TransformColumn
-    assert transform_columns
+def test_from_api_repr_w_transform_columns(resource):
+    from google.cloud.bigquery import ModelReference
+    resource = {
+    "modelReference": {
+            "projectId": "my-project",
+            "datasetId": "my_dataset",
+            "modelId": "my_model",
+        }}
+    reference = google.cloud.bigquery.model.ModelReference 
+    got = reference.from_api_repr(resource)
+    assert got.target_class == resource
 
 def test_transform_column_name():
     transform_columns = google.cloud.bigquery.model.TransformColumn({"name":"is_female"})
@@ -315,12 +323,12 @@ def test_transform_column_type_none():
     transform_columns = google.cloud.bigquery.model.TransformColumn({})
     assert transform_columns.type_ is None
 
-'''
-def test_transform_column_properties(object_under_test):
-    transform_columns = google.cloud.bigquery.model.TransformColumn({"name": "is_female","type":{
+def test_transform_column_properties():
+    transform_column = google.cloud.bigquery.model.TransformColumn({"name": "is_female","type": {
         "typeKind": "BOOL"},"transformSql":"is_female"})
-    assert transform_columns == object_under_test
-'''
+    assert transform_column._properties == {"name": "is_female","type": {
+    "typeKind":"BOOL"},"transformSql":"is_female"}
+
 
 def test_label_columns(object_under_test):
     from google.cloud.bigquery import standard_sql

@@ -35,6 +35,7 @@ import packaging.version
 from google.cloud.bigquery.exceptions import (
     LegacyBigQueryStorageError,
     LegacyPyarrowError,
+    BigQueryStorageNotFoundError,
 )
 
 _RFC3339_MICROS_NO_ZULU = "%Y-%m-%dT%H:%M:%S.%f"
@@ -120,10 +121,33 @@ class BQStorageVersions:
         """
         if self.installed_version < _MIN_BQ_STORAGE_VERSION:
             msg = (
-                "Dependency google-cloud-bigquery-storage is outdated, please upgrade "
-                f"it to version >= {_MIN_BQ_STORAGE_VERSION} (version found: {self.installed_version})."
+                "Dependency google-cloud-bigquery-storage is outdated, "
+                f"please upgrade it to version >= {_MIN_BQ_STORAGE_VERSION} "
+                f"(version found: {self.installed_version})."
             )
             raise LegacyBigQueryStorageError(msg)
+
+    def try_import(self) -> Any:
+        """Tries to import the bigquery_storage module, and returns an
+        error if BigQuery Storage extra is not installed.
+
+        Returns:
+            The ``bigquery_storage`` module.
+
+        Raises:
+            BigQueryStorageNotFoundError:
+                If google-cloud-bigquery-storage is not installed.
+        """
+        try:
+            from google.cloud import bigquery_storage  # type: ignore
+        except ImportError:
+            msg = (
+                "Package google-cloud-bigquery-storage not found. "
+                "Install google-cloud-bigquery-storage version >= "
+                f"{_MIN_BQ_STORAGE_VERSION}."
+            )
+            raise BigQueryStorageNotFoundError(msg)
+        return bigquery_storage
 
 
 class PyarrowVersions:

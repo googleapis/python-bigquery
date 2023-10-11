@@ -61,7 +61,10 @@ import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery.enums import DefaultPandasDTypes
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+from google.cloud.bigquery.exceptions import (
+    LegacyBigQueryStorageError,
+    BigQueryStorageNotFoundError,
+)
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
@@ -1610,8 +1613,8 @@ class RowIterator(HTTPIterator):
             return False
 
         try:
-            from google.cloud import bigquery_storage  # noqa: F401
-        except ImportError:
+            _helpers.BQ_STORAGE_VERSIONS.try_import()
+        except BigQueryStorageNotFoundError:
             return False
 
         try:

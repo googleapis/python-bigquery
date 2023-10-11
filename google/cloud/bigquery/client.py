@@ -89,7 +89,10 @@ from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+from google.cloud.bigquery.exceptions import (
+    LegacyBigQueryStorageError,
+    BigQueryStorageNotFoundError,
+)
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (
@@ -564,8 +567,8 @@ class Client(ClientWithProject):
             A BigQuery Storage API client.
         """
         try:
-            from google.cloud import bigquery_storage  # type: ignore
-        except ImportError:
+            bigquery_storage = BQ_STORAGE_VERSIONS.try_import()
+        except BigQueryStorageNotFoundError:
             warnings.warn(
                 "Cannot create BigQuery Storage client, the dependency "
                 "google-cloud-bigquery-storage is not installed."

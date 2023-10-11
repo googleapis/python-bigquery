@@ -16,6 +16,8 @@
 
 """Define resources for the BigQuery ML Models API."""
 
+from __future__ import annotations
+
 import copy
 import datetime
 import typing
@@ -185,7 +187,7 @@ class Model:
         ]
 
     @property
-    def transform_columns(self) -> Sequence[Dict[str, Any]]:
+    def transform_columns(self) -> Sequence[TransformColumn]:
         """The input feature columns that were used to train this model.
         The output transform columns used to train this model.
         
@@ -194,9 +196,11 @@ class Model:
 
         Read-only.
         """
-        return typing.cast(
-            Sequence[Dict[str,TransformColumn]], self._properties.get(TransformColumn , [])
-        )
+        resources = self._properties.get("transformColumns",[])
+        return [
+            TransformColumn(resource)
+            for resource in resources
+        ]
     
     @property
     def label_columns(self) -> Sequence[standard_sql.StandardSqlField]:

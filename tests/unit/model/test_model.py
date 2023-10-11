@@ -295,17 +295,25 @@ def test_feature_columns(object_under_test):
     assert object_under_test.feature_columns == expected
 
 
-def test_from_api_repr_w_transform_columns(resource):
-    from google.cloud.bigquery import ModelReference
+def test_from_api_repr_w_transform_columns(target_class):
     resource = {
     "modelReference": {
             "projectId": "my-project",
             "datasetId": "my_dataset",
             "modelId": "my_model",
-        }}
-    reference = google.cloud.bigquery.model.ModelReference 
-    got = reference.from_api_repr(resource)
-    assert got.target_class == resource
+    
+        },
+    "transformColumns": [{
+                "name": "transform_name" ,
+                "type": {"typeKind": "INT64"},
+                "transformSql": "transform_sql"
+}]
+}
+    got = target_class.from_api_repr(resource)
+    assert len(got.transform_columns) == 1
+    transform_column = got.transform_columns[0]
+    assert isinstance(transform_column, google.cloud.bigquery.model.TransformColumn)
+    assert transform_column.name == "transform_name"
 
 def test_transform_column_name():
     transform_columns = google.cloud.bigquery.model.TransformColumn({"name":"is_female"})

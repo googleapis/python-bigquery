@@ -693,7 +693,6 @@ class TestDataset(unittest.TestCase):
             self.assertEqual(a_entry.entity_id, r_entry["entity_id"])
 
     def _verify_readonly_resource_properties(self, dataset, resource):
-
         self.assertEqual(dataset.project, self.PROJECT)
         self.assertEqual(dataset.dataset_id, self.DS_ID)
         self.assertEqual(dataset.reference.project, self.PROJECT)
@@ -717,7 +716,6 @@ class TestDataset(unittest.TestCase):
             self.assertIsNone(dataset.self_link)
 
     def _verify_resource_properties(self, dataset, resource):
-
         self._verify_readonly_resource_properties(dataset, resource)
 
         if "defaultTableExpirationMs" in resource:
@@ -955,7 +953,7 @@ class TestDataset(unittest.TestCase):
     def test_storage_billing_model_setter_with_none(self):
         dataset = self._make_one(self.DS_REF)
         dataset.storage_billing_model = None
-        self.assertEqual(dataset.storage_billing_model, "LOGICAL")
+        self.assertIsNone(dataset.storage_billing_model)
 
     def test_storage_billing_model_setter_with_invalid_type(self):
         dataset = self._make_one(self.DS_REF)

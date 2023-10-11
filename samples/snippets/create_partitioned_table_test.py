@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,21 @@
 
 import typing
 
-from .. import get_dataset
+import create_partitioned_table
 
 if typing.TYPE_CHECKING:
     import pytest
 
 
-def test_get_dataset(capsys: "pytest.CaptureFixture[str]", dataset_id: str) -> None:
-    get_dataset.get_dataset(dataset_id)
-    out, err = capsys.readouterr()
-    assert dataset_id in out
+def test_create_partitioned_table(
+    capsys: "pytest.CaptureFixture[str]",
+    random_table_id: str,
+) -> None:
+    table = create_partitioned_table.create_partitioned_table(random_table_id)
+
+    out, _ = capsys.readouterr()
+    assert "Created" in out
+    assert random_table_id in out
+
+    assert table.time_partitioning.type_ == "DAY"
+    assert table.time_partitioning.field == "date"

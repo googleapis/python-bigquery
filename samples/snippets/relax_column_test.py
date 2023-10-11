@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,25 +16,31 @@ import typing
 
 from google.cloud import bigquery
 
-from .. import client_query_relax_column
+import relax_column
 
 if typing.TYPE_CHECKING:
     import pytest
 
 
-def test_client_query_relax_column(
+def test_relax_column(
     capsys: "pytest.CaptureFixture[str]",
+    bigquery_client: bigquery.Client,
     random_table_id: str,
-    client: bigquery.Client,
 ) -> None:
-    schema = [
-        bigquery.SchemaField("full_name", "STRING", mode="REQUIRED"),
-        bigquery.SchemaField("age", "INTEGER", mode="REQUIRED"),
-    ]
+    table = bigquery.Table(
+        random_table_id,
+        schema=[
+            bigquery.SchemaField("string_col", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("string_col2", "STRING", mode="REQUIRED"),
+        ],
+    )
 
-    client.create_table(bigquery.Table(random_table_id, schema=schema))
+    bigquery_client.create_table(table)
+    table = relax_column.relax_column(random_table_id)
 
-    client_query_relax_column.client_query_relax_column(random_table_id)
-    out, err = capsys.readouterr()
-    assert "2 fields in the schema are required." in out
-    assert "0 fields in the schema are now required." in out
+    out, _ = capsys.readouterr()
+
+    assert all(field.mode == "NULLABLE" for field in table.schema)
+    assert "REQUIRED" not in out
+    assert "NULLABLE" in out
+    assert random_table_id in out

@@ -177,9 +177,9 @@ class _JobConfig(object):
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfiguration.FIELDS.job_timeout_ms
         e.g.
 
-            job_config = bigquery.QueryJobConfig( jobtimeout = 5000 )
+            job_config = bigquery.QueryJobConfig( job_timeout_ms = 5000 )
             or
-            job_config.jobtimeout = 5000
+            job_config.job_timeout_ms = 5000
 
         Raises:
             ValueError: If ``value`` type is invalid.

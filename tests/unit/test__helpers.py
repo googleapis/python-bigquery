@@ -49,6 +49,12 @@ class TestBQStorageVersions(unittest.TestCase):
         _helpers.BQ_STORAGE_VERSIONS._installed_version = None
         return _helpers.BQ_STORAGE_VERSIONS.verify_version()
 
+    def _call_try_import(self):
+        from google.cloud.bigquery import _helpers
+
+        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
+        return _helpers.BQ_STORAGE_VERSIONS.try_import()
+
     def test_raises_no_error_w_recent_bqstorage(self):
         from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 
@@ -98,6 +104,9 @@ class TestBQStorageVersions(unittest.TestCase):
         versions = self._object_under_test()
         with mock.patch("google.cloud.bigquery_storage.__version__", new="2.5.0"):
             assert not versions.is_read_session_optional
+
+    def test_try_import(self):
+        assert self._call_try_import() is not None
 
 
 @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")

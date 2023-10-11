@@ -191,7 +191,7 @@ class Model:
         """The input feature columns that were used to train this model.
         The output transform columns used to train this model.
         
-        Dictionaries are in REST API format. See:
+        See REST API:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/models#transformcolumn
 
         Read-only.

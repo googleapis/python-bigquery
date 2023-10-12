@@ -110,6 +110,7 @@ def test_job_timeout_ms():
 def test_job_timeout_ms_raises_valueerror():
     # Confirm that attempting to set a non-integer values will raise an Error.
     with pytest.raises(ValueError):
+        job_config = bigquery.QueryJobConfig()
         job_config.job_timeout_ms = "WillRaiseError"
 
 

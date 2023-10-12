@@ -26,6 +26,7 @@ import google.api_core.future.polling
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.retry import DEFAULT_RETRY
+from google.cloud.bigquery._helpers import _int_or_none
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     from google.api_core import retry as retries
@@ -192,8 +193,12 @@ class _JobConfig(object):
 
     @job_timeout_ms.setter
     def job_timeout_ms(self, value):
-        if not isinstance(value, int):
-            raise ValueError("Pass an int for jobTimeoutMs, e.g. 5000")
+        try:
+            value = _int_or_none(value)
+        except ValueError as err:
+            raise ValueError("Pass an int for jobTimeoutMs, e.g. 5000").with_traceback(
+                err.__traceback__
+            )
 
         """ Docs indicate a string is expected by the API """
         self._properties["jobTimeoutMs"] = str(value)

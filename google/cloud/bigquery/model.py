@@ -16,7 +16,7 @@
 
 """Define resources for the BigQuery ML Models API."""
 
-from __future__ import annotations
+from __future__ import annotations  # type: ignore
 
 import copy
 import datetime
@@ -196,7 +196,9 @@ class Model:
 
         Read-only.
         """
-        resources = self._properties.get("transformColumns", [])
+        resources: Sequence[Dict[str, Any]] = typing.cast(
+            Sequence[Dict[str, Any]], self._properties.get("transformColumns", [])
+        )
         return [TransformColumn(resource) for resource in resources]
 
     @property
@@ -465,10 +467,17 @@ class TransformColumn:
 
     @property
     def name(self) -> Optional[str]:
+        """Name of the column."""
         return self._properties.get("name")
 
     @property
-    def type_(self) -> Optional[str]:
+    def type_(self) -> Optional[standard_sql.StandardSqlDataType]:
+        """Data type of the column after the transform.
+
+        Returns:
+            Optional[google.cloud.bigquery.standard_sql.StandardSqlDataType]:
+                Data type of the column.
+        """
         type_json = self._properties.get("type")
         if type_json is None:
             return None
@@ -476,6 +485,7 @@ class TransformColumn:
 
     @property
     def transform_sql(self) -> Optional[str]:
+        """The SQL expression used in the column transform."""
         return self._properties.get("transformSql")
 
     @classmethod
@@ -489,7 +499,7 @@ class TransformColumn:
         Returns:
             Transform column feature parsed from ``resource``.
         """
-        this = cls(None)
+        this = cls({})
         resource = copy.deepcopy(resource)
         this._properties = resource
         return this

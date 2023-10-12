@@ -346,7 +346,12 @@ def test_transform_column_type_none():
 
 def test_transform_column_from_api_repr_with_unknown_properties():
     transform_column = google.cloud.bigquery.model.TransformColumn.from_api_repr(
-        {"name": "is_female", "type": {"typeKind": "BOOL"}, "transformSql": "is_female", "test": "one"}
+        {
+            "name": "is_female",
+            "type": {"typeKind": "BOOL"},
+            "transformSql": "is_female",
+            "test": "one",
+        }
     )
     assert transform_column._properties == {
         "name": "is_female",

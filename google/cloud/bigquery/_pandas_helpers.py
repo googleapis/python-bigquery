@@ -25,6 +25,7 @@ from typing import Any, Union
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pyarrow_helpers
+from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
 
 try:
@@ -48,7 +49,7 @@ except ImportError as exc:  # pragma: NO COVER
     db_dtypes_import_exception = exc
     date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 
-pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
+pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 _BIGNUMERIC_SUPPORT = False
 if pyarrow is not None:
@@ -162,7 +163,7 @@ def bq_to_arrow_data_type(field):
     if field_type_upper in schema._STRUCT_TYPES:
         return bq_to_arrow_struct_data_type(field)
 
-    data_type_constructor = _pyarrow_helpers.PYARROW_VERSIONS.bq_to_arrow_scalars(
+    data_type_constructor = _pyarrow_helpers.bq_to_arrow_scalars(
         field_type_upper
     )
     if data_type_constructor is None:
@@ -492,7 +493,7 @@ def augment_schema(dataframe, current_bq_schema):
         if pyarrow.types.is_list(arrow_table.type):
             # `pyarrow.ListType`
             detected_mode = "REPEATED"
-            detected_type = _pyarrow_helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq(
+            detected_type = _pyarrow_helpers.arrow_scalar_ids_to_bq(
                 arrow_table.values.type.id
             )
 
@@ -510,7 +511,7 @@ def augment_schema(dataframe, current_bq_schema):
                     detected_type = "DATETIME"
         else:
             detected_mode = field.mode
-            detected_type = _pyarrow_helpers.PYARROW_VERSIONS.arrow_scalar_ids_to_bq(
+            detected_type = _pyarrow_helpers.arrow_scalar_ids_to_bq(
                 arrow_table.type.id
             )
 
@@ -633,13 +634,13 @@ def dataframe_to_parquet(
 
             This argument is ignored for ``pyarrow`` versions earlier than ``4.0.0``.
     """
-    pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
+    pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
 
     import pyarrow.parquet  # type: ignore
 
     kwargs = (
         {"use_compliant_nested_type": parquet_use_compliant_nested_type}
-        if _pyarrow_helpers.PYARROW_VERSIONS.use_compliant_nested_type
+        if _versions_helpers.PYARROW_VERSIONS.use_compliant_nested_type
         else {}
     )
 

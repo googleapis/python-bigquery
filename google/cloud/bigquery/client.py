@@ -76,12 +76,14 @@ from google.cloud.bigquery._helpers import BQ_STORAGE_VERSIONS
 from google.cloud.bigquery._helpers import _DEFAULT_HOST
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
 from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+from google.cloud.bigquery.exceptions import LegacyPyarrowError
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (
@@ -114,9 +116,7 @@ from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
 from google.cloud.bigquery.format_options import ParquetOptions
 
-from google.cloud.bigquery import _pyarrow_helpers
-
-pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
+pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 TimeoutType = Union[float, None]
 ResumableTimeoutType = Union[
@@ -2678,6 +2678,8 @@ class Client(ClientWithProject):
 
         try:
             if new_job_config.source_format == job.SourceFormat.PARQUET:
+                _versions_helpers.PYARROW_VERSIONS.try_import()
+
                 if new_job_config.schema:
                     if parquet_compression == "snappy":  # adjust the default value
                         parquet_compression = parquet_compression.upper()
@@ -2696,7 +2698,7 @@ class Client(ClientWithProject):
                         compression=parquet_compression,
                         **(
                             {"use_compliant_nested_type": True}
-                            if _pyarrow_helpers.PYARROW_VERSIONS.use_compliant_nested_type
+                            if _versions_helpers.PYARROW_VERSIONS.use_compliant_nested_type
                             else {}
                         ),
                     )

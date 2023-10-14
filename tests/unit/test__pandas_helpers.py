@@ -42,10 +42,11 @@ from google import api_core
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pyarrow_helpers
+from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
-pyarrow = _pyarrow_helpers.PYARROW_VERSIONS.try_import()
+pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 if pyarrow:
     import pyarrow.parquet
@@ -1119,7 +1120,7 @@ def test_dataframe_to_parquet_without_pyarrow(module_under_test, monkeypatch):
         "pyarrow not installed"
     )
     monkeypatch.setattr(
-        _pyarrow_helpers.PYARROW_VERSIONS, "try_import", mock_pyarrow_import
+        _versions_helpers.PYARROW_VERSIONS, "try_import", mock_pyarrow_import
     )
 
     with pytest.raises(exceptions.LegacyPyarrowError):

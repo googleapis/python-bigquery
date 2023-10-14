@@ -28,6 +28,7 @@ import warnings
 
 import mock
 import requests
+import packaging
 import pytest
 import pkg_resources
 
@@ -64,6 +65,7 @@ import google.cloud._helpers
 from google.cloud import bigquery
 
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery.exceptions import LegacyPyarrowError
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 from google.cloud.bigquery import ParquetOptions
 
@@ -8604,6 +8606,36 @@ class TestClientUpload(object):
                     location=self.LOCATION,
                     parquet_compression="gzip",
                 )
+
+    def test_load_table_from_dataframe_w_bad_pyarrow_issues_warning(self):
+        pytest.importorskip("pandas", reason="Requires `pandas`")
+        pytest.importorskip("pyarrow", reason="Requires `pyarrow`")
+
+        client = self._make_client()
+        records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
+        dataframe = pandas.DataFrame(records)
+
+        pyarrow_version_patch = mock.patch(
+            "google.cloud.bigquery._versions_helpers.PYARROW_VERSIONS._installed_version",
+            packaging.version.parse("2.0.0"),  # A known bad version of pyarrow.
+        )
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table",
+            autospec=True,
+            side_effect=google.api_core.exceptions.NotFound("Table not found"),
+        )
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+
+        with load_patch, get_table_patch, pyarrow_version_patch:
+            with pytest.raises(LegacyPyarrowError):
+                client.load_table_from_dataframe(
+                    dataframe,
+                    self.TABLE_REF,
+                    location=self.LOCATION,
+                )
+
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")

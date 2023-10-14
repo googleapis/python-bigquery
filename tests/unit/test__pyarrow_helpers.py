@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+import pytest
 
-import mock
 
 try:
     import pyarrow
@@ -22,75 +21,26 @@ except ImportError:  # pragma: NO COVER
     pyarrow = None
 
 
-@unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-class TestPyarrowVersions(unittest.TestCase):
-    def tearDown(self):
-        from google.cloud.bigquery import _pyarrow_helpers
+@pytest.fixture
+def module_under_test():
+    from google.cloud.bigquery import _pyarrow_helpers
 
-        # Reset any cached versions since it may not match reality.
-        _pyarrow_helpers.PYARROW_VERSIONS._installed_version = None
+    return _pyarrow_helpers
 
-    def _object_under_test(self):
-        from google.cloud.bigquery import _pyarrow_helpers
 
-        return _pyarrow_helpers.PyarrowVersions()
+@pytest.mark.skipIf(pyarrow is None, reason="Requires `pyarrow`")
+def test_bq_to_arrow_scalars(module_under_test):
+    assert (
+        module_under_test.bq_to_arrow_scalars("BIGNUMERIC")
+        == module_under_test.pyarrow_bignumeric
+    )
+    assert module_under_test.bq_to_arrow_scalars("UNKNOWN_TYPE") is None
 
-    def _call_try_import(self, **kwargs):
-        from google.cloud.bigquery import _pyarrow_helpers
 
-        _pyarrow_helpers.PYARROW_VERSIONS._installed_version = None
-        return _pyarrow_helpers.PYARROW_VERSIONS.try_import(**kwargs)
-
-    def test_try_import_raises_no_error_w_recent_pyarrow(self):
-        from google.cloud.bigquery.exceptions import LegacyPyarrowError
-
-        with mock.patch("pyarrow.__version__", new="5.0.0"):
-            try:
-                pyarrow = self._call_try_import(raise_if_error=True)
-                self.assertIsNotNone(pyarrow)
-            except LegacyPyarrowError:  # pragma: NO COVER
-                self.fail("Legacy error raised with a non-legacy dependency version.")
-
-    def test_try_import_returns_none_w_legacy_pyarrow(self):
-        with mock.patch("pyarrow.__version__", new="2.0.0"):
-            pyarrow = self._call_try_import()
-            self.assertIsNone(pyarrow)
-
-    def test_try_import_raises_error_w_legacy_pyarrow(self):
-        from google.cloud.bigquery.exceptions import LegacyPyarrowError
-
-        with mock.patch("pyarrow.__version__", new="2.0.0"):
-            with self.assertRaises(LegacyPyarrowError):
-                self._call_try_import(raise_if_error=True)
-
-    def test_installed_version_returns_cached(self):
-        versions = self._object_under_test()
-        versions._installed_version = object()
-        assert versions.installed_version is versions._installed_version
-
-    def test_installed_version_returns_parsed_version(self):
-        versions = self._object_under_test()
-
-        with mock.patch("pyarrow.__version__", new="1.2.3"):
-            version = versions.installed_version
-
-        assert version.major == 1
-        assert version.minor == 2
-        assert version.micro == 3
-
-    def test_bq_to_arrow_scalars(self):
-        from google.cloud.bigquery import _pyarrow_helpers
-
-        versions = self._object_under_test()
-
-        assert (
-            versions.bq_to_arrow_scalars("BIGNUMERIC")
-            == _pyarrow_helpers.pyarrow_bignumeric
-        )
-        assert versions.bq_to_arrow_scalars("UNKNOWN_TYPE") is None
-
-    def test_arrow_scalar_ids_to_bq(self):
-        versions = self._object_under_test()
-
-        assert versions.arrow_scalar_ids_to_bq(pyarrow.bool_().id) == "BOOL"
-        assert versions.arrow_scalar_ids_to_bq("UNKNOWN_TYPE") is None
+@pytest.mark.skipIf(pyarrow is None, reason="Requires `pyarrow`")
+def test_arrow_scalar_ids_to_bq(module_under_test):
+    assert (
+        module_under_test.arrow_scalar_ids_to_bq(pyarrow.bool_().id)
+        == "BOOL"
+    )
+    assert module_under_test.arrow_scalar_ids_to_bq("UNKNOWN_TYPE") is None

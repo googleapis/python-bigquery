@@ -767,8 +767,8 @@ class Dataset(object):
 
     @property
     def is_case_insensitive(self):
-        """Optional[bool]: TRUE if the dataset and its table names are case-insensitive, otherwise FALSE.
-        By default, this is FALSE, which means the dataset and its table names are case-sensitive.
+        """Optional[bool]: True if the dataset and its table names are case-insensitive, otherwise FALSE.
+        By default, this is False, which means the dataset and its table names are case-sensitive.
         This field does not affect routine references.
 
         Raises:

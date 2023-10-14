@@ -354,7 +354,7 @@ class TestBigQuery(unittest.TestCase):
             _make_dataset_id("create_table"), is_case_insensitive=True
         )
         table_arg = Table(ci_dataset.table("test_table2"), schema=SCHEMA)
-        tablemc_arg = Table(ci_dataset.table("Test_taBLe2"))
+        tablemc_arg = Table(ci_dataset.table("Test_taBLe2"))  # same name, in Mixed Case
 
         table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
@@ -368,7 +368,7 @@ class TestBigQuery(unittest.TestCase):
             _make_dataset_id("create_table"), is_case_insensitive=False
         )
         table_arg = Table(ci_dataset.table("test_table3"), schema=SCHEMA)
-        tablemc_arg = Table(ci_dataset.table("Test_taBLe3"))
+        tablemc_arg = Table(ci_dataset.table("Test_taBLe3"))  # same name, in Mixed Case
 
         table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)
@@ -380,7 +380,9 @@ class TestBigQuery(unittest.TestCase):
     def test_create_tables_in_default_sensitivity_dataset(self):
         dataset = self.temp_dataset(_make_dataset_id("create_table"))
         table_arg = Table(dataset.table("test_table4"), schema=SCHEMA)
-        tablemc_arg = Table(dataset.table("Test_taBLe4"))
+        tablemc_arg = Table(
+            dataset.table("Test_taBLe4")
+        )  # same name, in MC (Mixed Case)
 
         table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
         self.to_delete.insert(0, table)

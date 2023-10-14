@@ -693,7 +693,6 @@ class TestDataset(unittest.TestCase):
             self.assertEqual(a_entry.entity_id, r_entry["entity_id"])
 
     def _verify_readonly_resource_properties(self, dataset, resource):
-
         self.assertEqual(dataset.project, self.PROJECT)
         self.assertEqual(dataset.dataset_id, self.DS_ID)
         self.assertEqual(dataset.reference.project, self.PROJECT)
@@ -717,7 +716,6 @@ class TestDataset(unittest.TestCase):
             self.assertIsNone(dataset.self_link)
 
     def _verify_resource_properties(self, dataset, resource):
-
         self._verify_readonly_resource_properties(dataset, resource)
 
         if "defaultTableExpirationMs" in resource:
@@ -730,6 +728,9 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(dataset.description, resource.get("description"))
         self.assertEqual(dataset.friendly_name, resource.get("friendlyName"))
         self.assertEqual(dataset.location, resource.get("location"))
+        self.assertEqual(
+            dataset.is_case_insensitive, resource.get("isCaseInsensitive") or False
+        )
         if "defaultEncryptionConfiguration" in resource:
             self.assertEqual(
                 dataset.default_encryption_configuration.kms_key_name,
@@ -767,6 +768,7 @@ class TestDataset(unittest.TestCase):
         self.assertIsNone(dataset.description)
         self.assertIsNone(dataset.friendly_name)
         self.assertIsNone(dataset.location)
+        self.assertEqual(dataset.is_case_insensitive, False)
 
     def test_ctor_string(self):
         dataset = self._make_one("some-project.some_dset")
@@ -804,6 +806,7 @@ class TestDataset(unittest.TestCase):
         self.assertIsNone(dataset.description)
         self.assertIsNone(dataset.friendly_name)
         self.assertIsNone(dataset.location)
+        self.assertEqual(dataset.is_case_insensitive, False)
 
     def test_access_entries_setter_non_list(self):
         dataset = self._make_one(self.DS_REF)
@@ -895,6 +898,26 @@ class TestDataset(unittest.TestCase):
     def test_labels_getter_missing_value(self):
         dataset = self._make_one(self.DS_REF)
         self.assertEqual(dataset.labels, {})
+
+    def test_is_case_insensitive_setter_bad_value(self):
+        dataset = self._make_one(self.DS_REF)
+        with self.assertRaises(ValueError):
+            dataset.is_case_insensitive = 0
+
+    def test_is_case_insensitive_setter_true(self):
+        dataset = self._make_one(self.DS_REF)
+        dataset.is_case_insensitive = True
+        self.assertEqual(dataset.is_case_insensitive, True)
+
+    def test_is_case_insensitive_setter_none(self):
+        dataset = self._make_one(self.DS_REF)
+        dataset.is_case_insensitive = None
+        self.assertEqual(dataset.is_case_insensitive, False)
+
+    def test_is_case_insensitive_setter_false(self):
+        dataset = self._make_one(self.DS_REF)
+        dataset.is_case_insensitive = False
+        self.assertEqual(dataset.is_case_insensitive, False)
 
     def test_from_api_repr_missing_identity(self):
         self._setUpConstants()

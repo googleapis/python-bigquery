@@ -8636,7 +8636,6 @@ class TestClientUpload(object):
                     location=self.LOCATION,
                 )
 
-
     @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nulls(self):

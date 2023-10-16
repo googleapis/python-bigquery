@@ -83,7 +83,6 @@ from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
 from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-from google.cloud.bigquery.exceptions import LegacyPyarrowError
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (

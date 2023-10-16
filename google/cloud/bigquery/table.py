@@ -60,7 +60,6 @@ from google.api_core.page_iterator import HTTPIterator
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
-from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery.enums import DefaultPandasDTypes
 from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
 from google.cloud.bigquery.schema import _build_schema_resource

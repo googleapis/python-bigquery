@@ -163,9 +163,7 @@ def bq_to_arrow_data_type(field):
     if field_type_upper in schema._STRUCT_TYPES:
         return bq_to_arrow_struct_data_type(field)
 
-    data_type_constructor = _pyarrow_helpers.bq_to_arrow_scalars(
-        field_type_upper
-    )
+    data_type_constructor = _pyarrow_helpers.bq_to_arrow_scalars(field_type_upper)
     if data_type_constructor is None:
         return None
     return data_type_constructor()
@@ -511,9 +509,7 @@ def augment_schema(dataframe, current_bq_schema):
                     detected_type = "DATETIME"
         else:
             detected_mode = field.mode
-            detected_type = _pyarrow_helpers.arrow_scalar_ids_to_bq(
-                arrow_table.type.id
-            )
+            detected_type = _pyarrow_helpers.arrow_scalar_ids_to_bq(arrow_table.type.id)
 
         if detected_type is None:
             unknown_type_fields.append(field)

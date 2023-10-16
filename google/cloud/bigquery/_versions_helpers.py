@@ -26,6 +26,7 @@ _MIN_PYARROW_VERSION = packaging.version.Version("3.0.0")
 # https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
 _PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
 
+
 class PyarrowVersions:
     """Version comparisons for pyarrow package."""
 

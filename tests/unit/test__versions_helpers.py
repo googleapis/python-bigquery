@@ -15,6 +15,7 @@
 import pytest
 
 import mock
+
 try:
     import pyarrow
 except ImportError:  # pragma: NO COVER
@@ -50,7 +51,7 @@ def test_try_import_raises_error_w_legacy_pyarrow():
 
     versions = _versions_helpers.PyarrowVersions()
     with mock.patch("pyarrow.__version__", new="2.0.0"):
-         with pytest.raises(LegacyPyarrowError):
+        with pytest.raises(LegacyPyarrowError):
             versions.try_import(raise_if_error=True)
 
 
@@ -69,4 +70,4 @@ def test_installed_version_returns_parsed_version():
 
     assert version.major == 1
     assert version.minor == 2
-    assert version.micro == 3                           
+    assert version.micro == 3

@@ -68,7 +68,6 @@ if pyarrow:
         "STRING": pyarrow.string,
         "TIME": pyarrow_time,
         "TIMESTAMP": pyarrow_timestamp,
-        "BIGNUMERIC": pyarrow_bignumeric,
     }
 
     _ARROW_SCALAR_IDS_TO_BQ = {
@@ -94,7 +93,6 @@ if pyarrow:
         pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
         # The exact scale and precision don't matter, see below.
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
-        pyarrow.decimal256(76, scale=38).id: "BIGNUMERIC",
     }
 
     # Adds bignumeric support only if pyarrow version >= 3.0.0

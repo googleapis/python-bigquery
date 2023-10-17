@@ -15,10 +15,7 @@
 import pytest
 
 
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+pyarrow = pytest.importorskip("pyarrow", minversion="3.0.0")
 
 
 @pytest.fixture
@@ -28,7 +25,6 @@ def module_under_test():
     return _pyarrow_helpers
 
 
-@pytest.mark.skipIf(pyarrow is None, reason="Requires `pyarrow`")
 def test_bq_to_arrow_scalars(module_under_test):
     assert (
         module_under_test.bq_to_arrow_scalars("BIGNUMERIC")
@@ -37,7 +33,6 @@ def test_bq_to_arrow_scalars(module_under_test):
     assert module_under_test.bq_to_arrow_scalars("UNKNOWN_TYPE") is None
 
 
-@pytest.mark.skipIf(pyarrow is None, reason="Requires `pyarrow`")
 def test_arrow_scalar_ids_to_bq(module_under_test):
     assert module_under_test.arrow_scalar_ids_to_bq(pyarrow.bool_().id) == "BOOL"
     assert module_under_test.arrow_scalar_ids_to_bq("UNKNOWN_TYPE") is None

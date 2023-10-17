@@ -16,20 +16,19 @@ import pytest
 
 import mock
 
-pyarrow = pytest.importorskip("pyarrow")
-
 from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import exceptions
+
+pyarrow = pytest.importorskip("pyarrow")
 
 
 def test_try_import_raises_no_error_w_recent_pyarrow():
-    from google.cloud.bigquery.exceptions import LegacyPyarrowError
-
     versions = _versions_helpers.PyarrowVersions()
     with mock.patch("pyarrow.__version__", new="5.0.0"):
         try:
             pyarrow = versions.try_import(raise_if_error=True)
             assert pyarrow is not None
-        except LegacyPyarrowError:  # pragma: NO COVER
+        except exceptions.LegacyPyarrowError:  # pragma: NO COVER
             raise ("Legacy error raised with a non-legacy dependency version.")
 
 
@@ -41,11 +40,9 @@ def test_try_import_returns_none_w_legacy_pyarrow():
 
 
 def test_try_import_raises_error_w_legacy_pyarrow():
-    from google.cloud.bigquery.exceptions import LegacyPyarrowError
-
     versions = _versions_helpers.PyarrowVersions()
     with mock.patch("pyarrow.__version__", new="2.0.0"):
-        with pytest.raises(LegacyPyarrowError):
+        with pytest.raises(exceptions.LegacyPyarrowError):
             versions.try_import(raise_if_error=True)
 
 

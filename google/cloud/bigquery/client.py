@@ -82,7 +82,7 @@ from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+from google.cloud.bigquery import exceptions as bq_exceptions
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (
@@ -565,7 +565,7 @@ class Client(ClientWithProject):
 
         try:
             BQ_STORAGE_VERSIONS.verify_version()
-        except LegacyBigQueryStorageError as exc:
+        except bq_exceptions.LegacyBigQueryStorageError as exc:
             warnings.warn(str(exc))
             return None
         if bqstorage_client is None:
@@ -2677,8 +2677,6 @@ class Client(ClientWithProject):
 
         try:
             if new_job_config.source_format == job.SourceFormat.PARQUET:
-                _versions_helpers.PYARROW_VERSIONS.try_import()
-
                 if new_job_config.schema:
                     if parquet_compression == "snappy":  # adjust the default value
                         parquet_compression = parquet_compression.upper()

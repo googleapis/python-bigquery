@@ -65,7 +65,7 @@ import google.cloud._helpers
 from google.cloud import bigquery
 
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery.exceptions import LegacyPyarrowError
+from google.cloud.bigquery import exceptions
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 from google.cloud.bigquery import ParquetOptions
 
@@ -822,14 +822,12 @@ class TestClient(unittest.TestCase):
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_ensure_bqstorage_client_obsolete_dependency(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
 
         patcher = mock.patch(
             "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
-            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+            side_effect=exceptions.LegacyBigQueryStorageError("BQ Storage too old"),
         )
         with patcher, warnings.catch_warnings(record=True) as warned:
             bqstorage_client = client._ensure_bqstorage_client()
@@ -858,15 +856,13 @@ class TestClient(unittest.TestCase):
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test_ensure_bqstorage_client_existing_client_check_fails(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         mock_storage_client = mock.sentinel.mock_storage_client
 
         patcher = mock.patch(
             "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
-            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+            side_effect=exceptions.LegacyBigQueryStorageError("BQ Storage too old"),
         )
         with patcher, warnings.catch_warnings(record=True) as warned:
             bqstorage_client = client._ensure_bqstorage_client(mock_storage_client)
@@ -8629,7 +8625,7 @@ class TestClientUpload(object):
         )
 
         with load_patch, get_table_patch, pyarrow_version_patch:
-            with pytest.raises(LegacyPyarrowError):
+            with pytest.raises(exceptions.LegacyPyarrowError):
                 client.load_table_from_dataframe(
                     dataframe,
                     self.TABLE_REF,

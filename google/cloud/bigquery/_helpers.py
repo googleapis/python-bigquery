@@ -32,7 +32,7 @@ from google.cloud._helpers import _to_bytes
 
 import packaging.version
 
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+from google.cloud.bigquery import exceptions
 
 _RFC3339_MICROS_NO_ZULU = "%Y-%m-%dT%H:%M:%S.%f"
 _TIMEONLY_WO_MICROS = "%H:%M:%S"
@@ -110,7 +110,7 @@ class BQStorageVersions:
         verify the version compatibility at runtime.
 
         Raises:
-            LegacyBigQueryStorageError:
+            exceptions.LegacyBigQueryStorageError:
                 If the google-cloud-bigquery-storage package is outdated.
         """
         if self.installed_version < _MIN_BQ_STORAGE_VERSION:
@@ -118,7 +118,7 @@ class BQStorageVersions:
                 "Dependency google-cloud-bigquery-storage is outdated, please upgrade "
                 f"it to version >= {_MIN_BQ_STORAGE_VERSION} (version found: {self.installed_version})."
             )
-            raise LegacyBigQueryStorageError(msg)
+            raise exceptions.LegacyBigQueryStorageError(msg)
 
 
 BQ_STORAGE_VERSIONS = BQStorageVersions()

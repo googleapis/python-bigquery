@@ -19,6 +19,8 @@ import unittest
 
 import mock
 
+from google.cloud.bigquery import exceptions
+
 try:
     from google.cloud import bigquery_storage  # type: ignore
 except ImportError:  # pragma: NO COVER
@@ -45,28 +47,24 @@ class TestBQStorageVersions(unittest.TestCase):
         return _helpers.BQ_STORAGE_VERSIONS.verify_version()
 
     def test_raises_no_error_w_recent_bqstorage(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
         with mock.patch("google.cloud.bigquery_storage.__version__", new="2.0.0"):
             try:
                 self._call_fut()
-            except LegacyBigQueryStorageError:  # pragma: NO COVER
+            except exceptions.LegacyBigQueryStorageError:  # pragma: NO COVER
                 self.fail("Legacy error raised with a non-legacy dependency version.")
 
     def test_raises_error_w_legacy_bqstorage(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
         with mock.patch("google.cloud.bigquery_storage.__version__", new="1.9.9"):
-            with self.assertRaises(LegacyBigQueryStorageError):
+            with self.assertRaises(exceptions.LegacyBigQueryStorageError):
                 self._call_fut()
 
     def test_raises_error_w_unknown_bqstorage_version(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
         with mock.patch("google.cloud.bigquery_storage", autospec=True) as fake_module:
             del fake_module.__version__
             error_pattern = r"version found: 0.0.0"
-            with self.assertRaisesRegex(LegacyBigQueryStorageError, error_pattern):
+            with self.assertRaisesRegex(
+                exceptions.LegacyBigQueryStorageError, error_pattern
+            ):
                 self._call_fut()
 
     def test_installed_version_returns_cached(self):

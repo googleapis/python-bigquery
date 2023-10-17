@@ -16,15 +16,11 @@ import pytest
 
 import mock
 
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+pyarrow = pytest.importorskip("pyarrow")
 
 from google.cloud.bigquery import _versions_helpers
 
 
-@pytest.mark.skipIf(pyarrow is None, reason="Requires `pyarrow`")
 def test_try_import_raises_no_error_w_recent_pyarrow():
     from google.cloud.bigquery.exceptions import LegacyPyarrowError
 
@@ -37,7 +33,6 @@ def test_try_import_raises_no_error_w_recent_pyarrow():
             raise ("Legacy error raised with a non-legacy dependency version.")
 
 
-@pytest.mark.skipIf(pyarrow is None, reason="Requires `pyarrow`")
 def test_try_import_returns_none_w_legacy_pyarrow():
     versions = _versions_helpers.PyarrowVersions()
     with mock.patch("pyarrow.__version__", new="2.0.0"):
@@ -45,7 +40,6 @@ def test_try_import_returns_none_w_legacy_pyarrow():
         assert pyarrow is None
 
 
-@pytest.mark.skipIf(pyarrow is None, reason="Requires `pyarrow`")
 def test_try_import_raises_error_w_legacy_pyarrow():
     from google.cloud.bigquery.exceptions import LegacyPyarrowError
 
@@ -55,14 +49,12 @@ def test_try_import_raises_error_w_legacy_pyarrow():
             versions.try_import(raise_if_error=True)
 
 
-@pytest.mark.skipIf(pyarrow is None, reason="Requires `pyarrow`")
 def test_installed_version_returns_cached():
     versions = _versions_helpers.PyarrowVersions()
     versions._installed_version = object()
     assert versions.installed_version is versions._installed_version
 
 
-@pytest.mark.skipIf(pyarrow is None, reason="Requires `pyarrow`")
 def test_installed_version_returns_parsed_version():
     versions = _versions_helpers.PyarrowVersions()
     with mock.patch("pyarrow.__version__", new="1.2.3"):

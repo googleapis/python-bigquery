@@ -298,7 +298,7 @@ class TableReference(_TableBase):
     def to_bqstorage(self) -> str:
         """Construct a BigQuery Storage API representation of this table.
 
-        Install the ``google-cloud-bigquery-storage`` package to use this
+        Install the ``google-cloud-bigquery-storage`` package to use a
         feature.
 
         If the ``table_id`` contain a partition identifier (e.g.

@@ -584,6 +584,19 @@ class LoadJobConfig(_JobConfig):
         else:
             self._del_sub_prop("parquetOptions")
 
+    @property
+    def json_extension(self):
+        """Optional[google.cloud.bigquery.job.SourceFormat]: File format of the data.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.source_format
+        """
+        return self._get_sub_prop("jsonExtension")
+
+    @json_extension.setter
+    def json_extension(self, value):
+        self._set_sub_prop("jsonExtension", value)
+
 
 class LoadJob(_AsyncJob):
     """Asynchronous job for loading data into a table.

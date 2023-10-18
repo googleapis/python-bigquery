@@ -155,9 +155,9 @@ class TestAccessEntry(unittest.TestCase):
     def test_from_api_repr_wo_role(self):
         resource = {
             "view": {
-                'projectId': 'my-project',
-                'datasetId': 'my_dataset',
-                'tableId': 'my_table',
+                "projectId": "my-project",
+                "datasetId": "my_dataset",
+                "tableId": "my_table",
             }
         }
         entry = self._get_target_class().from_api_repr(resource)

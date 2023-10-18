@@ -301,7 +301,7 @@ class TableReference(_TableBase):
         Install the ``google-cloud-bigquery-storage`` package to use this
         feature.
 
-        If the ``table_id`` contains a partition identifier (e.g.
+        If the ``table_id`` contain a partition identifier (e.g.
         ``my_table$201812``) or a snapshot identifier (e.g.
         ``mytable@1234567890``), it is ignored. Use
         :class:`google.cloud.bigquery_storage.types.ReadSession.TableReadOptions`

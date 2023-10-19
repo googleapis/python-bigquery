@@ -454,7 +454,6 @@ class AccessEntry(object):
         return not self == other
 
     def __repr__(self):
-
         return f"<AccessEntry: role={self.role}, {self._entity_type}={self.entity_id}>"
 
     def _key(self):
@@ -502,9 +501,7 @@ class AccessEntry(object):
         if len(entry) != 0:
             raise ValueError("Entry has unexpected keys remaining.", entry)
 
-        config = cls(role, entity_type, entity_id)
-        config._properties = copy.deepcopy(resource)
-        return config
+        return cls(role, entity_type, entity_id)
 
 
 class Dataset(object):

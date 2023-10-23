@@ -366,7 +366,7 @@ def test__make_bqstorage_client_true_obsolete_dependency():
     )
 
     patcher = mock.patch(
-        "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
+        "google.cloud.bigquery.client._versions_helpers.BQ_STORAGE_VERSIONS.verify_version",
         side_effect=bq_exceptions.LegacyBigQueryStorageError("BQ Storage too old"),
     )
     with patcher, warnings.catch_warnings(record=True) as warned:

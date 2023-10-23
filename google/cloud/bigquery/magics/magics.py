@@ -104,6 +104,8 @@ from google.api_core.exceptions import NotFound
 import google.auth  # type: ignore
 from google.cloud import bigquery
 import google.cloud.bigquery.dataset
+from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import exceptions
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.magics import line_arg_parser as lap
 
@@ -748,8 +750,8 @@ def _make_bqstorage_client(client, use_bqstorage_api, client_options):
         return None
 
     try:
-        from google.cloud import bigquery_storage  # type: ignore # noqa: F401
-    except ImportError as err:
+        _versions_helpers.BQ_STORAGE_VERSIONS.try_import()  # type: ignore # noqa: F401
+    except exceptions.BigQueryStorageNotFoundError as err:
         customized_error = ImportError(
             "The default BigQuery Storage API client cannot be used, install "
             "the missing google-cloud-bigquery-storage and pyarrow packages "

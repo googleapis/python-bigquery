@@ -24,7 +24,7 @@ for this string is in BigQuery standard SQL notation without escapes, e.g. `proj
 
 `--tag` allows arbitrary key:value pairs to be set.  This flag can be specified multiple times.
 
-When `--create_table` flag is set, must specify the name of the new table using `--table`.
+When `--create_table` flag is set, must also specify the name of the new table using `--table`.
 
 ### Example invocations
 
@@ -49,6 +49,79 @@ python benchmark.py \
   --tag branch:$(git branch --show-current) \
   --tag latestcommit:$(git log --pretty=format:'%H' -n 1)
 ```
+
+## Stream Results To A BigQuery Table
+
+When streaming benchmarking results to a BigQuery table, the table schema is as follows:
+```
+[
+  {
+    "name": "groupname",
+    "type": "STRING"
+  },
+  {
+    "name": "name",
+    "type": "STRING"
+  },
+  {
+    "name": "tags",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "fields": [
+      {
+        "name": "key",
+        "type": "STRING"
+      },
+      {
+        "name": "value",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "SQL",
+    "type": "STRING"
+  },
+  {
+    "name": "runs",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "fields": [
+      {
+        "name": "errorstring",
+        "type": "STRING"
+      },
+      {
+        "name": "start_time",
+        "type": "TIMESTAMP"
+      },
+      {
+        "name": "query_end_time",
+        "type": "TIMESTAMP"
+      },
+      {
+        "name": "first_row_returned_time",
+        "type": "TIMESTAMP"
+      },
+      {
+        "name": "all_rows_returned_time",
+        "type": "TIMESTAMP"
+      },
+      {
+        "name": "total_rows",
+        "type": "INTEGER"
+      }
+    ]
+  },
+  {
+    "name": "event_time",
+    "type": "TIMESTAMP"
+  }
+]
+```
+
+The table schema is the same as the [benchmark in go](https://github.com/googleapis/google-cloud-go/tree/main/bigquery/benchmarks),
+so results from both languages can be streamed to the same table.
 
 ## BigQuery Benchmarks In Other Languages
 * Go: https://github.com/googleapis/google-cloud-go/tree/main/bigquery/benchmarks

@@ -62,7 +62,7 @@ def _check_pos_int(value):
     ivalue = int(value)
     if ivalue <= 0:
         raise argparse.ArgumentTypeError(
-            "Argument rerun should be positive int. " f"Actual value: {value}"
+            f"Argument rerun should be positive int. Actual value: {value}"
         )
     return ivalue
 
@@ -73,9 +73,8 @@ def _parse_tag(tag):
     key, value = tagstring.split(":")
     if not key or not value:
         raise argparse.ArgumentTypeError(
-            "key and value in tag need to be non-"
-            f"empty. Actual value: key= {key}, "
-            f"value={value}"
+            "key and value in tag need to be non-empty. Actual value: "
+            + f"key={key}, value={value}"
         )
     return {"key": key, "value": value}
 
@@ -90,8 +89,7 @@ def _parse_args() -> dict:
         type=_check_pos_int,
         default=3,
         metavar="",
-        help="how many times each query is run. "
-        + "Must be a positive integer. "
+        help="how many times each query is run. Must be a positive integer."
         + "Default 3 times",
     )
 
@@ -100,9 +98,8 @@ def _parse_args() -> dict:
         action="store",
         type=str,
         metavar="",
-        help="run benchmarks in a different project. If unset,"
-        + " the GOOGLE_CLOUD_PROJECT environment"
-        + " variable is used",
+        help="run benchmarks in a different project. If unset, the "
+        + "GOOGLE_CLOUD_PROJECT environment variable is used",
     )
 
     parser.add_argument(
@@ -111,7 +108,7 @@ def _parse_args() -> dict:
         type=str,
         metavar="",
         default="queries.json",
-        help="override the default file which contains " + "queries to be instrumented",
+        help="override the default file which contains queries to be instrumented",
     )
 
     parser.add_argument(
@@ -119,19 +116,16 @@ def _parse_args() -> dict:
         action="store",
         type=str,
         metavar="",
-        help="specify a table to which benchmarking results "
-        + "should be streamed. The format for this string is "
-        + "in BigQuery standard SQL notation without "
-        + "escapes, e.g. projectid.datasetid.tableid",
+        help="specify a table to which benchmarking results should be "
+        + "streamed. The format for this string is in BigQuery standard SQL "
+        + "notation without escapes, e.g. projectid.datasetid.tableid",
     )
 
     parser.add_argument(
         "--create_table",
         action="store_true",
-        help="let the benchmarking tool create the"
-        + " destination table prior to streaming; "
-        + "if set, also need to set --table to "
-        + "specify table name",
+        help="let the benchmarking tool create the destination table prior to"
+        + " streaming; if set, also need to set --table to specify table name",
     )
 
     parser.add_argument(
@@ -139,7 +133,7 @@ def _parse_args() -> dict:
         action="append",
         type=_parse_tag,
         metavar="",
-        help="set arbitrary key:value pairs, can be set " + "multiple times",
+        help="set arbitrary key:value pairs, can be set multiple times",
     )
 
     args = parser.parse_args()
@@ -158,7 +152,7 @@ def _parse_args() -> dict:
     # Verifies that table name is specified when `create_table == True`.
     if args_dict.get("create_table") and not args_dict.get("table"):
         raise ValueError(
-            "When --create_table is present, must specify table " "name with --table"
+            "When --create_table is present, must specify table name with --table"
         )
 
     return args_dict

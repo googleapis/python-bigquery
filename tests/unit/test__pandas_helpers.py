@@ -41,10 +41,12 @@ from google import api_core
 
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import _helpers
+from google.cloud.bigquery import _pyarrow_helpers
+from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 if pyarrow:
     import pyarrow.parquet
@@ -346,14 +348,14 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         pyarrow.field("field04", pyarrow.int64()),
         pyarrow.field("field05", pyarrow.float64()),
         pyarrow.field("field06", pyarrow.float64()),
-        pyarrow.field("field07", module_under_test.pyarrow_numeric()),
-        pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),
+        pyarrow.field("field07", _pyarrow_helpers.pyarrow_numeric()),
+        pyarrow.field("field08", _pyarrow_helpers.pyarrow_bignumeric()),
         pyarrow.field("field09", pyarrow.bool_()),
         pyarrow.field("field10", pyarrow.bool_()),
-        pyarrow.field("field11", module_under_test.pyarrow_timestamp()),
+        pyarrow.field("field11", _pyarrow_helpers.pyarrow_timestamp()),
         pyarrow.field("field12", pyarrow.date32()),
-        pyarrow.field("field13", module_under_test.pyarrow_time()),
-        pyarrow.field("field14", module_under_test.pyarrow_datetime()),
+        pyarrow.field("field13", _pyarrow_helpers.pyarrow_time()),
+        pyarrow.field("field14", _pyarrow_helpers.pyarrow_datetime()),
         pyarrow.field("field15", pyarrow.string()),
     )
     expected = pyarrow.struct(expected)
@@ -394,14 +396,14 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         pyarrow.field("field04", pyarrow.int64()),
         pyarrow.field("field05", pyarrow.float64()),
         pyarrow.field("field06", pyarrow.float64()),
-        pyarrow.field("field07", module_under_test.pyarrow_numeric()),
-        pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),
+        pyarrow.field("field07", _pyarrow_helpers.pyarrow_numeric()),
+        pyarrow.field("field08", _pyarrow_helpers.pyarrow_bignumeric()),
         pyarrow.field("field09", pyarrow.bool_()),
         pyarrow.field("field10", pyarrow.bool_()),
-        pyarrow.field("field11", module_under_test.pyarrow_timestamp()),
+        pyarrow.field("field11", _pyarrow_helpers.pyarrow_timestamp()),
         pyarrow.field("field12", pyarrow.date32()),
-        pyarrow.field("field13", module_under_test.pyarrow_time()),
-        pyarrow.field("field14", module_under_test.pyarrow_datetime()),
+        pyarrow.field("field13", _pyarrow_helpers.pyarrow_time()),
+        pyarrow.field("field14", _pyarrow_helpers.pyarrow_datetime()),
         pyarrow.field("field15", pyarrow.string()),
     )
     expected_value_type = pyarrow.struct(expected)
@@ -546,6 +548,9 @@ def test_bq_to_arrow_array_w_nullable_scalars(module_under_test, bq_type, rows):
     ],
 )
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+@pytest.mark.skipif(
+    PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
+)
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_bq_to_arrow_array_w_pandas_timestamp(module_under_test, bq_type, rows):
     rows = [pandas.Timestamp(row) for row in rows]
@@ -931,32 +936,6 @@ def test_list_columns_and_indexes_with_multiindex(module_under_test):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_dataframe_to_bq_schema_dict_sequence(module_under_test):
-    df_data = collections.OrderedDict(
-        [
-            ("str_column", ["hello", "world"]),
-            ("int_column", [42, 8]),
-            ("bool_column", [True, False]),
-        ]
-    )
-    dataframe = pandas.DataFrame(df_data)
-
-    dict_schema = [
-        {"name": "str_column", "type": "STRING", "mode": "NULLABLE"},
-        {"name": "bool_column", "type": "BOOL", "mode": "REQUIRED"},
-    ]
-
-    returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, dict_schema)
-
-    expected_schema = (
-        schema.SchemaField("str_column", "STRING", "NULLABLE"),
-        schema.SchemaField("int_column", "INTEGER", "NULLABLE"),
-        schema.SchemaField("bool_column", "BOOL", "REQUIRED"),
-    )
-    assert returned_schema == expected_schema
-
-
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_arrow_with_multiindex(module_under_test):
     bq_schema = (
         schema.SchemaField("str_index", "STRING"),
@@ -1140,7 +1119,9 @@ def test_dataframe_to_parquet_without_pyarrow(module_under_test, monkeypatch):
     mock_pyarrow_import.side_effect = exceptions.LegacyPyarrowError(
         "pyarrow not installed"
     )
-    monkeypatch.setattr(_helpers.PYARROW_VERSIONS, "try_import", mock_pyarrow_import)
+    monkeypatch.setattr(
+        _versions_helpers.PYARROW_VERSIONS, "try_import", mock_pyarrow_import
+    )
 
     with pytest.raises(exceptions.LegacyPyarrowError):
         module_under_test.dataframe_to_parquet(pandas.DataFrame(), (), None)
@@ -1188,6 +1169,86 @@ def test_dataframe_to_parquet_compression_method(module_under_test):
     call_args = fake_write_table.call_args
     assert call_args is not None
     assert call_args.kwargs.get("compression") == "ZSTD"
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_dataframe_to_bq_schema_w_named_index(module_under_test):
+    df_data = collections.OrderedDict(
+        [
+            ("str_column", ["hello", "world"]),
+            ("int_column", [42, 8]),
+            ("bool_column", [True, False]),
+        ]
+    )
+    index = pandas.Index(["a", "b"], name="str_index")
+    dataframe = pandas.DataFrame(df_data, index=index)
+
+    returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, [])
+
+    expected_schema = (
+        schema.SchemaField("str_index", "STRING", "NULLABLE"),
+        schema.SchemaField("str_column", "STRING", "NULLABLE"),
+        schema.SchemaField("int_column", "INTEGER", "NULLABLE"),
+        schema.SchemaField("bool_column", "BOOLEAN", "NULLABLE"),
+    )
+    assert returned_schema == expected_schema
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_dataframe_to_bq_schema_w_multiindex(module_under_test):
+    df_data = collections.OrderedDict(
+        [
+            ("str_column", ["hello", "world"]),
+            ("int_column", [42, 8]),
+            ("bool_column", [True, False]),
+        ]
+    )
+    index = pandas.MultiIndex.from_tuples(
+        [
+            ("a", 0, datetime.datetime(1999, 12, 31, 23, 59, 59, 999999)),
+            ("a", 0, datetime.datetime(2000, 1, 1, 0, 0, 0)),
+        ],
+        names=["str_index", "int_index", "dt_index"],
+    )
+    dataframe = pandas.DataFrame(df_data, index=index)
+
+    returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, [])
+
+    expected_schema = (
+        schema.SchemaField("str_index", "STRING", "NULLABLE"),
+        schema.SchemaField("int_index", "INTEGER", "NULLABLE"),
+        schema.SchemaField("dt_index", "DATETIME", "NULLABLE"),
+        schema.SchemaField("str_column", "STRING", "NULLABLE"),
+        schema.SchemaField("int_column", "INTEGER", "NULLABLE"),
+        schema.SchemaField("bool_column", "BOOLEAN", "NULLABLE"),
+    )
+    assert returned_schema == expected_schema
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_dataframe_to_bq_schema_w_bq_schema(module_under_test):
+    df_data = collections.OrderedDict(
+        [
+            ("str_column", ["hello", "world"]),
+            ("int_column", [42, 8]),
+            ("bool_column", [True, False]),
+        ]
+    )
+    dataframe = pandas.DataFrame(df_data)
+
+    dict_schema = [
+        {"name": "str_column", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "bool_column", "type": "BOOL", "mode": "REQUIRED"},
+    ]
+
+    returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, dict_schema)
+
+    expected_schema = (
+        schema.SchemaField("str_column", "STRING", "NULLABLE"),
+        schema.SchemaField("int_column", "INTEGER", "NULLABLE"),
+        schema.SchemaField("bool_column", "BOOL", "REQUIRED"),
+    )
+    assert returned_schema == expected_schema
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

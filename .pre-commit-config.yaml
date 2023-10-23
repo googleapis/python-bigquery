@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ repos:
     -   id: end-of-file-fixer
     -   id: check-yaml
 -   repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 23.7.0
     hooks:
     - id: black
 -   repo: https://github.com/pycqa/flake8
-    rev: 3.9.2
+    rev: 6.1.0
     hooks:
     - id: flake8

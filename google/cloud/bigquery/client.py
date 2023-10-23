@@ -27,7 +27,6 @@ import itertools
 import json
 import math
 import os
-import packaging.version
 import tempfile
 import typing
 from typing import (
@@ -44,13 +43,6 @@ from typing import (
 )
 import uuid
 import warnings
-
-try:
-    import pyarrow  # type: ignore
-
-    _PYARROW_VERSION = packaging.version.parse(pyarrow.__version__)
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
 
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore
@@ -84,12 +76,13 @@ from google.cloud.bigquery._helpers import BQ_STORAGE_VERSIONS
 from google.cloud.bigquery._helpers import _DEFAULT_HOST
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+from google.cloud.bigquery import exceptions as bq_exceptions
 from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery import job
 from google.cloud.bigquery.job import (
@@ -121,7 +114,8 @@ from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
 from google.cloud.bigquery.format_options import ParquetOptions
-from google.cloud.bigquery import _helpers
+
+pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 TimeoutType = Union[float, None]
 ResumableTimeoutType = Union[
@@ -158,9 +152,6 @@ _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
 _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
 TIMEOUT_HEADER = "X-Server-Timeout"
-
-# https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
-_PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
 
 
 class Project(object):
@@ -210,6 +201,9 @@ class Client(ClientWithProject):
         default_query_job_config (Optional[google.cloud.bigquery.job.QueryJobConfig]):
             Default ``QueryJobConfig``.
             Will be merged into job configs passed into the ``query`` method.
+        default_load_job_config (Optional[google.cloud.bigquery.job.LoadJobConfig]):
+            Default ``LoadJobConfig``.
+            Will be merged into job configs passed into the ``load_table_*`` methods.
         client_info (Optional[google.api_core.client_info.ClientInfo]):
             The client info used to send a user-agent string along with API
             requests. If ``None``, then default info will be used. Generally,
@@ -225,10 +219,7 @@ class Client(ClientWithProject):
             to acquire default credentials.
     """
 
-    SCOPE = (  # type: ignore
-        "https://www.googleapis.com/auth/bigquery",
-        "https://www.googleapis.com/auth/cloud-platform",
-    )
+    SCOPE = ("https://www.googleapis.com/auth/cloud-platform",)  # type: ignore
     """The scopes required for authenticating as a BigQuery consumer."""
 
     def __init__(
@@ -238,6 +229,7 @@ class Client(ClientWithProject):
         _http=None,
         location=None,
         default_query_job_config=None,
+        default_load_job_config=None,
         client_info=None,
         client_options=None,
     ) -> None:
@@ -252,7 +244,7 @@ class Client(ClientWithProject):
         bq_host = _get_bigquery_host()
         kw_args["api_endpoint"] = bq_host if bq_host != _DEFAULT_HOST else None
         if client_options:
-            if type(client_options) == dict:
+            if isinstance(client_options, dict):
                 client_options = google.api_core.client_options.from_dict(
                     client_options
                 )
@@ -263,11 +255,34 @@ class Client(ClientWithProject):
         self._connection = Connection(self, **kw_args)
         self._location = location
         self._default_query_job_config = copy.deepcopy(default_query_job_config)
+        self._default_load_job_config = copy.deepcopy(default_load_job_config)
 
     @property
     def location(self):
         """Default location for jobs / datasets / tables."""
         return self._location
+
+    @property
+    def default_query_job_config(self):
+        """Default ``QueryJobConfig``.
+        Will be merged into job configs passed into the ``query`` method.
+        """
+        return self._default_query_job_config
+
+    @default_query_job_config.setter
+    def default_query_job_config(self, value: QueryJobConfig):
+        self._default_query_job_config = copy.deepcopy(value)
+
+    @property
+    def default_load_job_config(self):
+        """Default ``LoadJobConfig``.
+        Will be merged into job configs passed into the ``load_table_*`` methods.
+        """
+        return self._default_load_job_config
+
+    @default_load_job_config.setter
+    def default_load_job_config(self, value: LoadJobConfig):
+        self._default_load_job_config = copy.deepcopy(value)
 
     def close(self):
         """Close the underlying transport objects, releasing system resources.
@@ -283,7 +298,7 @@ class Client(ClientWithProject):
 
     def get_service_account_email(
         self,
-        project: str = None,
+        project: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> str:
@@ -303,7 +318,8 @@ class Client(ClientWithProject):
                 before using ``retry``.
 
         Returns:
-            str: service account email address
+            str:
+                service account email address
 
         Example:
 
@@ -330,7 +346,7 @@ class Client(ClientWithProject):
     def list_projects(
         self,
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -392,11 +408,11 @@ class Client(ClientWithProject):
 
     def list_datasets(
         self,
-        project: str = None,
+        project: Optional[str] = None,
         include_all: bool = False,
-        filter: str = None,
+        filter: Optional[str] = None,
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -451,7 +467,6 @@ class Client(ClientWithProject):
         span_attributes = {"path": path}
 
         def api_request(*args, **kwargs):
-
             return self._call_api(
                 retry,
                 span_name="BigQuery.listDatasets",
@@ -473,7 +488,9 @@ class Client(ClientWithProject):
             page_size=page_size,
         )
 
-    def dataset(self, dataset_id: str, project: str = None) -> DatasetReference:
+    def dataset(
+        self, dataset_id: str, project: Optional[str] = None
+    ) -> DatasetReference:
         """Deprecated: Construct a reference to a dataset.
 
         .. deprecated:: 1.24.0
@@ -548,7 +565,7 @@ class Client(ClientWithProject):
 
         try:
             BQ_STORAGE_VERSIONS.verify_version()
-        except LegacyBigQueryStorageError as exc:
+        except bq_exceptions.LegacyBigQueryStorageError as exc:
             warnings.warn(str(exc))
             return None
         if bqstorage_client is None:
@@ -865,7 +882,7 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableReference, TableListItem, str],
         policy: Policy,
-        updateMask: str = None,
+        updateMask: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Policy:
@@ -1325,7 +1342,7 @@ class Client(ClientWithProject):
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -1402,7 +1419,7 @@ class Client(ClientWithProject):
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -1479,7 +1496,7 @@ class Client(ClientWithProject):
         self,
         dataset: Union[Dataset, DatasetReference, DatasetListItem, str],
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: Optional[int] = None,
@@ -1837,9 +1854,9 @@ class Client(ClientWithProject):
         self,
         job_id: str,
         retry: retries.Retry,
-        project: str = None,
+        project: Optional[str] = None,
         timeout_ms: Optional[int] = None,
-        location: str = None,
+        location: Optional[str] = None,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> _QueryResults:
         """Get the query results object for a query job.
@@ -1868,7 +1885,10 @@ class Client(ClientWithProject):
         extra_params: Dict[str, Any] = {"maxResults": 0}
 
         if timeout is not None:
-            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
+            if not isinstance(timeout, (int, float)):
+                timeout = _MIN_GET_QUERY_RESULTS_TIMEOUT
+            else:
+                timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if project is None:
             project = self.project
@@ -1908,7 +1928,8 @@ class Client(ClientWithProject):
             resource (Dict): one job resource from API response
 
         Returns:
-            The job instance, constructed via the resource.
+            Union[job.CopyJob, job.ExtractJob, job.LoadJob, job.QueryJob, job.UnknownJob]:
+                The job instance, constructed via the resource.
         """
         config = resource.get("configuration", {})
         if "load" in config:
@@ -1968,15 +1989,8 @@ class Client(ClientWithProject):
             )
             destination = _get_sub_prop(job_config, ["copy", "destinationTable"])
             destination = TableReference.from_api_repr(destination)
-            sources = []
-            source_configs = _get_sub_prop(job_config, ["copy", "sourceTables"])
-            if source_configs is None:
-                source_configs = [_get_sub_prop(job_config, ["copy", "sourceTable"])]
-            for source_config in source_configs:
-                table_ref = TableReference.from_api_repr(source_config)
-                sources.append(table_ref)
             return self.copy_table(
-                sources,
+                [],  # Source table(s) already in job_config resource.
                 destination,
                 job_config=typing.cast(CopyJobConfig, copy_job_config),
                 retry=retry,
@@ -2020,8 +2034,8 @@ class Client(ClientWithProject):
     def get_job(
         self,
         job_id: Union[str, job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob],
-        project: str = None,
-        location: str = None,
+        project: Optional[str] = None,
+        location: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
@@ -2047,7 +2061,8 @@ class Client(ClientWithProject):
                 before using ``retry``.
 
         Returns:
-            Job instance, based on the resource returned by the API.
+            Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
+                Job instance, based on the resource returned by the API.
         """
         extra_params = {"projection": "full"}
 
@@ -2083,8 +2098,8 @@ class Client(ClientWithProject):
     def cancel_job(
         self,
         job_id: str,
-        project: str = None,
-        location: str = None,
+        project: Optional[str] = None,
+        location: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
@@ -2161,12 +2176,12 @@ class Client(ClientWithProject):
 
     def list_jobs(
         self,
-        project: str = None,
+        project: Optional[str] = None,
         parent_job: Optional[Union[QueryJob, str]] = None,
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         all_users: bool = None,
-        state_filter: str = None,
+        state_filter: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         min_creation_time: datetime.datetime = None,
@@ -2277,11 +2292,11 @@ class Client(ClientWithProject):
         self,
         source_uris: Union[str, Sequence[str]],
         destination: Union[Table, TableReference, TableListItem, str],
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: LoadJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[LoadJobConfig] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
@@ -2329,8 +2344,8 @@ class Client(ClientWithProject):
 
         Raises:
             TypeError:
-                If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
-                class.
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.LoadJobConfig` class.
         """
         job_id = _make_job_id(job_id, job_id_prefix)
 
@@ -2347,11 +2362,14 @@ class Client(ClientWithProject):
 
         destination = _table_arg_to_table_ref(destination, default_project=self.project)
 
-        if job_config:
-            job_config = copy.deepcopy(job_config)
-            _verify_job_config_type(job_config, google.cloud.bigquery.job.LoadJobConfig)
+        if job_config is not None:
+            _verify_job_config_type(job_config, LoadJobConfig)
+        else:
+            job_config = job.LoadJobConfig()
 
-        load_job = job.LoadJob(job_ref, source_uris, destination, self, job_config)
+        new_job_config = job_config._fill_from_default(self._default_load_job_config)
+
+        load_job = job.LoadJob(job_ref, source_uris, destination, self, new_job_config)
         load_job._begin(retry=retry, timeout=timeout)
 
         return load_job
@@ -2363,11 +2381,11 @@ class Client(ClientWithProject):
         rewind: bool = False,
         size: Optional[int] = None,
         num_retries: int = _DEFAULT_NUM_RETRIES,
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: LoadJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[LoadJobConfig] = None,
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of this table from a file-like object.
@@ -2423,8 +2441,8 @@ class Client(ClientWithProject):
                 mode.
 
             TypeError:
-                If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
-                class.
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.LoadJobConfig` class.
         """
         job_id = _make_job_id(job_id, job_id_prefix)
 
@@ -2436,10 +2454,15 @@ class Client(ClientWithProject):
 
         destination = _table_arg_to_table_ref(destination, default_project=self.project)
         job_ref = job._JobReference(job_id, project=project, location=location)
-        if job_config:
-            job_config = copy.deepcopy(job_config)
-            _verify_job_config_type(job_config, google.cloud.bigquery.job.LoadJobConfig)
-        load_job = job.LoadJob(job_ref, None, destination, self, job_config)
+
+        if job_config is not None:
+            _verify_job_config_type(job_config, LoadJobConfig)
+        else:
+            job_config = job.LoadJobConfig()
+
+        new_job_config = job_config._fill_from_default(self._default_load_job_config)
+
+        load_job = job.LoadJob(job_ref, None, destination, self, new_job_config)
         job_resource = load_job.to_api_repr()
 
         if rewind:
@@ -2466,11 +2489,11 @@ class Client(ClientWithProject):
         dataframe: "pandas.DataFrame",
         destination: Union[Table, TableReference, str],
         num_retries: int = _DEFAULT_NUM_RETRIES,
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: LoadJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[LoadJobConfig] = None,
         parquet_compression: str = "snappy",
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
@@ -2563,43 +2586,40 @@ class Client(ClientWithProject):
                 If a usable parquet engine cannot be found. This method
                 requires :mod:`pyarrow` to be installed.
             TypeError:
-                If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
-                class.
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.LoadJobConfig` class.
         """
         job_id = _make_job_id(job_id, job_id_prefix)
 
-        if job_config:
-            _verify_job_config_type(job_config, google.cloud.bigquery.job.LoadJobConfig)
-            # Make a copy so that the job config isn't modified in-place.
-            job_config_properties = copy.deepcopy(job_config._properties)
-            job_config = job.LoadJobConfig()
-            job_config._properties = job_config_properties
-
+        if job_config is not None:
+            _verify_job_config_type(job_config, LoadJobConfig)
         else:
             job_config = job.LoadJobConfig()
 
+        new_job_config = job_config._fill_from_default(self._default_load_job_config)
+
         supported_formats = {job.SourceFormat.CSV, job.SourceFormat.PARQUET}
-        if job_config.source_format is None:
+        if new_job_config.source_format is None:
             # default value
-            job_config.source_format = job.SourceFormat.PARQUET
+            new_job_config.source_format = job.SourceFormat.PARQUET
 
         if (
-            job_config.source_format == job.SourceFormat.PARQUET
-            and job_config.parquet_options is None
+            new_job_config.source_format == job.SourceFormat.PARQUET
+            and new_job_config.parquet_options is None
         ):
             parquet_options = ParquetOptions()
             # default value
             parquet_options.enable_list_inference = True
-            job_config.parquet_options = parquet_options
+            new_job_config.parquet_options = parquet_options
 
-        if job_config.source_format not in supported_formats:
+        if new_job_config.source_format not in supported_formats:
             raise ValueError(
                 "Got unexpected source_format: '{}'. Currently, only PARQUET and CSV are supported".format(
-                    job_config.source_format
+                    new_job_config.source_format
                 )
             )
 
-        if pyarrow is None and job_config.source_format == job.SourceFormat.PARQUET:
+        if pyarrow is None and new_job_config.source_format == job.SourceFormat.PARQUET:
             # pyarrow is now the only supported parquet engine.
             raise ValueError("This method requires pyarrow to be installed")
 
@@ -2610,8 +2630,8 @@ class Client(ClientWithProject):
         # schema, and check if dataframe schema is compatible with it - except
         # for WRITE_TRUNCATE jobs, the existing schema does not matter then.
         if (
-            not job_config.schema
-            and job_config.write_disposition != job.WriteDisposition.WRITE_TRUNCATE
+            not new_job_config.schema
+            and new_job_config.write_disposition != job.WriteDisposition.WRITE_TRUNCATE
         ):
             try:
                 table = self.get_table(destination)
@@ -2622,7 +2642,7 @@ class Client(ClientWithProject):
                     name
                     for name, _ in _pandas_helpers.list_columns_and_indexes(dataframe)
                 )
-                job_config.schema = [
+                new_job_config.schema = [
                     # Field description and policy tags are not needed to
                     # serialize a data frame.
                     SchemaField(
@@ -2636,11 +2656,11 @@ class Client(ClientWithProject):
                     if field.name in columns_and_indexes
                 ]
 
-        job_config.schema = _pandas_helpers.dataframe_to_bq_schema(
-            dataframe, job_config.schema
+        new_job_config.schema = _pandas_helpers.dataframe_to_bq_schema(
+            dataframe, new_job_config.schema
         )
 
-        if not job_config.schema:
+        if not new_job_config.schema:
             # the schema could not be fully detected
             warnings.warn(
                 "Schema could not be detected for all columns. Loading from a "
@@ -2651,30 +2671,19 @@ class Client(ClientWithProject):
             )
 
         tmpfd, tmppath = tempfile.mkstemp(
-            suffix="_job_{}.{}".format(job_id[:8], job_config.source_format.lower())
+            suffix="_job_{}.{}".format(job_id[:8], new_job_config.source_format.lower())
         )
         os.close(tmpfd)
 
         try:
-
-            if job_config.source_format == job.SourceFormat.PARQUET:
-                if _PYARROW_VERSION in _PYARROW_BAD_VERSIONS:
-                    msg = (
-                        "Loading dataframe data in PARQUET format with pyarrow "
-                        f"{_PYARROW_VERSION} can result in data corruption. It is "
-                        "therefore *strongly* advised to use a different pyarrow "
-                        "version or a different source format. "
-                        "See: https://github.com/googleapis/python-bigquery/issues/781"
-                    )
-                    warnings.warn(msg, category=RuntimeWarning)
-
-                if job_config.schema:
+            if new_job_config.source_format == job.SourceFormat.PARQUET:
+                if new_job_config.schema:
                     if parquet_compression == "snappy":  # adjust the default value
                         parquet_compression = parquet_compression.upper()
 
                     _pandas_helpers.dataframe_to_parquet(
                         dataframe,
-                        job_config.schema,
+                        new_job_config.schema,
                         tmppath,
                         parquet_compression=parquet_compression,
                         parquet_use_compliant_nested_type=True,
@@ -2686,13 +2695,12 @@ class Client(ClientWithProject):
                         compression=parquet_compression,
                         **(
                             {"use_compliant_nested_type": True}
-                            if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+                            if _versions_helpers.PYARROW_VERSIONS.use_compliant_nested_type
                             else {}
                         ),
                     )
 
             else:
-
                 dataframe.to_csv(
                     tmppath,
                     index=False,
@@ -2714,7 +2722,7 @@ class Client(ClientWithProject):
                     job_id_prefix=job_id_prefix,
                     location=location,
                     project=project,
-                    job_config=job_config,
+                    job_config=new_job_config,
                     timeout=timeout,
                 )
 
@@ -2726,11 +2734,11 @@ class Client(ClientWithProject):
         json_rows: Iterable[Dict[str, Any]],
         destination: Union[Table, TableReference, TableListItem, str],
         num_retries: int = _DEFAULT_NUM_RETRIES,
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: LoadJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[LoadJobConfig] = None,
         timeout: ResumableTimeoutType = DEFAULT_TIMEOUT,
     ) -> job.LoadJob:
         """Upload the contents of a table from a JSON string or dict.
@@ -2790,22 +2798,22 @@ class Client(ClientWithProject):
 
         Raises:
             TypeError:
-                If ``job_config`` is not an instance of :class:`~google.cloud.bigquery.job.LoadJobConfig`
-                class.
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.LoadJobConfig` class.
         """
         job_id = _make_job_id(job_id, job_id_prefix)
 
-        if job_config:
-            _verify_job_config_type(job_config, google.cloud.bigquery.job.LoadJobConfig)
-            # Make a copy so that the job config isn't modified in-place.
-            job_config = copy.deepcopy(job_config)
+        if job_config is not None:
+            _verify_job_config_type(job_config, LoadJobConfig)
         else:
             job_config = job.LoadJobConfig()
 
-        job_config.source_format = job.SourceFormat.NEWLINE_DELIMITED_JSON
+        new_job_config = job_config._fill_from_default(self._default_load_job_config)
 
-        if job_config.schema is None:
-            job_config.autodetect = True
+        new_job_config.source_format = job.SourceFormat.NEWLINE_DELIMITED_JSON
+
+        if new_job_config.schema is None:
+            new_job_config.autodetect = True
 
         if project is None:
             project = self.project
@@ -2827,7 +2835,7 @@ class Client(ClientWithProject):
             job_id_prefix=job_id_prefix,
             location=location,
             project=project,
-            job_config=job_config,
+            job_config=new_job_config,
             timeout=timeout,
         )
 
@@ -3039,11 +3047,11 @@ class Client(ClientWithProject):
             Sequence[Union[Table, TableReference, TableListItem, str]],
         ],
         destination: Union[Table, TableReference, TableListItem, str],
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: CopyJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[CopyJobConfig] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> job.CopyJob:
@@ -3145,11 +3153,11 @@ class Client(ClientWithProject):
         self,
         source: Union[Table, TableReference, TableListItem, Model, ModelReference, str],
         destination_uris: Union[str, Sequence[str]],
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
-        job_config: ExtractJobConfig = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        job_config: Optional[ExtractJobConfig] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         source_type: str = "Table",
@@ -3244,11 +3252,11 @@ class Client(ClientWithProject):
     def query(
         self,
         query: str,
-        job_config: QueryJobConfig = None,
-        job_id: str = None,
-        job_id_prefix: str = None,
-        location: str = None,
-        project: str = None,
+        job_config: Optional[QueryJobConfig] = None,
+        job_id: Optional[str] = None,
+        job_id_prefix: Optional[str] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
@@ -3538,7 +3546,7 @@ class Client(ClientWithProject):
         ] = AutoRowIDs.GENERATE_UUID,
         skip_invalid_rows: bool = None,
         ignore_unknown_values: bool = None,
-        template_suffix: str = None,
+        template_suffix: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Sequence[dict]:
@@ -3730,7 +3738,7 @@ class Client(ClientWithProject):
         table: Union[Table, TableListItem, TableReference, str],
         selected_fields: Sequence[SchemaField] = None,
         max_results: Optional[int] = None,
-        page_token: str = None,
+        page_token: Optional[str] = None,
         start_index: Optional[int] = None,
         page_size: Optional[int] = None,
         retry: retries.Retry = DEFAULT_RETRY,
@@ -3897,7 +3905,10 @@ class Client(ClientWithProject):
         }
 
         if timeout is not None:
-            timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
+            if not isinstance(timeout, (int, float)):
+                timeout = _MIN_GET_QUERY_RESULTS_TIMEOUT
+            else:
+                timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
 
         if start_index is not None:
             params["startIndex"] = start_index
@@ -3932,12 +3943,13 @@ class Client(ClientWithProject):
         """
         json.dump(schema_list, file_obj, indent=2, sort_keys=True)
 
-    def schema_from_json(self, file_or_path: "PathType"):
+    def schema_from_json(self, file_or_path: "PathType") -> List[SchemaField]:
         """Takes a file object or file path that contains json that describes
         a table schema.
 
         Returns:
-            List of schema field objects.
+            List[SchemaField]:
+                List of :class:`~google.cloud.bigquery.schema.SchemaField` objects.
         """
         if isinstance(file_or_path, io.IOBase):
             return self._schema_from_json_file_object(file_or_path)

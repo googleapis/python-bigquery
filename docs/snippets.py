@@ -125,6 +125,8 @@ def test_create_partitioned_table(client, to_delete):
     dataset = client.create_dataset(dataset_ref)
     to_delete.append(dataset)
 
+    # TODO(tswast): remove this snippet once cloud.google.com is updated to use
+    # samples/snippets/create_partitioned_table.py
     # [START bigquery_create_table_partitioned]
     # from google.cloud import bigquery
     # client = bigquery.Client()
@@ -207,50 +209,6 @@ def test_update_table_description(client, to_delete):
         "https://github.com/GoogleCloudPlatform/google-cloud-python/issues/5589"
     )
 )
-def test_update_table_expiration(client, to_delete):
-    """Update a table's expiration time."""
-    dataset_id = "update_table_expiration_dataset_{}".format(_millis())
-    table_id = "update_table_expiration_table_{}".format(_millis())
-    project = client.project
-    dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    dataset = bigquery.Dataset(dataset_ref)
-    client.create_dataset(dataset)
-    to_delete.append(dataset)
-
-    table = bigquery.Table(dataset.table(table_id), schema=SCHEMA)
-    table = client.create_table(table)
-
-    # [START bigquery_update_table_expiration]
-    import datetime
-
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-    # project = client.project
-    # dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    # table_ref = dataset_ref.table('my_table')
-    # table = client.get_table(table_ref)  # API request
-
-    assert table.expires is None
-
-    # set table to expire 5 days from now
-    expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
-        days=5
-    )
-    table.expires = expiration
-    table = client.update_table(table, ["expires"])  # API request
-
-    # expiration is stored in milliseconds
-    margin = datetime.timedelta(microseconds=1000)
-    assert expiration - margin <= table.expires <= expiration + margin
-    # [END bigquery_update_table_expiration]
-
-
-@pytest.mark.skip(
-    reason=(
-        "update_table() is flaky "
-        "https://github.com/GoogleCloudPlatform/google-cloud-python/issues/5589"
-    )
-)
 def test_relax_column(client, to_delete):
     """Updates a schema field from required to nullable."""
     dataset_id = "relax_column_dataset_{}".format(_millis())
@@ -261,6 +219,8 @@ def test_relax_column(client, to_delete):
     dataset = client.create_dataset(dataset)
     to_delete.append(dataset)
 
+    # TODO(tswast): remove code sample once references to it on
+    # cloud.google.com are updated to samples/snippets/relax_column.py
     # [START bigquery_relax_column]
     # from google.cloud import bigquery
     # client = bigquery.Client()
@@ -613,48 +573,6 @@ def test_client_query_total_rows(client, capsys):
 
     out, _ = capsys.readouterr()
     assert "Got 100 rows." in out
-
-
-def test_query_external_gcs_permanent_table(client, to_delete):
-    dataset_id = "query_external_gcs_{}".format(_millis())
-    project = client.project
-    dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    dataset = bigquery.Dataset(dataset_ref)
-    client.create_dataset(dataset)
-    to_delete.append(dataset)
-
-    # [START bigquery_query_external_gcs_perm]
-    # from google.cloud import bigquery
-    # client = bigquery.Client()
-    # dataset_id = 'my_dataset'
-
-    # Configure the external data source
-    dataset_ref = bigquery.DatasetReference(project, dataset_id)
-    table_id = "us_states"
-    schema = [
-        bigquery.SchemaField("name", "STRING"),
-        bigquery.SchemaField("post_abbr", "STRING"),
-    ]
-    table = bigquery.Table(dataset_ref.table(table_id), schema=schema)
-    external_config = bigquery.ExternalConfig("CSV")
-    external_config.source_uris = [
-        "gs://cloud-samples-data/bigquery/us-states/us-states.csv"
-    ]
-    external_config.options.skip_leading_rows = 1  # optionally skip header row
-    table.external_data_configuration = external_config
-
-    # Create a permanent table linked to the GCS file
-    table = client.create_table(table)  # API request
-
-    # Example query to find states starting with 'W'
-    sql = 'SELECT * FROM `{}.{}` WHERE name LIKE "W%"'.format(dataset_id, table_id)
-
-    query_job = client.query(sql)  # API request
-
-    w_states = list(query_job)  # Waits for query to finish
-    print("There are {} states with names starting with W.".format(len(w_states)))
-    # [END bigquery_query_external_gcs_perm]
-    assert len(w_states) == 4
 
 
 def test_ddl_create_view(client, to_delete, capsys):

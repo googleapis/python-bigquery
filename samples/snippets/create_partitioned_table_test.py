@@ -14,19 +14,21 @@
 
 import typing
 
-from .. import create_table_external_data_configuration
+import create_partitioned_table
 
 if typing.TYPE_CHECKING:
     import pytest
 
 
-def test_create_table_external_data_configuration(
+def test_create_partitioned_table(
     capsys: "pytest.CaptureFixture[str]",
     random_table_id: str,
 ) -> None:
+    table = create_partitioned_table.create_partitioned_table(random_table_id)
 
-    create_table_external_data_configuration.create_table_external_data_configuration(
-        random_table_id
-    )
     out, _ = capsys.readouterr()
-    assert "Created table with external source format AVRO" in out
+    assert "Created" in out
+    assert random_table_id in out
+
+    assert table.time_partitioning.type_ == "DAY"
+    assert table.time_partitioning.field == "date"

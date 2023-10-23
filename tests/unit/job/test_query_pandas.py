@@ -17,6 +17,7 @@ import copy
 import json
 
 import mock
+import pkg_resources
 import pytest
 
 
@@ -48,6 +49,11 @@ from ..helpers import make_connection
 from .helpers import _make_client
 from .helpers import _make_job_resource
 
+if pandas is not None:
+    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
+else:
+    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
+
 pandas = pytest.importorskip("pandas")
 
 try:
@@ -59,12 +65,6 @@ except ImportError:  # pragma: NO COVER
 
 @pytest.fixture
 def table_read_options_kwarg():
-    # Create a BigQuery Storage table read options object with pyarrow compression
-    # enabled if a recent-enough version of google-cloud-bigquery-storage dependency is
-    # installed to support the compression.
-    if not hasattr(bigquery_storage, "ArrowSerializationOptions"):
-        return {}
-
     read_options = bigquery_storage.ReadSession.TableReadOptions(
         arrow_serialization_options=bigquery_storage.ArrowSerializationOptions(
             buffer_compression=bigquery_storage.ArrowSerializationOptions.CompressionCodec.LZ4_FRAME
@@ -652,6 +652,9 @@ def test_to_dataframe_bqstorage_no_pyarrow_compression():
     )
 
 
+@pytest.mark.skipif(
+    PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
+)
 @pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 def test_to_dataframe_column_dtypes():
     from google.cloud.bigquery.job import QueryJob as target_class

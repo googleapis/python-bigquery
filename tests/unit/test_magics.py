@@ -25,6 +25,7 @@ from tests.unit.helpers import make_connection
 from test_utils.imports import maybe_fail_import
 
 from google.cloud import bigquery
+from google.cloud.bigquery import exceptions as bq_exceptions
 from google.cloud.bigquery import job
 from google.cloud.bigquery import table
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
@@ -357,8 +358,6 @@ def test__make_bqstorage_client_true_raises_import_error(missing_bq_storage):
     bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 def test__make_bqstorage_client_true_obsolete_dependency():
-    from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
     credentials_mock = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
@@ -368,7 +367,7 @@ def test__make_bqstorage_client_true_obsolete_dependency():
 
     patcher = mock.patch(
         "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
-        side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+        side_effect=bq_exceptions.LegacyBigQueryStorageError("BQ Storage too old"),
     )
     with patcher, warnings.catch_warnings(record=True) as warned:
         got = magics._make_bqstorage_client(test_client, True, {})
@@ -638,9 +637,9 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
         google.cloud.bigquery.job.QueryJob, instance=True
     )
     query_job_mock.to_dataframe.return_value = result
-    with run_query_patch as run_query_mock, bqstorage_client_patch, warnings.catch_warnings(
-        record=True
-    ) as warned:
+    with run_query_patch as run_query_mock, (
+        bqstorage_client_patch
+    ), warnings.catch_warnings(record=True) as warned:
         run_query_mock.return_value = query_job_mock
 
         return_value = ip.run_cell_magic("bigquery", "--use_bqstorage_api", sql)
@@ -801,7 +800,9 @@ def test_bigquery_magic_w_max_results_query_job_results_fails():
 
     with pytest.raises(
         OSError
-    ), client_query_patch as client_query_mock, default_patch, close_transports_patch as close_transports:
+    ), client_query_patch as client_query_mock, (
+        default_patch
+    ), close_transports_patch as close_transports:
         client_query_mock.return_value = query_job_mock
         ip.run_cell_magic("bigquery", "--max_results=5", sql)
 

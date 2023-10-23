@@ -1358,8 +1358,6 @@ class TestBigQuery(unittest.TestCase):
         self.assertIn("Bharney Rhubble", got)
 
     def test_copy_table(self):
-        pytest.skip("b/210907595: copy fails for shakespeare table")
-
         # If we create a new table to copy from, the test won't work
         # because the new rows will be stored in the streaming buffer,
         # and copy jobs don't read the streaming buffer.
@@ -1706,8 +1704,8 @@ class TestBigQuery(unittest.TestCase):
 
         cursor.execute(
             """
-            SELECT id, `by`, time_ts
-            FROM `bigquery-public-data.hacker_news.comments`
+            SELECT id, `by`, timestamp
+            FROM `bigquery-public-data.hacker_news.full`
             ORDER BY `id` ASC
             LIMIT 100000
         """
@@ -1717,27 +1715,28 @@ class TestBigQuery(unittest.TestCase):
 
         field_name = operator.itemgetter(0)
         fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
-
         # Since DB API is not thread safe, only a single result stream should be
         # requested by the BQ storage client, meaning that results should arrive
         # in the sorted order.
+
         expected_data = [
             [
-                ("by", "sama"),
-                ("id", 15),
-                ("time_ts", datetime.datetime(2006, 10, 9, 19, 51, 1, tzinfo=UTC)),
+                ("by", "pg"),
+                ("id", 1),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 21, 51, tzinfo=UTC)),
             ],
             [
-                ("by", "pg"),
-                ("id", 17),
-                ("time_ts", datetime.datetime(2006, 10, 9, 19, 52, 45, tzinfo=UTC)),
+                ("by", "phyllis"),
+                ("id", 2),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 30, 28, tzinfo=UTC)),
             ],
             [
-                ("by", "pg"),
-                ("id", 22),
-                ("time_ts", datetime.datetime(2006, 10, 10, 2, 18, 22, tzinfo=UTC)),
+                ("by", "phyllis"),
+                ("id", 3),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 40, 33, tzinfo=UTC)),
             ],
         ]
+
         self.assertEqual(fetched_data, expected_data)
 
     def test_dbapi_dry_run_query(self):
@@ -1769,8 +1768,8 @@ class TestBigQuery(unittest.TestCase):
 
         cursor.execute(
             """
-            SELECT id, `by`, time_ts
-            FROM `bigquery-public-data.hacker_news.comments`
+            SELECT id, `by`, timestamp
+            FROM `bigquery-public-data.hacker_news.full`
             ORDER BY `id` ASC
             LIMIT 100000
         """
@@ -2319,8 +2318,7 @@ def _table_exists(t):
         return False
 
 
-def test_dbapi_create_view(dataset_id):
-
+def test_dbapi_create_view(dataset_id: str):
     query = f"""
     CREATE VIEW {dataset_id}.dbapi_create_view
     AS SELECT name, SUM(number) AS total
@@ -2332,7 +2330,7 @@ def test_dbapi_create_view(dataset_id):
     assert Config.CURSOR.rowcount == 0, "expected 0 rows"
 
 
-def test_parameterized_types_round_trip(dataset_id):
+def test_parameterized_types_round_trip(dataset_id: str):
     client = Config.CLIENT
     table_id = f"{dataset_id}.test_parameterized_types_round_trip"
     fields = (
@@ -2358,7 +2356,7 @@ def test_parameterized_types_round_trip(dataset_id):
     assert tuple(s._key()[:2] for s in table2.schema) == fields
 
 
-def test_table_snapshots(dataset_id):
+def test_table_snapshots(dataset_id: str):
     from google.cloud.bigquery import CopyJobConfig
     from google.cloud.bigquery import OperationType
 
@@ -2429,7 +2427,7 @@ def test_table_snapshots(dataset_id):
     assert rows == [(1, "one"), (2, "two")]
 
 
-def test_table_clones(dataset_id):
+def test_table_clones(dataset_id: str):
     from google.cloud.bigquery import CopyJobConfig
     from google.cloud.bigquery import OperationType
 
@@ -2455,7 +2453,7 @@ def test_table_clones(dataset_id):
     # Now create a clone before modifying the original table data.
     copy_config = CopyJobConfig()
     copy_config.operation_type = OperationType.CLONE
-    copy_config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+    copy_config.write_disposition = bigquery.WriteDisposition.WRITE_EMPTY
 
     copy_job = client.copy_table(
         sources=table_path_source,

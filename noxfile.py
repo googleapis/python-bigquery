@@ -24,7 +24,7 @@ import nox
 
 MYPY_VERSION = "mypy==0.910"
 PYTYPE_VERSION = "pytype==2021.4.9"
-BLACK_VERSION = "black==22.3.0"
+BLACK_VERSION = "black==23.7.0"
 BLACK_PATHS = (
     "docs",
     "google",
@@ -303,6 +303,10 @@ def prerelease_deps(session):
     session.install(
         "--pre",
         "--upgrade",
+        "IPython",
+        "ipykernel",
+        "ipywidgets",
+        "tqdm",
         "git+https://github.com/pypa/packaging.git",
     )
 
@@ -321,7 +325,6 @@ def prerelease_deps(session):
         "google-cloud-datacatalog",
         "google-cloud-storage",
         "google-cloud-testutils",
-        "IPython",
         "mock",
         "psutil",
         "pytest",
@@ -356,6 +359,7 @@ def prerelease_deps(session):
     session.run("python", "-c", "import grpc; print(grpc.__version__)")
     session.run("python", "-c", "import pandas; print(pandas.__version__)")
     session.run("python", "-c", "import pyarrow; print(pyarrow.__version__)")
+    session.run("python", "-m", "pip", "freeze")
 
     # Run all tests, except a few samples tests which require extra dependencies.
     session.run("py.test", "tests/unit")
@@ -398,7 +402,7 @@ def blacken(session):
     session.run("black", *BLACK_PATHS)
 
 
-@nox.session(python=DEFAULT_PYTHON_VERSION)
+@nox.session(python="3.9")
 def docs(session):
     """Build the docs."""
 
@@ -421,13 +425,15 @@ def docs(session):
     )
 
 
-@nox.session(python=DEFAULT_PYTHON_VERSION)
+@nox.session(python="3.9")
 def docfx(session):
     """Build the docfx yaml files for this library."""
 
     session.install("-e", ".")
     session.install(
-        "sphinx==4.0.2", "alabaster", "recommonmark", "gcp-sphinx-docfx-yaml"
+        "gcp-sphinx-docfx-yaml",
+        "alabaster",
+        "recommonmark",
     )
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)

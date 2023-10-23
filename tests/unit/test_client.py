@@ -8690,6 +8690,37 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_nulls_for_required_cols(self):
+        """Test that a DataFrame with null columns can be uploaded if a
+        BigQuery schema is specified.
+
+        See: https://github.com/googleapis/google-cloud-python/issues/7370
+        """
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+
+        client = self._make_client()
+        records = [{"name": None, "age": None}, {"name": None, "age": None}]
+        dataframe = pandas.DataFrame(records, columns=["name", "age"])
+        schema = [
+            SchemaField("name", "STRING"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        job_config = job.LoadJobConfig(schema=schema)
+
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+        with load_patch as load_table_from_file, pytest.raises(ValueError) as e:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, job_config=job_config, location=self.LOCATION
+            )
+
+            assert str(e.value) == "required field age can not be nulls"
+
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_load_table_from_dataframe_w_invaild_job_config(self):
         from google.cloud.bigquery import job
 

@@ -380,6 +380,21 @@ def bq_to_arrow_array(series, bq_field):
     return pyarrow.Array.from_pandas(series, type=arrow_type)
 
 
+def _check_nullability(arrow_fields, dataframe):
+    """Throws error if dataframe has null values and column doesn't allow nullable"""
+    if dataframe.index.name:
+        dataframe[dataframe.index.name] = dataframe.index
+    for arrow_field in arrow_fields:
+        col_name = arrow_field.name
+        is_col_nullable = arrow_field.nullable
+        col_has_nulls = dataframe[col_name].isnull().values.any()
+        print(col_name)
+        print(is_col_nullable)
+        print(dataframe[col_name].isnull().values.any())
+        if not is_col_nullable and col_has_nulls:
+            raise ValueError(f"required field {col_name} can not be nulls")
+
+
 def get_column_or_index(dataframe, name):
     """Return a column or index as a pandas series."""
     if name in dataframe.columns:
@@ -663,6 +678,7 @@ def dataframe_to_arrow(dataframe, bq_schema):
         )
         arrow_fields.append(bq_to_arrow_field(bq_field, arrow_arrays[-1].type))
 
+    _check_nullability(arrow_fields, dataframe)
     if all((field is not None for field in arrow_fields)):
         return pyarrow.Table.from_arrays(
             arrow_arrays, schema=pyarrow.schema(arrow_fields)

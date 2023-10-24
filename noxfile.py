@@ -192,9 +192,12 @@ def system(session):
     session.install("-e", f".{extras}", "-c", constraints_path)
 
     # Run py.test against the system tests.
-    session.run("py.test", "--quiet", 
-                #os.path.join("tests", "system"),
-                *session.posargs)
+    session.run(
+        "py.test",
+        "--quiet",
+        # os.path.join("tests", "system"),
+        *session.posargs,
+    )
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
@@ -275,7 +278,15 @@ def cover(session):
     """
     session.install("coverage", "pytest-cov")
     import sys
-    session.run("coverage", "report", "--show-missing", "--fail-under=100", "--branch", "--data-file=sys.stdout")
+
+    session.run(
+        "coverage",
+        "report",
+        "--show-missing",
+        "--fail-under=100",
+        "--branch",
+        "--data-file=sys.stdout",
+    )
     session.run("coverage", "erase")
 
 

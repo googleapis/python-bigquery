@@ -99,7 +99,7 @@ def test_query_w_timeout(bigquery_client, query_api_method):
 
 def test_job_timeout_ms():
     # Confirm that default status is None.
-    job_config = bigquery.QueryJobConfig()
+    job_config = bigquery._JobConfig()
     assert job_config.job_timeout_ms is None
 
     # Confirm that integers get converted to strings.

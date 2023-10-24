@@ -100,6 +100,32 @@ def test_raises_error_w_legacy_bqstorage():
 @pytest.mark.skipif(
     bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
 )
+def test_returns_none_with_legacy_bqstorage():
+    with mock.patch("google.cloud.bigquery_storage.__version__", new="1.9.9"):
+        try:
+            bqstorage_versions = _versions_helpers.BQStorageVersions()
+            bq_storage = bqstorage_versions.try_import()
+        except exceptions.LegacyBigQueryStorageError:  # pragma: NO COVER
+            raise ("Legacy error raised when raise_if_error == False.")
+        assert bq_storage is None
+
+
+@pytest.mark.skipif(
+    bigquery_storage is not None,
+    reason="Tests behavior when `google-cloud-bigquery-storage` isn't installed",
+)
+def test_returns_none_with_bqstorage_uninstalled():
+    try:
+        bqstorage_versions = _versions_helpers.BQStorageVersions()
+        bq_storage = bqstorage_versions.try_import()
+    except exceptions.LegacyBigQueryStorageError:  # pragma: NO COVER
+        raise ("NotFound error raised when raise_if_error == False.")
+    assert bq_storage is None
+
+
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
+)
 def test_raises_error_w_unknown_bqstorage_version():
     with mock.patch("google.cloud.bigquery_storage", autospec=True) as fake_module:
         del fake_module.__version__

@@ -55,12 +55,7 @@ else:  # pragma: NO COVER
     # used in test parameterization.
     pyarrow = mock.Mock()
 
-try:
-    from google.cloud import bigquery_storage
-
-    _versions_helpers.BQ_STORAGE_VERSIONS.verify_version()
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
+bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import()
 
 PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
 

@@ -53,7 +53,7 @@ class PyarrowVersions:
         return self.installed_version.major >= 4
 
     def try_import(self, raise_if_error: bool = False) -> Any:
-        """Verify that a recent enough version of pyarrow extra is installed.
+        """Verifies that a recent enough version of pyarrow extra is installed.
 
         The function assumes that pyarrow extra is installed, and should thus
         be used in places where this assumption holds.
@@ -126,50 +126,47 @@ class BQStorageVersions:
         """
         return self.installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION
 
-    def verify_version(self):
-        """Verify that a recent enough version of BigQuery Storage extra is
-        installed.
+    def try_import(self, raise_if_error: bool = False) -> Any:
+        """Tries to import the bigquery_storage module, and returns results
+        accordingly. It also verifies the module version is recent enough.
 
-        The function assumes that google-cloud-bigquery-storage extra is
-        installed, and should thus be used in places where this assumption
-        holds.
+        If the import succeeds, returns the ``bigquery_storage`` module.
 
-        Because `pip` can install an outdated version of this extra despite the
-        constraints in `setup.py`, the calling code can use this helper to
-        verify the version compatibility at runtime.
-
-        Raises:
-            exceptions.LegacyBigQueryStorageError:
-                If the google-cloud-bigquery-storage package is outdated.
-        """
-        if self.installed_version < _MIN_BQ_STORAGE_VERSION:
-            msg = (
-                "Dependency google-cloud-bigquery-storage is outdated, "
-                f"please upgrade it to version >= {_MIN_BQ_STORAGE_VERSION} "
-                f"(version found: {self.installed_version})."
-            )
-            raise exceptions.LegacyBigQueryStorageError(msg)
-
-    def try_import(self) -> Any:
-        """Tries to import the bigquery_storage module, and returns an
-        error if BigQuery Storage extra is not installed.
+        If the import fails,
+        returns ``None`` when ``raise_if_error == False``,
+        raises Error when ``raise_if_error == True``.
 
         Returns:
-            The ``bigquery_storage`` module.
+            The ``bigquery_storage`` module or ``None``.
 
         Raises:
-            BigQueryStorageNotFoundError:
-                If google-cloud-bigquery-storage is not installed.
+            exceptions.BigQueryStorageNotFoundError:
+                If google-cloud-bigquery-storage is not installed
+            exceptions.LegacyBigQueryStorageError:
+                If google-cloud-bigquery-storage package is outdated
         """
         try:
             from google.cloud import bigquery_storage  # type: ignore
         except ImportError:
-            msg = (
-                "Package google-cloud-bigquery-storage not found. "
-                "Install google-cloud-bigquery-storage version >= "
-                f"{_MIN_BQ_STORAGE_VERSION}."
-            )
-            raise exceptions.BigQueryStorageNotFoundError(msg)
+            if raise_if_error:
+                msg = (
+                    "Package google-cloud-bigquery-storage not found. "
+                    "Install google-cloud-bigquery-storage version >= "
+                    f"{_MIN_BQ_STORAGE_VERSION}."
+                )
+                raise exceptions.BigQueryStorageNotFoundError(msg)
+            return None
+
+        if self.installed_version < _MIN_BQ_STORAGE_VERSION:
+            if raise_if_error:
+                msg = (
+                    "Dependency google-cloud-bigquery-storage is outdated, "
+                    f"please upgrade it to version >= {_MIN_BQ_STORAGE_VERSION} "
+                    f"(version found: {self.installed_version})."
+                )
+                raise exceptions.LegacyBigQueryStorageError(msg)
+            return None
+
         return bigquery_storage
 
 

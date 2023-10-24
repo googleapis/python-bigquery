@@ -1594,7 +1594,7 @@ class RowIterator(HTTPIterator):
         return self._first_page_response.get(self._next_token) is None
 
     def _validate_bqstorage(self, bqstorage_client, create_bqstorage_client):
-        """Returns if the BigQuery Storage API can be used.
+        """Returns True if the BigQuery Storage API can be used.
 
         Returns:
             bool
@@ -1611,12 +1611,9 @@ class RowIterator(HTTPIterator):
             return False
 
         try:
-            _versions_helpers.BQ_STORAGE_VERSIONS.try_import()
+            _versions_helpers.BQ_STORAGE_VERSIONS.try_import(raise_if_error=True)
         except bq_exceptions.BigQueryStorageNotFoundError:
             return False
-
-        try:
-            _versions_helpers.BQ_STORAGE_VERSIONS.verify_version()
         except bq_exceptions.LegacyBigQueryStorageError as exc:
             warnings.warn(str(exc))
             return False

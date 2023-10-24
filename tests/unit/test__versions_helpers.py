@@ -82,7 +82,7 @@ def test_raises_no_error_w_recent_bqstorage():
     with mock.patch("google.cloud.bigquery_storage.__version__", new="2.0.0"):
         try:
             bqstorage_versions = _versions_helpers.BQStorageVersions()
-            bqstorage_versions.verify_version()
+            bqstorage_versions.try_import(raise_if_error=True)
         except exceptions.LegacyBigQueryStorageError:  # pragma: NO COVER
             raise ("Legacy error raised with a non-legacy dependency version.")
 
@@ -94,7 +94,7 @@ def test_raises_error_w_legacy_bqstorage():
     with mock.patch("google.cloud.bigquery_storage.__version__", new="1.9.9"):
         with pytest.raises(exceptions.LegacyBigQueryStorageError):
             bqstorage_versions = _versions_helpers.BQStorageVersions()
-            bqstorage_versions.verify_version()
+            bqstorage_versions.try_import(raise_if_error=True)
 
 
 @pytest.mark.skipif(
@@ -106,7 +106,7 @@ def test_raises_error_w_unknown_bqstorage_version():
         error_pattern = r"version found: 0.0.0"
         with pytest.raises(exceptions.LegacyBigQueryStorageError, match=error_pattern):
             bqstorage_versions = _versions_helpers.BQStorageVersions()
-            bqstorage_versions.verify_version()
+            bqstorage_versions.try_import(raise_if_error=True)
 
 
 @pytest.mark.skipif(

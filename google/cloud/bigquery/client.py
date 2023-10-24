@@ -553,20 +553,23 @@ class Client(ClientWithProject):
         Returns:
             A BigQuery Storage API client.
         """
+
         try:
-            bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import()
+            bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import(
+                raise_if_error=True
+            )
         except bq_exceptions.BigQueryStorageNotFoundError:
             warnings.warn(
                 "Cannot create BigQuery Storage client, the dependency "
                 "google-cloud-bigquery-storage is not installed."
             )
             return None
-
-        try:
-            _versions_helpers.BQ_STORAGE_VERSIONS.verify_version()
         except bq_exceptions.LegacyBigQueryStorageError as exc:
-            warnings.warn(str(exc))
+            warnings.warn(
+                "Dependency google-cloud-bigquery-storage is outdated: " + str(exc)
+            )
             return None
+
         if bqstorage_client is None:
             bqstorage_client = bigquery_storage.BigQueryReadClient(
                 credentials=self._credentials,

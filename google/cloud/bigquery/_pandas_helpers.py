@@ -515,6 +515,10 @@ def augment_schema(dataframe, current_bq_schema):
         else:
             detected_mode = field.mode
             detected_type = _pyarrow_helpers.arrow_scalar_ids_to_bq(arrow_table.type.id)
+            if detected_type == "NUMERIC" and (
+                arrow_table.type.precision > 38 or arrow_table.type.scale > 9
+            ):
+                detected_type = "BIGNUMERIC"
 
         if detected_type is None:
             unknown_type_fields.append(field)

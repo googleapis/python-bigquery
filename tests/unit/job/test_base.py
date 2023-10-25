@@ -1228,3 +1228,9 @@ class Test_JobConfig(unittest.TestCase):
         job_config = self._make_one()
         job_config.labels = labels
         self.assertEqual(job_config._properties["labels"], labels)
+
+    def test_job_timeout_ms_raises_valueerror():
+        # Confirm that attempting to set a non-integer values will raise an Error.
+        with pytest.raises(ValueError):
+            job_config = bigquery.QueryJobConfig()
+            job_config.job_timeout_ms = "WillRaiseError"

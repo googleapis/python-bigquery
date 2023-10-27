@@ -27,7 +27,6 @@ import itertools
 import json
 import math
 import os
-import packaging.version
 import tempfile
 import typing
 from typing import (
@@ -44,13 +43,6 @@ from typing import (
 )
 import uuid
 import warnings
-
-try:
-    import pyarrow  # type: ignore
-
-    _PYARROW_VERSION = packaging.version.parse(pyarrow.__version__)
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
 
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore
@@ -73,25 +65,25 @@ except ImportError:
     DEFAULT_BQSTORAGE_CLIENT_INFO = None  # type: ignore
 
 
+from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _job_helpers
-from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
+from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import enums
+from google.cloud.bigquery import exceptions as bq_exceptions
+from google.cloud.bigquery import job
 from google.cloud.bigquery._helpers import _get_sub_prop
 from google.cloud.bigquery._helpers import _record_field_to_json
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery._helpers import _verify_job_config_type
 from google.cloud.bigquery._helpers import _get_bigquery_host
-from google.cloud.bigquery._helpers import BQ_STORAGE_VERSIONS
 from google.cloud.bigquery._helpers import _DEFAULT_HOST
-from google.cloud.bigquery._http import Connection
-from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import AutoRowIDs
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-from google.cloud.bigquery.opentelemetry_tracing import create_span
-from google.cloud.bigquery import job
+from google.cloud.bigquery.format_options import ParquetOptions
 from google.cloud.bigquery.job import (
     CopyJob,
     CopyJobConfig,
@@ -105,6 +97,7 @@ from google.cloud.bigquery.job import (
 from google.cloud.bigquery.model import Model
 from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.model import _model_arg_to_model_ref
+from google.cloud.bigquery.opentelemetry_tracing import create_span
 from google.cloud.bigquery.query import _QueryResults
 from google.cloud.bigquery.retry import (
     DEFAULT_JOB_RETRY,
@@ -120,8 +113,8 @@ from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
-from google.cloud.bigquery.format_options import ParquetOptions
-from google.cloud.bigquery import _helpers
+
+pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 TimeoutType = Union[float, None]
 ResumableTimeoutType = Union[
@@ -158,9 +151,6 @@ _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS = "jobReference,totalRows,pageToken,rows"
 _MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
 TIMEOUT_HEADER = "X-Server-Timeout"
-
-# https://github.com/googleapis/python-bigquery/issues/781#issuecomment-883497414
-_PYARROW_BAD_VERSIONS = frozenset([packaging.version.Version("2.0.0")])
 
 
 class Project(object):
@@ -554,29 +544,32 @@ class Client(ClientWithProject):
                 An existing BigQuery Storage client instance. If ``None``, a new
                 instance is created and returned.
             client_options:
-                Custom options used with a new BigQuery Storage client instance if one
-                is created.
+                Custom options used with a new BigQuery Storage client instance
+                if one is created.
             client_info:
-                The client info used with a new BigQuery Storage client instance if one
-                is created.
+                The client info used with a new BigQuery Storage client
+                instance if one is created.
 
         Returns:
             A BigQuery Storage API client.
         """
+
         try:
-            from google.cloud import bigquery_storage  # type: ignore
-        except ImportError:
+            bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import(
+                raise_if_error=True
+            )
+        except bq_exceptions.BigQueryStorageNotFoundError:
             warnings.warn(
                 "Cannot create BigQuery Storage client, the dependency "
                 "google-cloud-bigquery-storage is not installed."
             )
             return None
-
-        try:
-            BQ_STORAGE_VERSIONS.verify_version()
-        except LegacyBigQueryStorageError as exc:
-            warnings.warn(str(exc))
+        except bq_exceptions.LegacyBigQueryStorageError as exc:
+            warnings.warn(
+                "Dependency google-cloud-bigquery-storage is outdated: " + str(exc)
+            )
             return None
+
         if bqstorage_client is None:
             bqstorage_client = bigquery_storage.BigQueryReadClient(
                 credentials=self._credentials,
@@ -2189,12 +2182,12 @@ class Client(ClientWithProject):
         parent_job: Optional[Union[QueryJob, str]] = None,
         max_results: Optional[int] = None,
         page_token: Optional[str] = None,
-        all_users: bool = None,
+        all_users: Optional[bool] = None,
         state_filter: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        min_creation_time: datetime.datetime = None,
-        max_creation_time: datetime.datetime = None,
+        min_creation_time: Optional[datetime.datetime] = None,
+        max_creation_time: Optional[datetime.datetime] = None,
         page_size: Optional[int] = None,
     ) -> page_iterator.Iterator:
         """List jobs for the project associated with this client.
@@ -2686,16 +2679,6 @@ class Client(ClientWithProject):
 
         try:
             if new_job_config.source_format == job.SourceFormat.PARQUET:
-                if _PYARROW_VERSION in _PYARROW_BAD_VERSIONS:
-                    msg = (
-                        "Loading dataframe data in PARQUET format with pyarrow "
-                        f"{_PYARROW_VERSION} can result in data corruption. It is "
-                        "therefore *strongly* advised to use a different pyarrow "
-                        "version or a different source format. "
-                        "See: https://github.com/googleapis/python-bigquery/issues/781"
-                    )
-                    warnings.warn(msg, category=RuntimeWarning)
-
                 if new_job_config.schema:
                     if parquet_compression == "snappy":  # adjust the default value
                         parquet_compression = parquet_compression.upper()
@@ -2714,7 +2697,7 @@ class Client(ClientWithProject):
                         compression=parquet_compression,
                         **(
                             {"use_compliant_nested_type": True}
-                            if _helpers.PYARROW_VERSIONS.use_compliant_nested_type
+                            if _versions_helpers.PYARROW_VERSIONS.use_compliant_nested_type
                             else {}
                         ),
                     )
@@ -3424,7 +3407,7 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableReference, str],
         rows: Union[Iterable[Tuple], Iterable[Mapping[str, Any]]],
-        selected_fields: Sequence[SchemaField] = None,
+        selected_fields: Optional[Sequence[SchemaField]] = None,
         **kwargs,
     ) -> Sequence[Dict[str, Any]]:
         """Insert rows into a table via the streaming API.
@@ -3500,7 +3483,7 @@ class Client(ClientWithProject):
         self,
         table: Union[Table, TableReference, str],
         dataframe,
-        selected_fields: Sequence[SchemaField] = None,
+        selected_fields: Optional[Sequence[SchemaField]] = None,
         chunk_size: int = 500,
         **kwargs: Dict,
     ) -> Sequence[Sequence[dict]]:
@@ -3563,8 +3546,8 @@ class Client(ClientWithProject):
         row_ids: Union[
             Iterable[Optional[str]], AutoRowIDs, None
         ] = AutoRowIDs.GENERATE_UUID,
-        skip_invalid_rows: bool = None,
-        ignore_unknown_values: bool = None,
+        skip_invalid_rows: Optional[bool] = None,
+        ignore_unknown_values: Optional[bool] = None,
         template_suffix: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
@@ -3755,7 +3738,7 @@ class Client(ClientWithProject):
     def list_rows(
         self,
         table: Union[Table, TableListItem, TableReference, str],
-        selected_fields: Sequence[SchemaField] = None,
+        selected_fields: Optional[Sequence[SchemaField]] = None,
         max_results: Optional[int] = None,
         page_token: Optional[str] = None,
         start_index: Optional[int] = None,
@@ -3868,7 +3851,7 @@ class Client(ClientWithProject):
         project: str,
         schema: SchemaField,
         total_rows: Optional[int] = None,
-        destination: Union[Table, TableReference, TableListItem, str] = None,
+        destination: Optional[Union[Table, TableReference, TableListItem, str]] = None,
         max_results: Optional[int] = None,
         start_index: Optional[int] = None,
         page_size: Optional[int] = None,

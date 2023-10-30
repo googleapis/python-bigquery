@@ -68,6 +68,12 @@ class Routine(object):
         "description": "description",
         "determinism_level": "determinismLevel",
         "remote_function_options": "remoteFunctionOptions",
+        "data_governance_type": "dataGovernanceType",
+    }
+
+    _DATA_GOVERNANCE_TYPE = {
+        "DATA_MASKING": None,
+        "DATA_GOVERNANCE_TYPE_UNSPECIFIED": None,
     }
 
     def __init__(self, routine_ref, **kwargs) -> None:
@@ -328,6 +334,27 @@ class Routine(object):
         self._properties[
             self._PROPERTY_TO_API_FIELD["remote_function_options"]
         ] = api_repr
+
+    @property
+    def data_governance_type(self):
+        """Optional[str]: If set to ``DATA_MASKING``, the function is validated
+        and made available as a masking function.
+
+        Raises:
+            ValueError:
+                If the value is not :data:`string` or :data:`None`, or the value
+                is not in `self._DATA_GOVERNANCE_TYPE`.
+        """
+        return self._properties.get(self._PROPERTY_TO_API_FIELD["data_governance_type"])
+
+    @data_governance_type.setter
+    def data_governance_type(self, value):
+        if value is not None and value not in self._DATA_GOVERNANCE_TYPE:
+            raise ValueError(
+                'invalid data_governance_type, must be "DATA_MASKING", '
+                '"DATA_GOVERNANCE_TYPE_UNSPECIFIED" or `None`.'
+            )
+        self._properties[self._PROPERTY_TO_API_FIELD["data_governance_type"]] = value
 
     @classmethod
     def from_api_repr(cls, resource: dict) -> "Routine":

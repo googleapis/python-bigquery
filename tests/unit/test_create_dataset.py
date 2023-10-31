@@ -537,7 +537,7 @@ def test_create_dataset_with_max_time_travel_hours_is_greater_than_7_days(
     )
 
 
-def test_create_dataset_with_max_time_travel_hours_not_is_not_int(
+def test_create_dataset_with_max_time_travel_hours_is_not_int(
     PROJECT, DS_ID, LOCATION
 ):
     ds_ref = DatasetReference(PROJECT, DS_ID)

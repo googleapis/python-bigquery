@@ -537,8 +537,9 @@ class Dataset(object):
     @property
     def max_time_travel_hours(self):
         """
-        Optional[int]: Defines the time travel window in hours. The value can be from 48 to 168 hours (2 to 7 days).
-        value must in multiple of 24 hours (48, 72, 96, 120, 144, 168)
+        Optional[int]: Defines the time travel window in hours. The value can
+        be from 48 to 168 hours (2 to 7 days), and in multiple of 24 hours
+        (48, 72, 96, 120, 144, 168).
         The default value is 168 hours if this is not set.
         """
         return self._properties.get("maxTimeTravelHours")

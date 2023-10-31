@@ -486,7 +486,7 @@ def test_create_dataset_with_max_time_travel_hours(PROJECT, DS_ID, LOCATION):
 
     assert after.dataset_id == DS_ID
     assert after.project == PROJECT
-    assert after.default_rounding_mode is None
+    assert after.max_time_travel_hours == 24 * 3
 
     conn.api_request.assert_called_once_with(
         method="POST",

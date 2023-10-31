@@ -470,23 +470,25 @@ def test_create_dataset_with_default_rounding_mode_if_value_is_in_possible_value
 
 def test_create_dataset_with_max_time_travel_hours(PROJECT, DS_ID, LOCATION):
     path = "/projects/%s/datasets" % PROJECT
+    max_time_travel_hours = 24 * 3
+
     resource = {
         "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
         "etag": "etag",
         "id": "{}:{}".format(PROJECT, DS_ID),
         "location": LOCATION,
+        "maxTimeTravelHours": max_time_travel_hours,
     }
     client = make_client(location=LOCATION)
     conn = client._connection = make_connection(resource)
 
     ds_ref = DatasetReference(PROJECT, DS_ID)
     before = Dataset(ds_ref)
-    before.max_time_travel_hours = 24 * 3
+    before.max_time_travel_hours = max_time_travel_hours
     after = client.create_dataset(before)
-
     assert after.dataset_id == DS_ID
     assert after.project == PROJECT
-    assert after.max_time_travel_hours == 24 * 3
+    assert after.max_time_travel_hours == max_time_travel_hours
 
     conn.api_request.assert_called_once_with(
         method="POST",
@@ -495,7 +497,7 @@ def test_create_dataset_with_max_time_travel_hours(PROJECT, DS_ID, LOCATION):
             "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
             "labels": {},
             "location": LOCATION,
-            "maxTimeTravelHours": 24 * 3,
+            "maxTimeTravelHours": max_time_travel_hours,
         },
         timeout=DEFAULT_TIMEOUT,
     )
@@ -537,9 +539,7 @@ def test_create_dataset_with_max_time_travel_hours_is_greater_than_7_days(
     )
 
 
-def test_create_dataset_with_max_time_travel_hours_is_not_int(
-    PROJECT, DS_ID, LOCATION
-):
+def test_create_dataset_with_max_time_travel_hours_is_not_int(PROJECT, DS_ID, LOCATION):
     ds_ref = DatasetReference(PROJECT, DS_ID)
     dataset = Dataset(ds_ref)
     with pytest.raises(ValueError) as e:

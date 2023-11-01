@@ -592,11 +592,13 @@ def test_set_data_governance_type_wrong_type(object_under_test):
 
 
 def test_set_data_governance_type_wrong_str(object_under_test):
-    with pytest.raises(ValueError) as exp:
-        object_under_test.data_governance_type = "RANDOM_STRING"
-    assert "invalid data_governance_type" in str(exp)
-    assert object_under_test.data_governance_type is None
-    assert object_under_test._properties.get("dataGovernanceType") is None
+    """Client does not verify the content of data_governance_type string to be
+    compatible with future upgrades. If the value is not supported, BigQuery
+    itself will report an error.
+    """
+    object_under_test.data_governance_type = "RANDOM_STRING"
+    assert object_under_test.data_governance_type == "RANDOM_STRING"
+    assert object_under_test._properties["dataGovernanceType"] == "RANDOM_STRING"
 
 
 def test_repr(target_class):

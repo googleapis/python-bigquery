@@ -71,11 +71,6 @@ class Routine(object):
         "data_governance_type": "dataGovernanceType",
     }
 
-    _DATA_GOVERNANCE_TYPE = {
-        "DATA_MASKING": None,
-        "DATA_GOVERNANCE_TYPE_UNSPECIFIED": None,
-    }
-
     def __init__(self, routine_ref, **kwargs) -> None:
         if isinstance(routine_ref, str):
             routine_ref = RoutineReference.from_string(routine_ref)
@@ -306,8 +301,8 @@ class Routine(object):
 
     @property
     def remote_function_options(self):
-        """Optional[google.cloud.bigquery.routine.RemoteFunctionOptions]: Configures remote function
-        options for a routine.
+        """Optional[google.cloud.bigquery.routine.RemoteFunctionOptions]:
+        Configures remote function options for a routine.
 
         Raises:
             ValueError:
@@ -342,17 +337,15 @@ class Routine(object):
 
         Raises:
             ValueError:
-                If the value is not :data:`string` or :data:`None`, or the value
-                is not in `self._DATA_GOVERNANCE_TYPE`.
+                If the value is not :data:`string` or :data:`None`.
         """
         return self._properties.get(self._PROPERTY_TO_API_FIELD["data_governance_type"])
 
     @data_governance_type.setter
     def data_governance_type(self, value):
-        if value is not None and value not in self._DATA_GOVERNANCE_TYPE:
+        if value is not None and not isinstance(value, str):
             raise ValueError(
-                'invalid data_governance_type, must be "DATA_MASKING", '
-                '"DATA_GOVERNANCE_TYPE_UNSPECIFIED" or `None`.'
+                "invalid data_governance_type, must be a string or `None`."
             )
         self._properties[self._PROPERTY_TO_API_FIELD["data_governance_type"]] = value
 

@@ -60,14 +60,15 @@ from google.api_core.page_iterator import HTTPIterator
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import exceptions as bq_exceptions
+from google.cloud.bigquery._tqdm_helpers import get_progress_bar
+from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import DefaultPandasDTypes
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
-from google.cloud.bigquery._tqdm_helpers import get_progress_bar
-from google.cloud.bigquery.external_config import ExternalConfig
-from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
@@ -1593,7 +1594,7 @@ class RowIterator(HTTPIterator):
         return self._first_page_response.get(self._next_token) is None
 
     def _validate_bqstorage(self, bqstorage_client, create_bqstorage_client):
-        """Returns if the BigQuery Storage API can be used.
+        """Returns True if the BigQuery Storage API can be used.
 
         Returns:
             bool
@@ -1610,13 +1611,10 @@ class RowIterator(HTTPIterator):
             return False
 
         try:
-            from google.cloud import bigquery_storage  # noqa: F401
-        except ImportError:
+            _versions_helpers.BQ_STORAGE_VERSIONS.try_import(raise_if_error=True)
+        except bq_exceptions.BigQueryStorageNotFoundError:
             return False
-
-        try:
-            _helpers.BQ_STORAGE_VERSIONS.verify_version()
-        except LegacyBigQueryStorageError as exc:
+        except bq_exceptions.LegacyBigQueryStorageError as exc:
             warnings.warn(str(exc))
             return False
 
@@ -1855,7 +1853,7 @@ class RowIterator(HTTPIterator):
     def to_dataframe_iterable(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
     ) -> "pandas.DataFrame":
         """Create an iterable of pandas DataFrames, to process the table as a stream.
@@ -1931,7 +1929,7 @@ class RowIterator(HTTPIterator):
     def to_dataframe(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         geography_as_object: bool = False,
@@ -2229,7 +2227,7 @@ class RowIterator(HTTPIterator):
     def to_geodataframe(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         geography_column: Optional[str] = None,

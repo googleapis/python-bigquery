@@ -2354,7 +2354,6 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(pyarrow.types.is_list(record_col[1].type))
         self.assertTrue(pyarrow.types.is_int64(record_col[1].type.value_type))
 
-
     def temp_dataset(self, dataset_id, *args, **kwargs):
         project = Config.CLIENT.project
         dataset_ref = bigquery.DatasetReference(project, dataset_id)

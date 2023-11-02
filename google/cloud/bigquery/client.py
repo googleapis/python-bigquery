@@ -115,6 +115,7 @@ from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
+pandas = _versions_helpers.PANDAS_VERSIONS.try_import()
 
 TimeoutType = Union[float, None]
 ResumableTimeoutType = Union[
@@ -124,7 +125,6 @@ ResumableTimeoutType = Union[
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # os.PathLike is only subscriptable in Python 3.9+, thus shielding with a condition.
     PathType = Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]
-    import pandas  # type: ignore
     import requests  # required by api-core
 
 _DEFAULT_CHUNKSIZE = 100 * 1024 * 1024  # 100 MB

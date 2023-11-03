@@ -307,12 +307,13 @@ def _check_nullability(arrow_fields, dataframe):
     if dataframe.index.name:
         dataframe[dataframe.index.name] = dataframe.index
     for arrow_field in arrow_fields:
-        col_name = arrow_field.name
-        if (
-            not arrow_field.nullable
-            and dataframe[arrow_field.name].isnull().values.any()
-        ):
-            raise ValueError(f"required field {col_name} can not be nulls")
+        if arrow_field:
+            col_name = arrow_field.name
+            if (
+                not arrow_field.nullable
+                and dataframe[arrow_field.name].isnull().values.any()
+            ):
+                raise ValueError(f"required field {col_name} can not be nulls")
 
 
 def get_column_or_index(dataframe, name):

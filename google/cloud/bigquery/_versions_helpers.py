@@ -25,7 +25,6 @@ _MIN_PYARROW_VERSION = packaging.version.Version("3.0.0")
 _MIN_BQ_STORAGE_VERSION = packaging.version.Version("2.0.0")
 _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
 _MIN_PANDAS_VERSION = packaging.version.Version("1.1.0")
-_MAX_PANDAS_VERSION = packaging.version.Version("2.0.0")
 
 
 class PyarrowVersions:
@@ -218,19 +217,14 @@ class PandasVersions:
                 raise exceptions.LegacyPandasError(
                     "pandas package not found. Install pandas version >="
                     f" {_MIN_PANDAS_VERSION}"
-                    "and <"
-                    f" {_MAX_PANDAS_VERSION}"
                 ) from exc
             return None
 
-        if (
-            self.installed_version < _MIN_PANDAS_VERSION
-            or self.installed_version >= _MAX_PANDAS_VERSION
-        ):
+        if self.installed_version < _MIN_PANDAS_VERSION:
             if raise_if_error:
                 msg = (
-                    "Dependency pandas is outdated, please upgrade"
-                    f" it to version >= {_MIN_PANDAS_VERSION} and < {_MAX_PANDAS_VERSION}"
+                    "Dependency pyarrow is outdated, please upgrade"
+                    f" it to version >= {_MIN_PANDAS_VERSION}"
                     f" (version found: {self.installed_version})."
                 )
                 raise exceptions.LegacyPandasError(msg)

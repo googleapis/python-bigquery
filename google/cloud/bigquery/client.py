@@ -115,7 +115,9 @@ from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
-pandas = _versions_helpers.PANDAS_VERSIONS.try_import() 
+pandas = (
+    _versions_helpers.PANDAS_VERSIONS.try_import()
+)  # mypy check fails because pandas import is outside module, there are type: ignore comments related to this
 
 TimeoutType = Union[float, None]
 ResumableTimeoutType = Union[
@@ -2488,7 +2490,7 @@ class Client(ClientWithProject):
 
     def load_table_from_dataframe(
         self,
-        dataframe: "pandas.DataFrame", # type: ignore
+        dataframe: "pandas.DataFrame",  # type: ignore
         destination: Union[Table, TableReference, str],
         num_retries: int = _DEFAULT_NUM_RETRIES,
         job_id: Optional[str] = None,

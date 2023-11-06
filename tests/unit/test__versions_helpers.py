@@ -208,22 +208,6 @@ def test_try_import_raises_error_w_legacy_pandas():
 
 
 @pytest.mark.skipif(pandas is None, reason="pandas is not installed")
-def test_try_import_returns_none_w_newer_pandas():
-    versions = _versions_helpers.PandasVersions()
-    with mock.patch("pandas.__version__", new="2.0.0"):
-        pandas = versions.try_import()
-        assert pandas is None
-
-
-@pytest.mark.skipif(pandas is None, reason="pandas is not installed")
-def test_try_import_raises_error_w_newer_pandas():
-    versions = _versions_helpers.PandasVersions()
-    with mock.patch("pandas.__version__", new="2.0.0"):
-        with pytest.raises(exceptions.LegacyPandasError):
-            versions.try_import(raise_if_error=True)
-
-
-@pytest.mark.skipif(pandas is None, reason="pandas is not installed")
 def test_installed_pandas_version_returns_cached():
     versions = _versions_helpers.PandasVersions()
     versions._installed_version = object()

@@ -223,7 +223,7 @@ class PandasVersions:
         if self.installed_version < _MIN_PANDAS_VERSION:
             if raise_if_error:
                 msg = (
-                    "Dependency pyarrow is outdated, please upgrade"
+                    "Dependency pandas is outdated, please upgrade"
                     f" it to version >= {_MIN_PANDAS_VERSION}"
                     f" (version found: {self.installed_version})."
                 )

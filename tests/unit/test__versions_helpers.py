@@ -181,9 +181,10 @@ def test_bqstorage_is_read_session_optional_false():
 
 
 @pytest.mark.skipif(pandas is None, reason="pandas is not installed")
-def test_try_import_raises_no_error_w_recent_pandas():
+@pytest.mark.parametrize("version", ["1.5.0", "2.0.0", "2.1.0"])
+def test_try_import_raises_no_error_w_recent_pandas(version):
     versions = _versions_helpers.PandasVersions()
-    with mock.patch("pandas.__version__", new="1.5.0"):
+    with mock.patch("pandas.__version__", new=version):
         try:
             pandas = versions.try_import(raise_if_error=True)
             assert pandas is not None

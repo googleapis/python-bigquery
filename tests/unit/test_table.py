@@ -28,6 +28,8 @@ import pytest
 import google.api_core.exceptions
 from test_utils.imports import maybe_fail_import
 
+from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import exceptions
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
@@ -40,16 +42,11 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
     big_query_read_grpc_transport = None
 
-from google.cloud.bigquery import _helpers
 
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
-PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
+pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 if pyarrow:
-    import pyarrow
     import pyarrow.types
-
-    PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
 
 try:
     import pandas
@@ -72,8 +69,6 @@ try:
 
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
-
-PYARROW_TIMESTAMP_VERSION = pkg_resources.parse_version("2.0.0")
 
 if pandas is not None:
     PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
@@ -416,7 +411,6 @@ class TestTableReference(unittest.TestCase):
 
 
 class TestTable(unittest.TestCase, _SchemaBase):
-
     PROJECT = "prahj-ekt"
     DS_ID = "dataset-name"
     TABLE_NAME = "table-name"
@@ -524,7 +518,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
         )
 
     def _verifyResourceProperties(self, table, resource):
-
         self._verifyReadonlyResourceProperties(table, resource)
 
         if "expirationTime" in resource:
@@ -1501,7 +1494,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
 
 class Test_row_from_mapping(unittest.TestCase, _SchemaBase):
-
     PROJECT = "prahj-ekt"
     DS_ID = "dataset-name"
     TABLE_NAME = "table-name"
@@ -1790,7 +1782,6 @@ class TestTableClassesInterchangeability:
         return TableListItem(*args, **kwargs)
 
     def test_table_eq_table_ref(self):
-
         table = self._make_table("project_foo.dataset_bar.table_baz")
         dataset_ref = DatasetReference("project_foo", "dataset_bar")
         table_ref = self._make_table_ref(dataset_ref, "table_baz")
@@ -1814,7 +1805,6 @@ class TestTableClassesInterchangeability:
         assert table_list_item == table
 
     def test_table_ref_eq_table_list_item(self):
-
         dataset_ref = DatasetReference("project_foo", "dataset_bar")
         table_ref = self._make_table_ref(dataset_ref, "table_baz")
         table_list_item = self._make_table_list_item(
@@ -2267,13 +2257,11 @@ class TestRowIterator(unittest.TestCase):
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
     def test__validate_bqstorage_returns_false_w_warning_if_obsolete_version(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
         iterator = self._make_one(first_page_response=None)  # not cached
 
         patcher = mock.patch(
-            "google.cloud.bigquery.table._helpers.BQ_STORAGE_VERSIONS.verify_version",
-            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+            "google.cloud.bigquery.table._versions_helpers.BQ_STORAGE_VERSIONS.try_import",
+            side_effect=exceptions.LegacyBigQueryStorageError("BQ Storage too old"),
         )
         with patcher, warnings.catch_warnings(record=True) as warned:
             result = iterator._validate_bqstorage(
@@ -2878,11 +2866,11 @@ class TestRowIterator(unittest.TestCase):
         mock_client = _mock_client()
         row_iterator = self._make_one(mock_client, api_request, path, schema)
 
-        def mock_verify_version():
-            raise _helpers.LegacyBigQueryStorageError("no bqstorage")
+        def mock_verify_version(raise_if_error: bool = False):
+            raise exceptions.LegacyBigQueryStorageError("no bqstorage")
 
         with mock.patch(
-            "google.cloud.bigquery._helpers.BQ_STORAGE_VERSIONS.verify_version",
+            "google.cloud.bigquery._versions_helpers.BQ_STORAGE_VERSIONS.try_import",
             mock_verify_version,
         ):
             tbl = row_iterator.to_arrow(create_bqstorage_client=True)

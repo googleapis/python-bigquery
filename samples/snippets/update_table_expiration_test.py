@@ -15,7 +15,7 @@
 import datetime
 import typing
 
-import update_table_expiration
+import update_table_expiration  # type: ignore
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -28,7 +28,6 @@ def test_update_table_expiration(
     table_id: str,
     tmp_path: "pathlib.Path",
 ) -> None:
-
     # This was not needed for function, only for test
     expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
         days=5

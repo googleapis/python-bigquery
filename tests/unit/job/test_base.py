@@ -1229,17 +1229,17 @@ class Test_JobConfig(unittest.TestCase):
         job_config.labels = labels
         self.assertEqual(job_config._properties["labels"], labels)
 
-    def test_job_timeout_ms_raises_valueerror():
+    def test_job_timeout_ms_raises_valueerror(self):
         # Confirm that attempting to set a non-integer values will raise an Error.
         with pytest.raises(ValueError):
-            from google.cloud.bigquery import QueryJobConfig
-            job_config = QueryJobConfig()
+            #from google.cloud.bigquery import QueryJobConfig
+            #job_config = QueryJobConfig()
+            job_config = self._make_one()
             job_config.job_timeout_ms = "WillRaiseError"
 
-    def test_job_timeout_ms():
+    def test_job_timeout_ms(self):
         # Confirm that default status is None.
-        from google.cloud.bigquery import QueryJobConfig
-        job_config = QueryJobConfig()
+        job_config = self._make_one()
         assert job_config.job_timeout_ms is None
 
         # Confirm that integers get converted to strings.

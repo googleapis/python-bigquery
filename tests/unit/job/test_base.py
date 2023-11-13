@@ -1243,5 +1243,5 @@ class Test_JobConfig(unittest.TestCase):
         assert job_config.job_timeout_ms is None
 
         # Confirm that integers get converted to strings.
-        #job_config.job_timeout_ms = 5000
-        #assert job_config.job_timeout_ms == "5000"  # int is converted to string
+        job_config.job_timeout_ms = 5000
+        assert job_config.job_timeout_ms == "5000"  # int is converted to string

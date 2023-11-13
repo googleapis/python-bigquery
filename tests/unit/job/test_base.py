@@ -1232,8 +1232,8 @@ class Test_JobConfig(unittest.TestCase):
     def test_job_timeout_ms_raises_valueerror(self):
         # Confirm that attempting to set a non-integer values will raise an Error.
         with pytest.raises(ValueError):
-            #from google.cloud.bigquery import QueryJobConfig
-            #job_config = QueryJobConfig()
+            # from google.cloud.bigquery import QueryJobConfig
+            # job_config = QueryJobConfig()
             job_config = self._make_one()
             job_config.job_timeout_ms = "WillRaiseError"
 

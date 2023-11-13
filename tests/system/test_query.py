@@ -97,24 +97,6 @@ def test_query_w_timeout(bigquery_client, query_api_method):
     assert bigquery_client.cancel_job(query_job) is not None
 
 
-def test_job_timeout_ms():
-    assert True
-    # Confirm that default status is None.
-    #job_config = bigquery.QueryJobConfig()
-    #assert job_config.job_timeout_ms is None
-
-    # Confirm that integers get converted to strings.
-    #job_config.job_timeout_ms = 5000
-    #assert job_config.job_timeout_ms == "5000"  # int is converted to string
-
-
-def test_job_timeout_ms_raises_valueerror():
-    # Confirm that attempting to set a non-integer values will raise an Error.
-    with pytest.raises(ValueError):
-        job_config = bigquery.QueryJobConfig()
-        job_config.job_timeout_ms = "WillRaiseError"
-
-
 def test_query_statistics(bigquery_client, query_api_method):
     """
     A system test to exercise some of the extended query statistics.

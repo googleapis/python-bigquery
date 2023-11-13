@@ -22,6 +22,7 @@ try:
 except ImportError:  # pragma: NO COVER
     proto = None
 
+
 @pytest.mark.skipif(proto is None, reason="proto is not installed")
 def test_importing_legacy_types_emits_warning():
     with warnings.catch_warnings(record=True) as warned:

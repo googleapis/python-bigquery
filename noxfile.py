@@ -164,7 +164,7 @@ def system(session):
         session.skip("RUN_SYSTEM_TESTS is set to false, skipping")
 
     # Sanity check: Only run system tests if the environment variable is set.
-    if not os.environ.get(" Super", ""):
+    if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):
         session.skip("Credentials must be set via environment variable.")
 
     # Use pre-release gRPC for system tests.
@@ -195,7 +195,7 @@ def system(session):
     session.run(
         "py.test",
         "--quiet",
-        # os.path.join("tests", "system"),
+        os.path.join("tests", "system"),
         *session.posargs,
     )
 
@@ -277,12 +277,7 @@ def cover(session):
     test runs (not system test runs), and then erases coverage data.
     """
     session.install("coverage", "pytest-cov")
-    session.run(
-        "coverage",
-        "report",
-        "--show-missing",
-        "--fail-under=100"
-    )
+    session.run("coverage", "report", "--show-missing", "--fail-under=100")
     session.run("coverage", "erase")
 
 

@@ -1231,7 +1231,6 @@ class QueryJob(_AsyncJob):
         datasets_by_project_name = {}
 
         for table in self._job_statistics().get("referencedTables", ()):
-
             t_project = table["projectId"]
 
             ds_id = table["datasetId"]
@@ -1694,7 +1693,7 @@ class QueryJob(_AsyncJob):
     def to_dataframe(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         max_results: Optional[int] = None,
@@ -1880,7 +1879,7 @@ class QueryJob(_AsyncJob):
     def to_geodataframe(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         max_results: Optional[int] = None,

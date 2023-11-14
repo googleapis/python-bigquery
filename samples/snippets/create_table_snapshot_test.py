@@ -14,7 +14,7 @@
 
 import typing
 
-import create_table_snapshot
+import create_table_snapshot  # type: ignore
 
 if typing.TYPE_CHECKING:
     import pytest
@@ -25,7 +25,6 @@ def test_create_table_snapshot(
     table_id: str,
     random_table_id: str,
 ) -> None:
-
     create_table_snapshot.create_table_snapshot(table_id, random_table_id)
 
     out, _ = capsys.readouterr()

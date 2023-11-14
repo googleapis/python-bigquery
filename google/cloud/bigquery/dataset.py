@@ -454,7 +454,6 @@ class AccessEntry(object):
         return not self == other
 
     def __repr__(self):
-
         return f"<AccessEntry: role={self.role}, {self._entity_type}={self.entity_id}>"
 
     def _key(self):
@@ -502,9 +501,7 @@ class AccessEntry(object):
         if len(entry) != 0:
             raise ValueError("Entry has unexpected keys remaining.", entry)
 
-        config = cls(role, entity_type, entity_id)
-        config._properties = copy.deepcopy(resource)
-        return config
+        return cls(role, entity_type, entity_id)
 
 
 class Dataset(object):
@@ -527,13 +524,75 @@ class Dataset(object):
         "default_table_expiration_ms": "defaultTableExpirationMs",
         "friendly_name": "friendlyName",
         "default_encryption_configuration": "defaultEncryptionConfiguration",
+        "is_case_insensitive": "isCaseInsensitive",
         "storage_billing_model": "storageBillingModel",
+        "max_time_travel_hours": "maxTimeTravelHours",
+        "default_rounding_mode": "defaultRoundingMode",
     }
 
     def __init__(self, dataset_ref) -> None:
         if isinstance(dataset_ref, str):
             dataset_ref = DatasetReference.from_string(dataset_ref)
         self._properties = {"datasetReference": dataset_ref.to_api_repr(), "labels": {}}
+
+    @property
+    def max_time_travel_hours(self):
+        """
+        Optional[int]: Defines the time travel window in hours. The value can
+        be from 48 to 168 hours (2 to 7 days), and in multiple of 24 hours
+        (48, 72, 96, 120, 144, 168).
+        The default value is 168 hours if this is not set.
+        """
+        return self._properties.get("maxTimeTravelHours")
+
+    @max_time_travel_hours.setter
+    def max_time_travel_hours(self, hours):
+        if not isinstance(hours, int):
+            raise ValueError(f"max_time_travel_hours must be an integer. Got {hours}")
+        if hours < 2 * 24 or hours > 7 * 24:
+            raise ValueError(
+                "Time Travel Window should be from 48 to 168 hours (2 to 7 days)"
+            )
+        if hours % 24 != 0:
+            raise ValueError("Time Travel Window should be multiple of 24")
+        self._properties["maxTimeTravelHours"] = hours
+
+    @property
+    def default_rounding_mode(self):
+        """Union[str, None]: defaultRoundingMode of the dataset as set by the user
+        (defaults to :data:`None`).
+
+        Set the value to one of ``'ROUND_HALF_AWAY_FROM_ZERO'``, ``'ROUND_HALF_EVEN'``, or
+        ``'ROUNDING_MODE_UNSPECIFIED'``.
+
+        See `default rounding mode
+        <https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#Dataset.FIELDS.default_rounding_mode>`_
+        in REST API docs and `updating the default rounding model
+        <https://cloud.google.com/bigquery/docs/updating-datasets#update_rounding_mode>`_
+        guide.
+
+        Raises:
+            ValueError: for invalid value types.
+        """
+        return self._properties.get("defaultRoundingMode")
+
+    @default_rounding_mode.setter
+    def default_rounding_mode(self, value):
+        possible_values = [
+            "ROUNDING_MODE_UNSPECIFIED",
+            "ROUND_HALF_AWAY_FROM_ZERO",
+            "ROUND_HALF_EVEN",
+        ]
+        if not isinstance(value, str) and value is not None:
+            raise ValueError("Pass a string, or None")
+        if value is None:
+            self._properties["defaultRoundingMode"] = "ROUNDING_MODE_UNSPECIFIED"
+        if value not in possible_values and value is not None:
+            raise ValueError(
+                f'rounding mode needs to be one of {",".join(possible_values)}'
+            )
+        if value:
+            self._properties["defaultRoundingMode"] = value
 
     @property
     def project(self):
@@ -763,6 +822,25 @@ class Dataset(object):
         if value:
             api_repr = value.to_api_repr()
         self._properties["defaultEncryptionConfiguration"] = api_repr
+
+    @property
+    def is_case_insensitive(self):
+        """Optional[bool]: True if the dataset and its table names are case-insensitive, otherwise False.
+        By default, this is False, which means the dataset and its table names are case-sensitive.
+        This field does not affect routine references.
+
+        Raises:
+            ValueError: for invalid value types.
+        """
+        return self._properties.get("isCaseInsensitive") or False
+
+    @is_case_insensitive.setter
+    def is_case_insensitive(self, value):
+        if not isinstance(value, bool) and value is not None:
+            raise ValueError("Pass a boolean value, or None")
+        if value is None:
+            value = False
+        self._properties["isCaseInsensitive"] = value
 
     @property
     def storage_billing_model(self):

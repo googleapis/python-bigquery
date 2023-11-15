@@ -3859,6 +3859,7 @@ class Client(ClientWithProject):
         page_size: Optional[int] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
+        first_page_response: Optional[Dict[str, Any]] = None,
     ) -> RowIterator:
         """List the rows of a completed query.
         See
@@ -3898,6 +3899,8 @@ class Client(ClientWithProject):
                 would otherwise be a successful response.
                 If multiple requests are made under the hood, ``timeout``
                 applies to each individual request.
+            first_page_response (Optional[dict]):
+                API response for the first page of results (if available).
         Returns:
             google.cloud.bigquery.table.RowIterator:
                 Iterator of row data
@@ -3928,6 +3931,7 @@ class Client(ClientWithProject):
             table=destination,
             extra_params=params,
             total_rows=total_rows,
+            first_page_response=first_page_response,
         )
         return row_iterator
 

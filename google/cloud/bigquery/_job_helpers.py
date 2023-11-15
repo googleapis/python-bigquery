@@ -12,9 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Helpers for interacting with the job REST APIs from the client."""
+"""Helpers for interacting with the job REST APIs from the client.
+
+For queries, there are three cases to consider:
+
+1. jobs.insert: This always returns a job resource.
+2. jobs.query, jobCreationMode=JOB_CREATION_REQUIRED:
+   This sometimes can return the results inline, but always includes a job ID.
+3. jobs.query, jobCreationMode=JOB_CREATION_OPTIONAL:
+   This sometimes doesn't create a job at all, instead returning the results.
+   For better debugging, a query ID is included in the response (not always a
+   job ID).
+
+Client.query() calls either (1) or (2), depending on what the user provides
+for the api_method parameter. query() always returns a QueryJob object, which
+can retry the query when the query job fails for a retriable reason.
+
+Client.query_and_wait() calls (3). This returns a RowIterator that may wrap
+local results from the response or may wrap a query job containing multiple
+pages of results. Even though query_and_wait() waits for the job to complete,
+we still need a separate job_retry object because there are different
+predicates where it is safe to generate a new query ID.
+"""
 
 import copy
+import os
 import uuid
 from typing import Any, Dict, TYPE_CHECKING, Optional
 
@@ -23,6 +45,7 @@ from google.api_core import retry as retries
 
 from google.cloud.bigquery import job
 import google.cloud.bigquery.query
+from google.cloud.bigquery import table
 
 # Avoid circular imports
 if TYPE_CHECKING:  # pragma: NO COVER
@@ -123,7 +146,12 @@ def query_jobs_insert(
     return future
 
 
-def _to_query_request(job_config: Optional[job.QueryJobConfig]) -> Dict[str, Any]:
+def _to_query_request(
+    query: str,
+    job_config: Optional[job.QueryJobConfig],
+    location: Optional[str],
+    timeout: Optional[float],
+) -> Dict[str, Any]:
     """Transform from Job resource to QueryRequest resource.
 
     Most of the keys in job.configuration.query are in common with
@@ -149,6 +177,12 @@ def _to_query_request(job_config: Optional[job.QueryJobConfig]) -> Dict[str, Any
     # format. See: https://github.com/googleapis/python-bigquery/issues/395
     request_body.setdefault("formatOptions", {})
     request_body["formatOptions"]["useInt64Timestamp"] = True  # type: ignore
+
+    if timeout is not None:
+        # Subtract a buffer for context switching, network latency, etc.
+        request_body["timeoutMs"] = max(0, int(1000 * timeout) - _TIMEOUT_BUFFER_MILLIS)
+    request_body["location"] = location
+    request_body["query"] = query
 
     return request_body
 
@@ -207,6 +241,10 @@ def _to_query_job(
     return query_job
 
 
+def _to_query_path(project: str) -> str:
+    return f"/projects/{project}/queries"
+
+
 def query_jobs_query(
     client: "Client",
     query: str,
@@ -217,18 +255,12 @@ def query_jobs_query(
     timeout: Optional[float],
     job_retry: retries.Retry,
 ) -> job.QueryJob:
-    """Initiate a query using jobs.query.
+    """Initiate a query using jobs.query with jobCreationMode=JOB_CREATION_REQUIRED.
 
     See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
     """
-    path = f"/projects/{project}/queries"
-    request_body = _to_query_request(job_config)
-
-    if timeout is not None:
-        # Subtract a buffer for context switching, network latency, etc.
-        request_body["timeoutMs"] = max(0, int(1000 * timeout) - _TIMEOUT_BUFFER_MILLIS)
-    request_body["location"] = location
-    request_body["query"] = query
+    path = _to_query_path(project)
+    request_body = _to_query_request(query, job_config, location, timeout)
 
     def do_query():
         request_body["requestId"] = make_job_id()
@@ -253,3 +285,84 @@ def query_jobs_query(
     future._job_retry = job_retry
 
     return future
+
+
+def query_and_wait(
+    client: "Client",
+    query: str,
+    job_config: Optional[job.QueryJobConfig],
+    location: Optional[str],
+    project: str,
+    retry: retries.Retry,
+    timeout: Optional[float],
+    job_retry: retries.Retry,
+) -> table.RowIterator:
+    """Initiate a query using jobs.query and waits for results.
+     
+    While ``jobCreationMode=JOB_CREATION_OPTIONAL`` is in preview, use the
+    default ``jobCreationMode`` unless the environment variable
+    ``QUERY_PREVIEW_ENABLED=true``. After ``jobCreationMode`` is GA, this
+    method will always use ``jobCreationMode=JOB_CREATION_OPTIONAL``.
+
+    See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
+    """
+    path = _to_query_path(project)
+    request_body = _to_query_request(query, job_config, location, timeout)
+
+    if os.getenv("QUERY_PREVIEW_ENABLED").casefold() == "true":
+        request_body["jobCreationMode"] = "JOB_CREATION_OPTIONAL"
+
+    @job_retry
+    def do_query():
+        request_body["requestId"] = make_job_id()
+        span_attributes = {"path": path}
+
+        response = client._call_api(
+            retry,
+            span_name="BigQuery.query",
+            span_attributes=span_attributes,
+            method="POST",
+            path=path,
+            data=request_body,
+            timeout=timeout,
+        )
+
+        # The query hasn't finished, so we expect there to be a job ID now.
+        # Wait until the query finishes.
+        if not response.get("jobComplete", False):
+            return _to_query_job(client, query, job_config, response).result()
+
+        # Even if we run with JOB_CREATION_OPTIONAL, if there are more pages
+        # to fetch, there will be a job ID for jobs.getQueryResults.
+        query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(response)
+        job_id = query_results.job_id
+        location = query_results.location
+        rows = query_results.rows
+        total_rows = query_results.total_rows
+        more_pages = (
+            job_id is not None
+            and location is not None
+            and len(rows) < total_rows
+        )
+        
+        if more_pages:
+            # TODO(swast): Call client._list_rows_from_query_results directly
+            # after updating RowIterator to fetch destination only if needed.
+            return _to_query_job(client, query, job_config, response).result()
+        
+        return table.RowIterator(
+            client=client,
+            api_request=client._call_api,
+            path=None,
+            schema=query_results.schema,
+            # TODO(swast): Support max_results
+            max_results=None,
+            total_rows=total_rows,
+            first_page_response=response,
+            location=location,
+            job_id=job_id,
+            query_id=query_results.query_id,
+            project=project,            
+        )
+
+    return do_query()

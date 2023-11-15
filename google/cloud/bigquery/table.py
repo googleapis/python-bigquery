@@ -1591,7 +1591,36 @@ class RowIterator(HTTPIterator):
         self._location = location
         self._job_id = job_id
         self._query_id = query_id
-        self._project = project
+
+        if project:
+            self._project = project
+        elif client is not None:
+            self._project = client.project
+        else:
+            self._project = None
+
+    def project(self) -> Optional[str]:
+        """GCP Project ID where these rows are read from."""
+        return self._project
+
+    def location(self) -> Optional[str]:
+        """Location where the query executed (if applicable).
+
+        See: https://cloud.google.com/bigquery/docs/locations
+        """
+        self._location
+
+    def job_id(self) -> Optional[str]:
+        """ID of the query job (if applicable).
+
+        To get the job metadata, call
+        ``job = client.get_job(rows.job_id, location=rows.location)``.
+        """
+        return self._job_id
+
+    def query_id(self) -> Optional[str]:
+        """ID of the stateless query (if applicable)."""
+        return self._query_id
 
     @property
     def _billing_project(self) -> Optional[str]:

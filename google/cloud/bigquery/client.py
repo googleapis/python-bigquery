@@ -3405,6 +3405,20 @@ class Client(ClientWithProject):
         else:
             raise ValueError(f"Got unexpected value for api_method: {repr(api_method)}")
 
+    def query_and_wait(self) -> RowIterator:
+        """[Preview] Run the query and return the results."""
+        maybe_job = _job_helpers.query_jobs_query(
+            self,
+            query,
+            job_config,
+            location,
+            project,
+            retry,
+            timeout,
+            job_retry,
+            # TODO: add no job mode
+        )
+
     def insert_rows(
         self,
         table: Union[Table, TableReference, str],
@@ -3853,7 +3867,7 @@ class Client(ClientWithProject):
         job_id: str,
         location: str,
         project: str,
-        schema: SchemaField,
+        schema: Sequence[SchemaField],
         total_rows: Optional[int] = None,
         destination: Optional[Union[Table, TableReference, TableListItem, str]] = None,
         max_results: Optional[int] = None,

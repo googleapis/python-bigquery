@@ -1604,6 +1604,9 @@ class RowIterator(HTTPIterator):
         if not using_bqstorage_api:
             return False
 
+        if self._table is None:
+            return False
+
         if self._is_completely_cached():
             return False
 

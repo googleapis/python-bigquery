@@ -1572,7 +1572,8 @@ class QueryJob(_AsyncJob):
                 # Since the job could already be "done" (e.g. got a finished job
                 # via client.get_job), the superclass call to done() might not
                 # set the self._query_results cache.
-                self._reload_query_results(retry=retry, timeout=timeout)
+                if self._query_results is None or not self._query_results.complete:
+                    self._reload_query_results(retry=retry, timeout=timeout)
 
             if retry_do_query is not None and job_retry is not None:
                 do_get_result = job_retry(do_get_result)

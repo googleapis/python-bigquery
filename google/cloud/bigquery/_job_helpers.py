@@ -201,14 +201,6 @@ def _to_query_job(
         query_job._query_results = google.cloud.bigquery.query._QueryResults(
             query_response
         )
-        # TODO: https://github.com/googleapis/python-bigquery/issues/589
-        # Set the first page of results if job is "complete" and there is
-        # only 1 page of results. Otherwise, use the existing logic that
-        # refreshes the job stats.
-        #
-        # This also requires updates to `to_dataframe` and the DB API connector
-        # so that they don't try to read from a destination table if all the
-        # results are present.
     else:
         query_job._properties["status"]["state"] = "PENDING"
 

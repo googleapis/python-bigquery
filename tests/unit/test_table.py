@@ -2274,6 +2274,9 @@ class TestRowIterator(unittest.TestCase):
             )
         )
 
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
     def test__validate_bqstorage_returns_true_if_no_cached_results(self):
         iterator = self._make_one(first_page_response=None)  # not cached
         result = iterator._validate_bqstorage(

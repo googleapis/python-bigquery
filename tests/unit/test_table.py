@@ -2240,6 +2240,19 @@ class TestRowIterator(unittest.TestCase):
         iterator = self._make_one(first_page_response=None)
         self.assertFalse(iterator._is_almost_completely_cached())
 
+    def test__is_almost_completely_cached_returns_true_with_more_rows_than_max_results(
+        self,
+    ):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+            {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(max_results=4, first_page_response=first_page)
+        self.assertTrue(iterator._is_almost_completely_cached())
+
     def test__is_almost_completely_cached_returns_false_with_too_many_rows_remaining(
         self,
     ):
@@ -2251,7 +2264,18 @@ class TestRowIterator(unittest.TestCase):
         iterator = self._make_one(first_page_response=first_page, total_rows=100)
         self.assertFalse(iterator._is_almost_completely_cached())
 
-    def test__is_almost_completely_cached_returns_true_with_few_rows_remaining(self):
+    def test__is_almost_completely_cached_returns_false_with_rows_remaining_and_no_total_rows(
+        self,
+    ):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(first_page_response=first_page)
+        self.assertFalse(iterator._is_almost_completely_cached())
+
+    def test__is_almost_completely_cached_returns_true_with_some_rows_remaining(self):
         rows = [
             {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
             {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
@@ -2260,7 +2284,7 @@ class TestRowIterator(unittest.TestCase):
         iterator = self._make_one(first_page_response=first_page, total_rows=6)
         self.assertTrue(iterator._is_almost_completely_cached())
 
-    def test__is_almost_completely_cached_returns_true(self):
+    def test__is_almost_completely_cached_returns_true_with_no_rows_remaining(self):
         first_page = {"rows": []}
         iterator = self._make_one(first_page_response=first_page)
         self.assertTrue(iterator._is_almost_completely_cached())

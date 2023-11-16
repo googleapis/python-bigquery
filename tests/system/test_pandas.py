@@ -45,9 +45,9 @@ bigquery_storage = pytest.importorskip(
     "google.cloud.bigquery_storage", minversion="2.0.0"
 )
 
-if pandas is not None:
+if pandas is not None: #pragma: NO COVER
     PANDAS_INSTALLED_VERSION = metadata.version("pandas")
-else:
+else: #pragma: NO COVER
     PANDAS_INSTALLED_VERSION = "0.0.0"
 
 PANDAS_INT64_VERSION = "1.0.0"

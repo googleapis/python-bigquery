@@ -82,9 +82,9 @@ from tests.unit.helpers import make_connection
 
 PANDAS_MINIUM_VERSION = "1.0.0"
 
-if pandas is not None:
+if pandas is not None: #pragma: NO COVER
     PANDAS_INSTALLED_VERSION = metadata.version("pandas")
-else:
+else: #pragma: NO COVER
     PANDAS_INSTALLED_VERSION = "0.0.0"
 
 

@@ -100,6 +100,10 @@ _NO_SUPPORTED_DTYPE = (
     "because the necessary `__from_arrow__` attribute is missing."
 )
 
+# How many of the total rows need to be downloaded already for us to skip
+# calling the BQ Storage API?
+ALMOST_COMPLETELY_CACHED_RATIO = 0.333
+
 
 def _reference_getter(table):
     """A :class:`~google.cloud.bigquery.table.TableReference` pointing to
@@ -1582,7 +1586,7 @@ class RowIterator(HTTPIterator):
         self._total_rows = total_rows
         self._first_page_response = first_page_response
 
-    def _is_completely_cached(self):
+    def _is_almost_completely_cached(self):
         """Check if all results are completely cached.
 
         This is useful to know, because we can avoid alternative download
@@ -1591,17 +1595,22 @@ class RowIterator(HTTPIterator):
         if self._first_page_response is None:
             return False
 
+        total_cached_rows = len(self._first_page_response.get(self._items_key, []))
+        if self.max_results is not None and total_cached_rows >= self.max_results:
+            return True
+
         if (
-            self.max_results is not None
-            and len(self._first_page_response.get(self._items_key, []))
-            >= self.max_results
+            self.next_page_token is None
+            and self._first_page_response.get(self._next_token) is None
         ):
             return True
 
-        if self.next_page_token is not None:
-            return False
+        if self._total_rows is not None:
+            almost_completely = self._total_rows * ALMOST_COMPLETELY_CACHED_RATIO
+            if total_cached_rows >= almost_completely:
+                return True
 
-        return self._first_page_response.get(self._next_token) is None
+        return False
 
     def _validate_bqstorage(self, bqstorage_client, create_bqstorage_client):
         """Returns True if the BigQuery Storage API can be used.
@@ -1617,7 +1626,11 @@ class RowIterator(HTTPIterator):
         if self._table is None:
             return False
 
-        if self._is_completely_cached():
+        # The developer is manually paging through results if this is set.
+        if self.next_page_token is not None:
+            return False
+
+        if self._is_almost_completely_cached():
             return False
 
         if self.max_results is not None:

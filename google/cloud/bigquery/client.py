@@ -3920,6 +3920,11 @@ class Client(ClientWithProject):
         if start_index is not None:
             params["startIndex"] = start_index
 
+        # We don't call jobs.query with a page size, so if the user explicitly
+        # requests a certain size, invalidate the cache.
+        if page_size is not None:
+            first_page_response = None
+
         params["formatOptions.useInt64Timestamp"] = True
         row_iterator = RowIterator(
             client=self,

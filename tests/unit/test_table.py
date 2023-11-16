@@ -2236,19 +2236,34 @@ class TestRowIterator(unittest.TestCase):
             query_params={"maxResults": row_iterator._page_size},
         )
 
-    def test__is_completely_cached_returns_false_without_first_page(self):
+    def test__is_almost_completely_cached_returns_false_without_first_page(self):
         iterator = self._make_one(first_page_response=None)
-        self.assertFalse(iterator._is_completely_cached())
+        self.assertFalse(iterator._is_almost_completely_cached())
 
-    def test__is_completely_cached_returns_false_with_page_token(self):
-        first_page = {"pageToken": "next-page"}
-        iterator = self._make_one(first_page_response=first_page)
-        self.assertFalse(iterator._is_completely_cached())
+    def test__is_almost_completely_cached_returns_false_with_too_many_rows_remaining(
+        self,
+    ):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(first_page_response=first_page, total_rows=100)
+        self.assertFalse(iterator._is_almost_completely_cached())
 
-    def test__is_completely_cached_returns_true(self):
+    def test__is_almost_completely_cached_returns_true_with_few_rows_remaining(self):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(first_page_response=first_page, total_rows=6)
+        self.assertTrue(iterator._is_almost_completely_cached())
+
+    def test__is_almost_completely_cached_returns_true(self):
         first_page = {"rows": []}
         iterator = self._make_one(first_page_response=first_page)
-        self.assertTrue(iterator._is_completely_cached())
+        self.assertTrue(iterator._is_almost_completely_cached())
 
     def test__validate_bqstorage_returns_false_when_completely_cached(self):
         first_page = {"rows": []}
@@ -2258,6 +2273,22 @@ class TestRowIterator(unittest.TestCase):
                 bqstorage_client=None, create_bqstorage_client=True
             )
         )
+
+    def test__validate_bqstorage_returns_true_if_no_cached_results(self):
+        iterator = self._make_one(first_page_response=None)  # not cached
+        result = iterator._validate_bqstorage(
+            bqstorage_client=None, create_bqstorage_client=True
+        )
+        self.assertTrue(result)
+
+    def test__validate_bqstorage_returns_false_if_page_token_set(self):
+        iterator = self._make_one(
+            page_token="abc", first_page_response=None  # not cached
+        )
+        result = iterator._validate_bqstorage(
+            bqstorage_client=None, create_bqstorage_client=True
+        )
+        self.assertFalse(result)
 
     def test__validate_bqstorage_returns_false_if_max_results_set(self):
         iterator = self._make_one(

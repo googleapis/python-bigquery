@@ -33,7 +33,7 @@ TEST_PATH = "/v1/project/test-proj/dataset/test-dset/table/test-tbl/data"
 
 if pandas is not None:  # pragma: NO COVER
     PANDAS_INSTALLED_VERSION = metadata.version("pandas")
-else: # pragma: NO COVER
+else:  # pragma: NO COVER
     PANDAS_INSTALLED_VERSION = "0.0.0"
 
 

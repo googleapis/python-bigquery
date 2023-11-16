@@ -66,6 +66,7 @@ extras = {
         "pandas>=1.1.0",
         pyarrow_dependency,
         "db-dtypes>=0.3.0,<2.0.0dev",
+        "importlib_metadata>=1.0.0; python_version<'3.8'",
     ],
     "ipywidgets": [
         "ipywidgets>=7.7.0",

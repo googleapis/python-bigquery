@@ -23,8 +23,12 @@ import operator
 import warnings
 
 import google.api_core.retry
-import pkg_resources
 import pytest
+
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 from google.cloud import bigquery
 
@@ -42,11 +46,11 @@ bigquery_storage = pytest.importorskip(
 )
 
 if pandas is not None:
-    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
+    PANDAS_INSTALLED_VERSION = metadata.version("pandas")
 else:
-    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
+    PANDAS_INSTALLED_VERSION = "0.0.0"
 
-PANDAS_INT64_VERSION = pkg_resources.parse_version("1.0.0")
+PANDAS_INT64_VERSION = "1.0.0"
 
 
 class MissingDataError(Exception):
@@ -1010,9 +1014,7 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
     assert len(dataframe.index) == 100
 
 
-@pytest.mark.skipif(
-    PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
-)
+@pytest.mark.skipif(PANDAS_INSTALLED_VERSION not in ["0", "1"], reason="")
 @pytest.mark.parametrize(
     ("max_results",),
     (

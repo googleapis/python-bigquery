@@ -44,7 +44,7 @@ def class_under_test():
     return RowIterator
 
 
-@pytest.mark.skipif(PANDAS_INSTALLED_VERSION not in ["0", "1"], reason="")
+@pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
 def test_to_dataframe_nullable_scalars(monkeypatch, class_under_test):
     # See tests/system/test_arrow.py for the actual types we get from the API.
     arrow_schema = pyarrow.schema(

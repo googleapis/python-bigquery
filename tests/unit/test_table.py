@@ -3706,7 +3706,7 @@ class TestRowIterator(unittest.TestCase):
             self.assertEqual(df.timestamp.dtype.name, "object")
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @pytest.mark.skipif(PANDAS_INSTALLED_VERSION not in ["0", "1"], reason="")
+    @pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
     def test_to_dataframe_w_none_dtypes_mapper(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3819,7 +3819,7 @@ class TestRowIterator(unittest.TestCase):
             )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @pytest.mark.skipif(PANDAS_INSTALLED_VERSION not in ["0", "1"], reason="")
+    @pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
     def test_to_dataframe_column_dtypes(self):
         from google.cloud.bigquery.schema import SchemaField
 

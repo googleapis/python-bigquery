@@ -78,3 +78,57 @@ def test_to_arrow_with_jobs_query_response():
         "Tiffani",
     ]
     assert records["number"].to_pylist() == [6, 325, 26, 10, 17, 22, 6, 229, 8]
+
+
+def test_to_arrow_with_jobs_query_response_and_max_results():
+    resource = {
+        "kind": "bigquery#queryResponse",
+        "schema": {
+            "fields": [
+                {"name": "name", "type": "STRING", "mode": "NULLABLE"},
+                {"name": "number", "type": "INTEGER", "mode": "NULLABLE"},
+            ]
+        },
+        "jobReference": {
+            "projectId": "test-project",
+            "jobId": "job_ocd3cb-N62QIslU7R5qKKa2_427J",
+            "location": "US",
+        },
+        "totalRows": "9",
+        "rows": [
+            {"f": [{"v": "Tiarra"}, {"v": "6"}]},
+            {"f": [{"v": "Timothy"}, {"v": "325"}]},
+            {"f": [{"v": "Tina"}, {"v": "26"}]},
+            {"f": [{"v": "Tierra"}, {"v": "10"}]},
+            {"f": [{"v": "Tia"}, {"v": "17"}]},
+            {"f": [{"v": "Tiara"}, {"v": "22"}]},
+            {"f": [{"v": "Tiana"}, {"v": "6"}]},
+            {"f": [{"v": "Tiffany"}, {"v": "229"}]},
+            {"f": [{"v": "Tiffani"}, {"v": "8"}]},
+        ],
+        "totalBytesProcessed": "154775150",
+        "jobComplete": True,
+        "cacheHit": False,
+        "queryId": "job_ocd3cb-N62QIslU7R5qKKa2_427J",
+    }
+
+    rows = google.cloud.bigquery.table.RowIterator(
+        client=None,
+        api_request=None,
+        path=None,
+        schema=[
+            bigquery.SchemaField.from_api_repr(field)
+            for field in resource["schema"]["fields"]
+        ],
+        first_page_response=resource,
+        max_results=3,
+    )
+    records = rows.to_arrow()
+
+    assert records.column_names == ["name", "number"]
+    assert records["name"].to_pylist() == [
+        "Tiarra",
+        "Timothy",
+        "Tina",
+    ]
+    assert records["number"].to_pylist() == [6, 325, 26]

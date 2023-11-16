@@ -2178,6 +2178,39 @@ class TestRowIterator(unittest.TestCase):
             method="GET", path=path, query_params={"pageToken": "next-page"}
         )
 
+    def test_iterate_with_cached_first_page_max_results(self):
+        from google.cloud.bigquery.schema import SchemaField
+
+        first_page = {
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
+            "pageToken": "next-page",
+        }
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        path = "/foo"
+        api_request = mock.Mock(return_value=first_page)
+        row_iterator = self._make_one(
+            _mock_client(),
+            api_request,
+            path,
+            schema,
+            max_results=3,
+            first_page_response=first_page,
+        )
+        rows = list(row_iterator)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0].age, 27)
+        self.assertEqual(rows[1].age, 28)
+        self.assertEqual(rows[2].age, 32)
+        api_request.assert_not_called()
+
     def test_page_size(self):
         from google.cloud.bigquery.schema import SchemaField
 

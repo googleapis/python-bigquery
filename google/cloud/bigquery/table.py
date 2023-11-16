@@ -1588,7 +1588,17 @@ class RowIterator(HTTPIterator):
         This is useful to know, because we can avoid alternative download
         mechanisms.
         """
-        if self._first_page_response is None or self.next_page_token:
+        if self._first_page_response is None:
+            return False
+
+        if (
+            self.max_results is not None
+            and len(self._first_page_response.get(self._items_key, []))
+            >= self.max_results
+        ):
+            return True
+
+        if self.next_page_token is not None:
             return False
 
         return self._first_page_response.get(self._next_token) is None
@@ -1631,7 +1641,15 @@ class RowIterator(HTTPIterator):
                 The parsed JSON response of the next page's contents.
         """
         if self._first_page_response:
-            response = self._first_page_response
+            rows = self._first_page_response.get(self._items_key, [])[
+                : self.max_results
+            ]
+            response = {
+                self._items_key: rows,
+            }
+            if self._next_token in self._first_page_response:
+                response[self._next_token] = self._first_page_response[self._next_token]
+
             self._first_page_response = None
             return response
 

@@ -1591,7 +1591,7 @@ class RowIterator(HTTPIterator):
 
     @property
     def _billing_project(self) -> Optional[str]:
-        """GCP Project ID where BQ Storage API will bill to (if applicable)."""
+        """GCP Project ID where BQ API will bill to (if applicable)."""
         client = self.client
         return client.project if client is not None else None
 

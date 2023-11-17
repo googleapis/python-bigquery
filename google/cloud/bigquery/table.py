@@ -1590,7 +1590,7 @@ class RowIterator(HTTPIterator):
         self._project = project
 
     @property
-    def _bqstorage_project(self) -> Optional[str]:
+    def _billing_project(self) -> Optional[str]:
         """GCP Project ID where BQ Storage API will bill to (if applicable)."""
         client = self.client
         return client.project if client is not None else None
@@ -1766,7 +1766,7 @@ class RowIterator(HTTPIterator):
 
         bqstorage_download = functools.partial(
             _pandas_helpers.download_arrow_bqstorage,
-            self._bqstorage_project,
+            self._billing_project,
             self._table,
             bqstorage_client,
             preserve_order=self._preserve_order,
@@ -1946,7 +1946,7 @@ class RowIterator(HTTPIterator):
         column_names = [field.name for field in self._schema]
         bqstorage_download = functools.partial(
             _pandas_helpers.download_dataframe_bqstorage,
-            self._bqstorage_project,
+            self._billing_project,
             self._table,
             bqstorage_client,
             column_names,

@@ -329,11 +329,6 @@ def query_and_wait(
             timeout=timeout,
         )
 
-        # The query hasn't finished, so we expect there to be a job ID now.
-        # Wait until the query finishes.
-        if not response.get("jobComplete", False):
-            return _to_query_job(client, query, job_config, response).result()
-
         # Even if we run with JOB_CREATION_OPTIONAL, if there are more pages
         # to fetch, there will be a job ID for jobs.getQueryResults.
         query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(
@@ -347,11 +342,11 @@ def query_and_wait(
             job_id is not None and location is not None and len(rows) < total_rows
         )
 
-        if more_pages:
-            # TODO(swast): Avoid a call to jobs.get in some cases (few
-            # remaining pages) by calling client._list_rows_from_query_results
-            # directly. Need to update RowIterator to fetch destination table
-            # via the job ID if needed.
+        if more_pages or not query_results.complete:
+            # TODO(swast): Avoid a call to jobs.get in some cases
+            # remaining pages) by waiting for the query to finish and calling
+            # client._list_rows_from_query_results directly. Need to update
+            # RowIterator to fetch destination table via the job ID if needed.
             return _to_query_job(client, query, job_config, response).result(
                 retry=retry,
                 timeout=timeout,

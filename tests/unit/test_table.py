@@ -74,9 +74,9 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
-if pandas is not None:  # pragma: NO COVER
+if pandas is not None:
     PANDAS_INSTALLED_VERSION = metadata.version("pandas")
-else:  # pragma: NO COVER
+else:
     PANDAS_INSTALLED_VERSION = "0.0.0"
 
 

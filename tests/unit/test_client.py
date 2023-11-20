@@ -80,11 +80,9 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
 
-PANDAS_MINIUM_VERSION = "1.0.0"
-
-if pandas is not None:  # pragma: NO COVER
+if pandas is not None:
     PANDAS_INSTALLED_VERSION = metadata.version("pandas")
-else:  # pragma: NO COVER
+else:
     PANDAS_INSTALLED_VERSION = "0.0.0"
 
 
@@ -8149,8 +8147,8 @@ class TestClientUpload(object):
         )
 
     @unittest.skipIf(
-        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
-        "Only `pandas version >=1.0.0` supported",
+        PANDAS_INSTALLED_VERSION[0:2] in ["0."],
+        reason="Only `pandas version >=1.0.0` is supported",
     )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
@@ -8197,8 +8195,8 @@ class TestClientUpload(object):
         )
 
     @unittest.skipIf(
-        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
-        "Only `pandas version >=1.0.0` supported",
+        PANDAS_INSTALLED_VERSION[0:2] in ["0."],
+        reason="Only `pandas version >=1.0.0` is supported",
     )
     # @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):

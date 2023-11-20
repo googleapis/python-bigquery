@@ -45,12 +45,10 @@ bigquery_storage = pytest.importorskip(
     "google.cloud.bigquery_storage", minversion="2.0.0"
 )
 
-if pandas is not None:  # pragma: NO COVER
+if pandas is not None:
     PANDAS_INSTALLED_VERSION = metadata.version("pandas")
-else:  # pragma: NO COVER
+else:
     PANDAS_INSTALLED_VERSION = "0.0.0"
-
-PANDAS_INT64_VERSION = "1.0.0"
 
 
 class MissingDataError(Exception):
@@ -315,7 +313,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
 
 
 @pytest.mark.skipif(
-    PANDAS_INSTALLED_VERSION < PANDAS_INT64_VERSION,
+    PANDAS_INSTALLED_VERSION[0:2] in ["0."],
     reason="Only `pandas version >=1.0.0` is supported",
 )
 def test_load_table_from_dataframe_w_nullable_int64_datatype(
@@ -346,7 +344,7 @@ def test_load_table_from_dataframe_w_nullable_int64_datatype(
 
 
 @pytest.mark.skipif(
-    PANDAS_INSTALLED_VERSION < PANDAS_INT64_VERSION,
+    PANDAS_INSTALLED_VERSION[0:2] in ["0."],
     reason="Only `pandas version >=1.0.0` is supported",
 )
 def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(

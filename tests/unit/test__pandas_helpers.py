@@ -63,9 +63,9 @@ bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import()
 
 PANDAS_MINIUM_VERSION = "1.0.0"
 
-if pandas is not None:  # pragma: NO COVER
+if pandas is not None:
     PANDAS_INSTALLED_VERSION = metadata.version("pandas")
-else:  # pragma: NO COVER
+else:
     PANDAS_INSTALLED_VERSION = "0.0.0"
 
 
@@ -808,8 +808,8 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
 
 
 @pytest.mark.skipif(
-    pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
-    reason="Requires `pandas version >= 1.0.0` which introduces pandas.NA",
+    PANDAS_INSTALLED_VERSION[0:2] in ["0."],
+    reason="Only `pandas version >=1.0.0` is supported",
 )
 def test_dataframe_to_json_generator(module_under_test):
     utcnow = datetime.datetime.utcnow()

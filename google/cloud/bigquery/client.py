@@ -3405,9 +3405,24 @@ class Client(ClientWithProject):
         else:
             raise ValueError(f"Got unexpected value for api_method: {repr(api_method)}")
 
-    def query_and_wait(self) -> RowIterator:
-        """[Preview] Run the query and return the results."""
-        maybe_job = _job_helpers.query_jobs_query(
+    def query_and_wait(
+        self,
+        query,
+        job_config: Optional[QueryJobConfig] = None,
+        location: Optional[str] = None,
+        project: Optional[str] = None,
+        retry: retries.Retry = DEFAULT_RETRY,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
+        job_retry: retries.Retry = DEFAULT_JOB_RETRY,
+    ) -> RowIterator:
+        """Run the query, wait for it to finish, and return the results."""
+        if project is None:
+            project = self.project
+
+        if location is None:
+            location = self.location
+
+        return _job_helpers.query_and_wait(
             self,
             query,
             job_config,
@@ -3416,7 +3431,6 @@ class Client(ClientWithProject):
             retry,
             timeout,
             job_retry,
-            # TODO: add no job mode
         )
 
     def insert_rows(

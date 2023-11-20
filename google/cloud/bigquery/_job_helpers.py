@@ -36,6 +36,7 @@ predicates where it is safe to generate a new query ID.
 """
 
 import copy
+import functools
 import os
 import uuid
 from typing import Any, Dict, TYPE_CHECKING, Optional
@@ -298,7 +299,7 @@ def query_and_wait(
     job_retry: retries.Retry,
 ) -> table.RowIterator:
     """Initiate a query using jobs.query and waits for results.
-     
+
     While ``jobCreationMode=JOB_CREATION_OPTIONAL`` is in preview, use the
     default ``jobCreationMode`` unless the environment variable
     ``QUERY_PREVIEW_ENABLED=true``. After ``jobCreationMode`` is GA, this
@@ -308,8 +309,9 @@ def query_and_wait(
     """
     path = _to_query_path(project)
     request_body = _to_query_request(query, job_config, location, timeout)
+    # TODO(swast): Set page size via page_size or max_results.
 
-    if os.getenv("QUERY_PREVIEW_ENABLED").casefold() == "true":
+    if os.getenv("QUERY_PREVIEW_ENABLED", "").casefold() == "true":
         request_body["jobCreationMode"] = "JOB_CREATION_OPTIONAL"
 
     @job_retry
@@ -334,25 +336,32 @@ def query_and_wait(
 
         # Even if we run with JOB_CREATION_OPTIONAL, if there are more pages
         # to fetch, there will be a job ID for jobs.getQueryResults.
-        query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(response)
+        query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(
+            response
+        )
         job_id = query_results.job_id
         location = query_results.location
         rows = query_results.rows
         total_rows = query_results.total_rows
         more_pages = (
-            job_id is not None
-            and location is not None
-            and len(rows) < total_rows
+            job_id is not None and location is not None and len(rows) < total_rows
         )
-        
+
         if more_pages:
-            # TODO(swast): Call client._list_rows_from_query_results directly
-            # after updating RowIterator to fetch destination only if needed.
-            return _to_query_job(client, query, job_config, response).result()
-        
+            # TODO(swast): Avoid a call to jobs.get in some cases (few
+            # remaining pages) by calling client._list_rows_from_query_results
+            # directly. Need to update RowIterator to fetch destination table
+            # via the job ID if needed.
+            return _to_query_job(client, query, job_config, response).result(
+                retry=retry,
+                timeout=timeout,
+                # TODO(swast): Support max_results
+                max_results=None,
+            )
+
         return table.RowIterator(
             client=client,
-            api_request=client._call_api,
+            api_request=functools.partial(client._call_api, retry, timeout=timeout),
             path=None,
             schema=query_results.schema,
             # TODO(swast): Support max_results
@@ -362,7 +371,7 @@ def query_and_wait(
             location=location,
             job_id=job_id,
             query_id=query_results.query_id,
-            project=project,            
+            project=project,
         )
 
     return do_query()

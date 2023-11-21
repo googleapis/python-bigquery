@@ -300,9 +300,11 @@ def query_and_wait(
     job_config: Optional[job.QueryJobConfig],
     location: Optional[str],
     project: str,
-    retry: retries.Retry,
+    retry: Optional[retries.Retry],
     timeout: Optional[float],
-    job_retry: retries.Retry,
+    job_retry: Optional[retries.Retry],
+    page_size: Optional[int] = None,
+    max_results: Optional[int] = None,
 ) -> table.RowIterator:
     """Initiate a query using jobs.query and waits for results.
 
@@ -317,12 +319,15 @@ def query_and_wait(
     request_body = _to_query_request(
         query=query, job_config=job_config, location=location, timeout=timeout
     )
-    # TODO(swast): Set page size via page_size or max_results.
+
+    if page_size is not None or max_results is not None:
+        request_body["maxResults"] = min(
+            *(size for size in (page_size, max_results) if size is not None)
+        )
 
     if os.getenv("QUERY_PREVIEW_ENABLED", "").casefold() == "true":
         request_body["jobCreationMode"] = "JOB_CREATION_OPTIONAL"
 
-    @job_retry
     def do_query():
         request_body["requestId"] = make_job_id()
         span_attributes = {"path": path}
@@ -342,13 +347,8 @@ def query_and_wait(
         query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(
             response
         )
-        job_id = query_results.job_id
-        location = query_results.location
-        rows = query_results.rows
-        total_rows = query_results.total_rows
-        more_pages = (
-            job_id is not None and location is not None and len(rows) < total_rows
-        )
+        page_token = query_results.page_token
+        more_pages = page_token is not None
 
         if more_pages or not query_results.complete:
             # TODO(swast): Avoid a call to jobs.get in some cases (few
@@ -358,8 +358,8 @@ def query_and_wait(
             return _to_query_job(client, query, job_config, response).result(
                 retry=retry,
                 timeout=timeout,
-                # TODO(swast): Support max_results
-                max_results=None,
+                page_size=page_size,
+                max_results=max_results,
             )
 
         return table.RowIterator(
@@ -367,14 +367,17 @@ def query_and_wait(
             api_request=functools.partial(client._call_api, retry, timeout=timeout),
             path=None,
             schema=query_results.schema,
-            # TODO(swast): Support max_results
-            max_results=None,
-            total_rows=total_rows,
+            max_results=max_results,
+            page_size=page_size,
+            total_rows=query_results.total_rows,
             first_page_response=response,
-            location=location,
-            job_id=job_id,
+            location=query_results.location,
+            job_id=query_results.job_id,
             query_id=query_results.query_id,
-            project=project,
+            project=query_results.project,
         )
 
-    return do_query()
+    if job_retry is not None:
+        return job_retry(do_query)()
+    else:
+        return do_query()

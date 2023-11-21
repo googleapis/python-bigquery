@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 from typing import Any, Dict, Optional
 from unittest import mock
 
@@ -152,7 +153,7 @@ def make_query_response(
 )
 def test__to_query_request(job_config, expected):
     result = _job_helpers._to_query_request(job_config, query="SELECT 1")
-    del result["query"]
+    expected["query"] = "SELECT 1"
     assert result == expected
 
 
@@ -312,6 +313,301 @@ def test_query_jobs_query_sets_timeout(timeout, expected_timeout):
     # See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#QueryRequest
     request = call_kwargs["data"]
     assert request["timeoutMs"] == expected_timeout
+
+
+def test_query_and_wait_sets_location():
+    client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "response-location",
+        },
+        "jobComplete": True,
+    }
+    rows = _job_helpers.query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=None,
+        retry=None,
+        timeout=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+    assert rows.location == "response-location"
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "SELECT 1",
+            "location": "request-location",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+        },
+        timeout=None,
+    )
+
+
+def test_query_and_wait_caches_completed_query_results_one_page():
+    client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "US",
+        },
+        "jobComplete": True,
+        "queryId": "xyz",
+        "schema": {
+            "fields": [
+                {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+            ],
+        },
+        "rows": [
+            {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+            {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ],
+        # Even though totalRows > len(rows), we should use the presense of a
+        # next page token to decide if there are any more pages.
+        "totalRows": 8,
+    }
+    rows = _job_helpers.query_and_wait(
+        client,
+        query="SELECT full_name, age FROM people;",
+        job_config=None,
+        location=None,
+        project="request-project",
+        retry=None,
+        timeout=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+    rows_list = list(rows)
+    assert rows.project == "response-project"
+    assert rows.job_id == "abc"
+    assert rows.location == "US"
+    assert rows.query_id == "xyz"
+    assert rows.total_rows == 8
+    assert len(rows_list) == 4
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "SELECT full_name, age FROM people;",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+        },
+        timeout=None,
+    )
+
+
+def test_query_and_wait_caches_completed_query_results_one_page_no_rows():
+    client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "US",
+        },
+        "jobComplete": True,
+        "queryId": "xyz",
+    }
+    rows = _job_helpers.query_and_wait(
+        client,
+        query="CREATE TABLE abc;",
+        project="request-project",
+        job_config=None,
+        location=None,
+        retry=None,
+        timeout=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+    assert rows.project == "response-project"
+    assert rows.job_id == "abc"
+    assert rows.location == "US"
+    assert rows.query_id == "xyz"
+    assert list(rows) == []
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "CREATE TABLE abc;",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+        },
+        timeout=None,
+    )
+
+
+def test_query_and_wait_caches_completed_query_results_more_pages():
+    client = mock.create_autospec(Client)
+    client._list_rows_from_query_results = functools.partial(
+        Client._list_rows_from_query_results, client
+    )
+    client._call_api.side_effect = (
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "response-job-id",
+                "location": "response-location",
+            },
+            "jobComplete": True,
+            "queryId": "xyz",
+            "schema": {
+                "fields": [
+                    {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                    {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+                ],
+            },
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
+            # Even though totalRows <= len(rows), we should use the presense of a
+            # next page token to decide if there are any more pages.
+            "totalRows": 2,
+            "pageToken": "page-2",
+        },
+        # TODO(swast): This is a case where we can avoid a call to jobs.get,
+        # but currently do so because the RowIterator might need the
+        # destination table, since results aren't fully cached.
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "response-job-id",
+                "location": "response-location",
+            },
+        },
+        {
+            "rows": [
+                {"f": [{"v": "Pebbles Phlyntstone"}, {"v": "4"}]},
+                {"f": [{"v": "Bamm-Bamm Rhubble"}, {"v": "5"}]},
+                {"f": [{"v": "Joseph Rockhead"}, {"v": "32"}]},
+                {"f": [{"v": "Perry Masonry"}, {"v": "33"}]},
+            ],
+            "totalRows": 3,
+            "pageToken": "page-3",
+        },
+        {
+            "rows": [
+                {"f": [{"v": "Pearl Slaghoople"}, {"v": "53"}]},
+            ],
+            "totalRows": 4,
+        },
+    )
+    rows = _job_helpers.query_and_wait(
+        client,
+        query="SELECT full_name, age FROM people;",
+        project="request-project",
+        job_config=None,
+        location=None,
+        retry=None,
+        timeout=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+    assert rows.total_rows == 2  # Match the API response.
+    rows_list = list(rows)
+    assert rows.total_rows == 4  # Match the final API response.
+    assert len(rows_list) == 9
+
+    # Start the query.
+    jobs_query_path = "/projects/request-project/queries"
+    client._call_api.assert_any_call(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": jobs_query_path},
+        method="POST",
+        path=jobs_query_path,
+        data={
+            "query": "SELECT full_name, age FROM people;",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+        },
+        timeout=None,
+    )
+
+    # TODO(swast): Fetching job metadata isn't necessary in this case.
+    jobs_get_path = "/projects/response-project/jobs/response-job-id"
+    client._call_api.assert_any_call(
+        None,  # retry
+        span_name="BigQuery.job.reload",
+        span_attributes={"path": jobs_get_path},
+        job_ref=mock.ANY,
+        method="GET",
+        path=jobs_get_path,
+        query_params={"location": "response-location"},
+        timeout=None,
+    )
+
+    # Fetch the remaining two pages.
+    jobs_get_query_results_path = "/projects/response-project/queries/response-job-id"
+    client._call_api.assert_any_call(
+        None,  # retry
+        timeout=None,
+        method="GET",
+        path=jobs_get_query_results_path,
+        query_params={
+            "pageToken": "page-2",
+            "fields": "jobReference,totalRows,pageToken,rows",
+            "location": "response-location",
+            "formatOptions.useInt64Timestamp": True,
+        },
+    )
+    client._call_api.assert_any_call(
+        None,  # retry
+        timeout=None,
+        method="GET",
+        path=jobs_get_query_results_path,
+        query_params={
+            "pageToken": "page-3",
+            "fields": "jobReference,totalRows,pageToken,rows",
+            "location": "response-location",
+            "formatOptions.useInt64Timestamp": True,
+        },
+    )
 
 
 def test_make_job_id_wo_suffix():

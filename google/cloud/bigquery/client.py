@@ -3414,8 +3414,63 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
+        page_size: Optional[int] = None,
+        max_results: Optional[int] = None,
     ) -> RowIterator:
-        """Run the query, wait for it to finish, and return the results."""
+        """Run the query, wait for it to finish, and return the results.
+
+        Args:
+            query (str):
+                SQL query to be executed. Defaults to the standard SQL
+                dialect. Use the ``job_config`` parameter to change dialects.
+            job_config (Optional[google.cloud.bigquery.job.QueryJobConfig]):
+                Extra configuration options for the job.
+                To override any options that were previously set in
+                the ``default_query_job_config`` given to the
+                ``Client`` constructor, manually set those options to ``None``,
+                or whatever value is preferred.
+            location (Optional[str]):
+                Location where to run the job. Must match the location of the
+                table used in the query as well as the destination table.
+            project (Optional[str]):
+                Project ID of the project of where to run the job. Defaults
+                to the client's project.
+            retry (Optional[google.api_core.retry.Retry]):
+                How to retry the RPC.  This only applies to making RPC
+                calls.  It isn't used to retry failed jobs.  This has
+                a reasonable default that should only be overridden
+                with care.
+            timeout (Optional[float]):
+                The number of seconds to wait for the underlying HTTP transport
+                before using ``retry``.
+            job_retry (Optional[google.api_core.retry.Retry]):
+                How to retry failed jobs.  The default retries
+                rate-limit-exceeded errors.  Passing ``None`` disables
+                job retry. Not all jobs can be retried.
+            page_size (Optional[int]):
+                The maximum number of rows in each page of results from this
+                request. Non-positive values are ignored.
+            max_results (Optional[int]):
+                The maximum total number of rows from this request.
+
+        Returns:
+            google.cloud.bigquery.table.RowIterator:
+                Iterator of row data
+                :class:`~google.cloud.bigquery.table.Row`-s. During each
+                page, the iterator will have the ``total_rows`` attribute
+                set, which counts the total number of rows **in the result
+                set** (this is distinct from the total number of rows in the
+                current page: ``iterator.page.num_items``).
+
+                If the query is a special query that produces no results, e.g.
+                a DDL query, an ``_EmptyRowIterator`` instance is returned.
+
+        Raises:
+            TypeError:
+                If ``job_config`` is not an instance of
+                :class:`~google.cloud.bigquery.job.QueryJobConfig`
+                class.
+        """
         if project is None:
             project = self.project
 
@@ -3431,6 +3486,8 @@ class Client(ClientWithProject):
             retry,
             timeout,
             job_retry,
+            page_size=page_size,
+            max_results=max_results,
         )
 
     def insert_rows(

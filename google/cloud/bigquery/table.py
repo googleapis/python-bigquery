@@ -2998,8 +2998,7 @@ def _rows_page_start(iterator, page, response):
 
     total_rows = response.get("totalRows")
     if total_rows is not None:
-        total_rows = int(total_rows)
-    iterator._total_rows = total_rows
+        iterator._total_rows = int(total_rows)
 
 
 # pylint: enable=unused-argument

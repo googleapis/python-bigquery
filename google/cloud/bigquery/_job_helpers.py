@@ -148,10 +148,11 @@ def query_jobs_insert(
 
 
 def _to_query_request(
+    job_config: Optional[job.QueryJobConfig] = None,
+    *,
     query: str,
-    job_config: Optional[job.QueryJobConfig],
-    location: Optional[str],
-    timeout: Optional[float],
+    location: Optional[str] = None,
+    timeout: Optional[float] = None,
 ) -> Dict[str, Any]:
     """Transform from Job resource to QueryRequest resource.
 
@@ -182,7 +183,10 @@ def _to_query_request(
     if timeout is not None:
         # Subtract a buffer for context switching, network latency, etc.
         request_body["timeoutMs"] = max(0, int(1000 * timeout) - _TIMEOUT_BUFFER_MILLIS)
-    request_body["location"] = location
+
+    if location is not None:
+        request_body["location"] = location
+
     request_body["query"] = query
 
     return request_body
@@ -261,7 +265,9 @@ def query_jobs_query(
     See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
     """
     path = _to_query_path(project)
-    request_body = _to_query_request(query, job_config, location, timeout)
+    request_body = _to_query_request(
+        query=query, job_config=job_config, location=location, timeout=timeout
+    )
 
     def do_query():
         request_body["requestId"] = make_job_id()
@@ -308,7 +314,9 @@ def query_and_wait(
     See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
     """
     path = _to_query_path(project)
-    request_body = _to_query_request(query, job_config, location, timeout)
+    request_body = _to_query_request(
+        query=query, job_config=job_config, location=location, timeout=timeout
+    )
     # TODO(swast): Set page size via page_size or max_results.
 
     if os.getenv("QUERY_PREVIEW_ENABLED", "").casefold() == "true":
@@ -343,7 +351,7 @@ def query_and_wait(
         )
 
         if more_pages or not query_results.complete:
-            # TODO(swast): Avoid a call to jobs.get in some cases
+            # TODO(swast): Avoid a call to jobs.get in some cases (few
             # remaining pages) by waiting for the query to finish and calling
             # client._list_rows_from_query_results directly. Need to update
             # RowIterator to fetch destination table via the job ID if needed.

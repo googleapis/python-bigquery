@@ -151,7 +151,8 @@ def make_query_response(
     ),
 )
 def test__to_query_request(job_config, expected):
-    result = _job_helpers._to_query_request(job_config)
+    result = _job_helpers._to_query_request(job_config, query="SELECT 1")
+    del result["query"]
     assert result == expected
 
 

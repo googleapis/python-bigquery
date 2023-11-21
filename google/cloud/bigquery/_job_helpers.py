@@ -320,10 +320,10 @@ def query_and_wait(
         query=query, job_config=job_config, location=location, timeout=timeout
     )
 
-    if page_size is not None or max_results is not None:
-        request_body["maxResults"] = min(
-            *(size for size in (page_size, max_results) if size is not None)
-        )
+    if page_size is not None and max_results is not None:
+        request_body["maxResults"] = min(page_size, max_results)
+    elif page_size is not None or max_results is not None:
+        request_body["maxResults"] = page_size or max_results
 
     if os.getenv("QUERY_PREVIEW_ENABLED", "").casefold() == "true":
         request_body["jobCreationMode"] = "JOB_CREATION_OPTIONAL"
@@ -332,15 +332,27 @@ def query_and_wait(
         request_body["requestId"] = make_job_id()
         span_attributes = {"path": path}
 
-        response = client._call_api(
-            retry,
-            span_name="BigQuery.query",
-            span_attributes=span_attributes,
-            method="POST",
-            path=path,
-            data=request_body,
-            timeout=timeout,
-        )
+        # For easier testing, handle the retries ourselves.
+        if retry is not None:
+            response = retry(client._call_api)(
+                retry,
+                span_name="BigQuery.query",
+                span_attributes=span_attributes,
+                method="POST",
+                path=path,
+                data=request_body,
+                timeout=timeout,
+            )
+        else:
+            response = client._call_api(
+                retry=None,
+                span_name="BigQuery.query",
+                span_attributes=span_attributes,
+                method="POST",
+                path=path,
+                data=request_body,
+                timeout=timeout,
+            )
 
         # Even if we run with JOB_CREATION_OPTIONAL, if there are more pages
         # to fetch, there will be a job ID for jobs.getQueryResults.

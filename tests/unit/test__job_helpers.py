@@ -16,6 +16,8 @@ import functools
 from typing import Any, Dict, Optional
 from unittest import mock
 
+import freezegun
+import google.api_core.exceptions
 from google.api_core import retry as retries
 import pytest
 
@@ -315,6 +317,159 @@ def test_query_jobs_query_sets_timeout(timeout, expected_timeout):
     assert request["timeoutMs"] == expected_timeout
 
 
+def test_query_and_wait_retries_job():
+    freezegun.freeze_time(auto_tick_seconds=100)
+    client = mock.create_autospec(Client)
+    client._call_api.__name__ = "_call_api"
+    client._call_api.__qualname__ = "Client._call_api"
+    client._call_api.__annotations__ = {}
+    client._call_api.side_effect = (
+        google.api_core.exceptions.BadGateway("retry me"),
+        google.api_core.exceptions.InternalServerError("job_retry me"),
+        google.api_core.exceptions.BadGateway("retry me"),
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "abc",
+                "location": "response-location",
+            },
+            "jobComplete": True,
+            "schema": {
+                "fields": [
+                    {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                    {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+                ],
+            },
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
+        },
+    )
+    rows = _job_helpers.query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=None,
+        timeout=None,
+        page_size=None,
+        max_results=None,
+        retry=retries.Retry(
+            lambda exc: isinstance(exc, google.api_core.exceptions.BadGateway),
+            multiplier=1.0,
+            timeout=200.0,  # Since auto_tick_seconds is 100, we should get at least 1 retry.
+        ),
+        job_retry=retries.Retry(
+            lambda exc: isinstance(exc, google.api_core.exceptions.InternalServerError),
+            multiplier=1.0,
+            timeout=600.0,
+        ),
+    )
+    assert len(list(rows)) == 4
+
+    # For this code path, where the query has finished immediately, we should
+    # only be calling jobs.query.
+    request_path = "/projects/request-project/queries"
+    for call in client._call_api.call_args_list:
+        assert call.call_args.kwargs["method"] == "POST"
+        assert call.call_args.kwargs["path"] == request_path
+
+
+@freezegun.freeze_time(auto_tick_seconds=100)
+def test_query_and_wait_retries_job_times_out():
+    client = mock.create_autospec(Client)
+    client._call_api.__name__ = "_call_api"
+    client._call_api.__qualname__ = "Client._call_api"
+    client._call_api.__annotations__ = {}
+    client._call_api.side_effect = (
+        google.api_core.exceptions.BadGateway("retry me"),
+        google.api_core.exceptions.InternalServerError("job_retry me"),
+        google.api_core.exceptions.BadGateway("retry me"),
+        google.api_core.exceptions.InternalServerError("job_retry me"),
+    )
+
+    with pytest.raises(google.api_core.exceptions.RetryError) as exc_info:
+        _job_helpers.query_and_wait(
+            client,
+            query="SELECT 1",
+            location="request-location",
+            project="request-project",
+            job_config=None,
+            timeout=None,
+            page_size=None,
+            max_results=None,
+            retry=retries.Retry(
+                lambda exc: isinstance(exc, google.api_core.exceptions.BadGateway),
+                multiplier=1.0,
+                timeout=200.0,  # Since auto_tick_seconds is 100, we should get at least 1 retry.
+            ),
+            job_retry=retries.Retry(
+                lambda exc: isinstance(
+                    exc, google.api_core.exceptions.InternalServerError
+                ),
+                multiplier=1.0,
+                timeout=400.0,
+            ),
+        )
+
+    assert isinstance(
+        exc_info.value.cause, google.api_core.exceptions.InternalServerError
+    )
+
+
+def test_query_and_wait_sets_job_creation_mode(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(
+        "QUERY_PREVIEW_ENABLED",
+        # The comparison should be case insensitive.
+        "TrUe",
+    )
+    client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "response-location",
+        },
+        "jobComplete": True,
+    }
+    _job_helpers.query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=None,
+        retry=None,
+        timeout=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "SELECT 1",
+            "location": "request-location",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+            "jobCreationMode": "JOB_CREATION_OPTIONAL",
+        },
+        timeout=None,
+    )
+
+
 def test_query_and_wait_sets_location():
     client = mock.create_autospec(Client)
     client._call_api.return_value = {
@@ -355,6 +510,61 @@ def test_query_and_wait_sets_location():
                 "useInt64Timestamp": True,
             },
             "requestId": mock.ANY,
+        },
+        timeout=None,
+    )
+
+
+@pytest.mark.parametrize(
+    ("max_results", "page_size", "expected"),
+    [
+        (10, None, 10),
+        (None, 11, 11),
+        (12, 100, 12),
+        (100, 13, 13),
+    ],
+)
+def test_query_and_wait_sets_max_results(max_results, page_size, expected):
+    client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "response-location",
+        },
+        "jobComplete": True,
+    }
+    rows = _job_helpers.query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=None,
+        retry=None,
+        timeout=None,
+        job_retry=None,
+        page_size=page_size,
+        max_results=max_results,
+    )
+    assert rows.location == "response-location"
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "SELECT 1",
+            "location": "request-location",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+            "maxResults": expected,
         },
         timeout=None,
     )

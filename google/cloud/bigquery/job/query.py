@@ -931,6 +931,15 @@ class QueryJob(_AsyncJob):
         )
 
     @property
+    def query_id(self) -> Optional[str]:
+        """[Preview] ID of a completed query.
+
+        This ID is auto-generated and not guaranteed to be populated.
+        """
+        query_results = self._query_results
+        return query_results.query_id if query_results is not None else None
+
+    @property
     def query_parameters(self):
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.query_parameters`.
@@ -1525,7 +1534,12 @@ class QueryJob(_AsyncJob):
                 provided and the job is not retryable.
         """
         if self.dry_run:
-            return _EmptyRowIterator()
+            return _EmptyRowIterator(
+                project=self.project,
+                location=self.location,
+                # Intentionally omit job_id and query_id since this doesn't
+                # actually correspond to a finished query job.
+            )
         try:
             retry_do_query = getattr(self, "_retry_do_query", None)
             if retry_do_query is not None:
@@ -1572,7 +1586,8 @@ class QueryJob(_AsyncJob):
                 # Since the job could already be "done" (e.g. got a finished job
                 # via client.get_job), the superclass call to done() might not
                 # set the self._query_results cache.
-                self._reload_query_results(retry=retry, timeout=timeout)
+                if self._query_results is None or not self._query_results.complete:
+                    self._reload_query_results(retry=retry, timeout=timeout)
 
             if retry_do_query is not None and job_retry is not None:
                 do_get_result = job_retry(do_get_result)
@@ -1594,7 +1609,21 @@ class QueryJob(_AsyncJob):
         # indicate success and avoid calling tabledata.list on a table which
         # can't be read (such as a view table).
         if self._query_results.total_rows is None:
-            return _EmptyRowIterator()
+            return _EmptyRowIterator(
+                location=self.location,
+                project=self.project,
+                job_id=self.job_id,
+                query_id=self.query_id,
+            )
+
+        # We know that there's at least 1 row, so only treat the response from
+        # jobs.getQueryResults / jobs.query as the first page of the
+        # RowIterator response if there are any rows in it. This prevents us
+        # from stopping the iteration early because we're missing rows and
+        # there's no next page token.
+        first_page_response = self._query_results._properties
+        if "rows" not in first_page_response:
+            first_page_response = None
 
         rows = self._client._list_rows_from_query_results(
             self.job_id,
@@ -1608,6 +1637,8 @@ class QueryJob(_AsyncJob):
             start_index=start_index,
             retry=retry,
             timeout=timeout,
+            query_id=self.query_id,
+            first_page_response=first_page_response,
         )
         rows._preserve_order = _contains_order_by(self.query)
         return rows

@@ -912,6 +912,14 @@ class _QueryResults(object):
         return self._properties.get("jobReference", {}).get("jobId")
 
     @property
+    def query_id(self) -> Optional[str]:
+        """[Preview] ID of a completed query.
+
+        This ID is auto-generated and not guaranteed to be populated.
+        """
+        return self._properties.get("queryId")
+
+    @property
     def page_token(self):
         """Token for fetching next bach of results.
 
@@ -997,14 +1005,6 @@ class _QueryResults(object):
         Args:
             api_response (Dict): Response returned from an API call
         """
-        job_id_present = (
-            "jobReference" in api_response
-            and "jobId" in api_response["jobReference"]
-            and "projectId" in api_response["jobReference"]
-        )
-        if not job_id_present:
-            raise ValueError("QueryResult requires a job reference")
-
         self._properties.clear()
         self._properties.update(copy.deepcopy(api_response))
 

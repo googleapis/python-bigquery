@@ -100,6 +100,10 @@ _NO_SUPPORTED_DTYPE = (
     "because the necessary `__from_arrow__` attribute is missing."
 )
 
+# How many of the total rows need to be downloaded already for us to skip
+# calling the BQ Storage API?
+ALMOST_COMPLETELY_CACHED_RATIO = 0.333
+
 
 def _reference_getter(table):
     """A :class:`~google.cloud.bigquery.table.TableReference` pointing to
@@ -1558,6 +1562,10 @@ class RowIterator(HTTPIterator):
         selected_fields=None,
         total_rows=None,
         first_page_response=None,
+        location: Optional[str] = None,
+        job_id: Optional[str] = None,
+        query_id: Optional[str] = None,
+        project: Optional[str] = None,
     ):
         super(RowIterator, self).__init__(
             client,
@@ -1575,23 +1583,77 @@ class RowIterator(HTTPIterator):
         self._field_to_index = _helpers._field_to_index_mapping(schema)
         self._page_size = page_size
         self._preserve_order = False
-        self._project = client.project if client is not None else None
         self._schema = schema
         self._selected_fields = selected_fields
         self._table = table
         self._total_rows = total_rows
         self._first_page_response = first_page_response
+        self._location = location
+        self._job_id = job_id
+        self._query_id = query_id
+        self._project = project
 
-    def _is_completely_cached(self):
+    @property
+    def _billing_project(self) -> Optional[str]:
+        """GCP Project ID where BQ API will bill to (if applicable)."""
+        client = self.client
+        return client.project if client is not None else None
+
+    @property
+    def job_id(self) -> Optional[str]:
+        """ID of the query job (if applicable).
+
+        To get the job metadata, call
+        ``job = client.get_job(rows.job_id, location=rows.location)``.
+        """
+        return self._job_id
+
+    @property
+    def location(self) -> Optional[str]:
+        """Location where the query executed (if applicable).
+
+        See: https://cloud.google.com/bigquery/docs/locations
+        """
+        return self._location
+
+    @property
+    def project(self) -> Optional[str]:
+        """GCP Project ID where these rows are read from."""
+        return self._project
+
+    @property
+    def query_id(self) -> Optional[str]:
+        """[Preview] ID of a completed query.
+
+        This ID is auto-generated and not guaranteed to be populated.
+        """
+        return self._query_id
+
+    def _is_almost_completely_cached(self):
         """Check if all results are completely cached.
 
         This is useful to know, because we can avoid alternative download
         mechanisms.
         """
-        if self._first_page_response is None or self.next_page_token:
+        if self._first_page_response is None:
             return False
 
-        return self._first_page_response.get(self._next_token) is None
+        total_cached_rows = len(self._first_page_response.get(self._items_key, []))
+        if self.max_results is not None and total_cached_rows >= self.max_results:
+            return True
+
+        if (
+            self.next_page_token is None
+            and self._first_page_response.get(self._next_token) is None
+        ):
+            return True
+
+        if self._total_rows is not None:
+            almost_completely = self._total_rows * ALMOST_COMPLETELY_CACHED_RATIO
+            if total_cached_rows >= almost_completely:
+                return True
+
+        return False
 
     def _validate_bqstorage(self, bqstorage_client, create_bqstorage_client):
         """Returns True if the BigQuery Storage API can be used.
@@ -1604,7 +1666,14 @@ class RowIterator(HTTPIterator):
         if not using_bqstorage_api:
             return False
 
-        if self._is_completely_cached():
+        if self._table is None:
+            return False
+
+        # The developer is manually paging through results if this is set.
+        if self.next_page_token is not None:
+            return False
+
+        if self._is_almost_completely_cached():
             return False
 
         if self.max_results is not None:
@@ -1628,7 +1697,15 @@ class RowIterator(HTTPIterator):
                 The parsed JSON response of the next page's contents.
         """
         if self._first_page_response:
-            response = self._first_page_response
+            rows = self._first_page_response.get(self._items_key, [])[
+                : self.max_results
+            ]
+            response = {
+                self._items_key: rows,
+            }
+            if self._next_token in self._first_page_response:
+                response[self._next_token] = self._first_page_response[self._next_token]
+
             self._first_page_response = None
             return response
 
@@ -1723,7 +1800,7 @@ class RowIterator(HTTPIterator):
 
         bqstorage_download = functools.partial(
             _pandas_helpers.download_arrow_bqstorage,
-            self._project,
+            self._billing_project,
             self._table,
             bqstorage_client,
             preserve_order=self._preserve_order,
@@ -1903,7 +1980,7 @@ class RowIterator(HTTPIterator):
         column_names = [field.name for field in self._schema]
         bqstorage_download = functools.partial(
             _pandas_helpers.download_dataframe_bqstorage,
-            self._project,
+            self._billing_project,
             self._table,
             bqstorage_client,
             column_names,

@@ -360,22 +360,23 @@ def test_query_and_wait_retries_job():
         retry=retries.Retry(
             lambda exc: isinstance(exc, google.api_core.exceptions.BadGateway),
             multiplier=1.0,
-            timeout=200.0,  # Since auto_tick_seconds is 100, we should get at least 1 retry.
-        ),
+        ).with_deadline(
+            200.0
+        ),  # Since auto_tick_seconds is 100, we should get at least 1 retry.
         job_retry=retries.Retry(
             lambda exc: isinstance(exc, google.api_core.exceptions.InternalServerError),
             multiplier=1.0,
-            timeout=600.0,
-        ),
+        ).with_deadline(600.0),
     )
     assert len(list(rows)) == 4
 
     # For this code path, where the query has finished immediately, we should
-    # only be calling jobs.query.
+    # only be calling the jobs.query API and no other request path.
     request_path = "/projects/request-project/queries"
     for call in client._call_api.call_args_list:
-        assert call.call_args.kwargs["method"] == "POST"
-        assert call.call_args.kwargs["path"] == request_path
+        _, kwargs = call
+        assert kwargs["method"] == "POST"
+        assert kwargs["path"] == request_path
 
 
 @freezegun.freeze_time(auto_tick_seconds=100)
@@ -404,15 +405,15 @@ def test_query_and_wait_retries_job_times_out():
             retry=retries.Retry(
                 lambda exc: isinstance(exc, google.api_core.exceptions.BadGateway),
                 multiplier=1.0,
-                timeout=200.0,  # Since auto_tick_seconds is 100, we should get at least 1 retry.
-            ),
+            ).with_deadline(
+                200.0
+            ),  # Since auto_tick_seconds is 100, we should get at least 1 retry.
             job_retry=retries.Retry(
                 lambda exc: isinstance(
                     exc, google.api_core.exceptions.InternalServerError
                 ),
                 multiplier=1.0,
-                timeout=400.0,
-            ),
+            ).with_deadline(400.0),
         )
 
     assert isinstance(
@@ -813,6 +814,158 @@ def test_query_and_wait_caches_completed_query_results_more_pages():
         path=jobs_get_query_results_path,
         query_params={
             "pageToken": "page-3",
+            "fields": "jobReference,totalRows,pageToken,rows",
+            "location": "response-location",
+            "formatOptions.useInt64Timestamp": True,
+        },
+    )
+
+
+def test_query_and_wait_incomplete_query():
+    client = mock.create_autospec(Client)
+    client._get_query_results = functools.partial(Client._get_query_results, client)
+    client._list_rows_from_query_results = functools.partial(
+        Client._list_rows_from_query_results, client
+    )
+    client._call_api.side_effect = (
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "response-job-id",
+                "location": "response-location",
+            },
+            "jobComplete": False,
+        },
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "response-job-id",
+                "location": "response-location",
+            },
+            "jobComplete": True,
+            "totalRows": 2,
+            "queryId": "xyz",
+            "schema": {
+                "fields": [
+                    {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                    {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+                ],
+            },
+        },
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "response-job-id",
+                "location": "response-location",
+            },
+        },
+        {
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
+            # Even though totalRows <= len(rows), we should use the presense of a
+            # next page token to decide if there are any more pages.
+            "totalRows": 2,
+            "pageToken": "page-2",
+        },
+        {
+            "rows": [
+                {"f": [{"v": "Pearl Slaghoople"}, {"v": "53"}]},
+            ],
+        },
+    )
+    rows = _job_helpers.query_and_wait(
+        client,
+        query="SELECT full_name, age FROM people;",
+        project="request-project",
+        job_config=None,
+        location=None,
+        retry=None,
+        timeout=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+    rows_list = list(rows)
+    assert rows.total_rows == 2  # Match the API response.
+    assert len(rows_list) == 5
+
+    # Start the query.
+    jobs_query_path = "/projects/request-project/queries"
+    client._call_api.assert_any_call(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": jobs_query_path},
+        method="POST",
+        path=jobs_query_path,
+        data={
+            "query": "SELECT full_name, age FROM people;",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+        },
+        timeout=None,
+    )
+
+    # Wait for the query to finish.
+    jobs_get_query_results_path = "/projects/response-project/queries/response-job-id"
+    client._call_api.assert_any_call(
+        None,  # retry
+        span_name="BigQuery.getQueryResults",
+        span_attributes={"path": jobs_get_query_results_path},
+        method="GET",
+        path=jobs_get_query_results_path,
+        query_params={
+            # QueryJob uses getQueryResults to wait for the query to finish.
+            # It avoids fetching the results because:
+            # (1) For large rows this can take a long time, much longer than
+            #     our progress bar update frequency.
+            #     See: https://github.com/googleapis/python-bigquery/issues/403
+            # (2) Caching the first page of results uses an unexpected increase in memory.
+            #     See: https://github.com/googleapis/python-bigquery/issues/394
+            "maxResults": 0,
+            "location": "response-location",
+        },
+        timeout=None,
+    )
+
+    # Fetch the job metadata in case the RowIterator needs the destination table.
+    jobs_get_path = "/projects/response-project/jobs/response-job-id"
+    client._call_api.assert_any_call(
+        None,  # retry
+        span_name="BigQuery.job.reload",
+        span_attributes={"path": jobs_get_path},
+        job_ref=mock.ANY,
+        method="GET",
+        path=jobs_get_path,
+        query_params={"location": "response-location"},
+        timeout=None,
+    )
+
+    # Fetch the remaining two pages.
+    client._call_api.assert_any_call(
+        None,  # retry
+        timeout=None,
+        method="GET",
+        path=jobs_get_query_results_path,
+        query_params={
+            "fields": "jobReference,totalRows,pageToken,rows",
+            "location": "response-location",
+            "formatOptions.useInt64Timestamp": True,
+        },
+    )
+    client._call_api.assert_any_call(
+        None,  # retry
+        timeout=None,
+        method="GET",
+        path=jobs_get_query_results_path,
+        query_params={
+            "pageToken": "page-2",
             "fields": "jobReference,totalRows,pageToken,rows",
             "location": "response-location",
             "formatOptions.useInt64Timestamp": True,

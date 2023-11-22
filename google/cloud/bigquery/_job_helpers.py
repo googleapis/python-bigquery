@@ -335,7 +335,7 @@ def query_and_wait(
         # For easier testing, handle the retries ourselves.
         if retry is not None:
             response = retry(client._call_api)(
-                retry,
+                retry=None,  # We're calling the retry decorator ourselves.
                 span_name="BigQuery.query",
                 span_attributes=span_attributes,
                 method="POST",

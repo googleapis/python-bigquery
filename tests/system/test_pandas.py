@@ -472,7 +472,12 @@ def test_load_table_from_dataframe_w_required_but_local_nulls_fails(
         bigquery.SchemaField("age", "INTEGER", mode="REQUIRED"),
     )
 
-    records = [{"name": "Chip", "age": None}, {"name": None, "age": 3}]
+    records = [
+        {"name": "Chip", "age": 2},
+        {"name": "Dale", "age": 3},
+        {"name": None, "age": None},
+        {"name": "Alvin", "age": 4},
+    ]
     dataframe = pandas.DataFrame(records, columns=["name", "age"])
     table_id = (
         "{}.{}.load_table_from_dataframe_w_required_but_local_nulls_fails".format(

@@ -312,10 +312,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
     ]
 
 
-@pytest.mark.skipif(
-    PANDAS_INSTALLED_VERSION[0:2] in ["0."],
-    reason="Only `pandas version >=1.0.0` is supported",
-)
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_load_table_from_dataframe_w_nullable_int64_datatype(
     bigquery_client, dataset_id
 ):

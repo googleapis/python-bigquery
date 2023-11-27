@@ -8146,10 +8146,7 @@ class TestClientUpload(object):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @unittest.skipIf(
-        PANDAS_INSTALLED_VERSION[0:2] in ["0."],
-        reason="Only `pandas version >=1.0.0` is supported",
-    )
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
@@ -8194,10 +8191,7 @@ class TestClientUpload(object):
             SchemaField("x", "INT64", "NULLABLE", None),
         )
 
-    @unittest.skipIf(
-        PANDAS_INSTALLED_VERSION[0:2] in ["0."],
-        reason="Only `pandas version >=1.0.0` is supported",
-    )
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     # @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES

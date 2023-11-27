@@ -312,6 +312,10 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
     ]
 
 
+@pytest.mark.skipif(
+    PANDAS_INSTALLED_VERSION[0:2] in ["0."],
+    reason="Only `pandas version >=1.0.0` is supported",
+)
 def test_load_table_from_dataframe_w_nullable_int64_datatype(
     bigquery_client, dataset_id
 ):
@@ -339,6 +343,10 @@ def test_load_table_from_dataframe_w_nullable_int64_datatype(
     assert table.num_rows == 4
 
 
+@pytest.mark.skipif(
+    PANDAS_INSTALLED_VERSION[0:2] in ["0."],
+    reason="Only `pandas version >=1.0.0` is supported",
+)
 def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(
     bigquery_client, dataset_id, table_id
 ):

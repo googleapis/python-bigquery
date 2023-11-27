@@ -3419,6 +3419,13 @@ class Client(ClientWithProject):
     ) -> RowIterator:
         """Run the query, wait for it to finish, and return the results.
 
+        While ``jobCreationMode=JOB_CREATION_OPTIONAL`` is in preview in the
+        ``jobs.query`` REST API, use the default ``jobCreationMode`` unless
+        the environment variable ``QUERY_PREVIEW_ENABLED=true``. After
+        ``jobCreationMode`` is GA, this method will always use
+        ``jobCreationMode=JOB_CREATION_OPTIONAL``. See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
+
         Args:
             query (str):
                 SQL query to be executed. Defaults to the standard SQL

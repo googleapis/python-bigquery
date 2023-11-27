@@ -14,7 +14,7 @@
 
 import typing
 
-import client_query
+import client_query  # type: ignore
 
 if typing.TYPE_CHECKING:
     import pytest

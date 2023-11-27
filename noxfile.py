@@ -208,7 +208,7 @@ def mypy_samples(session):
 
     session.install("pytest")
     for requirements_path in CURRENT_DIRECTORY.glob("samples/*/requirements.txt"):
-        session.install("-r", requirements_path)
+        session.install("-r", str(requirements_path))
     session.install(MYPY_VERSION)
 
     # Just install the dependencies' type info directly, since "mypy --install-types"

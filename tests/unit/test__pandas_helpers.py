@@ -61,8 +61,6 @@ else:  # pragma: NO COVER
 
 bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import()
 
-PANDAS_MINIUM_VERSION = "1.0.0"
-
 if pandas is not None:
     PANDAS_INSTALLED_VERSION = metadata.version("pandas")
 else:
@@ -807,10 +805,7 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
     assert columns_and_indexes == expected
 
 
-@pytest.mark.skipif(
-    PANDAS_INSTALLED_VERSION[0:2] in ["0."],
-    reason="Only `pandas version >=1.0.0` is supported",
-)
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_json_generator(module_under_test):
     utcnow = datetime.datetime.utcnow()
     df_data = collections.OrderedDict(
@@ -838,16 +833,8 @@ def test_dataframe_to_json_generator(module_under_test):
     assert list(rows) == expected
 
 
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_json_generator_repeated_field(module_under_test):
-    pytest.importorskip(
-        "pandas",
-        minversion=str(PANDAS_MINIUM_VERSION),
-        reason=(
-            f"Requires `pandas version >= {PANDAS_MINIUM_VERSION}` "
-            "which introduces pandas.NA"
-        ),
-    )
-
     df_data = [
         collections.OrderedDict(
             [("repeated_col", [pandas.NA, 2, None, 4]), ("not_repeated_col", "first")]

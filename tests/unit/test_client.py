@@ -80,11 +80,6 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
 
-if pandas is not None:
-    PANDAS_INSTALLED_VERSION = metadata.version("pandas")
-else:
-    PANDAS_INSTALLED_VERSION = "0.0.0"
-
 
 def _make_credentials():
     import google.auth.credentials
@@ -8146,11 +8141,8 @@ class TestClientUpload(object):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @unittest.skipIf(
-        PANDAS_INSTALLED_VERSION[0:2] in ["0."],
-        reason="Only `pandas version >=1.0.0` is supported",
-    )
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -8194,11 +8186,8 @@ class TestClientUpload(object):
             SchemaField("x", "INT64", "NULLABLE", None),
         )
 
-    @unittest.skipIf(
-        PANDAS_INSTALLED_VERSION[0:2] in ["0."],
-        reason="Only `pandas version >=1.0.0` is supported",
-    )
     # @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job

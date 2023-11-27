@@ -832,6 +832,7 @@ def test_dataframe_to_json_generator(module_under_test):
     ]
     assert list(rows) == expected
 
+
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_json_generator_repeated_field(module_under_test):
     df_data = [

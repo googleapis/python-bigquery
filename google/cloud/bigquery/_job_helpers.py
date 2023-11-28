@@ -21,8 +21,8 @@ For queries, there are three cases to consider:
    This sometimes can return the results inline, but always includes a job ID.
 3. jobs.query, jobCreationMode=JOB_CREATION_OPTIONAL:
    This sometimes doesn't create a job at all, instead returning the results.
-   For better debugging, a query ID is included in the response (not always a
-   job ID).
+   For better debugging, an auto-generated query ID is included in the
+   response.
 
 Client.query() calls either (1) or (2), depending on what the user provides
 for the api_method parameter. query() always returns a QueryJob object, which

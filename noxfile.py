@@ -137,7 +137,7 @@ def mypy(session):
         "types-requests",
         "types-setuptools",
     )
-    session.run("mypy", "-p", "google", "--show-traceback")
+    session.run("mypy", "google/cloud", "--show-traceback")
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
@@ -149,8 +149,7 @@ def pytype(session):
     session.install("attrs==20.3.0")
     session.install("-e", ".[all]")
     session.install(PYTYPE_VERSION)
-    # See https://github.com/google/pytype/issues/464
-    session.run("pytype", "-P", ".", "google/cloud/bigquery")
+    session.run("pytype")
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)

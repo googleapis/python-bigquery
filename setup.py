@@ -62,7 +62,6 @@ extras = {
         "pandas>=1.1.0",
         pyarrow_dependency,
         "db-dtypes>=0.3.0,<2.0.0dev",
-        "importlib_metadata>=1.0.0; python_version<'3.8'",
     ],
     "ipywidgets": [
         "ipywidgets>=7.7.0",
@@ -109,9 +108,15 @@ version = version["__version__"]
 # benchmarks, etc.
 packages = [
     package
-    for package in setuptools.find_namespace_packages()
+    for package in setuptools.PEP420PackageFinder.find()
     if package.startswith("google")
 ]
+
+# Determine which namespaces are needed.
+namespaces = ["google"]
+if "google.cloud" in packages:
+    namespaces.append("google.cloud")
+
 
 setuptools.setup(
     name=name,
@@ -138,6 +143,7 @@ setuptools.setup(
     ],
     platforms="Posix; MacOS X; Windows",
     packages=packages,
+    namespace_packages=namespaces,
     install_requires=dependencies,
     extras_require=extras,
     python_requires=">=3.7",

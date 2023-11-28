@@ -19,11 +19,7 @@ import functools
 import operator
 import queue
 import warnings
-
-try:
-    import importlib.metadata as metadata
-except ImportError:
-    import importlib_metadata as metadata
+import pkg_resources
 
 import mock
 
@@ -61,10 +57,13 @@ else:  # pragma: NO COVER
 
 bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import()
 
+PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
+
 if pandas is not None:
-    PANDAS_INSTALLED_VERSION = metadata.version("pandas")
+    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
 else:
-    PANDAS_INSTALLED_VERSION = "0.0.0"
+    # Set to less than MIN version.
+    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
 
 
 skip_if_no_bignumeric = pytest.mark.skipif(
@@ -543,7 +542,9 @@ def test_bq_to_arrow_array_w_nullable_scalars(module_under_test, bq_type, rows):
     ],
 )
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
+@pytest.mark.skipif(
+    PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
+)
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_bq_to_arrow_array_w_pandas_timestamp(module_under_test, bq_type, rows):
     rows = [pandas.Timestamp(row) for row in rows]
@@ -805,7 +806,10 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
     assert columns_and_indexes == expected
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+@pytest.mark.skipif(
+    pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
+    reason="Requires `pandas version >= 1.0.0` which introduces pandas.NA",
+)
 def test_dataframe_to_json_generator(module_under_test):
     utcnow = datetime.datetime.utcnow()
     df_data = collections.OrderedDict(
@@ -833,8 +837,16 @@ def test_dataframe_to_json_generator(module_under_test):
     assert list(rows) == expected
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_json_generator_repeated_field(module_under_test):
+    pytest.importorskip(
+        "pandas",
+        minversion=str(PANDAS_MINIUM_VERSION),
+        reason=(
+            f"Requires `pandas version >= {PANDAS_MINIUM_VERSION}` "
+            "which introduces pandas.NA"
+        ),
+    )
+
     df_data = [
         collections.OrderedDict(
             [("repeated_col", [pandas.NA, 2, None, 4]), ("not_repeated_col", "first")]

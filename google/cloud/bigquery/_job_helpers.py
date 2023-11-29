@@ -377,8 +377,11 @@ def query_and_wait(
     # Some API parameters aren't supported by the jobs.query API. In these
     # cases, fallback to a jobs.insert call.
     if not _supported_by_jobs_query(job_config):
-        return client.query(
+        return query_jobs_insert(
+            client=client,
             query=query,
+            job_id=None,
+            job_id_prefix=None,
             job_config=job_config,
             location=location,
             project=project,

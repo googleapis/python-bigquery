@@ -326,8 +326,6 @@ def test_query_jobs_query_sets_timeout(timeout, expected_timeout):
 def test_query_and_wait_uses_jobs_insert():
     """With unsupported features, call jobs.insert instead of jobs.query."""
     client = mock.create_autospec(Client)
-    client._default_query_job_config = None
-    client.query = functools.partial(Client.query, client)
     client._call_api.return_value = {
         "jobReference": {
             "projectId": "response-project",

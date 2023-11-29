@@ -3412,7 +3412,8 @@ class Client(ClientWithProject):
         location: Optional[str] = None,
         project: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: TimeoutType = DEFAULT_TIMEOUT,
+        api_timeout: TimeoutType = DEFAULT_TIMEOUT,
+        wait_timeout: TimeoutType = None,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
         page_size: Optional[int] = None,
         max_results: Optional[int] = None,
@@ -3447,9 +3448,13 @@ class Client(ClientWithProject):
                 calls.  It isn't used to retry failed jobs.  This has
                 a reasonable default that should only be overridden
                 with care.
-            timeout (Optional[float]):
+            api_timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
+            wait_timeout (Optional[float]):
+                The number of seconds to wait for the query to finish. If the
+                query doesn't finish before this timeout, the client attempts
+                to cancel the query.
             job_retry (Optional[google.api_core.retry.Retry]):
                 How to retry failed jobs.  The default retries
                 rate-limit-exceeded errors.  Passing ``None`` disables
@@ -3491,7 +3496,8 @@ class Client(ClientWithProject):
             location,
             project,
             retry,
-            timeout,
+            api_timeout,
+            wait_timeout,
             job_retry,
             page_size=page_size,
             max_results=max_results,

@@ -301,8 +301,9 @@ def query_and_wait(
     location: Optional[str],
     project: str,
     retry: Optional[retries.Retry],
-    timeout: Optional[float],
     job_retry: Optional[retries.Retry],
+    api_timeout: Optional[float] = None,
+    wait_timeout: Optional[float] = None,
     page_size: Optional[int] = None,
     max_results: Optional[int] = None,
 ) -> table.RowIterator:
@@ -338,9 +339,13 @@ def query_and_wait(
             calls.  It isn't used to retry failed jobs.  This has
             a reasonable default that should only be overridden
             with care.
-        timeout (Optional[float]):
+        api_timeout (Optional[float]):
             The number of seconds to wait for the underlying HTTP transport
             before using ``retry``.
+        wait_timeout (Optional[float]):
+            The number of seconds to wait for the query to finish. If the
+            query doesn't finish before this timeout, the client attempts
+            to cancel the query.
         job_retry (Optional[google.api_core.retry.Retry]):
             How to retry failed jobs.  The default retries
             rate-limit-exceeded errors.  Passing ``None`` disables
@@ -381,18 +386,18 @@ def query_and_wait(
             location=location,
             project=project,
             retry=retry,
-            timeout=timeout,
+            timeout=api_timeout,
             job_retry=job_retry,
         ).result(
             retry=retry,
-            timeout=timeout,
+            timeout=wait_timeout,
             page_size=page_size,
             max_results=max_results,
         )
 
     path = _to_query_path(project)
     request_body = _to_query_request(
-        query=query, job_config=job_config, location=location, timeout=timeout
+        query=query, job_config=job_config, location=location, timeout=api_timeout
     )
 
     if page_size is not None and max_results is not None:
@@ -416,7 +421,7 @@ def query_and_wait(
                 method="POST",
                 path=path,
                 data=request_body,
-                timeout=timeout,
+                timeout=api_timeout,
             )
         else:
             response = client._call_api(
@@ -426,7 +431,7 @@ def query_and_wait(
                 method="POST",
                 path=path,
                 data=request_body,
-                timeout=timeout,
+                timeout=api_timeout,
             )
 
         # Even if we run with JOB_CREATION_OPTIONAL, if there are more pages
@@ -444,14 +449,14 @@ def query_and_wait(
             # RowIterator to fetch destination table via the job ID if needed.
             return _to_query_job(client, query, job_config, response).result(
                 retry=retry,
-                timeout=timeout,
+                timeout=wait_timeout,
                 page_size=page_size,
                 max_results=max_results,
             )
 
         return table.RowIterator(
             client=client,
-            api_request=functools.partial(client._call_api, retry, timeout=timeout),
+            api_request=functools.partial(client._call_api, retry, timeout=api_timeout),
             path=None,
             schema=query_results.schema,
             max_results=max_results,

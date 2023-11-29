@@ -23,7 +23,7 @@ import pytest
 
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery import _job_helpers
-from google.cloud.bigquery.job.query import QueryJob, QueryJobConfig
+from google.cloud.bigquery.job import query as job_query
 from google.cloud.bigquery.query import ConnectionProperty, ScalarQueryParameter
 
 
@@ -58,9 +58,9 @@ def make_query_response(
     ("job_config", "expected"),
     (
         (None, make_query_request()),
-        (QueryJobConfig(), make_query_request()),
+        (job_query.QueryJobConfig(), make_query_request()),
         (
-            QueryJobConfig(default_dataset="my-project.my_dataset"),
+            job_query.QueryJobConfig(default_dataset="my-project.my_dataset"),
             make_query_request(
                 {
                     "defaultDataset": {
@@ -70,17 +70,17 @@ def make_query_response(
                 }
             ),
         ),
-        (QueryJobConfig(dry_run=True), make_query_request({"dryRun": True})),
+        (job_query.QueryJobConfig(dry_run=True), make_query_request({"dryRun": True})),
         (
-            QueryJobConfig(use_query_cache=False),
+            job_query.QueryJobConfig(use_query_cache=False),
             make_query_request({"useQueryCache": False}),
         ),
         (
-            QueryJobConfig(use_legacy_sql=True),
+            job_query.QueryJobConfig(use_legacy_sql=True),
             make_query_request({"useLegacySql": True}),
         ),
         (
-            QueryJobConfig(
+            job_query.QueryJobConfig(
                 query_parameters=[
                     ScalarQueryParameter("named_param1", "STRING", "param-value"),
                     ScalarQueryParameter("named_param2", "INT64", 123),
@@ -105,7 +105,7 @@ def make_query_response(
             ),
         ),
         (
-            QueryJobConfig(
+            job_query.QueryJobConfig(
                 query_parameters=[
                     ScalarQueryParameter(None, "STRING", "param-value"),
                     ScalarQueryParameter(None, "INT64", 123),
@@ -128,7 +128,7 @@ def make_query_response(
             ),
         ),
         (
-            QueryJobConfig(
+            job_query.QueryJobConfig(
                 connection_properties=[
                     ConnectionProperty(key="time_zone", value="America/Chicago"),
                     ConnectionProperty(key="session_id", value="abcd-efgh-ijkl-mnop"),
@@ -144,11 +144,11 @@ def make_query_response(
             ),
         ),
         (
-            QueryJobConfig(labels={"abc": "def"}),
+            job_query.QueryJobConfig(labels={"abc": "def"}),
             make_query_request({"labels": {"abc": "def"}}),
         ),
         (
-            QueryJobConfig(maximum_bytes_billed=987654),
+            job_query.QueryJobConfig(maximum_bytes_billed=987654),
             make_query_request({"maximumBytesBilled": "987654"}),
         ),
     ),
@@ -164,7 +164,9 @@ def test__to_query_job_defaults():
     response = make_query_response(
         job_id="test-job", project_id="some-project", location="asia-northeast1"
     )
-    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", None, response)
+    job: job_query.QueryJob = _job_helpers._to_query_job(
+        mock_client, "query-str", None, response
+    )
     assert job.query == "query-str"
     assert job._client is mock_client
     assert job.job_id == "test-job"
@@ -179,9 +181,9 @@ def test__to_query_job_dry_run():
     response = make_query_response(
         job_id="test-job", project_id="some-project", location="asia-northeast1"
     )
-    job_config: QueryJobConfig = QueryJobConfig()
+    job_config: job_query.QueryJobConfig = job_query.QueryJobConfig()
     job_config.dry_run = True
-    job: QueryJob = _job_helpers._to_query_job(
+    job: job_query.QueryJob = _job_helpers._to_query_job(
         mock_client, "query-str", job_config, response
     )
     assert job.dry_run is True
@@ -197,7 +199,9 @@ def test__to_query_job_dry_run():
 def test__to_query_job_sets_state(completed, expected_state):
     mock_client = mock.create_autospec(Client)
     response = make_query_response(completed=completed)
-    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", None, response)
+    job: job_query.QueryJob = _job_helpers._to_query_job(
+        mock_client, "query-str", None, response
+    )
     assert job.state == expected_state
 
 
@@ -210,7 +214,9 @@ def test__to_query_job_sets_errors():
             {"message": "something else went wrong"},
         ]
     )
-    job: QueryJob = _job_helpers._to_query_job(mock_client, "query-str", None, response)
+    job: job_query.QueryJob = _job_helpers._to_query_job(
+        mock_client, "query-str", None, response
+    )
     assert len(job.errors) == 2
     # If we got back a response instead of an HTTP error status code, most
     # likely the job didn't completely fail.
@@ -921,7 +927,7 @@ def test_query_and_wait_incomplete_query():
         method="GET",
         path=jobs_get_query_results_path,
         query_params={
-            # QueryJob uses getQueryResults to wait for the query to finish.
+            # job_query.QueryJob uses getQueryResults to wait for the query to finish.
             # It avoids fetching the results because:
             # (1) For large rows this can take a long time, much longer than
             #     our progress bar update frequency.
@@ -995,3 +1001,41 @@ def test_make_job_id_random():
 def test_make_job_id_w_job_id_overrides_prefix():
     job_id = _job_helpers.make_job_id("job_id", prefix="unused_prefix")
     assert job_id == "job_id"
+
+
+@pytest.mark.parametrize(
+    ("job_config", "expected"),
+    (
+        pytest.param(None, True),
+        pytest.param(job_query.QueryJobConfig(), True, id="default"),
+        pytest.param(
+            job_query.QueryJobConfig(use_query_cache=False), True, id="use_query_cache"
+        ),
+        pytest.param(
+            job_query.QueryJobConfig(maximum_bytes_billed=10_000_000),
+            True,
+            id="maximum_bytes_billed",
+        ),
+        pytest.param(
+            job_query.QueryJobConfig(clustering_fields=["a", "b", "c"]),
+            False,
+            id="clustering_fields",
+        ),
+        pytest.param(
+            job_query.QueryJobConfig(destination="p.d.t"), False, id="destination"
+        ),
+        pytest.param(
+            job_query.QueryJobConfig(
+                destination_encryption_configuration=job_query.EncryptionConfiguration(
+                    "key"
+                )
+            ),
+            False,
+            id="destination_encryption_configuration",
+        ),
+    ),
+)
+def test_supported_by_jobs_query(
+    job_config: Optional[job_query.QueryJobConfig], expected: bool
+):
+    assert _job_helpers._supported_by_jobs_query(job_config) == expected

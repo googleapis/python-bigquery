@@ -369,6 +369,27 @@ def query_and_wait(
             :class:`~google.cloud.bigquery.job.QueryJobConfig`
             class.
     """
+    # Some API parameters aren't supported by the jobs.query API. In these
+    # cases, fallback to a jobs.insert call.
+    if not _supported_by_jobs_query(job_config):
+        return query_jobs_insert(
+            client=client,
+            query=query,
+            job_config=job_config,
+            job_id=None,
+            job_id_prefix=None,
+            location=location,
+            project=project,
+            retry=retry,
+            timeout=timeout,
+            job_retry=job_retry,
+        ).result(
+            retry=retry,
+            timeout=timeout,
+            page_size=page_size,
+            max_results=max_results,
+        )
+
     path = _to_query_path(project)
     request_body = _to_query_request(
         query=query, job_config=job_config, location=location, timeout=timeout
@@ -447,3 +468,19 @@ def query_and_wait(
         return job_retry(do_query)()
     else:
         return do_query()
+
+
+def _supported_by_jobs_query(job_config: Optional[job.QueryJobConfig]) -> bool:
+    """True if jobs.query can be used. False if jobs.insert is needed."""
+    if job_config is None:
+        return True
+
+    return (
+        # These features aren't supported by jobs.query.
+        job_config.clustering_fields is None
+        and job_config.destination is None
+        and job_config.destination_encryption_configuration is None
+        and job_config.range_partitioning is None
+        and job_config.table_definitions is None
+        and job_config.time_partitioning is None
+    )

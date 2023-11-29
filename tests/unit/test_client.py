@@ -5284,6 +5284,39 @@ class TestClient(unittest.TestCase):
         sent = req["data"]
         self.assertEqual(sent["labels"], {"default-label": "default-value"})
 
+    def test_query_and_wait_w_job_config(self):
+        from google.cloud.bigquery import job
+
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        jobs_query_response = {
+            "jobComplete": True,
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+        )
+        conn = client._connection = make_connection(jobs_query_response)
+
+        _ = client.query_and_wait(
+            query,
+            job.QueryJobConfig(
+                labels={
+                    "job_config-label": "job_config-value",
+                },
+            ),
+        )
+
+        # Verify the request we send is to jobs.query.
+        conn.api_request.assert_called_once()
+        _, req = conn.api_request.call_args
+        self.assertEqual(req["method"], "POST")
+        self.assertEqual(req["path"], f"/projects/{self.PROJECT}/queries")
+        sent = req["data"]
+        self.assertEqual(sent["labels"], {"job_config-label": "job_config-value"})
+
     def test_query_and_wait_w_location(self):
         query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
         jobs_query_response = {

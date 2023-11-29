@@ -323,6 +323,70 @@ def test_query_jobs_query_sets_timeout(timeout, expected_timeout):
     assert request["timeoutMs"] == expected_timeout
 
 
+def test_query_and_wait_uses_jobs_insert():
+    """With unsupported features, call jobs.insert instead of jobs.query."""
+    client = mock.create_autospec(Client)
+    client._default_query_job_config = None
+    client.query = functools.partial(Client.query, client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "response-location",
+        },
+        "query": {
+            "query": "SELECT 1",
+        },
+        # Make sure the job has "started"
+        "status": {"state": "DONE"},
+        "jobComplete": True,
+    }
+    job_config = job_query.QueryJobConfig(
+        destination="dest-project.dest_dset.dest_table",
+    )
+    _job_helpers.query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=job_config,
+        retry=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+
+    # We should call jobs.insert since jobs.query doesn't support destination.
+    request_path = "/projects/request-project/jobs"
+    client._call_api.assert_any_call(
+        None,  # retry,
+        span_name="BigQuery.job.begin",
+        span_attributes={"path": request_path},
+        job_ref=mock.ANY,
+        method="POST",
+        path=request_path,
+        data={
+            "jobReference": {
+                "jobId": mock.ANY,
+                "projectId": "request-project",
+                "location": "request-location",
+            },
+            "configuration": {
+                "query": {
+                    "destinationTable": {
+                        "projectId": "dest-project",
+                        "datasetId": "dest_dset",
+                        "tableId": "dest_table",
+                    },
+                    "useLegacySql": False,
+                    "query": "SELECT 1",
+                }
+            },
+        },
+        timeout=None,
+    )
+
+
 def test_query_and_wait_retries_job():
     freezegun.freeze_time(auto_tick_seconds=100)
     client = mock.create_autospec(Client)

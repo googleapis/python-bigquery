@@ -779,7 +779,7 @@ class QueryJobConfig(_JobConfig):
         resource = copy.deepcopy(self._properties)
         # Query parameters have an addition property associated with them
         # to indicate if the query is using named or positional parameters.
-        query_parameters = resource["query"].get("queryParameters")
+        query_parameters = resource.get("query", {}).get("queryParameters")
         if query_parameters:
             if query_parameters[0].get("name") is None:
                 resource["query"]["parameterMode"] = "POSITIONAL"

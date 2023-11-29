@@ -255,8 +255,10 @@ class Client(ClientWithProject):
 
         self._connection = Connection(self, **kw_args)
         self._location = location
-        self._default_query_job_config = copy.deepcopy(default_query_job_config)
         self._default_load_job_config = copy.deepcopy(default_load_job_config)
+
+        # Use property setter so validation can run.
+        self.default_query_job_config = default_query_job_config
 
     @property
     def location(self):
@@ -264,14 +266,20 @@ class Client(ClientWithProject):
         return self._location
 
     @property
-    def default_query_job_config(self):
-        """Default ``QueryJobConfig``.
-        Will be merged into job configs passed into the ``query`` method.
+    def default_query_job_config(self) -> Optional[QueryJobConfig]:
+        """Default ``QueryJobConfig`` or ``None``.
+
+        Will be merged into job configs passed into the ``query`` or
+        ``query_and_wait`` methods.
         """
         return self._default_query_job_config
 
     @default_query_job_config.setter
-    def default_query_job_config(self, value: QueryJobConfig):
+    def default_query_job_config(self, value: Optional[QueryJobConfig]):
+        if value is not None:
+            _verify_job_config_type(
+                value, QueryJobConfig, param_name="default_query_job_config"
+            )
         self._default_query_job_config = copy.deepcopy(value)
 
     @property
@@ -3355,26 +3363,12 @@ class Client(ClientWithProject):
         if location is None:
             location = self.location
 
-        if self._default_query_job_config:
-            if job_config:
-                _verify_job_config_type(
-                    job_config, google.cloud.bigquery.job.QueryJobConfig
-                )
-                # anything that's not defined on the incoming
-                # that is in the default,
-                # should be filled in with the default
-                # the incoming therefore has precedence
-                #
-                # Note that _fill_from_default doesn't mutate the receiver
-                job_config = job_config._fill_from_default(
-                    self._default_query_job_config
-                )
-            else:
-                _verify_job_config_type(
-                    self._default_query_job_config,
-                    google.cloud.bigquery.job.QueryJobConfig,
-                )
-                job_config = self._default_query_job_config
+        if job_config is not None:
+            _verify_job_config_type(job_config, QueryJobConfig)
+
+        job_config = _job_helpers.job_config_with_defaults(
+            job_config, self._default_query_job_config
+        )
 
         # Note that we haven't modified the original job_config (or
         # _default_query_job_config) up to this point.
@@ -3489,26 +3483,12 @@ class Client(ClientWithProject):
         if location is None:
             location = self.location
 
-        if self._default_query_job_config:
-            if job_config:
-                _verify_job_config_type(
-                    job_config, google.cloud.bigquery.job.QueryJobConfig
-                )
-                # anything that's not defined on the incoming
-                # that is in the default,
-                # should be filled in with the default
-                # the incoming therefore has precedence
-                #
-                # Note that _fill_from_default doesn't mutate the receiver
-                job_config = job_config._fill_from_default(
-                    self._default_query_job_config
-                )
-            else:
-                _verify_job_config_type(
-                    self._default_query_job_config,
-                    google.cloud.bigquery.job.QueryJobConfig,
-                )
-                job_config = self._default_query_job_config
+        if job_config is not None:
+            _verify_job_config_type(job_config, QueryJobConfig)
+
+        job_config = _job_helpers.job_config_with_defaults(
+            job_config, self._default_query_job_config
+        )
 
         return _job_helpers.query_and_wait(
             self,

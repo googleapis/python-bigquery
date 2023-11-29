@@ -83,6 +83,25 @@ def make_job_id(job_id: Optional[str] = None, prefix: Optional[str] = None) -> s
         return str(uuid.uuid4())
 
 
+def job_config_with_defaults(
+    job_config: Optional[job.QueryJobConfig],
+    default_job_config: Optional[job.QueryJobConfig],
+) -> Optional[job.QueryJobConfig]:
+    if job_config is None:
+        return default_job_config
+
+    if default_job_config is None:
+        return job_config
+
+    # anything that's not defined on the incoming
+    # that is in the default,
+    # should be filled in with the default
+    # the incoming therefore has precedence
+    #
+    # Note that _fill_from_default doesn't mutate the receiver
+    return job_config._fill_from_default(default_job_config)
+
+
 def query_jobs_insert(
     client: "Client",
     query: str,

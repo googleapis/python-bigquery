@@ -1092,3 +1092,82 @@ def test_supported_by_jobs_query(
     job_config: Optional[job_query.QueryJobConfig], expected: bool
 ):
     assert _job_helpers._supported_by_jobs_query(job_config) == expected
+
+
+def test_wait_or_cancel_no_exception():
+    job = mock.create_autospec(job_query.QueryJob, instance=True)
+    expected_rows = object()
+    job.result.return_value = expected_rows
+    retry = retries.Retry()
+
+    rows = _job_helpers._wait_or_cancel(
+        job,
+        api_timeout=123,
+        wait_timeout=456,
+        retry=retry,
+        page_size=789,
+        max_results=101112,
+    )
+
+    job.result.assert_called_once_with(
+        timeout=456,
+        retry=retry,
+        page_size=789,
+        max_results=101112,
+    )
+    assert rows is expected_rows
+
+
+def test_wait_or_cancel_exception_cancels_job():
+    job = mock.create_autospec(job_query.QueryJob, instance=True)
+    job.result.side_effect = google.api_core.exceptions.BadGateway("test error")
+    retry = retries.Retry()
+
+    with pytest.raises(google.api_core.exceptions.BadGateway):
+        _job_helpers._wait_or_cancel(
+            job,
+            api_timeout=123,
+            wait_timeout=456,
+            retry=retry,
+            page_size=789,
+            max_results=101112,
+        )
+
+    job.result.assert_called_once_with(
+        timeout=456,
+        retry=retry,
+        page_size=789,
+        max_results=101112,
+    )
+    job.cancel.assert_called_once_with(
+        timeout=123,
+        retry=retry,
+    )
+
+
+def test_wait_or_cancel_exception_raises_original_exception():
+    job = mock.create_autospec(job_query.QueryJob, instance=True)
+    job.result.side_effect = google.api_core.exceptions.BadGateway("test error")
+    job.cancel.side_effect = google.api_core.exceptions.NotFound("don't raise me")
+    retry = retries.Retry()
+
+    with pytest.raises(google.api_core.exceptions.BadGateway):
+        _job_helpers._wait_or_cancel(
+            job,
+            api_timeout=123,
+            wait_timeout=456,
+            retry=retry,
+            page_size=789,
+            max_results=101112,
+        )
+
+    job.result.assert_called_once_with(
+        timeout=456,
+        retry=retry,
+        page_size=789,
+        max_results=101112,
+    )
+    job.cancel.assert_called_once_with(
+        timeout=123,
+        retry=retry,
+    )

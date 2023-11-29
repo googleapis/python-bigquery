@@ -396,20 +396,22 @@ def query_and_wait(
     # Some API parameters aren't supported by the jobs.query API. In these
     # cases, fallback to a jobs.insert call.
     if not _supported_by_jobs_query(job_config):
-        return query_jobs_insert(
-            client=client,
-            query=query,
-            job_id=None,
-            job_id_prefix=None,
-            job_config=job_config,
-            location=location,
-            project=project,
+        return _wait_or_cancel(
+            query_jobs_insert(
+                client=client,
+                query=query,
+                job_id=None,
+                job_id_prefix=None,
+                job_config=job_config,
+                location=location,
+                project=project,
+                retry=retry,
+                timeout=api_timeout,
+                job_retry=job_retry,
+            ),
+            api_timeout=api_timeout,
+            wait_timeout=wait_timeout,
             retry=retry,
-            timeout=api_timeout,
-            job_retry=job_retry,
-        ).result(
-            retry=retry,
-            timeout=wait_timeout,
             page_size=page_size,
             max_results=max_results,
         )
@@ -466,9 +468,11 @@ def query_and_wait(
             # remaining pages) by waiting for the query to finish and calling
             # client._list_rows_from_query_results directly. Need to update
             # RowIterator to fetch destination table via the job ID if needed.
-            return _to_query_job(client, query, job_config, response).result(
+            return _wait_or_cancel(
+                _to_query_job(client, query, job_config, response),
+                api_timeout=api_timeout,
+                wait_timeout=wait_timeout,
                 retry=retry,
-                timeout=wait_timeout,
                 page_size=page_size,
                 max_results=max_results,
             )
@@ -508,3 +512,33 @@ def _supported_by_jobs_query(job_config: Optional[job.QueryJobConfig]) -> bool:
         and job_config.table_definitions is None
         and job_config.time_partitioning is None
     )
+
+
+def _wait_or_cancel(
+    job: job.QueryJob,
+    api_timeout: Optional[float],
+    wait_timeout: Optional[float],
+    retry: Optional[retries.Retry],
+    page_size: Optional[int],
+    max_results: Optional[int],
+) -> table.RowIterator:
+    """Wait for a job to complete and return the results.
+
+    If we can't return the results within the ``wait_timeout``, try to cancel
+    the job.
+    """
+    try:
+        return job.result(
+            page_size=page_size,
+            max_results=max_results,
+            retry=retry,
+            timeout=wait_timeout,
+        )
+    except Exception:
+        # Attempt to cancel the job since we can't return the results.
+        try:
+            job.cancel(retry=retry, timeout=api_timeout)
+        except Exception:
+            # Don't eat the original exception if cancel fails.
+            pass
+        raise

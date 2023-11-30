@@ -110,9 +110,9 @@ def query_jobs_insert(
     job_id_prefix: Optional[str],
     location: Optional[str],
     project: str,
-    retry: retries.Retry,
+    retry: Optional[retries.Retry],
     timeout: Optional[float],
-    job_retry: retries.Retry,
+    job_retry: Optional[retries.Retry],
 ) -> job.QueryJob:
     """Initiate a query using jobs.insert.
 
@@ -316,13 +316,14 @@ def query_jobs_query(
 def query_and_wait(
     client: "Client",
     query: str,
+    *,
     job_config: Optional[job.QueryJobConfig],
     location: Optional[str],
     project: str,
-    retry: Optional[retries.Retry],
-    job_retry: Optional[retries.Retry],
     api_timeout: Optional[float] = None,
     wait_timeout: Optional[float] = None,
+    retry: Optional[retries.Retry],
+    job_retry: Optional[retries.Retry],
     page_size: Optional[int] = None,
     max_results: Optional[int] = None,
 ) -> table.RowIterator:
@@ -353,11 +354,6 @@ def query_and_wait(
         project (Optional[str]):
             Project ID of the project of where to run the job. Defaults
             to the client's project.
-        retry (Optional[google.api_core.retry.Retry]):
-            How to retry the RPC.  This only applies to making RPC
-            calls.  It isn't used to retry failed jobs.  This has
-            a reasonable default that should only be overridden
-            with care.
         api_timeout (Optional[float]):
             The number of seconds to wait for the underlying HTTP transport
             before using ``retry``.
@@ -365,6 +361,11 @@ def query_and_wait(
             The number of seconds to wait for the query to finish. If the
             query doesn't finish before this timeout, the client attempts
             to cancel the query.
+        retry (Optional[google.api_core.retry.Retry]):
+            How to retry the RPC.  This only applies to making RPC
+            calls.  It isn't used to retry failed jobs.  This has
+            a reasonable default that should only be overridden
+            with care.
         job_retry (Optional[google.api_core.retry.Retry]):
             How to retry failed jobs.  The default retries
             rate-limit-exceeded errors.  Passing ``None`` disables

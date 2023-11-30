@@ -3402,12 +3402,13 @@ class Client(ClientWithProject):
     def query_and_wait(
         self,
         query,
+        *,
         job_config: Optional[QueryJobConfig] = None,
         location: Optional[str] = None,
         project: Optional[str] = None,
-        retry: retries.Retry = DEFAULT_RETRY,
         api_timeout: TimeoutType = DEFAULT_TIMEOUT,
         wait_timeout: TimeoutType = None,
+        retry: retries.Retry = DEFAULT_RETRY,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
         page_size: Optional[int] = None,
         max_results: Optional[int] = None,
@@ -3437,11 +3438,6 @@ class Client(ClientWithProject):
             project (Optional[str]):
                 Project ID of the project of where to run the job. Defaults
                 to the client's project.
-            retry (Optional[google.api_core.retry.Retry]):
-                How to retry the RPC.  This only applies to making RPC
-                calls.  It isn't used to retry failed jobs.  This has
-                a reasonable default that should only be overridden
-                with care.
             api_timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
@@ -3449,6 +3445,11 @@ class Client(ClientWithProject):
                 The number of seconds to wait for the query to finish. If the
                 query doesn't finish before this timeout, the client attempts
                 to cancel the query.
+            retry (Optional[google.api_core.retry.Retry]):
+                How to retry the RPC.  This only applies to making RPC
+                calls.  It isn't used to retry failed jobs.  This has
+                a reasonable default that should only be overridden
+                with care.
             job_retry (Optional[google.api_core.retry.Retry]):
                 How to retry failed jobs.  The default retries
                 rate-limit-exceeded errors.  Passing ``None`` disables
@@ -3493,13 +3494,13 @@ class Client(ClientWithProject):
         return _job_helpers.query_and_wait(
             self,
             query,
-            job_config,
-            location,
-            project,
-            retry,
-            api_timeout,
-            wait_timeout,
-            job_retry,
+            job_config=job_config,
+            location=location,
+            project=project,
+            api_timeout=api_timeout,
+            wait_timeout=wait_timeout,
+            retry=retry,
+            job_retry=job_retry,
             page_size=page_size,
             max_results=max_results,
         )

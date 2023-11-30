@@ -5302,7 +5302,7 @@ class TestClient(unittest.TestCase):
 
         _ = client.query_and_wait(
             query,
-            job.QueryJobConfig(
+            job_config=job.QueryJobConfig(
                 labels={
                     "job_config-label": "job_config-value",
                 },

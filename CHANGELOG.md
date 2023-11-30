@@ -5,7 +5,7 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
-## [3.14.0](https://github.com/googleapis/python-bigquery/compare/v3.13.0...v3.14.0) (2023-11-28)
+## [3.14.0rc0](https://github.com/googleapis/python-bigquery/compare/v3.13.0...v3.14.0rc0) (2023-11-29)
 
 
 ### Features

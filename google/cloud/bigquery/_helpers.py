@@ -240,7 +240,7 @@ def _record_from_json(value, field):
 
 
 def _json_from_json(value, _):
-    """Coerce 'value' to a JSON object."""
+    """Coerce 'value' to an object."""
     return json.loads(value)
 
 

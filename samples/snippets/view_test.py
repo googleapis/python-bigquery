@@ -30,7 +30,7 @@ def table_id(
     table_id = f"{prefixer.create_prefix()}_view_tet"
     yield table_id
     full_table_id = f"{project_id}.{dataset_id}.{table_id}"
-    bigquery_client.delete_table(full_table_id, not_found_ok=True)  
+    bigquery_client.delete_table(full_table_id, not_found_ok=True)
 
 
 def temp_suffix() -> str:

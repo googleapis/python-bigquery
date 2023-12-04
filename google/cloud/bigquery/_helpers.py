@@ -243,6 +243,8 @@ def _json_from_json(value, field):
     """Coerce 'value' to an object."""
     if _not_null(value, field):
         return json.loads(value)
+    else:
+        return None
 
 
 _CELLDATA_FROM_JSON = {

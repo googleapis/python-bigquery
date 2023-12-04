@@ -20,6 +20,17 @@ from google.cloud import bigquery
 import pytest
 
 import view  # type: ignore
+from conftest import prefixer  # type: ignore
+
+
+@pytest.fixture
+def table_id(
+    bigquery_client: bigquery.Client, project_id: str, dataset_id: str
+) -> Iterator[str]:
+    table_id = f"{prefixer.create_prefix()}_view_tet"
+    yield table_id
+    full_table_id = f"{project_id}.{dataset_id}.{table_id}"
+    bigquery_client.delete_table(full_table_id, not_found_ok=True)  
 
 
 def temp_suffix() -> str:

@@ -391,6 +391,7 @@ def test_query_and_wait_retries_job():
     client._call_api.__name__ = "_call_api"
     client._call_api.__qualname__ = "Client._call_api"
     client._call_api.__annotations__ = {}
+    client._call_api.__type_params__ = ()
     client._call_api.side_effect = (
         google.api_core.exceptions.BadGateway("retry me"),
         google.api_core.exceptions.InternalServerError("job_retry me"),
@@ -452,6 +453,7 @@ def test_query_and_wait_retries_job_times_out():
     client._call_api.__name__ = "_call_api"
     client._call_api.__qualname__ = "Client._call_api"
     client._call_api.__annotations__ = {}
+    client._call_api.__type_params__ = ()
     client._call_api.side_effect = (
         google.api_core.exceptions.BadGateway("retry me"),
         google.api_core.exceptions.InternalServerError("job_retry me"),

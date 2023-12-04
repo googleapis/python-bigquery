@@ -17,6 +17,7 @@
 import base64
 import datetime
 import decimal
+import json
 import math
 import re
 import os
@@ -238,6 +239,11 @@ def _record_from_json(value, field):
         return record
 
 
+def _json_from_json(value, _):
+    """Coerce 'value' to a JSON object."""
+    return json.loads(value)
+
+
 _CELLDATA_FROM_JSON = {
     "INTEGER": _int_from_json,
     "INT64": _int_from_json,
@@ -256,6 +262,7 @@ _CELLDATA_FROM_JSON = {
     "DATE": _date_from_json,
     "TIME": _time_from_json,
     "RECORD": _record_from_json,
+    "JSON": _json_from_json,
 }
 
 _QUERY_PARAMS_FROM_JSON = dict(_CELLDATA_FROM_JSON)

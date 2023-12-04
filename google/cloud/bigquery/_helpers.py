@@ -239,9 +239,10 @@ def _record_from_json(value, field):
         return record
 
 
-def _json_from_json(value, _):
+def _json_from_json(value, field):
     """Coerce 'value' to an object."""
-    return json.loads(value)
+    if _not_null(value, field):
+        return json.loads(value)
 
 
 _CELLDATA_FROM_JSON = {

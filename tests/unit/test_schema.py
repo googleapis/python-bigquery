@@ -97,6 +97,35 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0], sub_field1)
         self.assertEqual(field.fields[1], sub_field2)
 
+    def test_constructor_range(self):
+        from google.cloud.bigquery.schema import FieldElementType 
+        field = self._make_one(
+            "test",
+            "RANGE",
+            mode="REQUIRED",
+            description="Testing",
+            range_element_type=FieldElementType("DATETIME"),
+        )
+        self.assertEqual(field.name, "test")
+        self.assertEqual(field.field_type, "RANGE")
+        self.assertEqual(field.mode, "REQUIRED")
+        self.assertEqual(field.description, "Testing")
+        self.assertEqual(field.range_element_type.type, "DATETIME")
+
+    def test_constructor_range_str(self):
+        field = self._make_one(
+            "test",
+            "RANGE",
+            mode="REQUIRED",
+            description="Testing",
+            range_element_type="DATETIME",
+        )
+        self.assertEqual(field.name, "test")
+        self.assertEqual(field.field_type, "RANGE")
+        self.assertEqual(field.mode, "REQUIRED")
+        self.assertEqual(field.description, "Testing")
+        self.assertEqual(field.range_element_type.type, "DATETIME")
+
     def test_to_api_repr(self):
         from google.cloud.bigquery.schema import PolicyTagList
 
@@ -160,6 +189,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].name, "bar")
         self.assertEqual(field.fields[0].field_type, "INTEGER")
         self.assertEqual(field.fields[0].mode, "NULLABLE")
+        self.assertEqual(field.range_element_type, None)
 
     def test_from_api_repr_policy(self):
         field = self._get_target_class().from_api_repr(
@@ -564,6 +594,46 @@ class TestSchemaField(unittest.TestCase):
         evaled_field = eval(field_repr)
 
         assert field == evaled_field
+
+
+class TestFieldElementType(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.schema import FieldElementType
+
+        return FieldElementType
+
+    @staticmethod
+    def _get_standard_sql_data_type_class():
+        from google.cloud.bigquery import standard_sql
+
+        return standard_sql.StandardSqlDataType
+
+    def _make_one(self, *args):
+        return self._get_target_class()(*args)
+
+    def test_constructor(self):
+        element_type = self._make_one("DATETIME")
+        self.assertEqual(element_type.type, "DATETIME")
+        self.assertEqual(element_type._properties["type"], "DATETIME")
+
+    def test_to_api_repr(self):
+        element_type = self._make_one("DATETIME")
+        self.assertEqual(element_type.to_api_repr(), {"type": "DATETIME"})
+
+    def test_from_api_repr(self):
+        api_repr = {"type": "DATETIME"}
+        expected_element_type = self._make_one("DATETIME")
+        self.assertEqual(
+            expected_element_type.type, 
+            self._get_target_class().from_api_repr(api_repr).type,
+        )
+
+    def test_from_api_repr_empty(self):
+        self.assertEqual(None, self._get_target_class().from_api_repr({}))
+
+    def test_from_api_repr_none(self):
+        self.assertEqual(None, self._get_target_class().from_api_repr(None))
 
 
 # TODO: dedup with the same class in test_table.py.

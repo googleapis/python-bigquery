@@ -66,6 +66,46 @@ class _DefaultSentinel(enum.Enum):
 _DEFAULT_VALUE = _DefaultSentinel.DEFAULT_VALUE
 
 
+class FieldElementType(object):
+    """Represents the type of a field element.
+
+    Args:
+        type (str): The type of a field element.
+    """
+
+    def __init__(self, type: str):
+        self._properties = {}
+        self._properties["type"] = type.upper()
+
+    @property
+    def type(self):
+        return self._properties.get("type")
+
+    @classmethod
+    def from_api_repr(cls, api_repr: Optional[dict]) -> Optional["FieldElementType"]:
+        """Factory: construct a FieldElementType given its API representation.
+
+        Args:
+            api_repr (Dict[str, str]): field element type as returned from
+            the API.
+
+        Returns:
+            google.cloud.bigquery.FieldElementType:
+                Python object, as parsed from ``api_repr``.
+        """
+        if not api_repr:
+            return None
+        return cls(api_repr["type"].upper())
+
+    def to_api_repr(self) -> dict:
+        """Construct the API resource representation of this field element type.
+
+        Returns:
+            Dict[str, str]: Field element type represented as an API resource.
+        """
+        return self._properties
+
+
 class SchemaField(object):
     """Describe a single field within a table schema.
 
@@ -117,6 +157,12 @@ class SchemaField(object):
             - Struct or array composed with the above allowed functions, for example:
 
                 "[CURRENT_DATE(), DATE '2020-01-01'"]
+
+        range_element_type: FieldElementType, str, Optional
+            The subtype of the RANGE, if the type of this field is RANGE. If
+            the type is RANGE, this field is required. Possible values for the
+            field element type of a RANGE include `DATE`, `DATETIME` and 
+            `TIMESTAMP`.
     """
 
     def __init__(
@@ -131,6 +177,7 @@ class SchemaField(object):
         precision: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
+        range_element_type: Union[FieldElementType, str, None] = None,
     ):
         self._properties: Dict[str, Any] = {
             "name": name,
@@ -152,6 +199,11 @@ class SchemaField(object):
             self._properties["policyTags"] = (
                 policy_tags.to_api_repr() if policy_tags is not None else None
             )
+        if isinstance(range_element_type, str):
+            self._properties["rangeElementType"] = {"type": range_element_type}
+        if isinstance(range_element_type, FieldElementType):
+            self._properties["rangeElementType"] = range_element_type.to_api_repr()
+
         self._fields = tuple(fields)
 
     @staticmethod
@@ -197,6 +249,7 @@ class SchemaField(object):
             precision=cls.__get_int(api_repr, "precision"),
             scale=cls.__get_int(api_repr, "scale"),
             max_length=cls.__get_int(api_repr, "maxLength"),
+            range_element_type=api_repr.get("rangeElementType"),
         )
 
     @property
@@ -251,6 +304,17 @@ class SchemaField(object):
     def max_length(self):
         """Optional[int]: Maximum length for the STRING or BYTES field."""
         return self._properties.get("maxLength")
+
+    @property
+    def range_element_type(self):
+        """Optional[FieldElementType]: The subtype of the RANGE, if the
+        type of this field is RANGE.
+        
+        Must be set when ``type`` is `"RANGE"`. Must be one of `"DATE"`,
+        `"DATETIME"` or `"TIMESTAMP"`.
+        """
+        if t := self._properties.get("rangeElementType"):
+            return FieldElementType(type=t["type"])
 
     @property
     def fields(self):

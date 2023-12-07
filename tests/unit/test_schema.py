@@ -98,7 +98,8 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[1], sub_field2)
 
     def test_constructor_range(self):
-        from google.cloud.bigquery.schema import FieldElementType 
+        from google.cloud.bigquery.schema import FieldElementType
+
         field = self._make_one(
             "test",
             "RANGE",
@@ -625,7 +626,7 @@ class TestFieldElementType(unittest.TestCase):
         api_repr = {"type": "DATETIME"}
         expected_element_type = self._make_one("DATETIME")
         self.assertEqual(
-            expected_element_type.type, 
+            expected_element_type.type,
             self._get_target_class().from_api_repr(api_repr).type,
         )
 

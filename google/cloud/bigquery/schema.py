@@ -161,7 +161,7 @@ class SchemaField(object):
         range_element_type: FieldElementType, str, Optional
             The subtype of the RANGE, if the type of this field is RANGE. If
             the type is RANGE, this field is required. Possible values for the
-            field element type of a RANGE include `DATE`, `DATETIME` and 
+            field element type of a RANGE include `DATE`, `DATETIME` and
             `TIMESTAMP`.
     """
 
@@ -309,7 +309,7 @@ class SchemaField(object):
     def range_element_type(self):
         """Optional[FieldElementType]: The subtype of the RANGE, if the
         type of this field is RANGE.
-        
+
         Must be set when ``type`` is `"RANGE"`. Must be one of `"DATE"`,
         `"DATETIME"` or `"TIMESTAMP"`.
         """

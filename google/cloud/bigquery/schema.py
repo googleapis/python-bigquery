@@ -313,8 +313,9 @@ class SchemaField(object):
         Must be set when ``type`` is `"RANGE"`. Must be one of `"DATE"`,
         `"DATETIME"` or `"TIMESTAMP"`.
         """
-        if t := self._properties.get("rangeElementType"):
-            return FieldElementType(type=t["type"])
+        if self._properties.get("rangeElementType"):
+            ret = self._properties.get("rangeElementType")
+            return FieldElementType(type=ret["type"])
 
     @property
     def fields(self):

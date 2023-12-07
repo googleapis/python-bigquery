@@ -604,12 +604,6 @@ class TestFieldElementType(unittest.TestCase):
 
         return FieldElementType
 
-    @staticmethod
-    def _get_standard_sql_data_type_class():
-        from google.cloud.bigquery import standard_sql
-
-        return standard_sql.StandardSqlDataType
-
     def _make_one(self, *args):
         return self._get_target_class()(*args)
 

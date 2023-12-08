@@ -410,7 +410,7 @@ class Test_json_from_json(unittest.TestCase):
         data_field = _Field("REQUIRED", "data", "JSON")
 
         value = json.dumps(
-                {"v": {"key": "value"}},
+            {"v": {"key": "value"}},
         )
 
         expected_output = {"v": {"key": "value"}}

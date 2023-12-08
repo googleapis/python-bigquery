@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import collections
 from collections import abc as collections_abc
-import copy
 import re
 from typing import Optional
 
@@ -77,9 +76,6 @@ class Cursor(object):
         self.arraysize = None
         self._query_data = None
         self._query_rows = None
-        self._job_id = None
-        self._job_location = None
-        self._job_project = None
         self._closed = False
 
     @property
@@ -90,9 +86,14 @@ class Cursor(object):
         .. note::
             If the last ``execute*()`` call was ``executemany()``, this is the
             last job created by ``executemany()``."""
-        job_id = self._job_id
-        project = self._job_project
-        location = self._job_location
+        rows = self._query_rows
+
+        if rows is None:
+            return None
+
+        job_id = rows.job_id
+        project = rows.project
+        location = rows.location
         client = self.connection._client
 
         if job_id is None:
@@ -202,14 +203,7 @@ class Cursor(object):
         # libraries.
         query_parameters = _helpers.to_query_parameters(parameters, parameter_types)
 
-        if client._default_query_job_config:
-            if job_config:
-                config = job_config._fill_from_default(client._default_query_job_config)
-            else:
-                config = copy.deepcopy(client._default_query_job_config)
-        else:
-            config = job_config or job.QueryJobConfig(use_legacy_sql=False)
-
+        config = job_config or job.QueryJobConfig()
         config.query_parameters = query_parameters
 
         # Start the query and wait for the query to finish.

@@ -12,11 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import functools
 import mock
 import operator as op
 import unittest
 
 import pytest
+
+import google.cloud.bigquery.table as bq_table
 
 try:
     import pyarrow
@@ -48,7 +51,6 @@ class TestCursor(unittest.TestCase):
         rows=None,
         schema=None,
         num_dml_affected_rows=None,
-        default_query_job_config=None,
         dry_run_job=False,
         total_bytes_processed=0,
     ):
@@ -60,15 +62,28 @@ class TestCursor(unittest.TestCase):
             total_rows = len(rows)
 
         mock_client = mock.create_autospec(client.Client)
-        mock_client.query.return_value = self._mock_job(
+        mock_job = self._mock_job(
             total_rows=total_rows,
             schema=schema,
             num_dml_affected_rows=num_dml_affected_rows,
             dry_run=dry_run_job,
             total_bytes_processed=total_bytes_processed,
-            rows=rows,
+            rows=self._mock_rows(
+                rows,
+                total_rows=total_rows,
+                schema=schema,
+                num_dml_affected_rows=num_dml_affected_rows,
+                table=mock.create_autospec(bq_table.TableReference, instance=True),
+            ),
         )
-        mock_client._default_query_job_config = default_query_job_config
+        mock_client.get_job.return_value = mock_job
+        mock_client.query.return_value = mock_job
+        mock_client.query_and_wait.return_value = self._mock_rows(
+            rows,
+            total_rows=total_rows,
+            schema=schema,
+            num_dml_affected_rows=num_dml_affected_rows,
+        )
 
         # Assure that the REST client gets used, not the BQ Storage client.
         mock_client._ensure_bqstorage_client.return_value = None
@@ -135,6 +150,25 @@ class TestCursor(unittest.TestCase):
             mock_job.statement_type = "UPDATE"
 
         return mock_job
+
+    def _mock_rows(
+        self, rows, total_rows=0, schema=None, num_dml_affected_rows=None, table=None
+    ):
+        mock_rows = mock.create_autospec(bq_table.RowIterator, instance=True)
+        mock_rows.__iter__.return_value = rows
+        mock_rows._table = table
+        mock_rows._should_use_bqstorage = functools.partial(
+            bq_table.RowIterator._should_use_bqstorage,
+            mock_rows,
+        )
+        type(mock_rows).job_id = mock.PropertyMock(return_value="test-job-id")
+        type(mock_rows).location = mock.PropertyMock(return_value="test-location")
+        type(mock_rows).num_dml_affected_rows = mock.PropertyMock(
+            return_value=num_dml_affected_rows
+        )
+        type(mock_rows).total_rows = mock.PropertyMock(return_value=total_rows)
+        type(mock_rows).schema = mock.PropertyMock(return_value=schema)
+        return mock_rows
 
     def _mock_results(self, total_rows=0, schema=None, num_dml_affected_rows=None):
         from google.cloud.bigquery import query
@@ -284,12 +318,15 @@ class TestCursor(unittest.TestCase):
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_fetchall_w_bqstorage_client_fetch_success(self):
         from google.cloud.bigquery import dbapi
-        from google.cloud.bigquery import table
 
         # use unordered data to also test any non-determenistic key order in dicts
         row_data = [
-            table.Row([1.4, 1.1, 1.3, 1.2], {"bar": 3, "baz": 2, "foo": 1, "quux": 0}),
-            table.Row([2.4, 2.1, 2.3, 2.2], {"bar": 3, "baz": 2, "foo": 1, "quux": 0}),
+            bq_table.Row(
+                [1.4, 1.1, 1.3, 1.2], {"bar": 3, "baz": 2, "foo": 1, "quux": 0}
+            ),
+            bq_table.Row(
+                [2.4, 2.1, 2.3, 2.2], {"bar": 3, "baz": 2, "foo": 1, "quux": 0}
+            ),
         ]
         bqstorage_streamed_rows = [
             {
@@ -365,9 +402,8 @@ class TestCursor(unittest.TestCase):
     )
     def test_fetchall_w_bqstorage_client_fetch_error_no_fallback(self):
         from google.cloud.bigquery import dbapi
-        from google.cloud.bigquery import table
 
-        row_data = [table.Row([1.1, 1.2], {"foo": 0, "bar": 1})]
+        row_data = [bq_table.Row([1.1, 1.2], {"foo": 0, "bar": 1})]
 
         def fake_ensure_bqstorage_client(bqstorage_client=None, **kwargs):
             return bqstorage_client
@@ -400,10 +436,9 @@ class TestCursor(unittest.TestCase):
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_fetchall_w_bqstorage_client_no_arrow_compression(self):
         from google.cloud.bigquery import dbapi
-        from google.cloud.bigquery import table
 
         # Use unordered data to also test any non-determenistic key order in dicts.
-        row_data = [table.Row([1.2, 1.1], {"bar": 1, "foo": 0})]
+        row_data = [bq_table.Row([1.2, 1.1], {"bar": 1, "foo": 0})]
         bqstorage_streamed_rows = [{"bar": _to_pyarrow(1.2), "foo": _to_pyarrow(1.1)}]
 
         def fake_ensure_bqstorage_client(bqstorage_client=None, **kwargs):
@@ -459,12 +494,8 @@ class TestCursor(unittest.TestCase):
 
     def test_execute_w_default_config(self):
         from google.cloud.bigquery.dbapi import connect
-        from google.cloud.bigquery import job
 
-        default_config = job.QueryJobConfig(use_legacy_sql=False, flatten_results=True)
-        client = self._mock_client(
-            rows=[], num_dml_affected_rows=0, default_query_job_config=default_config
-        )
+        client = self._mock_client(rows=[], num_dml_affected_rows=0)
         connection = connect(client)
         cursor = connection.cursor()
 
@@ -472,10 +503,7 @@ class TestCursor(unittest.TestCase):
 
         _, kwargs = client.query.call_args
         used_config = kwargs["job_config"]
-        expected_config = job.QueryJobConfig(
-            use_legacy_sql=False, flatten_results=True, query_parameters=[]
-        )
-        self.assertEqual(used_config._properties, expected_config._properties)
+        self.assertIsNone(used_config)
 
     def test_execute_custom_job_config_wo_default_config(self):
         from google.cloud.bigquery.dbapi import connect
@@ -495,10 +523,7 @@ class TestCursor(unittest.TestCase):
         from google.cloud.bigquery.dbapi import connect
         from google.cloud.bigquery import job
 
-        default_config = job.QueryJobConfig(use_legacy_sql=False, flatten_results=True)
-        client = self._mock_client(
-            rows=[], num_dml_affected_rows=0, default_query_job_config=default_config
-        )
+        client = self._mock_client(rows=[], num_dml_affected_rows=0)
         connection = connect(client)
         cursor = connection.cursor()
         config = job.QueryJobConfig(use_legacy_sql=True)
@@ -509,7 +534,6 @@ class TestCursor(unittest.TestCase):
         used_config = kwargs["job_config"]
         expected_config = job.QueryJobConfig(
             use_legacy_sql=True,  # the config passed to execute() prevails
-            flatten_results=True,  # from the default
             query_parameters=[],
         )
         self.assertEqual(used_config._properties, expected_config._properties)
@@ -576,7 +600,7 @@ class TestCursor(unittest.TestCase):
 
         connection = dbapi.connect(
             self._mock_client(
-                rows=[("hello", "world", 1), ("howdy", "y'all", 2)],
+                rows=[],
                 schema=[
                     SchemaField("a", "STRING", mode="NULLABLE"),
                     SchemaField("b", "STRING", mode="REQUIRED"),
@@ -594,7 +618,7 @@ class TestCursor(unittest.TestCase):
         )
 
         self.assertEqual(cursor.rowcount, 0)
-        self.assertIsNone(cursor.description)
+        self.assertIsNotNone(cursor.description)
         rows = cursor.fetchall()
         self.assertEqual(list(rows), [])
 
@@ -602,16 +626,11 @@ class TestCursor(unittest.TestCase):
         import google.cloud.exceptions
 
         from google.cloud.bigquery import client
-        from google.cloud.bigquery import job
         from google.cloud.bigquery.dbapi import connect
         from google.cloud.bigquery.dbapi import exceptions
 
-        job = mock.create_autospec(job.QueryJob)
-        job.dry_run = None
-        job.result.side_effect = google.cloud.exceptions.GoogleCloudError("")
         client = mock.create_autospec(client.Client)
-        client._default_query_job_config = None
-        client.query.return_value = job
+        client.query_and_wait.side_effect = google.cloud.exceptions.GoogleCloudError("")
         connection = connect(client)
         cursor = connection.cursor()
 

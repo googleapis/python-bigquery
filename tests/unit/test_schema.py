@@ -111,7 +111,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.field_type, "RANGE")
         self.assertEqual(field.mode, "REQUIRED")
         self.assertEqual(field.description, "Testing")
-        self.assertEqual(field.range_element_type.type, "DATETIME")
+        self.assertEqual(field.range_element_type.element_type, "DATETIME")
 
     def test_constructor_range_str(self):
         field = self._make_one(
@@ -125,7 +125,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.field_type, "RANGE")
         self.assertEqual(field.mode, "REQUIRED")
         self.assertEqual(field.description, "Testing")
-        self.assertEqual(field.range_element_type.type, "DATETIME")
+        self.assertEqual(field.range_element_type.element_type, "DATETIME")
 
     def test_to_api_repr(self):
         from google.cloud.bigquery.schema import PolicyTagList
@@ -609,19 +609,19 @@ class TestFieldElementType(unittest.TestCase):
 
     def test_constructor(self):
         element_type = self._make_one("DATETIME")
-        self.assertEqual(element_type.type, "DATETIME")
-        self.assertEqual(element_type._properties["type"], "DATETIME")
+        self.assertEqual(element_type.element_type, "DATETIME")
+        self.assertEqual(element_type._properties["element_type"], "DATETIME")
 
     def test_to_api_repr(self):
         element_type = self._make_one("DATETIME")
-        self.assertEqual(element_type.to_api_repr(), {"type": "DATETIME"})
+        self.assertEqual(element_type.to_api_repr(), {"element_type": "DATETIME"})
 
     def test_from_api_repr(self):
-        api_repr = {"type": "DATETIME"}
+        api_repr = {"element_type": "DATETIME"}
         expected_element_type = self._make_one("DATETIME")
         self.assertEqual(
-            expected_element_type.type,
-            self._get_target_class().from_api_repr(api_repr).type,
+            expected_element_type.element_type,
+            self._get_target_class().from_api_repr(api_repr).element_type,
         )
 
     def test_from_api_repr_empty(self):

@@ -70,16 +70,16 @@ class FieldElementType(object):
     """Represents the type of a field element.
 
     Args:
-        type (str): The type of a field element.
+        element_type (str): The type of a field element.
     """
 
-    def __init__(self, type: str):
+    def __init__(self, element_type: str):
         self._properties = {}
-        self._properties["type"] = type.upper()
+        self._properties["element_type"] = element_type.upper()
 
     @property
-    def type(self):
-        return self._properties.get("type")
+    def element_type(self):
+        return self._properties.get("element_type")
 
     @classmethod
     def from_api_repr(cls, api_repr: Optional[dict]) -> Optional["FieldElementType"]:
@@ -95,7 +95,7 @@ class FieldElementType(object):
         """
         if not api_repr:
             return None
-        return cls(api_repr["type"].upper())
+        return cls(api_repr["element_type"].upper())
 
     def to_api_repr(self) -> dict:
         """Construct the API resource representation of this field element type.
@@ -200,7 +200,7 @@ class SchemaField(object):
                 policy_tags.to_api_repr() if policy_tags is not None else None
             )
         if isinstance(range_element_type, str):
-            self._properties["rangeElementType"] = {"type": range_element_type}
+            self._properties["rangeElementType"] = {"element_type": range_element_type}
         if isinstance(range_element_type, FieldElementType):
             self._properties["rangeElementType"] = range_element_type.to_api_repr()
 
@@ -315,7 +315,7 @@ class SchemaField(object):
         """
         if self._properties.get("rangeElementType"):
             ret = self._properties.get("rangeElementType")
-            return FieldElementType(type=ret["type"])
+            return FieldElementType(element_type=ret["element_type"])
 
     @property
     def fields(self):

@@ -53,13 +53,14 @@ class TestCursor(unittest.TestCase):
         num_dml_affected_rows=None,
         dry_run_job=False,
         total_bytes_processed=0,
+        total_rows=None,
     ):
         from google.cloud.bigquery import client
 
-        if rows is None:
+        if total_rows is None:
             total_rows = 0
-        else:
-            total_rows = len(rows)
+            if rows is not None:
+                total_rows = len(rows)
 
         mock_client = mock.create_autospec(client.Client)
         mock_job = self._mock_job(
@@ -408,7 +409,7 @@ class TestCursor(unittest.TestCase):
         def fake_ensure_bqstorage_client(bqstorage_client=None, **kwargs):
             return bqstorage_client
 
-        mock_client = self._mock_client(rows=row_data)
+        mock_client = self._mock_client(rows=row_data, total_rows=1000)
         mock_client._ensure_bqstorage_client.side_effect = fake_ensure_bqstorage_client
         mock_bqstorage_client = self._mock_bqstorage_client(
             stream_count=1,

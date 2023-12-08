@@ -87,18 +87,18 @@ def job_config_with_defaults(
     job_config: Optional[job.QueryJobConfig],
     default_job_config: Optional[job.QueryJobConfig],
 ) -> Optional[job.QueryJobConfig]:
+    """Create a copy of `job_config`, replacing unset values with those from
+    `default_job_config`.
+    """
     if job_config is None:
         return default_job_config
 
     if default_job_config is None:
         return job_config
 
-    # anything that's not defined on the incoming
-    # that is in the default,
-    # should be filled in with the default
-    # the incoming therefore has precedence
-    #
-    # Note that _fill_from_default doesn't mutate the receiver
+    # Both job_config and default_job_config are not None, so make a copy of
+    # job_config merged with default_job_config. Anything already explicitly
+    # set on job_config should not be replaced.
     return job_config._fill_from_default(default_job_config)
 
 

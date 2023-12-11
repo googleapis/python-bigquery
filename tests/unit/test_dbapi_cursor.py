@@ -721,16 +721,16 @@ class TestCursor(unittest.TestCase):
         self.assertIsInstance(cursor.query_job, QueryJob)
 
     def test_query_job_w_execute_no_job(self):
-        from google.cloud.bigquery import dbapi, QueryJob
+        from google.cloud.bigquery import dbapi
 
         connection = dbapi.connect(self._mock_client())
         cursor = connection.cursor()
         cursor.execute("SELECT 1;")
 
         # Simulate jobless execution.
-        cursor._query_rows._job_id = None
+        type(cursor._query_rows).job_id = mock.PropertyMock(return_value=None)
 
-        self.assertIsInstance(cursor.query_job, QueryJob)
+        self.assertIsNone(cursor.query_job)
 
     def test_query_job_w_executemany(self):
         from google.cloud.bigquery import dbapi, QueryJob

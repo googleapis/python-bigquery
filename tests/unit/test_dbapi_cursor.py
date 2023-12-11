@@ -127,9 +127,6 @@ class TestCursor(unittest.TestCase):
     ):
         from google.cloud.bigquery import job
 
-        if rows is None:
-            rows = []
-
         mock_job = mock.create_autospec(job.QueryJob)
         mock_job.error_result = None
         mock_job.state = "DONE"
@@ -389,7 +386,12 @@ class TestCursor(unittest.TestCase):
     def test_fetchall_w_bqstorage_client_fetch_no_rows(self):
         from google.cloud.bigquery import dbapi
 
-        mock_client = self._mock_client(rows=[])
+        mock_client = self._mock_client(
+            rows=[],
+            # Assume there are many more pages of data to look at so that the
+            # BQ Storage API is necessary.
+            total_rows=1000,
+        )
         mock_bqstorage_client = self._mock_bqstorage_client(stream_count=0)
         mock_client._ensure_bqstorage_client.return_value = mock_bqstorage_client
 
@@ -716,6 +718,18 @@ class TestCursor(unittest.TestCase):
         connection = dbapi.connect(self._mock_client())
         cursor = connection.cursor()
         cursor.execute("SELECT 1;")
+        self.assertIsInstance(cursor.query_job, QueryJob)
+
+    def test_query_job_w_execute_no_job(self):
+        from google.cloud.bigquery import dbapi, QueryJob
+
+        connection = dbapi.connect(self._mock_client())
+        cursor = connection.cursor()
+        cursor.execute("SELECT 1;")
+
+        # Simulate jobless execution.
+        cursor._job_id = None
+
         self.assertIsInstance(cursor.query_job, QueryJob)
 
     def test_query_job_w_executemany(self):

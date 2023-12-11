@@ -2133,6 +2133,14 @@ class TestRowIterator(unittest.TestCase):
         rows = self._make_one(location="asia-northeast1")
         self.assertEqual(rows.location, "asia-northeast1")
 
+    def test_num_dml_affected_rows_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.num_dml_affected_rows)
+
+    def test_num_dml_affected_rows_present(self):
+        rows = self._make_one(num_dml_affected_rows=1234)
+        self.assertEqual(rows.num_dml_affected_rows, 1234)
+
     def test_project_missing(self):
         rows = self._make_one()
         self.assertIsNone(rows.project)

@@ -1647,7 +1647,10 @@ class RowIterator(HTTPIterator):
         This is useful to know, because we can avoid alternative download
         mechanisms.
         """
-        if self._first_page_response is None:
+        if (
+            not hasattr(self, "_first_page_response")
+            or self._first_page_response is None
+        ):
             return False
 
         total_cached_rows = len(self._first_page_response.get(self._items_key, []))
@@ -1681,8 +1684,9 @@ class RowIterator(HTTPIterator):
         if self._table is None:
             return False
 
-        # The developer is manually paging through results if this is set.
-        if self.next_page_token is not None:
+        # The developer has already started paging through results if
+        # next_page_token is set.
+        if hasattr(self, "next_page_token") and self.next_page_token is not None:
             return False
 
         if self._is_almost_completely_cached():

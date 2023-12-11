@@ -54,6 +54,7 @@ class TestCursor(unittest.TestCase):
         dry_run_job=False,
         total_bytes_processed=0,
         total_rows=None,
+        destination_table="test-project.test_dataset.test_table",
     ):
         from google.cloud.bigquery import client
 
@@ -62,6 +63,7 @@ class TestCursor(unittest.TestCase):
             if rows is not None:
                 total_rows = len(rows)
 
+        table = bq_table.TableReference.from_string(destination_table)
         mock_client = mock.create_autospec(client.Client)
         mock_job = self._mock_job(
             total_rows=total_rows,
@@ -74,7 +76,7 @@ class TestCursor(unittest.TestCase):
                 total_rows=total_rows,
                 schema=schema,
                 num_dml_affected_rows=num_dml_affected_rows,
-                table=mock.create_autospec(bq_table.TableReference, instance=True),
+                table=table,
             ),
         )
         mock_client.get_job.return_value = mock_job
@@ -84,6 +86,9 @@ class TestCursor(unittest.TestCase):
             total_rows=total_rows,
             schema=schema,
             num_dml_affected_rows=num_dml_affected_rows,
+            # Sometimes all the results will be available in the initial
+            # response, in which case may be no job and no destination table.
+            table=table if rows is not None and total_rows > len(rows) else None,
         )
 
         # Assure that the REST client gets used, not the BQ Storage client.
@@ -162,6 +167,11 @@ class TestCursor(unittest.TestCase):
             bq_table.RowIterator._should_use_bqstorage,
             mock_rows,
         )
+        mock_rows._is_almost_completely_cached = functools.partial(
+            bq_table.RowIterator._is_almost_completely_cached,
+            mock_rows,
+        )
+        mock_rows.max_results = None
         type(mock_rows).job_id = mock.PropertyMock(return_value="test-job-id")
         type(mock_rows).location = mock.PropertyMock(return_value="test-location")
         type(mock_rows).num_dml_affected_rows = mock.PropertyMock(
@@ -409,7 +419,12 @@ class TestCursor(unittest.TestCase):
         def fake_ensure_bqstorage_client(bqstorage_client=None, **kwargs):
             return bqstorage_client
 
-        mock_client = self._mock_client(rows=row_data, total_rows=1000)
+        mock_client = self._mock_client(
+            rows=row_data,
+            # Assume there are many more pages of data to look at so that the
+            # BQ Storage API is necessary.
+            total_rows=1000,
+        )
         mock_client._ensure_bqstorage_client.side_effect = fake_ensure_bqstorage_client
         mock_bqstorage_client = self._mock_bqstorage_client(
             stream_count=1,
@@ -445,7 +460,13 @@ class TestCursor(unittest.TestCase):
         def fake_ensure_bqstorage_client(bqstorage_client=None, **kwargs):
             return bqstorage_client
 
-        mock_client = self._mock_client(rows=row_data)
+        mock_client = self._mock_client(
+            rows=row_data,
+            # Assume there are many more pages of data to look at so that the
+            # BQ Storage API is necessary.
+            total_rows=1000,
+            destination_table="P.DS.T",
+        )
         mock_client._ensure_bqstorage_client.side_effect = fake_ensure_bqstorage_client
         mock_bqstorage_client = self._mock_bqstorage_client(
             stream_count=1,

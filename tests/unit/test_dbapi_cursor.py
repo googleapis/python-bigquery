@@ -728,7 +728,7 @@ class TestCursor(unittest.TestCase):
         cursor.execute("SELECT 1;")
 
         # Simulate jobless execution.
-        cursor._job_id = None
+        cursor._query_rows._job_id = None
 
         self.assertIsInstance(cursor.query_job, QueryJob)
 

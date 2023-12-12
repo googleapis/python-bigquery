@@ -603,6 +603,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         self.assertIsNone(table.encryption_configuration)
         self.assertIsNone(table.time_partitioning)
         self.assertIsNone(table.clustering_fields)
+        self.assertIsNone(table.table_constraints)
 
     def test_ctor_w_schema(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -900,6 +901,21 @@ class TestTable(unittest.TestCase, _SchemaBase):
         assert clone.clone_time == datetime.datetime(
             2010, 9, 28, 10, 20, 30, 123000, tzinfo=UTC
         )
+
+    def test_table_constraints_property_getter(self):
+        from google.cloud.bigquery.table import PrimaryKey, TableConstraints
+
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+        table._properties["tableConstraints"] = {
+            "primaryKey": {"columns": ["id"]},
+        }
+
+        table_constraints = table.table_constraints
+
+        assert isinstance(table_constraints, TableConstraints)
+        assert table_constraints.primary_key == PrimaryKey(columns=["id"])
 
     def test_description_setter_bad_value(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
@@ -5383,6 +5399,102 @@ class TestTimePartitioning(unittest.TestCase):
         time_partitioning = self._make_one()
         time_partitioning.expiration_ms = None
         assert time_partitioning._properties["expirationMs"] is None
+
+
+class TestTableConstraint(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import TableConstraints
+
+        return TableConstraints
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        return cls._get_target_class()(*args, **kwargs)
+
+    def test_constructor_defaults(self):
+        instance = self._make_one(primary_key=None, foreign_keys=None)
+        self.assertIsNone(instance.primary_key)
+        self.assertIsNone(instance.foreign_keys)
+
+    def test_from_api_repr_full_resource(self):
+        from google.cloud.bigquery.table import (
+            ColumnReference,
+            ForeignKey,
+            TableReference,
+        )
+
+        resource = {
+            "primaryKey": {
+                "columns": ["id", "product_id"],
+            },
+            "foreignKeys": [
+                {
+                    "name": "my_fk_name",
+                    "referencedTable": {
+                        "projectId": "my-project",
+                        "datasetId": "your-dataset",
+                        "tableId": "products",
+                    },
+                    "columnReferences": [
+                        {"referencingColumn": "product_id", "referencedColumn": "id"},
+                    ],
+                }
+            ],
+        }
+        instance = self._get_target_class().from_api_repr(resource)
+
+        self.assertIsNotNone(instance.primary_key)
+        self.assertEqual(instance.primary_key.columns, ["id", "product_id"])
+        self.assertEqual(
+            instance.foreign_keys,
+            [
+                ForeignKey(
+                    name="my_fk_name",
+                    referenced_table=TableReference.from_string(
+                        "my-project.your-dataset.products"
+                    ),
+                    column_references=[
+                        ColumnReference(
+                            referencing_column="product_id", referenced_column="id"
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+    def test_from_api_repr_only_primary_key_resource(self):
+        resource = {
+            "primaryKey": {
+                "columns": ["id"],
+            },
+        }
+        instance = self._get_target_class().from_api_repr(resource)
+
+        self.assertIsNotNone(instance.primary_key)
+        self.assertEqual(instance.primary_key.columns, ["id"])
+        self.assertIsNone(instance.foreign_keys)
+
+    def test_from_api_repr_only_foreign_keys_resource(self):
+        resource = {
+            "foreignKeys": [
+                {
+                    "name": "my_fk_name",
+                    "referencedTable": {
+                        "projectId": "my-project",
+                        "datasetId": "your-dataset",
+                        "tableId": "products",
+                    },
+                    "columnReferences": [
+                        {"referencingColumn": "product_id", "referencedColumn": "id"},
+                    ],
+                }
+            ]
+        }
+        instance = self._get_target_class().from_api_repr(resource)
+
+        self.assertIsNone(instance.primary_key)
+        self.assertIsNotNone(instance.foreign_keys)
 
 
 @pytest.mark.skipif(

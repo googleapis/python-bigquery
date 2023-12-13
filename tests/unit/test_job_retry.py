@@ -156,7 +156,7 @@ def test_disable_retry_failed_jobs(sleep, client, job_retry_on_query):
     assert len(sleep.mock_calls) == 0
 
 
-@mock.patch("google.api_core.retry.datetime_helpers")
+@mock.patch("google.api_core.datetime_helpers")
 @mock.patch("time.sleep")
 def test_retry_failed_jobs_after_retry_failed(sleep, datetime_helpers, client):
     """

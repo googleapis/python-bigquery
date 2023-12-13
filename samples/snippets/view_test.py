@@ -23,16 +23,6 @@ import view  # type: ignore
 from conftest import prefixer  # type: ignore
 
 
-@pytest.fixture
-def table_id(
-    bigquery_client: bigquery.Client, project_id: str, dataset_id: str
-) -> Iterator[str]:
-    table_id = f"{prefixer.create_prefix()}_view_tet"
-    yield table_id
-    full_table_id = f"{project_id}.{dataset_id}.{table_id}"
-    bigquery_client.delete_table(full_table_id, not_found_ok=True)
-
-
 def temp_suffix() -> str:
     now = datetime.datetime.now()
     return f"{now.strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}"
@@ -64,7 +54,7 @@ def view_id(bigquery_client: bigquery.Client, view_dataset_id: str) -> Iterator[
 def source_dataset_id(
     bigquery_client: bigquery.Client, project_id: str
 ) -> Iterator[str]:
-    dataset_id = f"{project_id}.view_{temp_suffix()}"
+    dataset_id = f"{prefixer.create_prefix()}_view"
     bigquery_client.create_dataset(dataset_id)
     yield dataset_id
     bigquery_client.delete_dataset(dataset_id, delete_contents=True)

@@ -19,6 +19,7 @@ from google.cloud import bigquery
 import pytest
 
 import natality_tutorial  # type: ignore
+from conftest import prefixer  # type: ignore
 
 
 @pytest.fixture(scope="module")
@@ -38,7 +39,7 @@ def test_natality_tutorial(
     client: bigquery.Client, datasets_to_delete: List[str]
 ) -> None:
     override_values = {
-        "dataset_id": "natality_regression_{}".format(
+        "dataset_id": f"{prefixer.create_prefix()}_natality_tutorial".format(
             str(uuid.uuid4()).replace("-", "_")
         ),
     }

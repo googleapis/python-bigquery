@@ -22,16 +22,6 @@ import authorized_view_tutorial  # type: ignore
 from conftest import prefixer  # type: ignore
 
 
-@pytest.fixture
-def table_id(
-    bigquery_client: bigquery.Client, project_id: str, dataset_id: str
-) -> Iterator[str]:
-    table_id = f"{prefixer.create_prefix()}_authorized_view_tutorial"
-    yield table_id
-    full_table_id = f"{project_id}.{dataset_id}.{table_id}"
-    bigquery_client.delete_table(full_table_id, not_found_ok=True)
-
-
 @pytest.fixture(scope="module")
 def client() -> bigquery.Client:
     return bigquery.Client()
@@ -49,7 +39,7 @@ def test_authorized_view_tutorial(
     client: bigquery.Client, datasets_to_delete: List[str]
 ) -> None:
     override_values = {
-        "source_dataset_id": "github_source_data_{}".format(
+        "source_dataset_id": f"{prefixer.create_prefix()}_authorized_view_tutorial".format(
             str(uuid.uuid4()).replace("-", "_")
         ),
         "shared_dataset_id": "shared_views_{}".format(

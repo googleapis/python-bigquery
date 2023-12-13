@@ -30,7 +30,11 @@ import mock
 import requests
 import packaging
 import pytest
-import pkg_resources
+
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 try:
     import pandas
@@ -66,8 +70,9 @@ from google.cloud import bigquery
 
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import exceptions
-from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 from google.cloud.bigquery import ParquetOptions
+from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
+import google.cloud.bigquery.table
 
 try:
     from google.cloud import bigquery_storage
@@ -76,13 +81,10 @@ except (ImportError, AttributeError):  # pragma: NO COVER
 from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
 
-PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
-
 if pandas is not None:
-    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
+    PANDAS_INSTALLED_VERSION = metadata.version("pandas")
 else:
-    # Set to less than MIN version.
-    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
+    PANDAS_INSTALLED_VERSION = "0.0.0"
 
 
 def _make_credentials():
@@ -4952,20 +4954,17 @@ class TestClient(unittest.TestCase):
         )
 
     def test_query_w_invalid_default_job_config(self):
-        job_id = "some-job-id"
-        query = "select count(*) from persons"
         creds = _make_credentials()
         http = object()
         default_job_config = object()
-        client = self._make_one(
-            project=self.PROJECT,
-            credentials=creds,
-            _http=http,
-            default_query_job_config=default_job_config,
-        )
 
         with self.assertRaises(TypeError) as exc:
-            client.query(query, job_id=job_id, location=self.LOCATION)
+            self._make_one(
+                project=self.PROJECT,
+                credentials=creds,
+                _http=http,
+                default_query_job_config=default_job_config,
+            )
         self.assertIn("Expected an instance of QueryJobConfig", exc.exception.args[0])
 
     def test_query_w_client_location(self):
@@ -5211,6 +5210,150 @@ class TestClient(unittest.TestCase):
             result = client.query("SELECT 1;", job_id=None)
 
         assert result is mock.sentinel.query_job
+
+    def test_query_and_wait_defaults(self):
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        jobs_query_response = {
+            "jobComplete": True,
+            "schema": {
+                "fields": [
+                    {
+                        "name": "f0_",
+                        "type": "INTEGER",
+                        "mode": "NULLABLE",
+                    },
+                ],
+            },
+            "totalRows": "1",
+            "rows": [{"f": [{"v": "5552452"}]}],
+            "queryId": "job_abcDEF_",
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(jobs_query_response)
+
+        rows = client.query_and_wait(query)
+
+        self.assertIsInstance(rows, google.cloud.bigquery.table.RowIterator)
+        self.assertEqual(rows.query_id, "job_abcDEF_")
+        self.assertEqual(rows.total_rows, 1)
+        # No job reference in the response should be OK for completed query.
+        self.assertIsNone(rows.job_id)
+        self.assertIsNone(rows.project)
+        self.assertIsNone(rows.location)
+
+        # Verify the request we send is to jobs.query.
+        conn.api_request.assert_called_once()
+        _, req = conn.api_request.call_args
+        self.assertEqual(req["method"], "POST")
+        self.assertEqual(req["path"], "/projects/PROJECT/queries")
+        self.assertEqual(req["timeout"], DEFAULT_TIMEOUT)
+        sent = req["data"]
+        self.assertEqual(sent["query"], query)
+        self.assertFalse(sent["useLegacySql"])
+
+    def test_query_and_wait_w_default_query_job_config(self):
+        from google.cloud.bigquery import job
+
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        jobs_query_response = {
+            "jobComplete": True,
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+            default_query_job_config=job.QueryJobConfig(
+                labels={
+                    "default-label": "default-value",
+                },
+            ),
+        )
+        conn = client._connection = make_connection(jobs_query_response)
+
+        _ = client.query_and_wait(query)
+
+        # Verify the request we send is to jobs.query.
+        conn.api_request.assert_called_once()
+        _, req = conn.api_request.call_args
+        self.assertEqual(req["method"], "POST")
+        self.assertEqual(req["path"], f"/projects/{self.PROJECT}/queries")
+        sent = req["data"]
+        self.assertEqual(sent["labels"], {"default-label": "default-value"})
+
+    def test_query_and_wait_w_job_config(self):
+        from google.cloud.bigquery import job
+
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        jobs_query_response = {
+            "jobComplete": True,
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+        )
+        conn = client._connection = make_connection(jobs_query_response)
+
+        _ = client.query_and_wait(
+            query,
+            job_config=job.QueryJobConfig(
+                labels={
+                    "job_config-label": "job_config-value",
+                },
+            ),
+        )
+
+        # Verify the request we send is to jobs.query.
+        conn.api_request.assert_called_once()
+        _, req = conn.api_request.call_args
+        self.assertEqual(req["method"], "POST")
+        self.assertEqual(req["path"], f"/projects/{self.PROJECT}/queries")
+        sent = req["data"]
+        self.assertEqual(sent["labels"], {"job_config-label": "job_config-value"})
+
+    def test_query_and_wait_w_location(self):
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        jobs_query_response = {
+            "jobComplete": True,
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(jobs_query_response)
+
+        _ = client.query_and_wait(query, location="not-the-client-location")
+
+        # Verify the request we send is to jobs.query.
+        conn.api_request.assert_called_once()
+        _, req = conn.api_request.call_args
+        self.assertEqual(req["method"], "POST")
+        self.assertEqual(req["path"], f"/projects/{self.PROJECT}/queries")
+        sent = req["data"]
+        self.assertEqual(sent["location"], "not-the-client-location")
+
+    def test_query_and_wait_w_project(self):
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        jobs_query_response = {
+            "jobComplete": True,
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(jobs_query_response)
+
+        _ = client.query_and_wait(query, project="not-the-client-project")
+
+        # Verify the request we send is to jobs.query.
+        conn.api_request.assert_called_once()
+        _, req = conn.api_request.call_args
+        self.assertEqual(req["method"], "POST")
+        self.assertEqual(req["path"], "/projects/not-the-client-project/queries")
 
     def test_insert_rows_w_timeout(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -6401,11 +6544,16 @@ class TestClient(unittest.TestCase):
         age = SchemaField("age", "INTEGER", mode="NULLABLE")
         joined = SchemaField("joined", "TIMESTAMP", mode="NULLABLE")
         table = Table(self.TABLE_REF, schema=[full_name, age, joined])
+        table._properties["location"] = "us-central1"
         table._properties["numRows"] = 7
 
         iterator = client.list_rows(table, timeout=7.5)
 
-        # Check that initial total_rows is populated from the table.
+        # Check that initial RowIterator is populated from the table metadata.
+        self.assertIsNone(iterator.job_id)
+        self.assertEqual(iterator.location, "us-central1")
+        self.assertEqual(iterator.project, table.project)
+        self.assertIsNone(iterator.query_id)
         self.assertEqual(iterator.total_rows, 7)
         page = next(iterator.pages)
         rows = list(page)
@@ -6521,6 +6669,10 @@ class TestClient(unittest.TestCase):
             selected_fields=[],
         )
 
+        self.assertIsNone(rows.job_id)
+        self.assertIsNone(rows.location)
+        self.assertEqual(rows.project, self.TABLE_REF.project)
+        self.assertIsNone(rows.query_id)
         # When a table reference / string and selected_fields is provided,
         # total_rows can't be populated until iteration starts.
         self.assertIsNone(rows.total_rows)
@@ -8136,10 +8288,7 @@ class TestClientUpload(object):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @unittest.skipIf(
-        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
-        "Only `pandas version >=1.0.0` supported",
-    )
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
@@ -8184,10 +8333,7 @@ class TestClientUpload(object):
             SchemaField("x", "INT64", "NULLABLE", None),
         )
 
-    @unittest.skipIf(
-        pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
-        "Only `pandas version >=1.0.0` supported",
-    )
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
     # @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES

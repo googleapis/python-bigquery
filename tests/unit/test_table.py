@@ -22,8 +22,12 @@ import unittest
 import warnings
 
 import mock
-import pkg_resources
 import pytest
+
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 import google.api_core.exceptions
 from test_utils.imports import maybe_fail_import
@@ -71,9 +75,9 @@ except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
 if pandas is not None:
-    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
+    PANDAS_INSTALLED_VERSION = metadata.version("pandas")
 else:
-    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
+    PANDAS_INSTALLED_VERSION = "0.0.0"
 
 
 def _mock_client():
@@ -2113,6 +2117,38 @@ class TestRowIterator(unittest.TestCase):
         ]
         self.assertEqual(iterator.schema, expected_schema)
 
+    def test_job_id_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.job_id)
+
+    def test_job_id_present(self):
+        rows = self._make_one(job_id="abc-123")
+        self.assertEqual(rows.job_id, "abc-123")
+
+    def test_location_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.location)
+
+    def test_location_present(self):
+        rows = self._make_one(location="asia-northeast1")
+        self.assertEqual(rows.location, "asia-northeast1")
+
+    def test_project_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.project)
+
+    def test_project_present(self):
+        rows = self._make_one(project="test-project")
+        self.assertEqual(rows.project, "test-project")
+
+    def test_query_id_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.query_id)
+
+    def test_query_id_present(self):
+        rows = self._make_one(query_id="xyz-987")
+        self.assertEqual(rows.query_id, "xyz-987")
+
     def test_iterate(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -2165,9 +2201,18 @@ class TestRowIterator(unittest.TestCase):
         path = "/foo"
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(
-            _mock_client(), api_request, path, schema, first_page_response=first_page
+            _mock_client(),
+            api_request,
+            path,
+            schema,
+            first_page_response=first_page,
+            total_rows=4,
         )
+        self.assertEqual(row_iterator.total_rows, 4)
         rows = list(row_iterator)
+        # Total rows should be maintained, even though subsequent API calls
+        # don't include it.
+        self.assertEqual(row_iterator.total_rows, 4)
         self.assertEqual(len(rows), 4)
         self.assertEqual(rows[0].age, 27)
         self.assertEqual(rows[1].age, 28)
@@ -2177,6 +2222,39 @@ class TestRowIterator(unittest.TestCase):
         api_request.assert_called_once_with(
             method="GET", path=path, query_params={"pageToken": "next-page"}
         )
+
+    def test_iterate_with_cached_first_page_max_results(self):
+        from google.cloud.bigquery.schema import SchemaField
+
+        first_page = {
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
+            "pageToken": "next-page",
+        }
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        path = "/foo"
+        api_request = mock.Mock(return_value=first_page)
+        row_iterator = self._make_one(
+            _mock_client(),
+            api_request,
+            path,
+            schema,
+            max_results=3,
+            first_page_response=first_page,
+        )
+        rows = list(row_iterator)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0].age, 27)
+        self.assertEqual(rows[1].age, 28)
+        self.assertEqual(rows[2].age, 32)
+        api_request.assert_not_called()
 
     def test_page_size(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -2203,19 +2281,58 @@ class TestRowIterator(unittest.TestCase):
             query_params={"maxResults": row_iterator._page_size},
         )
 
-    def test__is_completely_cached_returns_false_without_first_page(self):
+    def test__is_almost_completely_cached_returns_false_without_first_page(self):
         iterator = self._make_one(first_page_response=None)
-        self.assertFalse(iterator._is_completely_cached())
+        self.assertFalse(iterator._is_almost_completely_cached())
 
-    def test__is_completely_cached_returns_false_with_page_token(self):
-        first_page = {"pageToken": "next-page"}
+    def test__is_almost_completely_cached_returns_true_with_more_rows_than_max_results(
+        self,
+    ):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+            {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(max_results=4, first_page_response=first_page)
+        self.assertTrue(iterator._is_almost_completely_cached())
+
+    def test__is_almost_completely_cached_returns_false_with_too_many_rows_remaining(
+        self,
+    ):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(first_page_response=first_page, total_rows=100)
+        self.assertFalse(iterator._is_almost_completely_cached())
+
+    def test__is_almost_completely_cached_returns_false_with_rows_remaining_and_no_total_rows(
+        self,
+    ):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
         iterator = self._make_one(first_page_response=first_page)
-        self.assertFalse(iterator._is_completely_cached())
+        self.assertFalse(iterator._is_almost_completely_cached())
 
-    def test__is_completely_cached_returns_true(self):
+    def test__is_almost_completely_cached_returns_true_with_some_rows_remaining(self):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(first_page_response=first_page, total_rows=6)
+        self.assertTrue(iterator._is_almost_completely_cached())
+
+    def test__is_almost_completely_cached_returns_true_with_no_rows_remaining(self):
         first_page = {"rows": []}
         iterator = self._make_one(first_page_response=first_page)
-        self.assertTrue(iterator._is_completely_cached())
+        self.assertTrue(iterator._is_almost_completely_cached())
 
     def test__validate_bqstorage_returns_false_when_completely_cached(self):
         first_page = {"rows": []}
@@ -2225,6 +2342,25 @@ class TestRowIterator(unittest.TestCase):
                 bqstorage_client=None, create_bqstorage_client=True
             )
         )
+
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    def test__validate_bqstorage_returns_true_if_no_cached_results(self):
+        iterator = self._make_one(first_page_response=None)  # not cached
+        result = iterator._validate_bqstorage(
+            bqstorage_client=None, create_bqstorage_client=True
+        )
+        self.assertTrue(result)
+
+    def test__validate_bqstorage_returns_false_if_page_token_set(self):
+        iterator = self._make_one(
+            page_token="abc", first_page_response=None  # not cached
+        )
+        result = iterator._validate_bqstorage(
+            bqstorage_client=None, create_bqstorage_client=True
+        )
+        self.assertFalse(result)
 
     def test__validate_bqstorage_returns_false_if_max_results_set(self):
         iterator = self._make_one(
@@ -3670,9 +3806,7 @@ class TestRowIterator(unittest.TestCase):
             self.assertEqual(df.timestamp.dtype.name, "object")
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @pytest.mark.skipif(
-        PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
-    )
+    @pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
     def test_to_dataframe_w_none_dtypes_mapper(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3785,9 +3919,7 @@ class TestRowIterator(unittest.TestCase):
             )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @pytest.mark.skipif(
-        PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
-    )
+    @pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
     def test_to_dataframe_column_dtypes(self):
         from google.cloud.bigquery.schema import SchemaField
 

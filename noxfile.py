@@ -37,8 +37,8 @@ BLACK_PATHS = (
 )
 
 DEFAULT_PYTHON_VERSION = "3.8"
-SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.11"]
-UNIT_TEST_PYTHON_VERSIONS = ["3.7", "3.8", "3.9", "3.10", "3.11"]
+SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.11", "3.12"]
+UNIT_TEST_PYTHON_VERSIONS = ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 # 'docfx' is excluded since it only needs to run in 'docs-presubmit'
@@ -81,7 +81,7 @@ def default(session, install_extras=True):
         constraints_path,
     )
 
-    if install_extras and session.python == "3.11":
+    if install_extras and session.python in ["3.11", "3.12"]:
         install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     elif install_extras:
         install_target = ".[all]"
@@ -137,7 +137,7 @@ def mypy(session):
         "types-requests",
         "types-setuptools",
     )
-    session.run("mypy", "google/cloud", "--show-traceback")
+    session.run("mypy", "-p", "google", "--show-traceback")
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
@@ -149,7 +149,8 @@ def pytype(session):
     session.install("attrs==20.3.0")
     session.install("-e", ".[all]")
     session.install(PYTYPE_VERSION)
-    session.run("pytype")
+    # See https://github.com/google/pytype/issues/464
+    session.run("pytype", "-P", ".", "google/cloud/bigquery")
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
@@ -186,25 +187,32 @@ def system(session):
     # Data Catalog needed for the column ACL test with a real Policy Tag.
     session.install("google-cloud-datacatalog", "-c", constraints_path)
 
-    if session.python == "3.11":
+    if session.python in ["3.11", "3.12"]:
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)
 
     # Run py.test against the system tests.
-    session.run("py.test", "--quiet", os.path.join("tests", "system"), *session.posargs)
+    session.run(
+        "py.test",
+        "--quiet",
+        os.path.join("tests", "system"),
+        *session.posargs,
+    )
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def mypy_samples(session):
     """Run type checks with mypy."""
-    session.install("-e", ".[all]")
-
     session.install("pytest")
     for requirements_path in CURRENT_DIRECTORY.glob("samples/*/requirements.txt"):
-        session.install("-r", requirements_path)
+        session.install("-r", str(requirements_path))
     session.install(MYPY_VERSION)
+
+    # requirements.txt might include this package. Install from source so that
+    # we can author samples with unreleased features.
+    session.install("-e", ".[all]")
 
     # Just install the dependencies' type info directly, since "mypy --install-types"
     # might require an additional pass.
@@ -245,7 +253,7 @@ def snippets(session):
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
-    if session.python == "3.11":
+    if session.python in ["3.11", "3.12"]:
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
@@ -258,8 +266,10 @@ def snippets(session):
     session.run(
         "py.test",
         "samples",
+        "--ignore=samples/desktopapp",
         "--ignore=samples/magics",
         "--ignore=samples/geography",
+        "--ignore=samples/notebooks",
         "--ignore=samples/snippets",
         *session.posargs,
     )
@@ -427,7 +437,7 @@ def docs(session):
     )
 
 
-@nox.session(python="3.9")
+@nox.session(python="3.10")
 def docfx(session):
     """Build the docfx yaml files for this library."""
 

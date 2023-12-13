@@ -29,20 +29,16 @@ description = "Google BigQuery API client library"
 # 'Development Status :: 5 - Production/Stable'
 release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
-    "grpcio >= 1.47.0, < 2.0dev",  # https://github.com/googleapis/python-bigquery/issues/1262
-    "grpcio >= 1.49.1, < 2.0dev; python_version>='3.11'",
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-api-core[grpc] >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
-    "proto-plus >= 1.15.0, <2.0.0dev",
+    "google-api-core >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
     # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-cloud-core >= 1.6.0, <3.0.0dev",
     "google-resumable-media >= 0.6.0, < 3.0dev",
     "packaging >= 20.0.0",
-    "protobuf>=3.19.5,<5.0.0dev,!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",  # For the legacy proto-based types.
     "python-dateutil >= 2.7.2, <3.0dev",
     "requests >= 2.21.0, < 3.0.0dev",
 ]
@@ -66,6 +62,7 @@ extras = {
         "pandas>=1.1.0",
         pyarrow_dependency,
         "db-dtypes>=0.3.0,<2.0.0dev",
+        "importlib_metadata>=1.0.0; python_version<'3.8'",
     ],
     "ipywidgets": [
         "ipywidgets>=7.7.0",
@@ -81,6 +78,10 @@ extras = {
         "opentelemetry-api >= 1.1.0",
         "opentelemetry-sdk >= 1.1.0",
         "opentelemetry-instrumentation >= 0.20b0",
+    ],
+    "bigquery_v2": [
+        "proto-plus >= 1.15.0, <2.0.0dev",
+        "protobuf>=3.19.5,<5.0.0dev,!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",  # For the legacy proto-based types.
     ],
 }
 
@@ -108,15 +109,9 @@ version = version["__version__"]
 # benchmarks, etc.
 packages = [
     package
-    for package in setuptools.PEP420PackageFinder.find()
+    for package in setuptools.find_namespace_packages()
     if package.startswith("google")
 ]
-
-# Determine which namespaces are needed.
-namespaces = ["google"]
-if "google.cloud" in packages:
-    namespaces.append("google.cloud")
-
 
 setuptools.setup(
     name=name,
@@ -138,12 +133,12 @@ setuptools.setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Operating System :: OS Independent",
         "Topic :: Internet",
     ],
     platforms="Posix; MacOS X; Windows",
     packages=packages,
-    namespace_packages=namespaces,
     install_requires=dependencies,
     extras_require=extras,
     python_requires=">=3.7",

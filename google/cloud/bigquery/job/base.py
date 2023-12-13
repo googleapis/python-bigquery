@@ -21,14 +21,13 @@ import threading
 import typing
 from typing import ClassVar, Dict, Optional, Sequence
 
+from google.api_core import retry as retries
 from google.api_core import exceptions
 import google.api_core.future.polling
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.retry import DEFAULT_RETRY
-
-if typing.TYPE_CHECKING:  # pragma: NO COVER
-    from google.api_core import retry as retries
+from google.cloud.bigquery._helpers import _int_or_none
 
 
 _DONE_STATE = "DONE"
@@ -170,6 +169,37 @@ class _JobConfig(object):
                 "Property {} is unknown for {}.".format(name, type(self))
             )
         super(_JobConfig, self).__setattr__(name, value)
+
+    @property
+    def job_timeout_ms(self):
+        """Optional parameter. Job timeout in milliseconds. If this time limit is exceeded, BigQuery might attempt to stop the job.
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfiguration.FIELDS.job_timeout_ms
+        e.g.
+
+            job_config = bigquery.QueryJobConfig( job_timeout_ms = 5000 )
+            or
+            job_config.job_timeout_ms = 5000
+
+        Raises:
+            ValueError: If ``value`` type is invalid.
+        """
+
+        # None as this is an optional parameter.
+        if self._properties.get("jobTimeoutMs"):
+            return self._properties["jobTimeoutMs"]
+        return None
+
+    @job_timeout_ms.setter
+    def job_timeout_ms(self, value):
+        try:
+            value = _int_or_none(value)
+        except ValueError as err:
+            raise ValueError("Pass an int for jobTimeoutMs, e.g. 5000").with_traceback(
+                err.__traceback__
+            )
+
+        """ Docs indicate a string is expected by the API """
+        self._properties["jobTimeoutMs"] = str(value)
 
     @property
     def labels(self):
@@ -793,7 +823,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
     def cancel(
         self,
         client=None,
-        retry: "retries.Retry" = DEFAULT_RETRY,
+        retry: Optional[retries.Retry] = DEFAULT_RETRY,
         timeout: Optional[float] = None,
     ) -> bool:
         """API call:  cancel job via a POST request
@@ -889,9 +919,9 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             self.reload(retry=retry, timeout=timeout)
         return self.state == _DONE_STATE
 
-    def result(  # type: ignore  # (signature complaint)
+    def result(  # type: ignore  # (incompatible with supertype)
         self,
-        retry: "retries.Retry" = DEFAULT_RETRY,
+        retry: Optional[retries.Retry] = DEFAULT_RETRY,
         timeout: Optional[float] = None,
     ) -> "_AsyncJob":
         """Start the job and wait for it to complete and get the result.

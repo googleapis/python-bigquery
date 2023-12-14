@@ -412,7 +412,7 @@ class TestLoadJobConfig(_Base):
         config = self._get_target_class()()
         config.ignore_unknown_values = True
         self.assertTrue(config._properties["load"]["ignoreUnknownValues"])
-    
+
     def test_json_extension_missing(self):
         config = self._get_target_class()()
         self.assertIsNone(config.json_extension)
@@ -426,7 +426,7 @@ class TestLoadJobConfig(_Base):
         config = self._get_target_class()()
         config.json_extension = "GEOJSON"
         self.assertEqual(config._properties["load"]["jsonExtension"], "GEOJSON")
-    
+
     # def test_source_format_autodetect_with_json_extension(self):
     #     config = self._get_target_class()()
     #     config._properties["load"]["sourceFormat"] = "AUTODETECT"

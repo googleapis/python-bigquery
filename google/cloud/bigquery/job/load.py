@@ -343,7 +343,7 @@ class LoadJobConfig(_JobConfig):
     @json_extension.setter
     def json_extension(self, value):
         self._set_sub_prop("jsonExtension", value)
-    
+
     @property
     def max_bad_records(self):
         """Optional[int]: Number of invalid rows to ignore.

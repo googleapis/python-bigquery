@@ -165,7 +165,6 @@ def test_retry_failed_jobs_after_retry_failed(sleep, client):
     conn = client._connection = make_connection()
 
     with freezegun.freeze_time("2024-01-01 00:00:00") as frozen_datetime:
-
         err = dict(reason="rateLimitExceeded")
 
         def api_request(method, path, query_params=None, data=None, **kw):

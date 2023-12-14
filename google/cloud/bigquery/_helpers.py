@@ -240,7 +240,7 @@ def _record_from_json(value, field):
 
 
 def _json_from_json(value, field):
-    """Coerce 'value' to an object."""
+    """Coerce 'value' to a Pythonic JSON representation."""
     if _not_null(value, field):
         return json.loads(value)
     else:
@@ -420,12 +420,6 @@ def _time_to_json(value):
     if isinstance(value, datetime.time):
         value = value.isoformat()
     return value
-
-
-def _json_from_json(value, field):
-    """Coerce 'value' to a pythonic JSON representation, if set or not nullable."""
-    if _not_null(value, field):
-        return json.loads(value)
 
 
 # Converters used for scalar values marshalled as row data.

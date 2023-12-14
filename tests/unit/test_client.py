@@ -8900,24 +8900,14 @@ class TestClientUpload(object):
         from decimal import Decimal
 
         client = self._make_client()
-        dataframe = pandas.DataFrame(
-            {
-                "x": [
-                    Decimal("0.12345678901234560000000000000000000000"),
-                    Decimal("01234567890123456789012345678901234567.1234567891"),
-                ]
-            }
-        )
+        dataframe = pandas.DataFrame({"x": [Decimal("0.1234567891")]})
         load_patch = mock.patch(
             "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
         )
 
         get_table_patch = mock.patch(
-            "google.cloud.bigquery.client.Client.get_table",
-            autospec=True,
-            return_value=mock.Mock(schema=[SchemaField("x", "BIGNUMERIC", "NULLABLE")]),
+            "google.cloud.bigquery.client.Client.get_table", autospec=True
         )
-
         with load_patch as load_table_from_file, get_table_patch:
             client.load_table_from_dataframe(
                 dataframe, self.TABLE_REF, location=self.LOCATION

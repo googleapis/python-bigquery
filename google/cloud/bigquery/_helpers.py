@@ -247,6 +247,7 @@ def _json_from_json(value, field):
         return None
 
 
+# Parse BigQuery API response JSON into a Python representation.
 _CELLDATA_FROM_JSON = {
     "INTEGER": _int_from_json,
     "INT64": _int_from_json,
@@ -422,7 +423,8 @@ def _time_to_json(value):
     return value
 
 
-# Converters used for scalar values marshalled as row data.
+# Converters used for scalar values marshalled to the BigQuery API, such as in
+# query parameters or the tabledata.insert API.
 _SCALAR_VALUE_TO_JSON_ROW = {
     "INTEGER": _int_to_json,
     "INT64": _int_to_json,

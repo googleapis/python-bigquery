@@ -23,8 +23,6 @@ google-resumable-media==2.7.0
 googleapis-common-protos==1.62.0
 grpcio==1.60.0
 idna==3.6
-libcst==1.1.0; python_version == '3.7'
-libcst==1.1.0; python_version >= '3.8'
 munch==4.0.0
 mypy-extensions==1.0.0
 packaging==23.2

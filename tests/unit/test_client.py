@@ -113,6 +113,17 @@ def _make_list_partitons_meta_info(project, dataset_id, table_id, num_rows=0):
     }
 
 
+def _json_serial_date_only(obj):
+    """JSON serializer for objects not serializable by default json code
+
+    Ref: https://stackoverflow.com/a/22238613
+    """
+
+    if isinstance(obj, (datetime.datetime, datetime.date)):
+        return obj.isoformat()
+    raise TypeError("Type %s not serializable" % type(obj))
+
+
 class TestClient(unittest.TestCase):
     PROJECT = "PROJECT"
     DS_ID = "DATASET_ID"
@@ -8890,6 +8901,79 @@ class TestClientUpload(object):
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.CSV
+
+    def test_load_table_from_json_basic_use_with_json_dumps_kwargs_fail(self):
+        client = self._make_client()
+
+        class Fail:
+            _fail = "This will fail"
+
+        json_rows = [
+            {
+                "name": "One",
+                "age": 11,
+                "birthday": datetime.date(2008, 9, 10),
+                "adult": Fail(),
+            }
+        ]
+
+        with pytest.raises(TypeError):
+            client.load_table_from_json(
+                json_rows,
+                self.TABLE_REF,
+                json_dumps_kwargs={"default": _json_serial_date_only},
+            )
+
+    def test_load_table_from_json_basic_use_with_json_dumps_kwargs(self):
+        from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
+        from google.cloud.bigquery import job
+
+        client = self._make_client()
+
+        json_rows = [
+            {
+                "name": "One",
+                "age": 11,
+                "birthday": datetime.date(2008, 9, 10),
+                "adult": False,
+            },
+            {
+                "name": "Two",
+                "age": 22,
+                "birthday": datetime.date(1997, 8, 9),
+                "adult": True,
+            },
+        ]
+
+        load_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
+        )
+
+        with load_patch as load_table_from_file:
+            client.load_table_from_json(
+                json_rows,
+                self.TABLE_REF,
+                json_dumps_kwargs={"default": _json_serial_date_only},
+            )
+
+        load_table_from_file.assert_called_once_with(
+            client,
+            mock.ANY,
+            self.TABLE_REF,
+            size=mock.ANY,
+            num_retries=_DEFAULT_NUM_RETRIES,
+            job_id=mock.ANY,
+            job_id_prefix=None,
+            location=client.location,
+            project=client.project,
+            job_config=mock.ANY,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
+        sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
+        assert sent_config.source_format == job.SourceFormat.NEWLINE_DELIMITED_JSON
+        assert sent_config.schema is None
+        assert sent_config.autodetect
 
     def test_load_table_from_json_basic_use(self):
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES

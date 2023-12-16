@@ -2965,7 +2965,7 @@ class PrimaryKey:
 
     def __eq__(self, other):
         if not isinstance(other, PrimaryKey):
-            raise NotImplementedError
+            return NotImplemented
         return self.columns == other.columns
 
 
@@ -2983,7 +2983,7 @@ class ColumnReference:
 
     def __eq__(self, other):
         if not isinstance(other, ColumnReference):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self.referenced_column == other.referencing_column
             and self.referenced_column == other.referenced_column
@@ -3016,7 +3016,7 @@ class ForeignKey:
 
     def __eq__(self, other):
         if not isinstance(other, ForeignKey):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self.name == other.name and self.referenced_table == other.referenced_table
         )

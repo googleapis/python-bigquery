@@ -2985,7 +2985,7 @@ class ColumnReference:
         if not isinstance(other, ColumnReference):
             return NotImplemented
         return (
-            self.referenced_column == other.referencing_column
+            self.referencing_column == other.referencing_column
             and self.referenced_column == other.referenced_column
         )
 

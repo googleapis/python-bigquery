@@ -3018,7 +3018,9 @@ class ForeignKey:
         if not isinstance(other, ForeignKey):
             return NotImplemented
         return (
-            self.name == other.name and self.referenced_table == other.referenced_table
+            self.name == other.name
+            and self.referenced_table == other.referenced_table
+            and self.column_references == other.column_references
         )
 
     @classmethod

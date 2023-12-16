@@ -5401,6 +5401,174 @@ class TestTimePartitioning(unittest.TestCase):
         assert time_partitioning._properties["expirationMs"] is None
 
 
+class TestPrimaryKey(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import PrimaryKey
+
+        return PrimaryKey
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        return cls._get_target_class()(*args, **kwargs)
+
+    def test_constructor_explicit(self):
+        columns = ["id", "product_id"]
+        primary_key = self._make_one(columns)
+
+        self.assertEqual(primary_key.columns, columns)
+
+    def test__eq__columns_mismatch(self):
+        primary_key = self._make_one(columns=["id", "product_id"])
+        other_primary_key = self._make_one(columns=["id"])
+
+        self.assertNotEqual(primary_key, other_primary_key)
+
+    def test__eq__other_type(self):
+        primary_key = self._make_one(columns=["id", "product_id"])
+
+        self.assertNotEqual(primary_key, object())
+
+
+class TestColumnReference(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import ColumnReference
+
+        return ColumnReference
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        return cls._get_target_class()(*args, **kwargs)
+
+    def test_constructor_explicit(self):
+        referencing_column = "product_id"
+        referenced_column = "id"
+        column_reference = self._make_one(referencing_column, referenced_column)
+
+        self.assertEqual(column_reference.referencing_column, referencing_column)
+        self.assertEqual(column_reference.referenced_column, referenced_column)
+
+    def test__eq__referencing_column_mismatch(self):
+        column_reference = self._make_one(
+            referencing_column="product_id",
+            referenced_column="id",
+        )
+        other_column_reference = self._make_one(
+            referencing_column="item_id",
+            referenced_column="id",
+        )
+
+        self.assertNotEqual(column_reference, other_column_reference)
+
+    def test__eq__referenced_column_mismatch(self):
+        column_reference = self._make_one(
+            referencing_column="product_id",
+            referenced_column="id",
+        )
+        other_column_reference = self._make_one(
+            referencing_column="product_id",
+            referenced_column="id_1",
+        )
+
+        self.assertNotEqual(column_reference, other_column_reference)
+
+    def test__eq__other_type(self):
+        column_reference = self._make_one(
+            referencing_column="product_id",
+            referenced_column="id",
+        )
+
+        self.assertNotEqual(column_reference, object())
+
+
+class TestForeignKey(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import ForeignKey
+
+        return ForeignKey
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        return cls._get_target_class()(*args, **kwargs)
+
+    def test_constructor_explicit(self):
+        name = "my_fk"
+        referenced_table = TableReference.from_string("my-project.mydataset.mytable")
+        column_references = []
+        foreign_key = self._make_one(name, referenced_table, column_references)
+
+        self.assertEqual(foreign_key.name, name)
+        self.assertEqual(foreign_key.referenced_table, referenced_table)
+        self.assertEqual(foreign_key.column_references, column_references)
+
+    def test__eq__name_mismatch(self):
+        referenced_table = TableReference.from_string("my-project.mydataset.mytable")
+        column_references = []
+        foreign_key = self._make_one(
+            name="my_fk",
+            referenced_table=referenced_table,
+            column_references=column_references,
+        )
+        other_foreign_key = self._make_one(
+            name="my_other_fk",
+            referenced_table=referenced_table,
+            column_references=column_references,
+        )
+
+        self.assertNotEqual(foreign_key, other_foreign_key)
+
+    def test__eq__referenced_table_mismatch(self):
+        name = "my_fk"
+        column_references = []
+        foreign_key = self._make_one(
+            name=name,
+            referenced_table=TableReference.from_string("my-project.mydataset.mytable"),
+            column_references=column_references,
+        )
+        other_foreign_key = self._make_one(
+            name=name,
+            referenced_table=TableReference.from_string(
+                "my-project.mydataset.my-other-table"
+            ),
+            column_references=column_references,
+        )
+
+        self.assertNotEqual(foreign_key, other_foreign_key)
+
+    def test__eq__column_references_mismatch(self):
+        from google.cloud.bigquery.table import ColumnReference
+
+        name = "my_fk"
+        referenced_table = TableReference.from_string("my-project.mydataset.mytable")
+        foreign_key = self._make_one(
+            name=name,
+            referenced_table=referenced_table,
+            column_references=[],
+        )
+        other_foreign_key = self._make_one(
+            name=name,
+            referenced_table=referenced_table,
+            column_references=[
+                ColumnReference(
+                    referencing_column="product_id", referenced_column="id"
+                ),
+            ],
+        )
+
+        self.assertNotEqual(foreign_key, other_foreign_key)
+
+    def test__eq__other_type(self):
+        foreign_key = self._make_one(
+            name="my_fk",
+            referenced_table=TableReference.from_string("my-project.mydataset.mytable"),
+            column_references=[],
+        )
+
+        self.assertNotEqual(foreign_key, object())
+
+
 class TestTableConstraint(unittest.TestCase):
     @staticmethod
     def _get_target_class():

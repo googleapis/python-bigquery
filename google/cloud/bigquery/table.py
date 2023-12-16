@@ -2989,11 +2989,6 @@ class ColumnReference:
             and self.referenced_column == other.referenced_column
         )
 
-    @classmethod
-    def from_api_repr(cls, api_repr: Dict[str, Any]) -> "ColumnReference":
-        """Create an instance from API representation."""
-        return cls(api_repr["referencingColumn"], api_repr["referencedColumn"])
-
 
 class ForeignKey:
     """Represents a foreign key constraint on a table's columns.
@@ -3030,7 +3025,10 @@ class ForeignKey:
             name=api_repr["name"],
             referenced_table=TableReference.from_api_repr(api_repr["referencedTable"]),
             column_references=[
-                ColumnReference.from_api_repr(column_reference_resource)
+                ColumnReference(
+                    column_reference_resource["referencingColumn"],
+                    column_reference_resource["referencedColumn"],
+                )
                 for column_reference_resource in api_repr["columnReferences"]
             ],
         )

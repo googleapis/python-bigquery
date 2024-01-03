@@ -3027,7 +3027,7 @@ class ForeignKey:
 
     def __eq__(self, other):
         if not isinstance(other, ForeignKey):
-            return NotImplemented
+            return TypeError("The value provided is not a BigQuery ForeignKey.")
         return (
             self.name == other.name
             and self.referenced_table == other.referenced_table

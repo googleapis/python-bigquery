@@ -15,6 +15,7 @@
 import base64
 import datetime
 import decimal
+import json
 import unittest
 
 import mock
@@ -56,6 +57,35 @@ class Test_int_from_json(unittest.TestCase):
     def test_w_float_value(self):
         coerced = self._call_fut(42, object())
         self.assertEqual(coerced, 42)
+
+
+class Test_json_from_json(unittest.TestCase):
+    def _call_fut(self, value, field):
+        from google.cloud.bigquery._helpers import _json_from_json
+
+        return _json_from_json(value, field)
+
+    def test_w_none_nullable(self):
+        self.assertIsNone(self._call_fut(None, _Field("NULLABLE")))
+
+    def test_w_none_required(self):
+        with self.assertRaises(TypeError):
+            self._call_fut(None, _Field("REQUIRED"))
+
+    def test_w_json_field(self):
+        data_field = _Field("REQUIRED", "data", "JSON")
+
+        value = json.dumps(
+            {"v": {"key": "value"}},
+        )
+
+        expected_output = {"v": {"key": "value"}}
+        coerced_output = self._call_fut(value, data_field)
+        self.assertEqual(coerced_output, expected_output)
+
+    def test_w_string_value(self):
+        coerced = self._call_fut('"foo"', object())
+        self.assertEqual(coerced, "foo")
 
 
 class Test_float_from_json(unittest.TestCase):
@@ -856,6 +886,16 @@ class Test_scalar_field_to_json(unittest.TestCase):
         converted = self._call_fut(field, original)
         self.assertEqual(converted, str(original))
 
+    def test_w_scalar_none(self):
+        import google.cloud.bigquery._helpers as module_under_test
+
+        scalar_types = module_under_test._SCALAR_VALUE_TO_JSON_ROW.keys()
+        for type_ in scalar_types:
+            field = _make_field(type_)
+            original = None
+            converted = self._call_fut(field, original)
+            self.assertIsNone(converted, msg=f"{type_} did not return None")
+
 
 class Test_single_field_to_json(unittest.TestCase):
     def _call_fut(self, field, value):
@@ -890,6 +930,12 @@ class Test_single_field_to_json(unittest.TestCase):
         original = "hello world"
         converted = self._call_fut(field, original)
         self.assertEqual(converted, original)
+
+    def test_w_scalar_json(self):
+        field = _make_field("JSON")
+        original = {"alpha": "abc", "num": [1, 2, 3]}
+        converted = self._call_fut(field, original)
+        self.assertEqual(converted, json.dumps(original))
 
 
 class Test_repeated_field_to_json(unittest.TestCase):

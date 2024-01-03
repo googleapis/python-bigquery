@@ -17,6 +17,7 @@
 import base64
 import datetime
 import decimal
+import json
 import math
 import re
 import os
@@ -238,6 +239,15 @@ def _record_from_json(value, field):
         return record
 
 
+def _json_from_json(value, field):
+    """Coerce 'value' to a Pythonic JSON representation."""
+    if _not_null(value, field):
+        return json.loads(value)
+    else:
+        return None
+
+
+# Parse BigQuery API response JSON into a Python representation.
 _CELLDATA_FROM_JSON = {
     "INTEGER": _int_from_json,
     "INT64": _int_from_json,
@@ -256,6 +266,7 @@ _CELLDATA_FROM_JSON = {
     "DATE": _date_from_json,
     "TIME": _time_from_json,
     "RECORD": _record_from_json,
+    "JSON": _json_from_json,
 }
 
 _QUERY_PARAMS_FROM_JSON = dict(_CELLDATA_FROM_JSON)
@@ -363,6 +374,13 @@ def _bytes_to_json(value):
     return value
 
 
+def _json_to_json(value):
+    """Coerce 'value' to a BigQuery REST API representation."""
+    if value is None:
+        return None
+    return json.dumps(value)
+
+
 def _timestamp_to_json_parameter(value):
     """Coerce 'value' to an JSON-compatible representation.
 
@@ -412,7 +430,8 @@ def _time_to_json(value):
     return value
 
 
-# Converters used for scalar values marshalled as row data.
+# Converters used for scalar values marshalled to the BigQuery API, such as in
+# query parameters or the tabledata.insert API.
 _SCALAR_VALUE_TO_JSON_ROW = {
     "INTEGER": _int_to_json,
     "INT64": _int_to_json,
@@ -427,6 +446,7 @@ _SCALAR_VALUE_TO_JSON_ROW = {
     "DATETIME": _datetime_to_json,
     "DATE": _date_to_json,
     "TIME": _time_to_json,
+    "JSON": _json_to_json,
     # Make sure DECIMAL and BIGDECIMAL are handled, even though
     # requests for them should be converted to NUMERIC.  Better safe
     # than sorry.

@@ -2981,7 +2981,7 @@ class PrimaryKey:
 
     def __eq__(self, other):
         if not isinstance(other, PrimaryKey):
-            return NotImplemented
+            return TypeError("The value provided is not a BigQuery PrimaryKey.")
         return self.columns == other.columns
 
 

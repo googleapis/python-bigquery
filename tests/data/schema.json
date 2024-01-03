@@ -88,7 +88,9 @@
          "mode" : "NULLABLE",
          "name" : "TimeRange",
          "type" : "RANGE",
-         "rangeElementType": "DATETIME"
+         "range_element_type": {
+            "type": "DATETIME"
+          }
       }
    ]
 }

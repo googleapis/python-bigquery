@@ -2999,7 +2999,7 @@ class ColumnReference:
 
     def __eq__(self, other):
         if not isinstance(other, ColumnReference):
-            return NotImplemented
+            return TypeError("The value provided is not a BigQuery ColumnReference.")
         return (
             self.referencing_column == other.referencing_column
             and self.referenced_column == other.referenced_column

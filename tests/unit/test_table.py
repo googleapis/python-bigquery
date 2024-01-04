@@ -5435,7 +5435,7 @@ class TestPrimaryKey(unittest.TestCase):
     def test__eq__other_type(self):
         primary_key = self._make_one(columns=["id", "product_id"])
 
-        self.assertNotEqual(primary_key, object())
+        self.assertNotEqual(primary_key, list)
 
 
 class TestColumnReference(unittest.TestCase):

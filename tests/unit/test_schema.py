@@ -610,14 +610,14 @@ class TestFieldElementType(unittest.TestCase):
     def test_constructor(self):
         element_type = self._make_one("DATETIME")
         self.assertEqual(element_type.element_type, "DATETIME")
-        self.assertEqual(element_type._properties["element_type"], "DATETIME")
+        self.assertEqual(element_type._properties["type"], "DATETIME")
 
     def test_to_api_repr(self):
         element_type = self._make_one("DATETIME")
-        self.assertEqual(element_type.to_api_repr(), {"element_type": "DATETIME"})
+        self.assertEqual(element_type.to_api_repr(), {"type": "DATETIME"})
 
     def test_from_api_repr(self):
-        api_repr = {"element_type": "DATETIME"}
+        api_repr = {"type": "DATETIME"}
         expected_element_type = self._make_one("DATETIME")
         self.assertEqual(
             expected_element_type.element_type,

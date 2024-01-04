@@ -75,11 +75,11 @@ class FieldElementType(object):
 
     def __init__(self, element_type: str):
         self._properties = {}
-        self._properties["element_type"] = element_type.upper()
+        self._properties["type"] = element_type.upper()
 
     @property
     def element_type(self):
-        return self._properties.get("element_type")
+        return self._properties.get("type")
 
     @classmethod
     def from_api_repr(cls, api_repr: Optional[dict]) -> Optional["FieldElementType"]:
@@ -95,7 +95,7 @@ class FieldElementType(object):
         """
         if not api_repr:
             return None
-        return cls(api_repr["element_type"].upper())
+        return cls(api_repr["type"].upper())
 
     def to_api_repr(self) -> dict:
         """Construct the API resource representation of this field element type.
@@ -200,7 +200,7 @@ class SchemaField(object):
                 policy_tags.to_api_repr() if policy_tags is not None else None
             )
         if isinstance(range_element_type, str):
-            self._properties["rangeElementType"] = {"element_type": range_element_type}
+            self._properties["rangeElementType"] = {"type": range_element_type}
         if isinstance(range_element_type, FieldElementType):
             self._properties["rangeElementType"] = range_element_type.to_api_repr()
 
@@ -238,6 +238,11 @@ class SchemaField(object):
         if policy_tags is not None and policy_tags is not _DEFAULT_VALUE:
             policy_tags = PolicyTagList.from_api_repr(policy_tags)
 
+        if api_repr.get("rangeElementType"):
+            range_element_type = api_repr.get("rangeElementType")["type"]
+        else:
+            range_element_type = None
+
         return cls(
             field_type=field_type,
             fields=[cls.from_api_repr(f) for f in fields],
@@ -249,7 +254,7 @@ class SchemaField(object):
             precision=cls.__get_int(api_repr, "precision"),
             scale=cls.__get_int(api_repr, "scale"),
             max_length=cls.__get_int(api_repr, "maxLength"),
-            range_element_type=api_repr.get("rangeElementType"),
+            range_element_type=range_element_type,
         )
 
     @property
@@ -315,7 +320,7 @@ class SchemaField(object):
         """
         if self._properties.get("rangeElementType"):
             ret = self._properties.get("rangeElementType")
-            return FieldElementType(element_type=ret["element_type"])
+            return FieldElementType(element_type=ret["type"])
 
     @property
     def fields(self):

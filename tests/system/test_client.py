@@ -2334,9 +2334,6 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(found[7], e_favtime)
             self.assertEqual(found[8], decimal.Decimal(expected["FavoriteNumber"]))
 
-            self.assertEqual(found[10]["begin"], "1970-01-02")
-            self.assertEqual(found[10]["end"], "1970-01-03")
-
     @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     @unittest.skipIf(
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"

@@ -1805,7 +1805,6 @@ class TestBigQuery(unittest.TestCase):
             ],
         ]
 
-
         self.assertEqual(fetched_data, expected_data)
 
     def test_dbapi_dry_run_query(self):

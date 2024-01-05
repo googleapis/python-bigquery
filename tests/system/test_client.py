@@ -1781,7 +1781,6 @@ class TestBigQuery(unittest.TestCase):
         )
 
         result_rows = [cursor.fetchone(), cursor.fetchone(), cursor.fetchone()]
-
         field_name = operator.itemgetter(0)
         fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
         # Since DB API is not thread safe, only a single result stream should be

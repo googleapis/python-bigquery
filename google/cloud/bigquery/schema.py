@@ -242,7 +242,7 @@ class SchemaField(object):
             range_element_type = cast(dict, api_repr.get("rangeElementType"))
             element_type = range_element_type.get("type")
         else:
-            range_element_type = None
+            element_type = None
 
         return cls(
             field_type=field_type,

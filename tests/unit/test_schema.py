@@ -209,6 +209,23 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].field_type, "INTEGER")
         self.assertEqual(field.fields[0].mode, "NULLABLE")
 
+    def test_from_api_repr_range(self):
+        field = self._get_target_class().from_api_repr(
+            {
+                "mode": "nullable",
+                "description": "test_range",
+                "name": "foo",
+                "type": "range",
+                "rangeElementType": {"type": "DATETIME"},
+            }
+        )
+        self.assertEqual(field.name, "foo")
+        self.assertEqual(field.field_type, "RANGE")
+        self.assertEqual(field.mode, "NULLABLE")
+        self.assertEqual(field.description, "test_range")
+        self.assertEqual(len(field.fields), 0)
+        self.assertEqual(field.range_element_type.element_type, "DATETIME")
+
     def test_from_api_repr_defaults(self):
         field = self._get_target_class().from_api_repr(
             {"name": "foo", "type": "record"}
@@ -223,8 +240,10 @@ class TestSchemaField(unittest.TestCase):
         # _properties.
         self.assertIsNone(field.description)
         self.assertIsNone(field.policy_tags)
+        self.assertIsNone(field.range_element_type)
         self.assertNotIn("description", field._properties)
         self.assertNotIn("policyTags", field._properties)
+        self.assertNotIn("rangeElementType", field._properties)
 
     def test_name_property(self):
         name = "lemon-ness"

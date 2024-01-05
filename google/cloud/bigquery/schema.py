@@ -321,7 +321,7 @@ class SchemaField(object):
         """
         if self._properties.get("rangeElementType"):
             ret = self._properties.get("rangeElementType")
-            return FieldElementType(element_type=ret["type"])
+            return FieldElementType.from_api_repr(ret)
 
     @property
     def fields(self):

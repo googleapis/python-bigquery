@@ -5574,7 +5574,7 @@ class TestForeignKey(unittest.TestCase):
             column_references=[],
         )
 
-        self.assertNotEqual(foreign_key, list)
+        self.assertNotEqual(foreign_key.column_references, None)
 
 
 class TestTableConstraint(unittest.TestCase):

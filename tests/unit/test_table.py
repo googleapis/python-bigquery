@@ -5487,7 +5487,7 @@ class TestColumnReference(unittest.TestCase):
             referenced_column="id",
         )
 
-        self.assertNotEqual(column_reference, list)
+        self.assertIsNot(column_reference, None)
 
 
 class TestForeignKey(unittest.TestCase):

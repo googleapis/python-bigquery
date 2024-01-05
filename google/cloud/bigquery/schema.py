@@ -16,7 +16,7 @@
 
 import collections
 import enum
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, Dict, Iterable, Optional, Union, cast
 
 from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.enums import StandardSqlTypeNames
@@ -239,7 +239,8 @@ class SchemaField(object):
             policy_tags = PolicyTagList.from_api_repr(policy_tags)
 
         if api_repr.get("rangeElementType"):
-            range_element_type = api_repr.get("rangeElementType")["type"]
+            range_element_type = cast(dict, api_repr.get("rangeElementType"))
+            element_type = range_element_type.get("type")
         else:
             range_element_type = None
 
@@ -254,7 +255,7 @@ class SchemaField(object):
             precision=cls.__get_int(api_repr, "precision"),
             scale=cls.__get_int(api_repr, "scale"),
             max_length=cls.__get_int(api_repr, "maxLength"),
-            range_element_type=range_element_type,
+            range_element_type=element_type,
         )
 
     @property

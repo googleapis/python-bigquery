@@ -24,7 +24,7 @@ def main() -> "bigquery.Client":
 
     # [START bigquery_client_json_credentials]
     from google.cloud import bigquery
-    from google.oauth2 import service_account
+    from google.oauth2 import service_account  # type: ignore
 
     # TODO(developer): Set key_path to the path to the service account key
     #                  file.

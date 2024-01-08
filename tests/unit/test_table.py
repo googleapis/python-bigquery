@@ -5435,7 +5435,7 @@ class TestPrimaryKey(unittest.TestCase):
     def test__eq__other_type(self):
         primary_key = self._make_one(columns=["id", "product_id"])
         with self.assertRaises(TypeError):
-            primary_key == 'This is not a Primary Key'
+            primary_key == "This is not a Primary Key"
 
 
 class TestColumnReference(unittest.TestCase):

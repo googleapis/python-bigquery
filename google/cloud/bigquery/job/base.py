@@ -78,7 +78,7 @@ def _error_result_to_exception(error_result, errors=None):
     # Manually create error message to preserve both error_result and errors.
     # Can be removed once b/310544564 and b/318889899 are resolved.
     string = ""
-    if errors: 
+    if errors:
         string = "; "
         for err in errors:
             for key, value in err.items():
@@ -87,8 +87,9 @@ def _error_result_to_exception(error_result, errors=None):
 
     error_message = error_result.get("message", "") + string
 
-    return exceptions.from_http_status(status_code, error_message, errors=[error_result])
-
+    return exceptions.from_http_status(
+        status_code, error_message, errors=[error_result]
+    )
 
 
 ReservationUsage = namedtuple("ReservationUsage", "name slot_ms")

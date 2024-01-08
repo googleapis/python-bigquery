@@ -5487,7 +5487,7 @@ class TestColumnReference(unittest.TestCase):
             referenced_column="id",
         )
         with self.assertRaises(TypeError):
-            column_reference == 'This is not a Column Reference'
+            column_reference == "This is not a Column Reference"
 
 
 class TestForeignKey(unittest.TestCase):

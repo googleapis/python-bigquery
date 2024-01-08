@@ -5573,8 +5573,8 @@ class TestForeignKey(unittest.TestCase):
             referenced_table=TableReference.from_string("my-project.mydataset.mytable"),
             column_references=[],
         )
-
-        self.assertIsNot(foreign_key, None)
+        with self.assertRaises(TypeError):
+            foreign_key == 'This is not a Foreign Key'```
 
 
 class TestTableConstraint(unittest.TestCase):

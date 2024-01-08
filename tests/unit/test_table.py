@@ -5574,7 +5574,7 @@ class TestForeignKey(unittest.TestCase):
             column_references=[],
         )
         with self.assertRaises(TypeError):
-            foreign_key == 'This is not a Foreign Key'
+            foreign_key == "This is not a Foreign Key"
 
 
 class TestTableConstraint(unittest.TestCase):

@@ -82,7 +82,7 @@ def _error_result_to_exception(error_result, errors=None):
         string = "; "
         for err in errors:
             for key, value in err.items():
-                string += key + ": " + str(value) + ", "
+                string += f"{key}: {value}, "
         string = string[:-2]
 
     error_message = error_result.get("message", "") + string

@@ -77,15 +77,19 @@ def _error_result_to_exception(error_result, errors=None):
     )
     # Manually create error message to preserve both error_result and errors.
     # Can be removed once b/310544564 and b/318889899 are resolved.
-    string = ""
+    concatenated_errors = ""
     if errors:
-        string = "; "
+        concatenated_errors = "; "
         for err in errors:
-            for key, value in err.items():
-                string += f"{key}: {value}, "
-        string = string[:-2]  # strips off the last unneeded comma and space
+            concatenated_errors += ", ".join(
+                [f"{key}: {value}" for key, value in err.items()]
+            )
+            concatenated_errors += "; "
 
-    error_message = error_result.get("message", "") + string
+        # strips off the last unneeded semicolon and space
+        concatenated_errors = concatenated_errors[:-2]
+
+    error_message = error_result.get("message", "") + concatenated_errors
 
     return exceptions.from_http_status(
         status_code, error_message, errors=[error_result]

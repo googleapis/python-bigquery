@@ -83,7 +83,7 @@ def _error_result_to_exception(error_result, errors=None):
         for err in errors:
             for key, value in err.items():
                 string += f"{key}: {value}, "
-        string = string[:-2]
+        string = string[:-2]  # strips off the last unneeded comma and space
 
     error_message = error_result.get("message", "") + string
 

@@ -38,11 +38,7 @@ def datasets_to_delete(client: bigquery.Client) -> Iterator[List[str]]:
 def test_natality_tutorial(
     client: bigquery.Client, datasets_to_delete: List[str]
 ) -> None:
-    override_values = {
-        "dataset_id": f"{prefixer.create_prefix()}_natality_tutorial".format(
-            str(uuid.uuid4()).replace("-", "_")
-        ),
-    }
+    override_values = {"dataset_id": f"{prefixer.create_prefix()}_natality_tutorial"}
     datasets_to_delete.append(override_values["dataset_id"])
 
     natality_tutorial.run_natality_tutorial(override_values)

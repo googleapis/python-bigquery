@@ -39,12 +39,8 @@ def test_authorized_view_tutorial(
     client: bigquery.Client, datasets_to_delete: List[str]
 ) -> None:
     override_values = {
-        "source_dataset_id": f"{prefixer.create_prefix()}_authorized_view_tutorial".format(
-            str(uuid.uuid4()).replace("-", "_")
-        ),
-        "shared_dataset_id": "shared_views_{}".format(
-            str(uuid.uuid4()).replace("-", "_")
-        ),
+        "source_dataset_id": f"{prefixer.create_prefix()}_authorized_view_tutorial",
+        "shared_dataset_id": f"{prefixer.create_prefix()}_authorized_view_tutorial_shared_views",
     }
     source_dataset_ref = "{}.{}".format(
         client.project, override_values["source_dataset_id"]

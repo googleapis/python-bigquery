@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from typing import Iterator, List
-import uuid
 
 from google.cloud import bigquery
 import pytest

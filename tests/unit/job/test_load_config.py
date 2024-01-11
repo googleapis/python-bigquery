@@ -424,7 +424,9 @@ class TestLoadJobConfig(_Base):
 
     def test_json_extension_setter(self):
         config = self._get_target_class()()
+        self.assertFalse(config.json_extension)
         config.json_extension = "GEOJSON"
+        self.assertTrue(config.json_extension)
         self.assertEqual(config._properties["load"]["jsonExtension"], "GEOJSON")
 
     def test_to_api_repr_includes_json_extension(self):

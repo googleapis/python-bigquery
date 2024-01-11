@@ -329,13 +329,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def json_extension(self):
-        """Optional[str]: The extension to use for writing JSON data to BigQuery.
+        """Optional[str]: The extension to use for writing JSON data to BigQuery. Only supports GeoJSON currently.
 
-        For example, if you set `jsonExtension` to "nested", BigQuery
-        writes the loaded data as nested rows, one row per top-level
-        JSON object.
-
-        See: https://cloud.google.com/bigquery/docs/reference/rest/v2/JobConfigurationLoad.FIELDS.json_extension
+        See: https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.json_extension
 
         """
         return self._get_sub_prop("jsonExtension")

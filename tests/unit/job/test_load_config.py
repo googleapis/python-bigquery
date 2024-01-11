@@ -419,38 +419,20 @@ class TestLoadJobConfig(_Base):
 
     def test_json_extension_hit(self):
         config = self._get_target_class()()
-        config._properties["load"]["jsonExtension"] = "jsonl"
-        self.assertEqual(config.json_extension, "jsonl")
+        config._properties["load"]["jsonExtension"] = "GEOJSON"
+        self.assertEqual(config.json_extension, "GEOJSON")
 
     def test_json_extension_setter(self):
         config = self._get_target_class()()
         config.json_extension = "GEOJSON"
         self.assertEqual(config._properties["load"]["jsonExtension"], "GEOJSON")
 
-    # def test_source_format_autodetect_with_json_extension(self):
-    #     config = self._get_target_class()()
-    #     config._properties["load"]["sourceFormat"] = "AUTODETECT"
-    #     config._properties["load"]["jsonExtension"] = "NEWLINE_DELIMITED_JSON"
-
-    #     # Assert JSON-based format is prioritized
-    #     self.assertEqual(config.source_format, "NEWLINE_DELIMITED_JSON")
-
-    # def test_source_format_explicit_overrides_json_extension(self):
-    #     config = self._get_target_class()()
-    #     config._properties["load"]["sourceFormat"] = "PARQUET"
-    #     config._properties["load"]["jsonExtension"] = "jsonl"
-
-    #     # Assert explicitly set format takes precedence
-    #     self.assertEqual(config.source_format, "PARQUET")
-
-    # def test_to_api_repr_includes_json_extension(self):
-    #     config = self._get_target_class()()
-    #     config._properties["load"]["jsonExtension"] = "GEOJSON"
-    #     api_repr = config.to_api_repr()
-
-    #     # Assert "jsonExtension" key is present and value is encoded
-    #     self.assertIn("jsonExtension", api_repr)
-    #     self.assertEqual(api_repr["jsonExtension"], "GEOJSON")
+    def test_to_api_repr_includes_json_extension(self):
+        config = self._get_target_class()()
+        config._properties["load"]["jsonExtension"] = "GEOJSON"
+        api_repr = config.to_api_repr()
+        self.assertIn("jsonExtension", api_repr["load"])
+        self.assertEqual(api_repr["load"]["jsonExtension"], "GEOJSON")
 
     def test_max_bad_records_missing(self):
         config = self._get_target_class()()

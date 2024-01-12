@@ -254,6 +254,7 @@ class Client(ClientWithProject):
                 api_endpoint = client_options.api_endpoint
                 kw_args["api_endpoint"] = api_endpoint
             elif (
+                hasattr(client_options, "universe_domain") and
                 client_options.universe_domain
                 and client_options.universe_domain is not _DEFAULT_UNIVERSE
             ):

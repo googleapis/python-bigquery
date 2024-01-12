@@ -207,8 +207,6 @@ class TestClient(unittest.TestCase):
         reason="universe_domain not supported with google-api-core < 2.15.0",
     )
     def test_ctor_w_client_options_universe(self):
-        from google.api_core.client_options import ClientOptions
-
         creds = _make_credentials()
         http = object()
         client_options = {"universe_domain": "foo.com"}

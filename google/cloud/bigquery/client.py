@@ -253,8 +253,13 @@ class Client(ClientWithProject):
             if client_options.api_endpoint:
                 api_endpoint = client_options.api_endpoint
                 kw_args["api_endpoint"] = api_endpoint
-            elif client_options.universe_domain and client_options.universe_domain is not _DEFAULT_UNIVERSE:
-                    kw_args["api_endpoint"] = _DEFAULT_HOST.replace(_DEFAULT_UNIVERSE, client_options.universe_domain)
+            elif (
+                client_options.universe_domain
+                and client_options.universe_domain is not _DEFAULT_UNIVERSE
+            ):
+                kw_args["api_endpoint"] = _DEFAULT_HOST.replace(
+                    _DEFAULT_UNIVERSE, client_options.universe_domain
+                )
 
         self._connection = Connection(self, **kw_args)
         self._location = location

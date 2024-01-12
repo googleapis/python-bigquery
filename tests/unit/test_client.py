@@ -201,6 +201,20 @@ class TestClient(unittest.TestCase):
             client._connection.API_BASE_URL, "https://www.foo-googleapis.com"
         )
 
+    def test_ctor_w_client_options_universe(self):
+        from google.api_core.client_options import ClientOptions
+
+        creds = _make_credentials()
+        http = object()
+        client_options = ClientOptions(universe_domain="foo.com")
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+            client_options=client_options,
+        )
+        self.assertEqual(client._connection.API_BASE_URL, "https://bigquery.foo.com")
+
     def test_ctor_w_location(self):
         from google.cloud.bigquery._http import Connection
 

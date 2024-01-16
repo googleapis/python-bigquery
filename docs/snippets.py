@@ -465,13 +465,12 @@ def test_client_query_total_rows(client, capsys):
         'WHERE state = "TX" '
         "LIMIT 100"
     )
-    query_job = client.query_and_wait(
+    results = client.query_and_wait(
         query,
         # Location must match that of the dataset(s) referenced in the query.
         location="US",
-    )  # API request - starts the query
+    )  # API request - starts the query and waits for results. 
 
-    results = query_job.result()  # Wait for query to complete.
     print("Got {} rows.".format(results.total_rows))
     # [END bigquery_query_total_rows]
 

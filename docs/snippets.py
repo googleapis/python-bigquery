@@ -469,7 +469,7 @@ def test_client_query_total_rows(client, capsys):
         query,
         # Location must match that of the dataset(s) referenced in the query.
         location="US",
-    )  # API request - starts the query and waits for results. 
+    )  # API request - starts the query and waits for results.
 
     print("Got {} rows.".format(results.total_rows))
     # [END bigquery_query_total_rows]

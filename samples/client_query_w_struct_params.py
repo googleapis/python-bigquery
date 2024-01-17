@@ -32,7 +32,7 @@ def client_query_w_struct_params() -> None:
     )
     query_job = client.query_and_wait(
         query, job_config=job_config
-    )  # Make an API request.
+    )  # Make an API request and waits for results.
 
     for row in query_job:
         print(row.s)

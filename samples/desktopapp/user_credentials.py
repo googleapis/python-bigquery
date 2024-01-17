@@ -61,7 +61,7 @@ def main(project: str) -> None:
     WHERE name = 'William'
     GROUP BY name;
     """
-    query_job = client.query(query_string)
+    query_job = client.query_and_wait(query_string)
 
     # Print the results.
     for row in query_job.result():  # Wait for the job to complete.

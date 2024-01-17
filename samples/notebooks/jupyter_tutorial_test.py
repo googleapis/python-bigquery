@@ -141,7 +141,7 @@ def test_jupyter_tutorial(ipython: "TerminalInteractiveShell") -> None:
     ORDER BY
         count DESC
     """
-    df = client.query(sql).to_dataframe()
+    df = client.query_and_wait(sql).to_dataframe()
     df.head()
     # [END bigquery_jupyter_query_plurality_by_year]
 
@@ -164,7 +164,7 @@ def test_jupyter_tutorial(ipython: "TerminalInteractiveShell") -> None:
     ORDER BY
         gestation_weeks
     """
-    df = client.query(sql).to_dataframe()
+    df = client.query_and_wait(sql).to_dataframe()
     # [END bigquery_jupyter_query_births_by_gestation]
 
     # [START bigquery_jupyter_plot_births_by_gestation]

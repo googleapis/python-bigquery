@@ -22,7 +22,6 @@ if typing.TYPE_CHECKING:
     import pytest
 
 
-# is it possible to cleanup these datasets if they are passed in?
 def test_dataset_access_permissions(
     capsys: "pytest.CaptureFixture[str]",
     dataset_id: str,

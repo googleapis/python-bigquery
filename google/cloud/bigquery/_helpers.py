@@ -17,10 +17,11 @@
 import base64
 import datetime
 import decimal
+import json
 import math
 import re
 import os
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from dateutil import relativedelta
 from google.cloud._helpers import UTC  # type: ignore
@@ -29,13 +30,6 @@ from google.cloud._helpers import _datetime_from_microseconds
 from google.cloud._helpers import _RFC3339_MICROS
 from google.cloud._helpers import _RFC3339_NO_FRACTION
 from google.cloud._helpers import _to_bytes
-
-import packaging.version
-
-from google.cloud.bigquery.exceptions import (
-    LegacyBigQueryStorageError,
-    LegacyPyarrowError,
-)
 
 _RFC3339_MICROS_NO_ZULU = "%Y-%m-%dT%H:%M:%S.%f"
 _TIMEONLY_WO_MICROS = "%H:%M:%S"
@@ -55,144 +49,18 @@ _INTERVAL_PATTERN = re.compile(
     r"(?P<time_sign>-?)(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)\.?(?P<fraction>\d*)?$"
 )
 
-_MIN_BQ_STORAGE_VERSION = packaging.version.Version("2.0.0")
-
-_MIN_PYARROW_VERSION = packaging.version.Version("3.0.0")
-
-_BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
-
 BIGQUERY_EMULATOR_HOST = "BIGQUERY_EMULATOR_HOST"
 """Environment variable defining host for emulator."""
 
 _DEFAULT_HOST = "https://bigquery.googleapis.com"
 """Default host for JSON API."""
 
+_DEFAULT_UNIVERSE = "googleapis.com"
+"""Default universe for the JSON API."""
+
 
 def _get_bigquery_host():
     return os.environ.get(BIGQUERY_EMULATOR_HOST, _DEFAULT_HOST)
-
-
-class BQStorageVersions:
-    """Version comparisons for google-cloud-bigqueyr-storage package."""
-
-    def __init__(self):
-        self._installed_version = None
-
-    @property
-    def installed_version(self) -> packaging.version.Version:
-        """Return the parsed version of google-cloud-bigquery-storage."""
-        if self._installed_version is None:
-            from google.cloud import bigquery_storage
-
-            self._installed_version = packaging.version.parse(
-                # Use 0.0.0, since it is earlier than any released version.
-                # Legacy versions also have the same property, but
-                # creating a LegacyVersion has been deprecated.
-                # https://github.com/pypa/packaging/issues/321
-                getattr(bigquery_storage, "__version__", "0.0.0")
-            )
-
-        return self._installed_version  # type: ignore
-
-    @property
-    def is_read_session_optional(self) -> bool:
-        """True if read_session is optional to rows().
-
-        See: https://github.com/googleapis/python-bigquery-storage/pull/228
-        """
-        return self.installed_version >= _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION
-
-    def verify_version(self):
-        """Verify that a recent enough version of BigQuery Storage extra is
-        installed.
-
-        The function assumes that google-cloud-bigquery-storage extra is
-        installed, and should thus be used in places where this assumption
-        holds.
-
-        Because `pip` can install an outdated version of this extra despite the
-        constraints in `setup.py`, the calling code can use this helper to
-        verify the version compatibility at runtime.
-
-        Raises:
-            LegacyBigQueryStorageError:
-                If the google-cloud-bigquery-storage package is outdated.
-        """
-        if self.installed_version < _MIN_BQ_STORAGE_VERSION:
-            msg = (
-                "Dependency google-cloud-bigquery-storage is outdated, please upgrade "
-                f"it to version >= {_MIN_BQ_STORAGE_VERSION} (version found: {self.installed_version})."
-            )
-            raise LegacyBigQueryStorageError(msg)
-
-
-class PyarrowVersions:
-    """Version comparisons for pyarrow package."""
-
-    def __init__(self):
-        self._installed_version = None
-
-    @property
-    def installed_version(self) -> packaging.version.Version:
-        """Return the parsed version of pyarrow."""
-        if self._installed_version is None:
-            import pyarrow  # type: ignore
-
-            self._installed_version = packaging.version.parse(
-                # Use 0.0.0, since it is earlier than any released version.
-                # Legacy versions also have the same property, but
-                # creating a LegacyVersion has been deprecated.
-                # https://github.com/pypa/packaging/issues/321
-                getattr(pyarrow, "__version__", "0.0.0")
-            )
-
-        return self._installed_version
-
-    @property
-    def use_compliant_nested_type(self) -> bool:
-        return self.installed_version.major >= 4
-
-    def try_import(self, raise_if_error: bool = False) -> Any:
-        """Verify that a recent enough version of pyarrow extra is
-        installed.
-
-        The function assumes that pyarrow extra is installed, and should thus
-        be used in places where this assumption holds.
-
-        Because `pip` can install an outdated version of this extra despite the
-        constraints in `setup.py`, the calling code can use this helper to
-        verify the version compatibility at runtime.
-
-        Returns:
-            The ``pyarrow`` module or ``None``.
-
-        Raises:
-            LegacyPyarrowError:
-                If the pyarrow package is outdated and ``raise_if_error`` is ``True``.
-        """
-        try:
-            import pyarrow
-        except ImportError as exc:  # pragma: NO COVER
-            if raise_if_error:
-                raise LegacyPyarrowError(
-                    f"pyarrow package not found. Install pyarrow version >= {_MIN_PYARROW_VERSION}."
-                ) from exc
-            return None
-
-        if self.installed_version < _MIN_PYARROW_VERSION:
-            if raise_if_error:
-                msg = (
-                    "Dependency pyarrow is outdated, please upgrade "
-                    f"it to version >= {_MIN_PYARROW_VERSION} (version found: {self.installed_version})."
-                )
-                raise LegacyPyarrowError(msg)
-            return None
-
-        return pyarrow
-
-
-BQ_STORAGE_VERSIONS = BQStorageVersions()
-PYARROW_VERSIONS = PyarrowVersions()
 
 
 def _not_null(value, field):
@@ -374,6 +242,15 @@ def _record_from_json(value, field):
         return record
 
 
+def _json_from_json(value, field):
+    """Coerce 'value' to a Pythonic JSON representation."""
+    if _not_null(value, field):
+        return json.loads(value)
+    else:
+        return None
+
+
+# Parse BigQuery API response JSON into a Python representation.
 _CELLDATA_FROM_JSON = {
     "INTEGER": _int_from_json,
     "INT64": _int_from_json,
@@ -392,6 +269,7 @@ _CELLDATA_FROM_JSON = {
     "DATE": _date_from_json,
     "TIME": _time_from_json,
     "RECORD": _record_from_json,
+    "JSON": _json_from_json,
 }
 
 _QUERY_PARAMS_FROM_JSON = dict(_CELLDATA_FROM_JSON)
@@ -499,6 +377,13 @@ def _bytes_to_json(value):
     return value
 
 
+def _json_to_json(value):
+    """Coerce 'value' to a BigQuery REST API representation."""
+    if value is None:
+        return None
+    return json.dumps(value)
+
+
 def _timestamp_to_json_parameter(value):
     """Coerce 'value' to an JSON-compatible representation.
 
@@ -548,7 +433,8 @@ def _time_to_json(value):
     return value
 
 
-# Converters used for scalar values marshalled as row data.
+# Converters used for scalar values marshalled to the BigQuery API, such as in
+# query parameters or the tabledata.insert API.
 _SCALAR_VALUE_TO_JSON_ROW = {
     "INTEGER": _int_to_json,
     "INT64": _int_to_json,
@@ -563,6 +449,7 @@ _SCALAR_VALUE_TO_JSON_ROW = {
     "DATETIME": _datetime_to_json,
     "DATE": _date_to_json,
     "TIME": _time_to_json,
+    "JSON": _json_to_json,
     # Make sure DECIMAL and BIGDECIMAL are handled, even though
     # requests for them should be converted to NUMERIC.  Better safe
     # than sorry.

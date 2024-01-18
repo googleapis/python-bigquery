@@ -14,6 +14,8 @@
 
 
 def client_query() -> None:
+    # TODO(swast): remove once docs in cloud.google.com have been updated to
+    # use samples/snippets/client_query.py
 
     # [START bigquery_query]
 

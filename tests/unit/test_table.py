@@ -22,12 +22,18 @@ import unittest
 import warnings
 
 import mock
-import pkg_resources
 import pytest
+
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 import google.api_core.exceptions
 from test_utils.imports import maybe_fail_import
 
+from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import exceptions
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
@@ -40,16 +46,11 @@ except ImportError:  # pragma: NO COVER
     bigquery_storage = None
     big_query_read_grpc_transport = None
 
-from google.cloud.bigquery import _helpers
 
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
-PYARROW_VERSION = pkg_resources.parse_version("0.0.1")
+pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 if pyarrow:
-    import pyarrow
     import pyarrow.types
-
-    PYARROW_VERSION = pkg_resources.parse_version(pyarrow.__version__)
 
 try:
     import pandas
@@ -73,7 +74,10 @@ try:
 except (ImportError, AttributeError):  # pragma: NO COVER
     tqdm = None
 
-PYARROW_TIMESTAMP_VERSION = pkg_resources.parse_version("2.0.0")
+if pandas is not None:
+    PANDAS_INSTALLED_VERSION = metadata.version("pandas")
+else:
+    PANDAS_INSTALLED_VERSION = "0.0.0"
 
 
 def _mock_client():
@@ -411,7 +415,6 @@ class TestTableReference(unittest.TestCase):
 
 
 class TestTable(unittest.TestCase, _SchemaBase):
-
     PROJECT = "prahj-ekt"
     DS_ID = "dataset-name"
     TABLE_NAME = "table-name"
@@ -519,7 +522,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
         )
 
     def _verifyResourceProperties(self, table, resource):
-
         self._verifyReadonlyResourceProperties(table, resource)
 
         if "expirationTime" in resource:
@@ -601,6 +603,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         self.assertIsNone(table.encryption_configuration)
         self.assertIsNone(table.time_partitioning)
         self.assertIsNone(table.clustering_fields)
+        self.assertIsNone(table.table_constraints)
 
     def test_ctor_w_schema(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -898,6 +901,21 @@ class TestTable(unittest.TestCase, _SchemaBase):
         assert clone.clone_time == datetime.datetime(
             2010, 9, 28, 10, 20, 30, 123000, tzinfo=UTC
         )
+
+    def test_table_constraints_property_getter(self):
+        from google.cloud.bigquery.table import PrimaryKey, TableConstraints
+
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+        table._properties["tableConstraints"] = {
+            "primaryKey": {"columns": ["id"]},
+        }
+
+        table_constraints = table.table_constraints
+
+        assert isinstance(table_constraints, TableConstraints)
+        assert table_constraints.primary_key == PrimaryKey(columns=["id"])
 
     def test_description_setter_bad_value(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
@@ -1496,7 +1514,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
 
 class Test_row_from_mapping(unittest.TestCase, _SchemaBase):
-
     PROJECT = "prahj-ekt"
     DS_ID = "dataset-name"
     TABLE_NAME = "table-name"
@@ -1785,7 +1802,6 @@ class TestTableClassesInterchangeability:
         return TableListItem(*args, **kwargs)
 
     def test_table_eq_table_ref(self):
-
         table = self._make_table("project_foo.dataset_bar.table_baz")
         dataset_ref = DatasetReference("project_foo", "dataset_bar")
         table_ref = self._make_table_ref(dataset_ref, "table_baz")
@@ -1809,7 +1825,6 @@ class TestTableClassesInterchangeability:
         assert table_list_item == table
 
     def test_table_ref_eq_table_list_item(self):
-
         dataset_ref = DatasetReference("project_foo", "dataset_bar")
         table_ref = self._make_table_ref(dataset_ref, "table_baz")
         table_list_item = self._make_table_list_item(
@@ -2118,6 +2133,46 @@ class TestRowIterator(unittest.TestCase):
         ]
         self.assertEqual(iterator.schema, expected_schema)
 
+    def test_job_id_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.job_id)
+
+    def test_job_id_present(self):
+        rows = self._make_one(job_id="abc-123")
+        self.assertEqual(rows.job_id, "abc-123")
+
+    def test_location_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.location)
+
+    def test_location_present(self):
+        rows = self._make_one(location="asia-northeast1")
+        self.assertEqual(rows.location, "asia-northeast1")
+
+    def test_num_dml_affected_rows_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.num_dml_affected_rows)
+
+    def test_num_dml_affected_rows_present(self):
+        rows = self._make_one(num_dml_affected_rows=1234)
+        self.assertEqual(rows.num_dml_affected_rows, 1234)
+
+    def test_project_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.project)
+
+    def test_project_present(self):
+        rows = self._make_one(project="test-project")
+        self.assertEqual(rows.project, "test-project")
+
+    def test_query_id_missing(self):
+        rows = self._make_one()
+        self.assertIsNone(rows.query_id)
+
+    def test_query_id_present(self):
+        rows = self._make_one(query_id="xyz-987")
+        self.assertEqual(rows.query_id, "xyz-987")
+
     def test_iterate(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -2170,9 +2225,18 @@ class TestRowIterator(unittest.TestCase):
         path = "/foo"
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(
-            _mock_client(), api_request, path, schema, first_page_response=first_page
+            _mock_client(),
+            api_request,
+            path,
+            schema,
+            first_page_response=first_page,
+            total_rows=4,
         )
+        self.assertEqual(row_iterator.total_rows, 4)
         rows = list(row_iterator)
+        # Total rows should be maintained, even though subsequent API calls
+        # don't include it.
+        self.assertEqual(row_iterator.total_rows, 4)
         self.assertEqual(len(rows), 4)
         self.assertEqual(rows[0].age, 27)
         self.assertEqual(rows[1].age, 28)
@@ -2182,6 +2246,39 @@ class TestRowIterator(unittest.TestCase):
         api_request.assert_called_once_with(
             method="GET", path=path, query_params={"pageToken": "next-page"}
         )
+
+    def test_iterate_with_cached_first_page_max_results(self):
+        from google.cloud.bigquery.schema import SchemaField
+
+        first_page = {
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
+            "pageToken": "next-page",
+        }
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        path = "/foo"
+        api_request = mock.Mock(return_value=first_page)
+        row_iterator = self._make_one(
+            _mock_client(),
+            api_request,
+            path,
+            schema,
+            max_results=3,
+            first_page_response=first_page,
+        )
+        rows = list(row_iterator)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0].age, 27)
+        self.assertEqual(rows[1].age, 28)
+        self.assertEqual(rows[2].age, 32)
+        api_request.assert_not_called()
 
     def test_page_size(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -2208,39 +2305,97 @@ class TestRowIterator(unittest.TestCase):
             query_params={"maxResults": row_iterator._page_size},
         )
 
-    def test__is_completely_cached_returns_false_without_first_page(self):
+    def test__is_almost_completely_cached_returns_false_without_first_page(self):
         iterator = self._make_one(first_page_response=None)
-        self.assertFalse(iterator._is_completely_cached())
+        self.assertFalse(iterator._is_almost_completely_cached())
 
-    def test__is_completely_cached_returns_false_with_page_token(self):
-        first_page = {"pageToken": "next-page"}
+    def test__is_almost_completely_cached_returns_true_with_more_rows_than_max_results(
+        self,
+    ):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+            {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(max_results=4, first_page_response=first_page)
+        self.assertTrue(iterator._is_almost_completely_cached())
+
+    def test__is_almost_completely_cached_returns_false_with_too_many_rows_remaining(
+        self,
+    ):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(first_page_response=first_page, total_rows=100)
+        self.assertFalse(iterator._is_almost_completely_cached())
+
+    def test__is_almost_completely_cached_returns_false_with_rows_remaining_and_no_total_rows(
+        self,
+    ):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
         iterator = self._make_one(first_page_response=first_page)
-        self.assertFalse(iterator._is_completely_cached())
+        self.assertFalse(iterator._is_almost_completely_cached())
 
-    def test__is_completely_cached_returns_true(self):
+    def test__is_almost_completely_cached_returns_true_with_some_rows_remaining(self):
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ]
+        first_page = {"pageToken": "next-page", "rows": rows}
+        iterator = self._make_one(first_page_response=first_page, total_rows=6)
+        self.assertTrue(iterator._is_almost_completely_cached())
+
+    def test__is_almost_completely_cached_returns_true_with_no_rows_remaining(self):
         first_page = {"rows": []}
         iterator = self._make_one(first_page_response=first_page)
-        self.assertTrue(iterator._is_completely_cached())
+        self.assertTrue(iterator._is_almost_completely_cached())
 
-    def test__validate_bqstorage_returns_false_when_completely_cached(self):
+    def test__should_use_bqstorage_returns_false_when_completely_cached(self):
         first_page = {"rows": []}
         iterator = self._make_one(first_page_response=first_page)
         self.assertFalse(
-            iterator._validate_bqstorage(
+            iterator._should_use_bqstorage(
                 bqstorage_client=None, create_bqstorage_client=True
             )
         )
 
-    def test__validate_bqstorage_returns_false_if_max_results_set(self):
-        iterator = self._make_one(
-            max_results=10, first_page_response=None  # not cached
+    @unittest.skipIf(
+        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
+    )
+    def test__should_use_bqstorage_returns_true_if_no_cached_results(self):
+        iterator = self._make_one(first_page_response=None)  # not cached
+        result = iterator._should_use_bqstorage(
+            bqstorage_client=None, create_bqstorage_client=True
         )
-        result = iterator._validate_bqstorage(
+        self.assertTrue(result)
+
+    def test__should_use_bqstorage_returns_false_if_page_token_set(self):
+        iterator = self._make_one(
+            page_token="abc", first_page_response=None  # not cached
+        )
+        result = iterator._should_use_bqstorage(
             bqstorage_client=None, create_bqstorage_client=True
         )
         self.assertFalse(result)
 
-    def test__validate_bqstorage_returns_false_if_missing_dependency(self):
+    def test__should_use_bqstorage_returns_false_if_max_results_set(self):
+        iterator = self._make_one(
+            max_results=10, first_page_response=None  # not cached
+        )
+        result = iterator._should_use_bqstorage(
+            bqstorage_client=None, create_bqstorage_client=True
+        )
+        self.assertFalse(result)
+
+    def test__should_use_bqstorage_returns_false_if_missing_dependency(self):
         iterator = self._make_one(first_page_response=None)  # not cached
 
         def fail_bqstorage_import(name, globals, locals, fromlist, level):
@@ -2252,7 +2407,7 @@ class TestRowIterator(unittest.TestCase):
         no_bqstorage = maybe_fail_import(predicate=fail_bqstorage_import)
 
         with no_bqstorage:
-            result = iterator._validate_bqstorage(
+            result = iterator._should_use_bqstorage(
                 bqstorage_client=None, create_bqstorage_client=True
             )
 
@@ -2261,17 +2416,15 @@ class TestRowIterator(unittest.TestCase):
     @unittest.skipIf(
         bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
     )
-    def test__validate_bqstorage_returns_false_w_warning_if_obsolete_version(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
+    def test__should_use_bqstorage_returns_false_w_warning_if_obsolete_version(self):
         iterator = self._make_one(first_page_response=None)  # not cached
 
         patcher = mock.patch(
-            "google.cloud.bigquery.table._helpers.BQ_STORAGE_VERSIONS.verify_version",
-            side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+            "google.cloud.bigquery.table._versions_helpers.BQ_STORAGE_VERSIONS.try_import",
+            side_effect=exceptions.LegacyBigQueryStorageError("BQ Storage too old"),
         )
         with patcher, warnings.catch_warnings(record=True) as warned:
-            result = iterator._validate_bqstorage(
+            result = iterator._should_use_bqstorage(
                 bqstorage_client=None, create_bqstorage_client=True
             )
 
@@ -2873,11 +3026,11 @@ class TestRowIterator(unittest.TestCase):
         mock_client = _mock_client()
         row_iterator = self._make_one(mock_client, api_request, path, schema)
 
-        def mock_verify_version():
-            raise _helpers.LegacyBigQueryStorageError("no bqstorage")
+        def mock_verify_version(raise_if_error: bool = False):
+            raise exceptions.LegacyBigQueryStorageError("no bqstorage")
 
         with mock.patch(
-            "google.cloud.bigquery._helpers.BQ_STORAGE_VERSIONS.verify_version",
+            "google.cloud.bigquery._versions_helpers.BQ_STORAGE_VERSIONS.try_import",
             mock_verify_version,
         ):
             tbl = row_iterator.to_arrow(create_bqstorage_client=True)
@@ -3677,6 +3830,7 @@ class TestRowIterator(unittest.TestCase):
             self.assertEqual(df.timestamp.dtype.name, "object")
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
     def test_to_dataframe_w_none_dtypes_mapper(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -3789,6 +3943,7 @@ class TestRowIterator(unittest.TestCase):
             )
 
     @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
     def test_to_dataframe_column_dtypes(self):
         from google.cloud.bigquery.schema import SchemaField
 
@@ -5252,6 +5407,270 @@ class TestTimePartitioning(unittest.TestCase):
         time_partitioning = self._make_one()
         time_partitioning.expiration_ms = None
         assert time_partitioning._properties["expirationMs"] is None
+
+
+class TestPrimaryKey(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import PrimaryKey
+
+        return PrimaryKey
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        return cls._get_target_class()(*args, **kwargs)
+
+    def test_constructor_explicit(self):
+        columns = ["id", "product_id"]
+        primary_key = self._make_one(columns)
+
+        self.assertEqual(primary_key.columns, columns)
+
+    def test__eq__columns_mismatch(self):
+        primary_key = self._make_one(columns=["id", "product_id"])
+        other_primary_key = self._make_one(columns=["id"])
+
+        self.assertNotEqual(primary_key, other_primary_key)
+
+    def test__eq__other_type(self):
+        primary_key = self._make_one(columns=["id", "product_id"])
+        with self.assertRaises(TypeError):
+            primary_key == "This is not a Primary Key"
+
+
+class TestColumnReference(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import ColumnReference
+
+        return ColumnReference
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        return cls._get_target_class()(*args, **kwargs)
+
+    def test_constructor_explicit(self):
+        referencing_column = "product_id"
+        referenced_column = "id"
+        column_reference = self._make_one(referencing_column, referenced_column)
+
+        self.assertEqual(column_reference.referencing_column, referencing_column)
+        self.assertEqual(column_reference.referenced_column, referenced_column)
+
+    def test__eq__referencing_column_mismatch(self):
+        column_reference = self._make_one(
+            referencing_column="product_id",
+            referenced_column="id",
+        )
+        other_column_reference = self._make_one(
+            referencing_column="item_id",
+            referenced_column="id",
+        )
+
+        self.assertNotEqual(column_reference, other_column_reference)
+
+    def test__eq__referenced_column_mismatch(self):
+        column_reference = self._make_one(
+            referencing_column="product_id",
+            referenced_column="id",
+        )
+        other_column_reference = self._make_one(
+            referencing_column="product_id",
+            referenced_column="id_1",
+        )
+
+        self.assertNotEqual(column_reference, other_column_reference)
+
+    def test__eq__other_type(self):
+        column_reference = self._make_one(
+            referencing_column="product_id",
+            referenced_column="id",
+        )
+        with self.assertRaises(TypeError):
+            column_reference == "This is not a Column Reference"
+
+
+class TestForeignKey(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import ForeignKey
+
+        return ForeignKey
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        return cls._get_target_class()(*args, **kwargs)
+
+    def test_constructor_explicit(self):
+        name = "my_fk"
+        referenced_table = TableReference.from_string("my-project.mydataset.mytable")
+        column_references = []
+        foreign_key = self._make_one(name, referenced_table, column_references)
+
+        self.assertEqual(foreign_key.name, name)
+        self.assertEqual(foreign_key.referenced_table, referenced_table)
+        self.assertEqual(foreign_key.column_references, column_references)
+
+    def test__eq__name_mismatch(self):
+        referenced_table = TableReference.from_string("my-project.mydataset.mytable")
+        column_references = []
+        foreign_key = self._make_one(
+            name="my_fk",
+            referenced_table=referenced_table,
+            column_references=column_references,
+        )
+        other_foreign_key = self._make_one(
+            name="my_other_fk",
+            referenced_table=referenced_table,
+            column_references=column_references,
+        )
+
+        self.assertNotEqual(foreign_key, other_foreign_key)
+
+    def test__eq__referenced_table_mismatch(self):
+        name = "my_fk"
+        column_references = []
+        foreign_key = self._make_one(
+            name=name,
+            referenced_table=TableReference.from_string("my-project.mydataset.mytable"),
+            column_references=column_references,
+        )
+        other_foreign_key = self._make_one(
+            name=name,
+            referenced_table=TableReference.from_string(
+                "my-project.mydataset.my-other-table"
+            ),
+            column_references=column_references,
+        )
+
+        self.assertNotEqual(foreign_key, other_foreign_key)
+
+    def test__eq__column_references_mismatch(self):
+        from google.cloud.bigquery.table import ColumnReference
+
+        name = "my_fk"
+        referenced_table = TableReference.from_string("my-project.mydataset.mytable")
+        foreign_key = self._make_one(
+            name=name,
+            referenced_table=referenced_table,
+            column_references=[],
+        )
+        other_foreign_key = self._make_one(
+            name=name,
+            referenced_table=referenced_table,
+            column_references=[
+                ColumnReference(
+                    referencing_column="product_id", referenced_column="id"
+                ),
+            ],
+        )
+
+        self.assertNotEqual(foreign_key, other_foreign_key)
+
+    def test__eq__other_type(self):
+        foreign_key = self._make_one(
+            name="my_fk",
+            referenced_table=TableReference.from_string("my-project.mydataset.mytable"),
+            column_references=[],
+        )
+        with self.assertRaises(TypeError):
+            foreign_key == "This is not a Foreign Key"
+
+
+class TestTableConstraint(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import TableConstraints
+
+        return TableConstraints
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        return cls._get_target_class()(*args, **kwargs)
+
+    def test_constructor_defaults(self):
+        instance = self._make_one(primary_key=None, foreign_keys=None)
+        self.assertIsNone(instance.primary_key)
+        self.assertIsNone(instance.foreign_keys)
+
+    def test_from_api_repr_full_resource(self):
+        from google.cloud.bigquery.table import (
+            ColumnReference,
+            ForeignKey,
+            TableReference,
+        )
+
+        resource = {
+            "primaryKey": {
+                "columns": ["id", "product_id"],
+            },
+            "foreignKeys": [
+                {
+                    "name": "my_fk_name",
+                    "referencedTable": {
+                        "projectId": "my-project",
+                        "datasetId": "your-dataset",
+                        "tableId": "products",
+                    },
+                    "columnReferences": [
+                        {"referencingColumn": "product_id", "referencedColumn": "id"},
+                    ],
+                }
+            ],
+        }
+        instance = self._get_target_class().from_api_repr(resource)
+
+        self.assertIsNotNone(instance.primary_key)
+        self.assertEqual(instance.primary_key.columns, ["id", "product_id"])
+        self.assertEqual(
+            instance.foreign_keys,
+            [
+                ForeignKey(
+                    name="my_fk_name",
+                    referenced_table=TableReference.from_string(
+                        "my-project.your-dataset.products"
+                    ),
+                    column_references=[
+                        ColumnReference(
+                            referencing_column="product_id", referenced_column="id"
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+    def test_from_api_repr_only_primary_key_resource(self):
+        resource = {
+            "primaryKey": {
+                "columns": ["id"],
+            },
+        }
+        instance = self._get_target_class().from_api_repr(resource)
+
+        self.assertIsNotNone(instance.primary_key)
+        self.assertEqual(instance.primary_key.columns, ["id"])
+        self.assertIsNone(instance.foreign_keys)
+
+    def test_from_api_repr_only_foreign_keys_resource(self):
+        resource = {
+            "foreignKeys": [
+                {
+                    "name": "my_fk_name",
+                    "referencedTable": {
+                        "projectId": "my-project",
+                        "datasetId": "your-dataset",
+                        "tableId": "products",
+                    },
+                    "columnReferences": [
+                        {"referencingColumn": "product_id", "referencedColumn": "id"},
+                    ],
+                }
+            ]
+        }
+        instance = self._get_target_class().from_api_repr(resource)
+
+        self.assertIsNone(instance.primary_key)
+        self.assertIsNotNone(instance.foreign_keys)
 
 
 @pytest.mark.skipif(

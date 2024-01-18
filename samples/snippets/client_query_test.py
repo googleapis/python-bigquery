@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +14,25 @@
 
 import typing
 
-from .. import create_table_external_data_configuration
+import client_query  # type: ignore
 
 if typing.TYPE_CHECKING:
     import pytest
 
 
-def test_create_table_external_data_configuration(
-    capsys: "pytest.CaptureFixture[str]",
-    random_table_id: str,
-) -> None:
-
-    create_table_external_data_configuration.create_table_external_data_configuration(
-        random_table_id
-    )
+def test_client_query(capsys: "pytest.CaptureFixture[str]") -> None:
+    client_query.client_query()
     out, _ = capsys.readouterr()
-    assert "Created table with external source format AVRO" in out
+    assert "The query data:" in out
+    assert "name=James, count=272793" in out
+
+
+def test_client_query_job_optional(
+    capsys: "pytest.CaptureFixture[str]", monkeypatch: "pytest.MonkeyPatch"
+) -> None:
+    monkeypatch.setenv("QUERY_PREVIEW_ENABLED", "true")
+
+    client_query.client_query()
+    out, _ = capsys.readouterr()
+    assert "The query data:" in out
+    assert "name=James, count=272793" in out

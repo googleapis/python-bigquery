@@ -19,7 +19,11 @@ import functools
 import operator
 import queue
 import warnings
-import pkg_resources
+
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 import mock
 
@@ -40,11 +44,12 @@ import pytest
 from google import api_core
 
 from google.cloud.bigquery import exceptions
-from google.cloud.bigquery import _helpers
+from google.cloud.bigquery import _pyarrow_helpers
+from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
 from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
-pyarrow = _helpers.PYARROW_VERSIONS.try_import()
+pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 if pyarrow:
     import pyarrow.parquet
@@ -54,20 +59,12 @@ else:  # pragma: NO COVER
     # used in test parameterization.
     pyarrow = mock.Mock()
 
-try:
-    from google.cloud import bigquery_storage
-
-    _helpers.BQ_STORAGE_VERSIONS.verify_version()
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
-
-PANDAS_MINIUM_VERSION = pkg_resources.parse_version("1.0.0")
+bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import()
 
 if pandas is not None:
-    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
+    PANDAS_INSTALLED_VERSION = metadata.version("pandas")
 else:
-    # Set to less than MIN version.
-    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
+    PANDAS_INSTALLED_VERSION = "0.0.0"
 
 
 skip_if_no_bignumeric = pytest.mark.skipif(
@@ -346,14 +343,14 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         pyarrow.field("field04", pyarrow.int64()),
         pyarrow.field("field05", pyarrow.float64()),
         pyarrow.field("field06", pyarrow.float64()),
-        pyarrow.field("field07", module_under_test.pyarrow_numeric()),
-        pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),
+        pyarrow.field("field07", _pyarrow_helpers.pyarrow_numeric()),
+        pyarrow.field("field08", _pyarrow_helpers.pyarrow_bignumeric()),
         pyarrow.field("field09", pyarrow.bool_()),
         pyarrow.field("field10", pyarrow.bool_()),
-        pyarrow.field("field11", module_under_test.pyarrow_timestamp()),
+        pyarrow.field("field11", _pyarrow_helpers.pyarrow_timestamp()),
         pyarrow.field("field12", pyarrow.date32()),
-        pyarrow.field("field13", module_under_test.pyarrow_time()),
-        pyarrow.field("field14", module_under_test.pyarrow_datetime()),
+        pyarrow.field("field13", _pyarrow_helpers.pyarrow_time()),
+        pyarrow.field("field14", _pyarrow_helpers.pyarrow_datetime()),
         pyarrow.field("field15", pyarrow.string()),
     )
     expected = pyarrow.struct(expected)
@@ -394,14 +391,14 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         pyarrow.field("field04", pyarrow.int64()),
         pyarrow.field("field05", pyarrow.float64()),
         pyarrow.field("field06", pyarrow.float64()),
-        pyarrow.field("field07", module_under_test.pyarrow_numeric()),
-        pyarrow.field("field08", module_under_test.pyarrow_bignumeric()),
+        pyarrow.field("field07", _pyarrow_helpers.pyarrow_numeric()),
+        pyarrow.field("field08", _pyarrow_helpers.pyarrow_bignumeric()),
         pyarrow.field("field09", pyarrow.bool_()),
         pyarrow.field("field10", pyarrow.bool_()),
-        pyarrow.field("field11", module_under_test.pyarrow_timestamp()),
+        pyarrow.field("field11", _pyarrow_helpers.pyarrow_timestamp()),
         pyarrow.field("field12", pyarrow.date32()),
-        pyarrow.field("field13", module_under_test.pyarrow_time()),
-        pyarrow.field("field14", module_under_test.pyarrow_datetime()),
+        pyarrow.field("field13", _pyarrow_helpers.pyarrow_time()),
+        pyarrow.field("field14", _pyarrow_helpers.pyarrow_datetime()),
         pyarrow.field("field15", pyarrow.string()),
     )
     expected_value_type = pyarrow.struct(expected)
@@ -546,6 +543,7 @@ def test_bq_to_arrow_array_w_nullable_scalars(module_under_test, bq_type, rows):
     ],
 )
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+@pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_bq_to_arrow_array_w_pandas_timestamp(module_under_test, bq_type, rows):
     rows = [pandas.Timestamp(row) for row in rows]
@@ -807,10 +805,7 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
     assert columns_and_indexes == expected
 
 
-@pytest.mark.skipif(
-    pandas is None or PANDAS_INSTALLED_VERSION < PANDAS_MINIUM_VERSION,
-    reason="Requires `pandas version >= 1.0.0` which introduces pandas.NA",
-)
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_json_generator(module_under_test):
     utcnow = datetime.datetime.utcnow()
     df_data = collections.OrderedDict(
@@ -838,16 +833,8 @@ def test_dataframe_to_json_generator(module_under_test):
     assert list(rows) == expected
 
 
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_json_generator_repeated_field(module_under_test):
-    pytest.importorskip(
-        "pandas",
-        minversion=str(PANDAS_MINIUM_VERSION),
-        reason=(
-            f"Requires `pandas version >= {PANDAS_MINIUM_VERSION}` "
-            "which introduces pandas.NA"
-        ),
-    )
-
     df_data = [
         collections.OrderedDict(
             [("repeated_col", [pandas.NA, 2, None, 4]), ("not_repeated_col", "first")]
@@ -1018,30 +1005,41 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
     )
 
     data = {
-        "field01": ["hello", "world"],
-        "field02": [b"abd", b"efg"],
-        "field03": [1, 2],
-        "field04": [3, 4],
-        "field05": [1.25, 9.75],
-        "field06": [-1.75, -3.5],
-        "field07": [decimal.Decimal("1.2345"), decimal.Decimal("6.7891")],
+        "field01": ["hello", None, "world"],
+        "field02": [b"abd", b"efg", b"hij"],
+        "field03": [1, 2, 3],
+        "field04": [4, None, 5],
+        "field05": [1.25, 0.0, 9.75],
+        "field06": [-1.75, None, -3.5],
+        "field07": [
+            decimal.Decimal("1.2345"),
+            decimal.Decimal("6.7891"),
+            -decimal.Decimal("10.111213"),
+        ],
         "field08": [
             decimal.Decimal("-{d38}.{d38}".format(d38="9" * 38)),
+            None,
             decimal.Decimal("{d38}.{d38}".format(d38="9" * 38)),
         ],
-        "field09": [True, False],
-        "field10": [False, True],
+        "field09": [True, False, True],
+        "field10": [False, True, None],
         "field11": [
             datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
             datetime.datetime(2012, 12, 21, 9, 7, 42, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2022, 7, 14, 23, 59, 59, tzinfo=datetime.timezone.utc),
         ],
-        "field12": [datetime.date(9999, 12, 31), datetime.date(1970, 1, 1)],
-        "field13": [datetime.time(23, 59, 59, 999999), datetime.time(12, 0, 0)],
+        "field12": [datetime.date(9999, 12, 31), None, datetime.date(1970, 1, 1)],
+        "field13": [datetime.time(23, 59, 59, 999999), None, datetime.time(12, 0, 0)],
         "field14": [
             datetime.datetime(1970, 1, 1, 0, 0, 0),
+            None,
             datetime.datetime(2012, 12, 21, 9, 7, 42),
         ],
-        "field15": ["POINT(30 10)", "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))"],
+        "field15": [
+            None,
+            "POINT(30 10)",
+            "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))",
+        ],
     }
     dataframe = pandas.DataFrame(data)
 
@@ -1050,7 +1048,11 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
 
     assert len(arrow_schema) == len(bq_schema)
     for arrow_field in arrow_schema:
-        assert not arrow_field.nullable
+        # Even if the remote schema is REQUIRED, there's a chance there's
+        # local NULL values. Arrow will gladly interpret these NULL values
+        # as non-NULL and give you an arbitrary value. See:
+        # https://github.com/googleapis/python-bigquery/issues/1692
+        assert arrow_field.nullable
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
@@ -1102,7 +1104,11 @@ def test_dataframe_to_arrow_dict_sequence_schema(module_under_test):
     arrow_schema = arrow_table.schema
 
     expected_fields = [
-        pyarrow.field("field01", "string", nullable=False),
+        # Even if the remote schema is REQUIRED, there's a chance there's
+        # local NULL values. Arrow will gladly interpret these NULL values
+        # as non-NULL and give you an arbitrary value. See:
+        # https://github.com/googleapis/python-bigquery/issues/1692
+        pyarrow.field("field01", "string", nullable=True),
         pyarrow.field("field02", "bool", nullable=True),
     ]
     assert list(arrow_schema) == expected_fields
@@ -1114,7 +1120,9 @@ def test_dataframe_to_parquet_without_pyarrow(module_under_test, monkeypatch):
     mock_pyarrow_import.side_effect = exceptions.LegacyPyarrowError(
         "pyarrow not installed"
     )
-    monkeypatch.setattr(_helpers.PYARROW_VERSIONS, "try_import", mock_pyarrow_import)
+    monkeypatch.setattr(
+        _versions_helpers.PYARROW_VERSIONS, "try_import", mock_pyarrow_import
+    )
 
     with pytest.raises(exceptions.LegacyPyarrowError):
         module_under_test.dataframe_to_parquet(pandas.DataFrame(), (), None)
@@ -1609,7 +1617,9 @@ def test__download_table_bqstorage_stream_includes_read_session(
     import google.cloud.bigquery_storage_v1.reader
     import google.cloud.bigquery_storage_v1.types
 
-    monkeypatch.setattr(_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None)
+    monkeypatch.setattr(
+        _versions_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None
+    )
     monkeypatch.setattr(bigquery_storage, "__version__", "2.5.0")
     bqstorage_client = mock.create_autospec(
         bigquery_storage.BigQueryReadClient, instance=True
@@ -1634,7 +1644,7 @@ def test__download_table_bqstorage_stream_includes_read_session(
 
 @pytest.mark.skipif(
     bigquery_storage is None
-    or not _helpers.BQ_STORAGE_VERSIONS.is_read_session_optional,
+    or not _versions_helpers.BQ_STORAGE_VERSIONS.is_read_session_optional,
     reason="Requires `google-cloud-bigquery-storage` >= 2.6.0",
 )
 def test__download_table_bqstorage_stream_omits_read_session(
@@ -1643,7 +1653,9 @@ def test__download_table_bqstorage_stream_omits_read_session(
     import google.cloud.bigquery_storage_v1.reader
     import google.cloud.bigquery_storage_v1.types
 
-    monkeypatch.setattr(_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None)
+    monkeypatch.setattr(
+        _versions_helpers.BQ_STORAGE_VERSIONS, "_installed_version", None
+    )
     monkeypatch.setattr(bigquery_storage, "__version__", "2.6.0")
     bqstorage_client = mock.create_autospec(
         bigquery_storage.BigQueryReadClient, instance=True

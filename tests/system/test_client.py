@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import base64
+import copy
 import csv
 import datetime
 import decimal
@@ -237,6 +238,22 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(_dataset_exists(dataset))
         self.assertEqual(dataset.dataset_id, DATASET_ID)
         self.assertEqual(dataset.project, Config.CLIENT.project)
+        self.assertIs(dataset.is_case_insensitive, False)
+
+    def test_create_dataset_case_sensitive(self):
+        DATASET_ID = _make_dataset_id("create_cs_dataset")
+        dataset = self.temp_dataset(DATASET_ID, is_case_insensitive=False)
+        self.assertIs(dataset.is_case_insensitive, False)
+
+    def test_create_dataset_case_insensitive(self):
+        DATASET_ID = _make_dataset_id("create_ci_dataset")
+        dataset = self.temp_dataset(DATASET_ID, is_case_insensitive=True)
+        self.assertIs(dataset.is_case_insensitive, True)
+
+    def test_create_dataset_max_time_travel_hours(self):
+        DATASET_ID = _make_dataset_id("create_ci_dataset")
+        dataset = self.temp_dataset(DATASET_ID, max_time_travel_hours=24 * 2)
+        self.assertEqual(int(dataset.max_time_travel_hours), 24 * 2)
 
     def test_get_dataset(self):
         dataset_id = _make_dataset_id("get_dataset")
@@ -265,22 +282,32 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(got.friendly_name, "Friendly")
         self.assertEqual(got.description, "Description")
 
+    def test_create_dataset_with_default_rounding_mode(self):
+        DATASET_ID = _make_dataset_id("create_dataset_rounding_mode")
+        dataset = self.temp_dataset(DATASET_ID, default_rounding_mode="ROUND_HALF_EVEN")
+
+        self.assertTrue(_dataset_exists(dataset))
+        self.assertEqual(dataset.default_rounding_mode, "ROUND_HALF_EVEN")
+
     def test_update_dataset(self):
         dataset = self.temp_dataset(_make_dataset_id("update_dataset"))
         self.assertTrue(_dataset_exists(dataset))
         self.assertIsNone(dataset.friendly_name)
         self.assertIsNone(dataset.description)
         self.assertEqual(dataset.labels, {})
+        self.assertIs(dataset.is_case_insensitive, False)
 
         dataset.friendly_name = "Friendly"
         dataset.description = "Description"
         dataset.labels = {"priority": "high", "color": "blue"}
+        dataset.is_case_insensitive = True
         ds2 = Config.CLIENT.update_dataset(
-            dataset, ("friendly_name", "description", "labels")
+            dataset, ("friendly_name", "description", "labels", "is_case_insensitive")
         )
         self.assertEqual(ds2.friendly_name, "Friendly")
         self.assertEqual(ds2.description, "Description")
         self.assertEqual(ds2.labels, {"priority": "high", "color": "blue"})
+        self.assertIs(ds2.is_case_insensitive, True)
 
         ds2.labels = {
             "color": "green",  # change
@@ -334,6 +361,48 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertTrue(_table_exists(table))
         self.assertEqual(table.table_id, table_id)
+
+    def test_create_tables_in_case_insensitive_dataset(self):
+        ci_dataset = self.temp_dataset(
+            _make_dataset_id("create_table"), is_case_insensitive=True
+        )
+        table_arg = Table(ci_dataset.table("test_table2"), schema=SCHEMA)
+        tablemc_arg = Table(ci_dataset.table("Test_taBLe2"))  # same name, in Mixed Case
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table_arg))
+        self.assertTrue(_table_exists(tablemc_arg))
+        self.assertIs(ci_dataset.is_case_insensitive, True)
+
+    def test_create_tables_in_case_sensitive_dataset(self):
+        ci_dataset = self.temp_dataset(
+            _make_dataset_id("create_table"), is_case_insensitive=False
+        )
+        table_arg = Table(ci_dataset.table("test_table3"), schema=SCHEMA)
+        tablemc_arg = Table(ci_dataset.table("Test_taBLe3"))  # same name, in Mixed Case
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table_arg))
+        self.assertFalse(_table_exists(tablemc_arg))
+        self.assertIs(ci_dataset.is_case_insensitive, False)
+
+    def test_create_tables_in_default_sensitivity_dataset(self):
+        dataset = self.temp_dataset(_make_dataset_id("create_table"))
+        table_arg = Table(dataset.table("test_table4"), schema=SCHEMA)
+        tablemc_arg = Table(
+            dataset.table("Test_taBLe4")
+        )  # same name, in MC (Mixed Case)
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table_arg))
+        self.assertFalse(_table_exists(tablemc_arg))
+        self.assertIs(dataset.is_case_insensitive, False)
 
     def test_create_table_with_real_custom_policy(self):
         from google.cloud.bigquery.schema import PolicyTagList
@@ -1712,7 +1781,6 @@ class TestBigQuery(unittest.TestCase):
         )
 
         result_rows = [cursor.fetchone(), cursor.fetchone(), cursor.fetchone()]
-
         field_name = operator.itemgetter(0)
         fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
         # Since DB API is not thread safe, only a single result stream should be
@@ -1720,11 +1788,6 @@ class TestBigQuery(unittest.TestCase):
         # in the sorted order.
 
         expected_data = [
-            [
-                ("by", "pg"),
-                ("id", 1),
-                ("timestamp", datetime.datetime(2006, 10, 9, 18, 21, 51, tzinfo=UTC)),
-            ],
             [
                 ("by", "phyllis"),
                 ("id", 2),
@@ -1734,6 +1797,11 @@ class TestBigQuery(unittest.TestCase):
                 ("by", "phyllis"),
                 ("id", 3),
                 ("timestamp", datetime.datetime(2006, 10, 9, 18, 40, 33, tzinfo=UTC)),
+            ],
+            [
+                ("by", "onebeerdave"),
+                ("id", 4),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 47, 42, tzinfo=UTC)),
             ],
         ]
 
@@ -1980,13 +2048,18 @@ class TestBigQuery(unittest.TestCase):
                     ),
                 ],
             ),
+            SF("json_col", "JSON"),
         ]
         record = {
             "nested_string": "another string value",
             "nested_repeated": [0, 1, 2],
             "nested_record": {"nested_nested_string": "some deep insight"},
         }
-        to_insert = [("Some value", record)]
+        json_record = {
+            "json_array": [1, 2, 3],
+            "json_object": {"alpha": "abc", "num": 123},
+        }
+        to_insert = [("Some value", record, json_record)]
         table_id = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("issue_2951"))
         table_arg = Table(dataset.table(table_id), schema=schema)
@@ -2168,6 +2241,41 @@ class TestBigQuery(unittest.TestCase):
         ]
         assert result_rows == expected
 
+    def test_create_routine_w_data_governance(self):
+        routine_name = "routine_with_data_governance"
+        dataset = self.temp_dataset(_make_dataset_id("create_routine"))
+
+        routine = bigquery.Routine(
+            dataset.routine(routine_name),
+            type_="SCALAR_FUNCTION",
+            language="SQL",
+            body="x",
+            arguments=[
+                bigquery.RoutineArgument(
+                    name="x",
+                    data_type=bigquery.StandardSqlDataType(
+                        type_kind=bigquery.StandardSqlTypeNames.INT64
+                    ),
+                )
+            ],
+            data_governance_type="DATA_MASKING",
+            return_type=bigquery.StandardSqlDataType(
+                type_kind=bigquery.StandardSqlTypeNames.INT64
+            ),
+        )
+        routine_original = copy.deepcopy(routine)
+
+        client = Config.CLIENT
+        routine_new = client.create_routine(routine)
+
+        assert routine_new.reference == routine_original.reference
+        assert routine_new.type_ == routine_original.type_
+        assert routine_new.language == routine_original.language
+        assert routine_new.body == routine_original.body
+        assert routine_new.arguments == routine_original.arguments
+        assert routine_new.return_type == routine_original.return_type
+        assert routine_new.data_governance_type == routine_original.data_governance_type
+
     def test_create_table_rows_fetch_nested_schema(self):
         table_name = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("create_table_nested_schema"))
@@ -2286,12 +2394,18 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(pyarrow.types.is_list(record_col[1].type))
         self.assertTrue(pyarrow.types.is_int64(record_col[1].type.value_type))
 
-    def temp_dataset(self, dataset_id, location=None):
+    def temp_dataset(self, dataset_id, *args, **kwargs):
         project = Config.CLIENT.project
         dataset_ref = bigquery.DatasetReference(project, dataset_id)
         dataset = Dataset(dataset_ref)
-        if location:
-            dataset.location = location
+        if kwargs.get("location"):
+            dataset.location = kwargs.get("location")
+        if kwargs.get("max_time_travel_hours"):
+            dataset.max_time_travel_hours = kwargs.get("max_time_travel_hours")
+        if kwargs.get("default_rounding_mode"):
+            dataset.default_rounding_mode = kwargs.get("default_rounding_mode")
+        if kwargs.get("is_case_insensitive"):
+            dataset.is_case_insensitive = kwargs.get("is_case_insensitive")
         dataset = helpers.retry_403(Config.CLIENT.create_dataset)(dataset)
         self.to_delete.append(dataset)
         return dataset
@@ -2319,7 +2433,6 @@ def _table_exists(t):
 
 
 def test_dbapi_create_view(dataset_id: str):
-
     query = f"""
     CREATE VIEW {dataset_id}.dbapi_create_view
     AS SELECT name, SUM(number) AS total

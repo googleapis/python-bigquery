@@ -57,9 +57,34 @@ def make_query_response(
 @pytest.mark.parametrize(
     ("job_config", "expected"),
     (
-        (None, make_query_request()),
-        (job_query.QueryJobConfig(), make_query_request()),
-        (
+        pytest.param(
+            None,
+            make_query_request(),
+            id="job_config=None-default-request",
+        ),
+        pytest.param(
+            job_query.QueryJobConfig(),
+            make_query_request(),
+            id="job_config=QueryJobConfig()-default-request",
+        ),
+        pytest.param(
+            job_query.QueryJobConfig.from_api_repr(
+                {
+                    "unknownTopLevelProperty": "some-test-value",
+                    "query": {
+                        "unknownQueryProperty": "some-other-value",
+                    },
+                },
+            ),
+            make_query_request(
+                {
+                    "unknownTopLevelProperty": "some-test-value",
+                    "unknownQueryProperty": "some-other-value",
+                }
+            ),
+            id="job_config-with-unknown-properties-includes-all-properties-in-request",
+        ),
+        pytest.param(
             job_query.QueryJobConfig(default_dataset="my-project.my_dataset"),
             make_query_request(
                 {
@@ -69,17 +94,24 @@ def make_query_response(
                     }
                 }
             ),
+            id="job_config-with-default_dataset",
         ),
-        (job_query.QueryJobConfig(dry_run=True), make_query_request({"dryRun": True})),
-        (
+        pytest.param(
+            job_query.QueryJobConfig(dry_run=True),
+            make_query_request({"dryRun": True}),
+            id="job_config-with-dry_run",
+        ),
+        pytest.param(
             job_query.QueryJobConfig(use_query_cache=False),
             make_query_request({"useQueryCache": False}),
+            id="job_config-with-use_query_cache",
         ),
-        (
+        pytest.param(
             job_query.QueryJobConfig(use_legacy_sql=True),
             make_query_request({"useLegacySql": True}),
+            id="job_config-with-use_legacy_sql",
         ),
-        (
+        pytest.param(
             job_query.QueryJobConfig(
                 query_parameters=[
                     ScalarQueryParameter("named_param1", "STRING", "param-value"),
@@ -103,8 +135,9 @@ def make_query_response(
                     ],
                 }
             ),
+            id="job_config-with-query_parameters-named",
         ),
-        (
+        pytest.param(
             job_query.QueryJobConfig(
                 query_parameters=[
                     ScalarQueryParameter(None, "STRING", "param-value"),
@@ -126,8 +159,9 @@ def make_query_response(
                     ],
                 }
             ),
+            id="job_config-with-query_parameters-positional",
         ),
-        (
+        pytest.param(
             job_query.QueryJobConfig(
                 connection_properties=[
                     ConnectionProperty(key="time_zone", value="America/Chicago"),
@@ -142,14 +176,17 @@ def make_query_response(
                     ]
                 }
             ),
+            id="job_config-with-connection_properties",
         ),
-        (
+        pytest.param(
             job_query.QueryJobConfig(labels={"abc": "def"}),
             make_query_request({"labels": {"abc": "def"}}),
+            id="job_config-with-labels",
         ),
-        (
+        pytest.param(
             job_query.QueryJobConfig(maximum_bytes_billed=987654),
             make_query_request({"maximumBytesBilled": "987654"}),
+            id="job_config-with-maximum_bytes_billed",
         ),
     ),
 )

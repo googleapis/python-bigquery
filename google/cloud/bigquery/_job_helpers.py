@@ -179,17 +179,11 @@ def _to_query_request(
     QueryRequest. If any configuration property is set that is not available in
     jobs.query, it will result in a server-side error.
     """
-    request_body = {}
-    job_config_resource = job_config.to_api_repr() if job_config else {}
-    query_config_resource = job_config_resource.get("query", {})
+    request_body = copy.copy(job_config.to_api_repr()) if job_config else {}
 
+    # Move query.* properties to top-level.
+    query_config_resource = request_body.pop("query", {})
     request_body.update(query_config_resource)
-
-    # These keys are top level in job resource and query resource.
-    if "labels" in job_config_resource:
-        request_body["labels"] = job_config_resource["labels"]
-    if "dryRun" in job_config_resource:
-        request_body["dryRun"] = job_config_resource["dryRun"]
 
     # Default to standard SQL.
     request_body.setdefault("useLegacySql", False)

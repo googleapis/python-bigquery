@@ -240,3 +240,40 @@ def test_raises_on_job_retry_on_result_with_non_retryable_jobs(client):
         ),
     ):
         job.result(job_retry=google.api_core.retry.Retry())
+
+
+@mock.patch("time.sleep")
+def test_retry_ddl_query_rate_limit_exceeded(sleep, client):
+    """
+    Specific test for retrying DDL queries with "jobRateLimitExceeded" error
+    """
+
+    err = dict(reason="jobRateLimitExceeded")
+    responses = [
+        dict(status=dict(state="DONE", errors=[err], errorResult=err)),
+        dict(status=dict(state="DONE")),  # Retry succeeds on second attempt
+        dict(rows=[{"f": [{"v": "DDL operation successful"}]}], totalRows="1"),
+    ]
+
+    def api_request(method, path, query_params=None, data=None, **kw):
+        response = responses.pop(0)
+        if data:
+            response["jobReference"] = data["jobReference"]
+        else:
+            response["jobReference"] = dict(
+                jobId=path.split("/")[-1], projectId="PROJECT"
+            )
+        return response
+
+    conn = client._connection = make_connection()
+    conn.api_request.side_effect = api_request
+
+    job = client.query(
+        "ALTER TABLE my_table ADD COLUMN new_column STRING",
+        job_retry=google.api_core.retry.Retry(),
+    )
+    result = job.result()
+
+    assert result.total_rows == 1
+    assert not responses  # All calls made
+    assert len(sleep.mock_calls) == 1  # One retry attempt

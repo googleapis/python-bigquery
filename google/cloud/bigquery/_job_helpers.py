@@ -166,6 +166,14 @@ def query_jobs_insert(
     return future
 
 
+def _validate_job_config(request_body: Dict[str, Any], invalid_key: str):
+    """Catch common mistakes, such as passing in a *JobConfig object of the
+    wrong type.
+    """
+    if invalid_key in request_body:
+        raise ValueError(f"got unexpected key {repr(invalid_key)} in job_config")
+
+
 def _to_query_request(
     job_config: Optional[job.QueryJobConfig] = None,
     *,
@@ -180,6 +188,10 @@ def _to_query_request(
     jobs.query, it will result in a server-side error.
     """
     request_body = copy.copy(job_config.to_api_repr()) if job_config else {}
+
+    _validate_job_config(request_body, job.CopyJob._JOB_TYPE)
+    _validate_job_config(request_body, job.ExtractJob._JOB_TYPE)
+    _validate_job_config(request_body, job.LoadJob._JOB_TYPE)
 
     # Move query.* properties to top-level.
     query_config_resource = request_body.pop("query", {})

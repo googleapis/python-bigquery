@@ -23,6 +23,9 @@ import pytest
 
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery import _job_helpers
+from google.cloud.bigquery.job import copy_ as job_copy
+from google.cloud.bigquery.job import extract as job_extract
+from google.cloud.bigquery.job import load as job_load
 from google.cloud.bigquery.job import query as job_query
 from google.cloud.bigquery.query import ConnectionProperty, ScalarQueryParameter
 
@@ -194,6 +197,19 @@ def test__to_query_request(job_config, expected):
     result = _job_helpers._to_query_request(job_config, query="SELECT 1")
     expected["query"] = "SELECT 1"
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("job_config", "invalid_key"),
+    (
+        pytest.param(job_copy.CopyJobConfig(), "copy", id="copy"),
+        pytest.param(job_extract.ExtractJobConfig(), "extract", id="extract"),
+        pytest.param(job_load.LoadJobConfig(), "load", id="load"),
+    ),
+)
+def test__to_query_request_raises_for_invalid_config(job_config, invalid_key):
+    with pytest.raises(ValueError, match=f"{repr(invalid_key)} in job_config"):
+        _job_helpers._to_query_request(job_config, query="SELECT 1")
 
 
 def test__to_query_job_defaults():

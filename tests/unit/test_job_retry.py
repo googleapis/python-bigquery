@@ -22,6 +22,9 @@ import google.api_core.exceptions
 import google.api_core.retry
 import freezegun
 
+from google.cloud.bigquery.client import Client
+from google.cloud.bigquery import _job_helpers
+
 from .helpers import make_connection
 
 
@@ -242,38 +245,63 @@ def test_raises_on_job_retry_on_result_with_non_retryable_jobs(client):
         job.result(job_retry=google.api_core.retry.Retry())
 
 
-@mock.patch("time.sleep")
-def test_retry_ddl_query_rate_limit_exceeded(sleep, client):
-    """
-    Specific test for retrying DDL queries with "jobRateLimitExceeded" error
-    """
-
-    err = dict(reason="jobRateLimitExceeded")
-    responses = [
-        dict(status=dict(state="DONE", errors=[err], errorResult=err)),
-        dict(status=dict(state="DONE")),  # Retry succeeds on second attempt
-        dict(rows=[{"f": [{"v": "DDL operation successful"}]}], totalRows="1"),
-    ]
-
-    def api_request(method, path, query_params=None, data=None, **kw):
-        response = responses.pop(0)
-        if data:
-            response["jobReference"] = data["jobReference"]
-        else:
-            response["jobReference"] = dict(
-                jobId=path.split("/")[-1], projectId="PROJECT"
-            )
-        return response
-
-    conn = client._connection = make_connection()
-    conn.api_request.side_effect = api_request
-
-    job = client.query(
-        "ALTER TABLE my_table ADD COLUMN new_column STRING",
-        job_retry=google.api_core.retry.Retry(),
+def test_query_and_wait_retries_job():
+    freezegun.freeze_time(auto_tick_seconds=100)
+    client = mock.create_autospec(Client)
+    client._call_api.__name__ = "_call_api"
+    client._call_api.__qualname__ = "Client._call_api"
+    client._call_api.__annotations__ = {}
+    client._call_api.__type_params__ = ()
+    client._call_api.side_effect = (
+        google.api_core.exceptions.BadRequest("jobRateLimitExceeded"),
+        google.api_core.exceptions.InternalServerError("jobRateLimitExceeded"),
+        google.api_core.exceptions.BadRequest("jobRateLimitExceeded"),
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "abc",
+                "location": "response-location",
+            },
+            "jobComplete": True,
+            "schema": {
+                "fields": [
+                    {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                    {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+                ],
+            },
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
+        },
     )
-    result = job.result()
+    rows = _job_helpers.query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=None,
+        page_size=None,
+        max_results=None,
+        retry=google.api_core.retry.Retry(
+            lambda exc: isinstance(exc, google.api_core.exceptions.BadRequest),
+            multiplier=1.0,
+        ).with_deadline(
+            200.0
+        ),  # Since auto_tick_seconds is 100, we should get at least 1 retry.
+        job_retry=google.api_core.retry.Retry(
+            lambda exc: isinstance(exc, google.api_core.exceptions.InternalServerError),
+            multiplier=1.0,
+        ).with_deadline(600.0),
+    )
+    assert len(list(rows)) == 4
 
-    assert result.total_rows == 1
-    assert not responses  # All calls made
-    assert len(sleep.mock_calls) == 1  # One retry attempt
+    # For this code path, where the query has finished immediately, we should
+    # only be calling the jobs.query API and no other request path.
+    request_path = "/projects/request-project/queries"
+    for call in client._call_api.call_args_list:
+        _, kwargs = call
+        assert kwargs["method"] == "POST"
+        assert kwargs["path"] == request_path

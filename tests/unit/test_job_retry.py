@@ -246,6 +246,10 @@ def test_raises_on_job_retry_on_result_with_non_retryable_jobs(client):
 
 
 def test_query_and_wait_retries_job():
+    """
+    Specific test for retrying DDL queries with "jobRateLimitExceeded" error:
+    https://github.com/googleapis/python-bigquery/issues/1790
+    """
     freezegun.freeze_time(auto_tick_seconds=100)
     client = mock.create_autospec(Client)
     client._call_api.__name__ = "_call_api"

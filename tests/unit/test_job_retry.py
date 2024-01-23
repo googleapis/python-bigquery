@@ -257,7 +257,14 @@ def test_query_and_wait_retries_job():
     client._call_api.__annotations__ = {}
     client._call_api.__type_params__ = ()
     client._call_api.side_effect = (
-        google.api_core.exceptions.BadRequest("jobRateLimitExceeded"),
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "abc",
+                "location": "response-location",
+            },
+            "jobComplete": False,
+        },
         google.api_core.exceptions.InternalServerError("jobRateLimitExceeded"),
         google.api_core.exceptions.BadRequest("jobRateLimitExceeded"),
         {

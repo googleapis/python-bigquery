@@ -245,12 +245,12 @@ def test_raises_on_job_retry_on_result_with_non_retryable_jobs(client):
         job.result(job_retry=google.api_core.retry.Retry())
 
 
-def test_query_and_wait_retries_job():
+def test_query_and_wait_retries_job_for_DDL_queries():
     """
     Specific test for retrying DDL queries with "jobRateLimitExceeded" error:
     https://github.com/googleapis/python-bigquery/issues/1790
     """
-    freezegun.freeze_time(auto_tick_seconds=100)
+    freezegun.freeze_time(auto_tick_seconds=50)
     client = mock.create_autospec(Client)
     client._call_api.__name__ = "_call_api"
     client._call_api.__qualname__ = "Client._call_api"
@@ -265,8 +265,12 @@ def test_query_and_wait_retries_job():
             },
             "jobComplete": False,
         },
-        google.api_core.exceptions.InternalServerError("jobRateLimitExceeded"),
-        google.api_core.exceptions.BadRequest("jobRateLimitExceeded"),
+        google.api_core.exceptions.InternalServerError(
+            "job_retry me", errors=[{"reason": "jobRateLimitExceeded"}]
+        ),
+        google.api_core.exceptions.BadRequest(
+            "retry me", errors=[{"reason": "jobRateLimitExceeded"}]
+        ),
         {
             "jobReference": {
                 "projectId": "response-project",
@@ -296,23 +300,27 @@ def test_query_and_wait_retries_job():
         job_config=None,
         page_size=None,
         max_results=None,
-        retry=google.api_core.retry.Retry(
-            lambda exc: isinstance(exc, google.api_core.exceptions.BadRequest),
-            multiplier=1.0,
-        ).with_deadline(
-            200.0
-        ),  # Since auto_tick_seconds is 100, we should get at least 1 retry.
-        job_retry=google.api_core.retry.Retry(
-            lambda exc: isinstance(exc, google.api_core.exceptions.InternalServerError),
-            multiplier=1.0,
-        ).with_deadline(600.0),
+        retry=google.api_core.retry.Retry(),
+        job_retry=google.api_core.retry.Retry(),
     )
     assert len(list(rows)) == 4
 
-    # For this code path, where the query has finished immediately, we should
-    # only be calling the jobs.query API and no other request path.
-    request_path = "/projects/request-project/queries"
-    for call in client._call_api.call_args_list:
-        _, kwargs = call
-        assert kwargs["method"] == "POST"
-        assert kwargs["path"] == request_path
+    request_path = "/projects/request-project/queries"  # Updated path
+    response_path = "/projects/response-project/jobs/abc"
+
+    calls = client._call_api.call_args_list
+    _, kwargs = calls[0]
+    assert kwargs["method"] == "POST"
+    assert kwargs["path"] == request_path
+
+    _, kwargs = calls[1]
+    assert kwargs["method"] == "GET"
+    assert kwargs["path"].startswith(response_path)
+
+    _, kwargs = calls[2]
+    assert kwargs["method"] == "POST"
+    assert kwargs["path"].startswith(response_path)
+
+    _, kwargs = calls[3]
+    assert kwargs["method"] == "POST"
+    assert kwargs["path"].startswith(request_path)

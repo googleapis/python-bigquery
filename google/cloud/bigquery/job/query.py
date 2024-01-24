@@ -1554,6 +1554,8 @@ class QueryJob(_AsyncJob):
                     )
 
             first = True
+            if self.state is None:
+                self._begin(retry=retry, timeout=timeout)
 
             def do_get_result():
                 nonlocal first
@@ -1581,13 +1583,17 @@ class QueryJob(_AsyncJob):
                     self._retry_do_query = retry_do_query
                     self._job_retry = job_retry
 
-                super(QueryJob, self).result(retry=retry, timeout=timeout)
-
                 # Since the job could already be "done" (e.g. got a finished job
                 # via client.get_job), the superclass call to done() might not
                 # set the self._query_results cache.
                 if self._query_results is None or not self._query_results.complete:
                     self._reload_query_results(retry=retry, timeout=timeout)
+
+                # jobs.getQueryResults should be called before jobs.get. The
+                # jobs.getQueryResults request will raise an exception for
+                # failed jobs. This means our job retry mechanism can start
+                # earlier without a wasted call to jobs.get.
+                super(QueryJob, self).result(retry=retry, timeout=timeout)
 
             if retry_do_query is not None and job_retry is not None:
                 do_get_result = job_retry(do_get_result)

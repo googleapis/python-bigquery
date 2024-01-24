@@ -323,4 +323,4 @@ def test_query_and_wait_retries_job_for_DDL_queries():
 
     _, kwargs = calls[3]
     assert kwargs["method"] == "POST"
-    assert kwargs["path"].startswith(request_path)
+    assert kwargs["path"] == request_path

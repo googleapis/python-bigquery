@@ -251,7 +251,7 @@ def test_query_and_wait_retries_job_for_DDL_queries():
     Specific test for retrying DDL queries with "jobRateLimitExceeded" error:
     https://github.com/googleapis/python-bigquery/issues/1790
     """
-    freezegun.freeze_time(auto_tick_seconds=50)
+    freezegun.freeze_time(auto_tick_seconds=1)
     client = mock.create_autospec(Client)
     client._call_api.__name__ = "_call_api"
     client._call_api.__qualname__ = "Client._call_api"
@@ -306,15 +306,17 @@ def test_query_and_wait_retries_job_for_DDL_queries():
     )
     assert len(list(rows)) == 4
 
-    request_path = "/projects/request-project/queries"
+    # Relevant docs for the REST API path: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
+    # and https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults
+    query_request_path = "/projects/request-project/queries"
 
     calls = client._call_api.call_args_list
     _, kwargs = calls[0]
     assert kwargs["method"] == "POST"
-    assert kwargs["path"] == request_path
+    assert kwargs["path"] == query_request_path
 
     # TODO: Add assertion statements for response paths after PR#1797 is fixed
 
     _, kwargs = calls[3]
     assert kwargs["method"] == "POST"
-    assert kwargs["path"] == request_path
+    assert kwargs["path"] == query_request_path

@@ -8986,7 +8986,7 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.NEWLINE_DELIMITED_JSON
         assert sent_config.schema is None
-        assert sent_config.autodetect
+        assert sent_config.autodetect is None
 
     def test_load_table_from_json_non_default_args(self):
         from google.cloud.bigquery import job

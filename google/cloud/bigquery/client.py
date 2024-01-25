@@ -2833,9 +2833,6 @@ class Client(ClientWithProject):
 
         new_job_config.source_format = job.SourceFormat.NEWLINE_DELIMITED_JSON
 
-        if new_job_config.schema is None:
-            new_job_config.autodetect = True
-
         if project is None:
             project = self.project
 

@@ -35,7 +35,7 @@ def client_query_w_positional_params() -> None:
             bigquery.ScalarQueryParameter(None, "INT64", 250),
         ]
     )
-    query_job = client.query_and_wait(
+    results = client.query_and_wait(
         query, job_config=job_config
     )  # Make an API request.
 

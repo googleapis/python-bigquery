@@ -30,6 +30,7 @@ import mock
 import requests
 import packaging
 import pytest
+import sys
 
 try:
     import importlib.metadata as metadata
@@ -45,6 +46,10 @@ try:
     import opentelemetry
 except ImportError:
     opentelemetry = None
+
+if sys.version_info >= (3, 9):
+    import asyncio
+    from unittest.mock import patch, AsyncMock
 
 if opentelemetry is not None:
     try:
@@ -9545,6 +9550,37 @@ class TestClientUpload(object):
 
         client.schema_to_json(schema_list, fake_file)
         assert file_content == json.loads(fake_file.getvalue())
+
+    if sys.version_info >= (3, 9):
+
+        @patch("bigquery_client.async_query_and_wait", new_callable=AsyncMock)
+        async def test_async_execution(self, mock_query):
+            from google.cloud.bigquery import async_query_and_wait
+
+            client = self._make_client()
+
+            table_ref = DatasetReference(self.PROJECT, self.DS_ID).table(self.TABLE_ID)
+            table = client.create_table(table_ref)
+
+            # Mock response with expected row count
+            mock_query.return_value = asyncio.Future()
+            mock_query.return_value.set_result(
+                {
+                    "jobComplete": True,
+                    "result": {"rows": 100},  # Not sure where you get row count?
+                }
+            )
+
+            # Call the function under test
+            query = "SELECT * from %s:%s" % (self.DS_ID, self.TABLE_ID)
+            future_result = async_query_and_wait(query)
+            result = await future_result
+
+            # Assertions
+            self.assertTrue(asyncio.isfuture(future_result))
+            self.assertEqual(result["rows"], 100)
+
+        # Additional test cases for different scenarios
 
 
 def test_upload_chunksize(client):

@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 from collections import abc as collections_abc
+import sys
 import copy
 import datetime
 import functools
@@ -114,6 +115,9 @@ from google.cloud.bigquery.table import Table
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
+
+if sys.version_info >= (3, 9):
+    import asyncio
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 pandas = (
@@ -4117,6 +4121,11 @@ class Client(ClientWithProject):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+
+    async def async_query_and_wait(self, query, job_config=None):
+        return await asyncio.to_thread(
+            self.query_and_wait, query, job_config=job_config
+        )
 
 
 # pylint: disable=unused-argument

@@ -101,7 +101,6 @@ def test_retry_failed_jobs(job_retry_on_query):
         job_retry = retry_badrequest
     else:
         job_retry = None
-    
 
     rows = _job_helpers.query_and_wait(
         client,
@@ -144,7 +143,7 @@ def test_disable_retry_failed_jobs(job_retry_on_query):
         },
         google.api_core.exceptions.InternalServerError(
             "job_retry me", errors=[{"reason": "rateLimitExceeded"}]
-        )
+        ),
     )
 
     rows = _job_helpers.query_and_wait(
@@ -156,7 +155,7 @@ def test_disable_retry_failed_jobs(job_retry_on_query):
         page_size=None,
         max_results=None,
         retry=None,  # Explicitly disable retry
-        job_retry=None
+        job_retry=None,
     )
 
     with pytest.raises(google.api_core.exceptions.InternalServerError):
@@ -183,15 +182,27 @@ def test_retry_failed_jobs_after_retry_failed(client):
             },
             "jobComplete": False,
         },
-        google.api_core.exceptions.InternalServerError("job_retry me", errors=[{"reason": "rateLimitExceeded"}]),
+        google.api_core.exceptions.InternalServerError(
+            "job_retry me", errors=[{"reason": "rateLimitExceeded"}]
+        ),
         # Responses for subsequent success
         {
-            "jobReference": {"jobId": "job1", "projectId": "project", "location": "location"},
+            "jobReference": {
+                "jobId": "job1",
+                "projectId": "project",
+                "location": "location",
+            },
             "jobComplete": False,
         },
-        google.api_core.exceptions.BadRequest("job_retry me", errors=[{"reason": "backendError"}]),
-        google.api_core.exceptions.InternalServerError("job_retry me", errors=[{"reason": "rateLimitExceeded"}]),
-        google.api_core.exceptions.BadRequest("job_retry me", errors=[{"reason": "backendError"}]),
+        google.api_core.exceptions.BadRequest(
+            "job_retry me", errors=[{"reason": "backendError"}]
+        ),
+        google.api_core.exceptions.InternalServerError(
+            "job_retry me", errors=[{"reason": "rateLimitExceeded"}]
+        ),
+        google.api_core.exceptions.BadRequest(
+            "job_retry me", errors=[{"reason": "backendError"}]
+        ),
         {
             "jobReference": {
                 "projectId": "response-project",

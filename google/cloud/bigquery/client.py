@@ -118,8 +118,6 @@ from google.cloud.bigquery.table import RowIterator
 
 if sys.version_info >= (3, 9):
     import asyncio
-else:
-    asyncio = None
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 pandas = (
@@ -4126,12 +4124,9 @@ class Client(ClientWithProject):
 
     async def async_query_and_wait(self, query, job_config=None):
         """Async version of query_and_wait, only available in python 3.9+"""
-        if asyncio:
-            return await asyncio.to_thread(
-                self.query_and_wait, query, job_config=job_config
-            )
-        else:
-            return "Must be using python3.9+"
+        return await asyncio.to_thread(
+            self.query_and_wait, query, job_config=job_config
+        )
 
 
 # pylint: disable=unused-argument

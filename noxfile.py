@@ -140,7 +140,7 @@ def mypy(session):
     session.run("mypy", "-p", "google", "--show-traceback")
 
 
-@nox.session(python=DEFAULT_PYTHON_VERSION)
+@nox.session(python="3.9")
 def pytype(session):
     """Run type checks with pytype."""
     # An indirect dependecy attrs==21.1.0 breaks the check, and installing a less

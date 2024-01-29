@@ -4123,6 +4123,7 @@ class Client(ClientWithProject):
         self.close()
 
     async def async_query_and_wait(self, query, job_config=None):
+        """ "Async version of query_and_wait, only available in python 3.9+"""
         return await asyncio.to_thread(
             self.query_and_wait, query, job_config=job_config
         )

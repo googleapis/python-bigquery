@@ -50,11 +50,8 @@ try:
 except ImportError:
     opentelemetry = None
 
-if sys.version_info >= (3, 8):
+if sys.version_info >= (3, 9):
     import asyncio
-    from unittest.mock import AsyncMock
-else:
-    AsyncMock = None
 
 if opentelemetry is not None:
     try:
@@ -7039,6 +7036,7 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(jobs_query_response)
 
         future_result = client.async_query_and_wait(query)
+        self.assertTrue(inspect.iscoroutine(future_result))
         rows = await future_result
 
         self.assertIsInstance(rows, google.cloud.bigquery.table.RowIterator)

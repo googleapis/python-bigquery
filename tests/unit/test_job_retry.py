@@ -236,7 +236,7 @@ def test_retry_failed_jobs_after_retry_failed(client):
         retry=DEFAULT_RETRY,
         job_retry=DEFAULT_JOB_RETRY,
     )
-    #TODO: different test to test if it retries until it times out
+    # TODO: different test to test if it retries until it times out
     with pytest.raises(google.api_core.exceptions.RetryError):
         list(rows)  # Trigger the initial retry failure
 

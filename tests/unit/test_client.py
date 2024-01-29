@@ -31,6 +31,7 @@ import requests
 import packaging
 import pytest
 import sys
+import inspect
 
 from unittest.mock import patch
 
@@ -120,6 +121,17 @@ def _make_list_partitons_meta_info(project, dataset_id, table_id, num_rows=0):
         "etag": "ETAG",
         "numRows": num_rows,
     }
+
+
+def asyncio_run(async_func):
+    def wrapper(*args, **kwargs):
+        return asyncio.run(async_func(*args, **kwargs))
+
+    wrapper.__signature__ = inspect.signature(
+        async_func
+    )  # without this, fixtures are not injected
+
+    return wrapper
 
 
 class TestClient(unittest.TestCase):
@@ -7000,6 +7012,55 @@ class TestClient(unittest.TestCase):
 
         fake_close.assert_called_once()
 
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
+    )
+    @asyncio_run
+    async def test_async_execution(self):
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        jobs_query_response = {
+            "jobComplete": True,
+            "schema": {
+                "fields": [
+                    {
+                        "name": "f0_",
+                        "type": "INTEGER",
+                        "mode": "NULLABLE",
+                    },
+                ],
+            },
+            "totalRows": "1",
+            "rows": [{"f": [{"v": "5552452"}]}],
+            "queryId": "job_abcDEF_",
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(jobs_query_response)
+
+        future_result = client.async_query_and_wait(query)
+        rows = await future_result
+
+        self.assertIsInstance(rows, google.cloud.bigquery.table.RowIterator)
+        self.assertEqual(rows.query_id, "job_abcDEF_")
+        self.assertEqual(rows.total_rows, 1)
+        # No job reference in the response should be OK for completed query.
+        self.assertIsNone(rows.job_id)
+        self.assertIsNone(rows.project)
+        self.assertIsNone(rows.location)
+
+        # Verify the request we send is to jobs.query.
+        conn.api_request.assert_called_once()
+        _, req = conn.api_request.call_args
+        self.assertEqual(req["method"], "POST")
+        self.assertEqual(req["path"], "/projects/PROJECT/queries")
+        self.assertEqual(req["timeout"], DEFAULT_TIMEOUT)
+        sent = req["data"]
+        self.assertEqual(sent["query"], query)
+        self.assertFalse(sent["useLegacySql"])
+
+    # Additional test cases for different scenarios
+
 
 class TestClientUpload(object):
     # NOTE: This is a "partner" to `TestClient` meant to test some of the
@@ -9554,39 +9615,6 @@ class TestClientUpload(object):
 
         client.schema_to_json(schema_list, fake_file)
         assert file_content == json.loads(fake_file.getvalue())
-
-    @pytest.mark.skipif(
-        sys.version_info < (3, 9), reason="requires python3.8 or higher"
-    )
-    @pytest.mark.asyncio
-    @patch("bigquery_client.async_query_and_wait", new_callable=AsyncMock)
-    async def test_async_execution(self, mock_query):
-        from google.cloud.bigquery import async_query_and_wait
-
-        client = self._make_client()
-
-        table_ref = DatasetReference(self.PROJECT, self.DS_ID).table(self.TABLE_ID)
-        table = client.create_table(table_ref)
-
-        # Mock response with expected row count
-        mock_query.return_value = asyncio.Future()
-        mock_query.return_value.set_result(
-            {
-                "jobComplete": True,
-                "result": {"rows": 100},  # Not sure where you get row count?
-            }
-        )
-
-        # Call the function under test
-        query = "SELECT * from %s:%s" % (self.DS_ID, self.TABLE_ID)
-        future_result = async_query_and_wait(query)
-        result = await future_result
-
-        # Assertions
-        self.assertTrue(asyncio.isfuture(future_result))
-        self.assertEqual(result["rows"], 100)
-
-    # Additional test cases for different scenarios
 
 
 def test_upload_chunksize(client):

@@ -33,8 +33,6 @@ import pytest
 import sys
 import inspect
 
-from unittest.mock import patch
-
 try:
     import importlib.metadata as metadata
 except ImportError:

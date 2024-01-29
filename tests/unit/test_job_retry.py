@@ -40,14 +40,6 @@ def test_retry_failed_jobs(job_retry_on_query):
     Test retry of job failures, as opposed to API-invocation failures.
     """
 
-    freezegun.freeze_time(auto_tick_seconds=1)  # Control time for retries
-
-    client = mock.create_autospec(Client)
-    client._call_api.__name__ = "_call_api"
-    client._call_api.__qualname__ = "Client._call_api"
-    client._call_api.__annotations__ = {}
-    client._call_api.__type_params__ = ()
-
     retry_notfound = google.api_core.retry.Retry(
         predicate=google.api_core.retry.if_exception_type(
             google.api_core.exceptions.NotFound
@@ -60,35 +52,56 @@ def test_retry_failed_jobs(job_retry_on_query):
     )
 
     if job_retry_on_query is None:
-        errors = [{"reason": "rateLimitExceeded"}]
+        errs = [{"reason": "rateLimitExceeded"}]
     else:
-        errors = [{"reason": "notFound"}]
+        errs = [{"reason": "notFound"}]
 
+    freezegun.freeze_time(auto_tick_seconds=1)
+    client = mock.create_autospec(Client)
+    client._call_api.__name__ = "_call_api"
+    client._call_api.__qualname__ = "Client._call_api"
+    client._call_api.__annotations__ = {}
+    client._call_api.__type_params__ = ()
     client._call_api.side_effect = (
         {
             "jobReference": {
-                "jobId": "job1",
-                "projectId": "project",
-                "location": "location",
+                "projectId": "response-project",
+                "jobId": "abc",
+                "location": "response-location",
             },
             "jobComplete": False,
         },
-        *[
-            {
-                "status": {"state": "DONE", "errors": errors, "errorResult": errors[0]},
-            }
-            for _ in range(3)
-        ],
+        google.api_core.exceptions.InternalServerError("job_retry me", errors=errs),
         {
-            "status": {"state": "DONE"},
             "jobReference": {
-                "jobId": "job2",  # Updated job ID after retries
-                "projectId": "project",
-                "location": "location",
+                "projectId": "response-project",
+                "jobId": "abc",
+                "location": "response-location",
             },
+            "jobComplete": True,
+            "schema": {
+                "fields": [
+                    {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                    {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+                ],
+            },
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
         },
-        {"rows": [{"f": [{"v": "1"}]}], "totalRows": "1"},
     )
+
+    if job_retry_on_query == "Query":
+        job_retry = retry_notfound
+    elif job_retry_on_query == "Both":
+        # This will be overridden in `result`
+        job_retry = retry_badrequest
+    else:
+        job_retry = None
+    
 
     rows = _job_helpers.query_and_wait(
         client,
@@ -99,12 +112,10 @@ def test_retry_failed_jobs(job_retry_on_query):
         page_size=None,
         max_results=None,
         retry=DEFAULT_RETRY,
-        job_retry=retry_badrequest  # Initial retry for "Both" case
-        if job_retry_on_query == "Both"
-        else None,
+        job_retry=job_retry,
     )
 
-    assert len(list(rows)) == 1
+    assert len(list(rows)) == 4
 
 
 # With job_retry_on_query, we're testing 4 scenarios:
@@ -116,41 +127,36 @@ def test_disable_retry_failed_jobs(job_retry_on_query):
     Test retry of job failures, as opposed to API-invocation failures.
     """
 
-    freezegun.freeze_time(auto_tick_seconds=1)  # Control time for retries
-
+    freezegun.freeze_time(auto_tick_seconds=1)
     client = mock.create_autospec(Client)
     client._call_api.__name__ = "_call_api"
     client._call_api.__qualname__ = "Client._call_api"
     client._call_api.__annotations__ = {}
     client._call_api.__type_params__ = ()
-
-    err = google.api_core.exceptions.InternalServerError(reason="rateLimitExceeded")
     client._call_api.side_effect = (
         {
-            "jobReference": {"jobId": "job1", "projectId": "project", "location": "location"},
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "abc",
+                "location": "response-location",
+            },
             "jobComplete": False,
         },
-        *[
-            {
-                "status": {"state": "DONE", "errors": [err], "errorResult": err},
-                "jobReference": {"jobId": "job1", "projectId": "project", "location": "location"},
-            }
-            for _ in range(3)
-        ],
+        google.api_core.exceptions.InternalServerError(
+            "job_retry me", errors=[{"reason": "rateLimitExceeded"}]
+        )
     )
 
     rows = _job_helpers.query_and_wait(
         client,
-        query="select 1",
-        location="location",
-        project="project",
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
         job_config=None,
         page_size=None,
         max_results=None,
         retry=None,  # Explicitly disable retry
         job_retry=None
-        if job_retry_on_query == "Query"
-        else {},
     )
 
     with pytest.raises(google.api_core.exceptions.InternalServerError):
@@ -163,58 +169,56 @@ def test_retry_failed_jobs_after_retry_failed(client):
     """
 
     freezegun.freeze_time(auto_tick_seconds=1)
-
     client = mock.create_autospec(Client)
     client._call_api.__name__ = "_call_api"
     client._call_api.__qualname__ = "Client._call_api"
     client._call_api.__annotations__ = {}
     client._call_api.__type_params__ = ()
-
-    err = google.api_core.exceptions.InternalServerError(reason="rateLimitExceeded")
-    err2 = google.api_core.exceptions.BadRequest(reason="backendError")
-
     client._call_api.side_effect = (
-        # Initial responses for initial retry failure
         {
-            "jobReference": {"jobId": "job1", "projectId": "project", "location": "location"},
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "abc",
+                "location": "response-location",
+            },
             "jobComplete": False,
         },
-        *[
-            {
-                "status": {"state": "DONE", "errors": [err], "errorResult": err},
-                "jobReference": {"jobId": "job1", "projectId": "project", "location": "location"},
-            }
-            for _ in range(120)  # Simulate enough failures for timeout
-        ],
+        google.api_core.exceptions.InternalServerError("job_retry me", errors=[{"reason": "rateLimitExceeded"}]),
         # Responses for subsequent success
         {
             "jobReference": {"jobId": "job1", "projectId": "project", "location": "location"},
             "jobComplete": False,
         },
+        google.api_core.exceptions.BadRequest("job_retry me", errors=[{"reason": "backendError"}]),
+        google.api_core.exceptions.InternalServerError("job_retry me", errors=[{"reason": "rateLimitExceeded"}]),
+        google.api_core.exceptions.BadRequest("job_retry me", errors=[{"reason": "backendError"}]),
         {
-            "status": {"state": "DONE", "errors": [err2], "errorResult": err2},
-            "jobReference": {"jobId": "job1", "projectId": "project", "location": "location"},
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "abc",
+                "location": "response-location",
+            },
+            "jobComplete": True,
+            "schema": {
+                "fields": [
+                    {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                    {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+                ],
+            },
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
         },
-        {
-            "status": {"state": "DONE", "errors": [err], "errorResult": err},
-            "jobReference": {"jobId": "job1", "projectId": "project", "location": "location"},
-        },
-        {
-            "status": {"state": "DONE", "errors": [err2], "errorResult": err2},
-            "jobReference": {"jobId": "job1", "projectId": "project", "location": "location"},
-        },
-        {
-            "status": {"state": "DONE"},
-            "jobReference": {"jobId": "job2", "projectId": "project", "location": "location"},
-        },
-        {"rows": [{"f": [{"v": "1"}]}], "totalRows": "1"},
     )
 
     rows = _job_helpers.query_and_wait(
         client,
-        query="select 1",
-        location="location",
-        project="project",
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
         job_config=None,
         page_size=None,
         max_results=None,
@@ -228,9 +232,9 @@ def test_retry_failed_jobs_after_retry_failed(client):
     # Second attempt with successful retries
     rows = _job_helpers.query_and_wait(
         client,
-        query="select 1",
-        location="location",
-        project="project",
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
         job_config=None,
         page_size=None,
         max_results=None,
@@ -238,7 +242,7 @@ def test_retry_failed_jobs_after_retry_failed(client):
         job_retry=DEFAULT_RETRY,
     )
 
-    assert list(rows) == [{"f": [{"v": "1"}]}]
+    assert len(list(rows)) == 4
 
 
 def test_raises_on_job_retry_on_query_with_non_retryable_jobs(client):

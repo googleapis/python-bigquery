@@ -24,7 +24,7 @@ import freezegun
 
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery import _job_helpers
-from google.cloud.bigquery.retry import DEFAULT_RETRY
+from google.cloud.bigquery.retry import DEFAULT_RETRY, DEFAULT_JOB_RETRY
 
 from .helpers import make_connection
 
@@ -234,9 +234,9 @@ def test_retry_failed_jobs_after_retry_failed(client):
         page_size=None,
         max_results=None,
         retry=DEFAULT_RETRY,
-        job_retry=DEFAULT_RETRY,
+        job_retry=DEFAULT_JOB_RETRY,
     )
-
+    #TODO: different test to test if it retries until it times out
     with pytest.raises(google.api_core.exceptions.RetryError):
         list(rows)  # Trigger the initial retry failure
 
@@ -338,7 +338,7 @@ def test_query_and_wait_retries_job_for_DDL_queries():
         page_size=None,
         max_results=None,
         retry=DEFAULT_RETRY,
-        job_retry=DEFAULT_RETRY,
+        job_retry=DEFAULT_JOB_RETRY,
     )
     assert len(list(rows)) == 4
 

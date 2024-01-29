@@ -104,9 +104,9 @@ def test_retry_failed_jobs(job_retry_on_query):
 
     rows = _job_helpers.query_and_wait(
         client,
-        query="select 1",
-        location="location",
-        project="project",
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
         job_config=None,
         page_size=None,
         max_results=None,

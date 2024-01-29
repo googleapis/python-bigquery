@@ -9556,7 +9556,7 @@ class TestClientUpload(object):
         assert file_content == json.loads(fake_file.getvalue())
 
     @pytest.mark.skipif(
-        sys.version_info < (3, 8), reason="requires python3.8 or higher"
+        sys.version_info < (3, 9), reason="requires python3.8 or higher"
     )
     @pytest.mark.asyncio
     @patch("bigquery_client.async_query_and_wait", new_callable=AsyncMock)

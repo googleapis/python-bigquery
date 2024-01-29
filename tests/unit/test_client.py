@@ -32,6 +32,8 @@ import packaging
 import pytest
 import sys
 
+from unittest.mock import patch
+
 try:
     import importlib.metadata as metadata
 except ImportError:
@@ -47,9 +49,11 @@ try:
 except ImportError:
     opentelemetry = None
 
-if sys.version_info >= (3, 9):
+if sys.version_info >= (3, 8):
     import asyncio
-    from unittest.mock import patch, AsyncMock
+    from unittest.mock import AsyncMock
+else:
+    AsyncMock = None
 
 if opentelemetry is not None:
     try:
@@ -9551,36 +9555,38 @@ class TestClientUpload(object):
         client.schema_to_json(schema_list, fake_file)
         assert file_content == json.loads(fake_file.getvalue())
 
-    if sys.version_info >= (3, 9):
+    @pytest.mark.skipif(
+        sys.version_info < (3, 8), reason="requires python3.8 or higher"
+    )
+    @pytest.mark.asyncio
+    @patch("bigquery_client.async_query_and_wait", new_callable=AsyncMock)
+    async def test_async_execution(self, mock_query):
+        from google.cloud.bigquery import async_query_and_wait
 
-        @patch("bigquery_client.async_query_and_wait", new_callable=AsyncMock)
-        async def test_async_execution(self, mock_query):
-            from google.cloud.bigquery import async_query_and_wait
+        client = self._make_client()
 
-            client = self._make_client()
+        table_ref = DatasetReference(self.PROJECT, self.DS_ID).table(self.TABLE_ID)
+        table = client.create_table(table_ref)
 
-            table_ref = DatasetReference(self.PROJECT, self.DS_ID).table(self.TABLE_ID)
-            table = client.create_table(table_ref)
+        # Mock response with expected row count
+        mock_query.return_value = asyncio.Future()
+        mock_query.return_value.set_result(
+            {
+                "jobComplete": True,
+                "result": {"rows": 100},  # Not sure where you get row count?
+            }
+        )
 
-            # Mock response with expected row count
-            mock_query.return_value = asyncio.Future()
-            mock_query.return_value.set_result(
-                {
-                    "jobComplete": True,
-                    "result": {"rows": 100},  # Not sure where you get row count?
-                }
-            )
+        # Call the function under test
+        query = "SELECT * from %s:%s" % (self.DS_ID, self.TABLE_ID)
+        future_result = async_query_and_wait(query)
+        result = await future_result
 
-            # Call the function under test
-            query = "SELECT * from %s:%s" % (self.DS_ID, self.TABLE_ID)
-            future_result = async_query_and_wait(query)
-            result = await future_result
+        # Assertions
+        self.assertTrue(asyncio.isfuture(future_result))
+        self.assertEqual(result["rows"], 100)
 
-            # Assertions
-            self.assertTrue(asyncio.isfuture(future_result))
-            self.assertEqual(result["rows"], 100)
-
-        # Additional test cases for different scenarios
+    # Additional test cases for different scenarios
 
 
 def test_upload_chunksize(client):

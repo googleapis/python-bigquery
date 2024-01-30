@@ -276,6 +276,22 @@ class TestStandardSqlDataType:
         )
         assert result == expected
 
+    def test_from_api_repr_range_type():
+        pass
+
+    def test_from_api_repr_range_type_missing_element():
+        pass
+
+    def test_from_api_repr_range_type_invalid_element():
+        pass
+
+    def test_to_api_repr_range_type_element_type_missing():
+        pass
+
+    def test_to_api_repr_range_type_w_element_type():
+        pass
+
+
     def test__eq__another_type(self):
         instance = self._make_one()
 
@@ -320,6 +336,11 @@ class TestStandardSqlDataType:
                 "struct_type",
                 bq.StandardSqlStructType(fields=[bq.StandardSqlField(name="foo")]),
                 bq.StandardSqlStructType(fields=[bq.StandardSqlField(name="bar")]),
+            ),
+            (
+                "range_element_type",
+                bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.DATE),
+                bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.DATE),
             ),
         ),
     )

@@ -390,6 +390,7 @@ class Table(_TableBase):
         "view_use_legacy_sql": "view",
         "view_query": "view",
         "require_partition_filter": "requirePartitionFilter",
+        "table_constraints": "tableConstraints",
     }
 
     def __init__(self, table_ref, schema=None) -> None:
@@ -972,6 +973,16 @@ class Table(_TableBase):
         if clone_info is not None:
             clone_info = CloneDefinition(clone_info)
         return clone_info
+
+    @property
+    def table_constraints(self) -> Optional["TableConstraints"]:
+        """Tables Primary Key and Foreign Key information."""
+        table_constraints = self._properties.get(
+            self._PROPERTY_TO_API_FIELD["table_constraints"]
+        )
+        if table_constraints is not None:
+            table_constraints = TableConstraints.from_api_repr(table_constraints)
+        return table_constraints
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":
@@ -1566,6 +1577,7 @@ class RowIterator(HTTPIterator):
         job_id: Optional[str] = None,
         query_id: Optional[str] = None,
         project: Optional[str] = None,
+        num_dml_affected_rows: Optional[int] = None,
     ):
         super(RowIterator, self).__init__(
             client,
@@ -1592,6 +1604,7 @@ class RowIterator(HTTPIterator):
         self._job_id = job_id
         self._query_id = query_id
         self._project = project
+        self._num_dml_affected_rows = num_dml_affected_rows
 
     @property
     def _billing_project(self) -> Optional[str]:
@@ -1617,6 +1630,16 @@ class RowIterator(HTTPIterator):
         return self._location
 
     @property
+    def num_dml_affected_rows(self) -> Optional[int]:
+        """If this RowIterator is the result of a DML query, the number of
+        rows that were affected.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.num_dml_affected_rows
+        """
+        return self._num_dml_affected_rows
+
+    @property
     def project(self) -> Optional[str]:
         """GCP Project ID where these rows are read from."""
         return self._project
@@ -1635,7 +1658,10 @@ class RowIterator(HTTPIterator):
         This is useful to know, because we can avoid alternative download
         mechanisms.
         """
-        if self._first_page_response is None:
+        if (
+            not hasattr(self, "_first_page_response")
+            or self._first_page_response is None
+        ):
             return False
 
         total_cached_rows = len(self._first_page_response.get(self._items_key, []))
@@ -1655,7 +1681,7 @@ class RowIterator(HTTPIterator):
 
         return False
 
-    def _validate_bqstorage(self, bqstorage_client, create_bqstorage_client):
+    def _should_use_bqstorage(self, bqstorage_client, create_bqstorage_client):
         """Returns True if the BigQuery Storage API can be used.
 
         Returns:
@@ -1669,8 +1695,9 @@ class RowIterator(HTTPIterator):
         if self._table is None:
             return False
 
-        # The developer is manually paging through results if this is set.
-        if self.next_page_token is not None:
+        # The developer has already started paging through results if
+        # next_page_token is set.
+        if hasattr(self, "next_page_token") and self.next_page_token is not None:
             return False
 
         if self._is_almost_completely_cached():
@@ -1726,7 +1753,7 @@ class RowIterator(HTTPIterator):
 
     @property
     def total_rows(self):
-        """int: The total number of rows in the table."""
+        """int: The total number of rows in the table or query results."""
         return self._total_rows
 
     def _maybe_warn_max_results(
@@ -1752,7 +1779,7 @@ class RowIterator(HTTPIterator):
     def _to_page_iterable(
         self, bqstorage_download, tabledata_list_download, bqstorage_client=None
     ):
-        if not self._validate_bqstorage(bqstorage_client, False):
+        if not self._should_use_bqstorage(bqstorage_client, False):
             bqstorage_client = None
 
         result_pages = (
@@ -1882,7 +1909,7 @@ class RowIterator(HTTPIterator):
 
         self._maybe_warn_max_results(bqstorage_client)
 
-        if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
+        if not self._should_use_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
             bqstorage_client = None
 
@@ -2223,7 +2250,7 @@ class RowIterator(HTTPIterator):
 
         self._maybe_warn_max_results(bqstorage_client)
 
-        if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
+        if not self._should_use_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
             bqstorage_client = None
 
@@ -2940,6 +2967,123 @@ class TimePartitioning(object):
     def __repr__(self):
         key_vals = ["{}={}".format(key, val) for key, val in self._key()]
         return "TimePartitioning({})".format(",".join(key_vals))
+
+
+class PrimaryKey:
+    """Represents the primary key constraint on a table's columns.
+
+    Args:
+        columns: The columns that are composed of the primary key constraint.
+    """
+
+    def __init__(self, columns: List[str]):
+        self.columns = columns
+
+    def __eq__(self, other):
+        if not isinstance(other, PrimaryKey):
+            raise TypeError("The value provided is not a BigQuery PrimaryKey.")
+        return self.columns == other.columns
+
+
+class ColumnReference:
+    """The pair of the foreign key column and primary key column.
+
+    Args:
+        referencing_column: The column that composes the foreign key.
+        referenced_column: The column in the primary key that are referenced by the referencingColumn.
+    """
+
+    def __init__(self, referencing_column: str, referenced_column: str):
+        self.referencing_column = referencing_column
+        self.referenced_column = referenced_column
+
+    def __eq__(self, other):
+        if not isinstance(other, ColumnReference):
+            raise TypeError("The value provided is not a BigQuery ColumnReference.")
+        return (
+            self.referencing_column == other.referencing_column
+            and self.referenced_column == other.referenced_column
+        )
+
+
+class ForeignKey:
+    """Represents a foreign key constraint on a table's columns.
+
+    Args:
+        name: Set only if the foreign key constraint is named.
+        referenced_table: The table that holds the primary key and is referenced by this foreign key.
+        column_references: The columns that compose the foreign key.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        referenced_table: TableReference,
+        column_references: List[ColumnReference],
+    ):
+        self.name = name
+        self.referenced_table = referenced_table
+        self.column_references = column_references
+
+    def __eq__(self, other):
+        if not isinstance(other, ForeignKey):
+            raise TypeError("The value provided is not a BigQuery ForeignKey.")
+        return (
+            self.name == other.name
+            and self.referenced_table == other.referenced_table
+            and self.column_references == other.column_references
+        )
+
+    @classmethod
+    def from_api_repr(cls, api_repr: Dict[str, Any]) -> "ForeignKey":
+        """Create an instance from API representation."""
+        return cls(
+            name=api_repr["name"],
+            referenced_table=TableReference.from_api_repr(api_repr["referencedTable"]),
+            column_references=[
+                ColumnReference(
+                    column_reference_resource["referencingColumn"],
+                    column_reference_resource["referencedColumn"],
+                )
+                for column_reference_resource in api_repr["columnReferences"]
+            ],
+        )
+
+
+class TableConstraints:
+    """The TableConstraints defines the primary key and foreign key.
+
+    Args:
+        primary_key:
+            Represents a primary key constraint on a table's columns. Present only if the table
+            has a primary key. The primary key is not enforced.
+        foreign_keys:
+            Present only if the table has a foreign key. The foreign key is not enforced.
+
+    """
+
+    def __init__(
+        self,
+        primary_key: Optional[PrimaryKey],
+        foreign_keys: Optional[List[ForeignKey]],
+    ):
+        self.primary_key = primary_key
+        self.foreign_keys = foreign_keys
+
+    @classmethod
+    def from_api_repr(cls, resource: Dict[str, Any]) -> "TableConstraints":
+        """Create an instance from API representation."""
+        primary_key = None
+        if "primaryKey" in resource:
+            primary_key = PrimaryKey(resource["primaryKey"]["columns"])
+
+        foreign_keys = None
+        if "foreignKeys" in resource:
+            foreign_keys = [
+                ForeignKey.from_api_repr(foreign_key_resource)
+                for foreign_key_resource in resource["foreignKeys"]
+            ]
+        return cls(primary_key, foreign_keys)
 
 
 def _item_to_row(iterator, resource):

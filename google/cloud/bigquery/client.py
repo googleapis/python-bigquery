@@ -78,6 +78,7 @@ from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery._helpers import _verify_job_config_type
 from google.cloud.bigquery._helpers import _get_bigquery_host
 from google.cloud.bigquery._helpers import _DEFAULT_HOST
+from google.cloud.bigquery._helpers import _DEFAULT_UNIVERSE
 from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
@@ -252,6 +253,14 @@ class Client(ClientWithProject):
             if client_options.api_endpoint:
                 api_endpoint = client_options.api_endpoint
                 kw_args["api_endpoint"] = api_endpoint
+            elif (
+                hasattr(client_options, "universe_domain")
+                and client_options.universe_domain
+                and client_options.universe_domain is not _DEFAULT_UNIVERSE
+            ):
+                kw_args["api_endpoint"] = _DEFAULT_HOST.replace(
+                    _DEFAULT_UNIVERSE, client_options.universe_domain
+                )
 
         self._connection = Connection(self, **kw_args)
         self._location = location
@@ -2824,8 +2833,22 @@ class Client(ClientWithProject):
 
         new_job_config.source_format = job.SourceFormat.NEWLINE_DELIMITED_JSON
 
-        if new_job_config.schema is None:
-            new_job_config.autodetect = True
+        # In specific conditions, we check if the table alread exists, and/or
+        # set the autodetect value for the user. For exact conditions, see table
+        # https://github.com/googleapis/python-bigquery/issues/1228#issuecomment-1910946297
+        if new_job_config.schema is None and new_job_config.autodetect is None:
+            if new_job_config.write_disposition in (
+                job.WriteDisposition.WRITE_TRUNCATE,
+                job.WriteDisposition.WRITE_EMPTY,
+            ):
+                new_job_config.autodetect = True
+            else:
+                try:
+                    self.get_table(destination)
+                except core_exceptions.NotFound:
+                    new_job_config.autodetect = True
+                else:
+                    new_job_config.autodetect = False
 
         if project is None:
             project = self.project
@@ -3963,6 +3986,7 @@ class Client(ClientWithProject):
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         query_id: Optional[str] = None,
         first_page_response: Optional[Dict[str, Any]] = None,
+        num_dml_affected_rows: Optional[int] = None,
     ) -> RowIterator:
         """List the rows of a completed query.
         See
@@ -4007,6 +4031,10 @@ class Client(ClientWithProject):
                 and not guaranteed to be populated.
             first_page_response (Optional[dict]):
                 API response for the first page of results (if available).
+            num_dml_affected_rows (Optional[int]):
+                If this RowIterator is the result of a DML query, the number of
+                rows that were affected.
+
         Returns:
             google.cloud.bigquery.table.RowIterator:
                 Iterator of row data
@@ -4047,6 +4075,7 @@ class Client(ClientWithProject):
             job_id=job_id,
             query_id=query_id,
             first_page_response=first_page_response,
+            num_dml_affected_rows=num_dml_affected_rows,
         )
         return row_iterator
 

@@ -5,6 +5,89 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.17.2](https://github.com/googleapis/python-bigquery/compare/v3.17.1...v3.17.2) (2024-01-30)
+
+
+### Bug Fixes
+
+* Change load_table_from_json autodetect logic ([#1804](https://github.com/googleapis/python-bigquery/issues/1804)) ([6249032](https://github.com/googleapis/python-bigquery/commit/62490325f64e5d66303d9218992e28ac5f21cb3f))
+
+
+### Documentation
+
+* Update  to use  API ([#1781](https://github.com/googleapis/python-bigquery/issues/1781)) ([81563b0](https://github.com/googleapis/python-bigquery/commit/81563b06298fe3a64be6a89b583c3d64758ca12a))
+* Update `client_query_destination_table.py` sample to use `query_and_wait` ([#1783](https://github.com/googleapis/python-bigquery/issues/1783)) ([68ebbe1](https://github.com/googleapis/python-bigquery/commit/68ebbe12d455ce8e9b1784fb11787c2fb842ef22))
+* Update query_external_sheets_permanent_table.py to use query_and_wait API ([#1778](https://github.com/googleapis/python-bigquery/issues/1778)) ([a7be88a](https://github.com/googleapis/python-bigquery/commit/a7be88adf8a480ee61aa79789cb53df1b79bb091))
+* Update sample for query_to_arrow to use query_and_wait API ([#1776](https://github.com/googleapis/python-bigquery/issues/1776)) ([dbf10de](https://github.com/googleapis/python-bigquery/commit/dbf10dee51a7635e9b98658f205ded2de087a06f))
+* Update the query destination table legacy file to use query_and_wait API ([#1775](https://github.com/googleapis/python-bigquery/issues/1775)) ([ef89f9e](https://github.com/googleapis/python-bigquery/commit/ef89f9e58c22b3af5a7757b69daa030116012350))
+* Update to use `query_and_wait` in `client_query_w_positional_params.py` ([#1786](https://github.com/googleapis/python-bigquery/issues/1786)) ([410f71e](https://github.com/googleapis/python-bigquery/commit/410f71e6b6e755928e363ed89c1044e14b0db9cc))
+* Update to use `query_and_wait` in `samples/client_query_w_timestamp_params.py` ([#1785](https://github.com/googleapis/python-bigquery/issues/1785)) ([ba36948](https://github.com/googleapis/python-bigquery/commit/ba3694852c13c8a29fe0f9d923353e82acfd4278))
+* Update to_geodataframe to use query_and_wait functionality ([#1800](https://github.com/googleapis/python-bigquery/issues/1800)) ([1298594](https://github.com/googleapis/python-bigquery/commit/12985942942b8f205ecd261fcdf620df9a640460))
+
+## [3.17.1](https://github.com/googleapis/python-bigquery/compare/v3.17.0...v3.17.1) (2024-01-24)
+
+
+### Bug Fixes
+
+* Add pyarrow.large_strign to the _ARROW_SCALAR_IDS_TO_BQ map ([#1796](https://github.com/googleapis/python-bigquery/issues/1796)) ([b402a6d](https://github.com/googleapis/python-bigquery/commit/b402a6df92e656aee10dd2c11c48f6ed93c74fd7))
+* Retry 'job exceeded rate limits' for DDL queries ([#1794](https://github.com/googleapis/python-bigquery/issues/1794)) ([39f33b2](https://github.com/googleapis/python-bigquery/commit/39f33b210ecbe9c2fd390825d29393c2d80257f5))
+
+## [3.17.0](https://github.com/googleapis/python-bigquery/compare/v3.16.0...v3.17.0) (2024-01-24)
+
+
+### Features
+
+* Support universe resolution ([#1774](https://github.com/googleapis/python-bigquery/issues/1774)) ([0b5c1d5](https://github.com/googleapis/python-bigquery/commit/0b5c1d597cdec3a05a16fb935595f773c5840bd4))
+
+
+### Bug Fixes
+
+* `query_and_wait` now retains unknown query configuration `_properties` ([#1793](https://github.com/googleapis/python-bigquery/issues/1793)) ([4ba4342](https://github.com/googleapis/python-bigquery/commit/4ba434287a0a25f027e3b63a80f8881a9b16723e))
+* Raise `ValueError` in `query_and_wait` with wrong `job_config` type ([4ba4342](https://github.com/googleapis/python-bigquery/commit/4ba434287a0a25f027e3b63a80f8881a9b16723e))
+
+
+### Documentation
+
+* Remove unused query code sample ([#1769](https://github.com/googleapis/python-bigquery/issues/1769)) ([1f96439](https://github.com/googleapis/python-bigquery/commit/1f96439b3dbd27f11be5e2af84f290ec6094d0a4))
+* Update `snippets.py` to use `query_and_wait` ([#1773](https://github.com/googleapis/python-bigquery/issues/1773)) ([d90602d](https://github.com/googleapis/python-bigquery/commit/d90602de87e58b665cb974401a327a640805822f))
+* Update multiple samples to change query to query_and_wait ([#1784](https://github.com/googleapis/python-bigquery/issues/1784)) ([d1161dd](https://github.com/googleapis/python-bigquery/commit/d1161dddde41a7d35b30033ccbf6984a5de640bd))
+* Update the query with no cache sample to use query_and_wait API ([#1770](https://github.com/googleapis/python-bigquery/issues/1770)) ([955a4cd](https://github.com/googleapis/python-bigquery/commit/955a4cd99e21cbca1b2f9c1dc6aa3fd8070cd61f))
+* Updates `query` to `query and wait` in samples/desktopapp/user_credentials.py ([#1787](https://github.com/googleapis/python-bigquery/issues/1787)) ([89f1299](https://github.com/googleapis/python-bigquery/commit/89f1299b3164b51fb0f29bc600a34ded59c10682))
+
+## [3.16.0](https://github.com/googleapis/python-bigquery/compare/v3.15.0...v3.16.0) (2024-01-12)
+
+
+### Features
+
+* Add `table_constraints` field to Table model ([#1755](https://github.com/googleapis/python-bigquery/issues/1755)) ([a167f9a](https://github.com/googleapis/python-bigquery/commit/a167f9a95f0a8fbf0bdb4943d06f07c03768c132))
+* Support jsonExtension in LoadJobConfig ([#1751](https://github.com/googleapis/python-bigquery/issues/1751)) ([0fd7347](https://github.com/googleapis/python-bigquery/commit/0fd7347ddb4ae1993f02b3bc109f64297437b3e2))
+
+
+### Bug Fixes
+
+* Add detailed message in job error ([#1762](https://github.com/googleapis/python-bigquery/issues/1762)) ([08483fb](https://github.com/googleapis/python-bigquery/commit/08483fba675f3b87571787e1e4420134a8fc8177))
+
+## [3.15.0](https://github.com/googleapis/python-bigquery/compare/v3.14.1...v3.15.0) (2024-01-09)
+
+
+### Features
+
+* Support JSON type in `insert_rows` and as a scalar query parameter ([#1757](https://github.com/googleapis/python-bigquery/issues/1757)) ([02a7d12](https://github.com/googleapis/python-bigquery/commit/02a7d129776b7da7da844ffa9c5cdf21811cd3af))
+* Support RANGE in schema ([#1746](https://github.com/googleapis/python-bigquery/issues/1746)) ([8585747](https://github.com/googleapis/python-bigquery/commit/8585747058e6db49a8078ae44d8e10735cdc27f9))
+
+
+### Bug Fixes
+
+* Deserializing JSON subfields within structs fails ([#1742](https://github.com/googleapis/python-bigquery/issues/1742)) ([0d93073](https://github.com/googleapis/python-bigquery/commit/0d930739c78b557db6cd48b38fe16eba93719c40))
+* Due to upstream change in dataset, updates expected results ([#1761](https://github.com/googleapis/python-bigquery/issues/1761)) ([132c14b](https://github.com/googleapis/python-bigquery/commit/132c14bbddfb61ea8bc408bef5e958e21b5b819c))
+* Load_table_from_dataframe for higher scale decimal ([#1703](https://github.com/googleapis/python-bigquery/issues/1703)) ([b9c8be0](https://github.com/googleapis/python-bigquery/commit/b9c8be0982c76187444300c414e0dda8b0ad105b))
+* Updates types-protobuf version for mypy-samples nox session ([#1764](https://github.com/googleapis/python-bigquery/issues/1764)) ([c0de695](https://github.com/googleapis/python-bigquery/commit/c0de6958e5761ad6ff532dd933b0f4387e18f1b9))
+
+
+### Performance Improvements
+
+* DB-API uses more efficient `query_and_wait` when no job ID is provided ([#1747](https://github.com/googleapis/python-bigquery/issues/1747)) ([d225a94](https://github.com/googleapis/python-bigquery/commit/d225a94e718a85877c495fbd32eca607b8919ac6))
+
 ## [3.14.1](https://github.com/googleapis/python-bigquery/compare/v3.14.0...v3.14.1) (2023-12-13)
 
 

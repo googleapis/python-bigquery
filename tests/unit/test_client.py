@@ -8963,6 +8963,30 @@ class TestClientUpload(object):
             SchemaField("x", "BIGNUMERIC", "NULLABLE", None),
         )
 
+    @unittest.skipIf(pandas is None, "Requires `pandas`")
+    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
+    def test_load_table_from_dataframe_w_datatype_mismatch(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery import job
+        import re
+
+        client = self._make_client()
+        dataframe = pandas.DataFrame({"x": [1, 2, "three"]})
+        schema = [SchemaField("x", "INTEGER")]
+        job_config = job.LoadJobConfig(schema=schema)
+
+        get_table_patch = mock.patch(
+            "google.cloud.bigquery.client.Client.get_table", autospec=True
+        )
+        with get_table_patch, pytest.raises(ValueError) as e:
+            client.load_table_from_dataframe(
+                dataframe, self.TABLE_REF, location=self.LOCATION, job_config=job_config
+            )
+        assert re.match(
+            r"Could not convert '?three'? with type str: tried to convert to int\d{0,2} for column x",
+            str(e.value),
+        )
+
     # With autodetect specified, we pass the value as is. For more info, see
     # https://github.com/googleapis/python-bigquery/issues/1228#issuecomment-1910946297
     def test_load_table_from_json_basic_use(self):

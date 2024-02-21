@@ -72,7 +72,6 @@ def default(session, install_extras=True):
 
     # Install all test dependencies, then install local packages in-place.
     session.install(
-        "mock",
         "pytest",
         "google-cloud-testutils",
         "pytest-cov",
@@ -176,7 +175,7 @@ def system(session):
 
     # Install all test dependencies, then install local packages in place.
     session.install(
-        "mock", "pytest", "psutil", "google-cloud-testutils", "-c", constraints_path
+        "pytest", "psutil", "google-cloud-testutils", "-c", constraints_path
     )
     if os.environ.get("GOOGLE_API_USE_CLIENT_CERTIFICATE", "") == "true":
         # mTLS test requires pyopenssl and latest google-cloud-storage
@@ -249,7 +248,7 @@ def snippets(session):
     )
 
     # Install all test dependencies, then install local packages in place.
-    session.install("mock", "pytest", "google-cloud-testutils", "-c", constraints_path)
+    session.install("pytest", "google-cloud-testutils", "-c", constraints_path)
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
@@ -336,7 +335,6 @@ def prerelease_deps(session):
         "google-cloud-datacatalog",
         "google-cloud-storage",
         "google-cloud-testutils",
-        "mock",
         "psutil",
         "pytest",
         "pytest-cov",

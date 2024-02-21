@@ -17,8 +17,7 @@ import datetime
 import decimal
 import json
 import unittest
-
-import mock
+from unittest import mock
 
 
 class Test_not_null(unittest.TestCase):

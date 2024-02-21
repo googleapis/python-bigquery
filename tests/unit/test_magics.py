@@ -15,11 +15,11 @@
 import copy
 import re
 from concurrent import futures
+from unittest import mock
 import warnings
 
 from google.api_core import exceptions
 import google.auth.credentials
-import mock
 import pytest
 from tests.unit.helpers import make_connection
 from test_utils.imports import maybe_fail_import

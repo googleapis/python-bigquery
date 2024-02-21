@@ -17,11 +17,11 @@ import copy
 import http
 import textwrap
 import types
+from unittest import mock
 
 import freezegun
 from google.api_core import exceptions
 import google.api_core.retry
-import mock
 import requests
 
 from google.cloud.bigquery.client import _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS

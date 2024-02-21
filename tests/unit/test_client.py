@@ -24,9 +24,9 @@ import itertools
 import json
 import operator
 import unittest
+from unittest import mock
 import warnings
 
-import mock
 import requests
 import packaging
 import pytest

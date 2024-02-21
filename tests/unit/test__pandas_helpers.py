@@ -18,14 +18,13 @@ import decimal
 import functools
 import operator
 import queue
+from unittest import mock
 import warnings
 
 try:
     import importlib.metadata as metadata
 except ImportError:
     import importlib_metadata as metadata
-
-import mock
 
 try:
     import pandas

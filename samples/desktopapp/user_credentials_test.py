@@ -14,9 +14,9 @@
 
 import os
 from typing import Iterator, Union
+from unittest import mock
 
 import google.auth
-import mock
 import pytest
 
 from .user_credentials import main  # type: ignore

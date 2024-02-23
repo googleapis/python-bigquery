@@ -1145,7 +1145,7 @@ class Test_RangeQueryParameter(unittest.TestCase):
 
     def test_to_api_repr_unsupported_value_type(self):
         with self.assertRaises(ValueError):
-            self._make_one(range_element_type="STRING")
+            self._make_one(range_element_type="LONGSTRING")
 
     def test___eq__(self):
         param = self._make_one(range_element_type="DATE", start="2016-08-11", name="foo")

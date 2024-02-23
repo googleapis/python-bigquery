@@ -83,6 +83,8 @@ from google.cloud.bigquery.query import ArrayQueryParameterType
 from google.cloud.bigquery.query import ConnectionProperty
 from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.query import ScalarQueryParameterType
+from google.cloud.bigquery.query import RangeQueryParameter
+from google.cloud.bigquery.query import RangeQueryParameterType
 from google.cloud.bigquery.query import SqlParameterScalarTypes
 from google.cloud.bigquery.query import StructQueryParameter
 from google.cloud.bigquery.query import StructQueryParameterType
@@ -126,6 +128,8 @@ __all__ = [
     "ScalarQueryParameterType",
     "SqlParameterScalarTypes",
     "StructQueryParameterType",
+    "RangeQueryParameter",
+    "RangeQueryParameterType",
     # Datasets
     "Dataset",
     "DatasetReference",

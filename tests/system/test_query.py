@@ -425,13 +425,34 @@ def test_query_statistics(bigquery_client, query_api_method):
             ],
         ),
         (
-            "SELECT @date_range",
-            datetime.date(2016, 12, 5),
+            "SELECT @range_date",
+            "[2016-12-05, UNBOUNDED)",
             [
                 RangeQueryParameter(
-                    name="date_range",
+                    name="range_date",
                     range_element_type="DATE",
                     start=datetime.date(2016, 12, 5),
+                )
+            ],
+        ),
+        (
+            "SELECT @range_datetime",
+            "[2016-12-05T12:00:00.000000, UNBOUNDED)",
+            [
+                RangeQueryParameter(
+                    name="range_datetime",
+                    range_element_type="DATETIME",
+                    start=datetime.datetime(2016, 12, 5),
+                )
+            ],
+        ),
+        (
+            "SELECT @range_unbounded",
+            "[UNBOUNDED, UNBOUNDED)",
+            [
+                RangeQueryParameter(
+                    name="range_unbounded",
+                    range_element_type="DATETIME",
                 )
             ],
         ),

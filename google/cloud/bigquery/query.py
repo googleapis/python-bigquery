@@ -1048,8 +1048,9 @@ class RangeQueryParameter(_AbstractQueryParameter):
             google.cloud.bigquery.query.RangeQueryParameter: Instance
         """
         name = resource.get("name")
-        range_element_type = resource.get("parameterType", {}) \
-            .get("rangeElementType", {}).get("type")
+        range_element_type = (
+            resource.get("parameterType", {}).get("rangeElementType", {}).get("type")
+        )
         range_value = resource.get("parameterValue", {}).get("rangeValue", {})
         start = range_value.get("start", {}).get("value")
         end = range_value.get("end", {}).get("value")

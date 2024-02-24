@@ -30,10 +30,7 @@ _SCALAR_VALUE_TYPE = Optional[
     Union[str, int, float, decimal.Decimal, bool, datetime.datetime, datetime.date]
 ]
 
-# _RANGE_VALUE_TYPE = Union[datetime.datetime, datetime.date]
-
 _RANGE_ELEMENT_TYPE_STR = {"TIMESTAMP", "DATETIME", "DATE"}
-
 
 
 class ConnectionProperty:
@@ -386,7 +383,7 @@ class RangeQueryParameterType(_AbstractQueryParameterType):
     def _parse_range_element_type(self, type_):
         """Helper method that parses the input range element type, which may
         be a string, or a ScalarQueryParameterType object.
-        
+
         Returns:
             google.cloud.bigquery.query.ScalarQueryParameterType: Instance
         """
@@ -409,7 +406,7 @@ class RangeQueryParameterType(_AbstractQueryParameterType):
             raise ValueError(
                 "range_type must be a string or ScalarQueryParameter object, "
                 "of 'TIMESTAMP', 'DATE', or 'DATETIME' type."
-                )
+            )
 
     def __init__(self, type_, *, name=None, description=None):
         self.type_ = self._parse_range_element_type(type_)
@@ -445,7 +442,7 @@ class RangeQueryParameterType(_AbstractQueryParameterType):
             "type": "RANGE",
             "rangeElementType": self.type_.to_api_repr(),
         }
-    
+
     def with_name(self, new_name: Union[str, None]):
         """Return a copy of the instance with ``name`` set to ``new_name``.
 
@@ -485,9 +482,10 @@ class RangeQueryParameterType(_AbstractQueryParameterType):
         if not isinstance(other, RangeQueryParameterType):
             return NotImplemented
         return self._key() == other._key()
-    
+
     def __ne__(self, other):
         return not self == other
+
 
 class _AbstractQueryParameter(object):
     """Base class for named / positional query parameters."""
@@ -958,7 +956,7 @@ class RangeQueryParameter(_AbstractQueryParameter):
             Parameter name, used via ``@foo`` syntax.  If None, the
             parameter can only be addressed via position (``?``).
     """
-    
+
     @classmethod
     def _parse_range_element_type(self, range_element_type):
         if isinstance(range_element_type, str):
@@ -978,11 +976,11 @@ class RangeQueryParameter(_AbstractQueryParameter):
             return range_element_type
         else:
             raise ValueError(
-                    "range_element_type must be a string or "
-                    "RangeQueryParameterType object, of 'TIMESTAMP', 'DATE', "
-                    "or 'DATETIME' type. Got "
-                    f"{type(range_element_type)}:{range_element_type}"
-                )
+                "range_element_type must be a string or "
+                "RangeQueryParameterType object, of 'TIMESTAMP', 'DATE', "
+                "or 'DATETIME' type. Got "
+                f"{type(range_element_type)}:{range_element_type}"
+            )
 
     @classmethod
     def _serialize_range_element_value(self, value, type_):
@@ -1015,7 +1013,7 @@ class RangeQueryParameter(_AbstractQueryParameter):
     @classmethod
     def positional(
         cls, range_element_type, start=None, end=None
-        ) -> "RangeQueryParameter":
+    ) -> "RangeQueryParameter":
         """Factory for positional parameters.
 
         Args:
@@ -1074,14 +1072,14 @@ class RangeQueryParameter(_AbstractQueryParameter):
                 "rangeValue": {
                     "start": {"value": start},
                     "end": {"value": end},
-                    },
+                },
             },
         }
 
         # distinguish between name not provided vs. name being empty string
         if self.name is not None:
             resource["name"] = self.name
-        
+
         return resource
 
     def _key(self):

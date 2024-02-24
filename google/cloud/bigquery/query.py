@@ -994,9 +994,9 @@ class RangeQueryParameter(_AbstractQueryParameter):
                 return converter(value)  # type: ignore
             else:
                 raise ValueError(
-                    f"Cannot covert range element value {type(value)}:{value}, "
-                    "must be a datetime.datetime or datetime.date object, or "
-                    "a string."
+                    f"Cannot covert range element value from type {type_}, "
+                    "must be one of the strings 'TIMESTAMP', 'DATE' "
+                    "'DATETIME' or a RangeQueryParameterType object."
                 )
 
     def __init__(

@@ -1144,8 +1144,10 @@ class Test_RangeQueryParameter(unittest.TestCase):
         self.assertEqual(param.to_api_repr(), EXPECTED)
 
     def test_to_api_repr_unsupported_value_type(self):
-        with self.assertRaises(ValueError):
-            self._make_one(range_element_type="LONGSTRING")
+        with self.assertRaisesRegex(ValueError, "Cannot covert range element value from type"):
+            range_param = self._make_one(range_element_type="DATE", start = datetime.date.today())
+            range_param.range_element_type.type_._type = "LONG"
+            range_param.to_api_repr()
 
     def test___eq__(self):
         param = self._make_one(range_element_type="DATE", start="2016-08-11", name="foo")

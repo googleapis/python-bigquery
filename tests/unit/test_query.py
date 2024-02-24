@@ -394,6 +394,7 @@ class Test_RangeQueryParameterType(unittest.TestCase):
 
     def test_ctor_type(self):
         from google.cloud.bigquery import ScalarQueryParameterType
+
         scalar_type = ScalarQueryParameterType("DATE")
         param_type = self._make_one(scalar_type, name="foo", description="bar")
         self.assertEqual(param_type.type_._type, "DATE")
@@ -406,6 +407,7 @@ class Test_RangeQueryParameterType(unittest.TestCase):
 
     def test_ctor_unsupported_type_type(self):
         from google.cloud.bigquery import ScalarQueryParameterType
+
         scalar_type = ScalarQueryParameterType("TIME")
         with self.assertRaises(ValueError):
             self._make_one(scalar_type)
@@ -769,7 +771,9 @@ class Test_RangeQueryParameter(unittest.TestCase):
         from google.cloud.bigquery.query import RangeQueryParameterType
 
         range_element_type = RangeQueryParameterType(type_="DATE")
-        param = self._make_one(range_element_type="DATE", start="2016-08-11", name="foo")
+        param = self._make_one(
+            range_element_type="DATE", start="2016-08-11", name="foo"
+        )
         self.assertEqual(param.name, "foo")
         self.assertEqual(param.range_element_type, range_element_type)
         self.assertEqual(param.start, "2016-08-11")
@@ -885,6 +889,7 @@ class Test_RangeQueryParameter(unittest.TestCase):
 
     def test_ctor_w_unsupported_query_parameter_type_type(self):
         from google.cloud.bigquery.query import RangeQueryParameterType
+
         range_element_type = RangeQueryParameterType(type_="DATE")
         range_element_type.type_._type = "TIME"
         with self.assertRaises(ValueError):
@@ -899,7 +904,9 @@ class Test_RangeQueryParameter(unittest.TestCase):
 
         range_element_type = RangeQueryParameterType(type_="DATE")
         klass = self._get_target_class()
-        param = klass.positional(range_element_type="DATE", start="2016-08-11", end="2016-08-12")
+        param = klass.positional(
+            range_element_type="DATE", start="2016-08-11", end="2016-08-12"
+        )
         self.assertIs(param.name, None)
         self.assertEqual(param.range_element_type, range_element_type)
         self.assertEqual(param.start, "2016-08-11")
@@ -914,14 +921,11 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "DATE",
-                }
+                },
             },
             "parameterValue": {
-                "rangeValue": {
-                    "start": {"value": None},
-                    "end": {"value": "2020-12-31"}
-                }
-            }
+                "rangeValue": {"start": {"value": None}, "end": {"value": "2020-12-31"}}
+            },
         }
         klass = self._get_target_class()
         param = klass.from_api_repr(RESOURCE)
@@ -933,19 +937,17 @@ class Test_RangeQueryParameter(unittest.TestCase):
 
     def test_from_api_repr_wo_name(self):
         from google.cloud.bigquery.query import RangeQueryParameterType
+
         RESOURCE = {
             "parameterType": {
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "DATE",
-                }
+                },
             },
             "parameterValue": {
-                "rangeValue": {
-                    "start": {"value": None},
-                    "end": {"value": "2020-12-31"}
-                }
-            }
+                "rangeValue": {"start": {"value": None}, "end": {"value": "2020-12-31"}}
+            },
         }
         klass = self._get_target_class()
         param = klass.from_api_repr(RESOURCE)
@@ -964,7 +966,7 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "DATE",
-                }
+                },
             },
         }
         range_element_type = RangeQueryParameterType(type_="DATE")
@@ -982,14 +984,11 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "DATE",
-                }
+                },
             },
             "parameterValue": {
-                "rangeValue": {
-                    "start": {"value": None},
-                    "end": {"value": "2016-08-11"}
-                }
-            }
+                "rangeValue": {"start": {"value": None}, "end": {"value": "2016-08-11"}}
+            },
         }
         param = self._make_one(range_element_type="DATE", end="2016-08-11", name="foo")
         self.assertEqual(param.to_api_repr(), EXPECTED)
@@ -1000,14 +999,11 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "DATE",
-                }
+                },
             },
             "parameterValue": {
-                "rangeValue": {
-                    "start": {"value": None},
-                    "end": {"value": "2016-08-11"}
-                }
-            }
+                "rangeValue": {"start": {"value": None}, "end": {"value": "2016-08-11"}}
+            },
         }
         klass = self._get_target_class()
         param = klass.positional(range_element_type="DATE", end="2016-08-11")
@@ -1022,14 +1018,11 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "DATE",
-                }
+                },
             },
             "parameterValue": {
-                "rangeValue": {
-                    "start": {"value": None},
-                    "end": {"value": today_str}
-                }
-            }
+                "rangeValue": {"start": {"value": None}, "end": {"value": today_str}}
+            },
         }
         param = self._make_one(range_element_type="DATE", end=today, name="foo")
         self.assertEqual(param.to_api_repr(), EXPECTED)
@@ -1040,14 +1033,14 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "DATETIME",
-                }
+                },
             },
             "parameterValue": {
                 "rangeValue": {
                     "start": {"value": None},
-                    "end": {"value": "2020-01-01T12:00:00.000000"}
+                    "end": {"value": "2020-01-01T12:00:00.000000"},
                 }
-            }
+            },
         }
         klass = self._get_target_class()
         end_datetime = datetime.datetime(year=2020, month=1, day=1, hour=12)
@@ -1064,14 +1057,11 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "DATETIME",
-                }
+                },
             },
             "parameterValue": {
-                "rangeValue": {
-                    "start": {"value": None},
-                    "end": {"value": now_str}
-                }
-            }
+                "rangeValue": {"start": {"value": None}, "end": {"value": now_str}}
+            },
         }
         klass = self._get_target_class()
         param = klass.positional(range_element_type="DATETIME", end=now)
@@ -1083,14 +1073,14 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "TIMESTAMP",
-                }
+                },
             },
             "parameterValue": {
                 "rangeValue": {
                     "start": {"value": None},
-                    "end": {"value": "2020-01-01 12:00:00+00:00"}
+                    "end": {"value": "2020-01-01 12:00:00+00:00"},
                 }
-            }
+            },
         }
         klass = self._get_target_class()
         end_timestamp = datetime.datetime(year=2020, month=1, day=1, hour=12)
@@ -1108,14 +1098,11 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "TIMESTAMP",
-                }
+                },
             },
             "parameterValue": {
-                "rangeValue": {
-                    "start": {"value": None},
-                    "end": {"value": now_str}
-                }
-            }
+                "rangeValue": {"start": {"value": None}, "end": {"value": now_str}}
+            },
         }
         klass = self._get_target_class()
         param = klass.positional(range_element_type="TIMESTAMP", end=now)
@@ -1128,47 +1115,61 @@ class Test_RangeQueryParameter(unittest.TestCase):
                 "type": "RANGE",
                 "rangeElementType": {
                     "type": "DATE",
-                }
+                },
             },
             "parameterValue": {
-                "rangeValue": {
-                    "start": {"value": None},
-                    "end": {"value": None}
-                }
-            }
+                "rangeValue": {"start": {"value": None}, "end": {"value": None}}
+            },
         }
         param = self._make_one(range_element_type="DATE", name="foo")
         self.assertEqual(param.to_api_repr(), EXPECTED)
 
     def test_to_api_repr_unsupported_value_type(self):
-        with self.assertRaisesRegex(ValueError, "Cannot covert range element value from type"):
+        with self.assertRaisesRegex(
+            ValueError, "Cannot covert range element value from type"
+        ):
             range_param = self._make_one(
-                range_element_type="DATE",
-                start=datetime.date.today()
+                range_element_type="DATE", start=datetime.date.today()
             )
             range_param.range_element_type.type_._type = "LONG"
             range_param.to_api_repr()
 
     def test___eq__(self):
-        param = self._make_one(range_element_type="DATE", start="2016-08-11", name="foo")
+        param = self._make_one(
+            range_element_type="DATE", start="2016-08-11", name="foo"
+        )
         self.assertEqual(param, param)
         self.assertNotEqual(param, object())
-        alias = self._make_one(range_element_type="DATE", start="2016-08-11", name="bar")
+        alias = self._make_one(
+            range_element_type="DATE", start="2016-08-11", name="bar"
+        )
         self.assertNotEqual(param, alias)
-        wrong_type = self._make_one(range_element_type="DATETIME", start="2020-12-31 12:00:00.000000", name="foo")
+        wrong_type = self._make_one(
+            range_element_type="DATETIME",
+            start="2020-12-31 12:00:00.000000",
+            name="foo",
+        )
         self.assertNotEqual(param, wrong_type)
-        wrong_val = self._make_one(range_element_type="DATE", start="2016-08-12", name="foo")
+        wrong_val = self._make_one(
+            range_element_type="DATE", start="2016-08-12", name="foo"
+        )
         self.assertNotEqual(param, wrong_val)
 
     def test___eq___wrong_type(self):
-        param = self._make_one(range_element_type="DATE", start="2016-08-11", name="foo")
+        param = self._make_one(
+            range_element_type="DATE", start="2016-08-11", name="foo"
+        )
         other = object()
         self.assertNotEqual(param, other)
         self.assertEqual(param, mock.ANY)
 
     def test___eq___name_mismatch(self):
-        param = self._make_one(range_element_type="DATE", start="2016-08-11", name="foo")
-        other = self._make_one(range_element_type="DATE", start="2016-08-11", name="bar")
+        param = self._make_one(
+            range_element_type="DATE", start="2016-08-11", name="foo"
+        )
+        other = self._make_one(
+            range_element_type="DATE", start="2016-08-11", name="bar"
+        )
         self.assertNotEqual(param, other)
 
     def test___eq___field_type_mismatch(self):

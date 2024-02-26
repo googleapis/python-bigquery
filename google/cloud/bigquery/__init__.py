@@ -124,11 +124,11 @@ __all__ = [
     "ArrayQueryParameter",
     "ScalarQueryParameter",
     "StructQueryParameter",
+    "RangeQueryParameter",
     "ArrayQueryParameterType",
     "ScalarQueryParameterType",
     "SqlParameterScalarTypes",
     "StructQueryParameterType",
-    "RangeQueryParameter",
     "RangeQueryParameterType",
     # Datasets
     "Dataset",

@@ -132,6 +132,13 @@ BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {
     "DATETIME": {b"ARROW:extension:name": b"google:sqlType:datetime"},
 }
 
+def parse_interval_data_type(bq_field):
+    # some parsing conversion logic
+    return pyarrow.month_day_nano_interval()
+
+def interval_to_pandas_type(bq_field):
+    return pandas.ArrowDType(bq_to_arrow_data_type(bq_field))
+
 
 def bq_to_arrow_struct_data_type(field):
     arrow_fields = []
@@ -176,23 +183,26 @@ def bq_to_arrow_field(bq_field, array_type=None):
     Returns:
         None: if the Arrow type cannot be determined.
     """
-    arrow_type = bq_to_arrow_data_type(bq_field)
-    if arrow_type is not None:
-        if array_type is not None:
-            arrow_type = array_type  # For GEOGRAPHY, at least initially
-        metadata = BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA.get(
-            bq_field.field_type.upper() if bq_field.field_type else ""
-        )
-        return pyarrow.field(
-            bq_field.name,
-            arrow_type,
-            # Even if the remote schema is REQUIRED, there's a chance there's
-            # local NULL values. Arrow will gladly interpret these NULL values
-            # as non-NULL and give you an arbitrary value. See:
-            # https://github.com/googleapis/python-bigquery/issues/1692
-            nullable=True,
-            metadata=metadata,
-        )
+    if bq_field.field_type.upper() == "INTERVAL":
+        return parse_interval_data_type(bq_field)
+    else:
+        arrow_type = bq_to_arrow_data_type(bq_field)
+        if arrow_type is not None:
+            if array_type is not None:
+                arrow_type = array_type  # For GEOGRAPHY, at least initially
+            metadata = BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA.get(
+                bq_field.field_type.upper() if bq_field.field_type else ""
+            )
+            return pyarrow.field(
+                bq_field.name,
+                arrow_type,
+                # Even if the remote schema is REQUIRED, there's a chance there's
+                # local NULL values. Arrow will gladly interpret these NULL values
+                # as non-NULL and give you an arbitrary value. See:
+                # https://github.com/googleapis/python-bigquery/issues/1692
+                nullable=True,
+                metadata=metadata,
+            )
 
     warnings.warn("Unable to determine type for field '{}'.".format(bq_field.name))
     return None
@@ -671,7 +681,10 @@ def _row_iterator_page_to_arrow(page, column_names, arrow_types):
 
     arrays = []
     for column_index, arrow_type in enumerate(arrow_types):
-        arrays.append(pyarrow.array(page._columns[column_index], type=arrow_type))
+        if arrow_type.type == pyarrow.month_day_nano_interval():
+            pass
+        else:
+            arrays.append(pyarrow.array(page._columns[column_index], type=arrow_type))
 
     if isinstance(column_names, pyarrow.Schema):
         return pyarrow.RecordBatch.from_arrays(arrays, schema=column_names)

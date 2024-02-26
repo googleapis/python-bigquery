@@ -64,6 +64,7 @@ if pyarrow:
         "GEOGRAPHY": pyarrow.string,
         "INT64": pyarrow.int64,
         "INTEGER": pyarrow.int64,
+        "INTERVAL": pyarrow.month_day_nano_interval,
         "NUMERIC": pyarrow_numeric,
         "STRING": pyarrow.string,
         "TIME": pyarrow_time,
@@ -92,6 +93,7 @@ if pyarrow:
         pyarrow.binary().id: "BYTES",
         pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
         pyarrow.large_string().id: "STRING",
+        pyarrow.month_day_nano_interval().id: "INTERVAL",
         # The exact scale and precision don't matter, see below.
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
     }

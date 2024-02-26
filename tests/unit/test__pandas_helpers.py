@@ -174,6 +174,7 @@ def test_all_():
         ("TIME", "NULLABLE", pyarrow.types.is_time64),
         ("DATETIME", "NULLABLE", is_datetime),
         ("GEOGRAPHY", "NULLABLE", pyarrow.types.is_string),
+        ["INTERVAL", "NULLABLE", pyarrow.types.is_string],
         ("UNKNOWN_TYPE", "NULLABLE", is_none),
         # Use pyarrow.list_(item_type) for repeated (array) fields.
         (
@@ -301,6 +302,14 @@ def test_all_():
                 lambda type_: pyarrow.types.is_string(type_.value_type),
             ),
         ),
+        (
+            "INTERVAL",
+            "REPEATED",
+            all_(
+                pyarrow.types.is_list,
+                lambda type_: pyarrow.types.is_string(type_.value_type),
+            ),
+        ),
         ("RECORD", "REPEATED", is_none),
         ("UNKNOWN_TYPE", "REPEATED", is_none),
     ],
@@ -331,6 +340,7 @@ def test_bq_to_arrow_data_type_w_struct(module_under_test, bq_type):
         schema.SchemaField("field13", "TIME"),
         schema.SchemaField("field14", "DATETIME"),
         schema.SchemaField("field15", "GEOGRAPHY"),
+        schema.SchemaField("field16", "INTERVAL"),
     )
 
     field = schema.SchemaField("ignored_name", bq_type, mode="NULLABLE", fields=fields)
@@ -379,6 +389,7 @@ def test_bq_to_arrow_data_type_w_array_struct(module_under_test, bq_type):
         schema.SchemaField("field13", "TIME"),
         schema.SchemaField("field14", "DATETIME"),
         schema.SchemaField("field15", "GEOGRAPHY"),
+        schema.SchemaField("field16", "INTERVAL"),
     )
 
     field = schema.SchemaField("ignored_name", bq_type, mode="REPEATED", fields=fields)
@@ -504,6 +515,12 @@ def test_bq_to_arrow_data_type_w_struct_unknown_subfield(module_under_test):
                 "LINESTRING (30 10, 10 30, 40 40)",
                 "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))",
             ],
+        ),
+        (
+            "INTERVAL", 
+            [
+                pandas.Interval(left=1, right=2), None, pandas.Interval(left=3, right=4)
+            ]
         ),
     ],
 )
@@ -656,6 +673,49 @@ def test_bq_to_arrow_array_w_geography_type_wkb_data(module_under_test):
     assert array.type == pyarrow.binary()
     assert array.to_pylist() == list(series)
 
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
+def test_bq_to_arrow_array_w_interval(module_under_test):
+    """
+    Test conversion of pandas Series with interval dtype to Arrow array.
+    """
+
+    rows = [pandas.Interval(left=1, right=2), None, pandas.Interval(left=3, right=4)]
+    series = pandas.Series(rows)
+    bq_field = schema.SchemaField("field_name", "INTERVAL")
+    arrow_array = module_under_test.bq_to_arrow_array(series, bq_field)
+
+    # Assert that the Arrow array is of the appropriate type (e.g., int32 for integers)
+    assert arrow_array.type == pyarrow.int32()
+
+    # Assert that the values in the Arrow array are converted correctly
+    assert arrow_array.to_pylist() == [1, None, 3]
+
+# Test with different interval units (e.g., DAY, HOUR, etc.)
+@pytest.mark.parametrize(
+    "unit", ["DAY", "HOUR", "MINUTE", "SECOND", "MILLISECOND", "MICROSECOND", "NANOSECOND"]
+)
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
+def test_bq_to_arrow_array_w_interval_unit(module_under_test, unit):
+    """
+    Test conversion of pandas Series with interval of different units to Arrow array.
+    """
+
+    rows = [pandas.Interval(left=1, right=2, unit=unit), None]
+    series = pandas.Series(rows)
+    bq_field = schema.SchemaField("field_name", "INTERVAL")
+    arrow_array = module_under_test.bq_to_arrow_array(series, bq_field)
+
+    # Assert that the Arrow array is of the appropriate type (e.g., int64 for larger units)
+    assert arrow_array.type in [pyarrow.int32(), pyarrow.int64()]
+
+    # Assert that the values in the Arrow array are converted correctly (considering unit)
+    expected_values = [None, None]
+    if rows[0] is not None:
+        expected_values[0] = int(rows[0].seconds / getattr(pandas.Timedelta, unit).unit)
+    assert arrow_array.to_pylist() == expected_values
 
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_bq_to_arrow_schema_w_unknown_type(module_under_test):
@@ -1033,6 +1093,7 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
         schema.SchemaField("field13", "TIME", mode="REQUIRED"),
         schema.SchemaField("field14", "DATETIME", mode="REQUIRED"),
         schema.SchemaField("field15", "GEOGRAPHY", mode="REQUIRED"),
+        schema.SchemaField("field16", "INTERVAL", mode="REQUIRED"),
     )
 
     data = {
@@ -1070,6 +1131,9 @@ def test_dataframe_to_arrow_with_required_fields(module_under_test):
             None,
             "POINT(30 10)",
             "POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))",
+        ],
+        "field16": [
+
         ],
     }
     dataframe = pandas.DataFrame(data)
@@ -1384,6 +1448,22 @@ def test_dataframe_to_bq_schema_geography(module_under_test):
         schema.SchemaField("name", "STRING"),
         schema.SchemaField("geo1", "GEOGRAPHY"),
         schema.SchemaField("geo2", "GEOGRAPHY"),
+    )
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_dataframe_to_bq_schema_interval(module_under_test):
+    """
+    Test conversion of pandas DataFrame with interval column to BigQuery schema.
+    """
+
+    df = pandas.DataFrame(dict(col1=[1, 2, None]))
+    df["col2"] = pandas.to_timedelta([None, "3 days", "1 hour"], unit="D")
+    bq_schema = module_under_test.dataframe_to_bq_schema(df, [])
+
+    # Assert that the BigQuery schema includes the interval column with appropriate type
+    assert bq_schema == (
+        schema.SchemaField("col1", "INT64"),
+        schema.SchemaField("col2", "INTERVAL"),
     )
 
 

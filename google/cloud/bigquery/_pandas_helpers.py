@@ -108,6 +108,7 @@ _PANDAS_DTYPE_TO_BQ = {
     "uint16": "INTEGER",
     "uint32": "INTEGER",
     "geometry": "GEOGRAPHY",
+    "interval": "INTERVAL",
     date_dtype_name: "DATE",
     time_dtype_name: "TIME",
 }
@@ -223,6 +224,7 @@ def default_types_mapper(
     datetime_dtype: Union[Any, None] = None,
     time_dtype: Union[Any, None] = None,
     timestamp_dtype: Union[Any, None] = None,
+    month_day_nano_interval_dtype: Union[Any, None] = None,
 ):
     """Create a mapping from pyarrow types to pandas types.
 
@@ -276,6 +278,9 @@ def default_types_mapper(
 
         elif time_dtype is not None and pyarrow.types.is_time(arrow_data_type):
             return time_dtype
+        
+        elif month_day_nano_interval_dtype is not None and pyarrow.types.is_month_day_nano_interval(arrow_data_type):
+            return month_day_nano_interval_dtype
 
     return types_mapper
 

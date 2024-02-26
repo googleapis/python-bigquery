@@ -183,26 +183,24 @@ def bq_to_arrow_field(bq_field, array_type=None):
     Returns:
         None: if the Arrow type cannot be determined.
     """
-    if bq_field.field_type.upper() == "INTERVAL":
-        return parse_interval_data_type(bq_field)
-    else:
-        arrow_type = bq_to_arrow_data_type(bq_field)
-        if arrow_type is not None:
-            if array_type is not None:
-                arrow_type = array_type  # For GEOGRAPHY, at least initially
-            metadata = BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA.get(
-                bq_field.field_type.upper() if bq_field.field_type else ""
-            )
-            return pyarrow.field(
-                bq_field.name,
-                arrow_type,
-                # Even if the remote schema is REQUIRED, there's a chance there's
-                # local NULL values. Arrow will gladly interpret these NULL values
-                # as non-NULL and give you an arbitrary value. See:
-                # https://github.com/googleapis/python-bigquery/issues/1692
-                nullable=True,
-                metadata=metadata,
-            )
+
+    arrow_type = bq_to_arrow_data_type(bq_field)
+    if arrow_type is not None:
+        if array_type is not None:
+            arrow_type = array_type  # For GEOGRAPHY, at least initially
+        metadata = BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA.get(
+            bq_field.field_type.upper() if bq_field.field_type else ""
+        )
+        return pyarrow.field(
+            bq_field.name,
+            arrow_type,
+            # Even if the remote schema is REQUIRED, there's a chance there's
+            # local NULL values. Arrow will gladly interpret these NULL values
+            # as non-NULL and give you an arbitrary value. See:
+            # https://github.com/googleapis/python-bigquery/issues/1692
+            nullable=True,
+            metadata=metadata,
+        )
 
     warnings.warn("Unable to determine type for field '{}'.".format(bq_field.name))
     return None
@@ -714,6 +712,7 @@ def download_arrow_row_iterator(pages, bq_schema):
         yield _row_iterator_page_to_arrow(page, column_names, arrow_types)
 
 
+# DELETE
 def _row_iterator_page_to_dataframe(page, column_names, dtypes):
     # Iterate over the page to force the API request to get the page data.
     try:
@@ -729,6 +728,7 @@ def _row_iterator_page_to_dataframe(page, column_names, dtypes):
     return pandas.DataFrame(columns, columns=column_names)
 
 
+#DELETE after table methods refactor, want only one place to go from arrow to pandas
 def download_dataframe_row_iterator(pages, bq_schema, dtypes):
     """Use HTTP JSON RowIterator to construct a DataFrame.
 

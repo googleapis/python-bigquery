@@ -2016,8 +2016,8 @@ class RowIterator(HTTPIterator):
             selected_fields=self._selected_fields,
             max_queue_size=max_queue_size,
         )
-        tabledata_list_download = functools.partial(
-            _pandas_helpers.download_dataframe_row_iterator,
+        tabledata_list_download = functools.partial( # should call to_arrow_iterable, use shared arrow_to_dataframe conversion
+            _pandas_helpers.download_dataframe_row_iterator, 
             iter(self.pages),
             self.schema,
             dtypes,
@@ -2184,6 +2184,9 @@ class RowIterator(HTTPIterator):
 
                 .. versionadded:: 3.10.0
 
+            # add for interval. Object Dtype for date time delta (check REST API). Need custom logic below
+            # Try calling pandas on month_day_nano. Add a hook for interval dtype. So they know its a month day nano, use it the same as other extension dtypes
+
         Returns:
             pandas.DataFrame:
                 A :class:`~pandas.DataFrame` populated with row data and column
@@ -2258,7 +2261,7 @@ class RowIterator(HTTPIterator):
             progress_bar_type=progress_bar_type,
             bqstorage_client=bqstorage_client,
             create_bqstorage_client=create_bqstorage_client,
-        )
+        ) # Refactor, shared helper code -> to_dataframe_iterable. Everything after this point want shared code to to_dataframe_iterable. Put in pandas_helpers/pyarrow_helpers
 
         # Default date dtype is `db_dtypes.DateDtype()` that could cause out of bounds error,
         # when pyarrow converts date values to nanosecond precision. To avoid the error, we

@@ -1974,7 +1974,7 @@ class Client(ClientWithProject):
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob]:
         """Create a new job.
-        
+
         Args:
             job_config (dict): configuration job representation returned from the API.
             retry (Optional[google.api_core.retry.Retry]): How to retry the RPC.

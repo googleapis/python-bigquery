@@ -23,7 +23,7 @@ from .user_credentials import main  # type: ignore
 
 PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
 
-MockType = Union[mock.mock.MagicMock, mock.mock.AsyncMock]
+MockType = Union[mock.MagicMock, mock.AsyncMock]
 
 
 @pytest.fixture

@@ -79,6 +79,12 @@ class Test_should_retry(unittest.TestCase):
         exc = TooManyRequests("testing")
         self.assertTrue(self._call_fut(exc))
 
+    def test_w_unstructured_service_unavailable(self):
+        from google.api_core.exceptions import ServiceUnavailable
+
+        exc = ServiceUnavailable("testing")
+        self.assertTrue(self._call_fut(exc))
+
     def test_w_internalError(self):
         exc = mock.Mock(errors=[{"reason": "internalError"}], spec=["errors"])
         self.assertTrue(self._call_fut(exc))
@@ -119,6 +125,34 @@ def test_DEFAULT_JOB_RETRY_predicate():
 
 
 def test_DEFAULT_JOB_RETRY_deadline():
-    from google.cloud.bigquery.retry import DEFAULT_JOB_RETRY
+    from google.cloud.bigquery.retry import DEFAULT_JOB_RETRY, DEFAULT_RETRY
 
-    assert DEFAULT_JOB_RETRY._deadline == 600
+    # Make sure we can retry the job at least once.
+    assert DEFAULT_JOB_RETRY._deadline > DEFAULT_RETRY._deadline
+
+
+def test_DEFAULT_JOB_RETRY_job_rate_limit_exceeded_retry_predicate():
+    """Tests the retry predicate specifically for jobRateLimitExceeded."""
+    from google.cloud.bigquery.retry import DEFAULT_JOB_RETRY
+    from google.api_core.exceptions import ClientError
+
+    # Non-ClientError exceptions should never trigger a retry
+    assert not DEFAULT_JOB_RETRY._predicate(TypeError())
+
+    # ClientError without specific reason shouldn't trigger a retry
+    assert not DEFAULT_JOB_RETRY._predicate(ClientError("fail"))
+
+    # ClientError with generic reason "idk" shouldn't trigger a retry
+    assert not DEFAULT_JOB_RETRY._predicate(
+        ClientError("fail", errors=[dict(reason="idk")])
+    )
+
+    # ClientError with reason "jobRateLimitExceeded" should trigger a retry
+    assert DEFAULT_JOB_RETRY._predicate(
+        ClientError("fail", errors=[dict(reason="jobRateLimitExceeded")])
+    )
+
+    # Other retryable reasons should still work as expected
+    assert DEFAULT_JOB_RETRY._predicate(
+        ClientError("fail", errors=[dict(reason="backendError")])
+    )

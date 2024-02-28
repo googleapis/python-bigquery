@@ -15,146 +15,10 @@
 import base64
 import datetime
 import decimal
+import json
 import unittest
 
 import mock
-
-try:
-    from google.cloud import bigquery_storage  # type: ignore
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
-
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
-
-
-@unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")
-class TestBQStorageVersions(unittest.TestCase):
-    def tearDown(self):
-        from google.cloud.bigquery import _helpers
-
-        # Reset any cached versions since it may not match reality.
-        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
-
-    def _object_under_test(self):
-        from google.cloud.bigquery import _helpers
-
-        return _helpers.BQStorageVersions()
-
-    def _call_fut(self):
-        from google.cloud.bigquery import _helpers
-
-        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
-        return _helpers.BQ_STORAGE_VERSIONS.verify_version()
-
-    def test_raises_no_error_w_recent_bqstorage(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="2.0.0"):
-            try:
-                self._call_fut()
-            except LegacyBigQueryStorageError:  # pragma: NO COVER
-                self.fail("Legacy error raised with a non-legacy dependency version.")
-
-    def test_raises_error_w_legacy_bqstorage(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="1.9.9"):
-            with self.assertRaises(LegacyBigQueryStorageError):
-                self._call_fut()
-
-    def test_raises_error_w_unknown_bqstorage_version(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
-        with mock.patch("google.cloud.bigquery_storage", autospec=True) as fake_module:
-            del fake_module.__version__
-            error_pattern = r"version found: 0.0.0"
-            with self.assertRaisesRegex(LegacyBigQueryStorageError, error_pattern):
-                self._call_fut()
-
-    def test_installed_version_returns_cached(self):
-        versions = self._object_under_test()
-        versions._installed_version = object()
-        assert versions.installed_version is versions._installed_version
-
-    def test_installed_version_returns_parsed_version(self):
-        versions = self._object_under_test()
-
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="1.2.3"):
-            version = versions.installed_version
-
-        assert version.major == 1
-        assert version.minor == 2
-        assert version.micro == 3
-
-    def test_is_read_session_optional_true(self):
-        versions = self._object_under_test()
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="2.6.0"):
-            assert versions.is_read_session_optional
-
-    def test_is_read_session_optional_false(self):
-        versions = self._object_under_test()
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="2.5.0"):
-            assert not versions.is_read_session_optional
-
-
-@unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-class TestPyarrowVersions(unittest.TestCase):
-    def tearDown(self):
-        from google.cloud.bigquery import _helpers
-
-        # Reset any cached versions since it may not match reality.
-        _helpers.PYARROW_VERSIONS._installed_version = None
-
-    def _object_under_test(self):
-        from google.cloud.bigquery import _helpers
-
-        return _helpers.PyarrowVersions()
-
-    def _call_try_import(self, **kwargs):
-        from google.cloud.bigquery import _helpers
-
-        _helpers.PYARROW_VERSIONS._installed_version = None
-        return _helpers.PYARROW_VERSIONS.try_import(**kwargs)
-
-    def test_try_import_raises_no_error_w_recent_pyarrow(self):
-        from google.cloud.bigquery.exceptions import LegacyPyarrowError
-
-        with mock.patch("pyarrow.__version__", new="5.0.0"):
-            try:
-                pyarrow = self._call_try_import(raise_if_error=True)
-                self.assertIsNotNone(pyarrow)
-            except LegacyPyarrowError:  # pragma: NO COVER
-                self.fail("Legacy error raised with a non-legacy dependency version.")
-
-    def test_try_import_returns_none_w_legacy_pyarrow(self):
-        with mock.patch("pyarrow.__version__", new="2.0.0"):
-            pyarrow = self._call_try_import()
-            self.assertIsNone(pyarrow)
-
-    def test_try_import_raises_error_w_legacy_pyarrow(self):
-        from google.cloud.bigquery.exceptions import LegacyPyarrowError
-
-        with mock.patch("pyarrow.__version__", new="2.0.0"):
-            with self.assertRaises(LegacyPyarrowError):
-                self._call_try_import(raise_if_error=True)
-
-    def test_installed_version_returns_cached(self):
-        versions = self._object_under_test()
-        versions._installed_version = object()
-        assert versions.installed_version is versions._installed_version
-
-    def test_installed_version_returns_parsed_version(self):
-        versions = self._object_under_test()
-
-        with mock.patch("pyarrow.__version__", new="1.2.3"):
-            version = versions.installed_version
-
-        assert version.major == 1
-        assert version.minor == 2
-        assert version.micro == 3
 
 
 class Test_not_null(unittest.TestCase):
@@ -193,6 +57,35 @@ class Test_int_from_json(unittest.TestCase):
     def test_w_float_value(self):
         coerced = self._call_fut(42, object())
         self.assertEqual(coerced, 42)
+
+
+class Test_json_from_json(unittest.TestCase):
+    def _call_fut(self, value, field):
+        from google.cloud.bigquery._helpers import _json_from_json
+
+        return _json_from_json(value, field)
+
+    def test_w_none_nullable(self):
+        self.assertIsNone(self._call_fut(None, _Field("NULLABLE")))
+
+    def test_w_none_required(self):
+        with self.assertRaises(TypeError):
+            self._call_fut(None, _Field("REQUIRED"))
+
+    def test_w_json_field(self):
+        data_field = _Field("REQUIRED", "data", "JSON")
+
+        value = json.dumps(
+            {"v": {"key": "value"}},
+        )
+
+        expected_output = {"v": {"key": "value"}}
+        coerced_output = self._call_fut(value, data_field)
+        self.assertEqual(coerced_output, expected_output)
+
+    def test_w_string_value(self):
+        coerced = self._call_fut('"foo"', object())
+        self.assertEqual(coerced, "foo")
 
 
 class Test_float_from_json(unittest.TestCase):
@@ -993,6 +886,16 @@ class Test_scalar_field_to_json(unittest.TestCase):
         converted = self._call_fut(field, original)
         self.assertEqual(converted, str(original))
 
+    def test_w_scalar_none(self):
+        import google.cloud.bigquery._helpers as module_under_test
+
+        scalar_types = module_under_test._SCALAR_VALUE_TO_JSON_ROW.keys()
+        for type_ in scalar_types:
+            field = _make_field(type_)
+            original = None
+            converted = self._call_fut(field, original)
+            self.assertIsNone(converted, msg=f"{type_} did not return None")
+
 
 class Test_single_field_to_json(unittest.TestCase):
     def _call_fut(self, field, value):
@@ -1027,6 +930,12 @@ class Test_single_field_to_json(unittest.TestCase):
         original = "hello world"
         converted = self._call_fut(field, original)
         self.assertEqual(converted, original)
+
+    def test_w_scalar_json(self):
+        field = _make_field("JSON")
+        original = {"alpha": "abc", "num": [1, 2, 3]}
+        converted = self._call_fut(field, original)
+        self.assertEqual(converted, json.dumps(original))
 
 
 class Test_repeated_field_to_json(unittest.TestCase):

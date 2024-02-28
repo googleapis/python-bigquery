@@ -22,6 +22,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 from google.api_core import exceptions
 from google.api_core.future import polling as polling_future
+from google.api_core import retry as retries
 import requests
 
 from google.cloud.bigquery.dataset import Dataset
@@ -69,7 +70,6 @@ if typing.TYPE_CHECKING:  # pragma: NO COVER
     import pandas  # type: ignore
     import geopandas  # type: ignore
     import pyarrow  # type: ignore
-    from google.api_core import retry as retries
     from google.cloud import bigquery_storage
     from google.cloud.bigquery.client import Client
     from google.cloud.bigquery.table import RowIterator
@@ -196,6 +196,59 @@ class DmlStats(typing.NamedTuple):
             for api_field, default_val in zip(api_fields, cls.__new__.__defaults__)  # type: ignore
         )
         return cls(*args)
+
+
+class IndexUnusedReason(typing.NamedTuple):
+    """Reason about why no search index was used in the search query (or sub-query).
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#indexunusedreason
+    """
+
+    code: Optional[str] = None
+    """Specifies the high-level reason for the scenario when no search index was used.
+    """
+
+    message: Optional[str] = None
+    """Free form human-readable reason for the scenario when no search index was used.
+    """
+
+    baseTable: Optional[TableReference] = None
+    """Specifies the base table involved in the reason that no search index was used.
+    """
+
+    indexName: Optional[str] = None
+    """Specifies the name of the unused search index, if available."""
+
+    @classmethod
+    def from_api_repr(cls, reason):
+        code = reason.get("code")
+        message = reason.get("message")
+        baseTable = reason.get("baseTable")
+        indexName = reason.get("indexName")
+
+        return cls(code, message, baseTable, indexName)
+
+
+class SearchStats(typing.NamedTuple):
+    """Statistics related to Search Queries. Populated as part of JobStatistics2.
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#searchstatistics
+    """
+
+    mode: Optional[str] = None
+    """Indicates the type of search index usage in the entire search query."""
+
+    reason: List[IndexUnusedReason] = []
+    """Reason about why no search index was used in the search query (or sub-query)"""
+
+    @classmethod
+    def from_api_repr(cls, stats: Dict[str, Any]):
+        mode = stats.get("indexUsageMode", None)
+        reason = [
+            IndexUnusedReason.from_api_repr(r)
+            for r in stats.get("indexUnusedReasons", [])
+        ]
+        return cls(mode, reason)
 
 
 class ScriptOptions:
@@ -724,10 +777,9 @@ class QueryJobConfig(_JobConfig):
             Dict: A dictionary in the format used by the BigQuery API.
         """
         resource = copy.deepcopy(self._properties)
-
         # Query parameters have an addition property associated with them
         # to indicate if the query is using named or positional parameters.
-        query_parameters = resource["query"].get("queryParameters")
+        query_parameters = resource.get("query", {}).get("queryParameters")
         if query_parameters:
             if query_parameters[0].get("name") is None:
                 resource["query"]["parameterMode"] = "POSITIONAL"
@@ -859,6 +911,15 @@ class QueryJob(_AsyncJob):
         return self.configuration.priority
 
     @property
+    def search_stats(self) -> Optional[SearchStats]:
+        """Returns a SearchStats object."""
+
+        stats = self._job_statistics().get("searchStatistics")
+        if stats is not None:
+            return SearchStats.from_api_repr(stats)
+        return None
+
+    @property
     def query(self):
         """str: The query text used in this query job.
 
@@ -868,6 +929,15 @@ class QueryJob(_AsyncJob):
         return _helpers._get_sub_prop(
             self._properties, ["configuration", "query", "query"]
         )
+
+    @property
+    def query_id(self) -> Optional[str]:
+        """[Preview] ID of a completed query.
+
+        This ID is auto-generated and not guaranteed to be populated.
+        """
+        query_results = self._query_results
+        return query_results.query_id if query_results is not None else None
 
     @property
     def query_parameters(self):
@@ -1170,7 +1240,6 @@ class QueryJob(_AsyncJob):
         datasets_by_project_name = {}
 
         for table in self._job_statistics().get("referencedTables", ()):
-
             t_project = table["projectId"]
 
             ds_id = table["datasetId"]
@@ -1342,10 +1411,10 @@ class QueryJob(_AsyncJob):
         # Our system does not natively handle that and instead expects
         # either none or a numeric value. If passed a Python object, convert to
         # None.
-        if type(self._done_timeout) == object:  # pragma: NO COVER
+        if isinstance(self._done_timeout, object):  # pragma: NO COVER
             self._done_timeout = None
 
-        if self._done_timeout is not None:
+        if self._done_timeout is not None:  # pragma: NO COVER
             # Subtract a buffer for context switching, network latency, etc.
             api_timeout = self._done_timeout - _TIMEOUT_BUFFER_SECS
             api_timeout = max(min(api_timeout, 10), 0)
@@ -1400,14 +1469,14 @@ class QueryJob(_AsyncJob):
             except exceptions.GoogleAPIError as exc:
                 self.set_exception(exc)
 
-    def result(  # type: ignore  # (complaints about the overloaded signature)
+    def result(  # type: ignore  # (incompatible with supertype)
         self,
         page_size: Optional[int] = None,
         max_results: Optional[int] = None,
-        retry: "retries.Retry" = DEFAULT_RETRY,
+        retry: Optional[retries.Retry] = DEFAULT_RETRY,
         timeout: Optional[float] = None,
         start_index: Optional[int] = None,
-        job_retry: "retries.Retry" = DEFAULT_JOB_RETRY,
+        job_retry: Optional[retries.Retry] = DEFAULT_JOB_RETRY,
     ) -> Union["RowIterator", _EmptyRowIterator]:
         """Start the job and wait for it to complete and get the result.
 
@@ -1465,7 +1534,12 @@ class QueryJob(_AsyncJob):
                 provided and the job is not retryable.
         """
         if self.dry_run:
-            return _EmptyRowIterator()
+            return _EmptyRowIterator(
+                project=self.project,
+                location=self.location,
+                # Intentionally omit job_id and query_id since this doesn't
+                # actually correspond to a finished query job.
+            )
         try:
             retry_do_query = getattr(self, "_retry_do_query", None)
             if retry_do_query is not None:
@@ -1512,7 +1586,8 @@ class QueryJob(_AsyncJob):
                 # Since the job could already be "done" (e.g. got a finished job
                 # via client.get_job), the superclass call to done() might not
                 # set the self._query_results cache.
-                self._reload_query_results(retry=retry, timeout=timeout)
+                if self._query_results is None or not self._query_results.complete:
+                    self._reload_query_results(retry=retry, timeout=timeout)
 
             if retry_do_query is not None and job_retry is not None:
                 do_get_result = job_retry(do_get_result)
@@ -1534,7 +1609,22 @@ class QueryJob(_AsyncJob):
         # indicate success and avoid calling tabledata.list on a table which
         # can't be read (such as a view table).
         if self._query_results.total_rows is None:
-            return _EmptyRowIterator()
+            return _EmptyRowIterator(
+                location=self.location,
+                project=self.project,
+                job_id=self.job_id,
+                query_id=self.query_id,
+                num_dml_affected_rows=self._query_results.num_dml_affected_rows,
+            )
+
+        # We know that there's at least 1 row, so only treat the response from
+        # jobs.getQueryResults / jobs.query as the first page of the
+        # RowIterator response if there are any rows in it. This prevents us
+        # from stopping the iteration early because we're missing rows and
+        # there's no next page token.
+        first_page_response = self._query_results._properties
+        if "rows" not in first_page_response:
+            first_page_response = None
 
         rows = self._client._list_rows_from_query_results(
             self.job_id,
@@ -1548,6 +1638,9 @@ class QueryJob(_AsyncJob):
             start_index=start_index,
             retry=retry,
             timeout=timeout,
+            query_id=self.query_id,
+            first_page_response=first_page_response,
+            num_dml_affected_rows=self._query_results.num_dml_affected_rows,
         )
         rows._preserve_order = _contains_order_by(self.query)
         return rows
@@ -1633,7 +1726,7 @@ class QueryJob(_AsyncJob):
     def to_dataframe(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         max_results: Optional[int] = None,
@@ -1819,7 +1912,7 @@ class QueryJob(_AsyncJob):
     def to_geodataframe(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         max_results: Optional[int] = None,
@@ -2169,6 +2262,11 @@ class QueryPlanEntry(object):
             QueryPlanEntryStep.from_api_repr(step)
             for step in self._properties.get("steps", [])
         ]
+
+    @property
+    def slot_ms(self):
+        """Optional[int]: Slot-milliseconds used by the stage."""
+        return _helpers._int_or_none(self._properties.get("slotMs"))
 
 
 class TimelineEntry(object):

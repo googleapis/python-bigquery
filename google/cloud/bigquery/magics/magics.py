@@ -104,6 +104,8 @@ from google.api_core.exceptions import NotFound
 import google.auth  # type: ignore
 from google.cloud import bigquery
 import google.cloud.bigquery.dataset
+from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import exceptions
 from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.magics import line_arg_parser as lap
 
@@ -286,7 +288,7 @@ def _handle_error(error, destination_var=None):
 
     Args:
         error (Exception):
-            An exception that ocurred during the query execution.
+            An exception that occurred during the query execution.
         destination_var (Optional[str]):
             The name of the IPython session variable to store the query job.
     """
@@ -506,6 +508,15 @@ def _create_dataset_if_necessary(client, dataset_id):
         "Defaults to use tqdm_notebook. Install the ``tqdm`` package to use this feature."
     ),
 )
+@magic_arguments.argument(
+    "--location",
+    type=str,
+    default=None,
+    help=(
+        "Set the location to execute query."
+        "Defaults to location set in query setting in console."
+    ),
+)
 def _cell_magic(line, query):
     """Underlying function for bigquery cell magic
 
@@ -549,6 +560,7 @@ def _cell_magic(line, query):
             category=DeprecationWarning,
         )
     use_bqstorage_api = not args.use_rest_api
+    location = args.location
 
     params = []
     if params_option_value:
@@ -577,6 +589,7 @@ def _cell_magic(line, query):
         default_query_job_config=context.default_query_job_config,
         client_info=client_info.ClientInfo(user_agent=IPYTHON_USER_AGENT),
         client_options=bigquery_client_options,
+        location=location,
     )
     if context._connection:
         client._connection = context._connection
@@ -744,12 +757,31 @@ def _split_args_line(line):
 
 
 def _make_bqstorage_client(client, use_bqstorage_api, client_options):
+    """Creates a BigQuery Storage client.
+
+    Args:
+        client (:class:`~google.cloud.bigquery.client.Client`): BigQuery client.
+        use_bqstorage_api (bool): whether BigQuery Storage API is used or not.
+        client_options (:class:`google.api_core.client_options.ClientOptions`):
+            Custom options used with a new BigQuery Storage client instance
+            if one is created.
+
+    Raises:
+        ImportError: if google-cloud-bigquery-storage is not installed, or
+            grpcio package is not installed.
+
+
+    Returns:
+        None: if ``use_bqstorage_api == False``, or google-cloud-bigquery-storage
+            is outdated.
+        BigQuery Storage Client:
+    """
     if not use_bqstorage_api:
         return None
 
     try:
-        from google.cloud import bigquery_storage  # type: ignore # noqa: F401
-    except ImportError as err:
+        _versions_helpers.BQ_STORAGE_VERSIONS.try_import(raise_if_error=True)
+    except exceptions.BigQueryStorageNotFoundError as err:
         customized_error = ImportError(
             "The default BigQuery Storage API client cannot be used, install "
             "the missing google-cloud-bigquery-storage and pyarrow packages "
@@ -757,6 +789,8 @@ def _make_bqstorage_client(client, use_bqstorage_api, client_options):
             "the --use_rest_api magic option."
         )
         raise customized_error from err
+    except exceptions.LegacyBigQueryStorageError:
+        pass
 
     try:
         from google.api_core.gapic_v1 import client_info as gapic_client_info

@@ -14,7 +14,6 @@
 
 
 def query_no_cache() -> None:
-
     # [START bigquery_query_no_cache]
     from google.cloud import bigquery
 
@@ -27,8 +26,8 @@ def query_no_cache() -> None:
         FROM `bigquery-public-data.samples.shakespeare`
         GROUP BY corpus;
     """
-    query_job = client.query(sql, job_config=job_config)  # Make an API request.
+    results = client.query_and_wait(sql, job_config=job_config)  # Make an API request.
 
-    for row in query_job:
+    for row in results:
         print(row)
     # [END bigquery_query_no_cache]

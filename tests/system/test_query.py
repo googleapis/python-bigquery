@@ -256,6 +256,18 @@ def test_query_statistics(bigquery_client, query_api_method):
                 )
             ],
         ),
+        pytest.param(
+            "SELECT @json",
+            {"alpha": "abc", "num": [1, 2, 3]},
+            [
+                ScalarQueryParameter(
+                    name="json",
+                    type_="JSON",
+                    value={"alpha": "abc", "num": [1, 2, 3]},
+                )
+            ],
+            id="scalar-json",
+        ),
         (
             "SELECT @naive_time",
             datetime.time(12, 41, 9, 62500),
@@ -465,7 +477,7 @@ def test_query_error_w_api_method_default(bigquery_client: bigquery.Client):
     """Test that an exception is not thrown until fetching the results.
 
     For backwards compatibility, jobs.insert is the default API method. With
-    jobs.insert, a failed query job is "sucessfully" created. An exception is
+    jobs.insert, a failed query job is "successfully" created. An exception is
     thrown when fetching the results.
     """
 

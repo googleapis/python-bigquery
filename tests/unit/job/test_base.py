@@ -47,6 +47,27 @@ class Test__error_result_to_exception(unittest.TestCase):
         exception = self._call_fut(error_result)
         self.assertEqual(exception.code, http.client.INTERNAL_SERVER_ERROR)
 
+    def test_contatenate_errors(self):
+        # Added test for  b/310544564 and b/318889899.
+        # Ensures that error messages from both error_result and errors are
+        # present in the exception raised.
+
+        error_result = {
+            "reason": "invalid1",
+            "message": "error message 1",
+        }
+        errors = [
+            {"reason": "invalid2", "message": "error message 2"},
+            {"reason": "invalid3", "message": "error message 3"},
+        ]
+
+        exception = self._call_fut(error_result, errors)
+        self.assertEqual(
+            exception.message,
+            "error message 1; reason: invalid2, message: error message 2; "
+            "reason: invalid3, message: error message 3",
+        )
+
 
 class Test_JobReference(unittest.TestCase):
     JOB_ID = "job-id"
@@ -1228,3 +1249,18 @@ class Test_JobConfig(unittest.TestCase):
         job_config = self._make_one()
         job_config.labels = labels
         self.assertEqual(job_config._properties["labels"], labels)
+
+    def test_job_timeout_ms_raises_valueerror(self):
+        # Confirm that attempting to set a non-integer values will raise an Error.
+        with pytest.raises(ValueError):
+            job_config = self._make_one()
+            job_config.job_timeout_ms = "WillRaiseError"
+
+    def test_job_timeout_ms(self):
+        # Confirm that default status is None.
+        job_config = self._make_one()
+        assert job_config.job_timeout_ms is None
+
+        # Confirm that integers get converted to strings.
+        job_config.job_timeout_ms = 5000
+        assert job_config.job_timeout_ms == "5000"  # int is converted to string

@@ -14,7 +14,7 @@
 
 import typing
 
-import nested_repeated_schema
+import nested_repeated_schema  # type: ignore
 
 if typing.TYPE_CHECKING:
     import pytest
@@ -24,7 +24,6 @@ def test_create_table(
     capsys: "pytest.CaptureFixture[str]",
     random_table_id: str,
 ) -> None:
-
     nested_repeated_schema.nested_schema(random_table_id)
 
     out, _ = capsys.readouterr()

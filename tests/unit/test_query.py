@@ -1281,7 +1281,6 @@ class Test_StructQueryParameter(unittest.TestCase):
         field1 = self._make_one("test", _make_subparam("field1", "STRING", "hello"))
         got = repr(field1)
         self.assertIn("StructQueryParameter", got)
-        self.assertIn("'field1', 'STRING'", got)
         self.assertIn("'field1': 'hello'", got)
 
 
@@ -1362,19 +1361,29 @@ class Test_QueryResults(unittest.TestCase):
         self.assertEqual(query.errors, ERRORS)
 
     def test_job_id_missing(self):
-        with self.assertRaises(ValueError):
-            self._make_one({})
+        query = self._make_one({})
+        self.assertIsNone(query.job_id)
 
     def test_job_id_broken_job_reference(self):
         resource = {"jobReference": {"bogus": "BOGUS"}}
-        with self.assertRaises(ValueError):
-            self._make_one(resource)
+        query = self._make_one(resource)
+        self.assertIsNone(query.job_id)
 
     def test_job_id_present(self):
         resource = self._make_resource()
         resource["jobReference"]["jobId"] = "custom-job"
         query = self._make_one(resource)
         self.assertEqual(query.job_id, "custom-job")
+
+    def test_location_missing(self):
+        query = self._make_one({})
+        self.assertIsNone(query.location)
+
+    def test_location_present(self):
+        resource = self._make_resource()
+        resource["jobReference"]["location"] = "test-location"
+        query = self._make_one(resource)
+        self.assertEqual(query.location, "test-location")
 
     def test_page_token_missing(self):
         query = self._make_one(self._make_resource())
@@ -1385,6 +1394,16 @@ class Test_QueryResults(unittest.TestCase):
         resource["pageToken"] = "TOKEN"
         query = self._make_one(resource)
         self.assertEqual(query.page_token, "TOKEN")
+
+    def test_query_id_missing(self):
+        query = self._make_one(self._make_resource())
+        self.assertIsNone(query.query_id)
+
+    def test_query_id_present(self):
+        resource = self._make_resource()
+        resource["queryId"] = "test-query-id"
+        query = self._make_one(resource)
+        self.assertEqual(query.query_id, "test-query-id")
 
     def test_total_rows_present_integer(self):
         resource = self._make_resource()

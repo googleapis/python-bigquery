@@ -29,6 +29,7 @@ try:
 except AttributeError:
     MockType = Union[mock.MagicMock]
 
+
 @pytest.fixture
 def mock_flow() -> Iterator[MockType]:
     flow_patch = mock.patch("google_auth_oauthlib.flow.InstalledAppFlow", autospec=True)

@@ -309,7 +309,9 @@ def bq_to_arrow_array(series, bq_field):
     try:
         return pyarrow.Array.from_pandas(series, type=arrow_type)
     except Exception as e:
-        _LOGGER.error(f'Error converting Pandas column "{series.name}" to pyarrow Array')
+        _LOGGER.error(
+            f'Error converting Pandas column "{series.name}" to pyarrow Array'
+        )
         raise e
 
 

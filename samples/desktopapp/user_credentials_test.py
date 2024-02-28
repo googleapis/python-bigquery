@@ -23,8 +23,11 @@ from .user_credentials import main  # type: ignore
 
 PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
 
-MockType = Union[mock.MagicMock, mock.AsyncMock]
-
+# Python 3.7 does not have an AsyncMock attribute in unittest.mock.
+try:
+    MockType = Union[mock.MagicMock, mock.AsyncMock]
+except AttributeError:
+    MockType = Union[mock.MagicMock]
 
 @pytest.fixture
 def mock_flow() -> Iterator[MockType]:

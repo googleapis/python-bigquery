@@ -558,7 +558,7 @@ def test_bq_to_arrow_array_w_pandas_timestamp(module_under_test, bq_type, rows):
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_bq_to_arrow_array_w_arrays(module_under_test):
     rows = [[1, 2, 3], [], [4, 5, 6]]
-    series = pandas.Series(rows, dtype="object")
+    series = pandas.Series(rows, name="test_col", dtype="object")
     bq_field = schema.SchemaField("field_name", "INTEGER", mode="REPEATED")
     arrow_array = module_under_test.bq_to_arrow_array(series, bq_field)
     roundtrip = arrow_array.to_pylist()
@@ -574,7 +574,7 @@ def test_bq_to_arrow_array_w_structs(module_under_test, bq_type):
         None,
         {"int_col": 456, "string_col": "def"},
     ]
-    series = pandas.Series(rows, dtype="object")
+    series = pandas.Series(rows, name="test_col", dtype="object")
     bq_field = schema.SchemaField(
         "field_name",
         bq_type,

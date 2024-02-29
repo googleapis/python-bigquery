@@ -1126,7 +1126,7 @@ class Test_RangeQueryParameter(unittest.TestCase):
 
     def test_to_api_repr_unsupported_value_type(self):
         with self.assertRaisesRegex(
-            ValueError, "Cannot covert range element value from type"
+            ValueError, "Cannot convert range element value from type"
         ):
             range_param = self._make_one(
                 range_element_type="DATE", start=datetime.date.today()

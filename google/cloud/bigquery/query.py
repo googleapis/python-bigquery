@@ -941,8 +941,8 @@ class RangeQueryParameter(_AbstractQueryParameter):
 
     Args:
         range_element_type (Union[str, RangeQueryParameterType]):
-            The type of range elements. If given as a string, it must be one of
-            'TIMESTAMP', 'DATE', or 'DATETIME'.
+            The type of range elements. It must be one of 'TIMESTAMP',
+            'DATE', or 'DATETIME'.
 
         start (Optional[Union[ScalarQueryParameter, str]]):
             The start of the range value. Must be the same type as
@@ -992,7 +992,7 @@ class RangeQueryParameter(_AbstractQueryParameter):
                 return converter(value)  # type: ignore
             else:
                 raise ValueError(
-                    f"Cannot covert range element value from type {type_}, "
+                    f"Cannot convert range element value from type {type_}, "
                     "must be one of the strings 'TIMESTAMP', 'DATE' "
                     "'DATETIME' or a RangeQueryParameterType object."
                 )
@@ -1018,8 +1018,8 @@ class RangeQueryParameter(_AbstractQueryParameter):
 
         Args:
             range_element_type (Union[str, RangeQueryParameterType]):
-                The type of range elements. If given as a string, it must be
-                one of `'TIMESTAMP'`, `'DATE'`, or `'DATETIME'`.
+                The type of range elements. It must be one of `'TIMESTAMP'`,
+                `'DATE'`, or `'DATETIME'`.
 
             start (Optional[Union[ScalarQueryParameter, str]]):
                 The start of the range value. Must be the same type as

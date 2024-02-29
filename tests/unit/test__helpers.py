@@ -19,8 +19,14 @@ import json
 import unittest
 import os
 import mock
+import pytest
 
 
+@pytest.mark.skipif(
+    packaging.version.parse(getattr(google.api_core, "__version__", "0.0.0"))
+    < packaging.version.Version("2.15.0"),
+    reason="universe_domain not supported with google-api-core < 2.15.0",
+)
 class Test_get_client_universe(unittest.TestCase):
     def test_with_none(self):
         from google.cloud.bigquery._helpers import _get_client_universe

@@ -21,6 +21,7 @@ import os
 import mock
 import pytest
 import packaging
+import google.api_core
 
 
 @pytest.mark.skipif(

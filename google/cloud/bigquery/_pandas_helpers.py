@@ -50,6 +50,7 @@ except ImportError as exc:  # pragma: NO COVER
     date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 
 from pyarrow import ArrowTypeError
+
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 _BIGNUMERIC_SUPPORT = False

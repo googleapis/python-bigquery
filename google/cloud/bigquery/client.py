@@ -262,7 +262,7 @@ class Client(ClientWithProject):
                 if client_universe != _DEFAULT_UNIVERSE:
                     kw_args["api_endpoint"] = _DEFAULT_HOST_TEMPLATE.replace(
                         "{UNIVERSE_DOMAIN}", client_universe
-                )
+                    )
         # Ensure credentials and universe are not in conflict.
         if hasattr(self, "_credentials") and client_universe is not None:
             _validate_universe(client_universe, self._credentials)

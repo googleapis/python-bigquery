@@ -42,19 +42,20 @@ def make_client(project="PROJECT", **kw):
     credentials = mock.Mock(spec=google.auth.credentials.Credentials)
     return google.cloud.bigquery.client.Client(project, credentials, **kw)
 
+
 def make_creds(creds_universe: None):
     from google.auth import credentials
 
     class TestingCreds(credentials.Credentials):
-
         def refresh(self, request):
             raise NotImplemented
 
         @property
         def universe_domain(self):
             return creds_universe
-    
+
     return TestingCreds()
+
 
 def make_dataset_reference_string(project, ds_id):
     return f"{project}.{ds_id}"

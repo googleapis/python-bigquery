@@ -67,13 +67,15 @@ _UNIVERSE_DOMAIN_ENV = "GOOGLE_CLOUD_UNIVERSE_DOMAIN"
 """Environment variable for setting universe domain."""
 
 
-def _get_client_universe(client_options: Optional[Union[client_options_lib.ClientOptions, dict]]) -> str:
+def _get_client_universe(
+    client_options: Optional[Union[client_options_lib.ClientOptions, dict]]
+) -> str:
     """Retrieves the specified universe setting.
 
-        Args:
-            client_options: specified client options.
-        Returns:
-            str: resolved universe setting.
+    Args:
+        client_options: specified client options.
+    Returns:
+        str: resolved universe setting.
 
     """
     if isinstance(client_options, dict):
@@ -87,19 +89,19 @@ def _get_client_universe(client_options: Optional[Union[client_options_lib.Clien
         env_universe = os.getenv(_UNIVERSE_DOMAIN_ENV)
         if isinstance(env_universe, str):
             universe = env_universe
-    return universe             
+    return universe
 
 
 def _validate_universe(client_universe: str, credentials: ga_credentials.Credentials):
     """Validates that client provided universe and universe embedded in credentials match.
 
-        Args:
-            client_universe (str): The universe domain configured via the client options.
-            credentials (ga_credentials.Credentials): The credentials being used in the client.
+    Args:
+        client_universe (str): The universe domain configured via the client options.
+        credentials (ga_credentials.Credentials): The credentials being used in the client.
 
-        Raises:
-            ValueError: when client_universe does not match the universe in credentials.
-        """
+    Raises:
+        ValueError: when client_universe does not match the universe in credentials.
+    """
     if hasattr(credentials, "universe_domain"):
         cred_universe = getattr(credentials, "universe_domain")
         if isinstance(cred_universe, str):

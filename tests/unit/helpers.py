@@ -47,7 +47,7 @@ def make_creds(creds_universe: None):
     from google.auth import credentials
 
     class TestingCreds(credentials.Credentials):
-        def refresh(self, request):  # pragma: no cover
+        def refresh(self, request):  # pragma: NO COVER
             raise NotImplemented
 
         @property

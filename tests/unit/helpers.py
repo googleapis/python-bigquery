@@ -48,7 +48,7 @@ def make_creds(creds_universe: None):
 
     class TestingCreds(credentials.Credentials):
         def refresh(self, request):  # pragma: NO COVER
-            raise NotImplemented
+            raise NotImplementedError
 
         @property
         def universe_domain(self):

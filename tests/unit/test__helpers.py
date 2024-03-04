@@ -41,7 +41,13 @@ class Test_get_client_universe(unittest.TestCase):
         options = {"universe_domain": "foo.com"}
         self.assertEqual("foo.com", _get_client_universe(options))
 
-    def test_with_clientoptions(self):
+    def test_with_dict_empty(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
+
+        options = {"universe_domain": ""}
+        self.assertEqual("googleapis.com", _get_client_universe(options))
+
+    def test_with_client_options(self):
         from google.cloud.bigquery._helpers import _get_client_universe
         from google.api_core import client_options
 
@@ -53,6 +59,12 @@ class Test_get_client_universe(unittest.TestCase):
         from google.cloud.bigquery._helpers import _get_client_universe
 
         self.assertEqual("foo.com", _get_client_universe(None))
+
+    @mock.patch.dict(os.environ, {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": ""})
+    def test_with_environ_empty(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
+
+        self.assertEqual("googleapis.com", _get_client_universe(None))
 
 
 class Test_validate_universe(unittest.TestCase):

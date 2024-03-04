@@ -268,7 +268,6 @@ class Client(ClientWithProject):
             _validate_universe(client_universe, self._credentials)
 
         self._connection = Connection(self, **kw_args)
-
         self._location = location
         self._default_load_job_config = copy.deepcopy(default_load_job_config)
 

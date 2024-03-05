@@ -128,7 +128,7 @@ class TestClient(unittest.TestCase):
 
         creds = _make_credentials()
         http = object()
-        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)._client
         self.assertIsInstance(client._connection, Connection)
         self.assertIs(client._connection.credentials, creds)
         self.assertIs(client._connection.http, http)
@@ -148,7 +148,7 @@ class TestClient(unittest.TestCase):
             credentials=creds,
             _http=http,
             client_options=client_options,
-        )
+        )._client
         self.assertEqual(
             client._connection.API_BASE_URL, client._connection.DEFAULT_API_ENDPOINT
         )
@@ -177,7 +177,7 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        conn = client._connection = make_connection(jobs_query_response)
+        conn = client._client._connection = make_connection(jobs_query_response)
 
         rows = await client.query_and_wait(query)
 
@@ -190,7 +190,6 @@ class TestClient(unittest.TestCase):
         self.assertIsNone(rows.location)
 
         # Verify the request we send is to jobs.query.
-        conn.api_request = await conn.api_request
         conn.api_request.assert_called_once()
         _, req = conn.api_request.call_args
         self.assertEqual(req["method"], "POST")
@@ -223,7 +222,7 @@ class TestClient(unittest.TestCase):
                 },
             ),
         )
-        conn = client._connection = make_connection(jobs_query_response)
+        conn = client._client._connection = make_connection(jobs_query_response)
 
         future_result = client.query_and_wait(query)
         _ = await future_result
@@ -255,7 +254,7 @@ class TestClient(unittest.TestCase):
             credentials=creds,
             _http=http,
         )
-        conn = client._connection = make_connection(jobs_query_response)
+        conn = client._client._connection = make_connection(jobs_query_response)
 
         future_result = client.query_and_wait(
             query,
@@ -287,7 +286,7 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        conn = client._connection = make_connection(jobs_query_response)
+        conn = client._client._connection = make_connection(jobs_query_response)
 
         future_result = client.query_and_wait(query, location="not-the-client-location")
         _ = await future_result
@@ -312,7 +311,7 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        conn = client._connection = make_connection(jobs_query_response)
+        conn = client._client._connection = make_connection(jobs_query_response)
 
         future_result = client.query_and_wait(query, project="not-the-client-project")
         _ = await future_result

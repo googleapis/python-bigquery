@@ -129,6 +129,24 @@ class TestStandardSqlDataType:
         }
         assert result == expected
 
+    def test_to_api_repr_range_type_element_type_missing(self):
+        instance = self._make_one(bq.StandardSqlTypeNames.RANGE, range_element_type=None)
+
+        result = instance.to_api_repr()
+
+        assert result == {"typeKind": "RANGE"}
+
+    def test_to_api_repr_range_type_w_element_type(self):
+        range_element_type = self._make_one(type_kind=bq.StandardSqlTypeNames.DATE)
+        instance = self._make_one(bq.StandardSqlTypeNames.RANGE, range_element_type=range_element_type)
+
+        result = instance.to_api_repr()
+
+        assert result == {
+            "typeKind": "RANGE",
+            'rangeElementType': {'typeKind': 'DATE'},
+        }
+
     def test_from_api_repr_empty_resource(self):
         klass = self._get_target_class()
         result = klass.from_api_repr(resource={})
@@ -276,21 +294,30 @@ class TestStandardSqlDataType:
         )
         assert result == expected
 
-    def test_from_api_repr_range_type():
-        pass
+    def test_from_api_repr_range_type_full(self):
+        klass = self._get_target_class()
+        resource = {"typeKind": "RANGE", "rangeElementType": {"typeKind": "DATE"}}
 
-    def test_from_api_repr_range_type_missing_element():
-        pass
+        result = klass.from_api_repr(resource=resource)
 
-    def test_from_api_repr_range_type_invalid_element():
-        pass
+        expected = klass(
+            type_kind=bq.StandardSqlTypeNames.RANGE,
+            range_element_type=klass(type_kind=bq.StandardSqlTypeNames.DATE),
+        )
+        assert result == expected
 
-    def test_to_api_repr_range_type_element_type_missing():
-        pass
+    def test_from_api_repr_range_type_missing_element_type(self):
+        klass = self._get_target_class()
+        resource = {"typeKind": "RANGE"}
 
-    def test_to_api_repr_range_type_w_element_type():
-        pass
+        result = klass.from_api_repr(resource=resource)
 
+        expected = klass(
+            type_kind=bq.StandardSqlTypeNames.RANGE,
+            range_element_type=None,
+            struct_type=None,
+        )
+        assert result == expected
 
     def test__eq__another_type(self):
         instance = self._make_one()
@@ -340,7 +367,7 @@ class TestStandardSqlDataType:
             (
                 "range_element_type",
                 bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.DATE),
-                bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.DATE),
+                bq.StandardSqlDataType(type_kind=bq.StandardSqlTypeNames.DATETIME),
             ),
         ),
     )

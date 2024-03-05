@@ -43,6 +43,7 @@ class StandardSqlDataType:
                 ]
             }
         }
+        RANGE: {type_kind="RANGE", range_element_type="DATETIME"}
 
     Args:
         type_kind:
@@ -53,7 +54,7 @@ class StandardSqlDataType:
         struct_type:
             The fields of this struct, in order, if type_kind is STRUCT.
         range_element_type:
-            The type of the range's elements, if type_kind = "RANGE".
+            The type of the range's elements, if type_kind is RANGE.
     """
 
     def __init__(
@@ -144,7 +145,7 @@ class StandardSqlDataType:
         result._properties = range_element_info  # We do not use a copy on purpose.
         return result
 
-    @struct_type.setter
+    @range_element_type.setter
     def range_element_type(self, value: Optional["StandardSqlDataType"]):
         range_element_type = None if value is None else value.to_api_repr()
 

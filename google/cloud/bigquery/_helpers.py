@@ -82,8 +82,12 @@ def _get_client_universe(
         client_options = client_options_lib.from_dict(client_options)
     universe = _DEFAULT_UNIVERSE
     options_universe = getattr(client_options, "universe_domain", None)
-    if options_universe and isinstance(options_universe, str) and len(options_universe) > 0:
-            universe = options_universe
+    if (
+        options_universe
+        and isinstance(options_universe, str)
+        and len(options_universe) > 0
+    ):
+        universe = options_universe
     else:
         env_universe = os.getenv(_UNIVERSE_DOMAIN_ENV)
         if isinstance(env_universe, str) and len(env_universe) > 0:

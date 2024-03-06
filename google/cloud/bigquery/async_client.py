@@ -8,13 +8,11 @@ from google.cloud.bigquery.retry import (
 )
 from google.api_core import retry_async as retries
 import asyncio
-import google.auth.transport._aiohttp_requests
 
 
-class AsyncClient():  
+class AsyncClient:
     def __init__(self, *args, **kwargs):
         self._client = Client(*args, **kwargs)
-
 
     async def query_and_wait(
         self,
@@ -29,14 +27,14 @@ class AsyncClient():
         job_retry: retries.AsyncRetry = DEFAULT_ASYNC_JOB_RETRY,
         page_size: Optional[int] = None,
         max_results: Optional[int] = None,
-        ) -> RowIterator:
-
+    ) -> RowIterator:
         if project is None:
             project = self._client.project
 
         if location is None:
             location = self._client.location
 
+        # for some reason these cannot find the function call
         # if job_config is not None:
         #     self._client._verify_job_config_type(job_config, QueryJobConfig)
 
@@ -62,7 +60,7 @@ class AsyncClient():
         )
 
 
-async def async_query_and_wait(    
+async def async_query_and_wait(
     client: "Client",
     query: str,
     *,
@@ -76,23 +74,24 @@ async def async_query_and_wait(
     page_size: Optional[int] = None,
     max_results: Optional[int] = None,
 ) -> table.RowIterator:
-            
     # Some API parameters aren't supported by the jobs.query API. In these
     # cases, fallback to a jobs.insert call.
     if not _job_helpers._supported_by_jobs_query(job_config):
         return await async_wait_or_cancel(
-            asyncio.to_thread(_job_helpers.query_jobs_insert( # throw in a background thread
-                client=client,
-                query=query,
-                job_id=None,
-                job_id_prefix=None,
-                job_config=job_config,
-                location=location,
-                project=project,
-                retry=retry,
-                timeout=api_timeout,
-                job_retry=job_retry,
-            )),
+            asyncio.to_thread(
+                _job_helpers.query_jobs_insert(
+                    client=client,
+                    query=query,
+                    job_id=None,
+                    job_id_prefix=None,
+                    job_config=job_config,
+                    location=location,
+                    project=project,
+                    retry=retry,
+                    timeout=api_timeout,
+                    job_retry=job_retry,
+                )
+            ),
             api_timeout=api_timeout,
             wait_timeout=wait_timeout,
             retry=retry,
@@ -113,14 +112,12 @@ async def async_query_and_wait(
     if os.getenv("QUERY_PREVIEW_ENABLED", "").casefold() == "true":
         request_body["jobCreationMode"] = "JOB_CREATION_OPTIONAL"
 
-
     request_body["requestId"] = _job_helpers.make_job_id()
     span_attributes = {"path": path}
 
-    # For easier testing, handle the retries ourselves.
     if retry is not None:
-        response = retry(client._call_api)( # ASYNCHRONOUS HTTP CALLS aiohttp (optional of google-auth)
-            retry=None,  # We're calling the retry decorator ourselves, async_retries
+        response = client._call_api(  # ASYNCHRONOUS HTTP CALLS aiohttp (optional of google-auth), add back retry()
+            retry=None,  # We're calling the retry decorator ourselves, async_retries, need to implement after making HTTP calls async
             span_name="BigQuery.query",
             span_attributes=span_attributes,
             method="POST",
@@ -128,6 +125,7 @@ async def async_query_and_wait(
             data=request_body,
             timeout=api_timeout,
         )
+
     else:
         response = client._call_api(
             retry=None,
@@ -141,9 +139,7 @@ async def async_query_and_wait(
 
     # Even if we run with JOB_CREATION_OPTIONAL, if there are more pages
     # to fetch, there will be a job ID for jobs.getQueryResults.
-    query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(
-        await response
-    )
+    query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(response)
     page_token = query_results.page_token
     more_pages = page_token is not None
 
@@ -161,7 +157,7 @@ async def async_query_and_wait(
             max_results=max_results,
         )
 
-    result = table.RowIterator( # async of RowIterator? async version without all the pandas stuff
+    result = table.RowIterator(  # async of RowIterator? async version without all the pandas stuff
         client=client,
         api_request=functools.partial(client._call_api, retry, timeout=api_timeout),
         path=None,
@@ -177,11 +173,11 @@ async def async_query_and_wait(
         num_dml_affected_rows=query_results.num_dml_affected_rows,
     )
 
-
     if job_retry is not None:
-        return job_retry(result) # AsyncRetries, new default objects, default_job_retry_async, default_retry_async
+        return job_retry(result)
     else:
         return result
+
 
 async def async_wait_or_cancel(
     job: job.QueryJob,
@@ -192,12 +188,14 @@ async def async_wait_or_cancel(
     max_results: Optional[int],
 ) -> table.RowIterator:
     try:
-        return asyncio.to_thread(job.result( # run in a background thread
-            page_size=page_size,
-            max_results=max_results,
-            retry=retry,
-            timeout=wait_timeout,
-        ))
+        return asyncio.to_thread(
+            job.result(  # run in a background thread
+                page_size=page_size,
+                max_results=max_results,
+                retry=retry,
+                timeout=wait_timeout,
+            )
+        )
     except Exception:
         # Attempt to cancel the job since we can't return the results.
         try:

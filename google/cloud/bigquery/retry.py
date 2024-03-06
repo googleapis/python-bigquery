@@ -91,8 +91,11 @@ DEFAULT_JOB_RETRY = retry.Retry(
 The default job retry object.
 """
 
-DEFAULT_ASYNC_RETRY = retry_async.AsyncRetry(predicate=_should_retry, deadline=_DEFAULT_RETRY_DEADLINE) # deadline is deprecated
+DEFAULT_ASYNC_RETRY = retry_async.AsyncRetry(
+    predicate=_should_retry, deadline=_DEFAULT_RETRY_DEADLINE
+)  # deadline is deprecated
 
 DEFAULT_ASYNC_JOB_RETRY = retry_async.AsyncRetry(
-    predicate=_job_should_retry, deadline=_DEFAULT_JOB_DEADLINE # deadline is deprecated
+    predicate=_job_should_retry,
+    deadline=_DEFAULT_JOB_DEADLINE,  # deadline is deprecated
 )

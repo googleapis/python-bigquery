@@ -77,6 +77,17 @@ if pandas is not None:
 else:
     PANDAS_INSTALLED_VERSION = "0.0.0"
 
+from google.cloud.bigquery.retry import (
+    DEFAULT_ASYNC_JOB_RETRY,
+    DEFAULT_ASYNC_RETRY,
+    DEFAULT_TIMEOUT,
+)
+from google.api_core import retry_async as retries
+from google.cloud.bigquery import async_client
+from google.cloud.bigquery.async_client import AsyncClient
+from google.cloud.bigquery.job import query as job_query
+
+
 def asyncio_run(async_func):
     def wrapper(*args, **kwargs):
         return asyncio.run(async_func(*args, **kwargs))
@@ -92,7 +103,6 @@ def _make_credentials():
     import google.auth.credentials
 
     return mock.Mock(spec=google.auth.credentials.Credentials)
-
 
 
 class TestClient(unittest.TestCase):
@@ -123,12 +133,17 @@ class TestClient(unittest.TestCase):
             },
         }
 
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
+    )
     def test_ctor_defaults(self):
         from google.cloud.bigquery._http import Connection
 
         creds = _make_credentials()
         http = object()
-        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)._client
+        client = self._make_one(
+            project=self.PROJECT, credentials=creds, _http=http
+        )._client
         self.assertIsInstance(client._connection, Connection)
         self.assertIs(client._connection.credentials, creds)
         self.assertIs(client._connection.http, http)
@@ -137,6 +152,9 @@ class TestClient(unittest.TestCase):
             client._connection.API_BASE_URL, Connection.DEFAULT_API_ENDPOINT
         )
 
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
+    )
     def test_ctor_w_empty_client_options(self):
         from google.api_core.client_options import ClientOptions
 
@@ -154,7 +172,133 @@ class TestClient(unittest.TestCase):
         )
 
     @pytest.mark.skipif(
-    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
+    )
+    def test_ctor_w_client_options_dict(self):
+        creds = _make_credentials()
+        http = object()
+        client_options = {"api_endpoint": "https://www.foo-googleapis.com"}
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+            client_options=client_options,
+        )._client
+        self.assertEqual(
+            client._connection.API_BASE_URL, "https://www.foo-googleapis.com"
+        )
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
+    )
+    def test_ctor_w_client_options_object(self):
+        from google.api_core.client_options import ClientOptions
+
+        creds = _make_credentials()
+        http = object()
+        client_options = ClientOptions(api_endpoint="https://www.foo-googleapis.com")
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+            client_options=client_options,
+        )._client
+        self.assertEqual(
+            client._connection.API_BASE_URL, "https://www.foo-googleapis.com"
+        )
+
+    @pytest.mark.skipif(
+        packaging.version.parse(getattr(google.api_core, "__version__", "0.0.0"))
+        < packaging.version.Version("2.15.0"),
+        reason="universe_domain not supported with google-api-core < 2.15.0",
+    )
+    def test_ctor_w_client_options_universe(self):
+        creds = _make_credentials()
+        http = object()
+        client_options = {"universe_domain": "foo.com"}
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+            client_options=client_options,
+        )._client
+        self.assertEqual(client._connection.API_BASE_URL, "https://bigquery.foo.com")
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
+    )
+    def test_ctor_w_location(self):
+        from google.cloud.bigquery._http import Connection
+
+        creds = _make_credentials()
+        http = object()
+        location = "us-central"
+        client = self._make_one(
+            project=self.PROJECT, credentials=creds, _http=http, location=location
+        )._client
+        self.assertIsInstance(client._connection, Connection)
+        self.assertIs(client._connection.credentials, creds)
+        self.assertIs(client._connection.http, http)
+        self.assertEqual(client.location, location)
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
+    )
+    def test_ctor_w_query_job_config(self):
+        from google.cloud.bigquery._http import Connection
+        from google.cloud.bigquery import QueryJobConfig
+
+        creds = _make_credentials()
+        http = object()
+        location = "us-central"
+        job_config = QueryJobConfig()
+        job_config.dry_run = True
+
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+            location=location,
+            default_query_job_config=job_config,
+        )._client
+        self.assertIsInstance(client._connection, Connection)
+        self.assertIs(client._connection.credentials, creds)
+        self.assertIs(client._connection.http, http)
+        self.assertEqual(client.location, location)
+
+        self.assertIsInstance(client._default_query_job_config, QueryJobConfig)
+        self.assertTrue(client._default_query_job_config.dry_run)
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
+    )
+    def test_ctor_w_load_job_config(self):
+        from google.cloud.bigquery._http import Connection
+        from google.cloud.bigquery import LoadJobConfig
+
+        creds = _make_credentials()
+        http = object()
+        location = "us-central"
+        job_config = LoadJobConfig()
+        job_config.create_session = True
+
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+            location=location,
+            default_load_job_config=job_config,
+        )._client
+        self.assertIsInstance(client._connection, Connection)
+        self.assertIs(client._connection.credentials, creds)
+        self.assertIs(client._connection.http, http)
+        self.assertEqual(client.location, location)
+
+        self.assertIsInstance(client._default_load_job_config, LoadJobConfig)
+        self.assertTrue(client._default_load_job_config.create_session)
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
     )
     @asyncio_run
     async def test_query_and_wait_defaults(self):
@@ -200,7 +344,7 @@ class TestClient(unittest.TestCase):
         self.assertFalse(sent["useLegacySql"])
 
     @pytest.mark.skipif(
-    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
     )
     @asyncio_run
     async def test_query_and_wait_w_default_query_job_config(self):
@@ -237,7 +381,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(sent["labels"], {"default-label": "default-value"})
 
     @pytest.mark.skipif(
-    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
     )
     @asyncio_run
     async def test_query_and_wait_w_job_config(self):
@@ -275,7 +419,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(sent["labels"], {"job_config-label": "job_config-value"})
 
     @pytest.mark.skipif(
-    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
     )
     @asyncio_run
     async def test_query_and_wait_w_location(self):
@@ -300,7 +444,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(sent["location"], "not-the-client-location")
 
     @pytest.mark.skipif(
-    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+        sys.version_info < (3, 9), reason="requires python3.9 or higher"
     )
     @asyncio_run
     async def test_query_and_wait_w_project(self):
@@ -321,3 +465,6 @@ class TestClient(unittest.TestCase):
         _, req = conn.api_request.call_args
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/projects/not-the-client-project/queries")
+
+
+# Add tests for async_query_and_wait and async_wait_or_cancel

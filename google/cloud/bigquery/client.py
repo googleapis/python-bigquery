@@ -2878,33 +2878,7 @@ class Client(ClientWithProject):
 
         data_str = "\n".join(json.dumps(item, ensure_ascii=False) for item in json_rows)
         encoded_str = data_str.encode()
-        #print(encoded_str)
-        #print(len(encoded_str))
         data_file = io.BytesIO(encoded_str)
-        #print(data_file)
-        #print(data_file.getvalue())
-
-        #with open("temp.json", "w") as f:
-            #b = bytes(encoded_str)
-            #json_file = json.dump(b, f)
-        #    f.write(data_str)
-        #f.close()
-
-        if False:
-            with open("temp.json", "rb") as f:         
-                return self.load_table_from_file(
-                    f,
-                    # data_file,
-                    destination,
-                    size=len(encoded_str),
-                    num_retries=num_retries,
-                    job_id=job_id,
-                    job_id_prefix=job_id_prefix,
-                    location=location,
-                    project=project,
-                    job_config=new_job_config,
-                    timeout=timeout,
-                )
 
         return self.load_table_from_file(
             data_file,
@@ -2918,6 +2892,7 @@ class Client(ClientWithProject):
             job_config=new_job_config,
             timeout=timeout,
         )
+
     def _do_resumable_upload(
         self,
         stream: IO[bytes],

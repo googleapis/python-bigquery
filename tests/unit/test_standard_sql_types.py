@@ -130,7 +130,9 @@ class TestStandardSqlDataType:
         assert result == expected
 
     def test_to_api_repr_range_type_element_type_missing(self):
-        instance = self._make_one(bq.StandardSqlTypeNames.RANGE, range_element_type=None)
+        instance = self._make_one(
+            bq.StandardSqlTypeNames.RANGE, range_element_type=None
+        )
 
         result = instance.to_api_repr()
 
@@ -138,13 +140,15 @@ class TestStandardSqlDataType:
 
     def test_to_api_repr_range_type_w_element_type(self):
         range_element_type = self._make_one(type_kind=bq.StandardSqlTypeNames.DATE)
-        instance = self._make_one(bq.StandardSqlTypeNames.RANGE, range_element_type=range_element_type)
+        instance = self._make_one(
+            bq.StandardSqlTypeNames.RANGE, range_element_type=range_element_type
+        )
 
         result = instance.to_api_repr()
 
         assert result == {
             "typeKind": "RANGE",
-            'rangeElementType': {'typeKind': 'DATE'},
+            "rangeElementType": {"typeKind": "DATE"},
         }
 
     def test_from_api_repr_empty_resource(self):

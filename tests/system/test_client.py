@@ -2210,7 +2210,7 @@ class TestBigQuery(unittest.TestCase):
                         range_element_type=bigquery.StandardSqlDataType(
                             type_kind=bigquery.StandardSqlTypeNames.DATE
                         ),
-                    )
+                    ),
                 )
             ],
             return_type=bigquery.StandardSqlDataType(
@@ -2218,8 +2218,10 @@ class TestBigQuery(unittest.TestCase):
             ),
         )
 
-        query_string = "SELECT `{}`(RANGE<DATE> '[2016-08-12, UNBOUNDED)') as range_start;".format(
-            str(routine.reference)
+        query_string = (
+            "SELECT `{}`(RANGE<DATE> '[2016-08-12, UNBOUNDED)') as range_start;".format(
+                str(routine.reference)
+            )
         )
 
         routine = helpers.retry_403(Config.CLIENT.create_routine)(routine)

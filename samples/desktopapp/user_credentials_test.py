@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import sys
 from typing import Iterator, Union
 from unittest import mock
 
@@ -23,10 +24,12 @@ from .user_credentials import main  # type: ignore
 
 PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
 
-# Python 3.7 does not have an AsyncMock attribute in unittest.mock.
-try:
+
+if sys.version_info >= (3, 8):
+    # Python 3.8+ has an AsyncMock attribute in unittest.mock, but 3.7 does not
     MockType = Union[mock.MagicMock, mock.AsyncMock]
-except AttributeError:
+else:
+    # Other definitions and imports
     MockType = Union[mock.MagicMock]
 
 

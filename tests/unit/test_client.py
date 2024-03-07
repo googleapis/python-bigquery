@@ -23,6 +23,7 @@ import io
 import itertools
 import json
 import operator
+import os
 import unittest
 from unittest import mock
 import warnings

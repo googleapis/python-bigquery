@@ -293,7 +293,7 @@ class SqlTypeNames(str, enum.Enum):
     TIME = "TIME"
     DATETIME = "DATETIME"
     INTERVAL = "INTERVAL"  # NOTE: not available in legacy types
-    RANGE = "RANGE"
+    RANGE = "RANGE"  # NOTE: not available in legacy types
 
 
 class WriteDisposition(object):

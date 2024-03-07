@@ -115,7 +115,6 @@ class Test_validate_universe(unittest.TestCase):
             _validate_universe("googleapis.com", creds)
 
 
-
 class Test_not_null(unittest.TestCase):
     def _call_fut(self, value, field):
         from google.cloud.bigquery._helpers import _not_null

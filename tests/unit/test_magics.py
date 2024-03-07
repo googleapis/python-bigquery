@@ -513,7 +513,7 @@ def test_bigquery_magic_default_connection_user_agent():
     with conn_patch as conn, run_query_patch, default_patch:
         ip.run_cell_magic("bigquery", "", "SELECT 17 as num")
 
-    client_info_arg = conn.call_args.kwargs.get("client_info")
+    client_info_arg = conn.call_args[1].get("client_info")
     assert client_info_arg is not None
     assert client_info_arg.user_agent == "ipython-" + IPython.__version__
 
@@ -663,7 +663,7 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     assert len(expected_warnings) == 1
 
     assert len(bqstorage_mock.call_args_list) == 1
-    kwargs = bqstorage_mock.call_args_list[0].kwargs
+    kwargs = bqstorage_mock.call_args_list[0][1]
     assert kwargs.get("credentials") is mock_credentials
     client_info = kwargs.get("client_info")
     assert client_info is not None

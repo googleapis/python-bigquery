@@ -1411,7 +1411,7 @@ class QueryJob(_AsyncJob):
         # Our system does not natively handle that and instead expects
         # either none or a numeric value. If passed a Python object, convert to
         # None.
-        if isinstance(self._done_timeout, object):  # pragma: NO COVER
+        if type(self._done_timeout) is object:  # pragma: NO COVER
             self._done_timeout = None
 
         if self._done_timeout is not None:  # pragma: NO COVER

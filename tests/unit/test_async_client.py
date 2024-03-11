@@ -11,7 +11,7 @@ import json
 import operator
 import unittest
 import warnings
-
+import freezegun
 import mock
 import requests
 import packaging
@@ -83,8 +83,8 @@ from google.cloud.bigquery.retry import (
     DEFAULT_TIMEOUT,
 )
 from google.api_core import retry_async as retries
-from google.cloud.bigquery import async_client
-from google.cloud.bigquery.async_client import AsyncClient
+from google.cloud.bigquery.async_client import AsyncClient, async_query_and_wait
+from google.cloud.bigquery.client import Client
 from google.cloud.bigquery.job import query as job_query
 
 
@@ -301,105 +301,6 @@ class TestClient(unittest.TestCase):
         sys.version_info < (3, 9), reason="requires python3.9 or higher"
     )
     @asyncio_run
-    async def test_get_job_miss_w_explict_project(self):
-        from google.cloud.exceptions import NotFound
-
-        OTHER_PROJECT = "OTHER_PROJECT"
-        JOB_ID = "NONESUCH"
-        creds = _make_credentials()
-        client = self._make_one(self.PROJECT, creds)
-        conn = client._client._connection = make_connection()
-
-        with self.assertRaises(NotFound):
-            await client.get_job(JOB_ID, project=OTHER_PROJECT)
-
-        conn.api_request.assert_called_once_with(
-            method="GET",
-            path="/projects/OTHER_PROJECT/jobs/NONESUCH",
-            query_params={"projection": "full"},
-            timeout=DEFAULT_TIMEOUT,
-        )
-
-    @pytest.mark.skipif(
-        sys.version_info < (3, 9), reason="requires python3.9 or higher"
-    )
-    @asyncio_run
-    async def test_get_job_miss_w_client_location(self):
-        from google.cloud.exceptions import NotFound
-
-        JOB_ID = "NONESUCH"
-        creds = _make_credentials()
-        client = self._make_one("client-proj", creds, location="client-loc")
-        conn = client._client._connection = make_connection()
-
-        with self.assertRaises(NotFound):
-            await client.get_job(JOB_ID)
-
-        conn.api_request.assert_called_once_with(
-            method="GET",
-            path="/projects/client-proj/jobs/NONESUCH",
-            query_params={"projection": "full", "location": "client-loc"},
-            timeout=DEFAULT_TIMEOUT,
-        )
-
-    @pytest.mark.skipif(
-        sys.version_info < (3, 9), reason="requires python3.9 or higher"
-    )
-    @asyncio_run
-    async def test_get_job_hit_w_timeout(self):
-        from google.cloud.bigquery.job import CreateDisposition
-        from google.cloud.bigquery.job import QueryJob
-        from google.cloud.bigquery.job import WriteDisposition
-
-        JOB_ID = "query_job"
-        QUERY_DESTINATION_TABLE = "query_destination_table"
-        QUERY = "SELECT * from test_dataset:test_table"
-        ASYNC_QUERY_DATA = {
-            "id": "{}:{}".format(self.PROJECT, JOB_ID),
-            "jobReference": {
-                "projectId": "resource-proj",
-                "jobId": "query_job",
-                "location": "us-east1",
-            },
-            "state": "DONE",
-            "configuration": {
-                "query": {
-                    "query": QUERY,
-                    "destinationTable": {
-                        "projectId": self.PROJECT,
-                        "datasetId": self.DS_ID,
-                        "tableId": QUERY_DESTINATION_TABLE,
-                    },
-                    "createDisposition": CreateDisposition.CREATE_IF_NEEDED,
-                    "writeDisposition": WriteDisposition.WRITE_TRUNCATE,
-                }
-            },
-        }
-        creds = _make_credentials()
-        client = self._make_one(self.PROJECT, creds)
-        conn = client._client._connection = make_connection(ASYNC_QUERY_DATA)
-        job_from_resource = QueryJob.from_api_repr(ASYNC_QUERY_DATA, client._client)
-
-        job = await client.get_job(job_from_resource, timeout=7.5)
-
-        self.assertIsInstance(job, QueryJob)
-        self.assertEqual(job.job_id, JOB_ID)
-        self.assertEqual(job.project, "resource-proj")
-        self.assertEqual(job.location, "us-east1")
-        self.assertEqual(job.create_disposition, CreateDisposition.CREATE_IF_NEEDED)
-        self.assertEqual(job.write_disposition, WriteDisposition.WRITE_TRUNCATE)
-
-        conn.api_request.assert_called_once_with(
-            method="GET",
-            path="/projects/resource-proj/jobs/query_job",
-            query_params={"projection": "full", "location": "us-east1"},
-            timeout=7.5,
-        )
-
-    @pytest.mark.skipif(
-        sys.version_info < (3, 9), reason="requires python3.9 or higher"
-    )
-    @asyncio_run
     async def test_query_and_wait_defaults(self):
         query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
         jobs_query_response = {
@@ -565,5 +466,396 @@ class TestClient(unittest.TestCase):
         self.assertEqual(req["method"], "POST")
         self.assertEqual(req["path"], "/projects/not-the-client-project/queries")
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+)
+@asyncio_run
+async def test_query_and_wait_retries_job():
+    freezegun.freeze_time(auto_tick_seconds=100)
+    client = mock.create_autospec(AsyncClient)
+    client._client = mock.create_autospec(Client)
+    client._call_api.__name__ = "_call_api"
+    client._call_api.__qualname__ = "Client._call_api"
+    client._call_api.__annotations__ = {}
+    client._call_api.__type_params__ = ()
+    client._call_api.side_effect = (
+        google.api_core.exceptions.BadGateway("retry me"),
+        google.api_core.exceptions.InternalServerError("job_retry me"),
+        google.api_core.exceptions.BadGateway("retry me"),
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "abc",
+                "location": "response-location",
+            },
+            "jobComplete": True,
+            "schema": {
+                "fields": [
+                    {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                    {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+                ],
+            },
+            "rows": [
+                {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            ],
+        },
+    )
+    rows = await async_query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=None,
+        page_size=None,
+        max_results=None,
+        retry=retries.AsyncRetry(
+            lambda exc: isinstance(exc, google.api_core.exceptions.BadGateway),
+            multiplier=1.0,
+        ).with_deadline(
+            200.0
+        ),  # Since auto_tick_seconds is 100, we should get at least 1 retry.
+        job_retry=retries.AsyncRetry(
+            lambda exc: isinstance(exc, google.api_core.exceptions.InternalServerError),
+            multiplier=1.0,
+        ).with_deadline(600.0),
+    )
+    assert len(list(rows)) == 4
 
-# Add tests for async_query_and_wait and async_wait_or_cancel
+    # For this code path, where the query has finished immediately, we should
+    # only be calling the jobs.query API and no other request path.
+    request_path = "/projects/request-project/queries"
+    for call in client._call_api.call_args_list:
+        _, kwargs = call
+        assert kwargs["method"] == "POST"
+        assert kwargs["path"] == request_path
+
+
+@freezegun.freeze_time(auto_tick_seconds=100)
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+)
+@asyncio_run
+async def test_query_and_wait_retries_job_times_out():
+    client = mock.create_autospec(AsyncClient)
+    client._client = mock.create_autospec(Client)
+    client._call_api.__name__ = "_call_api"
+    client._call_api.__qualname__ = "Client._call_api"
+    client._call_api.__annotations__ = {}
+    client._call_api.__type_params__ = ()
+    client._call_api.side_effect = (
+        google.api_core.exceptions.BadGateway("retry me"),
+        google.api_core.exceptions.InternalServerError("job_retry me"),
+        google.api_core.exceptions.BadGateway("retry me"),
+        google.api_core.exceptions.InternalServerError("job_retry me"),
+    )
+
+    with pytest.raises(google.api_core.exceptions.RetryError) as exc_info:
+        await async_query_and_wait(
+            client,
+            query="SELECT 1",
+            location="request-location",
+            project="request-project",
+            job_config=None,
+            page_size=None,
+            max_results=None,
+            retry=retries.AsyncRetry(
+                lambda exc: isinstance(exc, google.api_core.exceptions.BadGateway),
+                multiplier=1.0,
+            ).with_deadline(
+                200.0
+            ),  # Since auto_tick_seconds is 100, we should get at least 1 retry.
+            job_retry=retries.AsyncRetry(
+                lambda exc: isinstance(
+                    exc, google.api_core.exceptions.InternalServerError
+                ),
+                multiplier=1.0,
+            ).with_deadline(400.0),
+        )
+
+    assert isinstance(
+        exc_info.value.cause, google.api_core.exceptions.InternalServerError
+    )
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+)
+@asyncio_run
+async def test_query_and_wait_sets_job_creation_mode(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv(
+        "QUERY_PREVIEW_ENABLED",
+        # The comparison should be case insensitive.
+        "TrUe",
+    )
+    client = mock.create_autospec(AsyncClient)
+    client._client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "response-location",
+        },
+        "jobComplete": True,
+    }
+    async_query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=None,
+        retry=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "SELECT 1",
+            "location": "request-location",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+            "jobCreationMode": "JOB_CREATION_OPTIONAL",
+        },
+        timeout=None,
+    )
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+)
+@asyncio_run
+async def test_query_and_wait_sets_location():
+    client = mock.create_autospec(AsyncClient)
+    client._client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "response-location",
+        },
+        "jobComplete": True,
+    }
+    rows = await async_query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=None,
+        retry=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+    assert rows.location == "response-location"
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "SELECT 1",
+            "location": "request-location",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+        },
+        timeout=None,
+    )
+
+
+@pytest.mark.parametrize(
+    ("max_results", "page_size", "expected"),
+    [
+        (10, None, 10),
+        (None, 11, 11),
+        (12, 100, 12),
+        (100, 13, 13),
+    ],
+)
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+)
+@asyncio_run
+async def test_query_and_wait_sets_max_results(max_results, page_size, expected):
+    client = mock.create_autospec(AsyncClient)
+    client._client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "response-location",
+        },
+        "jobComplete": True,
+    }
+    rows = await async_query_and_wait(
+        client,
+        query="SELECT 1",
+        location="request-location",
+        project="request-project",
+        job_config=None,
+        retry=None,
+        job_retry=None,
+        page_size=page_size,
+        max_results=max_results,
+    )
+    assert rows.location == "response-location"
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "SELECT 1",
+            "location": "request-location",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+            "maxResults": expected,
+        },
+        timeout=None,
+    )
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+)
+@asyncio_run
+async def test_query_and_wait_caches_completed_query_results_one_page():
+    client = mock.create_autospec(AsyncClient)
+    client._client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "US",
+        },
+        "jobComplete": True,
+        "queryId": "xyz",
+        "schema": {
+            "fields": [
+                {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+            ],
+        },
+        "rows": [
+            {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+            {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+        ],
+        # Even though totalRows > len(rows), we should use the presence of a
+        # next page token to decide if there are any more pages.
+        "totalRows": 8,
+    }
+    rows = await async_query_and_wait(
+        client,
+        query="SELECT full_name, age FROM people;",
+        job_config=None,
+        location=None,
+        project="request-project",
+        retry=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+    rows_list = list(rows)
+    assert rows.project == "response-project"
+    assert rows.job_id == "abc"
+    assert rows.location == "US"
+    assert rows.query_id == "xyz"
+    assert rows.total_rows == 8
+    assert len(rows_list) == 4
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "SELECT full_name, age FROM people;",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+        },
+        timeout=None,
+    )
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="requires python3.9 or higher"
+)
+@asyncio_run
+async def test_query_and_wait_caches_completed_query_results_one_page_no_rows():
+    client = mock.create_autospec(AsyncClient)
+    client._client = mock.create_autospec(Client)
+    client._call_api.return_value = {
+        "jobReference": {
+            "projectId": "response-project",
+            "jobId": "abc",
+            "location": "US",
+        },
+        "jobComplete": True,
+        "queryId": "xyz",
+    }
+    rows = await async_query_and_wait(
+        client,
+        query="CREATE TABLE abc;",
+        project="request-project",
+        job_config=None,
+        location=None,
+        retry=None,
+        job_retry=None,
+        page_size=None,
+        max_results=None,
+    )
+    assert rows.project == "response-project"
+    assert rows.job_id == "abc"
+    assert rows.location == "US"
+    assert rows.query_id == "xyz"
+    assert list(rows) == []
+
+    # We should only call jobs.query once, no additional row requests needed.
+    request_path = "/projects/request-project/queries"
+    client._call_api.assert_called_once_with(
+        None,  # retry
+        span_name="BigQuery.query",
+        span_attributes={"path": request_path},
+        method="POST",
+        path=request_path,
+        data={
+            "query": "CREATE TABLE abc;",
+            "useLegacySql": False,
+            "formatOptions": {
+                "useInt64Timestamp": True,
+            },
+            "requestId": mock.ANY,
+        },
+        timeout=None,
+    )

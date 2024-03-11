@@ -6,7 +6,6 @@ from google.cloud.bigquery.client import (
 from google.cloud.bigquery.opentelemetry_tracing import async_create_span
 from google.cloud.bigquery import _job_helpers
 from google.cloud.bigquery.table import *
-from google.api_core.page_iterator import HTTPIterator
 from google.cloud.bigquery.retry import (
     DEFAULT_ASYNC_JOB_RETRY,
     DEFAULT_ASYNC_RETRY,
@@ -15,6 +14,7 @@ from google.cloud.bigquery.retry import (
 from google.api_core import retry_async as retries
 import asyncio
 from google.auth.transport import _aiohttp_requests
+from google.api_core.page_iterator_async import AsyncIterator
 
 # This code is experimental
 
@@ -22,45 +22,6 @@ from google.auth.transport import _aiohttp_requests
 class AsyncClient:
     def __init__(self, *args, **kwargs):
         self._client = Client(*args, **kwargs)
-
-    async def get_job(
-        self,
-        job_id: Union[str, job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob],
-        project: Optional[str] = None,
-        location: Optional[str] = None,
-        retry: retries.AsyncRetry = DEFAULT_ASYNC_RETRY,
-        timeout: TimeoutType = DEFAULT_TIMEOUT,
-    ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
-        extra_params = {"projection": "full"}
-
-        project, location, job_id = _extract_job_reference(
-            job_id, project=project, location=location
-        )
-
-        if project is None:
-            project = self._client.project
-
-        if location is None:
-            location = self._client.location
-
-        if location is not None:
-            extra_params["location"] = location
-
-        path = "/projects/{}/jobs/{}".format(project, job_id)
-
-        span_attributes = {"path": path, "job_id": job_id, "location": location}
-
-        resource = await self._call_api(
-            retry,
-            span_name="BigQuery.getJob",
-            span_attributes=span_attributes,
-            method="GET",
-            path=path,
-            query_params=extra_params,
-            timeout=timeout,
-        )
-
-        return await asyncio.to_thread(self._client.job_from_resource(await resource))
 
     async def query_and_wait(
         self,
@@ -295,27 +256,5 @@ async def async_wait_or_cancel(
         raise
 
 
-class AsyncRowIterator(RowIterator):
-    async def _get_next_page_response(self):
-        """Asynchronous version of fetching the next response page."""
-        if self._first_page_response:
-            rows = self._first_page_response.get(self._items_key, [])[
-                : self.max_results
-            ]
-            response = {
-                self._items_key: rows,
-            }
-            if self._next_token in self._first_page_response:
-                response[self._next_token] = self._first_page_response[self._next_token]
-
-            self._first_page_response = None
-            return response
-
-        params = self._get_query_params()
-        if self._page_size is not None:
-            if self.page_number and "startIndex" in params:
-                del params["startIndex"]
-            params["maxResults"] = self._page_size
-        return await self.api_request(
-            method=self._HTTP_METHOD, path=self.path, query_params=params
-        )
+class AsyncRowIterator(AsyncHTTPIterator):
+    pass

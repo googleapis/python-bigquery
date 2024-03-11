@@ -37,7 +37,6 @@ dependencies = [
     # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-auth >= 2.14.1, <3.0.0dev",
     "google-cloud-core >= 1.6.0, <3.0.0dev",
     "google-resumable-media >= 0.6.0, < 3.0dev",
     "packaging >= 20.0.0",

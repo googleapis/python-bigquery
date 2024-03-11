@@ -80,8 +80,8 @@ def default(session, install_extras=True):
         constraints_path,
     )
 
-    if install_extras and session.python in ["3.11", "3.12"]:
-        install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
+    if install_extras and session.python in ["3.12"]:
+        install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry,aiohttp]"
     elif install_extras:
         install_target = ".[all]"
     else:
@@ -188,8 +188,8 @@ def system(session):
     # Data Catalog needed for the column ACL test with a real Policy Tag.
     session.install("google-cloud-datacatalog", "-c", constraints_path)
 
-    if session.python in ["3.11", "3.12"]:
-        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
+    if session.python in ["3.12"]:
+        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry,aiohttp]" # look at geopandas to see if it supports 3.11/3.12 (up to 3.11)
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)
@@ -254,8 +254,8 @@ def snippets(session):
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
-    if session.python in ["3.11", "3.12"]:
-        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
+    if session.python in ["3.12"]:
+        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry,aiohttp]"
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)

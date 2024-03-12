@@ -1,3 +1,4 @@
+import sys
 from google.cloud.bigquery.client import *
 from google.cloud.bigquery.client import (
     _add_server_timeout_header,
@@ -6,17 +7,25 @@ from google.cloud.bigquery.client import (
 from google.cloud.bigquery.opentelemetry_tracing import async_create_span
 from google.cloud.bigquery import _job_helpers
 from google.cloud.bigquery.table import *
+from google.cloud.bigquery.table import _table_arg_to_table_ref
 from google.api_core.page_iterator import HTTPIterator
+from google.cloud.bigquery.query import _QueryResults
 from google.cloud.bigquery.retry import (
     DEFAULT_ASYNC_JOB_RETRY,
     DEFAULT_ASYNC_RETRY,
     DEFAULT_TIMEOUT,
 )
 from google.api_core import retry_async as retries
-import asyncio
-from google.auth.transport import _aiohttp_requests
+
+if sys.version_info >= (3, 9):
+    import asyncio
+
+    # import aiohttp
+    # from google.auth.transport import _aiohttp_requests
 
 # This code is experimental
+
+_MIN_GET_QUERY_RESULTS_TIMEOUT = 120
 
 
 class AsyncClient:
@@ -62,50 +71,95 @@ class AsyncClient:
 
         return await asyncio.to_thread(self._client.job_from_resource(await resource))
 
-    async def query_and_wait(
+    async def _get_query_results(  # make async
         self,
-        query,
-        *,
-        job_config: Optional[QueryJobConfig] = None,
-        location: Optional[str] = None,
+        job_id: str,
+        retry: retries.AsyncRetry,
         project: Optional[str] = None,
-        api_timeout: TimeoutType = DEFAULT_TIMEOUT,
-        wait_timeout: TimeoutType = None,
-        retry: retries.AsyncRetry = DEFAULT_ASYNC_RETRY,
-        job_retry: retries.AsyncRetry = DEFAULT_ASYNC_JOB_RETRY,
-        page_size: Optional[int] = None,
-        max_results: Optional[int] = None,
-    ) -> RowIterator:
+        timeout_ms: Optional[int] = None,
+        location: Optional[str] = None,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
+    ) -> _QueryResults:
+        extra_params: Dict[str, Any] = {"maxResults": 0}
+
+        if timeout is not None:
+            if not isinstance(timeout, (int, float)):
+                timeout = _MIN_GET_QUERY_RESULTS_TIMEOUT
+            else:
+                timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
+
         if project is None:
             project = self._client.project
+
+        if timeout_ms is not None:
+            extra_params["timeoutMs"] = timeout_ms
 
         if location is None:
             location = self._client.location
 
-        # for some reason these cannot find the function call
-        # if job_config is not None:
-        #     self._client._verify_job_config_type(job_config, QueryJobConfig)
+        if location is not None:
+            extra_params["location"] = location
 
-        # if job_config is not None:
-        #     self._client._verify_job_config_type(job_config, QueryJobConfig)
+        path = "/projects/{}/queries/{}".format(project, job_id)
 
-        job_config = _job_helpers.job_config_with_defaults(
-            job_config, self._client._default_query_job_config
+        # This call is typically made in a polling loop that checks whether the
+        # job is complete (from QueryJob.done(), called ultimately from
+        # QueryJob.result()). So we don't need to poll here.
+        span_attributes = {"path": path}
+        resource = await self._call_api(
+            retry,
+            span_name="BigQuery.getQueryResults",
+            span_attributes=span_attributes,
+            method="GET",
+            path=path,
+            query_params=extra_params,
+            timeout=timeout,
         )
+        return _QueryResults.from_api_repr(resource)
 
-        return await async_query_and_wait(
-            self,
-            query,
-            job_config=job_config,
-            location=location,
-            project=project,
-            api_timeout=api_timeout,
-            wait_timeout=wait_timeout,
+    async def get_table(  # make async
+        self,
+        table: Union[Table, TableReference, TableListItem, str],
+        retry: retries.AsyncRetry = DEFAULT_ASYNC_RETRY,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
+    ) -> Table:
+        table_ref = _table_arg_to_table_ref(table, default_project=self._client.project)
+        path = table_ref.path
+        span_attributes = {"path": path}
+        api_response = await self._call_api(
+            retry,
+            span_name="BigQuery.getTable",
+            span_attributes=span_attributes,
+            method="GET",
+            path=path,
+            timeout=timeout,
+        )
+        result = await asyncio.to_thread(Table.from_api_repr, api_response)
+        return result
+
+    async def list_partitions(  # make async
+        self,
+        table: Union[Table, TableReference, TableListItem, str],
+        retry: retries.AsyncRetry = DEFAULT_ASYNC_RETRY,
+        timeout: TimeoutType = DEFAULT_TIMEOUT,
+    ) -> Sequence[str]:
+        table = _table_arg_to_table_ref(table, default_project=self._client.project)
+        meta_table = await self.get_table(
+            TableReference(
+                DatasetReference(table.project, table.dataset_id),
+                "%s$__PARTITIONS_SUMMARY__" % table.table_id,
+            ),
             retry=retry,
-            job_retry=job_retry,
-            page_size=page_size,
-            max_results=max_results,
+            timeout=timeout,
         )
+
+        subset = [col for col in meta_table.schema if col.name == "partition_id"]
+        return [
+            row[0]
+            for row in self._client.list_rows(
+                meta_table, selected_fields=subset, retry=retry, timeout=timeout
+            )
+        ]
 
     async def _call_api(
         self,
@@ -118,6 +172,7 @@ class AsyncClient:
     ):
         kwargs = _add_server_timeout_header(headers, kwargs)
 
+        # cloudcore,bigquery installed locally,
         # Prepare the asynchronous request function
         # async with _aiohttp_requests.Request(**kwargs) as response:
         #     response.raise_for_status()
@@ -138,184 +193,3 @@ class AsyncClient:
                 return async_call()  # Await the asynchronous call
 
         return async_call()  # Await the asynchronous call
-
-
-async def async_query_and_wait(
-    client: "AsyncClient",
-    query: str,
-    *,
-    job_config: Optional[job.QueryJobConfig],
-    location: Optional[str],
-    project: str,
-    api_timeout: Optional[float] = None,
-    wait_timeout: Optional[float] = None,
-    retry: Optional[retries.AsyncRetry],
-    job_retry: Optional[retries.AsyncRetry],
-    page_size: Optional[int] = None,
-    max_results: Optional[int] = None,
-) -> RowIterator:
-    if not _job_helpers._supported_by_jobs_query(job_config):
-        return await async_wait_or_cancel(
-            asyncio.to_thread(
-                _job_helpers.query_jobs_insert(
-                    client=client._client,
-                    query=query,
-                    job_id=None,
-                    job_id_prefix=None,
-                    job_config=job_config,
-                    location=location,
-                    project=project,
-                    retry=retry,
-                    timeout=api_timeout,
-                    job_retry=job_retry,
-                )
-            ),
-            api_timeout=api_timeout,
-            wait_timeout=wait_timeout,
-            retry=retry,
-            page_size=page_size,
-            max_results=max_results,
-        )
-
-    path = _job_helpers._to_query_path(project)
-    request_body = _job_helpers._to_query_request(
-        query=query, job_config=job_config, location=location, timeout=api_timeout
-    )
-
-    if page_size is not None and max_results is not None:
-        request_body["maxResults"] = min(page_size, max_results)
-    elif page_size is not None or max_results is not None:
-        request_body["maxResults"] = page_size or max_results
-
-    if os.getenv("QUERY_PREVIEW_ENABLED", "").casefold() == "true":
-        request_body["jobCreationMode"] = "JOB_CREATION_OPTIONAL"
-
-    request_body["requestId"] = _job_helpers.make_job_id()
-    span_attributes = {"path": path}
-
-    if retry is not None:
-        response = await client._call_api(  # ASYNCHRONOUS HTTP CALLS aiohttp (optional of google-auth), add back retry()
-            retry=None,  # We're calling the retry decorator ourselves, async_retries, need to implement after making HTTP calls async
-            span_name="BigQuery.query",
-            span_attributes=span_attributes,
-            method="POST",
-            path=path,
-            data=request_body,
-            timeout=api_timeout,
-        )
-
-    else:
-        response = await client._call_api(
-            retry=None,
-            span_name="BigQuery.query",
-            span_attributes=span_attributes,
-            method="POST",
-            path=path,
-            data=request_body,
-            timeout=api_timeout,
-        )
-
-    # Even if we run with JOB_CREATION_OPTIONAL, if there are more pages
-    # to fetch, there will be a job ID for jobs.getQueryResults.
-    query_results = google.cloud.bigquery.query._QueryResults.from_api_repr(response)
-    page_token = query_results.page_token
-    more_pages = page_token is not None
-
-    if more_pages or not query_results.complete:
-        # TODO(swast): Avoid a call to jobs.get in some cases (few
-        # remaining pages) by waiting for the query to finish and calling
-        # client._list_rows_from_query_results directly. Need to update
-        # RowIterator to fetch destination table via the job ID if needed.
-        result = await async_wait_or_cancel(
-            asyncio.to_thread(
-                _job_helpers._to_query_job(client._client, query, job_config, response),
-                api_timeout=api_timeout,
-                wait_timeout=wait_timeout,
-                retry=retry,
-                page_size=page_size,
-                max_results=max_results,
-            )
-        )
-
-    def api_request(*args, **kwargs):
-        return client._call_api(
-            span_name="BigQuery.query",
-            span_attributes=span_attributes,
-            *args,
-            timeout=api_timeout,
-            **kwargs,
-        )
-
-    result = AsyncRowIterator(  # async of RowIterator? async version without all the pandas stuff
-        client=client._client,
-        api_request=api_request,
-        path=None,
-        schema=query_results.schema,
-        max_results=max_results,
-        page_size=page_size,
-        total_rows=query_results.total_rows,
-        first_page_response=response,
-        location=query_results.location,
-        job_id=query_results.job_id,
-        query_id=query_results.query_id,
-        project=query_results.project,
-        num_dml_affected_rows=query_results.num_dml_affected_rows,
-    )
-
-    if job_retry is not None:
-        return job_retry(result)
-    else:
-        return result
-
-
-async def async_wait_or_cancel(
-    job: job.QueryJob,
-    api_timeout: Optional[float],
-    wait_timeout: Optional[float],
-    retry: Optional[retries.AsyncRetry],
-    page_size: Optional[int],
-    max_results: Optional[int],
-) -> RowIterator:
-    try:
-        return asyncio.to_thread(
-            job.result(
-                page_size=page_size,
-                max_results=max_results,
-                retry=retry,
-                timeout=wait_timeout,
-            )
-        )
-    except Exception:
-        # Attempt to cancel the job since we can't return the results.
-        try:
-            job.cancel(retry=retry, timeout=api_timeout)
-        except Exception:
-            # Don't eat the original exception if cancel fails.
-            pass
-        raise
-
-
-class AsyncRowIterator(RowIterator):
-    async def _get_next_page_response(self):
-        """Asynchronous version of fetching the next response page."""
-        if self._first_page_response:
-            rows = self._first_page_response.get(self._items_key, [])[
-                : self.max_results
-            ]
-            response = {
-                self._items_key: rows,
-            }
-            if self._next_token in self._first_page_response:
-                response[self._next_token] = self._first_page_response[self._next_token]
-
-            self._first_page_response = None
-            return response
-
-        params = self._get_query_params()
-        if self._page_size is not None:
-            if self.page_number and "startIndex" in params:
-                del params["startIndex"]
-            params["maxResults"] = self._page_size
-        return await self.api_request(
-            method=self._HTTP_METHOD, path=self.path, query_params=params
-        )

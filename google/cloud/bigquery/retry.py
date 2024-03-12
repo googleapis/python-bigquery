@@ -99,3 +99,6 @@ DEFAULT_ASYNC_JOB_RETRY = retry_async.AsyncRetry(
     predicate=_job_should_retry,
     deadline=_DEFAULT_JOB_DEADLINE,  # deadline is deprecated
 )
+# additional predicate cases for async modes?
+# timeout?
+# how is that expressed?, maximum retry based?

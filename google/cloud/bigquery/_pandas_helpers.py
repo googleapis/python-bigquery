@@ -53,7 +53,7 @@ pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import(raise_if_error=True)
 from pyarrow import ArrowTypeError  # type: ignore # noqa: E402
 
 _BIGNUMERIC_SUPPORT = False
-if pyarrow is not None:
+if pyarrow is not None:  # pragma: NO COVER
     _BIGNUMERIC_SUPPORT = True
 
 try:

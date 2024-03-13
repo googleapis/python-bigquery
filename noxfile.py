@@ -86,8 +86,7 @@ def default(session, install_extras=True):
         install_target = ".[all]"
     else:
         install_target = "."
-    session.install("-e", install_target, "-c", constraints_path)
-
+    session.install("-e", install_target)
     session.run("python", "-m", "pip", "freeze")
 
     # Run py.test against the unit tests.
@@ -120,6 +119,8 @@ def unit_noextras(session):
     # There is no pyarrow 1.0.0 package for Python 3.9.
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
         session.install("pyarrow==1.0.0")
+    elif session.python == UNIT_TEST_PYTHON_VERSIONS[-1]:
+        session.install("pyarrow>=3.0.0")
 
     default(session, install_extras=False)
 

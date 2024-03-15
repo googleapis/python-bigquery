@@ -18,7 +18,7 @@ import pathlib
 import os
 import re
 import shutil
-
+import time
 import nox
 
 
@@ -66,6 +66,7 @@ def default(session, install_extras=True):
     Python corresponding to the ``nox`` binary the ``PATH`` can
     run the tests.
     """
+    
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
     )
@@ -102,13 +103,15 @@ def default(session, install_extras=True):
         os.path.join("tests", "unit"),
         *session.posargs,
     )
-
+    
 
 @nox.session(python=UNIT_TEST_PYTHON_VERSIONS)
 def unit(session):
     """Run the unit test suite."""
-    default(session)
 
+    start = time.perf_counter()
+    default(session)
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 @nox.session(python=[UNIT_TEST_PYTHON_VERSIONS[0], UNIT_TEST_PYTHON_VERSIONS[-1]])
 def unit_noextras(session):
@@ -117,17 +120,22 @@ def unit_noextras(session):
     # Install optional dependencies that are out-of-date.
     # https://github.com/googleapis/python-bigquery/issues/933
     # There is no pyarrow 1.0.0 package for Python 3.9.
+
+    start = time.perf_counter()
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
         session.install("pyarrow>=3.0.0")
     elif session.python == UNIT_TEST_PYTHON_VERSIONS[-1]:
         session.install("pyarrow")
 
     default(session, install_extras=False)
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def mypy(session):
     """Run type checks with mypy."""
+
+    start = time.perf_counter()
     session.install("-e", ".[all]")
     session.install(MYPY_VERSION)
 
@@ -140,7 +148,7 @@ def mypy(session):
         "types-setuptools",
     )
     session.run("mypy", "-p", "google", "--show-traceback")
-
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def pytype(session):
@@ -148,12 +156,14 @@ def pytype(session):
     # An indirect dependecy attrs==21.1.0 breaks the check, and installing a less
     # recent version avoids the error until a possibly better fix is found.
     # https://github.com/googleapis/python-bigquery/issues/655
+
+    start = time.perf_counter()
     session.install("attrs==20.3.0")
     session.install("-e", ".[all]")
     session.install(PYTYPE_VERSION)
     # See https://github.com/google/pytype/issues/464
     session.run("pytype", "-P", ".", "google/cloud/bigquery")
-
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
 def system(session):
@@ -207,6 +217,8 @@ def system(session):
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def mypy_samples(session):
     """Run type checks with mypy."""
+
+    start = time.perf_counter()
     session.install("pytest")
     for requirements_path in CURRENT_DIRECTORY.glob("samples/*/requirements.txt"):
         session.install("-r", str(requirements_path))
@@ -236,7 +248,7 @@ def mypy_samples(session):
         "--no-incremental",  # Required by warn-unused-configs from mypy.ini to work
         "samples/",
     )
-
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
 def snippets(session):
@@ -284,10 +296,12 @@ def cover(session):
     This outputs the coverage report aggregating coverage from the unit
     test runs (not system test runs), and then erases coverage data.
     """
+
+    start = time.perf_counter()
     session.install("coverage", "pytest-cov")
     session.run("coverage", "report", "--show-missing", "--fail-under=100")
     session.run("coverage", "erase")
-
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
 def prerelease_deps(session):
@@ -387,6 +401,7 @@ def lint(session):
     serious code quality issues.
     """
 
+    start = time.perf_counter()
     session.install("flake8", BLACK_VERSION)
     session.install("-e", ".")
     session.run("flake8", os.path.join("google", "cloud", "bigquery"))
@@ -395,15 +410,16 @@ def lint(session):
     session.run("flake8", os.path.join("docs", "snippets.py"))
     session.run("flake8", "benchmark")
     session.run("black", "--check", *BLACK_PATHS)
-
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
+    start = time.perf_counter()
     session.install("docutils", "Pygments")
     session.run("python", "setup.py", "check", "--restructuredtext", "--strict")
-
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def blacken(session):
@@ -411,14 +427,16 @@ def blacken(session):
     Format code to uniform standard.
     """
 
+    start = time.perf_counter()
     session.install(BLACK_VERSION)
     session.run("black", *BLACK_PATHS)
-
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 @nox.session(python="3.9")
 def docs(session):
     """Build the docs."""
 
+    start = time.perf_counter()
     session.install(
         # We need to pin to specific versions of the `sphinxcontrib-*` packages
         # which still support sphinx 4.x.
@@ -449,7 +467,7 @@ def docs(session):
         os.path.join("docs", ""),
         os.path.join("docs", "_build", "html", ""),
     )
-
+    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 @nox.session(python="3.10")
 def docfx(session):

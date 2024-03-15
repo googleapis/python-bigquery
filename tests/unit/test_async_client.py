@@ -101,9 +101,9 @@ def asyncio_run(async_func):
 
 
 def _make_credentials():
-    import google.auth.credentials
+    from google.auth import _credentials_async as credentials
 
-    return mock.Mock(spec=google.auth.credentials.Credentials)
+    return mock.Mock(spec=credentials.Credentials)
 
 
 class TestClient(unittest.TestCase):
@@ -663,7 +663,7 @@ class TestClient(unittest.TestCase):
     @asyncio_run
     async def test__call_api_applying_custom_retry_on_timeout(self):
         from concurrent.futures import TimeoutError
-        from google.cloud.bigquery.retry import DEFAULT_RETRY
+        from google.cloud.bigquery.retry import DEFAULT_ASYNC_RETRY
 
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
@@ -692,7 +692,7 @@ class TestClient(unittest.TestCase):
     @asyncio_run
     async def test__call_api_span_creator_not_called(self):
         from concurrent.futures import TimeoutError
-        from google.cloud.bigquery.retry import DEFAULT_RETRY
+        from google.cloud.bigquery.retry import DEFAULT_ASYNC_RETRY
 
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
@@ -720,7 +720,7 @@ class TestClient(unittest.TestCase):
     @asyncio_run
     async def test__call_api_span_creator_called(self):
         from concurrent.futures import TimeoutError
-        from google.cloud.bigquery.retry import DEFAULT_RETRY
+        from google.cloud.bigquery.retry import DEFAULT_ASYNC_RETRY
 
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
@@ -745,7 +745,6 @@ class TestClient(unittest.TestCase):
                 )
 
             final_attributes.assert_called_once()
-
 
 # make tests to show its cancelleable
 # row iterator, paginated access, we need to make

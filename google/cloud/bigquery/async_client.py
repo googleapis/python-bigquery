@@ -19,9 +19,8 @@ from google.api_core import retry_async as retries
 
 if sys.version_info >= (3, 9):
     import asyncio
-
-    # import aiohttp
-    # from google.auth.transport import _aiohttp_requests
+    import aiohttp
+    from google.auth.transport import _aiohttp_requests
 
 # This code is experimental
 
@@ -69,7 +68,7 @@ class AsyncClient:
             timeout=timeout,
         )
 
-        return await asyncio.to_thread(self._client.job_from_resource(await resource))
+        return self._client.job_from_resource(await resource)
 
     async def _get_query_results(  # make async
         self,
@@ -134,8 +133,8 @@ class AsyncClient:
             path=path,
             timeout=timeout,
         )
-        result = await asyncio.to_thread(Table.from_api_repr, api_response)
-        return result
+
+        return Table.from_api_repr(api_response)
 
     async def list_partitions(  # make async
         self,
@@ -170,18 +169,26 @@ class AsyncClient:
         headers: Optional[Dict[str, str]] = None,
         **kwargs,
     ):
+        
         kwargs = _add_server_timeout_header(headers, kwargs)
+        
+        # CREATE THIN WRAPPER OVER _AIOHTTP_REQUESTS (wip)
 
-        # cloudcore,bigquery installed locally,
-        # Prepare the asynchronous request function
-        # async with _aiohttp_requests.Request(**kwargs) as response:
-        #     response.raise_for_status()
-        #     response = await response.json()  # or response.text()
+        DEFAULT_API_ENDPOINT = "https://bigquery.googleapis.com"
 
-        async_call = functools.partial(self._client._connection.api_request, **kwargs)
+        kwargs['url'] = DEFAULT_API_ENDPOINT + kwargs.pop('path')
+
+        if kwargs.get('query_params'):
+            kwargs['params'] = kwargs.pop('query_params')
+
+        async with _aiohttp_requests.AuthorizedSession(self._client._credentials) as authed_session:
+            response = await authed_session.request(
+                **kwargs
+            )
+
 
         if retry:
-            async_call = retry(async_call)
+            response = retry(response)
 
         if span_name is not None:
             async with async_create_span(
@@ -190,6 +197,7 @@ class AsyncClient:
                 client=self._client,
                 job_ref=job_ref,
             ):
-                return async_call()  # Await the asynchronous call
+                return response()  # Await the asynchronous call
 
-        return async_call()  # Await the asynchronous call
+        return response()  # Await the asynchronous call
+    

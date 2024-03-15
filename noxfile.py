@@ -79,6 +79,7 @@ def default(session, install_extras=True):
         "-c",
         constraints_path,
     )
+    session.install("asyncmock", "pytest-asyncio")
 
     if install_extras and session.python in ["3.12"]:
         install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry,aiohttp]"
@@ -103,6 +104,9 @@ def default(session, install_extras=True):
         os.path.join("tests", "unit"),
         *session.posargs,
     )
+
+    # Having positional arguments means the user wants to run specific tests.
+    # Best not to add additional tests to that list.
 
 
 @nox.session(python=UNIT_TEST_PYTHON_VERSIONS)

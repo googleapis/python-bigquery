@@ -111,7 +111,6 @@ def unit(session):
     default(session)
 
 
-
 @nox.session(python=[UNIT_TEST_PYTHON_VERSIONS[0], UNIT_TEST_PYTHON_VERSIONS[-1]])
 def unit_noextras(session):
     """Run the unit test suite."""
@@ -146,7 +145,6 @@ def mypy(session):
     session.run("mypy", "-p", "google", "--show-traceback")
 
 
-
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def pytype(session):
     """Run type checks with pytype."""
@@ -161,12 +159,10 @@ def pytype(session):
     session.run("pytype", "-P", ".", "google/cloud/bigquery")
 
 
-
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
 def system(session):
     """Run the system test suite."""
 
-    start = time.perf_counter()
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
     )
@@ -210,7 +206,6 @@ def system(session):
         os.path.join("tests", "system"),
         *session.posargs,
     )
-    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
@@ -248,14 +243,11 @@ def mypy_samples(session):
     )
 
 
-
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
 def snippets(session):
     """Run the snippets test suite."""
 
     # Check the value of `RUN_SNIPPETS_TESTS` env var. It defaults to true.
-
-    start = time.perf_counter()
     if os.environ.get("RUN_SNIPPETS_TESTS", "true") == "false":
         session.skip("RUN_SNIPPETS_TESTS is set to false, skipping")
 
@@ -288,7 +280,6 @@ def snippets(session):
         "--ignore=samples/snippets",
         *session.posargs,
     )
-    print(f"TOTAL TIME: {time.perf_counter() - start}")
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
@@ -301,9 +292,7 @@ def cover(session):
 
     session.install("coverage", "pytest-cov")
     session.run("coverage", "report", "--show-missing", "--fail-under=100")
-    print(f"SUB TOTAL TIME (AFTER REPORT): {time.perf_counter() - start}")
     session.run("coverage", "erase")
-
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
@@ -414,14 +403,12 @@ def lint(session):
     session.run("black", "--check", *BLACK_PATHS)
 
 
-
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
     session.install("docutils", "Pygments")
     session.run("python", "setup.py", "check", "--restructuredtext", "--strict")
-
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
@@ -432,7 +419,6 @@ def blacken(session):
 
     session.install(BLACK_VERSION)
     session.run("black", *BLACK_PATHS)
-
 
 
 @nox.session(python="3.9")
@@ -469,7 +455,6 @@ def docs(session):
         os.path.join("docs", ""),
         os.path.join("docs", "_build", "html", ""),
     )
-
 
 
 @nox.session(python="3.10")

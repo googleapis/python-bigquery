@@ -571,12 +571,10 @@ def test_bq_to_arrow_array_w_conversion_fail(module_under_test):
     rows = [[1, 2, 3], [], [4, 5, 6]]
     series = pandas.Series(rows, name="test_col", dtype="object")
     bq_field = schema.SchemaField("field_name", "STRING", mode="REPEATED")
-    with pytest.raises(ArrowTypeError) as e:
+    exc_msg = f"""Error converting Pandas column with name: "{series.name}" and datatype: "{series.dtype}" to an appropriate pyarrow datatype: Array, ListArray, or StructArray"""
+    with pytest.raises(ArrowTypeError, match=exc_msg) as e:
         module_under_test.bq_to_arrow_array(series, bq_field)
-    assert (
-        e.exconly()
-        == f"""pyarrow.lib.ArrowTypeError: Error converting Pandas column with name: "{series.name}" and datatype: "{series.dtype}" to an appropriate pyarrow datatype: Array, ListArray, or StructArray"""
-    )
+        raise ArrowTypeError(exc_msg)
 
 
 @pytest.mark.parametrize("bq_type", ["RECORD", "record", "STRUCT", "struct"])

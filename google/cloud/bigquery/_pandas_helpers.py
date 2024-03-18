@@ -441,6 +441,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
         if bq_field.field_type is None:
             unknown_type_fields.append(bq_field)
 
+    """
     # Catch any schema mismatch. The developer explicitly asked to serialize a
     # column, but it was not found.
     if bq_schema_unused:
@@ -449,6 +450,24 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
                 bq_schema_unused
             )
         )
+    """
+
+    # When some columns in the schema is not present in the dataframe,
+    # we raise a warning but allow the request to go through. This allows the
+    # developers to:
+    # (1) be aware that some columns may be missing or the schema may be incorrect
+    # (2) have the flexibility to upload a dataframe when the whole column is empty
+    # column, but it was not found.
+    if bq_schema_unused:
+        warnings.warn(
+            "bq_schema contains fields not present in dataframe: {}".format(
+            bq_schema_unused
+            )
+        )
+        for name in bq_schema_unused:
+            col = bq_schema_index.get(name)
+            bq_schema_out.append(col)
+        # bq_schema_out.extend(bq_schema_unused)
 
     # If schema detection was not successful for all columns, also try with
     # pyarrow, if available.
@@ -570,12 +589,16 @@ def dataframe_to_arrow(dataframe, bq_schema):
     bq_field_names = set(field.name for field in bq_schema)
 
     extra_fields = bq_field_names - column_and_index_names
+    """
     if extra_fields:
         raise ValueError(
             "bq_schema contains fields not present in dataframe: {}".format(
                 extra_fields
             )
         )
+    """
+    
+
 
     # It's okay for indexes to be missing from bq_schema, but it's not okay to
     # be missing columns.
@@ -590,10 +613,17 @@ def dataframe_to_arrow(dataframe, bq_schema):
     arrow_fields = []
     for bq_field in bq_schema:
         arrow_names.append(bq_field.name)
-        arrow_arrays.append(
-            bq_to_arrow_array(get_column_or_index(dataframe, bq_field.name), bq_field)
-        )
-        arrow_fields.append(bq_to_arrow_field(bq_field, arrow_arrays[-1].type))
+        try: 
+            col = get_column_or_index(dataframe, bq_field.name)
+        except ValueError as exp:
+            if "column or index '" in str(exp):
+                arrow_fields.append(None)
+                arrow_arrays.append(pyarrow.nulls(dataframe.shape[0]))
+            else:
+                raise exp
+        else:
+            arrow_arrays.append(bq_to_arrow_array(col, bq_field))
+            arrow_fields.append(bq_to_arrow_field(bq_field, arrow_arrays[-1].type))
 
     if all((field is not None for field in arrow_fields)):
         return pyarrow.Table.from_arrays(

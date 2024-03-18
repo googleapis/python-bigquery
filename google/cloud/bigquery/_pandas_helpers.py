@@ -310,7 +310,7 @@ def bq_to_arrow_array(series, bq_field):
             return pyarrow.StructArray.from_pandas(series, type=arrow_type)
         return pyarrow.Array.from_pandas(series, type=arrow_type)
     except ArrowTypeError:  # pragma: NO COVER
-        msg = f"""Error converting Pandas column with name: "{series.name}" to pyarrow datatype: Array, ListArray, or StructArray"""
+        msg = f"""Error converting Pandas column with name: "{series.name}" and datatype: "{series.dtype}" to an appropriate pyarrow datatype: Array, ListArray, or StructArray"""
         _LOGGER.error(msg)
         raise ArrowTypeError(msg)
 

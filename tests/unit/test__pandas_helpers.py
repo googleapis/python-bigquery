@@ -575,7 +575,7 @@ def test_bq_to_arrow_array_w_conversion_fail(module_under_test):
         module_under_test.bq_to_arrow_array(series, bq_field)
     assert (
         e.exconly()
-        == f"""pyarrow.lib.ArrowTypeError: Error converting Pandas column with name: "{series.name}" to pyarrow datatype: Array, ListArray, or StructArray"""
+        == f"""pyarrow.lib.ArrowTypeError: Error converting Pandas column with name: "{series.name}" and datatype: "{series.dtype}" to an appropriate pyarrow datatype: Array, ListArray, or StructArray"""
     )
 
 

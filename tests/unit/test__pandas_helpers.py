@@ -567,7 +567,7 @@ def test_bq_to_arrow_array_w_arrays(module_under_test):
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
-def test_bq_to_arrow_array_w_conversion_fail(module_under_test): # pragma: NO COVER
+def test_bq_to_arrow_array_w_conversion_fail(module_under_test):  # pragma: NO COVER
     rows = [[1, 2, 3], [], [4, 5, 6]]
     series = pandas.Series(rows, name="test_col", dtype="object")
     bq_field = schema.SchemaField("field_name", "STRING", mode="REPEATED")

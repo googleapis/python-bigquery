@@ -7731,7 +7731,7 @@ class TestClientUpload(object):
 
     def test_load_table_from_dataframe_w_parquet_options_none(self):
         pandas = pytest.importorskip("pandas")
-        pytest.importorskip("pyarrow") 
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8827,7 +8827,7 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
     def test_load_table_from_dataframe_w_invaild_job_config(self):
-        pandas = pytest.importorskip("pandas") 
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery import job
 
         client = self._make_client()

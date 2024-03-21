@@ -32,10 +32,6 @@ import requests
 import packaging
 import pytest
 
-try:
-    import importlib.metadata as metadata
-except ImportError:
-    import importlib_metadata as metadata
 
 try:
     import opentelemetry
@@ -864,12 +860,13 @@ class TestClient(unittest.TestCase):
         pytest.importorskip("google.cloud.bigquery_storage")
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
-        mock_storage_client = mock.sentinel.mock_storage_client
+        bqstorage_client = None
 
-        bqstorage_client = client._ensure_bqstorage_client(bqstorage_client=None)
+        assert bqstorage_client is None
+        bqstorage_client = client._ensure_bqstorage_client(
+            bqstorage_client=bqstorage_client,
+        )
 
-        print(bqstorage_client, type(bqstorage_client), dir(bqstorage_client))
-        # self.assertIs(bqstorage_client, mock_storage_client)
         assert isinstance(
             bqstorage_client, google.cloud.bigquery_storage_v1.BigQueryReadClient
         )

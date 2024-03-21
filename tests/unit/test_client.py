@@ -866,13 +866,13 @@ class TestClient(unittest.TestCase):
         client = self._make_one(project=self.PROJECT, credentials=creds)
         mock_storage_client = mock.sentinel.mock_storage_client
 
-        bqstorage_client = client._ensure_bqstorage_client(
-            bqstorage_client=None
-        )
+        bqstorage_client = client._ensure_bqstorage_client(bqstorage_client=None)
 
         print(bqstorage_client, type(bqstorage_client), dir(bqstorage_client))
-        #self.assertIs(bqstorage_client, mock_storage_client)
-        assert isinstance(bqstorage_client, google.cloud.bigquery_storage_v1.BigQueryReadClient)
+        # self.assertIs(bqstorage_client, mock_storage_client)
+        assert isinstance(
+            bqstorage_client, google.cloud.bigquery_storage_v1.BigQueryReadClient
+        )
 
     def test_ensure_bqstorage_client_existing_client_check_fails(self):
         pytest.importorskip("google-cloud-bigquery-storage")

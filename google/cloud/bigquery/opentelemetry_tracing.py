@@ -152,5 +152,11 @@ def _set_job_attributes(job_ref):
 
     if job_ref.num_child_jobs is not None:
         job_attributes["num_child_jobs"] = job_ref.num_child_jobs
+    
+    if job_ref.total_bytes_billed is not None:
+        job_attributes["total_bytes_billed"] = int(job_ref.total_bytes_billed)
+
+    if job_ref.total_bytes_processed is not None:
+        job_attributes["total_bytes_processed"] = int(job_ref.total_bytes_processed)
 
     return job_attributes

@@ -2400,8 +2400,8 @@ class TestBigQuery(unittest.TestCase):
 
     def test_nested_table_to_arrow(self):
         pytest.importorskip("google-cloud-bigquery-storage")
-        pytest.importorskip("pyarrow")
-        pytest.importorskip("pyarrow.types")
+        pyarrow = pytest.importorskip("pyarrow")
+        pyarrow.types = pytest.importorskip("pyarrow.types")
         from google.cloud import bigquery_storage
         from google.cloud.bigquery.job import SourceFormat
         from google.cloud.bigquery.job import WriteDisposition

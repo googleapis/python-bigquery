@@ -88,6 +88,7 @@ class TestCursor(unittest.TestCase):
 
     def _mock_bqstorage_client(self, rows=None, stream_count=0):
         from google.cloud import bigquery_storage
+
         if rows is None:
             rows = []
 

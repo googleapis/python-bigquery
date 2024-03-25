@@ -13,13 +13,9 @@
 #  limitations under the License.
 
 import gc
+import pytest
 import unittest
 from unittest import mock
-
-try:
-    from google.cloud import bigquery_storage
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
 
 
 class TestConnection(unittest.TestCase):
@@ -41,6 +37,7 @@ class TestConnection(unittest.TestCase):
     def _mock_bqstorage_client(self):
         # Assumption: bigquery_storage exists. It's the test's responisbility to
         # not use this helper or skip itself if bqstorage is not installed.
+        from google.cloud import bigquery_storage
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client._transport = mock.Mock(spec=["channel"])
         mock_client._transport.grpc_channel = mock.Mock(spec=["close"])
@@ -57,10 +54,8 @@ class TestConnection(unittest.TestCase):
         self.assertIs(connection._client, mock_client)
         self.assertIs(connection._bqstorage_client, None)
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_ctor_w_bqstorage_client(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery.dbapi import Connection
 
         mock_client = self._mock_client()
@@ -89,10 +84,8 @@ class TestConnection(unittest.TestCase):
         self.assertIsNotNone(connection._client)
         self.assertIsNotNone(connection._bqstorage_client)
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_connect_w_client(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery.dbapi import connect
         from google.cloud.bigquery.dbapi import Connection
 
@@ -107,10 +100,8 @@ class TestConnection(unittest.TestCase):
         self.assertIs(connection._client, mock_client)
         self.assertIs(connection._bqstorage_client, mock_bqstorage_client)
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_connect_w_both_clients(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         from google.cloud.bigquery.dbapi import connect
         from google.cloud.bigquery.dbapi import Connection
 
@@ -143,10 +134,8 @@ class TestConnection(unittest.TestCase):
             ):
                 getattr(connection, method)()
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_close_closes_all_created_bigquery_clients(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         client = self._mock_client()
         bqstorage_client = self._mock_bqstorage_client()
 

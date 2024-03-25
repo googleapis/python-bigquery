@@ -3049,7 +3049,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(actual_table.schema[1].name, "colC")
         self.assertEqual(actual_table.schema[2].name, "colB")
 
-    def test_to_arrow_progress_bar(self, tqdm_mock, tqdm_notebook_mock, tqdm_gui_mock):
+    def test_to_arrow_progress_bar(self):
         pytest.importorskip("pyarrow")
         pytest.importorskip("tqdm")
         pytest.importorskip("tqdm.notebook")
@@ -3406,9 +3406,7 @@ class TestRowIterator(unittest.TestCase):
             [datetime.datetime(4567, 1, 1), datetime.datetime(9999, 12, 31)],
         )
 
-    def test_to_dataframe_progress_bar(
-        self, tqdm_mock, tqdm_notebook_mock, tqdm_gui_mock
-    ):
+    def test_to_dataframe_progress_bar(self)
         pytest.importorskip("pandas")
         pytest.importorskip("tqdm")
 
@@ -4414,7 +4412,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(len(got.index), total_rows)
         self.assertTrue(got.index.is_unique)
 
-    def test_to_dataframe_w_bqstorage_updates_progress_bar(self, tqdm_mock):
+    def test_to_dataframe_w_bqstorage_updates_progress_bar(self):
         bigquery_storage = pytest.importorskip("google.cloud.bigquery-storage")
         pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")

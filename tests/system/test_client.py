@@ -1794,6 +1794,7 @@ class TestBigQuery(unittest.TestCase):
         pytest.importorskip("google-cloud-bigquery-storage")
         pytest.importorskip("pyarrow")
         from google.cloud import bigquery_storage
+
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )

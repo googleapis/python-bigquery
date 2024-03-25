@@ -158,10 +158,8 @@ class TestConnection(unittest.TestCase):
         self.assertTrue(client.close.called)
         self.assertTrue(bqstorage_client._transport.grpc_channel.close.called)
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_close_does_not_close_bigquery_clients_passed_to_it(self):
+        pytest.importorskip("google-cloud-bigquery-storage")
         client = self._mock_client()
         bqstorage_client = self._mock_bqstorage_client()
         connection = self._make_one(client=client, bqstorage_client=bqstorage_client)

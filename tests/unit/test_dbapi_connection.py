@@ -38,6 +38,7 @@ class TestConnection(unittest.TestCase):
         # Assumption: bigquery_storage exists. It's the test's responisbility to
         # not use this helper or skip itself if bqstorage is not installed.
         from google.cloud import bigquery_storage
+
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client._transport = mock.Mock(spec=["channel"])
         mock_client._transport.grpc_channel = mock.Mock(spec=["close"])

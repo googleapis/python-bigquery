@@ -212,6 +212,7 @@ class TestToBqTableRows(unittest.TestCase):
     def test_non_empty_iterable(self):
         pytest.importorskip("pyarrow")
         from tests.unit.helpers import _to_pyarrow
+
         rows_iterable = [
             dict(
                 one=_to_pyarrow(1.1),

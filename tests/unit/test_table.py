@@ -3406,7 +3406,7 @@ class TestRowIterator(unittest.TestCase):
             [datetime.datetime(4567, 1, 1), datetime.datetime(9999, 12, 31)],
         )
 
-    def test_to_dataframe_progress_bar(self)
+    def test_to_dataframe_progress_bar(self):
         pytest.importorskip("pandas")
         pytest.importorskip("tqdm")
 

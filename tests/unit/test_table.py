@@ -4279,7 +4279,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertTrue(got.empty)
 
     def test_to_dataframe_w_bqstorage_nonempty(self):
-        pytest.importorskip("google.cloud.bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
         from google.cloud.bigquery import schema

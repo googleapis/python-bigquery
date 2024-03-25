@@ -313,7 +313,7 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(rows[0], (1,))
 
     def test_fetchall_w_bqstorage_client_fetch_success(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery-storage")
         pytest.importorskip("pyarrow")
         from google.cloud.bigquery import dbapi
 
@@ -371,7 +371,7 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(sorted_row_data, expected_row_data)
 
     def test_fetchall_w_bqstorage_client_fetch_no_rows(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery-storage")
         from google.cloud.bigquery import dbapi
 
         mock_client = self._mock_client(
@@ -399,7 +399,7 @@ class TestCursor(unittest.TestCase):
         self.assertEqual(rows, [])
 
     def test_fetchall_w_bqstorage_client_fetch_error_no_fallback(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery-storage")
         from google.cloud.bigquery import dbapi
 
         row_data = [bq_table.Row([1.1, 1.2], {"foo": 0, "bar": 1})]
@@ -435,7 +435,7 @@ class TestCursor(unittest.TestCase):
         mock_client.list_rows.assert_not_called()
 
     def test_fetchall_w_bqstorage_client_no_arrow_compression(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery-storage")
         pytest.importorskip("pyarrow")
         from google.cloud import bigquery_storage
         from google.cloud.bigquery import dbapi

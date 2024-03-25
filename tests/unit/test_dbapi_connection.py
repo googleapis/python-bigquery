@@ -56,7 +56,7 @@ class TestConnection(unittest.TestCase):
         self.assertIs(connection._bqstorage_client, None)
 
     def test_ctor_w_bqstorage_client(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery-storage")
         from google.cloud.bigquery.dbapi import Connection
 
         mock_client = self._mock_client()
@@ -86,7 +86,7 @@ class TestConnection(unittest.TestCase):
         self.assertIsNotNone(connection._bqstorage_client)
 
     def test_connect_w_client(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery-storage")
         from google.cloud.bigquery.dbapi import connect
         from google.cloud.bigquery.dbapi import Connection
 
@@ -102,7 +102,7 @@ class TestConnection(unittest.TestCase):
         self.assertIs(connection._bqstorage_client, mock_bqstorage_client)
 
     def test_connect_w_both_clients(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery-storage")
         from google.cloud.bigquery.dbapi import connect
         from google.cloud.bigquery.dbapi import Connection
 
@@ -136,7 +136,7 @@ class TestConnection(unittest.TestCase):
                 getattr(connection, method)()
 
     def test_close_closes_all_created_bigquery_clients(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery-storage")
         client = self._mock_client()
         bqstorage_client = self._mock_bqstorage_client()
 
@@ -159,7 +159,7 @@ class TestConnection(unittest.TestCase):
         self.assertTrue(bqstorage_client._transport.grpc_channel.close.called)
 
     def test_close_does_not_close_bigquery_clients_passed_to_it(self):
-        pytest.importorskip("google-cloud-bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery-storage")
         client = self._mock_client()
         bqstorage_client = self._mock_bqstorage_client()
         connection = self._make_one(client=client, bqstorage_client=bqstorage_client)

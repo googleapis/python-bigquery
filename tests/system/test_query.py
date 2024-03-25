@@ -425,7 +425,7 @@ def test_query_statistics(bigquery_client, query_api_method):
         ),
         (
             "SELECT @range_date",
-            {'end': None, 'start': datetime.date(2016, 12, 5)},
+            {"end": None, "start": datetime.date(2016, 12, 5)},
             [
                 RangeQueryParameter(
                     name="range_date",
@@ -436,7 +436,7 @@ def test_query_statistics(bigquery_client, query_api_method):
         ),
         (
             "SELECT @range_datetime",
-            {'end': None, 'start': datetime.datetime(2016, 12, 5, 0, 0)},
+            {"end": None, "start": datetime.datetime(2016, 12, 5, 0, 0)},
             [
                 RangeQueryParameter(
                     name="range_datetime",
@@ -447,7 +447,7 @@ def test_query_statistics(bigquery_client, query_api_method):
         ),
         (
             "SELECT @range_unbounded",
-            {'end': None, 'start': None},
+            {"end": None, "start": None},
             [
                 RangeQueryParameter(
                     name="range_unbounded",

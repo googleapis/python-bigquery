@@ -3914,7 +3914,7 @@ class TestRowIterator(unittest.TestCase):
                 create_bqstorage_client=False,
                 timestamp_dtype=numpy.dtype("datetime64[us]"),
             )
-    
+
     def test_to_dataframe_column_dtypes(self):
         pandas = pytest.importorskip("pandas")
         pandas_major_version = pandas.__version__[0:2]

@@ -3802,7 +3802,9 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_dataframe_w_none_dtypes_mapper(self):
         pandas = pytest.importorskip("pandas")
-        pytest.mark.skipif(pandas.__version__[0:2] not in ["0.", "1."], reason="")
+        pandas_major_version = pandas.__version__[0:2]
+        if pandas_major_version not in ["0.", "1."]:
+            pytest.skip(reason="Requires a version of pandas less than 2.0")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3912,10 +3914,12 @@ class TestRowIterator(unittest.TestCase):
                 create_bqstorage_client=False,
                 timestamp_dtype=numpy.dtype("datetime64[us]"),
             )
-
+    
     def test_to_dataframe_column_dtypes(self):
         pandas = pytest.importorskip("pandas")
-        pytest.mark.skipif(pandas.__version__[0:2] not in ["0.", "1."], reason="")
+        pandas_major_version = pandas.__version__[0:2]
+        if pandas_major_version not in ["0.", "1."]:
+            pytest.skip("Requires a version of pandas less than 2.0")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3928,9 +3932,9 @@ class TestRowIterator(unittest.TestCase):
             SchemaField("date", "DATE"),
         ]
         row_data = [
-            ["1433836800000000", "420", "1.1", "1.77", "Cash", "true", "1999-12-01"],
+            ["1433836800000", "420", "1.1", "1.77", "Cash", "true", "1999-12-01"],
             [
-                "1387811700000000",
+                "1387811700000",
                 "2580",
                 "17.7",
                 "28.5",
@@ -3938,7 +3942,7 @@ class TestRowIterator(unittest.TestCase):
                 "false",
                 "1953-06-14",
             ],
-            ["1385565300000000", "2280", "4.4", "7.1", "Credit", "true", "1981-11-04"],
+            ["1385565300000", "2280", "4.4", "7.1", "Credit", "true", "1981-11-04"],
         ]
         rows = [{"f": [{"v": field} for field in row]} for row in row_data]
         path = "/foo"

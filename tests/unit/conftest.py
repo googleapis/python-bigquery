@@ -40,7 +40,7 @@ def LOCATION():
 
 
 @pytest.fixture
-def PYARROW_MINIMUM_VERSION(): # pragma: NO COVER
+def PYARROW_MINIMUM_VERSION():  # pragma: NO COVER
     return "3.0.0"
 
 

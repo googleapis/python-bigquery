@@ -1791,9 +1791,8 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
 
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
-        pytest.importorskip("google.cloud.bigquery_storage")
+        bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pyarrow")
-        from google.cloud import bigquery_storage
 
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials

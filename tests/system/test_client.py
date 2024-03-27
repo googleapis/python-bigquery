@@ -2398,10 +2398,9 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(found[8], decimal.Decimal(expected["FavoriteNumber"]))
 
     def test_nested_table_to_arrow(self):
-        pytest.importorskip("google.cloud.bigquery_storage")
+        bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
         pyarrow = pytest.importorskip("pyarrow")
         pyarrow.types = pytest.importorskip("pyarrow.types")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery.job import SourceFormat
         from google.cloud.bigquery.job import WriteDisposition
 

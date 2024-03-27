@@ -27,8 +27,12 @@ def module_under_test():
 
 def test_bq_to_arrow_scalars(module_under_test):
     assert (
-        module_under_test.bq_to_arrow_scalars("BIGNUMERIC")
-        == module_under_test.pyarrow_bignumeric
+        module_under_test.bq_to_arrow_scalars("BIGNUMERIC")()
+        == module_under_test.pyarrow_bignumeric()
+    )
+    assert (
+        module_under_test.bq_to_arrow_scalars("JSON")()
+        == module_under_test.json_arrow_type
     )
     assert module_under_test.bq_to_arrow_scalars("UNKNOWN_TYPE") is None
 

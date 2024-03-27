@@ -3540,7 +3540,7 @@ class TestRowIterator(unittest.TestCase):
 
             # Warn that a progress bar was requested, but creating the tqdm
             # progress bar failed.
-            for warning in warned:
+            for warning in warned:  # pragma: NO COVER
                 self.assertIn(
                     warning.category,
                     [UserWarning, DeprecationWarning],

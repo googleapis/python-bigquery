@@ -778,8 +778,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
     def test_ensure_bqstorage_client_creating_new_instance(self):
-        pytest.importorskip("google.cloud.bigquery_storage")
-        from google.cloud import bigquery_storage
+        bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
 
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client_instance = object()

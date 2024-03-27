@@ -40,8 +40,6 @@ def LOCATION():
 
 
 @pytest.fixture
-def PYARROW_MINIMUM_VERSION():  # pragma: NO COVER
-    return "3.0.0"
 
 
 def noop_add_server_timeout_header(headers, kwargs):

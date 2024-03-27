@@ -39,7 +39,6 @@ def LOCATION():
     yield "us-central"
 
 
-@pytest.fixture
 def noop_add_server_timeout_header(headers, kwargs):
     if headers:
         kwargs["headers"] = headers

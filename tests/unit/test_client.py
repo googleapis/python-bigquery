@@ -778,7 +778,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
     def test_ensure_bqstorage_client_creating_new_instance(self):
-        pytest.importorskip("google.cloud.bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud import bigquery_storage
 
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
@@ -827,7 +827,7 @@ class TestClient(unittest.TestCase):
         assert matching_warnings, "Missing dependency warning not raised."
 
     def test_ensure_bqstorage_client_obsolete_dependency(self):
-        pytest.importorskip("google.cloud.bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery_storage")
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
 
@@ -845,7 +845,7 @@ class TestClient(unittest.TestCase):
         assert matching_warnings, "Obsolete dependency warning not raised."
 
     def test_ensure_bqstorage_client_existing_client_check_passes(self):
-        pytest.importorskip("google.cloud.bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery_storage")
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         mock_storage_client = mock.sentinel.mock_storage_client
@@ -872,7 +872,7 @@ class TestClient(unittest.TestCase):
         )
 
     def test_ensure_bqstorage_client_existing_client_check_fails(self):
-        pytest.importorskip("google.cloud.bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery_storage")
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         mock_storage_client = mock.sentinel.mock_storage_client

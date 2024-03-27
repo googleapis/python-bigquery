@@ -1791,7 +1791,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
 
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
-        pytest.importorskip("google.cloud.bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pyarrow")
         from google.cloud import bigquery_storage
 
@@ -1853,7 +1853,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(list(rows), [])
 
     def test_dbapi_connection_does_not_leak_sockets(self):
-        pytest.importorskip("google.cloud.bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery_storage")
         current_process = psutil.Process()
         conn_count_start = len(current_process.connections())
 
@@ -2399,7 +2399,7 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(found[8], decimal.Decimal(expected["FavoriteNumber"]))
 
     def test_nested_table_to_arrow(self):
-        pytest.importorskip("google.cloud.bigquery-storage")
+        pytest.importorskip("google.cloud.bigquery_storage")
         pyarrow = pytest.importorskip("pyarrow")
         pyarrow.types = pytest.importorskip("pyarrow.types")
         from google.cloud import bigquery_storage

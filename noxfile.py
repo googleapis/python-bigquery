@@ -121,8 +121,6 @@ def unit_noextras(session):
 
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
         session.install("pyarrow>=3.0.0")
-    elif session.python == UNIT_TEST_PYTHON_VERSIONS[-1]:
-        session.install("pyarrow")
 
     default(session, install_extras=False)
 

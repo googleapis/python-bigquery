@@ -2045,6 +2045,9 @@ class RowIterator(HTTPIterator):
         datetime_dtype: Union[Any, None] = None,
         time_dtype: Union[Any, None] = DefaultPandasDTypes.TIME_DTYPE,
         timestamp_dtype: Union[Any, None] = None,
+        range_date_dtype: Union[Any, None] = DefaultPandasDTypes.RANGE_DATE_DTYPE,
+        range_datetime_dtype: Union[Any, None] = DefaultPandasDTypes.RANGE_DATETIME_DTYPE,
+        range_timestamp_dtype: Union[Any, None] = DefaultPandasDTypes.RANGE_TIMESTAMP_DTYPE,
     ) -> "pandas.DataFrame":
         """Create a pandas DataFrame by loading all pages of a query.
 
@@ -2215,6 +2218,27 @@ class RowIterator(HTTPIterator):
         if time_dtype is DefaultPandasDTypes.TIME_DTYPE:
             time_dtype = db_dtypes.TimeDtype()
 
+        if range_date_dtype is DefaultPandasDTypes.RANGE_DATE_DTYPE:
+            range_date_dtype = pandas.ArrowDtype(pyarrow.struct(
+                [("start", pyarrow.date32()), ("end", pyarrow.date32())]
+            ))
+        
+        if range_datetime_dtype is DefaultPandasDTypes.RANGE_DATETIME_DTYPE:
+            range_datetime_dtype = pandas.ArrowDtype(pyarrow.struct(
+                [
+                    ("start", pyarrow.timestamp("us")),
+                    ("end", pyarrow.timestamp("us")),
+                ]
+            ))
+
+        if range_timestamp_dtype is DefaultPandasDTypes.RANGE_TIMESTAMP_DTYPE:
+            range_timestamp_dtype = pandas.ArrowDtype(pyarrow.struct(
+                [   
+                    ("start", pyarrow.timestamp("us", tz="UTC")), 
+                    ("end", pyarrow.timestamp("us", tz="UTC")),
+                ]
+            ))
+
         if bool_dtype is not None and not hasattr(bool_dtype, "__from_arrow__"):
             raise ValueError("bool_dtype", _NO_SUPPORTED_DTYPE)
 
@@ -2299,6 +2323,9 @@ class RowIterator(HTTPIterator):
                     datetime_dtype=datetime_dtype,
                     time_dtype=time_dtype,
                     timestamp_dtype=timestamp_dtype,
+                    range_date_dtype=range_date_dtype,
+                    range_datetime_dtype=range_datetime_dtype,
+                    range_timestamp_dtype=range_timestamp_dtype,
                 ),
             )
         else:
@@ -2503,6 +2530,9 @@ class _EmptyRowIterator(RowIterator):
         datetime_dtype=None,
         time_dtype=None,
         timestamp_dtype=None,
+        range_date_dtype=None,
+        range_datetime_dtype=None,
+        range_timestamp_dtype=None,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
 

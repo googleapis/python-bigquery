@@ -3651,6 +3651,9 @@ class TestRowIterator(unittest.TestCase):
             SchemaField("datetime", "DATETIME"),
             SchemaField("time", "TIME"),
             SchemaField("timestamp", "TIMESTAMP"),
+            SchemaField("range_timestamp", "RANGE", range_element_type="TIMESTAMP"),
+            SchemaField("range_datetime", "RANGE", range_element_type="DATETIME"),
+            SchemaField("range_date", "RANGE", range_element_type="DATE"),
         ]
         row_data = [
             [
@@ -3663,6 +3666,9 @@ class TestRowIterator(unittest.TestCase):
                 "1999-12-31T00:00:00.000000",
                 "00:00:00.000000",
                 "1433836800000000",
+                "[1433836800000000, 1433999900000000)",
+                "[2009-06-17T13:45:30, 2019-07-17T13:45:30)",
+                "[2020-10-01, 2021-10-02)",
             ],
             [
                 "Bharney Rhubble",
@@ -3674,6 +3680,9 @@ class TestRowIterator(unittest.TestCase):
                 "4567-12-31T00:00:00.000000",
                 "12:00:00.232413",
                 "81953424000000000",
+                "[1433836800000000, UNBOUNDED)",
+                "[2009-06-17T13:45:30, UNBOUNDED)",
+                "[2020-10-01, UNBOUNDED)",
             ],
             [
                 "Wylma Phlyntstone",
@@ -3685,6 +3694,9 @@ class TestRowIterator(unittest.TestCase):
                 "9999-12-31T23:59:59.999999",
                 "23:59:59.999999",
                 "253402261199999999",
+                "[UNBOUNDED, UNBOUNDED)",
+                "[UNBOUNDED, UNBOUNDED)",
+                "[UNBOUNDED, UNBOUNDED)",
             ],
         ]
         rows = [{"f": [{"v": field} for field in row]} for row in row_data]
@@ -3719,6 +3731,27 @@ class TestRowIterator(unittest.TestCase):
             ),
             timestamp_dtype=(
                 pandas.ArrowDtype(pyarrow.timestamp("us", tz="UTC"))
+                if hasattr(pandas, "ArrowDtype")
+                else None
+            ),
+            range_date_dtype=(
+                pandas.ArrowDtype(pyarrow.struct(
+                    [("start", pyarrow.date32()), ("end", pyarrow.date32())]
+                ))
+                if hasattr(pandas, "ArrowDtype")
+                else None
+            ),
+            range_datetime_dtype=(
+                pandas.ArrowDtype(pyarrow.struct(
+                    [("start", pyarrow.timestamp("us")), ("end", pyarrow.timestamp("us"))]
+                ))
+                if hasattr(pandas, "ArrowDtype")
+                else None
+            ),
+            range_timestamp_dtype=(
+                pandas.ArrowDtype(pyarrow.struct(
+                    [("start", pyarrow.timestamp("us", tz="UTC")), ("end", pyarrow.timestamp("us", tz="UTC"))]
+                ))
                 if hasattr(pandas, "ArrowDtype")
                 else None
             ),
@@ -3789,6 +3822,36 @@ class TestRowIterator(unittest.TestCase):
                 ],
             )
             self.assertEqual(df.timestamp.dtype.name, "timestamp[us, tz=UTC][pyarrow]")
+
+            self.assertEqual(
+                list(df.range_timestamp),
+                [
+                    {'start': datetime.datetime(2015, 6, 9, 8, 0, 0, tzinfo=datetime.timezone.utc), 'end': datetime.datetime(2015, 6, 11, 5, 18, 20, tzinfo=datetime.timezone.utc)},
+                    {'start': datetime.datetime(2015, 6, 9, 8, 0, 0, tzinfo=datetime.timezone.utc), 'end': None},
+                    {'start': None, 'end': None},
+                ],
+            )
+
+            self.assertEqual(
+                list(df.range_datetime),
+                [
+                    {'start': datetime.datetime(2009, 6, 17, 13, 45, 30), 'end': datetime.datetime(2019, 7, 17, 13, 45, 30)},
+                    {'start': datetime.datetime(2009, 6, 17, 13, 45, 30), 'end': None},
+                    {'start': None, 'end': None},
+                ],
+            )
+
+            self.assertEqual(
+                list(df.range_date),
+                [
+                    {'start': datetime.date(2020, 10, 1), 'end': datetime.date(2021, 10, 2)},
+                    {'start': datetime.date(2020, 10, 1), 'end': None},
+                    {'start': None, 'end': None},
+                    #{'start': datetime.date(2020, 10, 1), 'end': None},
+                    #{'start': None, 'end': None},
+                ],
+            )
+
         else:
             self.assertEqual(
                 list(df.date),

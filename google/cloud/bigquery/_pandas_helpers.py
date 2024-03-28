@@ -164,6 +164,8 @@ def bq_to_arrow_data_type(field):
     if field_type_upper in schema._STRUCT_TYPES:
         return bq_to_arrow_struct_data_type(field)
 
+    if field_type_upper == "RANGE":
+        field_type_upper = f"RANGE<{field.range_element_type.element_type}>"
     data_type_constructor = _pyarrow_helpers.bq_to_arrow_scalars(field_type_upper)
     if data_type_constructor is None:
         return None
@@ -224,6 +226,9 @@ def default_types_mapper(
     datetime_dtype: Union[Any, None] = None,
     time_dtype: Union[Any, None] = None,
     timestamp_dtype: Union[Any, None] = None,
+    range_date_dtype: Union[Any, None] = None,
+    range_datetime_dtype: Union[Any, None] = None,
+    range_timestamp_dtype: Union[Any, None] = None,
 ):
     """Create a mapping from pyarrow types to pandas types.
 
@@ -278,6 +283,26 @@ def default_types_mapper(
         elif time_dtype is not None and pyarrow.types.is_time(arrow_data_type):
             return time_dtype
 
+        elif pyarrow.types.is_struct(arrow_data_type):
+            if (
+                range_datetime_dtype is not None 
+                and arrow_data_type.equals(range_datetime_dtype.pyarrow_dtype)
+            ):
+                return range_datetime_dtype
+
+            elif (
+                range_date_dtype is not None 
+                and arrow_data_type.equals(range_date_dtype.pyarrow_dtype)
+            ):
+                return range_date_dtype
+                return pandas.ArrowDtype(range_date_dtype)
+            
+            elif (
+                range_timestamp_dtype is not None 
+                and arrow_data_type.equals(range_timestamp_dtype.pyarrow_dtype)
+            ):
+                return range_timestamp_dtype
+        
     return types_mapper
 
 

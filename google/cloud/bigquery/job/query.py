@@ -1739,6 +1739,9 @@ class QueryJob(_AsyncJob):
         datetime_dtype: Union[Any, None] = None,
         time_dtype: Union[Any, None] = DefaultPandasDTypes.TIME_DTYPE,
         timestamp_dtype: Union[Any, None] = None,
+        range_date_dtype: Union[Any, None] = DefaultPandasDTypes.RANGE_DATE_DTYPE,
+        range_datetime_dtype: Union[Any, None] = DefaultPandasDTypes.RANGE_DATETIME_DTYPE,
+        range_timestamp_dtype: Union[Any, None] = DefaultPandasDTypes.RANGE_TIMESTAMP_DTYPE,
     ) -> "pandas.DataFrame":
         """Return a pandas DataFrame from a QueryJob
 
@@ -1904,6 +1907,9 @@ class QueryJob(_AsyncJob):
             datetime_dtype=datetime_dtype,
             time_dtype=time_dtype,
             timestamp_dtype=timestamp_dtype,
+            range_date_dtype=range_date_dtype,
+            range_datetime_dtype=range_datetime_dtype,
+            range_timestamp_dtype=range_timestamp_dtype,
         )
 
     # If changing the signature of this method, make sure to apply the same

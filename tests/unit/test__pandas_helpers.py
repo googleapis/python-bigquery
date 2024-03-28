@@ -53,8 +53,7 @@ pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 if pyarrow:
     import pyarrow.parquet
     import pyarrow.types
-    from pyarrow import ArrowTypeError  # type: ignore # noqa: E402
-else:  # pragma: NO COVER
+else:
     # Mock out pyarrow when missing, because methods from pyarrow.types are
     # used in test parameterization.
     pyarrow = mock.Mock()
@@ -572,9 +571,9 @@ def test_bq_to_arrow_array_w_conversion_fail(module_under_test):  # pragma: NO C
     series = pandas.Series(rows, name="test_col", dtype="object")
     bq_field = schema.SchemaField("field_name", "STRING", mode="REPEATED")
     exc_msg = f"""Error converting Pandas column with name: "{series.name}" and datatype: "{series.dtype}" to an appropriate pyarrow datatype: Array, ListArray, or StructArray"""
-    with pytest.raises(ArrowTypeError, match=exc_msg):
+    with pytest.raises(pyarrow.ArrowTypeError, match=exc_msg):
         module_under_test.bq_to_arrow_array(series, bq_field)
-        raise ArrowTypeError(exc_msg)
+        raise pyarrow.ArrowTypeError(exc_msg)
 
 
 @pytest.mark.parametrize("bq_type", ["RECORD", "record", "STRUCT", "struct"])

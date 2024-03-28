@@ -3408,6 +3408,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_dataframe_progress_bar(self):
         pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         pytest.importorskip("tqdm")
 
         from google.cloud.bigquery.schema import SchemaField
@@ -3447,6 +3448,7 @@ class TestRowIterator(unittest.TestCase):
     @mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm", new=None)
     def test_to_dataframe_no_tqdm_no_progress_bar(self):
         pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -3711,7 +3713,7 @@ class TestRowIterator(unittest.TestCase):
         if hasattr(pandas, "Float64Dtype"):
             self.assertEqual(list(df.miles), [1.77, 6.66, 2.0])
             self.assertEqual(df.miles.dtype.name, "Float64")
-        else:  # pragma: NO COVER
+        else:
             self.assertEqual(list(df.miles), ["1.77", "6.66", "2.0"])
             self.assertEqual(df.miles.dtype.name, "string")
 

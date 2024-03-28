@@ -2219,25 +2219,55 @@ class RowIterator(HTTPIterator):
             time_dtype = db_dtypes.TimeDtype()
 
         if range_date_dtype is DefaultPandasDTypes.RANGE_DATE_DTYPE:
-            range_date_dtype = pandas.ArrowDtype(pyarrow.struct(
-                [("start", pyarrow.date32()), ("end", pyarrow.date32())]
-            ))
+            try:
+                range_date_dtype = pandas.ArrowDtype(pyarrow.struct(
+                    [("start", pyarrow.date32()), ("end", pyarrow.date32())]
+                ))
+            except AttributeError:
+                # pandas.ArrowDtype was introduced in pandas 1.5, but python 3.7
+                # only supports upto pandas 1.3. If pandas.ArrowDtype is not
+                # present, we raise a warning and set range_date_dtype to None.
+                msg = ("Unable ro find class ArrowDtype in pandas, setting "
+                "range_date_dtype to be None. To use ArrowDtype, please "
+                "use pandas >= 1.5 and python >= 3.8.")
+                warnings.warn(msg)
+                range_date_dtype = None
         
         if range_datetime_dtype is DefaultPandasDTypes.RANGE_DATETIME_DTYPE:
-            range_datetime_dtype = pandas.ArrowDtype(pyarrow.struct(
-                [
-                    ("start", pyarrow.timestamp("us")),
-                    ("end", pyarrow.timestamp("us")),
-                ]
-            ))
+            try:
+                range_datetime_dtype = pandas.ArrowDtype(pyarrow.struct(
+                    [
+                        ("start", pyarrow.timestamp("us")),
+                        ("end", pyarrow.timestamp("us")),
+                    ]
+                ))
+            except AttributeError:
+                # pandas.ArrowDtype was introduced in pandas 1.5, but python 3.7
+                # only supports upto pandas 1.3. If pandas.ArrowDtype is not
+                # present, we raise a warning and set range_datetime_dtype to None.
+                msg = ("Unable ro find class ArrowDtype in pandas, setting "
+                "range_datetime_dtype to be None. To use ArrowDtype, please "
+                "use pandas >= 1.5 and python >= 3.8.")
+                warnings.warn(msg)
+                range_datetime_dtype = None
 
         if range_timestamp_dtype is DefaultPandasDTypes.RANGE_TIMESTAMP_DTYPE:
-            range_timestamp_dtype = pandas.ArrowDtype(pyarrow.struct(
-                [   
-                    ("start", pyarrow.timestamp("us", tz="UTC")), 
-                    ("end", pyarrow.timestamp("us", tz="UTC")),
-                ]
-            ))
+            try:
+                range_timestamp_dtype = pandas.ArrowDtype(pyarrow.struct(
+                    [   
+                        ("start", pyarrow.timestamp("us", tz="UTC")), 
+                        ("end", pyarrow.timestamp("us", tz="UTC")),
+                    ]
+                ))
+            except AttributeError:
+                # pandas.ArrowDtype was introduced in pandas 1.5, but python 3.7
+                # only supports upto pandas 1.3. If pandas.ArrowDtype is not
+                # present, we raise a warning and set range_timestamp_dtype to None.
+                msg = ("Unable ro find class ArrowDtype in pandas, setting "
+                "range_timestamp_dtype to be None. To use ArrowDtype, please "
+                "use pandas >= 1.5 and python >= 3.8.")
+                warnings.warn(msg)
+                range_timestamp_dtype = None
 
         if bool_dtype is not None and not hasattr(bool_dtype, "__from_arrow__"):
             raise ValueError("bool_dtype", _NO_SUPPORTED_DTYPE)

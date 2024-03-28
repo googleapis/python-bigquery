@@ -3428,7 +3428,6 @@ class TestRowIterator(unittest.TestCase):
 
         progress_bars = (
             ("tqdm", mock.patch("tqdm.tqdm")),
-            ("tqdm_notebook", mock.patch("tqdm.notebook.tqdm")),
             ("tqdm_gui", mock.patch("tqdm.tqdm_gui")),
         )
 
@@ -3437,6 +3436,39 @@ class TestRowIterator(unittest.TestCase):
             row_iterator = self._make_one(_mock_client(), api_request, path, schema)
             df = row_iterator.to_dataframe(
                 progress_bar_type=progress_bar_type,
+                create_bqstorage_client=False,
+            )
+
+            progress_bar_mock.assert_called()
+            progress_bar_mock().update.assert_called()
+            progress_bar_mock().close.assert_called_once()
+            self.assertEqual(len(df), 4)
+
+    def test_to_dataframe_progress_bar_notebook(self):
+        pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
+        pytest.importorskip("tqdm")
+        pytest.importorskip("tqdm.notebook")
+
+        from google.cloud.bigquery.schema import SchemaField
+
+        schema = [
+            SchemaField("name", "STRING", mode="REQUIRED"),
+            SchemaField("age", "INTEGER", mode="REQUIRED"),
+        ]
+        rows = [
+            {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+            {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+            {"f": [{"v": "Wylma Phlyntstone"}, {"v": "29"}]},
+            {"f": [{"v": "Bhettye Rhubble"}, {"v": "27"}]},
+        ]
+        path = "/foo"
+        api_request = mock.Mock(return_value={"rows": rows})
+
+        with mock.patch("tqdm.notebook.tqdm") as progress_bar_mock:
+            row_iterator = self._make_one(_mock_client(), api_request, path, schema)
+            df = row_iterator.to_dataframe(
+                progress_bar_type="tqdm_notebook",
                 create_bqstorage_client=False,
             )
 

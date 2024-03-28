@@ -20,7 +20,7 @@ from packaging import version
 
 try:
     import pyarrow  # type: ignore
-except ImportError:  # pragma: NO COVER
+except ImportError:
     pyarrow = None
 
 
@@ -73,7 +73,7 @@ def pyarrow_range_date():
 _BQ_TO_ARROW_SCALARS = {}
 _ARROW_SCALAR_IDS_TO_BQ = {}
 
-if pyarrow:  # pragma: NO COVER
+if pyarrow:
     # This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
     # When modifying it be sure to update it there as well.
     # Note(todo!!): type "BIGNUMERIC"'s matching pyarrow type is added in _pandas_helpers.py

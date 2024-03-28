@@ -30,12 +30,12 @@ try:
     import pandas
     import pandas.api.types
     import pandas.testing
-except ImportError:  # pragma: NO COVER
+except ImportError:
     pandas = None
 
 try:
     import geopandas
-except ImportError:  # pragma: NO COVER
+except ImportError:
     geopandas = None
 
 import pytest
@@ -46,17 +46,19 @@ from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 if pyarrow:
     import pyarrow.parquet
     import pyarrow.types
+
+    _BIGNUMERIC_SUPPORT = True
 else:
     # Mock out pyarrow when missing, because methods from pyarrow.types are
     # used in test parameterization.
     pyarrow = mock.Mock()
+    _BIGNUMERIC_SUPPORT = False
 
 bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import()
 

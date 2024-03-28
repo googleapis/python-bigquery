@@ -20,7 +20,7 @@ from packaging import version
 
 try:
     import pyarrow  # type: ignore
-except ImportError:  # pragma: NO COVER
+except ImportError:
     pyarrow = None
 
 

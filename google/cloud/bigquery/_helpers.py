@@ -320,7 +320,7 @@ def _range_element_from_json(value, field):
     elif field.element_type == "TIMESTAMP":
         return _timestamp_from_json(value, None)
     else:
-        raise ValueError(f"Unsupported range field type: {value}")
+        raise ValueError(f"Unsupported range field type: {field.element_type}")
 
 
 def _range_from_json(value, field):
@@ -344,7 +344,7 @@ def _range_from_json(value, field):
             end = _range_element_from_json(end, field.range_element_type)
             return {"start": start, "end": end}
         else:
-            raise ValueError(f"Unknown range format: {value}")
+            raise ValueError(f"Unknown format for range value: {value}")
     else:
         return None
 

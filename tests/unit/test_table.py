@@ -3920,6 +3920,9 @@ class TestRowIterator(unittest.TestCase):
             SchemaField("datetime", "DATETIME"),
             SchemaField("time", "TIME"),
             SchemaField("timestamp", "TIMESTAMP"),
+            SchemaField("range_timestamp", "RANGE", range_element_type="TIMESTAMP"),
+            SchemaField("range_datetime", "RANGE", range_element_type="DATETIME"),
+            SchemaField("range_date", "RANGE", range_element_type="DATE"),
         ]
         row_data = [
             [
@@ -3932,6 +3935,9 @@ class TestRowIterator(unittest.TestCase):
                 "1999-12-31T00:00:00.000000",
                 "23:59:59.999999",
                 "1433836800000000",
+                "[1433836800000000, 1433999900000000)",
+                "[2009-06-17T13:45:30, 2019-07-17T13:45:30)",
+                "[2020-10-01, 2021-10-02)",
             ],
         ]
         rows = [{"f": [{"v": field} for field in row]} for row in row_data]
@@ -3949,6 +3955,9 @@ class TestRowIterator(unittest.TestCase):
             datetime_dtype=None,
             time_dtype=None,
             timestamp_dtype=None,
+            range_timestamp_dtype=None,
+            range_datetime_dtype=None,
+            range_date_dtype=None,
         )
         self.assertIsInstance(df, pandas.DataFrame)
         self.assertEqual(df.complete.dtype.name, "bool")
@@ -3960,6 +3969,9 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.datetime.dtype.name, "datetime64[ns]")
         self.assertEqual(df.time.dtype.name, "object")
         self.assertEqual(df.timestamp.dtype.name, "datetime64[ns, UTC]")
+        self.assertEqual(df.time.range_timestamp_dtype.name, "object")
+        self.assertEqual(df.time.range_datetime_dtype.name, "object")
+        self.assertEqual(df.time.range_date_dtype.name, "object")
 
     def test_to_dataframe_w_unsupported_dtypes_mapper(self):
         pytest.importorskip("pandas")

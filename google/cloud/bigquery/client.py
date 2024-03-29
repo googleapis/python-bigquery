@@ -3868,8 +3868,6 @@ class Client(ClientWithProject):
         if template_suffix is not None:
             data["templateSuffix"] = template_suffix
 
-        print(data)
-
         path = "%s/insertAll" % table.path
         # We can always retry, because every row has an insert ID.
         span_attributes = {"path": path}

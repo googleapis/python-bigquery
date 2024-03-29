@@ -2580,6 +2580,9 @@ class _EmptyRowIterator(RowIterator):
             datetime_dtype (Any): Ignored. Added for compatibility with RowIterator.
             time_dtype (Any): Ignored. Added for compatibility with RowIterator.
             timestamp_dtype (Any): Ignored. Added for compatibility with RowIterator.
+            range_date_dtype (Any): Ignored. Added for compatibility with RowIterator.
+            range_datetime_dtype (Any): Ignored. Added for compatibility with RowIterator.
+            range_timestamp_dtype (Any): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -2602,6 +2605,7 @@ class _EmptyRowIterator(RowIterator):
             dtypes (Any): Ignored. Added for compatibility with RowIterator.
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
+            geography_column (str): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.

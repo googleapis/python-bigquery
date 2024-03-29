@@ -291,7 +291,6 @@ def default_types_mapper(
                 and arrow_data_type.equals(range_date_dtype.pyarrow_dtype)
             ):
                 return range_date_dtype
-                return pandas.ArrowDtype(range_date_dtype)
             
             elif (
                 range_timestamp_dtype is not None 

@@ -225,7 +225,6 @@ def mypy_samples(session):
     if os.environ.get("RUN_TYPING_TESTS", "true") == "false":
         session.skip("RUN_TYPING_TESTS is set to false, skipping")
 
-
     session.install("pytest")
     for requirements_path in CURRENT_DIRECTORY.glob("samples/*/requirements.txt"):
         session.install("-r", str(requirements_path))

@@ -221,7 +221,7 @@ def system(session):
 def mypy_samples(session):
     """Run type checks with mypy."""
 
-    # Check the value of `RUN_TYPING_TESTS` env var. It defaults to true.
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
     if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
         session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 

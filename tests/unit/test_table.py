@@ -3969,9 +3969,9 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df.datetime.dtype.name, "datetime64[ns]")
         self.assertEqual(df.time.dtype.name, "object")
         self.assertEqual(df.timestamp.dtype.name, "datetime64[ns, UTC]")
-        self.assertEqual(df.time.range_timestamp_dtype.name, "object")
-        self.assertEqual(df.time.range_datetime_dtype.name, "object")
-        self.assertEqual(df.time.range_date_dtype.name, "object")
+        self.assertEqual(df.range_timestamp.dtype.name, "object")
+        self.assertEqual(df.range_datetime.dtype.name, "object")
+        self.assertEqual(df.range_date.dtype.name, "object")
 
     def test_to_dataframe_w_unsupported_dtypes_mapper(self):
         pytest.importorskip("pandas")

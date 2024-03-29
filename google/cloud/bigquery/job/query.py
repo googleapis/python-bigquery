@@ -1872,8 +1872,53 @@ class QueryJob(_AsyncJob):
 
                 .. versionadded:: 3.10.0
 
+            range_date_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype, such as:                
+                ``pandas.ArrowDtype(pyarrow.struct(
+                    [("start", pyarrow.date32()), ("end", pyarrow.date32())]
+                ))``
+                to convert BigQuery RANGE<DATE> type, instead of relying on
+                the default ``object``. If you explicitly set the value to
+                ``None``, the data type will be ``object``. BigQuery Range type
+                can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#range_type
+
+                .. versionadded:: 3.21.0
+
+            range_datetime_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype, such as:                
+                ``pandas.ArrowDtype(pyarrow.struct(
+                    [   
+                        ("start", pyarrow.timestamp("us")), 
+                        ("end", pyarrow.timestamp("us")),
+                    ]
+                ))``
+                to convert BigQuery RANGE<DATETIME> type, instead of relying on
+                the default ``object``. If you explicitly set the value to
+                ``None``, the data type will be ``object``. BigQuery Range type
+                can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#range_type
+
+                .. versionadded:: 3.21.0
+
+            range_timestamp_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype, such as:                
+                ``pandas.ArrowDtype(pyarrow.struct(
+                    [   
+                        ("start", pyarrow.timestamp("us", tz="UTC")), 
+                        ("end", pyarrow.timestamp("us", tz="UTC")),
+                    ]
+                ))``
+                to convert BigQuery RANGE<TIMESTAMP> type, instead of relying
+                on the default ``object``. If you explicitly set the value to
+                ``None``, the data type will be ``object``. BigQuery Range type
+                can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#range_type
+
+                .. versionadded:: 3.21.0
+
         Returns:
-            pandas.DataFrame:
+            pandas.DataFrame: 
                 A :class:`~pandas.DataFrame` populated with row data
                 and column headers from the query results. The column
                 headers are derived from the destination table's

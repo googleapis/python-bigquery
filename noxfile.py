@@ -406,7 +406,7 @@ def lint(session):
     serious code quality issues.
     """
 
-    # Check the value of `RUN_LINTING_TESTS` env var. It defaults to true.
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
     if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
         session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 

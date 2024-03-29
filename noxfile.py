@@ -133,8 +133,8 @@ def mypy(session):
     """Run type checks with mypy."""
 
     # Check the value of `RUN_TYPING_TESTS` env var. It defaults to true.
-    if os.environ.get("RUN_TYPING_TESTS", "true") == "false":
-        session.skip("RUN_TYPING_TESTS is set to false, skipping")
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 
     session.install("-e", ".[all]")
     session.install(MYPY_VERSION)
@@ -158,8 +158,8 @@ def pytype(session):
     # https://github.com/googleapis/python-bigquery/issues/655
 
     # Check the value of `RUN_TYPING_TESTS` env var. It defaults to true.
-    if os.environ.get("RUN_TYPING_TESTS", "true") == "false":
-        session.skip("RUN_TYPING_TESTS is set to false, skipping")
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 
     session.install("attrs==20.3.0")
     session.install("-e", ".[all]")
@@ -222,8 +222,8 @@ def mypy_samples(session):
     """Run type checks with mypy."""
 
     # Check the value of `RUN_TYPING_TESTS` env var. It defaults to true.
-    if os.environ.get("RUN_TYPING_TESTS", "true") == "false":
-        session.skip("RUN_TYPING_TESTS is set to false, skipping")
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 
     session.install("pytest")
     for requirements_path in CURRENT_DIRECTORY.glob("samples/*/requirements.txt"):
@@ -407,8 +407,8 @@ def lint(session):
     """
 
     # Check the value of `RUN_LINTING_TESTS` env var. It defaults to true.
-    if os.environ.get("RUN_LINTING_TESTS", "true") == "false":
-        session.skip("RUN_LINTING_TESTS is set to false, skipping")
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 
     session.install("flake8", BLACK_VERSION)
     session.install("-e", ".")
@@ -425,8 +425,8 @@ def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
     # Check the value of `RUN_LINTING_TESTS` env var. It defaults to true.
-    if os.environ.get("RUN_LINTING_TESTS", "true") == "false":
-        session.skip("RUN_LINTING_TESTS is set to false, skipping")
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 
     session.install("docutils", "Pygments")
     session.run("python", "setup.py", "check", "--restructuredtext", "--strict")
@@ -439,8 +439,8 @@ def blacken(session):
     """
 
     # Check the value of `RUN_LINTING_TESTS` env var. It defaults to true.
-    if os.environ.get("RUN_LINTING_TESTS", "true") == "false":
-        session.skip("RUN_LINTING_TESTS is set to false, skipping")
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 
     session.install(BLACK_VERSION)
     session.run("black", *BLACK_PATHS)

@@ -424,7 +424,7 @@ def lint(session):
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
-    # Check the value of `RUN_LINTING_TESTS` env var. It defaults to true.
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
     if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
         session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 

@@ -157,7 +157,7 @@ def pytype(session):
     # recent version avoids the error until a possibly better fix is found.
     # https://github.com/googleapis/python-bigquery/issues/655
 
-    # Check the value of `RUN_TYPING_TESTS` env var. It defaults to true.
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
     if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
         session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 

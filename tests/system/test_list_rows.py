@@ -117,12 +117,10 @@ def test_list_rows_scalars_extreme(
         if column == "rowindex":
             assert value == 4
         else:
-            assert value 
+            assert value is None
 
-def test_list_rows_scalars(
-        bigquery_client: bigquery.Client,
-        scalars_table_csv: str
-    ):
+
+def test_list_rows_range(bigquery_client: bigquery.Client, scalars_table_csv: str):
     rows = bigquery_client.list_rows(scalars_table_csv)
     rows = list(rows)
     row = rows[0]

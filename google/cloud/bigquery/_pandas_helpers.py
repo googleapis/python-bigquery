@@ -280,24 +280,21 @@ def default_types_mapper(
             return time_dtype
 
         elif pyarrow.types.is_struct(arrow_data_type):
-            if (
-                range_datetime_dtype is not None 
-                and arrow_data_type.equals(range_datetime_dtype.pyarrow_dtype)
+            if range_datetime_dtype is not None and arrow_data_type.equals(
+                range_datetime_dtype.pyarrow_dtype
             ):
                 return range_datetime_dtype
 
-            elif (
-                range_date_dtype is not None 
-                and arrow_data_type.equals(range_date_dtype.pyarrow_dtype)
+            elif range_date_dtype is not None and arrow_data_type.equals(
+                range_date_dtype.pyarrow_dtype
             ):
                 return range_date_dtype
-            
-            elif (
-                range_timestamp_dtype is not None 
-                and arrow_data_type.equals(range_timestamp_dtype.pyarrow_dtype)
+
+            elif range_timestamp_dtype is not None and arrow_data_type.equals(
+                range_timestamp_dtype.pyarrow_dtype
             ):
                 return range_timestamp_dtype
-        
+
     return types_mapper
 
 

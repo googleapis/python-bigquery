@@ -60,6 +60,7 @@ class StandardSqlDataType(proto.Message):
 
     class TypeKind(proto.Enum):
         r""""""
+
         TYPE_KIND_UNSPECIFIED = 0
         INT64 = 2
         BOOL = 5

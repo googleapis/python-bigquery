@@ -3497,12 +3497,13 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        with warnings.catch_warnings(record=True) as warned:
+        # with warnings.catch_warnings(record=True) as warned:
+        with warnings.catch_warnings(record=True):
             df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
-        user_warnings = [
-            warning for warning in warned if warning.category is UserWarning
-        ]
+        # user_warnings = [
+        #    warning for warning in warned if warning.category is UserWarning
+        # ]
         # Note: number of warnings is inconsistent across python versions
         # I think it's relatively safe to not check warning numbers, than
         # having different assertions depending on python version.
@@ -3528,15 +3529,16 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        with warnings.catch_warnings(record=True) as warned:
+        # with warnings.catch_warnings(record=True) as warned:
+        with warnings.catch_warnings(record=True):
             df = row_iterator.to_dataframe(
                 progress_bar_type="tqdm",
                 create_bqstorage_client=False,
             )
 
-        user_warnings = [
-            warning for warning in warned if warning.category is UserWarning
-        ]
+        # user_warnings = [
+        #     warning for warning in warned if warning.category is UserWarning
+        # ]
         # Note: number of warnings is inconsistent across python versions
         # I think it's relatively safe to not check warning numbers, than
         # having different assertions depending on python version.
@@ -3743,23 +3745,35 @@ class TestRowIterator(unittest.TestCase):
                 else None
             ),
             range_date_dtype=(
-                pandas.ArrowDtype(pyarrow.struct(
-                    [("start", pyarrow.date32()), ("end", pyarrow.date32())]
-                ))
+                pandas.ArrowDtype(
+                    pyarrow.struct(
+                        [("start", pyarrow.date32()), ("end", pyarrow.date32())]
+                    )
+                )
                 if hasattr(pandas, "ArrowDtype")
                 else None
             ),
             range_datetime_dtype=(
-                pandas.ArrowDtype(pyarrow.struct(
-                    [("start", pyarrow.timestamp("us")), ("end", pyarrow.timestamp("us"))]
-                ))
+                pandas.ArrowDtype(
+                    pyarrow.struct(
+                        [
+                            ("start", pyarrow.timestamp("us")),
+                            ("end", pyarrow.timestamp("us")),
+                        ]
+                    )
+                )
                 if hasattr(pandas, "ArrowDtype")
                 else None
             ),
             range_timestamp_dtype=(
-                pandas.ArrowDtype(pyarrow.struct(
-                    [("start", pyarrow.timestamp("us", tz="UTC")), ("end", pyarrow.timestamp("us", tz="UTC"))]
-                ))
+                pandas.ArrowDtype(
+                    pyarrow.struct(
+                        [
+                            ("start", pyarrow.timestamp("us", tz="UTC")),
+                            ("end", pyarrow.timestamp("us", tz="UTC")),
+                        ]
+                    )
+                )
                 if hasattr(pandas, "ArrowDtype")
                 else None
             ),
@@ -3834,29 +3848,45 @@ class TestRowIterator(unittest.TestCase):
             self.assertEqual(
                 list(df.range_timestamp),
                 [
-                    {'start': datetime.datetime(2015, 6, 9, 8, 0, 0, tzinfo=datetime.timezone.utc), 'end': datetime.datetime(2015, 6, 11, 5, 18, 20, tzinfo=datetime.timezone.utc)},
-                    {'start': datetime.datetime(2015, 6, 9, 8, 0, 0, tzinfo=datetime.timezone.utc), 'end': None},
-                    {'start': None, 'end': None},
+                    {
+                        "start": datetime.datetime(
+                            2015, 6, 9, 8, 0, 0, tzinfo=datetime.timezone.utc
+                        ),
+                        "end": datetime.datetime(
+                            2015, 6, 11, 5, 18, 20, tzinfo=datetime.timezone.utc
+                        ),
+                    },
+                    {
+                        "start": datetime.datetime(
+                            2015, 6, 9, 8, 0, 0, tzinfo=datetime.timezone.utc
+                        ),
+                        "end": None,
+                    },
+                    {"start": None, "end": None},
                 ],
             )
 
             self.assertEqual(
                 list(df.range_datetime),
                 [
-                    {'start': datetime.datetime(2009, 6, 17, 13, 45, 30), 'end': datetime.datetime(2019, 7, 17, 13, 45, 30)},
-                    {'start': datetime.datetime(2009, 6, 17, 13, 45, 30), 'end': None},
-                    {'start': None, 'end': None},
+                    {
+                        "start": datetime.datetime(2009, 6, 17, 13, 45, 30),
+                        "end": datetime.datetime(2019, 7, 17, 13, 45, 30),
+                    },
+                    {"start": datetime.datetime(2009, 6, 17, 13, 45, 30), "end": None},
+                    {"start": None, "end": None},
                 ],
             )
 
             self.assertEqual(
                 list(df.range_date),
                 [
-                    {'start': datetime.date(2020, 10, 1), 'end': datetime.date(2021, 10, 2)},
-                    {'start': datetime.date(2020, 10, 1), 'end': None},
-                    {'start': None, 'end': None},
-                    #{'start': datetime.date(2020, 10, 1), 'end': None},
-                    #{'start': None, 'end': None},
+                    {
+                        "start": datetime.date(2020, 10, 1),
+                        "end": datetime.date(2021, 10, 2),
+                    },
+                    {"start": datetime.date(2020, 10, 1), "end": None},
+                    {"start": None, "end": None},
                 ],
             )
 

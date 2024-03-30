@@ -177,9 +177,7 @@ def test_list_rows_range_csv(
 
     schema = [
         bigquery.SchemaField(
-            "range_date",
-            enums.SqlTypeNames.RANGE,
-            range_element_type="DATE"
+            "range_date", enums.SqlTypeNames.RANGE, range_element_type="DATE"
         ),
     ]
 

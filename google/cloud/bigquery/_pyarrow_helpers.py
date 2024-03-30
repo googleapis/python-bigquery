@@ -48,26 +48,24 @@ def pyarrow_timestamp():
 
 def pyarrow_range_timestamp():
     return pyarrow.struct(
-            [   
-                ("start", pyarrow.timestamp("us", tz="UTC")), 
-                ("end", pyarrow.timestamp("us", tz="UTC")),
-            ]
-        )
+        [
+            ("start", pyarrow.timestamp("us", tz="UTC")),
+            ("end", pyarrow.timestamp("us", tz="UTC")),
+        ]
+    )
 
 
 def pyarrow_range_datetime():
     return pyarrow.struct(
-            [
-                ("start", pyarrow.timestamp("us")),
-                ("end", pyarrow.timestamp("us")),
-            ]
-        )
+        [
+            ("start", pyarrow.timestamp("us")),
+            ("end", pyarrow.timestamp("us")),
+        ]
+    )
 
 
 def pyarrow_range_date():
-    return pyarrow.struct(
-            [("start", pyarrow.date32()), ("end", pyarrow.date32())]
-        )    
+    return pyarrow.struct([("start", pyarrow.date32()), ("end", pyarrow.date32())])
 
 
 _BQ_TO_ARROW_SCALARS = {}

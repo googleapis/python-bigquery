@@ -103,6 +103,7 @@ class Model(proto.Message):
 
     class ModelType(proto.Enum):
         r"""Indicates the type of the Model."""
+
         MODEL_TYPE_UNSPECIFIED = 0
         LINEAR_REGRESSION = 1
         LOGISTIC_REGRESSION = 2
@@ -120,6 +121,7 @@ class Model(proto.Message):
 
     class LossType(proto.Enum):
         r"""Loss metric to evaluate model training performance."""
+
         LOSS_TYPE_UNSPECIFIED = 0
         MEAN_SQUARED_LOSS = 1
         MEAN_LOG_LOSS = 2
@@ -128,6 +130,7 @@ class Model(proto.Message):
         r"""Distance metric used to compute the distance between two
         points.
         """
+
         DISTANCE_TYPE_UNSPECIFIED = 0
         EUCLIDEAN = 1
         COSINE = 2
@@ -136,6 +139,7 @@ class Model(proto.Message):
         r"""Indicates the method to split input data into multiple
         tables.
         """
+
         DATA_SPLIT_METHOD_UNSPECIFIED = 0
         RANDOM = 1
         CUSTOM = 2
@@ -147,6 +151,7 @@ class Model(proto.Message):
         r"""Type of supported data frequency for time series forecasting
         models.
         """
+
         DATA_FREQUENCY_UNSPECIFIED = 0
         AUTO_FREQUENCY = 1
         YEARLY = 2
@@ -161,6 +166,7 @@ class Model(proto.Message):
         r"""Type of supported holiday regions for time series forecasting
         models.
         """
+
         HOLIDAY_REGION_UNSPECIFIED = 0
         GLOBAL = 1
         NA = 2
@@ -233,12 +239,14 @@ class Model(proto.Message):
 
     class LearnRateStrategy(proto.Enum):
         r"""Indicates the learning rate optimization strategy to use."""
+
         LEARN_RATE_STRATEGY_UNSPECIFIED = 0
         LINE_SEARCH = 1
         CONSTANT = 2
 
     class OptimizationStrategy(proto.Enum):
         r"""Indicates the optimization strategy used for training."""
+
         OPTIMIZATION_STRATEGY_UNSPECIFIED = 0
         BATCH_GRADIENT_DESCENT = 1
         NORMAL_EQUATION = 2
@@ -247,6 +255,7 @@ class Model(proto.Message):
         r"""Indicates the training algorithm to use for matrix
         factorization models.
         """
+
         FEEDBACK_TYPE_UNSPECIFIED = 0
         IMPLICIT = 1
         EXPLICIT = 2
@@ -256,6 +265,7 @@ class Model(proto.Message):
 
         class SeasonalPeriodType(proto.Enum):
             r""""""
+
             SEASONAL_PERIOD_TYPE_UNSPECIFIED = 0
             NO_SEASONALITY = 1
             DAILY = 2
@@ -271,6 +281,7 @@ class Model(proto.Message):
             r"""Indicates the method used to initialize the centroids for
             KMeans clustering algorithm.
             """
+
             KMEANS_INITIALIZATION_METHOD_UNSPECIFIED = 0
             RANDOM = 1
             CUSTOM = 2

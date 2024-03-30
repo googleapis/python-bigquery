@@ -101,8 +101,6 @@ def load_scalars_table(
 ) -> str:
     schema = bigquery_client.schema_from_json(DATA_DIR / schema_source)
     table_id = data_path.replace(".", "_") + hex(random.randrange(1000000))
-    #if data_path != "scalars.jsonl":
-    #    breakpoint()
     job_config = bigquery.LoadJobConfig()
     job_config.schema = schema
     job_config.source_format = source_format
@@ -156,12 +154,14 @@ def scalars_table_multi_location(
 
 
 @pytest.fixture(scope="session")
-def scalars_table_csv(bigquery_client: bigquery.Client, project_id: str, dataset_id: str):
+def scalars_table_csv(
+    bigquery_client: bigquery.Client, project_id: str, dataset_id: str
+):
     full_table_id = load_scalars_table(
-        bigquery_client, 
-        project_id, 
-        dataset_id, 
-        data_path="scalars.csv", 
+        bigquery_client,
+        project_id,
+        dataset_id,
+        data_path="scalars.csv",
         source_format=enums.SourceFormat.CSV,
         schema_source="scalars_schema_csv.json",
     )

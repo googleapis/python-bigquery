@@ -2193,11 +2193,11 @@ class RowIterator(HTTPIterator):
 
             range_date_dtype (Optional[pandas.Series.dtype, None]):
                 If set, indicate a pandas ExtensionDtype, such as:
-                '''
-                pandas.ArrowDtype(pyarrow.struct(
-                    [("start", pyarrow.date32()), ("end", pyarrow.date32())]
-                ))
-                '''
+                .. code-block:: python
+
+                    pandas.ArrowDtype(pyarrow.struct(
+                        [("start", pyarrow.date32()), ("end", pyarrow.date32())]
+                    ))
                 to convert BigQuery RANGE<DATE> type, instead of relying on
                 the default ``object``. If you explicitly set the value to
                 ``None``, the data type will be ``object``. BigQuery Range type
@@ -2208,14 +2208,14 @@ class RowIterator(HTTPIterator):
 
             range_datetime_dtype (Optional[pandas.Series.dtype, None]):
                 If set, indicate a pandas ExtensionDtype, such as:
-                '''
-                pandas.ArrowDtype(pyarrow.struct(
-                    [
-                        ("start", pyarrow.timestamp("us")),
-                        ("end", pyarrow.timestamp("us")),
-                    ]
-                ))
-                '''
+                .. code-block:: python
+
+                    pandas.ArrowDtype(pyarrow.struct(
+                        [
+                            ("start", pyarrow.timestamp("us")),
+                            ("end", pyarrow.timestamp("us")),
+                        ]
+                    ))
                 to convert BigQuery RANGE<DATETIME> type, instead of relying on
                 the default ``object``. If you explicitly set the value to
                 ``None``, the data type will be ``object``. BigQuery Range type
@@ -2226,14 +2226,14 @@ class RowIterator(HTTPIterator):
 
             range_timestamp_dtype (Optional[pandas.Series.dtype, None]):
                 If set, indicate a pandas ExtensionDtype, such as:
-                '''
-                pandas.ArrowDtype(pyarrow.struct(
-                    [
-                        ("start", pyarrow.timestamp("us", tz="UTC")),
-                        ("end", pyarrow.timestamp("us", tz="UTC")),
-                    ]
-                ))
-                '''
+                .. code-block:: python
+
+                    pandas.ArrowDtype(pyarrow.struct(
+                        [
+                            ("start", pyarrow.timestamp("us", tz="UTC")),
+                            ("end", pyarrow.timestamp("us", tz="UTC")),
+                        ]
+                    ))
                 to convert BigQuery RANGE<TIMESTAMP> type, instead of relying
                 on the default ``object``. If you explicitly set the value to
                 ``None``, the data type will be ``object``. BigQuery Range type

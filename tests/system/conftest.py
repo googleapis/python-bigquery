@@ -101,6 +101,8 @@ def load_scalars_table(
 ) -> str:
     schema = bigquery_client.schema_from_json(DATA_DIR / schema_source)
     table_id = data_path.replace(".", "_") + hex(random.randrange(1000000))
+    #if data_path != "scalars.jsonl":
+    #    breakpoint()
     job_config = bigquery.LoadJobConfig()
     job_config.schema = schema
     job_config.source_format = source_format

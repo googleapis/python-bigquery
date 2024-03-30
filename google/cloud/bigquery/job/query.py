@@ -1878,7 +1878,6 @@ class QueryJob(_AsyncJob):
 
             range_date_dtype (Optional[pandas.Series.dtype, None]):
                 If set, indicate a pandas ExtensionDtype, such as:
-
                 .. code-block:: python
 
                     pandas.ArrowDtype(pyarrow.struct(
@@ -1894,7 +1893,6 @@ class QueryJob(_AsyncJob):
 
             range_datetime_dtype (Optional[pandas.Series.dtype, None]):
                 If set, indicate a pandas ExtensionDtype, such as:
-
                 .. code-block:: python
 
                     pandas.ArrowDtype(pyarrow.struct(
@@ -1913,7 +1911,6 @@ class QueryJob(_AsyncJob):
 
             range_timestamp_dtype (Optional[pandas.Series.dtype, None]):
                 If set, indicate a pandas ExtensionDtype, such as:
-
                 .. code-block:: python
 
                     pandas.ArrowDtype(pyarrow.struct(

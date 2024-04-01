@@ -157,7 +157,8 @@ def _set_job_attributes(job_ref):
     if total_bytes_billed is not None:
         job_attributes["total_bytes_billed"] = total_bytes_billed
 
-    if job_ref.total_bytes_processed is not None:
-        job_attributes["total_bytes_processed"] = int(job_ref.total_bytes_processed)
+    total_bytes_processed = getattr(job_ref, "total_bytes_processed", None)
+    if total_bytes_processed is not None:
+        job_attributes["total_bytes_processed"] = total_bytes_processed
 
     return job_attributes

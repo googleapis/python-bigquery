@@ -18,7 +18,6 @@ import pathlib
 import os
 import re
 import shutil
-
 import nox
 
 
@@ -38,7 +37,7 @@ BLACK_PATHS = (
 
 DEFAULT_PYTHON_VERSION = "3.8"
 SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.11", "3.12"]
-UNIT_TEST_PYTHON_VERSIONS = ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+UNIT_TEST_PYTHON_VERSIONS = ["3.7", "3.8", "3.12"]
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 # 'docfx' is excluded since it only needs to run in 'docs-presubmit'
@@ -66,13 +65,13 @@ def default(session, install_extras=True):
     Python corresponding to the ``nox`` binary the ``PATH`` can
     run the tests.
     """
+
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
     )
 
     # Install all test dependencies, then install local packages in-place.
     session.install(
-        "mock",
         "pytest",
         "google-cloud-testutils",
         "pytest-cov",
@@ -88,6 +87,7 @@ def default(session, install_extras=True):
     else:
         install_target = "."
     session.install("-e", install_target, "-c", constraints_path)
+    session.run("python", "-m", "pip", "freeze")
 
     # Run py.test against the unit tests.
     session.run(
@@ -107,6 +107,7 @@ def default(session, install_extras=True):
 @nox.session(python=UNIT_TEST_PYTHON_VERSIONS)
 def unit(session):
     """Run the unit test suite."""
+
     default(session)
 
 
@@ -114,9 +115,13 @@ def unit(session):
 def unit_noextras(session):
     """Run the unit test suite."""
 
-    # Install optional dependencies that are out-of-date.
+    # Install optional dependencies that are out-of-date to see that
+    # we fail gracefully.
     # https://github.com/googleapis/python-bigquery/issues/933
-    # There is no pyarrow 1.0.0 package for Python 3.9.
+    #
+    # We only install this extra package on one of the two Python versions
+    # so that it continues to be an optional dependency.
+    # https://github.com/googleapis/python-bigquery/issues/1877
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
         session.install("pyarrow==1.0.0")
 
@@ -126,6 +131,7 @@ def unit_noextras(session):
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def mypy(session):
     """Run type checks with mypy."""
+
     session.install("-e", ".[all]")
     session.install(MYPY_VERSION)
 
@@ -146,6 +152,7 @@ def pytype(session):
     # An indirect dependecy attrs==21.1.0 breaks the check, and installing a less
     # recent version avoids the error until a possibly better fix is found.
     # https://github.com/googleapis/python-bigquery/issues/655
+
     session.install("attrs==20.3.0")
     session.install("-e", ".[all]")
     session.install(PYTYPE_VERSION)
@@ -176,7 +183,7 @@ def system(session):
 
     # Install all test dependencies, then install local packages in place.
     session.install(
-        "mock", "pytest", "psutil", "google-cloud-testutils", "-c", constraints_path
+        "pytest", "psutil", "google-cloud-testutils", "-c", constraints_path
     )
     if os.environ.get("GOOGLE_API_USE_CLIENT_CERTIFICATE", "") == "true":
         # mTLS test requires pyopenssl and latest google-cloud-storage
@@ -205,6 +212,7 @@ def system(session):
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def mypy_samples(session):
     """Run type checks with mypy."""
+
     session.install("pytest")
     for requirements_path in CURRENT_DIRECTORY.glob("samples/*/requirements.txt"):
         session.install("-r", str(requirements_path))
@@ -249,7 +257,7 @@ def snippets(session):
     )
 
     # Install all test dependencies, then install local packages in place.
-    session.install("mock", "pytest", "google-cloud-testutils", "-c", constraints_path)
+    session.install("pytest", "google-cloud-testutils", "-c", constraints_path)
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
@@ -282,6 +290,7 @@ def cover(session):
     This outputs the coverage report aggregating coverage from the unit
     test runs (not system test runs), and then erases coverage data.
     """
+
     session.install("coverage", "pytest-cov")
     session.run("coverage", "report", "--show-missing", "--fail-under=100")
     session.run("coverage", "erase")
@@ -336,7 +345,6 @@ def prerelease_deps(session):
         "google-cloud-datacatalog",
         "google-cloud-storage",
         "google-cloud-testutils",
-        "mock",
         "psutil",
         "pytest",
         "pytest-cov",

@@ -56,13 +56,8 @@ from google.cloud.bigquery.job.base import _JobReference
 
 try:
     import pandas  # type: ignore
-except ImportError:  # pragma: NO COVER
+except ImportError:
     pandas = None
-
-try:
-    import db_dtypes  # type: ignore
-except ImportError:  # pragma: NO COVER
-    db_dtypes = None
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Assumption: type checks are only used by library developers and CI environments
@@ -1409,9 +1404,9 @@ class QueryJob(_AsyncJob):
         # Python_API_core, as part of a major rewrite of the deadline, timeout,
         # retry process sets the timeout value as a Python object().
         # Our system does not natively handle that and instead expects
-        # either none or a numeric value. If passed a Python object, convert to
+        # either None or a numeric value. If passed a Python object, convert to
         # None.
-        if isinstance(self._done_timeout, object):  # pragma: NO COVER
+        if type(self._done_timeout) is object:  # pragma: NO COVER
             self._done_timeout = None
 
         if self._done_timeout is not None:  # pragma: NO COVER
@@ -2262,6 +2257,11 @@ class QueryPlanEntry(object):
             QueryPlanEntryStep.from_api_repr(step)
             for step in self._properties.get("steps", [])
         ]
+
+    @property
+    def slot_ms(self):
+        """Optional[int]: Slot-milliseconds used by the stage."""
+        return _helpers._int_or_none(self._properties.get("slotMs"))
 
 
 class TimelineEntry(object):

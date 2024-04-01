@@ -23,10 +23,13 @@ import warnings
 
 try:
     import tqdm  # type: ignore
-    import tqdm.notebook as notebook  # type: ignore
-
-except ImportError:  # pragma: NO COVER
+except ImportError:
     tqdm = None
+
+try:
+    import tqdm.notebook as tqdm_notebook  # type: ignore
+except ImportError:
+    tqdm_notebook = None
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     from google.cloud.bigquery import QueryJob
@@ -42,7 +45,7 @@ _PROGRESS_BAR_UPDATE_INTERVAL = 0.5
 
 def get_progress_bar(progress_bar_type, description, total, unit):
     """Construct a tqdm progress bar object, if tqdm is installed."""
-    if tqdm is None:
+    if tqdm is None or tqdm_notebook is None and progress_bar_type == "tqdm_notebook":
         if progress_bar_type is not None:
             warnings.warn(_NO_TQDM_ERROR, UserWarning, stacklevel=3)
         return None
@@ -58,7 +61,7 @@ def get_progress_bar(progress_bar_type, description, total, unit):
                 unit=unit,
             )
         elif progress_bar_type == "tqdm_notebook":
-            return notebook.tqdm(
+            return tqdm_notebook.tqdm(
                 bar_format="{l_bar}{bar}|",
                 desc=description,
                 file=sys.stdout,
@@ -67,7 +70,7 @@ def get_progress_bar(progress_bar_type, description, total, unit):
             )
         elif progress_bar_type == "tqdm_gui":
             return tqdm.tqdm_gui(desc=description, total=total, unit=unit)
-    except (KeyError, TypeError):
+    except (KeyError, TypeError):  # pragma: NO COVER
         # Protect ourselves from any tqdm errors. In case of
         # unexpected tqdm behavior, just fall back to showing
         # no progress bar.

@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest import mock
+
+import pytest
+
 import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
-import mock
-import pytest
 
 
 def make_connection(*responses):
     import google.cloud.bigquery._http
-    import mock
     from google.cloud.exceptions import NotFound
 
     mock_conn = mock.create_autospec(google.cloud.bigquery._http.Connection)
@@ -41,6 +42,20 @@ def _to_pyarrow(value):
 def make_client(project="PROJECT", **kw):
     credentials = mock.Mock(spec=google.auth.credentials.Credentials)
     return google.cloud.bigquery.client.Client(project, credentials, **kw)
+
+
+def make_creds(creds_universe: None):
+    from google.auth import credentials
+
+    class TestingCreds(credentials.Credentials):
+        def refresh(self, request):  # pragma: NO COVER
+            raise NotImplementedError
+
+        @property
+        def universe_domain(self):
+            return creds_universe
+
+    return TestingCreds()
 
 
 def make_dataset_reference_string(project, ds_id):

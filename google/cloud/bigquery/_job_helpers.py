@@ -54,7 +54,7 @@ if TYPE_CHECKING:  # pragma: NO COVER
 
 
 # The purpose of _TIMEOUT_BUFFER_MILLIS is to allow the server-side timeout to
-# happen before the client-side timeout. This is not strictly neccessary, as the
+# happen before the client-side timeout. This is not strictly necessary, as the
 # client retries client-side timeouts, but the hope by making the server-side
 # timeout slightly shorter is that it can save the server from some unncessary
 # processing time.
@@ -166,6 +166,14 @@ def query_jobs_insert(
     return future
 
 
+def _validate_job_config(request_body: Dict[str, Any], invalid_key: str):
+    """Catch common mistakes, such as passing in a *JobConfig object of the
+    wrong type.
+    """
+    if invalid_key in request_body:
+        raise ValueError(f"got unexpected key {repr(invalid_key)} in job_config")
+
+
 def _to_query_request(
     job_config: Optional[job.QueryJobConfig] = None,
     *,
@@ -179,17 +187,15 @@ def _to_query_request(
     QueryRequest. If any configuration property is set that is not available in
     jobs.query, it will result in a server-side error.
     """
-    request_body = {}
-    job_config_resource = job_config.to_api_repr() if job_config else {}
-    query_config_resource = job_config_resource.get("query", {})
+    request_body = copy.copy(job_config.to_api_repr()) if job_config else {}
 
+    _validate_job_config(request_body, job.CopyJob._JOB_TYPE)
+    _validate_job_config(request_body, job.ExtractJob._JOB_TYPE)
+    _validate_job_config(request_body, job.LoadJob._JOB_TYPE)
+
+    # Move query.* properties to top-level.
+    query_config_resource = request_body.pop("query", {})
     request_body.update(query_config_resource)
-
-    # These keys are top level in job resource and query resource.
-    if "labels" in job_config_resource:
-        request_body["labels"] = job_config_resource["labels"]
-    if "dryRun" in job_config_resource:
-        request_body["dryRun"] = job_config_resource["dryRun"]
 
     # Default to standard SQL.
     request_body.setdefault("useLegacySql", False)
@@ -394,9 +400,13 @@ def query_and_wait(
             :class:`~google.cloud.bigquery.job.QueryJobConfig`
             class.
     """
+    request_body = _to_query_request(
+        query=query, job_config=job_config, location=location, timeout=api_timeout
+    )
+
     # Some API parameters aren't supported by the jobs.query API. In these
     # cases, fallback to a jobs.insert call.
-    if not _supported_by_jobs_query(job_config):
+    if not _supported_by_jobs_query(request_body):
         return _wait_or_cancel(
             query_jobs_insert(
                 client=client,
@@ -418,9 +428,6 @@ def query_and_wait(
         )
 
     path = _to_query_path(project)
-    request_body = _to_query_request(
-        query=query, job_config=job_config, location=location, timeout=api_timeout
-    )
 
     if page_size is not None and max_results is not None:
         request_body["maxResults"] = min(page_size, max_results)
@@ -500,20 +507,38 @@ def query_and_wait(
         return do_query()
 
 
-def _supported_by_jobs_query(job_config: Optional[job.QueryJobConfig]) -> bool:
+def _supported_by_jobs_query(request_body: Dict[str, Any]) -> bool:
     """True if jobs.query can be used. False if jobs.insert is needed."""
-    if job_config is None:
-        return True
+    request_keys = frozenset(request_body.keys())
 
-    return (
-        # These features aren't supported by jobs.query.
-        job_config.clustering_fields is None
-        and job_config.destination is None
-        and job_config.destination_encryption_configuration is None
-        and job_config.range_partitioning is None
-        and job_config.table_definitions is None
-        and job_config.time_partitioning is None
-    )
+    # Per issue: https://github.com/googleapis/python-bigquery/issues/1867
+    # use an allowlist here instead of a denylist because the backend API allows
+    # unsupported parameters without any warning or failure. Instead, keep this
+    # set in sync with those in QueryRequest:
+    # https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#QueryRequest
+    keys_allowlist = {
+        "kind",
+        "query",
+        "maxResults",
+        "defaultDataset",
+        "timeoutMs",
+        "dryRun",
+        "preserveNulls",
+        "useQueryCache",
+        "useLegacySql",
+        "parameterMode",
+        "queryParameters",
+        "location",
+        "formatOptions",
+        "connectionProperties",
+        "labels",
+        "maximumBytesBilled",
+        "requestId",
+        "createSession",
+    }
+
+    unsupported_keys = request_keys - keys_allowlist
+    return len(unsupported_keys) == 0
 
 
 def _wait_or_cancel(

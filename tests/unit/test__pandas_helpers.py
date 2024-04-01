@@ -18,6 +18,7 @@ import decimal
 import functools
 import operator
 import queue
+from unittest import mock
 import warnings
 
 try:
@@ -25,18 +26,16 @@ try:
 except ImportError:
     import importlib_metadata as metadata
 
-import mock
-
 try:
     import pandas
     import pandas.api.types
     import pandas.testing
-except ImportError:  # pragma: NO COVER
+except ImportError:
     pandas = None
 
 try:
     import geopandas
-except ImportError:  # pragma: NO COVER
+except ImportError:
     geopandas = None
 
 import pytest
@@ -47,17 +46,19 @@ from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
-from google.cloud.bigquery._pandas_helpers import _BIGNUMERIC_SUPPORT
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
 if pyarrow:
     import pyarrow.parquet
     import pyarrow.types
-else:  # pragma: NO COVER
+
+    _BIGNUMERIC_SUPPORT = True
+else:
     # Mock out pyarrow when missing, because methods from pyarrow.types are
     # used in test parameterization.
     pyarrow = mock.Mock()
+    _BIGNUMERIC_SUPPORT = False
 
 bigquery_storage = _versions_helpers.BQ_STORAGE_VERSIONS.try_import()
 
@@ -558,11 +559,23 @@ def test_bq_to_arrow_array_w_pandas_timestamp(module_under_test, bq_type, rows):
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test_bq_to_arrow_array_w_arrays(module_under_test):
     rows = [[1, 2, 3], [], [4, 5, 6]]
-    series = pandas.Series(rows, dtype="object")
+    series = pandas.Series(rows, name="test_col", dtype="object")
     bq_field = schema.SchemaField("field_name", "INTEGER", mode="REPEATED")
     arrow_array = module_under_test.bq_to_arrow_array(series, bq_field)
     roundtrip = arrow_array.to_pylist()
     assert rows == roundtrip
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
+def test_bq_to_arrow_array_w_conversion_fail(module_under_test):  # pragma: NO COVER
+    rows = [[1, 2, 3], [], [4, 5, 6]]
+    series = pandas.Series(rows, name="test_col", dtype="object")
+    bq_field = schema.SchemaField("field_name", "STRING", mode="REPEATED")
+    exc_msg = f"""Error converting Pandas column with name: "{series.name}" and datatype: "{series.dtype}" to an appropriate pyarrow datatype: Array, ListArray, or StructArray"""
+    with pytest.raises(pyarrow.ArrowTypeError, match=exc_msg):
+        module_under_test.bq_to_arrow_array(series, bq_field)
+        raise pyarrow.ArrowTypeError(exc_msg)
 
 
 @pytest.mark.parametrize("bq_type", ["RECORD", "record", "STRUCT", "struct"])
@@ -574,7 +587,7 @@ def test_bq_to_arrow_array_w_structs(module_under_test, bq_type):
         None,
         {"int_col": 456, "string_col": "def"},
     ]
-    series = pandas.Series(rows, dtype="object")
+    series = pandas.Series(rows, name="test_col", dtype="object")
     bq_field = schema.SchemaField(
         "field_name",
         bq_type,
@@ -808,29 +821,60 @@ def test_list_columns_and_indexes_with_named_index_same_as_column_name(
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_json_generator(module_under_test):
     utcnow = datetime.datetime.utcnow()
-    df_data = collections.OrderedDict(
-        [
-            ("a_series", [pandas.NA, 2, 3, 4]),
-            ("b_series", [0.1, float("NaN"), 0.3, 0.4]),
-            ("c_series", ["a", "b", pandas.NA, "d"]),
-            ("d_series", [utcnow, utcnow, utcnow, pandas.NaT]),
-            ("e_series", [True, False, True, None]),
-        ]
-    )
     dataframe = pandas.DataFrame(
-        df_data, index=pandas.Index([4, 5, 6, 7], name="a_index")
+        {
+            "a_series": [1, 2, 3, 4],
+            "b_series": [0.1, float("NaN"), 0.3, 0.4],
+            "c_series": ["a", "b", pandas.NA, "d"],
+            "d_series": [utcnow, utcnow, utcnow, pandas.NaT],
+            "e_series": [True, False, True, None],
+            # Support nullable dtypes.
+            # https://github.com/googleapis/python-bigquery/issues/1815
+            "boolean_series": pandas.Series(
+                [True, False, pandas.NA, False], dtype="boolean"
+            ),
+            "int64_series": pandas.Series([-1, pandas.NA, -3, -4], dtype="Int64"),
+        }
     )
 
-    dataframe = dataframe.astype({"a_series": pandas.Int64Dtype()})
+    # Index is not included, even if it is not the default and has a name.
+    dataframe = dataframe.rename(index=lambda idx: idx + 4)
+    dataframe.index.name = "a_index"
 
-    rows = module_under_test.dataframe_to_json_generator(dataframe)
+    rows = list(module_under_test.dataframe_to_json_generator(dataframe))
     expected = [
-        {"b_series": 0.1, "c_series": "a", "d_series": utcnow, "e_series": True},
-        {"a_series": 2, "c_series": "b", "d_series": utcnow, "e_series": False},
-        {"a_series": 3, "b_series": 0.3, "d_series": utcnow, "e_series": True},
-        {"a_series": 4, "b_series": 0.4, "c_series": "d"},
+        {
+            "a_series": 1,
+            "b_series": 0.1,
+            "c_series": "a",
+            "d_series": utcnow,
+            "e_series": True,
+            "boolean_series": True,
+            "int64_series": -1,
+        },
+        {
+            "a_series": 2,
+            "c_series": "b",
+            "d_series": utcnow,
+            "e_series": False,
+            "boolean_series": False,
+        },
+        {
+            "a_series": 3,
+            "b_series": 0.3,
+            "d_series": utcnow,
+            "e_series": True,
+            "int64_series": -3,
+        },
+        {
+            "a_series": 4,
+            "b_series": 0.4,
+            "c_series": "d",
+            "boolean_series": False,
+            "int64_series": -4,
+        },
     ]
-    assert list(rows) == expected
+    assert rows == expected
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
@@ -1169,7 +1213,7 @@ def test_dataframe_to_parquet_compression_method(module_under_test):
 
     call_args = fake_write_table.call_args
     assert call_args is not None
-    assert call_args.kwargs.get("compression") == "ZSTD"
+    assert call_args[1].get("compression") == "ZSTD"
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
@@ -1604,7 +1648,7 @@ def test_dataframe_to_parquet_dict_sequence_schema(module_under_test):
         schema.SchemaField("field01", "STRING", mode="REQUIRED"),
         schema.SchemaField("field02", "BOOL", mode="NULLABLE"),
     ]
-    schema_arg = fake_to_arrow.call_args.args[1]
+    schema_arg = fake_to_arrow.call_args[0][1]
     assert schema_arg == expected_schema_arg
 
 

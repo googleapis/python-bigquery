@@ -20,7 +20,7 @@ from packaging import version
 
 try:
     import pyarrow  # type: ignore
-except ImportError:  # pragma: NO COVER
+except ImportError:
     pyarrow = None
 
 
@@ -91,6 +91,7 @@ if pyarrow:
         pyarrow.date64().id: "DATETIME",  # because millisecond resolution
         pyarrow.binary().id: "BYTES",
         pyarrow.string().id: "STRING",  # also alias for pyarrow.utf8()
+        pyarrow.large_string().id: "STRING",
         # The exact scale and precision don't matter, see below.
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
     }

@@ -27,7 +27,6 @@ from typing import Any, Union
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
-from google.cloud.bigquery.enums import DefaultPandasDTypes
 
 try:
     import pandas  # type: ignore
@@ -109,11 +108,6 @@ _PANDAS_DTYPE_TO_BQ = {
     date_dtype_name: "DATE",
     time_dtype_name: "TIME",
 }
-
-_NO_SUPPORTED_DTYPE = (
-    "The dtype cannot to be converted to a pandas ExtensionArray "
-    "because the necessary `__from_arrow__` attribute is missing."
-)
 
 
 class _DownloadState(object):
@@ -1023,131 +1017,3 @@ def verify_pandas_imports():
         raise ValueError(_NO_PANDAS_ERROR) from pandas_import_exception
     if db_dtypes is None:
         raise ValueError(_NO_DB_TYPES_ERROR) from db_dtypes_import_exception
-
-
-def verify_and_enhance_dtypes(
-    bool_dtype,
-    int_dtype,
-    float_dtype,
-    string_dtype,
-    date_dtype,
-    datetime_dtype,
-    time_dtype,
-    timestamp_dtype,
-    range_date_dtype,
-    range_datetime_dtype,
-    range_timestamp_dtype,
-):
-    """Verifies pandas dtypes mapping and convert from sentinel values."""
-
-    if bool_dtype is DefaultPandasDTypes.BOOL_DTYPE:
-        bool_dtype = pandas.BooleanDtype()
-
-    if int_dtype is DefaultPandasDTypes.INT_DTYPE:
-        int_dtype = pandas.Int64Dtype()
-
-    if time_dtype is DefaultPandasDTypes.TIME_DTYPE:
-        time_dtype = db_dtypes.TimeDtype()
-
-    if range_date_dtype is DefaultPandasDTypes.RANGE_DATE_DTYPE:
-        try:
-            range_date_dtype = pandas.ArrowDtype(
-                pyarrow.struct([("start", pyarrow.date32()), ("end", pyarrow.date32())])
-            )
-        except AttributeError:
-            # pandas.ArrowDtype was introduced in pandas 1.5, but python 3.7
-            # only supports upto pandas 1.3. If pandas.ArrowDtype is not
-            # present, we raise a warning and set range_date_dtype to None.
-            msg = (
-                "Unable ro find class ArrowDtype in pandas, setting "
-                "range_date_dtype to be None. To use ArrowDtype, please "
-                "use pandas >= 1.5 and python >= 3.8."
-            )
-            warnings.warn(msg)
-            range_date_dtype = None
-
-    if range_datetime_dtype is DefaultPandasDTypes.RANGE_DATETIME_DTYPE:
-        try:
-            range_datetime_dtype = pandas.ArrowDtype(
-                pyarrow.struct(
-                    [
-                        ("start", pyarrow.timestamp("us")),
-                        ("end", pyarrow.timestamp("us")),
-                    ]
-                )
-            )
-        except AttributeError:
-            # pandas.ArrowDtype was introduced in pandas 1.5, but python 3.7
-            # only supports upto pandas 1.3. If pandas.ArrowDtype is not
-            # present, we raise a warning and set range_datetime_dtype to None.
-            msg = (
-                "Unable ro find class ArrowDtype in pandas, setting "
-                "range_datetime_dtype to be None. To use ArrowDtype, "
-                "please use pandas >= 1.5 and python >= 3.8."
-            )
-            warnings.warn(msg)
-            range_datetime_dtype = None
-
-    if range_timestamp_dtype is DefaultPandasDTypes.RANGE_TIMESTAMP_DTYPE:
-        try:
-            range_timestamp_dtype = pandas.ArrowDtype(
-                pyarrow.struct(
-                    [
-                        ("start", pyarrow.timestamp("us", tz="UTC")),
-                        ("end", pyarrow.timestamp("us", tz="UTC")),
-                    ]
-                )
-            )
-        except AttributeError:
-            # pandas.ArrowDtype was introduced in pandas 1.5, but python 3.7
-            # only supports upto pandas 1.3. If pandas.ArrowDtype is not
-            # present, we raise a warning and set range_timestamp_dtype to None.
-            msg = (
-                "Unable ro find class ArrowDtype in pandas, setting "
-                "range_timestamp_dtype to be None. To use ArrowDtype, "
-                "please use pandas >= 1.5 and python >= 3.8."
-            )
-            warnings.warn(msg)
-            range_timestamp_dtype = None
-
-    if bool_dtype is not None and not hasattr(bool_dtype, "__from_arrow__"):
-        raise ValueError("bool_dtype", _NO_SUPPORTED_DTYPE)
-
-    if int_dtype is not None and not hasattr(int_dtype, "__from_arrow__"):
-        raise ValueError("int_dtype", _NO_SUPPORTED_DTYPE)
-
-    if float_dtype is not None and not hasattr(float_dtype, "__from_arrow__"):
-        raise ValueError("float_dtype", _NO_SUPPORTED_DTYPE)
-
-    if string_dtype is not None and not hasattr(string_dtype, "__from_arrow__"):
-        raise ValueError("string_dtype", _NO_SUPPORTED_DTYPE)
-
-    if (
-        date_dtype is not None
-        and date_dtype is not DefaultPandasDTypes.DATE_DTYPE
-        and not hasattr(date_dtype, "__from_arrow__")
-    ):
-        raise ValueError("date_dtype", _NO_SUPPORTED_DTYPE)
-
-    if datetime_dtype is not None and not hasattr(datetime_dtype, "__from_arrow__"):
-        raise ValueError("datetime_dtype", _NO_SUPPORTED_DTYPE)
-
-    if time_dtype is not None and not hasattr(time_dtype, "__from_arrow__"):
-        raise ValueError("time_dtype", _NO_SUPPORTED_DTYPE)
-
-    if timestamp_dtype is not None and not hasattr(timestamp_dtype, "__from_arrow__"):
-        raise ValueError("timestamp_dtype", _NO_SUPPORTED_DTYPE)
-
-    return (
-        bool_dtype,
-        int_dtype,
-        float_dtype,
-        string_dtype,
-        date_dtype,
-        datetime_dtype,
-        time_dtype,
-        timestamp_dtype,
-        range_date_dtype,
-        range_datetime_dtype,
-        range_timestamp_dtype,
-    )

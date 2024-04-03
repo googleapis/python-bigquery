@@ -148,6 +148,12 @@ def bq_to_arrow_struct_data_type(field):
     return pyarrow.struct(arrow_fields)
 
 
+def bq_to_arrow_range_data_type(field):
+    element_type = field.element_type.upper()
+    arrow_element_type = _pyarrow_helpers.bq_to_arrow_scalars(element_type)()
+    return pyarrow.struct([("start", arrow_element_type), ("end", arrow_element_type)])
+
+
 def bq_to_arrow_data_type(field):
     """Return the Arrow data type, corresponding to a given BigQuery column.
 
@@ -167,7 +173,8 @@ def bq_to_arrow_data_type(field):
         return bq_to_arrow_struct_data_type(field)
 
     if field_type_upper == "RANGE":
-        field_type_upper = f"RANGE<{field.range_element_type.element_type}>"
+        return bq_to_arrow_range_data_type(field.range_element_type)
+
     data_type_constructor = _pyarrow_helpers.bq_to_arrow_scalars(field_type_upper)
     if data_type_constructor is None:
         return None

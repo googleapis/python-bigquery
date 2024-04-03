@@ -46,28 +46,6 @@ def pyarrow_timestamp():
     return pyarrow.timestamp("us", tz="UTC")
 
 
-def pyarrow_range_timestamp():
-    return pyarrow.struct(
-        [
-            ("start", pyarrow.timestamp("us", tz="UTC")),
-            ("end", pyarrow.timestamp("us", tz="UTC")),
-        ]
-    )
-
-
-def pyarrow_range_datetime():
-    return pyarrow.struct(
-        [
-            ("start", pyarrow.timestamp("us")),
-            ("end", pyarrow.timestamp("us")),
-        ]
-    )
-
-
-def pyarrow_range_date():
-    return pyarrow.struct([("start", pyarrow.date32()), ("end", pyarrow.date32())])
-
-
 _BQ_TO_ARROW_SCALARS = {}
 _ARROW_SCALAR_IDS_TO_BQ = {}
 
@@ -90,9 +68,6 @@ if pyarrow:
         "STRING": pyarrow.string,
         "TIME": pyarrow_time,
         "TIMESTAMP": pyarrow_timestamp,
-        "RANGE<TIMESTAMP>": pyarrow_range_timestamp,
-        "RANGE<DATETIME>": pyarrow_range_datetime,
-        "RANGE<DATE>": pyarrow_range_date,
     }
 
     _ARROW_SCALAR_IDS_TO_BQ = {

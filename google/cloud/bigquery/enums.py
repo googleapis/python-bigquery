@@ -39,6 +39,9 @@ class Compression(object):
     SNAPPY = "SNAPPY"
     """Specifies SNAPPY format."""
 
+    ZSTD = "ZSTD"
+    """Specifies ZSTD format."""
+
     NONE = "NONE"
     """Specifies no compression."""
 

@@ -32,7 +32,8 @@ dependencies = [
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-api-core >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
+    "google-api-core[grpc] >= 1.34.1, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,!=2.8.*,!=2.9.*,!=2.10.*",
+    "google-auth >= 2.14.1, <3.0.0dev",
     # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
@@ -44,8 +45,9 @@ dependencies = [
 ]
 pyarrow_dependency = "pyarrow >= 3.0.0"
 extras = {
-    # Keep the no-op bqstorage extra for backward compatibility.
-    # See: https://github.com/googleapis/python-bigquery/issues/757
+    # bqstorage had a period where it was a required dependency, and has been
+    # moved back to optional due to bloat.  See
+    # https://github.com/googleapis/python-bigquery/issues/1196 for more background.
     "bqstorage": [
         "google-cloud-bigquery-storage >= 2.6.0, <3.0.0dev",
         # Due to an issue in pip's dependency resolver, the `grpc` extra is not

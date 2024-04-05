@@ -5,6 +5,64 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.20.1](https://github.com/googleapis/python-bigquery/compare/v3.20.0...v3.20.1) (2024-04-01)
+
+
+### Bug Fixes
+
+* Make `pyarrow` an optional dependency post-3.20.0 yanked release ([#1879](https://github.com/googleapis/python-bigquery/issues/1879)) ([21714e1](https://github.com/googleapis/python-bigquery/commit/21714e18bad8d8d89ed5642dbdb61d14e97d5f33))
+
+## [3.20.0](https://github.com/googleapis/python-bigquery/compare/v3.19.0...v3.20.0) (2024-03-27)
+
+
+### Features
+
+* Add `fields` parameter to `set_iam_policy` for consistency with update methods ([#1872](https://github.com/googleapis/python-bigquery/issues/1872)) ([08b1e6f](https://github.com/googleapis/python-bigquery/commit/08b1e6f9c41121907c345daedbae40ece18e8b6a))
+
+
+### Bug Fixes
+
+* Correct type checking ([#1848](https://github.com/googleapis/python-bigquery/issues/1848)) ([2660dbd](https://github.com/googleapis/python-bigquery/commit/2660dbd4821a89a1e20e3e1541504a409f1979aa))
+* Update error logging when converting to pyarrow column fails ([#1836](https://github.com/googleapis/python-bigquery/issues/1836)) ([0ac6e9b](https://github.com/googleapis/python-bigquery/commit/0ac6e9bf186945832f5dcdf5a4d95667b4da223e))
+* Updates a number of optional dependencies ([#1864](https://github.com/googleapis/python-bigquery/issues/1864)) ([c2496a1](https://github.com/googleapis/python-bigquery/commit/c2496a1014a7d99e805b3d0a66e4517165bd7e01))
+* Use an allowlist instead of denylist to determine when `query_and_wait` uses `jobs.query` API ([#1869](https://github.com/googleapis/python-bigquery/issues/1869)) ([e265db6](https://github.com/googleapis/python-bigquery/commit/e265db6a6a37d13056dcaac240c2cf3975dfd644))
+
+## [3.19.0](https://github.com/googleapis/python-bigquery/compare/v3.18.0...v3.19.0) (2024-03-11)
+
+
+### Features
+
+* Support RANGE query parameters ([#1827](https://github.com/googleapis/python-bigquery/issues/1827)) ([b359a9a](https://github.com/googleapis/python-bigquery/commit/b359a9a55936a759a36aa69c5e5b014685e1fca6))
+* Support range sql ([#1807](https://github.com/googleapis/python-bigquery/issues/1807)) ([86a45c9](https://github.com/googleapis/python-bigquery/commit/86a45c989836b34dca456bac014352e55d6f86c0))
+
+
+### Bug Fixes
+
+* Add google-auth as a direct dependency ([713ce2c](https://github.com/googleapis/python-bigquery/commit/713ce2c2f6ce9931f67cbbcd63ad436ad336ad26))
+* Augment universe_domain handling ([#1837](https://github.com/googleapis/python-bigquery/issues/1837)) ([53c2cbf](https://github.com/googleapis/python-bigquery/commit/53c2cbf98d2961f553747514de273bcd5c117f0e))
+* **deps:** Require google-api-core&gt;=1.34.1, >=2.11.0 ([713ce2c](https://github.com/googleapis/python-bigquery/commit/713ce2c2f6ce9931f67cbbcd63ad436ad336ad26))
+* Supplementary fix to env-based universe resolution ([#1844](https://github.com/googleapis/python-bigquery/issues/1844)) ([b818992](https://github.com/googleapis/python-bigquery/commit/b8189929b6008f7780214822062f8ed05d8d2a01))
+* Supplementary fix to env-based universe resolution ([#1847](https://github.com/googleapis/python-bigquery/issues/1847)) ([6dff50f](https://github.com/googleapis/python-bigquery/commit/6dff50f4fbc5aeb644383a4050dd5ffc05015ffe))
+
+## [3.18.0](https://github.com/googleapis/python-bigquery/compare/v3.17.2...v3.18.0) (2024-02-29)
+
+
+### Features
+
+* Support nullable boolean and Int64 dtypes in `insert_rows_from_dataframe` ([#1816](https://github.com/googleapis/python-bigquery/issues/1816)) ([ab0cf4c](https://github.com/googleapis/python-bigquery/commit/ab0cf4cc03292f62b56a8813cfb7681daa87f872))
+* Support slot_ms in QueryPlanEntry ([#1831](https://github.com/googleapis/python-bigquery/issues/1831)) ([d62cabb](https://github.com/googleapis/python-bigquery/commit/d62cabbf115637ecbaf8cc378f39329a5ae74c26))
+
+
+### Bug Fixes
+
+* Keyword rendering and docstring improvements ([#1829](https://github.com/googleapis/python-bigquery/issues/1829)) ([4dfb920](https://github.com/googleapis/python-bigquery/commit/4dfb920b106784e98f343b3e3fc8e8ff70c50560))
+
+
+### Documentation
+
+* **samples:** Updates to urllib3 constraint for Python 3.7 ([#1834](https://github.com/googleapis/python-bigquery/issues/1834)) ([b099c32](https://github.com/googleapis/python-bigquery/commit/b099c32a83946a347560f6a71d08c3f263e56cb6))
+* Update `client_query_w_named_params.py` to use `query_and_wait` API ([#1782](https://github.com/googleapis/python-bigquery/issues/1782)) ([89dfcb6](https://github.com/googleapis/python-bigquery/commit/89dfcb6469d22e78003a70371a0938a6856e033c))
+
 ## [3.17.2](https://github.com/googleapis/python-bigquery/compare/v3.17.1...v3.17.2) (2024-01-30)
 
 

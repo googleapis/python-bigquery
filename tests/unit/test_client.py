@@ -23,23 +23,15 @@ import io
 import itertools
 import json
 import operator
+import os
 import unittest
+from unittest import mock
 import warnings
 
-import mock
 import requests
 import packaging
 import pytest
 
-try:
-    import importlib.metadata as metadata
-except ImportError:
-    import importlib_metadata as metadata
-
-try:
-    import pandas
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pandas = None
 
 try:
     import opentelemetry
@@ -58,11 +50,6 @@ if opentelemetry is not None:
         msg = "Error importing from opentelemetry, is the installed version compatible?"
         raise ImportError(msg) from exc
 
-try:
-    import pyarrow
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pyarrow = None
-
 import google.api_core.exceptions
 from google.api_core import client_info
 import google.cloud._helpers
@@ -74,17 +61,8 @@ from google.cloud.bigquery import ParquetOptions
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 import google.cloud.bigquery.table
 
-try:
-    from google.cloud import bigquery_storage
-except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage = None
 from test_utils.imports import maybe_fail_import
 from tests.unit.helpers import make_connection
-
-if pandas is not None:
-    PANDAS_INSTALLED_VERSION = metadata.version("pandas")
-else:
-    PANDAS_INSTALLED_VERSION = "0.0.0"
 
 
 def _make_credentials():
@@ -170,6 +148,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(
             client._connection.API_BASE_URL, client._connection.DEFAULT_API_ENDPOINT
         )
+
+    @mock.patch.dict(os.environ, {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": "foo.com"})
+    def test_ctor_w_only_env_universe(self):
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(
+            project=self.PROJECT,
+            credentials=creds,
+            _http=http,
+        )
+        self.assertEqual(client._connection.API_BASE_URL, "https://bigquery.foo.com")
 
     def test_ctor_w_client_options_dict(self):
         creds = _make_credentials()
@@ -788,10 +777,9 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_ensure_bqstorage_client_creating_new_instance(self):
+        bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
+
         mock_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         mock_client_instance = object()
         mock_client.return_value = mock_client_instance
@@ -837,10 +825,8 @@ class TestClient(unittest.TestCase):
         ]
         assert matching_warnings, "Missing dependency warning not raised."
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_ensure_bqstorage_client_obsolete_dependency(self):
+        pytest.importorskip("google.cloud.bigquery_storage")
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
 
@@ -857,10 +843,8 @@ class TestClient(unittest.TestCase):
         ]
         assert matching_warnings, "Obsolete dependency warning not raised."
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_ensure_bqstorage_client_existing_client_check_passes(self):
+        pytest.importorskip("google.cloud.bigquery_storage")
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         mock_storage_client = mock.sentinel.mock_storage_client
@@ -871,10 +855,23 @@ class TestClient(unittest.TestCase):
 
         self.assertIs(bqstorage_client, mock_storage_client)
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
+    def test_ensure_bqstorage_client_is_none(self):
+        pytest.importorskip("google.cloud.bigquery_storage")
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+        bqstorage_client = None
+
+        assert bqstorage_client is None
+        bqstorage_client = client._ensure_bqstorage_client(
+            bqstorage_client=bqstorage_client,
+        )
+
+        assert isinstance(
+            bqstorage_client, google.cloud.bigquery_storage_v1.BigQueryReadClient
+        )
+
     def test_ensure_bqstorage_client_existing_client_check_fails(self):
+        pytest.importorskip("google.cloud.bigquery_storage")
         creds = _make_credentials()
         client = self._make_one(project=self.PROJECT, credentials=creds)
         mock_storage_client = mock.sentinel.mock_storage_client
@@ -960,8 +957,8 @@ class TestClient(unittest.TestCase):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @unittest.skipIf(opentelemetry is None, "Requires `opentelemetry`")
     def test_span_status_is_set(self):
+        pytest.importorskip("opentelemetry")
         from google.cloud.bigquery.routine import Routine
 
         tracer_provider = TracerProvider()
@@ -1788,6 +1785,60 @@ class TestClient(unittest.TestCase):
             {"role": BIGQUERY_DATA_EDITOR_ROLE, "members": [EDITOR1, EDITOR2]},
             {"role": BIGQUERY_DATA_VIEWER_ROLE, "members": [VIEWER1, VIEWER2]},
         ]
+        FIELDS = ("bindings", "etag")
+        RETURNED = {"etag": ETAG, "version": VERSION, "bindings": BINDINGS}
+
+        policy = Policy()
+        for binding in BINDINGS:
+            policy[binding["role"]] = binding["members"]
+
+        BODY = {"policy": policy.to_api_repr(), "updateMask": "bindings,etag"}
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(RETURNED)
+
+        with mock.patch(
+            "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
+        ) as final_attributes:
+            returned_policy = client.set_iam_policy(
+                self.TABLE_REF, policy, fields=FIELDS, timeout=7.5
+            )
+
+        final_attributes.assert_called_once_with({"path": PATH}, client, None)
+
+        conn.api_request.assert_called_once_with(
+            method="POST", path=PATH, data=BODY, timeout=7.5
+        )
+        self.assertEqual(returned_policy.etag, ETAG)
+        self.assertEqual(returned_policy.version, VERSION)
+        self.assertEqual(dict(returned_policy), dict(policy))
+
+    def test_set_iam_policy_updateMask(self):
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_OWNER_ROLE
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_EDITOR_ROLE
+        from google.cloud.bigquery.iam import BIGQUERY_DATA_VIEWER_ROLE
+        from google.api_core.iam import Policy
+
+        PATH = "/projects/%s/datasets/%s/tables/%s:setIamPolicy" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+        ETAG = "foo"
+        VERSION = 1
+        OWNER1 = "user:phred@example.com"
+        OWNER2 = "group:cloud-logs@google.com"
+        EDITOR1 = "domain:google.com"
+        EDITOR2 = "user:phred@example.com"
+        VIEWER1 = "serviceAccount:1234-abcdef@service.example.com"
+        VIEWER2 = "user:phred@example.com"
+        BINDINGS = [
+            {"role": BIGQUERY_DATA_OWNER_ROLE, "members": [OWNER1, OWNER2]},
+            {"role": BIGQUERY_DATA_EDITOR_ROLE, "members": [EDITOR1, EDITOR2]},
+            {"role": BIGQUERY_DATA_VIEWER_ROLE, "members": [VIEWER1, VIEWER2]},
+        ]
         MASK = "bindings,etag"
         RETURNED = {"etag": ETAG, "version": VERSION, "bindings": BINDINGS}
 
@@ -1845,6 +1896,19 @@ class TestClient(unittest.TestCase):
         conn.api_request.assert_called_once_with(
             method="POST", path=PATH, data=BODY, timeout=7.5
         )
+
+    def test_set_ia_policy_updateMask_and_fields(self):
+        from google.api_core.iam import Policy
+
+        policy = Policy()
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        with pytest.raises(ValueError, match="updateMask"):
+            client.set_iam_policy(
+                self.TABLE_REF, policy, updateMask="bindings", fields=("bindings",)
+            )
 
     def test_set_iam_policy_invalid_policy(self):
         from google.api_core.iam import Policy
@@ -5960,8 +6024,8 @@ class TestClient(unittest.TestCase):
                 timeout=DEFAULT_TIMEOUT,
             )
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_insert_rows_from_dataframe(self):
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -6047,8 +6111,8 @@ class TestClient(unittest.TestCase):
             )
             assert call == expected_call
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_insert_rows_from_dataframe_nan(self):
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -6115,8 +6179,8 @@ class TestClient(unittest.TestCase):
             )
             assert call == expected_call
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_insert_rows_from_dataframe_many_columns(self):
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -6168,8 +6232,8 @@ class TestClient(unittest.TestCase):
         assert len(actual_calls) == 1
         assert actual_calls[0] == expected_call
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_insert_rows_from_dataframe_w_explicit_none_insert_ids(self):
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -7490,9 +7554,9 @@ class TestClientUpload(object):
             project=self.PROJECT,
         )
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import PolicyTagList, SchemaField
@@ -7586,9 +7650,9 @@ class TestClientUpload(object):
             # (not passed in via job_config)
             assert "description" not in field
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_client_location(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7631,9 +7695,9 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_custom_job_config_wihtout_source_format(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7686,9 +7750,9 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_custom_job_config_w_source_format(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7742,9 +7806,9 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_parquet_options_none(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7794,9 +7858,9 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.parquet_options.enable_list_inference is True
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_list_inference_none(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7854,9 +7918,9 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_explicit_job_config_override(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7915,9 +7979,9 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_default_load_config(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -7965,9 +8029,9 @@ class TestClientUpload(object):
         assert sent_config.write_disposition == job.WriteDisposition.WRITE_TRUNCATE
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_list_inference_false(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8026,9 +8090,9 @@ class TestClientUpload(object):
         # the original config object should not have been modified
         assert job_config.to_api_repr() == original_config_copy.to_api_repr()
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_custom_job_config_w_wrong_source_format(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery import job
 
         client = self._make_client()
@@ -8046,9 +8110,9 @@ class TestClientUpload(object):
 
         assert "Got unexpected source_format:" in str(exc.value)
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_automatic_schema(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8147,9 +8211,9 @@ class TestClientUpload(object):
             SchemaField("time_col", "TIME"),
         )
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_automatic_schema_detection_fails(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
 
@@ -8207,9 +8271,9 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema is None
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_index_and_auto_schema(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8269,9 +8333,9 @@ class TestClientUpload(object):
         ]
         assert sent_schema == expected_sent_schema
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_unknown_table(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
 
         client = self._make_client()
@@ -8305,9 +8369,9 @@ class TestClientUpload(object):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8350,9 +8414,8 @@ class TestClientUpload(object):
             SchemaField("x", "INT64", "NULLABLE", None),
         )
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    # @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(self):
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8395,9 +8458,9 @@ class TestClientUpload(object):
             SchemaField("x", "INT64", "NULLABLE", None),
         )
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_struct_fields(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8455,13 +8518,13 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema == schema
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_array_fields(self):
         """Test that a DataFrame with array columns can be uploaded correctly.
 
         See: https://github.com/googleapis/python-bigquery/issues/19
         """
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8520,13 +8583,13 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema == schema
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_array_fields_w_auto_schema(self):
         """Test that a DataFrame with array columns can be uploaded correctly.
 
         See: https://github.com/googleapis/python-bigquery/issues/19
         """
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8583,9 +8646,9 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert sent_config.schema == expected_schema
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_partial_schema(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8667,9 +8730,9 @@ class TestClientUpload(object):
             SchemaField("bytes_col", "BYTES"),
         )
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_partial_schema_extra_types(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
 
@@ -8704,9 +8767,9 @@ class TestClientUpload(object):
         assert "bq_schema contains fields not present in dataframe" in message
         assert "unknown_col" in message
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_schema_arrow_custom_compression(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
 
@@ -8733,13 +8796,13 @@ class TestClientUpload(object):
                 parquet_compression="LZ4",
             )
 
-        call_args = fake_to_parquet.call_args
+        call_args = fake_to_parquet.call_args[1]
         assert call_args is not None
-        assert call_args.kwargs.get("parquet_compression") == "LZ4"
+        assert call_args.get("parquet_compression") == "LZ4"
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_wo_pyarrow_raises_error(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         client = self._make_client()
         records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
         dataframe = pandas.DataFrame(records)
@@ -8767,8 +8830,8 @@ class TestClientUpload(object):
                 )
 
     def test_load_table_from_dataframe_w_bad_pyarrow_issues_warning(self):
-        pytest.importorskip("pandas", reason="Requires `pandas`")
-        pytest.importorskip("pyarrow", reason="Requires `pyarrow`")
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
 
         client = self._make_client()
         records = [{"id": 1, "age": 100}, {"id": 2, "age": 60}]
@@ -8795,14 +8858,14 @@ class TestClientUpload(object):
                     location=self.LOCATION,
                 )
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_nulls(self):
         """Test that a DataFrame with null columns can be uploaded if a
         BigQuery schema is specified.
 
         See: https://github.com/googleapis/google-cloud-python/issues/7370
         """
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
@@ -8840,8 +8903,8 @@ class TestClientUpload(object):
         assert sent_config.schema == schema
         assert sent_config.source_format == job.SourceFormat.PARQUET
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_load_table_from_dataframe_w_invaild_job_config(self):
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery import job
 
         client = self._make_client()
@@ -8858,8 +8921,8 @@ class TestClientUpload(object):
         err_msg = str(exc.value)
         assert "Expected an instance of LoadJobConfig" in err_msg
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
     def test_load_table_from_dataframe_with_csv_source_format(self):
+        pandas = pytest.importorskip("pandas")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -8908,9 +8971,9 @@ class TestClientUpload(object):
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.CSV
 
-    @unittest.skipIf(pandas is None, "Requires `pandas`")
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_load_table_from_dataframe_w_higher_scale_decimal128_datatype(self):
+        pandas = pytest.importorskip("pandas")
+        pytest.importorskip("pyarrow")
         from google.cloud.bigquery.client import _DEFAULT_NUM_RETRIES
         from google.cloud.bigquery import job
         from google.cloud.bigquery.schema import SchemaField
@@ -9498,12 +9561,11 @@ class TestClientUpload(object):
             timeout=mock.ANY,
         )
 
-        # Check the project ID used in the call to initiate resumable upload.
         initiation_url = next(
             (
-                call.args[1]
+                call[0][1]
                 for call in transport.request.call_args_list
-                if call.args[0] == "POST" and "uploadType=resumable" in call.args[1]
+                if call[0][0] == "POST" and "uploadType=resumable" in call[0][1]
             ),
             None,
         )  # pragma: NO COVER
@@ -9525,7 +9587,7 @@ class TestClientUpload(object):
 
         # The timeout should be applied to all underlying calls.
         for call_args in transport.request.call_args_list:
-            assert call_args.kwargs.get("timeout") == 3.14
+            assert call_args[1].get("timeout") == 3.14
 
     def test__do_multipart_upload(self):
         transport = self._make_transport([self._make_response(http.client.OK)])

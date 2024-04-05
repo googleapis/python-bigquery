@@ -36,7 +36,6 @@ from google.api_core.exceptions import NotFound
 from google.api_core.exceptions import InternalServerError
 from google.api_core.exceptions import ServiceUnavailable
 from google.api_core.exceptions import TooManyRequests
-from google.api_core.iam import Policy
 from google.cloud import bigquery
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
@@ -55,16 +54,6 @@ from test_utils.system import unique_resource_id
 
 from . import helpers
 
-try:
-    from google.cloud import bigquery_storage
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
-
-try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
 
 JOB_TIMEOUT = 120  # 2 minutes
 DATA_PATH = pathlib.Path(__file__).parent.parent / "data"
@@ -1485,33 +1474,6 @@ class TestBigQuery(unittest.TestCase):
         got_rows = self._fetch_single_page(dest_table)
         self.assertTrue(len(got_rows) > 0)
 
-    def test_get_set_iam_policy(self):
-        from google.cloud.bigquery.iam import BIGQUERY_DATA_VIEWER_ROLE
-
-        dataset = self.temp_dataset(_make_dataset_id("create_table"))
-        table_id = "test_table"
-        table_ref = Table(dataset.table(table_id))
-        self.assertFalse(_table_exists(table_ref))
-
-        table = helpers.retry_403(Config.CLIENT.create_table)(table_ref)
-        self.to_delete.insert(0, table)
-
-        self.assertTrue(_table_exists(table))
-
-        member = "serviceAccount:{}".format(Config.CLIENT.get_service_account_email())
-        BINDING = {
-            "role": BIGQUERY_DATA_VIEWER_ROLE,
-            "members": {member},
-        }
-
-        policy = Config.CLIENT.get_iam_policy(table)
-        self.assertIsInstance(policy, Policy)
-        self.assertEqual(policy.bindings, [])
-
-        policy.bindings.append(BINDING)
-        returned_policy = Config.CLIENT.set_iam_policy(table, policy)
-        self.assertEqual(returned_policy.bindings, policy.bindings)
-
     def test_test_iam_permissions(self):
         dataset = self.temp_dataset(_make_dataset_id("create_table"))
         table_id = "test_table"
@@ -1800,11 +1762,10 @@ class TestBigQuery(unittest.TestCase):
         row_tuples = [r.values() for r in rows]
         self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
+        bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
+        pytest.importorskip("pyarrow")
+
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
@@ -1862,10 +1823,8 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertEqual(list(rows), [])
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_dbapi_connection_does_not_leak_sockets(self):
+        pytest.importorskip("google.cloud.bigquery_storage")
         current_process = psutil.Process()
         conn_count_start = len(current_process.connections())
 
@@ -2193,6 +2152,44 @@ class TestBigQuery(unittest.TestCase):
         assert len(rows) == 1
         assert rows[0].max_value == 100.0
 
+    def test_create_routine_with_range(self):
+        routine_name = "routine_range"
+        dataset = self.temp_dataset(_make_dataset_id("routine_range"))
+
+        routine = bigquery.Routine(
+            dataset.routine(routine_name),
+            type_="SCALAR_FUNCTION",
+            language="SQL",
+            body="RANGE_START(x)",
+            arguments=[
+                bigquery.RoutineArgument(
+                    name="x",
+                    data_type=bigquery.StandardSqlDataType(
+                        type_kind=bigquery.StandardSqlTypeNames.RANGE,
+                        range_element_type=bigquery.StandardSqlDataType(
+                            type_kind=bigquery.StandardSqlTypeNames.DATE
+                        ),
+                    ),
+                )
+            ],
+            return_type=bigquery.StandardSqlDataType(
+                type_kind=bigquery.StandardSqlTypeNames.DATE
+            ),
+        )
+
+        query_string = (
+            "SELECT `{}`(RANGE<DATE> '[2016-08-12, UNBOUNDED)') as range_start;".format(
+                str(routine.reference)
+            )
+        )
+
+        routine = helpers.retry_403(Config.CLIENT.create_routine)(routine)
+        query_job = helpers.retry_403(Config.CLIENT.query)(query_string)
+        rows = list(query_job.result())
+
+        assert len(rows) == 1
+        assert rows[0].range_start == datetime.date(2016, 8, 12)
+
     def test_create_tvf_routine(self):
         from google.cloud.bigquery import (
             Routine,
@@ -2372,11 +2369,10 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(found[7], e_favtime)
             self.assertEqual(found[8], decimal.Decimal(expected["FavoriteNumber"]))
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_nested_table_to_arrow(self):
+        bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
+        pyarrow = pytest.importorskip("pyarrow")
+        pyarrow.types = pytest.importorskip("pyarrow.types")
         from google.cloud.bigquery.job import SourceFormat
         from google.cloud.bigquery.job import WriteDisposition
 

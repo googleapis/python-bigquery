@@ -95,7 +95,7 @@ try:
     import IPython  # type: ignore
     from IPython import display  # type: ignore
     from IPython.core import magic_arguments  # type: ignore
-except ImportError:  # pragma: NO COVER
+except ImportError:
     raise ImportError("This module can only be loaded in IPython.")
 
 from google.api_core import client_info
@@ -288,7 +288,7 @@ def _handle_error(error, destination_var=None):
 
     Args:
         error (Exception):
-            An exception that ocurred during the query execution.
+            An exception that occurred during the query execution.
         destination_var (Optional[str]):
             The name of the IPython session variable to store the query job.
     """

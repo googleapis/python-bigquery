@@ -22,7 +22,7 @@ class AutoRowIDs(enum.Enum):
     GENERATE_UUID = enum.auto()
 
 
-class Compression(object):
+class Compression(enum.Enum):
     """The compression type to use for exported files. The default value is
     :attr:`NONE`.
 

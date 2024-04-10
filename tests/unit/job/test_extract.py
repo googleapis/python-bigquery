@@ -50,7 +50,7 @@ class TestExtractJobConfig(_Base):
             resource,
             {
                 "extract": {
-                    "compression": "SNAPPY",
+                    "compression": job.Compression.SNAPPY,
                     "destinationFormat": "AVRO",
                     "fieldDelimiter": "ignored for avro",
                     "printHeader": False,

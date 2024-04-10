@@ -39,7 +39,7 @@ class TestExtractJobConfig(_Base):
         from google.cloud.bigquery import job
 
         config = self._make_one()
-        config.compression = job.Compression.SNAPPY
+        config.compression = job.Compression.SNAPPY.value
         config.destination_format = job.DestinationFormat.AVRO
         config.field_delimiter = "ignored for avro"
         config.print_header = False
@@ -50,7 +50,7 @@ class TestExtractJobConfig(_Base):
             resource,
             {
                 "extract": {
-                    "compression": job.Compression.SNAPPY,
+                    "compression": "SNAPPY",
                     "destinationFormat": "AVRO",
                     "fieldDelimiter": "ignored for avro",
                     "printHeader": False,

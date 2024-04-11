@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from unittest import mock
 
 from ..helpers import make_connection
@@ -37,7 +38,6 @@ class TestExtractJobConfig(_Base):
 
     def test_to_api_repr(self):
         from google.cloud.bigquery import job
-        import json
 
         config = self._make_one()
         config.compression = job.Compression.SNAPPY

@@ -40,7 +40,7 @@ class TestExtractJobConfig(_Base):
         import json
 
         config = self._make_one()
-        config.compression = job.Compression.SNAPPY.value
+        config.compression = job.Compression.SNAPPY
         config.destination_format = job.DestinationFormat.AVRO
         config.field_delimiter = "ignored for avro"
         config.print_header = False

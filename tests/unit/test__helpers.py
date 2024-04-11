@@ -467,27 +467,27 @@ class Test_range_from_json(unittest.TestCase):
 
     def test_w_wrong_format(self):
         range_field = _Field(
-            "NULLIBLE",
+            "NULLABLE",
             field_type="RANGE",
-            range_element_type=_Field("NULLIBLE", element_type="DATE"),
+            range_element_type=_Field("NULLABLE", element_type="DATE"),
         )
         with self.assertRaises(ValueError):
             self._call_fut("[2009-06-172019-06-17)", range_field)
 
     def test_w_wrong_element_type(self):
         range_field = _Field(
-            "NULLIBLE",
+            "NULLABLE",
             field_type="RANGE",
-            range_element_type=_Field("NULLIBLE", element_type="TIME"),
+            range_element_type=_Field("NULLABLE", element_type="TIME"),
         )
         with self.assertRaises(ValueError):
             self._call_fut("[15:31:38, 15:50:38)", range_field)
 
     def test_w_unbounded_value(self):
         range_field = _Field(
-            "NULLIBLE",
+            "NULLABLE",
             field_type="RANGE",
-            range_element_type=_Field("NULLIBLE", element_type="DATE"),
+            range_element_type=_Field("NULLABLE", element_type="DATE"),
         )
         coerced = self._call_fut("[UNBOUNDED, 2019-06-17)", range_field)
         self.assertEqual(
@@ -497,9 +497,9 @@ class Test_range_from_json(unittest.TestCase):
 
     def test_w_date_value(self):
         range_field = _Field(
-            "NULLIBLE",
+            "NULLABLE",
             field_type="RANGE",
-            range_element_type=_Field("NULLIBLE", element_type="DATE"),
+            range_element_type=_Field("NULLABLE", element_type="DATE"),
         )
         coerced = self._call_fut("[2009-06-17, 2019-06-17)", range_field)
         self.assertEqual(
@@ -512,9 +512,9 @@ class Test_range_from_json(unittest.TestCase):
 
     def test_w_datetime_value(self):
         range_field = _Field(
-            "NULLIBLE",
+            "NULLABLE",
             field_type="RANGE",
-            range_element_type=_Field("NULLIBLE", element_type="DATETIME"),
+            range_element_type=_Field("NULLABLE", element_type="DATETIME"),
         )
         coerced = self._call_fut(
             "[2009-06-17T13:45:30, 2019-06-17T13:45:30)", range_field
@@ -531,9 +531,9 @@ class Test_range_from_json(unittest.TestCase):
         from google.cloud._helpers import _EPOCH
 
         range_field = _Field(
-            "NULLIBLE",
+            "NULLABLE",
             field_type="RANGE",
-            range_element_type=_Field("NULLIBLE", element_type="TIMESTAMP"),
+            range_element_type=_Field("NULLABLE", element_type="TIMESTAMP"),
         )
         coerced = self._call_fut("[1234567, 1234789)", range_field)
         self.assertEqual(

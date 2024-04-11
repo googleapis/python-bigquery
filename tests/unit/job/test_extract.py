@@ -37,6 +37,7 @@ class TestExtractJobConfig(_Base):
 
     def test_to_api_repr(self):
         from google.cloud.bigquery import job
+        import json
 
         config = self._make_one()
         config.compression = job.Compression.SNAPPY.value
@@ -45,9 +46,8 @@ class TestExtractJobConfig(_Base):
         config.print_header = False
         config._properties["extract"]["someNewField"] = "some-value"
         config.use_avro_logical_types = True
-        resource = config.to_api_repr()
-        self.assertEqual(
-            resource,
+        resource = json.dumps(config.to_api_repr(), sort_keys=True)
+        expected = json.dumps(
             {
                 "extract": {
                     "compression": "SNAPPY",
@@ -58,6 +58,12 @@ class TestExtractJobConfig(_Base):
                     "useAvroLogicalTypes": True,
                 }
             },
+            sort_keys=True,
+        )
+
+        self.assertEqual(
+            resource,
+            expected,
         )
 
     def test_from_api_repr(self):

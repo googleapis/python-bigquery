@@ -23,6 +23,7 @@ import queue
 import warnings
 from typing import Any, Union
 
+
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
@@ -31,7 +32,7 @@ try:
     import pandas  # type: ignore
 
     pandas_import_exception = None
-except ImportError as exc:  # pragma: NO COVER
+except ImportError as exc:
     pandas = None
     pandas_import_exception = exc
 else:
@@ -43,24 +44,21 @@ try:
     date_dtype_name = db_dtypes.DateDtype.name
     time_dtype_name = db_dtypes.TimeDtype.name
     db_dtypes_import_exception = None
-except ImportError as exc:  # pragma: NO COVER
+except ImportError as exc:
     db_dtypes = None
     db_dtypes_import_exception = exc
     date_dtype_name = time_dtype_name = ""  # Use '' rather than None because pytype
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
-_BIGNUMERIC_SUPPORT = False
-if pyarrow is not None:
-    _BIGNUMERIC_SUPPORT = True
-
 try:
     # _BaseGeometry is used to detect shapely objevys in `bq_to_arrow_array`
     from shapely.geometry.base import BaseGeometry as _BaseGeometry  # type: ignore
-except ImportError:  # pragma: NO COVER
+except ImportError:
     # No shapely, use NoneType for _BaseGeometry as a placeholder.
     _BaseGeometry = type(None)
 else:
+    # We don't have any unit test sessions that install shapely but not pandas.
     if pandas is not None:  # pragma: NO COVER
 
         def _to_wkb():
@@ -178,12 +176,18 @@ def bq_to_arrow_field(bq_field, array_type=None):
     if arrow_type is not None:
         if array_type is not None:
             arrow_type = array_type  # For GEOGRAPHY, at least initially
-        is_nullable = bq_field.mode.upper() == "NULLABLE"
         metadata = BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA.get(
             bq_field.field_type.upper() if bq_field.field_type else ""
         )
         return pyarrow.field(
-            bq_field.name, arrow_type, nullable=is_nullable, metadata=metadata
+            bq_field.name,
+            arrow_type,
+            # Even if the remote schema is REQUIRED, there's a chance there's
+            # local NULL values. Arrow will gladly interpret these NULL values
+            # as non-NULL and give you an arbitrary value. See:
+            # https://github.com/googleapis/python-bigquery/issues/1692
+            nullable=True,
+            metadata=metadata,
         )
 
     warnings.warn("Unable to determine type for field '{}'.".format(bq_field.name))
@@ -295,11 +299,16 @@ def bq_to_arrow_array(series, bq_field):
 
     field_type_upper = bq_field.field_type.upper() if bq_field.field_type else ""
 
-    if bq_field.mode.upper() == "REPEATED":
-        return pyarrow.ListArray.from_pandas(series, type=arrow_type)
-    if field_type_upper in schema._STRUCT_TYPES:
-        return pyarrow.StructArray.from_pandas(series, type=arrow_type)
-    return pyarrow.Array.from_pandas(series, type=arrow_type)
+    try:
+        if bq_field.mode.upper() == "REPEATED":
+            return pyarrow.ListArray.from_pandas(series, type=arrow_type)
+        if field_type_upper in schema._STRUCT_TYPES:
+            return pyarrow.StructArray.from_pandas(series, type=arrow_type)
+        return pyarrow.Array.from_pandas(series, type=arrow_type)
+    except pyarrow.ArrowTypeError:
+        msg = f"""Error converting Pandas column with name: "{series.name}" and datatype: "{series.dtype}" to an appropriate pyarrow datatype: Array, ListArray, or StructArray"""
+        _LOGGER.error(msg)
+        raise pyarrow.ArrowTypeError(msg)
 
 
 def get_column_or_index(dataframe, name):
@@ -479,7 +488,6 @@ def augment_schema(dataframe, current_bq_schema):
     # pytype: disable=attribute-error
     augmented_schema = []
     unknown_type_fields = []
-
     for field in current_bq_schema:
         if field.field_type is not None:
             augmented_schema.append(field)
@@ -509,6 +517,8 @@ def augment_schema(dataframe, current_bq_schema):
         else:
             detected_mode = field.mode
             detected_type = _pyarrow_helpers.arrow_scalar_ids_to_bq(arrow_table.type.id)
+            if detected_type == "NUMERIC" and arrow_table.type.scale > 9:
+                detected_type = "BIGNUMERIC"
 
         if detected_type is None:
             unknown_type_fields.append(field)
@@ -950,6 +960,25 @@ def dataframe_to_json_generator(dataframe):
             # considered a NaN, however.
             if isinstance(is_nan, bool) and is_nan:
                 continue
+
+            # Convert numpy types to corresponding Python types.
+            # https://stackoverflow.com/a/60441783/101923
+            if isinstance(value, numpy.bool_):
+                value = bool(value)
+            elif isinstance(
+                value,
+                (
+                    numpy.int64,
+                    numpy.int32,
+                    numpy.int16,
+                    numpy.int8,
+                    numpy.uint64,
+                    numpy.uint32,
+                    numpy.uint16,
+                    numpy.uint8,
+                ),
+            ):
+                value = int(value)
             output[column] = value
 
         yield output

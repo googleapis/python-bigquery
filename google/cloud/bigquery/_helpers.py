@@ -17,6 +17,7 @@
 import base64
 import datetime
 import decimal
+import json
 import math
 import re
 import os
@@ -29,6 +30,8 @@ from google.cloud._helpers import _datetime_from_microseconds
 from google.cloud._helpers import _RFC3339_MICROS
 from google.cloud._helpers import _RFC3339_NO_FRACTION
 from google.cloud._helpers import _to_bytes
+from google.auth import credentials as ga_credentials  # type: ignore
+from google.api_core import client_options as client_options_lib
 
 _RFC3339_MICROS_NO_ZULU = "%Y-%m-%dT%H:%M:%S.%f"
 _TIMEONLY_WO_MICROS = "%H:%M:%S"
@@ -53,6 +56,66 @@ BIGQUERY_EMULATOR_HOST = "BIGQUERY_EMULATOR_HOST"
 
 _DEFAULT_HOST = "https://bigquery.googleapis.com"
 """Default host for JSON API."""
+
+_DEFAULT_HOST_TEMPLATE = "https://bigquery.{UNIVERSE_DOMAIN}"
+""" Templatized endpoint format. """
+
+_DEFAULT_UNIVERSE = "googleapis.com"
+"""Default universe for the JSON API."""
+
+_UNIVERSE_DOMAIN_ENV = "GOOGLE_CLOUD_UNIVERSE_DOMAIN"
+"""Environment variable for setting universe domain."""
+
+
+def _get_client_universe(
+    client_options: Optional[Union[client_options_lib.ClientOptions, dict]]
+) -> str:
+    """Retrieves the specified universe setting.
+
+    Args:
+        client_options: specified client options.
+    Returns:
+        str: resolved universe setting.
+
+    """
+    if isinstance(client_options, dict):
+        client_options = client_options_lib.from_dict(client_options)
+    universe = _DEFAULT_UNIVERSE
+    options_universe = getattr(client_options, "universe_domain", None)
+    if (
+        options_universe
+        and isinstance(options_universe, str)
+        and len(options_universe) > 0
+    ):
+        universe = options_universe
+    else:
+        env_universe = os.getenv(_UNIVERSE_DOMAIN_ENV)
+        if isinstance(env_universe, str) and len(env_universe) > 0:
+            universe = env_universe
+    return universe
+
+
+def _validate_universe(client_universe: str, credentials: ga_credentials.Credentials):
+    """Validates that client provided universe and universe embedded in credentials match.
+
+    Args:
+        client_universe (str): The universe domain configured via the client options.
+        credentials (ga_credentials.Credentials): The credentials being used in the client.
+
+    Raises:
+        ValueError: when client_universe does not match the universe in credentials.
+    """
+    if hasattr(credentials, "universe_domain"):
+        cred_universe = getattr(credentials, "universe_domain")
+        if isinstance(cred_universe, str):
+            if client_universe != cred_universe:
+                raise ValueError(
+                    "The configured universe domain "
+                    f"({client_universe}) does not match the universe domain "
+                    f"found in the credentials ({cred_universe}). "
+                    "If you haven't configured the universe domain explicitly, "
+                    f"`{_DEFAULT_UNIVERSE}` is the default."
+                )
 
 
 def _get_bigquery_host():
@@ -238,6 +301,55 @@ def _record_from_json(value, field):
         return record
 
 
+def _json_from_json(value, field):
+    """Coerce 'value' to a Pythonic JSON representation."""
+    if _not_null(value, field):
+        return json.loads(value)
+    else:
+        return None
+
+
+def _range_element_from_json(value, field):
+    """Coerce 'value' to a range element value, if set or not nullable."""
+    if value == "UNBOUNDED":
+        return None
+    elif field.element_type == "DATE":
+        return _date_from_json(value, None)
+    elif field.element_type == "DATETIME":
+        return _datetime_from_json(value, None)
+    elif field.element_type == "TIMESTAMP":
+        return _timestamp_from_json(value, None)
+    else:
+        raise ValueError(f"Unsupported range field type: {value}")
+
+
+def _range_from_json(value, field):
+    """Coerce 'value' to a range, if set or not nullable.
+
+    Args:
+        value (str): The literal representation of the range.
+        field (google.cloud.bigquery.schema.SchemaField):
+            The field corresponding to the value.
+
+    Returns:
+        Optional[dict]:
+            The parsed range object from ``value`` if the ``field`` is not
+            null (otherwise it is :data:`None`).
+    """
+    range_literal = re.compile(r"\[.*, .*\)")
+    if _not_null(value, field):
+        if range_literal.match(value):
+            start, end = value[1:-1].split(", ")
+            start = _range_element_from_json(start, field.range_element_type)
+            end = _range_element_from_json(end, field.range_element_type)
+            return {"start": start, "end": end}
+        else:
+            raise ValueError(f"Unknown range format: {value}")
+    else:
+        return None
+
+
+# Parse BigQuery API response JSON into a Python representation.
 _CELLDATA_FROM_JSON = {
     "INTEGER": _int_from_json,
     "INT64": _int_from_json,
@@ -256,6 +368,8 @@ _CELLDATA_FROM_JSON = {
     "DATE": _date_from_json,
     "TIME": _time_from_json,
     "RECORD": _record_from_json,
+    "JSON": _json_from_json,
+    "RANGE": _range_from_json,
 }
 
 _QUERY_PARAMS_FROM_JSON = dict(_CELLDATA_FROM_JSON)
@@ -363,6 +477,13 @@ def _bytes_to_json(value):
     return value
 
 
+def _json_to_json(value):
+    """Coerce 'value' to a BigQuery REST API representation."""
+    if value is None:
+        return None
+    return json.dumps(value)
+
+
 def _timestamp_to_json_parameter(value):
     """Coerce 'value' to an JSON-compatible representation.
 
@@ -412,7 +533,8 @@ def _time_to_json(value):
     return value
 
 
-# Converters used for scalar values marshalled as row data.
+# Converters used for scalar values marshalled to the BigQuery API, such as in
+# query parameters or the tabledata.insert API.
 _SCALAR_VALUE_TO_JSON_ROW = {
     "INTEGER": _int_to_json,
     "INT64": _int_to_json,
@@ -427,6 +549,7 @@ _SCALAR_VALUE_TO_JSON_ROW = {
     "DATETIME": _datetime_to_json,
     "DATE": _date_to_json,
     "TIME": _time_to_json,
+    "JSON": _json_to_json,
     # Make sure DECIMAL and BIGDECIMAL are handled, even though
     # requests for them should be converted to NUMERIC.  Better safe
     # than sorry.

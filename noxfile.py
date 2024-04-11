@@ -18,7 +18,6 @@ import pathlib
 import os
 import re
 import shutil
-
 import nox
 
 
@@ -37,8 +36,8 @@ BLACK_PATHS = (
 )
 
 DEFAULT_PYTHON_VERSION = "3.8"
-SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.11"]
-UNIT_TEST_PYTHON_VERSIONS = ["3.7", "3.8", "3.9", "3.10", "3.11"]
+SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.11", "3.12"]
+UNIT_TEST_PYTHON_VERSIONS = ["3.7", "3.8", "3.12"]
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 # 'docfx' is excluded since it only needs to run in 'docs-presubmit'
@@ -66,13 +65,13 @@ def default(session, install_extras=True):
     Python corresponding to the ``nox`` binary the ``PATH`` can
     run the tests.
     """
+
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
     )
 
     # Install all test dependencies, then install local packages in-place.
     session.install(
-        "mock",
         "pytest",
         "google-cloud-testutils",
         "pytest-cov",
@@ -81,13 +80,14 @@ def default(session, install_extras=True):
         constraints_path,
     )
 
-    if install_extras and session.python == "3.11":
+    if install_extras and session.python in ["3.11", "3.12"]:
         install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     elif install_extras:
         install_target = ".[all]"
     else:
         install_target = "."
     session.install("-e", install_target, "-c", constraints_path)
+    session.run("python", "-m", "pip", "freeze")
 
     # Run py.test against the unit tests.
     session.run(
@@ -107,6 +107,7 @@ def default(session, install_extras=True):
 @nox.session(python=UNIT_TEST_PYTHON_VERSIONS)
 def unit(session):
     """Run the unit test suite."""
+
     default(session)
 
 
@@ -114,9 +115,13 @@ def unit(session):
 def unit_noextras(session):
     """Run the unit test suite."""
 
-    # Install optional dependencies that are out-of-date.
+    # Install optional dependencies that are out-of-date to see that
+    # we fail gracefully.
     # https://github.com/googleapis/python-bigquery/issues/933
-    # There is no pyarrow 1.0.0 package for Python 3.9.
+    #
+    # We only install this extra package on one of the two Python versions
+    # so that it continues to be an optional dependency.
+    # https://github.com/googleapis/python-bigquery/issues/1877
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
         session.install("pyarrow==1.0.0")
 
@@ -126,6 +131,11 @@ def unit_noextras(session):
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def mypy(session):
     """Run type checks with mypy."""
+
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
+
     session.install("-e", ".[all]")
     session.install(MYPY_VERSION)
 
@@ -137,7 +147,7 @@ def mypy(session):
         "types-requests",
         "types-setuptools",
     )
-    session.run("mypy", "google/cloud", "--show-traceback")
+    session.run("mypy", "-p", "google", "--show-traceback")
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
@@ -146,10 +156,16 @@ def pytype(session):
     # An indirect dependecy attrs==21.1.0 breaks the check, and installing a less
     # recent version avoids the error until a possibly better fix is found.
     # https://github.com/googleapis/python-bigquery/issues/655
+
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
+
     session.install("attrs==20.3.0")
     session.install("-e", ".[all]")
     session.install(PYTYPE_VERSION)
-    session.run("pytype")
+    # See https://github.com/google/pytype/issues/464
+    session.run("pytype", "-P", ".", "google/cloud/bigquery")
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
@@ -175,7 +191,7 @@ def system(session):
 
     # Install all test dependencies, then install local packages in place.
     session.install(
-        "mock", "pytest", "psutil", "google-cloud-testutils", "-c", constraints_path
+        "pytest", "psutil", "google-cloud-testutils", "-c", constraints_path
     )
     if os.environ.get("GOOGLE_API_USE_CLIENT_CERTIFICATE", "") == "true":
         # mTLS test requires pyopenssl and latest google-cloud-storage
@@ -186,32 +202,44 @@ def system(session):
     # Data Catalog needed for the column ACL test with a real Policy Tag.
     session.install("google-cloud-datacatalog", "-c", constraints_path)
 
-    if session.python == "3.11":
+    if session.python in ["3.11", "3.12"]:
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)
 
     # Run py.test against the system tests.
-    session.run("py.test", "--quiet", os.path.join("tests", "system"), *session.posargs)
+    session.run(
+        "py.test",
+        "--quiet",
+        os.path.join("tests", "system"),
+        *session.posargs,
+    )
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
 def mypy_samples(session):
     """Run type checks with mypy."""
-    session.install("-e", ".[all]")
+
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 
     session.install("pytest")
     for requirements_path in CURRENT_DIRECTORY.glob("samples/*/requirements.txt"):
-        session.install("-r", requirements_path)
+        session.install("-r", str(requirements_path))
     session.install(MYPY_VERSION)
+
+    # requirements.txt might include this package. Install from source so that
+    # we can author samples with unreleased features.
+    session.install("-e", ".[all]")
 
     # Just install the dependencies' type info directly, since "mypy --install-types"
     # might require an additional pass.
     session.install(
         "types-mock",
         "types-pytz",
-        "types-protobuf",
+        "types-protobuf!=4.24.0.20240106",  # This version causes an error: 'Module "google.oauth2" has no attribute "service_account"'
         "types-python-dateutil",
         "types-requests",
         "types-setuptools",
@@ -241,11 +269,11 @@ def snippets(session):
     )
 
     # Install all test dependencies, then install local packages in place.
-    session.install("mock", "pytest", "google-cloud-testutils", "-c", constraints_path)
+    session.install("pytest", "google-cloud-testutils", "-c", constraints_path)
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
-    if session.python == "3.11":
+    if session.python in ["3.11", "3.12"]:
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
@@ -258,8 +286,10 @@ def snippets(session):
     session.run(
         "py.test",
         "samples",
+        "--ignore=samples/desktopapp",
         "--ignore=samples/magics",
         "--ignore=samples/geography",
+        "--ignore=samples/notebooks",
         "--ignore=samples/snippets",
         *session.posargs,
     )
@@ -272,6 +302,7 @@ def cover(session):
     This outputs the coverage report aggregating coverage from the unit
     test runs (not system test runs), and then erases coverage data.
     """
+
     session.install("coverage", "pytest-cov")
     session.run("coverage", "report", "--show-missing", "--fail-under=100")
     session.run("coverage", "erase")
@@ -326,7 +357,6 @@ def prerelease_deps(session):
         "google-cloud-datacatalog",
         "google-cloud-storage",
         "google-cloud-testutils",
-        "mock",
         "psutil",
         "pytest",
         "pytest-cov",
@@ -376,6 +406,10 @@ def lint(session):
     serious code quality issues.
     """
 
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
+
     session.install("flake8", BLACK_VERSION)
     session.install("-e", ".")
     session.run("flake8", os.path.join("google", "cloud", "bigquery"))
@@ -390,6 +424,10 @@ def lint(session):
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
+
     session.install("docutils", "Pygments")
     session.run("python", "setup.py", "check", "--restructuredtext", "--strict")
 
@@ -400,6 +438,10 @@ def blacken(session):
     Format code to uniform standard.
     """
 
+    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
+    if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
+        session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
+
     session.install(BLACK_VERSION)
     session.run("black", *BLACK_PATHS)
 
@@ -408,7 +450,20 @@ def blacken(session):
 def docs(session):
     """Build the docs."""
 
-    session.install("recommonmark", "sphinx==4.0.2", "sphinx_rtd_theme")
+    session.install(
+        # We need to pin to specific versions of the `sphinxcontrib-*` packages
+        # which still support sphinx 4.x.
+        # See https://github.com/googleapis/sphinx-docfx-yaml/issues/344
+        # and https://github.com/googleapis/sphinx-docfx-yaml/issues/345.
+        "sphinxcontrib-applehelp==1.0.4",
+        "sphinxcontrib-devhelp==1.0.2",
+        "sphinxcontrib-htmlhelp==2.0.1",
+        "sphinxcontrib-qthelp==1.0.3",
+        "sphinxcontrib-serializinghtml==1.1.5",
+        "sphinx==4.5.0",
+        "alabaster",
+        "recommonmark",
+    )
     session.install("google-cloud-storage")
     session.install("-e", ".[all]")
 
@@ -433,6 +488,15 @@ def docfx(session):
 
     session.install("-e", ".")
     session.install(
+        # We need to pin to specific versions of the `sphinxcontrib-*` packages
+        # which still support sphinx 4.x.
+        # See https://github.com/googleapis/sphinx-docfx-yaml/issues/344
+        # and https://github.com/googleapis/sphinx-docfx-yaml/issues/345.
+        "sphinxcontrib-applehelp==1.0.4",
+        "sphinxcontrib-devhelp==1.0.2",
+        "sphinxcontrib-htmlhelp==2.0.1",
+        "sphinxcontrib-qthelp==1.0.3",
+        "sphinxcontrib-serializinghtml==1.1.5",
         "gcp-sphinx-docfx-yaml",
         "alabaster",
         "recommonmark",

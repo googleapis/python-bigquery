@@ -14,7 +14,7 @@
 
 import typing
 
-from .. import client_query
+import client_query  # type: ignore
 
 if typing.TYPE_CHECKING:
     import pytest
@@ -22,6 +22,17 @@ if typing.TYPE_CHECKING:
 
 def test_client_query(capsys: "pytest.CaptureFixture[str]") -> None:
     client_query.client_query()
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
+    assert "The query data:" in out
+    assert "name=James, count=272793" in out
+
+
+def test_client_query_job_optional(
+    capsys: "pytest.CaptureFixture[str]", monkeypatch: "pytest.MonkeyPatch"
+) -> None:
+    monkeypatch.setenv("QUERY_PREVIEW_ENABLED", "true")
+
+    client_query.client_query()
+    out, _ = capsys.readouterr()
     assert "The query data:" in out
     assert "name=James, count=272793" in out

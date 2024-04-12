@@ -896,18 +896,10 @@ def test_query_and_wait_caches_completed_query_results_more_pages():
         timeout=None,
     )
 
-    # TODO(swast): Fetching job metadata isn't necessary in this case.
-    jobs_get_path = "/projects/response-project/jobs/response-job-id"
-    client._call_api.assert_any_call(
-        None,  # retry
-        span_name="BigQuery.job.reload",
-        span_attributes={"path": jobs_get_path},
-        job_ref=mock.ANY,
-        method="GET",
-        path=jobs_get_path,
-        query_params={"location": "response-location"},
-        timeout=None,
-    )
+    # Note: There is no get call to
+    # "/projects/response-project/jobs/response-job-id", because fetching job
+    # metadata isn't necessary in this case. The job already completed in
+    # jobs.query and we don't need the full job metadata in query_and_wait.
 
     # Fetch the remaining two pages.
     jobs_get_query_results_path = "/projects/response-project/queries/response-job-id"
@@ -944,6 +936,7 @@ def test_query_and_wait_incomplete_query():
         Client._list_rows_from_query_results, client
     )
     client._call_api.side_effect = (
+        # jobs.query
         {
             "jobReference": {
                 "projectId": "response-project",
@@ -952,6 +945,7 @@ def test_query_and_wait_incomplete_query():
             },
             "jobComplete": False,
         },
+        # jobs.get
         {
             "jobReference": {
                 "projectId": "response-project",
@@ -968,6 +962,7 @@ def test_query_and_wait_incomplete_query():
                 ],
             },
         },
+        # jobs.getQueryResults with max_results=0
         {
             "jobReference": {
                 "projectId": "response-project",
@@ -975,6 +970,7 @@ def test_query_and_wait_incomplete_query():
                 "location": "response-location",
             },
         },
+        # jobs.getQueryResults
         {
             "rows": [
                 {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
@@ -987,6 +983,7 @@ def test_query_and_wait_incomplete_query():
             "totalRows": 2,
             "pageToken": "page-2",
         },
+        # jobs.getQueryResults
         {
             "rows": [
                 {"f": [{"v": "Pearl Slaghoople"}, {"v": "53"}]},

@@ -17,6 +17,7 @@
 import concurrent.futures
 import copy
 import re
+import time
 import typing
 from typing import Any, Dict, Iterable, List, Optional, Union
 
@@ -1528,6 +1529,10 @@ class QueryJob(_AsyncJob):
                 If Non-``None`` and non-default ``job_retry`` is
                 provided and the job is not retryable.
         """
+        # Note: Since waiting for a query job to finish is more complex than
+        # refreshing the job state in a loop, we avoid calling the superclass
+        # in this method.
+
         if self.dry_run:
             return _EmptyRowIterator(
                 project=self.project,
@@ -1548,46 +1553,80 @@ class QueryJob(_AsyncJob):
                         " provided to the query that created this job."
                     )
 
-            first = True
+            restart_query_job = False
 
-            def do_get_result():
-                nonlocal first
+            def is_job_done():
+                nonlocal restart_query_job
 
-                if first:
-                    first = False
-                else:
-                    # Note that we won't get here if retry_do_query is
-                    # None, because we won't use a retry.
+                if restart_query_job:
+                    restart_query_job = False
 
                     # The orinal job is failed. Create a new one.
+                    #
+                    # Note that we won't get here if retry_do_query is
+                    # None, because we won't use a retry.
                     job = retry_do_query()
-
-                    # If it's already failed, we might as well stop:
-                    if job.done() and job.exception() is not None:
-                        raise job.exception()
 
                     # Become the new job:
                     self.__dict__.clear()
                     self.__dict__.update(job.__dict__)
 
-                    # This shouldn't be necessary, because once we have a good
-                    # job, it should stay good,and we shouldn't have to retry.
-                    # But let's be paranoid. :)
+                    # It's possible the job fails again and we'll have to
+                    # retry that too.
                     self._retry_do_query = retry_do_query
                     self._job_retry = job_retry
 
-                super(QueryJob, self).result(retry=retry, timeout=timeout)
+                if self.done():
+                    # If it's already failed, we might as well stop.
+                    if self.exception() is not None:
+                        # Only try to restart the query job if the job failed for
+                        # a retriable reason. For example, don't restart the query
+                        # if the call to reload the job metadata within self.done()
+                        # timed out.
+                        restart_query_job = True
+                        raise self.exception()
+                    else:
+                        # Optimization: avoid a call to jobs.getQueryResults if
+                        # it's already been fetched, e.g. from jobs.query first
+                        # page of results.
+                        if (
+                            self._query_results is not None
+                            and self._query_results.complete
+                        ):
+                            return True
 
-                # Since the job could already be "done" (e.g. got a finished job
-                # via client.get_job), the superclass call to done() might not
-                # set the self._query_results cache.
-                if self._query_results is None or not self._query_results.complete:
-                    self._reload_query_results(retry=retry, timeout=timeout)
+                # Call jobs.getQueryResults with max results set to 0 just to
+                # wait for the query to finish. Unlike most methods,
+                # jobs.getQueryResults hangs as long as it can to ensure we
+                # know when the query has finished as soon as possible.
+                self._reload_query_results(retry=retry, timeout=timeout)
+                return False
 
             if retry_do_query is not None and job_retry is not None:
-                do_get_result = job_retry(do_get_result)
+                is_job_done = job_retry(is_job_done)
 
-            do_get_result()
+            # timeout can be `None` or an object from our superclass
+            # indicating a default timeout.
+            remaining_timeout = timeout if isinstance(timeout, (float, int)) else None
+
+            if remaining_timeout is None:
+                # Since is_job_done() calls jobs.getQueryResults, which is a
+                # long-running API, don't delay the next request at all.
+                while not is_job_done():
+                    pass
+            else:
+                # Use a monotonic clock since we don't actually care about
+                # daylight savings or similar, just the elapsed time.
+                previous_time = time.monotonic()
+
+                while not is_job_done():
+                    current_time = time.monotonic()
+                    elapsed_time = current_time - previous_time
+                    remaining_timeout = remaining_timeout - elapsed_time
+                    previous_time = current_time
+
+                    if remaining_timeout < 0:
+                        raise concurrent.futures.TimeoutError()
 
         except exceptions.GoogleAPICallError as exc:
             exc.message = _EXCEPTION_FOOTER_TEMPLATE.format(

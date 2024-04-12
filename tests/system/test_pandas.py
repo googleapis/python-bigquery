@@ -23,8 +23,12 @@ import operator
 import warnings
 
 import google.api_core.retry
-import pkg_resources
 import pytest
+
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 from google.cloud import bigquery
 
@@ -42,11 +46,9 @@ bigquery_storage = pytest.importorskip(
 )
 
 if pandas is not None:
-    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
+    PANDAS_INSTALLED_VERSION = metadata.version("pandas")
 else:
-    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
-
-PANDAS_INT64_VERSION = pkg_resources.parse_version("1.0.0")
+    PANDAS_INSTALLED_VERSION = "0.0.0"
 
 
 class MissingDataError(Exception):
@@ -310,10 +312,7 @@ def test_load_table_from_dataframe_w_automatic_schema(bigquery_client, dataset_i
     ]
 
 
-@pytest.mark.skipif(
-    PANDAS_INSTALLED_VERSION < PANDAS_INT64_VERSION,
-    reason="Only `pandas version >=1.0.0` is supported",
-)
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_load_table_from_dataframe_w_nullable_int64_datatype(
     bigquery_client, dataset_id
 ):
@@ -342,7 +341,7 @@ def test_load_table_from_dataframe_w_nullable_int64_datatype(
 
 
 @pytest.mark.skipif(
-    PANDAS_INSTALLED_VERSION < PANDAS_INT64_VERSION,
+    PANDAS_INSTALLED_VERSION[0:2].startswith("0."),
     reason="Only `pandas version >=1.0.0` is supported",
 )
 def test_load_table_from_dataframe_w_nullable_int64_datatype_automatic_schema(
@@ -428,8 +427,7 @@ def test_load_table_from_dataframe_w_nulls(bigquery_client, dataset_id):
 
 
 def test_load_table_from_dataframe_w_required(bigquery_client, dataset_id):
-    """Test that a DataFrame with required columns can be uploaded if a
-    BigQuery schema is specified.
+    """Test that a DataFrame can be uploaded to a table with required columns.
 
     See: https://github.com/googleapis/google-cloud-python/issues/8093
     """
@@ -440,7 +438,6 @@ def test_load_table_from_dataframe_w_required(bigquery_client, dataset_id):
 
     records = [{"name": "Chip", "age": 2}, {"name": "Dale", "age": 3}]
     dataframe = pandas.DataFrame(records, columns=["name", "age"])
-    job_config = bigquery.LoadJobConfig(schema=table_schema)
     table_id = "{}.{}.load_table_from_dataframe_w_required".format(
         bigquery_client.project, dataset_id
     )
@@ -451,15 +448,50 @@ def test_load_table_from_dataframe_w_required(bigquery_client, dataset_id):
         bigquery.Table(table_id, schema=table_schema)
     )
 
-    job_config = bigquery.LoadJobConfig(schema=table_schema)
-    load_job = bigquery_client.load_table_from_dataframe(
-        dataframe, table_id, job_config=job_config
-    )
+    load_job = bigquery_client.load_table_from_dataframe(dataframe, table_id)
     load_job.result()
 
     table = bigquery_client.get_table(table)
     assert tuple(table.schema) == table_schema
     assert table.num_rows == 2
+    for field in table.schema:
+        assert field.mode == "REQUIRED"
+
+
+def test_load_table_from_dataframe_w_required_but_local_nulls_fails(
+    bigquery_client, dataset_id
+):
+    """Test that a DataFrame with nulls can't be uploaded to a table with
+    required columns.
+
+    See: https://github.com/googleapis/python-bigquery/issues/1692
+    """
+    table_schema = (
+        bigquery.SchemaField("name", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("age", "INTEGER", mode="REQUIRED"),
+    )
+
+    records = [
+        {"name": "Chip", "age": 2},
+        {"name": "Dale", "age": 3},
+        {"name": None, "age": None},
+        {"name": "Alvin", "age": 4},
+    ]
+    dataframe = pandas.DataFrame(records, columns=["name", "age"])
+    table_id = (
+        "{}.{}.load_table_from_dataframe_w_required_but_local_nulls_fails".format(
+            bigquery_client.project, dataset_id
+        )
+    )
+
+    # Create the table before loading so that schema mismatch errors are
+    # identified.
+    helpers.retry_403(bigquery_client.create_table)(
+        bigquery.Table(table_id, schema=table_schema)
+    )
+
+    with pytest.raises(google.api_core.exceptions.BadRequest, match="null"):
+        bigquery_client.load_table_from_dataframe(dataframe, table_id).result()
 
 
 def test_load_table_from_dataframe_w_explicit_schema(bigquery_client, dataset_id):
@@ -803,7 +835,9 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
     schema = [
         SF("float_col", "FLOAT", mode="REQUIRED"),
         SF("int_col", "INTEGER", mode="REQUIRED"),
+        SF("int64_col", "INTEGER", mode="NULLABLE"),
         SF("bool_col", "BOOLEAN", mode="REQUIRED"),
+        SF("boolean_col", "BOOLEAN", mode="NULLABLE"),
         SF("string_col", "STRING", mode="NULLABLE"),
         SF("date_col", "DATE", mode="NULLABLE"),
         SF("time_col", "TIME", mode="NULLABLE"),
@@ -866,6 +900,15 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
     dataframe["date_col"] = dataframe["date_col"].astype("dbdate")
     dataframe["time_col"] = dataframe["time_col"].astype("dbtime")
 
+    # Support nullable integer and boolean dtypes.
+    # https://github.com/googleapis/python-bigquery/issues/1815
+    dataframe["int64_col"] = pandas.Series(
+        [-11, -22, pandas.NA, -44, -55, -66], dtype="Int64"
+    )
+    dataframe["boolean_col"] = pandas.Series(
+        [True, False, True, pandas.NA, True, False], dtype="boolean"
+    )
+
     table_id = f"{bigquery_client.project}.{dataset_id}.test_insert_rows_from_dataframe"
     table_arg = bigquery.Table(table_id, schema=schema)
     table = helpers.retry_403(bigquery_client.create_table)(table_arg)
@@ -878,7 +921,7 @@ def test_insert_rows_from_dataframe(bigquery_client, dataset_id):
     expected = [
         # Pandas often represents NULL values as NaN. Convert to None for
         # easier comparison.
-        tuple(None if col != col else col for col in data_row)
+        tuple(None if pandas.isna(col) else col for col in data_row)
         for data_row in dataframe.itertuples(index=False)
     ]
 
@@ -1010,9 +1053,7 @@ def test_list_rows_max_results_w_bqstorage(bigquery_client):
     assert len(dataframe.index) == 100
 
 
-@pytest.mark.skipif(
-    PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
-)
+@pytest.mark.skipif(PANDAS_INSTALLED_VERSION[0:2] not in ["0.", "1."], reason="")
 @pytest.mark.parametrize(
     ("max_results",),
     (

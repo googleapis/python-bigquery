@@ -16,7 +16,7 @@ import typing
 
 from google.cloud import bigquery
 
-import get_table_labels
+import get_table_labels  # type: ignore
 
 if typing.TYPE_CHECKING:
     import pytest
@@ -42,7 +42,6 @@ def test_get_table_labels_no_label(
     capsys: "pytest.CaptureFixture[str]",
     table_id: str,
 ) -> None:
-
     get_table_labels.get_table_labels(table_id)
 
     out, _ = capsys.readouterr()

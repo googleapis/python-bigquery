@@ -15,146 +15,104 @@
 import base64
 import datetime
 import decimal
+import json
+import os
+import pytest
+import packaging
 import unittest
+from unittest import mock
 
-import mock
-
-try:
-    from google.cloud import bigquery_storage  # type: ignore
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
-
-try:
-    import pyarrow
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
+import google.api_core
 
 
-@unittest.skipIf(bigquery_storage is None, "Requires `google-cloud-bigquery-storage`")
-class TestBQStorageVersions(unittest.TestCase):
-    def tearDown(self):
-        from google.cloud.bigquery import _helpers
+@pytest.mark.skipif(
+    packaging.version.parse(getattr(google.api_core, "__version__", "0.0.0"))
+    < packaging.version.Version("2.15.0"),
+    reason="universe_domain not supported with google-api-core < 2.15.0",
+)
+class Test_get_client_universe(unittest.TestCase):
+    def test_with_none(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
 
-        # Reset any cached versions since it may not match reality.
-        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
+        self.assertEqual("googleapis.com", _get_client_universe(None))
 
-    def _object_under_test(self):
-        from google.cloud.bigquery import _helpers
+    def test_with_dict(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
 
-        return _helpers.BQStorageVersions()
+        options = {"universe_domain": "foo.com"}
+        self.assertEqual("foo.com", _get_client_universe(options))
 
-    def _call_fut(self):
-        from google.cloud.bigquery import _helpers
+    def test_with_dict_empty(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
 
-        _helpers.BQ_STORAGE_VERSIONS._installed_version = None
-        return _helpers.BQ_STORAGE_VERSIONS.verify_version()
+        options = {"universe_domain": ""}
+        self.assertEqual("googleapis.com", _get_client_universe(options))
 
-    def test_raises_no_error_w_recent_bqstorage(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+    def test_with_client_options(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
+        from google.api_core import client_options
 
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="2.0.0"):
-            try:
-                self._call_fut()
-            except LegacyBigQueryStorageError:  # pragma: NO COVER
-                self.fail("Legacy error raised with a non-legacy dependency version.")
+        options = client_options.from_dict({"universe_domain": "foo.com"})
+        self.assertEqual("foo.com", _get_client_universe(options))
 
-    def test_raises_error_w_legacy_bqstorage(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+    @mock.patch.dict(os.environ, {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": "foo.com"})
+    def test_with_environ(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
 
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="1.9.9"):
-            with self.assertRaises(LegacyBigQueryStorageError):
-                self._call_fut()
+        self.assertEqual("foo.com", _get_client_universe(None))
 
-    def test_raises_error_w_unknown_bqstorage_version(self):
-        from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+    @mock.patch.dict(os.environ, {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": "foo.com"})
+    def test_with_environ_and_dict(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
 
-        with mock.patch("google.cloud.bigquery_storage", autospec=True) as fake_module:
-            del fake_module.__version__
-            error_pattern = r"version found: 0.0.0"
-            with self.assertRaisesRegex(LegacyBigQueryStorageError, error_pattern):
-                self._call_fut()
+        options = ({"credentials_file": "file.json"},)
+        self.assertEqual("foo.com", _get_client_universe(options))
 
-    def test_installed_version_returns_cached(self):
-        versions = self._object_under_test()
-        versions._installed_version = object()
-        assert versions.installed_version is versions._installed_version
+    @mock.patch.dict(os.environ, {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": "foo.com"})
+    def test_with_environ_and_empty_options(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
+        from google.api_core import client_options
 
-    def test_installed_version_returns_parsed_version(self):
-        versions = self._object_under_test()
+        options = client_options.from_dict({})
+        self.assertEqual("foo.com", _get_client_universe(options))
 
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="1.2.3"):
-            version = versions.installed_version
+    @mock.patch.dict(os.environ, {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": ""})
+    def test_with_environ_empty(self):
+        from google.cloud.bigquery._helpers import _get_client_universe
 
-        assert version.major == 1
-        assert version.minor == 2
-        assert version.micro == 3
-
-    def test_is_read_session_optional_true(self):
-        versions = self._object_under_test()
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="2.6.0"):
-            assert versions.is_read_session_optional
-
-    def test_is_read_session_optional_false(self):
-        versions = self._object_under_test()
-        with mock.patch("google.cloud.bigquery_storage.__version__", new="2.5.0"):
-            assert not versions.is_read_session_optional
+        self.assertEqual("googleapis.com", _get_client_universe(None))
 
 
-@unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-class TestPyarrowVersions(unittest.TestCase):
-    def tearDown(self):
-        from google.cloud.bigquery import _helpers
+class Test_validate_universe(unittest.TestCase):
+    def test_with_none(self):
+        from google.cloud.bigquery._helpers import _validate_universe
 
-        # Reset any cached versions since it may not match reality.
-        _helpers.PYARROW_VERSIONS._installed_version = None
+        # should not raise
+        _validate_universe("googleapis.com", None)
 
-    def _object_under_test(self):
-        from google.cloud.bigquery import _helpers
+    def test_with_no_universe_creds(self):
+        from google.cloud.bigquery._helpers import _validate_universe
+        from .helpers import make_creds
 
-        return _helpers.PyarrowVersions()
+        creds = make_creds(None)
+        # should not raise
+        _validate_universe("googleapis.com", creds)
 
-    def _call_try_import(self, **kwargs):
-        from google.cloud.bigquery import _helpers
+    def test_with_matched_universe_creds(self):
+        from google.cloud.bigquery._helpers import _validate_universe
+        from .helpers import make_creds
 
-        _helpers.PYARROW_VERSIONS._installed_version = None
-        return _helpers.PYARROW_VERSIONS.try_import(**kwargs)
+        creds = make_creds("googleapis.com")
+        # should not raise
+        _validate_universe("googleapis.com", creds)
 
-    def test_try_import_raises_no_error_w_recent_pyarrow(self):
-        from google.cloud.bigquery.exceptions import LegacyPyarrowError
+    def test_with_mismatched_universe_creds(self):
+        from google.cloud.bigquery._helpers import _validate_universe
+        from .helpers import make_creds
 
-        with mock.patch("pyarrow.__version__", new="5.0.0"):
-            try:
-                pyarrow = self._call_try_import(raise_if_error=True)
-                self.assertIsNotNone(pyarrow)
-            except LegacyPyarrowError:  # pragma: NO COVER
-                self.fail("Legacy error raised with a non-legacy dependency version.")
-
-    def test_try_import_returns_none_w_legacy_pyarrow(self):
-        with mock.patch("pyarrow.__version__", new="2.0.0"):
-            pyarrow = self._call_try_import()
-            self.assertIsNone(pyarrow)
-
-    def test_try_import_raises_error_w_legacy_pyarrow(self):
-        from google.cloud.bigquery.exceptions import LegacyPyarrowError
-
-        with mock.patch("pyarrow.__version__", new="2.0.0"):
-            with self.assertRaises(LegacyPyarrowError):
-                self._call_try_import(raise_if_error=True)
-
-    def test_installed_version_returns_cached(self):
-        versions = self._object_under_test()
-        versions._installed_version = object()
-        assert versions.installed_version is versions._installed_version
-
-    def test_installed_version_returns_parsed_version(self):
-        versions = self._object_under_test()
-
-        with mock.patch("pyarrow.__version__", new="1.2.3"):
-            version = versions.installed_version
-
-        assert version.major == 1
-        assert version.minor == 2
-        assert version.micro == 3
+        creds = make_creds("foo.com")
+        with self.assertRaises(ValueError):
+            _validate_universe("googleapis.com", creds)
 
 
 class Test_not_null(unittest.TestCase):
@@ -193,6 +151,35 @@ class Test_int_from_json(unittest.TestCase):
     def test_w_float_value(self):
         coerced = self._call_fut(42, object())
         self.assertEqual(coerced, 42)
+
+
+class Test_json_from_json(unittest.TestCase):
+    def _call_fut(self, value, field):
+        from google.cloud.bigquery._helpers import _json_from_json
+
+        return _json_from_json(value, field)
+
+    def test_w_none_nullable(self):
+        self.assertIsNone(self._call_fut(None, _Field("NULLABLE")))
+
+    def test_w_none_required(self):
+        with self.assertRaises(TypeError):
+            self._call_fut(None, _Field("REQUIRED"))
+
+    def test_w_json_field(self):
+        data_field = _Field("REQUIRED", "data", "JSON")
+
+        value = json.dumps(
+            {"v": {"key": "value"}},
+        )
+
+        expected_output = {"v": {"key": "value"}}
+        coerced_output = self._call_fut(value, data_field)
+        self.assertEqual(coerced_output, expected_output)
+
+    def test_w_string_value(self):
+        coerced = self._call_fut('"foo"', object())
+        self.assertEqual(coerced, "foo")
 
 
 class Test_float_from_json(unittest.TestCase):
@@ -463,6 +450,99 @@ class Test_time_from_json(unittest.TestCase):
     def test_w_bogus_string_value(self):
         with self.assertRaises(ValueError):
             self._call_fut("12:12:27.123", object())
+
+
+class Test_range_from_json(unittest.TestCase):
+    def _call_fut(self, value, field):
+        from google.cloud.bigquery._helpers import _range_from_json
+
+        return _range_from_json(value, field)
+
+    def test_w_none_nullable(self):
+        self.assertIsNone(self._call_fut(None, _Field("NULLABLE")))
+
+    def test_w_none_required(self):
+        with self.assertRaises(TypeError):
+            self._call_fut(None, _Field("REQUIRED"))
+
+    def test_w_wrong_format(self):
+        range_field = _Field(
+            "NULLABLE",
+            field_type="RANGE",
+            range_element_type=_Field("NULLABLE", element_type="DATE"),
+        )
+        with self.assertRaises(ValueError):
+            self._call_fut("[2009-06-172019-06-17)", range_field)
+
+    def test_w_wrong_element_type(self):
+        range_field = _Field(
+            "NULLABLE",
+            field_type="RANGE",
+            range_element_type=_Field("NULLABLE", element_type="TIME"),
+        )
+        with self.assertRaises(ValueError):
+            self._call_fut("[15:31:38, 15:50:38)", range_field)
+
+    def test_w_unbounded_value(self):
+        range_field = _Field(
+            "NULLABLE",
+            field_type="RANGE",
+            range_element_type=_Field("NULLABLE", element_type="DATE"),
+        )
+        coerced = self._call_fut("[UNBOUNDED, 2019-06-17)", range_field)
+        self.assertEqual(
+            coerced,
+            {"start": None, "end": datetime.date(2019, 6, 17)},
+        )
+
+    def test_w_date_value(self):
+        range_field = _Field(
+            "NULLABLE",
+            field_type="RANGE",
+            range_element_type=_Field("NULLABLE", element_type="DATE"),
+        )
+        coerced = self._call_fut("[2009-06-17, 2019-06-17)", range_field)
+        self.assertEqual(
+            coerced,
+            {
+                "start": datetime.date(2009, 6, 17),
+                "end": datetime.date(2019, 6, 17),
+            },
+        )
+
+    def test_w_datetime_value(self):
+        range_field = _Field(
+            "NULLABLE",
+            field_type="RANGE",
+            range_element_type=_Field("NULLABLE", element_type="DATETIME"),
+        )
+        coerced = self._call_fut(
+            "[2009-06-17T13:45:30, 2019-06-17T13:45:30)", range_field
+        )
+        self.assertEqual(
+            coerced,
+            {
+                "start": datetime.datetime(2009, 6, 17, 13, 45, 30),
+                "end": datetime.datetime(2019, 6, 17, 13, 45, 30),
+            },
+        )
+
+    def test_w_timestamp_value(self):
+        from google.cloud._helpers import _EPOCH
+
+        range_field = _Field(
+            "NULLABLE",
+            field_type="RANGE",
+            range_element_type=_Field("NULLABLE", element_type="TIMESTAMP"),
+        )
+        coerced = self._call_fut("[1234567, 1234789)", range_field)
+        self.assertEqual(
+            coerced,
+            {
+                "start": _EPOCH + datetime.timedelta(seconds=1, microseconds=234567),
+                "end": _EPOCH + datetime.timedelta(seconds=1, microseconds=234789),
+            },
+        )
 
 
 class Test_record_from_json(unittest.TestCase):
@@ -993,6 +1073,16 @@ class Test_scalar_field_to_json(unittest.TestCase):
         converted = self._call_fut(field, original)
         self.assertEqual(converted, str(original))
 
+    def test_w_scalar_none(self):
+        import google.cloud.bigquery._helpers as module_under_test
+
+        scalar_types = module_under_test._SCALAR_VALUE_TO_JSON_ROW.keys()
+        for type_ in scalar_types:
+            field = _make_field(type_)
+            original = None
+            converted = self._call_fut(field, original)
+            self.assertIsNone(converted, msg=f"{type_} did not return None")
+
 
 class Test_single_field_to_json(unittest.TestCase):
     def _call_fut(self, field, value):
@@ -1027,6 +1117,12 @@ class Test_single_field_to_json(unittest.TestCase):
         original = "hello world"
         converted = self._call_fut(field, original)
         self.assertEqual(converted, original)
+
+    def test_w_scalar_json(self):
+        field = _make_field("JSON")
+        original = {"alpha": "abc", "num": [1, 2, 3]}
+        converted = self._call_fut(field, original)
+        self.assertEqual(converted, json.dumps(original))
 
 
 class Test_repeated_field_to_json(unittest.TestCase):
@@ -1320,11 +1416,21 @@ class Test__str_or_none(unittest.TestCase):
 
 
 class _Field(object):
-    def __init__(self, mode, name="unknown", field_type="UNKNOWN", fields=()):
+    def __init__(
+        self,
+        mode,
+        name="unknown",
+        field_type="UNKNOWN",
+        fields=(),
+        range_element_type=None,
+        element_type=None,
+    ):
         self.mode = mode
         self.name = name
         self.field_type = field_type
         self.fields = fields
+        self.range_element_type = range_element_type
+        self.element_type = element_type
 
 
 def _field_isinstance_patcher():

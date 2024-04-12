@@ -26,6 +26,7 @@ from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.query import ScalarQueryParameterType
 from google.cloud.bigquery.query import StructQueryParameter
 from google.cloud.bigquery.query import StructQueryParameterType
+from google.cloud.bigquery.query import RangeQueryParameter
 
 
 @pytest.fixture(params=["INSERT", "QUERY"])
@@ -256,6 +257,18 @@ def test_query_statistics(bigquery_client, query_api_method):
                 )
             ],
         ),
+        pytest.param(
+            "SELECT @json",
+            {"alpha": "abc", "num": [1, 2, 3]},
+            [
+                ScalarQueryParameter(
+                    name="json",
+                    type_="JSON",
+                    value={"alpha": "abc", "num": [1, 2, 3]},
+                )
+            ],
+            id="scalar-json",
+        ),
         (
             "SELECT @naive_time",
             datetime.time(12, 41, 9, 62500),
@@ -410,6 +423,38 @@ def test_query_statistics(bigquery_client, query_api_method):
                 )
             ],
         ),
+        (
+            "SELECT @range_date",
+            {"end": None, "start": datetime.date(2016, 12, 5)},
+            [
+                RangeQueryParameter(
+                    name="range_date",
+                    range_element_type="DATE",
+                    start=datetime.date(2016, 12, 5),
+                )
+            ],
+        ),
+        (
+            "SELECT @range_datetime",
+            {"end": None, "start": datetime.datetime(2016, 12, 5, 0, 0)},
+            [
+                RangeQueryParameter(
+                    name="range_datetime",
+                    range_element_type="DATETIME",
+                    start=datetime.datetime(2016, 12, 5),
+                )
+            ],
+        ),
+        (
+            "SELECT @range_unbounded",
+            {"end": None, "start": None},
+            [
+                RangeQueryParameter(
+                    name="range_unbounded",
+                    range_element_type="DATETIME",
+                )
+            ],
+        ),
     ),
 )
 def test_query_parameters(
@@ -465,7 +510,7 @@ def test_query_error_w_api_method_default(bigquery_client: bigquery.Client):
     """Test that an exception is not thrown until fetching the results.
 
     For backwards compatibility, jobs.insert is the default API method. With
-    jobs.insert, a failed query job is "sucessfully" created. An exception is
+    jobs.insert, a failed query job is "successfully" created. An exception is
     thrown when fetching the results.
     """
 

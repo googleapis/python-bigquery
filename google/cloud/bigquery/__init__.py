@@ -83,6 +83,8 @@ from google.cloud.bigquery.query import ArrayQueryParameterType
 from google.cloud.bigquery.query import ConnectionProperty
 from google.cloud.bigquery.query import ScalarQueryParameter
 from google.cloud.bigquery.query import ScalarQueryParameterType
+from google.cloud.bigquery.query import RangeQueryParameter
+from google.cloud.bigquery.query import RangeQueryParameterType
 from google.cloud.bigquery.query import SqlParameterScalarTypes
 from google.cloud.bigquery.query import StructQueryParameter
 from google.cloud.bigquery.query import StructQueryParameterType
@@ -96,6 +98,7 @@ from google.cloud.bigquery.routine import RoutineType
 from google.cloud.bigquery.routine import RemoteFunctionOptions
 from google.cloud.bigquery.schema import PolicyTagList
 from google.cloud.bigquery.schema import SchemaField
+from google.cloud.bigquery.schema import FieldElementType
 from google.cloud.bigquery.standard_sql import StandardSqlDataType
 from google.cloud.bigquery.standard_sql import StandardSqlField
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
@@ -121,10 +124,12 @@ __all__ = [
     "ArrayQueryParameter",
     "ScalarQueryParameter",
     "StructQueryParameter",
+    "RangeQueryParameter",
     "ArrayQueryParameterType",
     "ScalarQueryParameterType",
     "SqlParameterScalarTypes",
     "StructQueryParameterType",
+    "RangeQueryParameterType",
     # Datasets
     "Dataset",
     "DatasetReference",
@@ -158,6 +163,7 @@ __all__ = [
     "RemoteFunctionOptions",
     # Shared helpers
     "SchemaField",
+    "FieldElementType",
     "PolicyTagList",
     "UDFResource",
     "ExternalConfig",
@@ -202,6 +208,7 @@ __all__ = [
     # Custom exceptions
     "LegacyBigQueryStorageError",
     "LegacyPyarrowError",
+    "LegacyPandasError",
 ]
 
 

@@ -15,52 +15,41 @@
 import concurrent.futures
 import copy
 import json
+from unittest import mock
 
-import mock
-import pkg_resources
 import pytest
-
-
-try:
-    from google.cloud import bigquery_storage
-    import google.cloud.bigquery_storage_v1.reader
-    import google.cloud.bigquery_storage_v1.services.big_query_read.client
-except (ImportError, AttributeError):  # pragma: NO COVER
-    bigquery_storage = None
-
-try:
-    import pandas
-except (ImportError, AttributeError):  # pragma: NO COVER
-    pandas = None
-try:
-    import shapely
-except (ImportError, AttributeError):  # pragma: NO COVER
-    shapely = None
-try:
-    import geopandas
-except (ImportError, AttributeError):  # pragma: NO COVER
-    geopandas = None
-try:
-    import tqdm
-except (ImportError, AttributeError):  # pragma: NO COVER
-    tqdm = None
 
 from ..helpers import make_connection
 from .helpers import _make_client
 from .helpers import _make_job_resource
 
-if pandas is not None:
-    PANDAS_INSTALLED_VERSION = pkg_resources.get_distribution("pandas").parsed_version
-else:
-    PANDAS_INSTALLED_VERSION = pkg_resources.parse_version("0.0.0")
+try:
+    from google.cloud import bigquery_storage
+    import google.cloud.bigquery_storage_v1.reader
+    import google.cloud.bigquery_storage_v1.services.big_query_read.client
+except (ImportError, AttributeError):
+    bigquery_storage = None
 
-pandas = pytest.importorskip("pandas")
+try:
+    import shapely
+except (ImportError, AttributeError):
+    shapely = None
+try:
+    import geopandas
+except (ImportError, AttributeError):
+    geopandas = None
+try:
+    import tqdm
+except (ImportError, AttributeError):
+    tqdm = None
 
 try:
     import pyarrow
     import pyarrow.types
-except ImportError:  # pragma: NO COVER
+except ImportError:
     pyarrow = None
+
+pandas = pytest.importorskip("pandas")
 
 
 @pytest.fixture
@@ -560,7 +549,7 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
         [name_array, age_array], schema=arrow_schema
     )
     connection = make_connection(query_resource)
-    client = _make_client(connection=connection)
+    client = _make_client(connection=connection, project="bqstorage-billing-project")
     job = target_class.from_api_repr(resource, client)
     session = bigquery_storage.types.ReadSession()
     session.arrow_schema.serialized_schema = arrow_schema.serialize().to_pybytes()
@@ -597,7 +586,9 @@ def test_to_dataframe_bqstorage(table_read_options_kwarg):
         **table_read_options_kwarg,
     )
     bqstorage_client.create_read_session.assert_called_once_with(
-        parent=f"projects/{client.project}",
+        # The billing project can differ from the data project. Make sure we
+        # are charging to the billing project, not the data project.
+        parent="projects/bqstorage-billing-project",
         read_session=expected_session,
         max_stream_count=0,  # Use default number of streams for best performance.
     )
@@ -618,7 +609,7 @@ def test_to_dataframe_bqstorage_no_pyarrow_compression():
         "schema": {"fields": [{"name": "name", "type": "STRING", "mode": "NULLABLE"}]},
     }
     connection = make_connection(query_resource)
-    client = _make_client(connection=connection)
+    client = _make_client(connection=connection, project="bqstorage-billing-project")
     job = target_class.from_api_repr(resource, client)
     bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
     session = bigquery_storage.types.ReadSession()
@@ -646,14 +637,17 @@ def test_to_dataframe_bqstorage_no_pyarrow_compression():
         data_format=bigquery_storage.DataFormat.ARROW,
     )
     bqstorage_client.create_read_session.assert_called_once_with(
-        parent=f"projects/{client.project}",
+        # The billing project can differ from the data project. Make sure we
+        # are charging to the billing project, not the data project.
+        parent="projects/bqstorage-billing-project",
         read_session=expected_session,
         max_stream_count=0,
     )
 
 
 @pytest.mark.skipif(
-    PANDAS_INSTALLED_VERSION >= pkg_resources.parse_version("2.0.0"), reason=""
+    pandas.__version__.startswith("2."),
+    reason="pandas 2.0 changes some default dtypes and we haven't update the test to account for those",
 )
 @pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 def test_to_dataframe_column_dtypes():

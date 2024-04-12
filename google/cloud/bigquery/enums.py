@@ -22,7 +22,7 @@ class AutoRowIDs(enum.Enum):
     GENERATE_UUID = enum.auto()
 
 
-class Compression(object):
+class Compression(str, enum.Enum):
     """The compression type to use for exported files. The default value is
     :attr:`NONE`.
 
@@ -38,6 +38,9 @@ class Compression(object):
 
     SNAPPY = "SNAPPY"
     """Specifies SNAPPY format."""
+
+    ZSTD = "ZSTD"
+    """Specifies ZSTD format."""
 
     NONE = "NONE"
     """Specifies no compression."""
@@ -254,6 +257,7 @@ class StandardSqlTypeNames(str, enum.Enum):
     JSON = enum.auto()
     ARRAY = enum.auto()
     STRUCT = enum.auto()
+    RANGE = enum.auto()
 
 
 class EntityTypes(str, enum.Enum):
@@ -292,6 +296,7 @@ class SqlTypeNames(str, enum.Enum):
     TIME = "TIME"
     DATETIME = "DATETIME"
     INTERVAL = "INTERVAL"  # NOTE: not available in legacy types
+    RANGE = "RANGE"  # NOTE: not available in legacy types
 
 
 class WriteDisposition(object):

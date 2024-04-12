@@ -26,17 +26,17 @@ import warnings
 
 try:
     import pandas  # type: ignore
-except ImportError:  # pragma: NO COVER
+except ImportError:
     pandas = None
 
 try:
     import pyarrow  # type: ignore
-except ImportError:  # pragma: NO COVER
+except ImportError:
     pyarrow = None
 
 try:
     import db_dtypes  # type: ignore
-except ImportError:  # pragma: NO COVER
+except ImportError:
     db_dtypes = None
 
 try:
@@ -60,14 +60,15 @@ from google.api_core.page_iterator import HTTPIterator
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import exceptions as bq_exceptions
+from google.cloud.bigquery._tqdm_helpers import get_progress_bar
+from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import DefaultPandasDTypes
-from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
+from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
-from google.cloud.bigquery._tqdm_helpers import get_progress_bar
-from google.cloud.bigquery.external_config import ExternalConfig
-from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
@@ -98,6 +99,10 @@ _NO_SUPPORTED_DTYPE = (
     "The dtype cannot to be converted to a pandas ExtensionArray "
     "because the necessary `__from_arrow__` attribute is missing."
 )
+
+# How many of the total rows need to be downloaded already for us to skip
+# calling the BQ Storage API?
+ALMOST_COMPLETELY_CACHED_RATIO = 0.333
 
 
 def _reference_getter(table):
@@ -384,6 +389,7 @@ class Table(_TableBase):
         "view_use_legacy_sql": "view",
         "view_query": "view",
         "require_partition_filter": "requirePartitionFilter",
+        "table_constraints": "tableConstraints",
     }
 
     def __init__(self, table_ref, schema=None) -> None:
@@ -966,6 +972,16 @@ class Table(_TableBase):
         if clone_info is not None:
             clone_info = CloneDefinition(clone_info)
         return clone_info
+
+    @property
+    def table_constraints(self) -> Optional["TableConstraints"]:
+        """Tables Primary Key and Foreign Key information."""
+        table_constraints = self._properties.get(
+            self._PROPERTY_TO_API_FIELD["table_constraints"]
+        )
+        if table_constraints is not None:
+            table_constraints = TableConstraints.from_api_repr(table_constraints)
+        return table_constraints
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":
@@ -1556,6 +1572,11 @@ class RowIterator(HTTPIterator):
         selected_fields=None,
         total_rows=None,
         first_page_response=None,
+        location: Optional[str] = None,
+        job_id: Optional[str] = None,
+        query_id: Optional[str] = None,
+        project: Optional[str] = None,
+        num_dml_affected_rows: Optional[int] = None,
     ):
         super(RowIterator, self).__init__(
             client,
@@ -1573,26 +1594,94 @@ class RowIterator(HTTPIterator):
         self._field_to_index = _helpers._field_to_index_mapping(schema)
         self._page_size = page_size
         self._preserve_order = False
-        self._project = client.project if client is not None else None
         self._schema = schema
         self._selected_fields = selected_fields
         self._table = table
         self._total_rows = total_rows
         self._first_page_response = first_page_response
+        self._location = location
+        self._job_id = job_id
+        self._query_id = query_id
+        self._project = project
+        self._num_dml_affected_rows = num_dml_affected_rows
 
-    def _is_completely_cached(self):
+    @property
+    def _billing_project(self) -> Optional[str]:
+        """GCP Project ID where BQ API will bill to (if applicable)."""
+        client = self.client
+        return client.project if client is not None else None
+
+    @property
+    def job_id(self) -> Optional[str]:
+        """ID of the query job (if applicable).
+
+        To get the job metadata, call
+        ``job = client.get_job(rows.job_id, location=rows.location)``.
+        """
+        return self._job_id
+
+    @property
+    def location(self) -> Optional[str]:
+        """Location where the query executed (if applicable).
+
+        See: https://cloud.google.com/bigquery/docs/locations
+        """
+        return self._location
+
+    @property
+    def num_dml_affected_rows(self) -> Optional[int]:
+        """If this RowIterator is the result of a DML query, the number of
+        rows that were affected.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.num_dml_affected_rows
+        """
+        return self._num_dml_affected_rows
+
+    @property
+    def project(self) -> Optional[str]:
+        """GCP Project ID where these rows are read from."""
+        return self._project
+
+    @property
+    def query_id(self) -> Optional[str]:
+        """[Preview] ID of a completed query.
+
+        This ID is auto-generated and not guaranteed to be populated.
+        """
+        return self._query_id
+
+    def _is_almost_completely_cached(self):
         """Check if all results are completely cached.
 
         This is useful to know, because we can avoid alternative download
         mechanisms.
         """
-        if self._first_page_response is None or self.next_page_token:
+        if (
+            not hasattr(self, "_first_page_response")
+            or self._first_page_response is None
+        ):
             return False
 
-        return self._first_page_response.get(self._next_token) is None
+        total_cached_rows = len(self._first_page_response.get(self._items_key, []))
+        if self.max_results is not None and total_cached_rows >= self.max_results:
+            return True
 
-    def _validate_bqstorage(self, bqstorage_client, create_bqstorage_client):
-        """Returns if the BigQuery Storage API can be used.
+        if (
+            self.next_page_token is None
+            and self._first_page_response.get(self._next_token) is None
+        ):
+            return True
+
+        if self._total_rows is not None:
+            almost_completely = self._total_rows * ALMOST_COMPLETELY_CACHED_RATIO
+            if total_cached_rows >= almost_completely:
+                return True
+
+        return False
+
+    def _should_use_bqstorage(self, bqstorage_client, create_bqstorage_client):
+        """Returns True if the BigQuery Storage API can be used.
 
         Returns:
             bool
@@ -1602,20 +1691,25 @@ class RowIterator(HTTPIterator):
         if not using_bqstorage_api:
             return False
 
-        if self._is_completely_cached():
+        if self._table is None:
+            return False
+
+        # The developer has already started paging through results if
+        # next_page_token is set.
+        if hasattr(self, "next_page_token") and self.next_page_token is not None:
+            return False
+
+        if self._is_almost_completely_cached():
             return False
 
         if self.max_results is not None:
             return False
 
         try:
-            from google.cloud import bigquery_storage  # noqa: F401
-        except ImportError:
+            _versions_helpers.BQ_STORAGE_VERSIONS.try_import(raise_if_error=True)
+        except bq_exceptions.BigQueryStorageNotFoundError:
             return False
-
-        try:
-            _helpers.BQ_STORAGE_VERSIONS.verify_version()
-        except LegacyBigQueryStorageError as exc:
+        except bq_exceptions.LegacyBigQueryStorageError as exc:
             warnings.warn(str(exc))
             return False
 
@@ -1629,7 +1723,15 @@ class RowIterator(HTTPIterator):
                 The parsed JSON response of the next page's contents.
         """
         if self._first_page_response:
-            response = self._first_page_response
+            rows = self._first_page_response.get(self._items_key, [])[
+                : self.max_results
+            ]
+            response = {
+                self._items_key: rows,
+            }
+            if self._next_token in self._first_page_response:
+                response[self._next_token] = self._first_page_response[self._next_token]
+
             self._first_page_response = None
             return response
 
@@ -1650,7 +1752,7 @@ class RowIterator(HTTPIterator):
 
     @property
     def total_rows(self):
-        """int: The total number of rows in the table."""
+        """int: The total number of rows in the table or query results."""
         return self._total_rows
 
     def _maybe_warn_max_results(
@@ -1676,7 +1778,7 @@ class RowIterator(HTTPIterator):
     def _to_page_iterable(
         self, bqstorage_download, tabledata_list_download, bqstorage_client=None
     ):
-        if not self._validate_bqstorage(bqstorage_client, False):
+        if not self._should_use_bqstorage(bqstorage_client, False):
             bqstorage_client = None
 
         result_pages = (
@@ -1724,7 +1826,7 @@ class RowIterator(HTTPIterator):
 
         bqstorage_download = functools.partial(
             _pandas_helpers.download_arrow_bqstorage,
-            self._project,
+            self._billing_project,
             self._table,
             bqstorage_client,
             preserve_order=self._preserve_order,
@@ -1806,7 +1908,7 @@ class RowIterator(HTTPIterator):
 
         self._maybe_warn_max_results(bqstorage_client)
 
-        if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
+        if not self._should_use_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
             bqstorage_client = None
 
@@ -1854,7 +1956,7 @@ class RowIterator(HTTPIterator):
     def to_dataframe_iterable(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
     ) -> "pandas.DataFrame":
         """Create an iterable of pandas DataFrames, to process the table as a stream.
@@ -1904,7 +2006,7 @@ class RowIterator(HTTPIterator):
         column_names = [field.name for field in self._schema]
         bqstorage_download = functools.partial(
             _pandas_helpers.download_dataframe_bqstorage,
-            self._project,
+            self._billing_project,
             self._table,
             bqstorage_client,
             column_names,
@@ -1930,7 +2032,7 @@ class RowIterator(HTTPIterator):
     def to_dataframe(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         geography_as_object: bool = False,
@@ -2147,7 +2249,7 @@ class RowIterator(HTTPIterator):
 
         self._maybe_warn_max_results(bqstorage_client)
 
-        if not self._validate_bqstorage(bqstorage_client, create_bqstorage_client):
+        if not self._should_use_bqstorage(bqstorage_client, create_bqstorage_client):
             create_bqstorage_client = False
             bqstorage_client = None
 
@@ -2228,7 +2330,7 @@ class RowIterator(HTTPIterator):
     def to_geodataframe(
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
-        dtypes: Dict[str, Any] = None,
+        dtypes: Optional[Dict[str, Any]] = None,
         progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         geography_column: Optional[str] = None,
@@ -2866,6 +2968,123 @@ class TimePartitioning(object):
         return "TimePartitioning({})".format(",".join(key_vals))
 
 
+class PrimaryKey:
+    """Represents the primary key constraint on a table's columns.
+
+    Args:
+        columns: The columns that are composed of the primary key constraint.
+    """
+
+    def __init__(self, columns: List[str]):
+        self.columns = columns
+
+    def __eq__(self, other):
+        if not isinstance(other, PrimaryKey):
+            raise TypeError("The value provided is not a BigQuery PrimaryKey.")
+        return self.columns == other.columns
+
+
+class ColumnReference:
+    """The pair of the foreign key column and primary key column.
+
+    Args:
+        referencing_column: The column that composes the foreign key.
+        referenced_column: The column in the primary key that are referenced by the referencingColumn.
+    """
+
+    def __init__(self, referencing_column: str, referenced_column: str):
+        self.referencing_column = referencing_column
+        self.referenced_column = referenced_column
+
+    def __eq__(self, other):
+        if not isinstance(other, ColumnReference):
+            raise TypeError("The value provided is not a BigQuery ColumnReference.")
+        return (
+            self.referencing_column == other.referencing_column
+            and self.referenced_column == other.referenced_column
+        )
+
+
+class ForeignKey:
+    """Represents a foreign key constraint on a table's columns.
+
+    Args:
+        name: Set only if the foreign key constraint is named.
+        referenced_table: The table that holds the primary key and is referenced by this foreign key.
+        column_references: The columns that compose the foreign key.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        referenced_table: TableReference,
+        column_references: List[ColumnReference],
+    ):
+        self.name = name
+        self.referenced_table = referenced_table
+        self.column_references = column_references
+
+    def __eq__(self, other):
+        if not isinstance(other, ForeignKey):
+            raise TypeError("The value provided is not a BigQuery ForeignKey.")
+        return (
+            self.name == other.name
+            and self.referenced_table == other.referenced_table
+            and self.column_references == other.column_references
+        )
+
+    @classmethod
+    def from_api_repr(cls, api_repr: Dict[str, Any]) -> "ForeignKey":
+        """Create an instance from API representation."""
+        return cls(
+            name=api_repr["name"],
+            referenced_table=TableReference.from_api_repr(api_repr["referencedTable"]),
+            column_references=[
+                ColumnReference(
+                    column_reference_resource["referencingColumn"],
+                    column_reference_resource["referencedColumn"],
+                )
+                for column_reference_resource in api_repr["columnReferences"]
+            ],
+        )
+
+
+class TableConstraints:
+    """The TableConstraints defines the primary key and foreign key.
+
+    Args:
+        primary_key:
+            Represents a primary key constraint on a table's columns. Present only if the table
+            has a primary key. The primary key is not enforced.
+        foreign_keys:
+            Present only if the table has a foreign key. The foreign key is not enforced.
+
+    """
+
+    def __init__(
+        self,
+        primary_key: Optional[PrimaryKey],
+        foreign_keys: Optional[List[ForeignKey]],
+    ):
+        self.primary_key = primary_key
+        self.foreign_keys = foreign_keys
+
+    @classmethod
+    def from_api_repr(cls, resource: Dict[str, Any]) -> "TableConstraints":
+        """Create an instance from API representation."""
+        primary_key = None
+        if "primaryKey" in resource:
+            primary_key = PrimaryKey(resource["primaryKey"]["columns"])
+
+        foreign_keys = None
+        if "foreignKeys" in resource:
+            foreign_keys = [
+                ForeignKey.from_api_repr(foreign_key_resource)
+                for foreign_key_resource in resource["foreignKeys"]
+            ]
+        return cls(primary_key, foreign_keys)
+
+
 def _item_to_row(iterator, resource):
     """Convert a JSON row to the native object.
 
@@ -2921,9 +3140,9 @@ def _rows_page_start(iterator, page, response):
     page._columns = _row_iterator_page_columns(iterator._schema, response)
 
     total_rows = response.get("totalRows")
+    # Don't reset total_rows if it's not present in the next API response.
     if total_rows is not None:
-        total_rows = int(total_rows)
-    iterator._total_rows = total_rows
+        iterator._total_rows = int(total_rows)
 
 
 # pylint: enable=unused-argument

@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest import mock
+
 from google.cloud.bigquery.dataset import Dataset, DatasetReference
 from .helpers import make_connection, dataset_polymorphic, make_client
 import google.cloud.bigquery.dataset
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
-import mock
 import pytest
 
 
@@ -63,6 +64,7 @@ def test_create_dataset_w_attrs(client, PROJECT, DS_ID):
         "datasetId": "starry-skies",
         "tableId": "northern-hemisphere",
     }
+    DEFAULT_ROUNDING_MODE = "ROUND_HALF_EVEN"
     RESOURCE = {
         "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
         "etag": "etag",
@@ -73,6 +75,7 @@ def test_create_dataset_w_attrs(client, PROJECT, DS_ID):
         "defaultTableExpirationMs": "3600",
         "labels": LABELS,
         "access": [{"role": "OWNER", "userByEmail": USER_EMAIL}, {"view": VIEW}],
+        "defaultRoundingMode": DEFAULT_ROUNDING_MODE,
     }
     conn = client._connection = make_connection(RESOURCE)
     entries = [
@@ -88,8 +91,8 @@ def test_create_dataset_w_attrs(client, PROJECT, DS_ID):
     before.default_table_expiration_ms = 3600
     before.location = LOCATION
     before.labels = LABELS
+    before.default_rounding_mode = DEFAULT_ROUNDING_MODE
     after = client.create_dataset(before)
-
     assert after.dataset_id == DS_ID
     assert after.project == PROJECT
     assert after.etag == RESOURCE["etag"]
@@ -99,6 +102,7 @@ def test_create_dataset_w_attrs(client, PROJECT, DS_ID):
     assert after.location == LOCATION
     assert after.default_table_expiration_ms == 3600
     assert after.labels == LABELS
+    assert after.default_rounding_mode == DEFAULT_ROUNDING_MODE
 
     conn.api_request.assert_called_once_with(
         method="POST",
@@ -109,6 +113,7 @@ def test_create_dataset_w_attrs(client, PROJECT, DS_ID):
             "friendlyName": FRIENDLY_NAME,
             "location": LOCATION,
             "defaultTableExpirationMs": "3600",
+            "defaultRoundingMode": DEFAULT_ROUNDING_MODE,
             "access": [
                 {"role": "OWNER", "userByEmail": USER_EMAIL},
                 {"view": VIEW, "role": None},
@@ -365,3 +370,179 @@ def test_create_dataset_alreadyexists_w_exists_ok_true(PROJECT, DS_ID, LOCATION)
             mock.call(method="GET", path=get_path, timeout=DEFAULT_TIMEOUT),
         ]
     )
+
+
+def test_create_dataset_with_default_rounding_mode_if_value_is_none(
+    PROJECT, DS_ID, LOCATION
+):
+    default_rounding_mode = None
+    path = "/projects/%s/datasets" % PROJECT
+    resource = {
+        "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
+        "etag": "etag",
+        "id": "{}:{}".format(PROJECT, DS_ID),
+        "location": LOCATION,
+    }
+    client = make_client(location=LOCATION)
+    conn = client._connection = make_connection(resource)
+
+    ds_ref = DatasetReference(PROJECT, DS_ID)
+    before = Dataset(ds_ref)
+    before.default_rounding_mode = default_rounding_mode
+    after = client.create_dataset(before)
+
+    assert after.dataset_id == DS_ID
+    assert after.project == PROJECT
+    assert after.default_rounding_mode is None
+
+    conn.api_request.assert_called_once_with(
+        method="POST",
+        path=path,
+        data={
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
+            "labels": {},
+            "location": LOCATION,
+            "defaultRoundingMode": "ROUNDING_MODE_UNSPECIFIED",
+        },
+        timeout=DEFAULT_TIMEOUT,
+    )
+
+
+def test_create_dataset_with_default_rounding_mode_if_value_is_not_string(
+    PROJECT, DS_ID, LOCATION
+):
+    default_rounding_mode = 10
+    ds_ref = DatasetReference(PROJECT, DS_ID)
+    dataset = Dataset(ds_ref)
+    with pytest.raises(ValueError) as e:
+        dataset.default_rounding_mode = default_rounding_mode
+    assert str(e.value) == "Pass a string, or None"
+
+
+def test_create_dataset_with_default_rounding_mode_if_value_is_not_in_possible_values(
+    PROJECT, DS_ID
+):
+    default_rounding_mode = "ROUND_HALF_AWAY_FROM_ZEROS"
+    ds_ref = DatasetReference(PROJECT, DS_ID)
+    dataset = Dataset(ds_ref)
+    with pytest.raises(ValueError) as e:
+        dataset.default_rounding_mode = default_rounding_mode
+    assert (
+        str(e.value)
+        == "rounding mode needs to be one of ROUNDING_MODE_UNSPECIFIED,ROUND_HALF_AWAY_FROM_ZERO,ROUND_HALF_EVEN"
+    )
+
+
+def test_create_dataset_with_default_rounding_mode_if_value_is_in_possible_values(
+    PROJECT, DS_ID, LOCATION
+):
+    default_rounding_mode = "ROUND_HALF_AWAY_FROM_ZERO"
+    path = "/projects/%s/datasets" % PROJECT
+    resource = {
+        "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
+        "etag": "etag",
+        "id": "{}:{}".format(PROJECT, DS_ID),
+        "location": LOCATION,
+    }
+    client = make_client(location=LOCATION)
+    conn = client._connection = make_connection(resource)
+
+    ds_ref = DatasetReference(PROJECT, DS_ID)
+    before = Dataset(ds_ref)
+    before.default_rounding_mode = default_rounding_mode
+    after = client.create_dataset(before)
+
+    assert after.dataset_id == DS_ID
+    assert after.project == PROJECT
+    assert after.default_rounding_mode is None
+
+    conn.api_request.assert_called_once_with(
+        method="POST",
+        path=path,
+        data={
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
+            "labels": {},
+            "location": LOCATION,
+            "defaultRoundingMode": default_rounding_mode,
+        },
+        timeout=DEFAULT_TIMEOUT,
+    )
+
+
+def test_create_dataset_with_max_time_travel_hours(PROJECT, DS_ID, LOCATION):
+    path = "/projects/%s/datasets" % PROJECT
+    max_time_travel_hours = 24 * 3
+
+    resource = {
+        "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
+        "etag": "etag",
+        "id": "{}:{}".format(PROJECT, DS_ID),
+        "location": LOCATION,
+        "maxTimeTravelHours": max_time_travel_hours,
+    }
+    client = make_client(location=LOCATION)
+    conn = client._connection = make_connection(resource)
+
+    ds_ref = DatasetReference(PROJECT, DS_ID)
+    before = Dataset(ds_ref)
+    before.max_time_travel_hours = max_time_travel_hours
+    after = client.create_dataset(before)
+    assert after.dataset_id == DS_ID
+    assert after.project == PROJECT
+    assert after.max_time_travel_hours == max_time_travel_hours
+
+    conn.api_request.assert_called_once_with(
+        method="POST",
+        path=path,
+        data={
+            "datasetReference": {"projectId": PROJECT, "datasetId": DS_ID},
+            "labels": {},
+            "location": LOCATION,
+            "maxTimeTravelHours": max_time_travel_hours,
+        },
+        timeout=DEFAULT_TIMEOUT,
+    )
+
+
+def test_create_dataset_with_max_time_travel_hours_not_multiple_of_24(
+    PROJECT, DS_ID, LOCATION
+):
+    ds_ref = DatasetReference(PROJECT, DS_ID)
+    dataset = Dataset(ds_ref)
+    with pytest.raises(ValueError) as e:
+        dataset.max_time_travel_hours = 50
+    assert str(e.value) == "Time Travel Window should be multiple of 24"
+
+
+def test_create_dataset_with_max_time_travel_hours_is_less_than_2_days(
+    PROJECT, DS_ID, LOCATION
+):
+    ds_ref = DatasetReference(PROJECT, DS_ID)
+    dataset = Dataset(ds_ref)
+    with pytest.raises(ValueError) as e:
+        dataset.max_time_travel_hours = 24
+    assert (
+        str(e.value)
+        == "Time Travel Window should be from 48 to 168 hours (2 to 7 days)"
+    )
+
+
+def test_create_dataset_with_max_time_travel_hours_is_greater_than_7_days(
+    PROJECT, DS_ID, LOCATION
+):
+    ds_ref = DatasetReference(PROJECT, DS_ID)
+    dataset = Dataset(ds_ref)
+    with pytest.raises(ValueError) as e:
+        dataset.max_time_travel_hours = 192
+    assert (
+        str(e.value)
+        == "Time Travel Window should be from 48 to 168 hours (2 to 7 days)"
+    )
+
+
+def test_create_dataset_with_max_time_travel_hours_is_not_int(PROJECT, DS_ID, LOCATION):
+    ds_ref = DatasetReference(PROJECT, DS_ID)
+    dataset = Dataset(ds_ref)
+    with pytest.raises(ValueError) as e:
+        dataset.max_time_travel_hours = "50"
+    assert str(e.value) == "max_time_travel_hours must be an integer. Got 50"

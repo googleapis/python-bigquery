@@ -15,16 +15,17 @@
 import copy
 import re
 from concurrent import futures
+from unittest import mock
 import warnings
 
 from google.api_core import exceptions
 import google.auth.credentials
-import mock
 import pytest
 from tests.unit.helpers import make_connection
 from test_utils.imports import maybe_fail_import
 
 from google.cloud import bigquery
+from google.cloud.bigquery import exceptions as bq_exceptions
 from google.cloud.bigquery import job
 from google.cloud.bigquery import table
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
@@ -338,6 +339,9 @@ def test__make_bqstorage_client_true():
 
 
 def test__make_bqstorage_client_true_raises_import_error(missing_bq_storage):
+    """When package `google-cloud-bigquery-storage` is not installed, reports
+    ImportError.
+    """
     credentials_mock = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
@@ -357,8 +361,9 @@ def test__make_bqstorage_client_true_raises_import_error(missing_bq_storage):
     bigquery_storage is None, reason="Requires `google-cloud-bigquery-storage`"
 )
 def test__make_bqstorage_client_true_obsolete_dependency():
-    from google.cloud.bigquery.exceptions import LegacyBigQueryStorageError
-
+    """When package `google-cloud-bigquery-storage` is installed but has outdated
+    version, returns None, and raises a warning.
+    """
     credentials_mock = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
@@ -367,8 +372,10 @@ def test__make_bqstorage_client_true_obsolete_dependency():
     )
 
     patcher = mock.patch(
-        "google.cloud.bigquery.client.BQ_STORAGE_VERSIONS.verify_version",
-        side_effect=LegacyBigQueryStorageError("BQ Storage too old"),
+        "google.cloud.bigquery._versions_helpers.BQ_STORAGE_VERSIONS.try_import",
+        side_effect=bq_exceptions.LegacyBigQueryStorageError(
+            "google-cloud-bigquery-storage is outdated"
+        ),
     )
     with patcher, warnings.catch_warnings(record=True) as warned:
         got = magics._make_bqstorage_client(test_client, True, {})
@@ -376,7 +383,9 @@ def test__make_bqstorage_client_true_obsolete_dependency():
     assert got is None
 
     matching_warnings = [
-        warning for warning in warned if "BQ Storage too old" in str(warning)
+        warning
+        for warning in warned
+        if "google-cloud-bigquery-storage is outdated" in str(warning)
     ]
     assert matching_warnings, "Obsolete dependency warning not raised."
 
@@ -504,7 +513,7 @@ def test_bigquery_magic_default_connection_user_agent():
     with conn_patch as conn, run_query_patch, default_patch:
         ip.run_cell_magic("bigquery", "", "SELECT 17 as num")
 
-    client_info_arg = conn.call_args.kwargs.get("client_info")
+    client_info_arg = conn.call_args[1].get("client_info")
     assert client_info_arg is not None
     assert client_info_arg.user_agent == "ipython-" + IPython.__version__
 
@@ -638,9 +647,9 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
         google.cloud.bigquery.job.QueryJob, instance=True
     )
     query_job_mock.to_dataframe.return_value = result
-    with run_query_patch as run_query_mock, bqstorage_client_patch, warnings.catch_warnings(
-        record=True
-    ) as warned:
+    with run_query_patch as run_query_mock, (
+        bqstorage_client_patch
+    ), warnings.catch_warnings(record=True) as warned:
         run_query_mock.return_value = query_job_mock
 
         return_value = ip.run_cell_magic("bigquery", "--use_bqstorage_api", sql)
@@ -654,7 +663,7 @@ def test_bigquery_magic_with_bqstorage_from_argument(monkeypatch):
     assert len(expected_warnings) == 1
 
     assert len(bqstorage_mock.call_args_list) == 1
-    kwargs = bqstorage_mock.call_args_list[0].kwargs
+    kwargs = bqstorage_mock.call_args_list[0][1]
     assert kwargs.get("credentials") is mock_credentials
     client_info = kwargs.get("client_info")
     assert client_info is not None
@@ -801,7 +810,9 @@ def test_bigquery_magic_w_max_results_query_job_results_fails():
 
     with pytest.raises(
         OSError
-    ), client_query_patch as client_query_mock, default_patch, close_transports_patch as close_transports:
+    ), client_query_patch as client_query_mock, (
+        default_patch
+    ), close_transports_patch as close_transports:
         client_query_mock.return_value = query_job_mock
         ip.run_cell_magic("bigquery", "--max_results=5", sql)
 
@@ -2042,3 +2053,21 @@ def test_bigquery_magic_create_dataset_fails():
         )
 
     assert close_transports.called
+
+
+@pytest.mark.usefixtures("ipython_interactive")
+def test_bigquery_magic_with_location():
+    ip = IPython.get_ipython()
+    ip.extension_manager.load_extension("google.cloud.bigquery")
+    magics.context.credentials = mock.create_autospec(
+        google.auth.credentials.Credentials, instance=True
+    )
+
+    run_query_patch = mock.patch(
+        "google.cloud.bigquery.magics.magics._run_query", autospec=True
+    )
+    with run_query_patch as run_query_mock:
+        ip.run_cell_magic("bigquery", "--location=us-east1", "SELECT 17 AS num")
+
+        client_options_used = run_query_mock.call_args_list[0][0][0]
+        assert client_options_used.location == "us-east1"

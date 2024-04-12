@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import base64
+import copy
 import csv
 import datetime
 import decimal
@@ -35,7 +36,6 @@ from google.api_core.exceptions import NotFound
 from google.api_core.exceptions import InternalServerError
 from google.api_core.exceptions import ServiceUnavailable
 from google.api_core.exceptions import TooManyRequests
-from google.api_core.iam import Policy
 from google.cloud import bigquery
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetReference
@@ -54,16 +54,6 @@ from test_utils.system import unique_resource_id
 
 from . import helpers
 
-try:
-    from google.cloud import bigquery_storage
-except ImportError:  # pragma: NO COVER
-    bigquery_storage = None
-
-try:
-    import pyarrow
-    import pyarrow.types
-except ImportError:  # pragma: NO COVER
-    pyarrow = None
 
 JOB_TIMEOUT = 120  # 2 minutes
 DATA_PATH = pathlib.Path(__file__).parent.parent / "data"
@@ -237,6 +227,22 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(_dataset_exists(dataset))
         self.assertEqual(dataset.dataset_id, DATASET_ID)
         self.assertEqual(dataset.project, Config.CLIENT.project)
+        self.assertIs(dataset.is_case_insensitive, False)
+
+    def test_create_dataset_case_sensitive(self):
+        DATASET_ID = _make_dataset_id("create_cs_dataset")
+        dataset = self.temp_dataset(DATASET_ID, is_case_insensitive=False)
+        self.assertIs(dataset.is_case_insensitive, False)
+
+    def test_create_dataset_case_insensitive(self):
+        DATASET_ID = _make_dataset_id("create_ci_dataset")
+        dataset = self.temp_dataset(DATASET_ID, is_case_insensitive=True)
+        self.assertIs(dataset.is_case_insensitive, True)
+
+    def test_create_dataset_max_time_travel_hours(self):
+        DATASET_ID = _make_dataset_id("create_ci_dataset")
+        dataset = self.temp_dataset(DATASET_ID, max_time_travel_hours=24 * 2)
+        self.assertEqual(int(dataset.max_time_travel_hours), 24 * 2)
 
     def test_get_dataset(self):
         dataset_id = _make_dataset_id("get_dataset")
@@ -265,22 +271,32 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(got.friendly_name, "Friendly")
         self.assertEqual(got.description, "Description")
 
+    def test_create_dataset_with_default_rounding_mode(self):
+        DATASET_ID = _make_dataset_id("create_dataset_rounding_mode")
+        dataset = self.temp_dataset(DATASET_ID, default_rounding_mode="ROUND_HALF_EVEN")
+
+        self.assertTrue(_dataset_exists(dataset))
+        self.assertEqual(dataset.default_rounding_mode, "ROUND_HALF_EVEN")
+
     def test_update_dataset(self):
         dataset = self.temp_dataset(_make_dataset_id("update_dataset"))
         self.assertTrue(_dataset_exists(dataset))
         self.assertIsNone(dataset.friendly_name)
         self.assertIsNone(dataset.description)
         self.assertEqual(dataset.labels, {})
+        self.assertIs(dataset.is_case_insensitive, False)
 
         dataset.friendly_name = "Friendly"
         dataset.description = "Description"
         dataset.labels = {"priority": "high", "color": "blue"}
+        dataset.is_case_insensitive = True
         ds2 = Config.CLIENT.update_dataset(
-            dataset, ("friendly_name", "description", "labels")
+            dataset, ("friendly_name", "description", "labels", "is_case_insensitive")
         )
         self.assertEqual(ds2.friendly_name, "Friendly")
         self.assertEqual(ds2.description, "Description")
         self.assertEqual(ds2.labels, {"priority": "high", "color": "blue"})
+        self.assertIs(ds2.is_case_insensitive, True)
 
         ds2.labels = {
             "color": "green",  # change
@@ -334,6 +350,48 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertTrue(_table_exists(table))
         self.assertEqual(table.table_id, table_id)
+
+    def test_create_tables_in_case_insensitive_dataset(self):
+        ci_dataset = self.temp_dataset(
+            _make_dataset_id("create_table"), is_case_insensitive=True
+        )
+        table_arg = Table(ci_dataset.table("test_table2"), schema=SCHEMA)
+        tablemc_arg = Table(ci_dataset.table("Test_taBLe2"))  # same name, in Mixed Case
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table_arg))
+        self.assertTrue(_table_exists(tablemc_arg))
+        self.assertIs(ci_dataset.is_case_insensitive, True)
+
+    def test_create_tables_in_case_sensitive_dataset(self):
+        ci_dataset = self.temp_dataset(
+            _make_dataset_id("create_table"), is_case_insensitive=False
+        )
+        table_arg = Table(ci_dataset.table("test_table3"), schema=SCHEMA)
+        tablemc_arg = Table(ci_dataset.table("Test_taBLe3"))  # same name, in Mixed Case
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table_arg))
+        self.assertFalse(_table_exists(tablemc_arg))
+        self.assertIs(ci_dataset.is_case_insensitive, False)
+
+    def test_create_tables_in_default_sensitivity_dataset(self):
+        dataset = self.temp_dataset(_make_dataset_id("create_table"))
+        table_arg = Table(dataset.table("test_table4"), schema=SCHEMA)
+        tablemc_arg = Table(
+            dataset.table("Test_taBLe4")
+        )  # same name, in MC (Mixed Case)
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+
+        self.assertTrue(_table_exists(table_arg))
+        self.assertFalse(_table_exists(tablemc_arg))
+        self.assertIs(dataset.is_case_insensitive, False)
 
     def test_create_table_with_real_custom_policy(self):
         from google.cloud.bigquery.schema import PolicyTagList
@@ -925,6 +983,45 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(tuple(table.schema), table_schema)
         self.assertEqual(table.num_rows, 2)
 
+    # Autodetect makes best effort to infer the schema, but situations exist
+    # when the detected schema is wrong, and does not match existing schema.
+    # Thus the client sets autodetect = False when table exists and just uses
+    # the existing schema. This test case uses a special case where backend has
+    # no way to distinguish int from string.
+    def test_load_table_from_json_schema_autodetect_table_exists(self):
+        json_rows = [
+            {"name": "123", "age": 18, "birthday": "2001-10-15", "is_awesome": False},
+            {"name": "456", "age": 79, "birthday": "1940-03-10", "is_awesome": True},
+        ]
+
+        dataset_id = _make_dataset_id("bq_system_test")
+        self.temp_dataset(dataset_id)
+        table_id = "{}.{}.load_table_from_json_basic_use".format(
+            Config.CLIENT.project, dataset_id
+        )
+
+        # Use schema with NULLABLE fields, because schema autodetection
+        # defaults to field mode NULLABLE.
+        table_schema = (
+            bigquery.SchemaField("name", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("age", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("birthday", "DATE", mode="NULLABLE"),
+            bigquery.SchemaField("is_awesome", "BOOLEAN", mode="NULLABLE"),
+        )
+        # create the table before loading so that the column order is predictable
+        table = helpers.retry_403(Config.CLIENT.create_table)(
+            Table(table_id, schema=table_schema)
+        )
+        self.to_delete.insert(0, table)
+
+        # do not pass an explicit job config to trigger automatic schema detection
+        load_job = Config.CLIENT.load_table_from_json(json_rows, table_id)
+        load_job.result()
+
+        table = Config.CLIENT.get_table(table)
+        self.assertEqual(tuple(table.schema), table_schema)
+        self.assertEqual(table.num_rows, 2)
+
     def test_load_avro_from_uri_then_dump_table(self):
         from google.cloud.bigquery.job import CreateDisposition
         from google.cloud.bigquery.job import SourceFormat
@@ -1377,33 +1474,6 @@ class TestBigQuery(unittest.TestCase):
         got_rows = self._fetch_single_page(dest_table)
         self.assertTrue(len(got_rows) > 0)
 
-    def test_get_set_iam_policy(self):
-        from google.cloud.bigquery.iam import BIGQUERY_DATA_VIEWER_ROLE
-
-        dataset = self.temp_dataset(_make_dataset_id("create_table"))
-        table_id = "test_table"
-        table_ref = Table(dataset.table(table_id))
-        self.assertFalse(_table_exists(table_ref))
-
-        table = helpers.retry_403(Config.CLIENT.create_table)(table_ref)
-        self.to_delete.insert(0, table)
-
-        self.assertTrue(_table_exists(table))
-
-        member = "serviceAccount:{}".format(Config.CLIENT.get_service_account_email())
-        BINDING = {
-            "role": BIGQUERY_DATA_VIEWER_ROLE,
-            "members": {member},
-        }
-
-        policy = Config.CLIENT.get_iam_policy(table)
-        self.assertIsInstance(policy, Policy)
-        self.assertEqual(policy.bindings, [])
-
-        policy.bindings.append(BINDING)
-        returned_policy = Config.CLIENT.set_iam_policy(table, policy)
-        self.assertEqual(returned_policy.bindings, policy.bindings)
-
     def test_test_iam_permissions(self):
         dataset = self.temp_dataset(_make_dataset_id("create_table"))
         table_id = "test_table"
@@ -1692,11 +1762,10 @@ class TestBigQuery(unittest.TestCase):
         row_tuples = [r.values() for r in rows]
         self.assertEqual(row_tuples, [(5, "foo"), (6, "bar"), (7, "baz")])
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
     def test_dbapi_fetch_w_bqstorage_client_large_result_set(self):
+        bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
+        pytest.importorskip("pyarrow")
+
         bqstorage_client = bigquery_storage.BigQueryReadClient(
             credentials=Config.CLIENT._credentials
         )
@@ -1712,7 +1781,6 @@ class TestBigQuery(unittest.TestCase):
         )
 
         result_rows = [cursor.fetchone(), cursor.fetchone(), cursor.fetchone()]
-
         field_name = operator.itemgetter(0)
         fetched_data = [sorted(row.items(), key=field_name) for row in result_rows]
         # Since DB API is not thread safe, only a single result stream should be
@@ -1720,11 +1788,6 @@ class TestBigQuery(unittest.TestCase):
         # in the sorted order.
 
         expected_data = [
-            [
-                ("by", "pg"),
-                ("id", 1),
-                ("timestamp", datetime.datetime(2006, 10, 9, 18, 21, 51, tzinfo=UTC)),
-            ],
             [
                 ("by", "phyllis"),
                 ("id", 2),
@@ -1734,6 +1797,11 @@ class TestBigQuery(unittest.TestCase):
                 ("by", "phyllis"),
                 ("id", 3),
                 ("timestamp", datetime.datetime(2006, 10, 9, 18, 40, 33, tzinfo=UTC)),
+            ],
+            [
+                ("by", "onebeerdave"),
+                ("id", 4),
+                ("timestamp", datetime.datetime(2006, 10, 9, 18, 47, 42, tzinfo=UTC)),
             ],
         ]
 
@@ -1755,10 +1823,8 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertEqual(list(rows), [])
 
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_dbapi_connection_does_not_leak_sockets(self):
+        pytest.importorskip("google.cloud.bigquery_storage")
         current_process = psutil.Process()
         conn_count_start = len(current_process.connections())
 
@@ -1980,13 +2046,18 @@ class TestBigQuery(unittest.TestCase):
                     ),
                 ],
             ),
+            SF("json_col", "JSON"),
         ]
         record = {
             "nested_string": "another string value",
             "nested_repeated": [0, 1, 2],
             "nested_record": {"nested_nested_string": "some deep insight"},
         }
-        to_insert = [("Some value", record)]
+        json_record = {
+            "json_array": [1, 2, 3],
+            "json_object": {"alpha": "abc", "num": 123},
+        }
+        to_insert = [("Some value", record, json_record)]
         table_id = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("issue_2951"))
         table_arg = Table(dataset.table(table_id), schema=schema)
@@ -2081,6 +2152,44 @@ class TestBigQuery(unittest.TestCase):
         assert len(rows) == 1
         assert rows[0].max_value == 100.0
 
+    def test_create_routine_with_range(self):
+        routine_name = "routine_range"
+        dataset = self.temp_dataset(_make_dataset_id("routine_range"))
+
+        routine = bigquery.Routine(
+            dataset.routine(routine_name),
+            type_="SCALAR_FUNCTION",
+            language="SQL",
+            body="RANGE_START(x)",
+            arguments=[
+                bigquery.RoutineArgument(
+                    name="x",
+                    data_type=bigquery.StandardSqlDataType(
+                        type_kind=bigquery.StandardSqlTypeNames.RANGE,
+                        range_element_type=bigquery.StandardSqlDataType(
+                            type_kind=bigquery.StandardSqlTypeNames.DATE
+                        ),
+                    ),
+                )
+            ],
+            return_type=bigquery.StandardSqlDataType(
+                type_kind=bigquery.StandardSqlTypeNames.DATE
+            ),
+        )
+
+        query_string = (
+            "SELECT `{}`(RANGE<DATE> '[2016-08-12, UNBOUNDED)') as range_start;".format(
+                str(routine.reference)
+            )
+        )
+
+        routine = helpers.retry_403(Config.CLIENT.create_routine)(routine)
+        query_job = helpers.retry_403(Config.CLIENT.query)(query_string)
+        rows = list(query_job.result())
+
+        assert len(rows) == 1
+        assert rows[0].range_start == datetime.date(2016, 8, 12)
+
     def test_create_tvf_routine(self):
         from google.cloud.bigquery import (
             Routine,
@@ -2168,6 +2277,41 @@ class TestBigQuery(unittest.TestCase):
         ]
         assert result_rows == expected
 
+    def test_create_routine_w_data_governance(self):
+        routine_name = "routine_with_data_governance"
+        dataset = self.temp_dataset(_make_dataset_id("create_routine"))
+
+        routine = bigquery.Routine(
+            dataset.routine(routine_name),
+            type_="SCALAR_FUNCTION",
+            language="SQL",
+            body="x",
+            arguments=[
+                bigquery.RoutineArgument(
+                    name="x",
+                    data_type=bigquery.StandardSqlDataType(
+                        type_kind=bigquery.StandardSqlTypeNames.INT64
+                    ),
+                )
+            ],
+            data_governance_type="DATA_MASKING",
+            return_type=bigquery.StandardSqlDataType(
+                type_kind=bigquery.StandardSqlTypeNames.INT64
+            ),
+        )
+        routine_original = copy.deepcopy(routine)
+
+        client = Config.CLIENT
+        routine_new = client.create_routine(routine)
+
+        assert routine_new.reference == routine_original.reference
+        assert routine_new.type_ == routine_original.type_
+        assert routine_new.language == routine_original.language
+        assert routine_new.body == routine_original.body
+        assert routine_new.arguments == routine_original.arguments
+        assert routine_new.return_type == routine_original.return_type
+        assert routine_new.data_governance_type == routine_original.data_governance_type
+
     def test_create_table_rows_fetch_nested_schema(self):
         table_name = "test_table"
         dataset = self.temp_dataset(_make_dataset_id("create_table_nested_schema"))
@@ -2225,11 +2369,10 @@ class TestBigQuery(unittest.TestCase):
             self.assertEqual(found[7], e_favtime)
             self.assertEqual(found[8], decimal.Decimal(expected["FavoriteNumber"]))
 
-    @unittest.skipIf(pyarrow is None, "Requires `pyarrow`")
-    @unittest.skipIf(
-        bigquery_storage is None, "Requires `google-cloud-bigquery-storage`"
-    )
     def test_nested_table_to_arrow(self):
+        bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
+        pyarrow = pytest.importorskip("pyarrow")
+        pyarrow.types = pytest.importorskip("pyarrow.types")
         from google.cloud.bigquery.job import SourceFormat
         from google.cloud.bigquery.job import WriteDisposition
 
@@ -2286,12 +2429,18 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(pyarrow.types.is_list(record_col[1].type))
         self.assertTrue(pyarrow.types.is_int64(record_col[1].type.value_type))
 
-    def temp_dataset(self, dataset_id, location=None):
+    def temp_dataset(self, dataset_id, *args, **kwargs):
         project = Config.CLIENT.project
         dataset_ref = bigquery.DatasetReference(project, dataset_id)
         dataset = Dataset(dataset_ref)
-        if location:
-            dataset.location = location
+        if kwargs.get("location"):
+            dataset.location = kwargs.get("location")
+        if kwargs.get("max_time_travel_hours"):
+            dataset.max_time_travel_hours = kwargs.get("max_time_travel_hours")
+        if kwargs.get("default_rounding_mode"):
+            dataset.default_rounding_mode = kwargs.get("default_rounding_mode")
+        if kwargs.get("is_case_insensitive"):
+            dataset.is_case_insensitive = kwargs.get("is_case_insensitive")
         dataset = helpers.retry_403(Config.CLIENT.create_dataset)(dataset)
         self.to_delete.append(dataset)
         return dataset
@@ -2319,7 +2468,6 @@ def _table_exists(t):
 
 
 def test_dbapi_create_view(dataset_id: str):
-
     query = f"""
     CREATE VIEW {dataset_id}.dbapi_create_view
     AS SELECT name, SUM(number) AS total

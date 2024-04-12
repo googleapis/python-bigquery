@@ -952,6 +952,15 @@ def test_query_and_wait_incomplete_query():
                 "jobId": "response-job-id",
                 "location": "response-location",
             },
+            "status": {"state": "RUNNING"},
+        },
+        # jobs.getQueryResults with max_results=0
+        {
+            "jobReference": {
+                "projectId": "response-project",
+                "jobId": "response-job-id",
+                "location": "response-location",
+            },
             "jobComplete": True,
             "totalRows": 2,
             "queryId": "xyz",
@@ -962,15 +971,18 @@ def test_query_and_wait_incomplete_query():
                 ],
             },
         },
-        # jobs.getQueryResults with max_results=0
+        # jobs.get
         {
             "jobReference": {
                 "projectId": "response-project",
                 "jobId": "response-job-id",
                 "location": "response-location",
             },
+            "status": {"state": "DONE"},
         },
         # jobs.getQueryResults
+        # Note: No more jobs.getQueryResults with max_results=0 because the
+        # previous call to jobs.getQueryResults returned with jobComplete=True.
         {
             "rows": [
                 {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},

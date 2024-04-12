@@ -1440,6 +1440,12 @@ class QueryJob(_AsyncJob):
         # stored in _blocking_poll() in the process of polling for job completion.
         transport_timeout = timeout if timeout is not None else self._transport_timeout
 
+        # We could have been given a generic object() sentinel to represent a
+        # default timeout.
+        transport_timeout = (
+            transport_timeout if isinstance(timeout, (int, float)) else None
+        )
+
         try:
             self._reload_query_results(retry=retry, timeout=transport_timeout)
         except exceptions.GoogleAPIError as exc:
@@ -1576,7 +1582,12 @@ class QueryJob(_AsyncJob):
                     self._retry_do_query = retry_do_query
                     self._job_retry = job_retry
 
-                if self.done():
+                # Refresh the job status with jobs.get because some of the
+                # exceptions thrown by jobs.getQueryResults like timeout and
+                # rateLimitExceeded errors are ambiguous. We want to know if
+                # the query job failed and not just the call to
+                # jobs.getQueryResults.
+                if self.done(retry=retry, timeout=timeout):
                     # If it's already failed, we might as well stop.
                     if self.exception() is not None:
                         # Only try to restart the query job if the job failed for
@@ -1590,16 +1601,21 @@ class QueryJob(_AsyncJob):
                         # it's already been fetched, e.g. from jobs.query first
                         # page of results.
                         if (
-                            self._query_results is not None
-                            and self._query_results.complete
+                            self._query_results is None
+                            or not self._query_results.complete
                         ):
-                            return True
+                            self._reload_query_results(retry=retry, timeout=timeout)
+                        return True
 
                 # Call jobs.getQueryResults with max results set to 0 just to
                 # wait for the query to finish. Unlike most methods,
                 # jobs.getQueryResults hangs as long as it can to ensure we
                 # know when the query has finished as soon as possible.
                 self._reload_query_results(retry=retry, timeout=timeout)
+
+                # Even if the query is finished now according to
+                # jobs.getQueryResults, we'll want to reload the job status if
+                # it's not already DONE.
                 return False
 
             if retry_do_query is not None and job_retry is not None:

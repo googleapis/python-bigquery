@@ -970,7 +970,12 @@ class TestQueryJob(_Base):
             "rows": [{"f": [{"v": "abc"}]}],
         }
         conn = make_connection(
-            query_resource, query_resource_done, job_resource_done, query_page_resource
+            job_resource,
+            query_resource,
+            job_resource,
+            query_resource_done,
+            job_resource_done,
+            query_page_resource,
         )
         client = _make_client(self.PROJECT, connection=conn)
         job = self._get_target_class().from_api_repr(job_resource, client)
@@ -1014,7 +1019,14 @@ class TestQueryJob(_Base):
             timeout=None,
         )
         conn.api_request.assert_has_calls(
-            [query_results_call, query_results_call, reload_call, query_page_call]
+            [
+                reload_call,
+                query_results_call,
+                reload_call,
+                query_results_call,
+                reload_call,
+                query_page_call,
+            ]
         )
 
     def test_result_dry_run(self):
@@ -1255,7 +1267,11 @@ class TestQueryJob(_Base):
 
         connection = make_connection(
             exceptions.NotFound("not normally retriable"),
+            job_resource,
+            exceptions.NotFound("not normally retriable"),
             query_resource,
+            exceptions.NotFound("not normally retriable"),
+            job_resource,
             exceptions.NotFound("not normally retriable"),
             query_resource_done,
             exceptions.NotFound("not normally retriable"),
@@ -1289,7 +1305,18 @@ class TestQueryJob(_Base):
         )
 
         connection.api_request.assert_has_calls(
-            [query_results_call, query_results_call, reload_call]
+            [
+                reload_call,
+                reload_call,
+                query_results_call,
+                query_results_call,
+                reload_call,
+                reload_call,
+                query_results_call,
+                query_results_call,
+                reload_call,
+                reload_call,
+            ]
         )
 
     def test_result_w_empty_schema(self):
@@ -1315,37 +1342,6 @@ class TestQueryJob(_Base):
         self.assertEqual(result.job_id, self.JOB_ID)
         self.assertEqual(result.location, "asia-northeast1")
         self.assertEqual(result.query_id, "xyz-abc")
-
-    def test_result_invokes_begins(self):
-        begun_resource = self._make_resource()
-        incomplete_resource = {
-            "jobComplete": False,
-            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
-            "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
-        }
-        query_resource = copy.deepcopy(incomplete_resource)
-        query_resource["jobComplete"] = True
-        done_resource = copy.deepcopy(begun_resource)
-        done_resource["status"] = {"state": "DONE"}
-        connection = make_connection(
-            begun_resource,
-            incomplete_resource,
-            query_resource,
-            done_resource,
-            query_resource,
-        )
-        client = _make_client(project=self.PROJECT, connection=connection)
-        job = self._make_one(self.JOB_ID, self.QUERY, client)
-
-        job.result()
-
-        self.assertEqual(len(connection.api_request.call_args_list), 4)
-        begin_request = connection.api_request.call_args_list[0]
-        query_request = connection.api_request.call_args_list[2]
-        reload_request = connection.api_request.call_args_list[3]
-        self.assertEqual(begin_request[1]["method"], "POST")
-        self.assertEqual(query_request[1]["method"], "GET")
-        self.assertEqual(reload_request[1]["method"], "GET")
 
     def test_result_w_timeout(self):
         import google.cloud.bigquery.client

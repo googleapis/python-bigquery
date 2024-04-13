@@ -1081,7 +1081,7 @@ class TestQueryJob(_Base):
             method="GET",
             path=query_results_path,
             query_params={"maxResults": 0, "location": "EU"},
-            timeout=None,
+            timeout=google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
         )
         query_results_page_call = mock.call(
             method="GET",
@@ -1347,6 +1347,7 @@ class TestQueryJob(_Base):
         import google.cloud.bigquery.client
 
         begun_resource = self._make_resource()
+        begun_resource["jobReference"]["location"] = "US"
         query_resource = {
             "jobComplete": True,
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
@@ -1357,26 +1358,33 @@ class TestQueryJob(_Base):
         connection = make_connection(begun_resource, query_resource, done_resource)
         client = _make_client(project=self.PROJECT, connection=connection)
         job = self._make_one(self.JOB_ID, self.QUERY, client)
+        job._properties["jobReference"]["location"] = "US"
 
         with freezegun.freeze_time("1970-01-01 00:00:00", tick=False):
-            job.result(timeout=1.0)
+            job.result(timeout=1.125)
 
-        self.assertEqual(len(connection.api_request.call_args_list), 3)
-        begin_request = connection.api_request.call_args_list[0]
-        query_request = connection.api_request.call_args_list[1]
-        reload_request = connection.api_request.call_args_list[2]
-        self.assertEqual(begin_request[1]["method"], "POST")
-        self.assertEqual(query_request[1]["method"], "GET")
-        self.assertEqual(
-            query_request[1]["path"],
-            "/projects/{}/queries/{}".format(self.PROJECT, self.JOB_ID),
+        reload_call = mock.call(
+            method="GET",
+            path=f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}",
+            query_params={"location": "US"},
+            timeout=1.125,
         )
-        self.assertEqual(query_request[1]["timeout"], 120)
-        self.assertEqual(
-            query_request[1]["timeout"],
-            google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
+        get_query_results_call = mock.call(
+            method="GET",
+            path=f"/projects/{self.PROJECT}/queries/{self.JOB_ID}",
+            query_params={
+                "maxResults": 0,
+                "location": "US",
+            },
+            timeout=google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
         )
-        self.assertEqual(reload_request[1]["method"], "GET")
+        connection.api_request.assert_has_calls(
+            [
+                reload_call,
+                get_query_results_call,
+                reload_call,
+            ]
+        )
 
     def test_result_w_page_size(self):
         # Arrange

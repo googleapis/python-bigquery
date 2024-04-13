@@ -246,7 +246,9 @@ def test__to_query_job_dry_run():
 @pytest.mark.parametrize(
     ("completed", "expected_state"),
     (
-        (True, "DONE"),
+        # Always pending so that we refresh the job state to get the
+        # destination table or job stats in case it's needed.
+        (True, "PENDING"),
         (False, "PENDING"),
     ),
 )
@@ -843,6 +845,7 @@ def test_query_and_wait_caches_completed_query_results_more_pages():
                 "jobId": "response-job-id",
                 "location": "response-location",
             },
+            "status": {"state": "DONE"},
         },
         {
             "rows": [

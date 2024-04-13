@@ -1026,7 +1026,10 @@ class TestQueryJob(_Base):
             request_config=None,
             query_response=query_resource_done,
         )
-        assert job.state == "DONE"
+
+        # We want job.result() to refresh the job state, so the conversion is
+        # always "PENDING", even if the job is finished.
+        assert job.state == "PENDING"
 
         result = job.result()
 
@@ -1075,7 +1078,9 @@ class TestQueryJob(_Base):
             request_config=None,
             query_response=query_resource_done,
         )
-        assert job.state == "DONE"
+        # We want job.result() to refresh the job state, so the conversion is
+        # always "PENDING", even if the job is finished.
+        assert job.state == "PENDING"
 
         # Act
         result = job.result(page_size=3)

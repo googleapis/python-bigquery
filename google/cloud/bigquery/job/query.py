@@ -22,7 +22,6 @@ import typing
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 from google.api_core import exceptions
-from google.api_core.future import polling as polling_future
 from google.api_core import retry as retries
 import requests
 
@@ -1430,46 +1429,6 @@ class QueryJob(_AsyncJob):
             location=self.location,
             timeout=transport_timeout,
         )
-
-    def _done_or_raise(self, retry=DEFAULT_RETRY, timeout=None):
-        """Check if the query has finished running and raise if it's not.
-
-        If the query has finished, also reload the job itself.
-        """
-        # If an explicit timeout is not given, fall back to the transport timeout
-        # stored in _blocking_poll() in the process of polling for job completion.
-        transport_timeout = timeout if timeout is not None else self._transport_timeout
-
-        # We could have been given a generic object() sentinel to represent a
-        # default timeout.
-        transport_timeout = (
-            transport_timeout if isinstance(timeout, (int, float)) else None
-        )
-
-        try:
-            self._reload_query_results(retry=retry, timeout=transport_timeout)
-        except exceptions.GoogleAPIError as exc:
-            # Reloading also updates error details on self, thus no need for an
-            # explicit self.set_exception() call if reloading succeeds.
-            try:
-                self.reload(retry=retry, timeout=transport_timeout)
-            except exceptions.GoogleAPIError:
-                # Use the query results reload exception, as it generally contains
-                # much more useful error information.
-                self.set_exception(exc)
-            finally:
-                return
-
-        # Only reload the job once we know the query is complete.
-        # This will ensure that fields such as the destination table are
-        # correctly populated.
-        if not self._query_results.complete:
-            raise polling_future._OperationNotComplete()
-        else:
-            try:
-                self.reload(retry=retry, timeout=transport_timeout)
-            except exceptions.GoogleAPIError as exc:
-                self.set_exception(exc)
 
     def result(  # type: ignore  # (incompatible with supertype)
         self,

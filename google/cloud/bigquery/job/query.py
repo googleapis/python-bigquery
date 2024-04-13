@@ -1383,7 +1383,7 @@ class QueryJob(_AsyncJob):
     def _reload_query_results(
         self, retry: "retries.Retry" = DEFAULT_RETRY, timeout: Optional[float] = None
     ):
-        """Refresh the cached query results.
+        """Refresh the cached query results unless already cached and complete.
 
         Args:
             retry (Optional[google.api_core.retry.Retry]):
@@ -1392,6 +1392,8 @@ class QueryJob(_AsyncJob):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
         """
+        # Optimization: avoid a call to jobs.getQueryResults if it's already
+        # been fetched, e.g. from jobs.query first page of results.
         if self._query_results and self._query_results.complete:
             return
 
@@ -1556,14 +1558,16 @@ class QueryJob(_AsyncJob):
                         restart_query_job = True
                         raise self.exception()
                     else:
-                        # Optimization: avoid a call to jobs.getQueryResults if
-                        # it's already been fetched, e.g. from jobs.query first
-                        # page of results.
-                        if (
-                            self._query_results is None
-                            or not self._query_results.complete
-                        ):
-                            self._reload_query_results(retry=retry, timeout=timeout)
+                        # Make sure that the _query_results are cached so we
+                        # can return a complete RowIterator.
+                        #
+                        # Note: As an optimization, _reload_query_results
+                        # doesn't make any API calls if the query results are
+                        # already cached and have jobComplete=True in the
+                        # response from the REST API. This ensures we aren't
+                        # making any extra API calls if the previous loop
+                        # iteration fetched the finished job.
+                        self._reload_query_results(retry=retry, timeout=timeout)
                         return True
 
                 # Call jobs.getQueryResults with max results set to 0 just to

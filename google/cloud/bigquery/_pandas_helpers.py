@@ -143,6 +143,11 @@ def bq_to_arrow_struct_data_type(field):
 
 
 def bq_to_arrow_range_data_type(field):
+    if field is None:
+        raise ValueError(
+            "Range element type cannot be None, must be one of "
+            "DATE, DATETIME, or TIMESTAMP"
+        )
     element_type = field.element_type.upper()
     arrow_element_type = _pyarrow_helpers.bq_to_arrow_scalars(element_type)()
     return pyarrow.struct([("start", arrow_element_type), ("end", arrow_element_type)])

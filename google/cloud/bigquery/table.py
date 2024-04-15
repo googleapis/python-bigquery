@@ -2291,7 +2291,7 @@ class RowIterator(HTTPIterator):
                 # only supports upto pandas 1.3. If pandas.ArrowDtype is not
                 # present, we raise a warning and set range_date_dtype to None.
                 msg = (
-                    "Unable ro find class ArrowDtype in pandas, setting "
+                    "Unable to find class ArrowDtype in pandas, setting "
                     "range_date_dtype to be None. To use ArrowDtype, please "
                     "use pandas >= 1.5 and python >= 3.8."
                 )
@@ -2313,7 +2313,7 @@ class RowIterator(HTTPIterator):
                 # only supports upto pandas 1.3. If pandas.ArrowDtype is not
                 # present, we raise a warning and set range_datetime_dtype to None.
                 msg = (
-                    "Unable ro find class ArrowDtype in pandas, setting "
+                    "Unable to find class ArrowDtype in pandas, setting "
                     "range_datetime_dtype to be None. To use ArrowDtype, "
                     "please use pandas >= 1.5 and python >= 3.8."
                 )
@@ -2335,7 +2335,7 @@ class RowIterator(HTTPIterator):
                 # only supports upto pandas 1.3. If pandas.ArrowDtype is not
                 # present, we raise a warning and set range_timestamp_dtype to None.
                 msg = (
-                    "Unable ro find class ArrowDtype in pandas, setting "
+                    "Unable to find class ArrowDtype in pandas, setting "
                     "range_timestamp_dtype to be None. To use ArrowDtype, "
                     "please use pandas >= 1.5 and python >= 3.8."
                 )

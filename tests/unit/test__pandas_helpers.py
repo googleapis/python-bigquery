@@ -670,7 +670,7 @@ def test_bq_to_arrow_array_w_geography_type_wkb_data(module_under_test):
     assert array.to_pylist() == list(series)
 
 
-@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.parametrize(
     "bq_schema,expected",
     [
@@ -723,7 +723,7 @@ def test_bq_to_arrow_data_type_w_range(module_under_test, bq_schema, expected):
     assert actual.equals(expected)
 
 
-@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_bq_to_arrow_data_type_w_range_no_element(module_under_test):
     field = schema.SchemaField("field1", "RANGE", mode="NULLABLE")
     with pytest.raises(ValueError, match="Range element type cannot be None"):

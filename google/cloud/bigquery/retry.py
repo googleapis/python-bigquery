@@ -39,7 +39,7 @@ _DEFAULT_RETRY_DEADLINE = 10.0 * 60.0  # 10 minutes
 # Allow for a few retries after the API request times out. This relevant for
 # rateLimitExceeded errors, which can be raised either by the Google load
 # balancer or the BigQuery job server.
-_DEFAULT_JOB_DEADLINE = 3.0 * _DEFAULT_RETRY_DEADLINE
+_DEFAULT_JOB_DEADLINE = 4.0 * _DEFAULT_RETRY_DEADLINE
 
 
 def _should_retry(exc):
@@ -73,10 +73,32 @@ This is the time to wait per request. To adjust the total wait time, set a
 deadline on the retry object.
 """
 
-job_retry_reasons = "rateLimitExceeded", "backendError", "jobRateLimitExceeded"
+job_retry_reasons = (
+    "rateLimitExceeded",
+    "backendError",
+    "internalError",
+    "jobRateLimitExceeded",
+)
 
 
 def _job_should_retry(exc):
+    # Sometimes we have ambiguous errors, such as 'backendError' which could
+    # be due to an API problem or a job problem. For these, make sure we retry
+    # our is_job_done function.
+    #
+    # Note: This won't restart the job unless we know for sure it's because of
+    # the job status and set restart_query_job = True in that loop. This means
+    # that we might end up calling this predicate twice for the same job
+    # but from different paths: (1) from jobs.getQueryResults RetryError and
+    # (2) from translating the job error from the body of a jobs.get response.
+    #
+    # Note: If we start retrying job types other than queries where we don't
+    # call the problematic getQueryResults API to check the status, we need
+    # to provide a different predicate, as there shouldn't be ambiguous
+    # errors in those cases.
+    if isinstance(exc, exceptions.RetryError):
+        exc = exc.cause
+
     if not hasattr(exc, "errors") or len(exc.errors) == 0:
         return False
 

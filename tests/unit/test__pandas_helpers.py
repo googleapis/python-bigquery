@@ -671,7 +671,7 @@ def test_bq_to_arrow_array_w_geography_type_wkb_data(module_under_test):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 @pytest.mark.parametrize(
     "bq_schema,expected",
     [

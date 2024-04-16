@@ -696,8 +696,8 @@ def test_bq_to_arrow_array_w_geography_type_wkb_data(module_under_test):
             ),
             pyarrow.struct(
                 [
-                    ("start", _pyarrow_helpers.pyarrow_datetime()),
-                    ("end", _pyarrow_helpers.pyarrow_datetime()),
+                    ("start", pyarrow.timestamp("us", tz=None)),
+                    ("end", pyarrow.timestamp("us", tz=None)),
                 ]
             ),
         ),
@@ -710,8 +710,8 @@ def test_bq_to_arrow_array_w_geography_type_wkb_data(module_under_test):
             ),
             pyarrow.struct(
                 [
-                    ("start", _pyarrow_helpers.pyarrow_timestamp()),
-                    ("end", _pyarrow_helpers.pyarrow_timestamp()),
+                    ("start", pyarrow.timestamp("us", tz="UTC")),
+                    ("end", pyarrow.timestamp("us", tz="UTC")),
                 ]
             ),
         ),

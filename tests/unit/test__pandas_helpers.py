@@ -670,8 +670,6 @@ def test_bq_to_arrow_array_w_geography_type_wkb_data(module_under_test):
     assert array.to_pylist() == list(series)
 
 
-@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-@pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
 @pytest.mark.parametrize(
     "bq_schema,expected",
     [
@@ -719,6 +717,8 @@ def test_bq_to_arrow_array_w_geography_type_wkb_data(module_under_test):
         ),
     ],
 )
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_bq_to_arrow_data_type_w_range(module_under_test, bq_schema, expected):
     actual = module_under_test.bq_to_arrow_data_type(bq_schema)
     assert actual.equals(expected)

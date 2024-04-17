@@ -1342,7 +1342,6 @@ class TestQueryJob(_Base):
         import google.cloud.bigquery.client
 
         begun_resource = self._make_resource()
-        begun_resource["jobReference"]["location"] = "US"
         query_resource = {
             "jobComplete": True,
             "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
@@ -1356,7 +1355,14 @@ class TestQueryJob(_Base):
         job._properties["jobReference"]["location"] = "US"
 
         with freezegun.freeze_time("1970-01-01 00:00:00", tick=False):
-            job.result(timeout=1.125)
+            job.result(
+                # Test that fractional seconds are supported, but use a timeout
+                # that is representable as a floating point without rounding
+                # errors since it can be represented exactly in base 2. In this
+                # case 1.125 is 9 / 8, which is a fraction with a power of 2 in
+                # the denominator.
+                timeout=1.125,
+            )
 
         reload_call = mock.call(
             method="GET",

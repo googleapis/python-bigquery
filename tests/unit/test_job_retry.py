@@ -165,7 +165,7 @@ def test_query_retry_with_default_retry_and_ambiguous_errors_only_retries_with_f
         # jobs.getQueryResults x2
         #
         # Note: internalError is ambiguous in jobs.getQueryResults. The
-        # problem could be at the Google Frontend leve or it could be because
+        # problem could be at the Google Frontend level or it could be because
         # the job has failed due to some transient issues and the BigQuery
         # REST API is translating the job failed status into failure HTTP
         # codes.

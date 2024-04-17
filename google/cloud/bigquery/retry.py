@@ -36,10 +36,25 @@ _UNSTRUCTURED_RETRYABLE_TYPES = (
 
 _DEFAULT_RETRY_DEADLINE = 10.0 * 60.0  # 10 minutes
 
-# Allow for a few retries after the API request times out. This is relevant for
-# rateLimitExceeded errors, which can be raised either by the Google load
-# balancer or the BigQuery job server.
-_DEFAULT_JOB_DEADLINE = 4.0 * _DEFAULT_RETRY_DEADLINE
+# Ambiguous errors (e.g. internalError, backendError, rateLimitExceeded) retry
+# until the full `_DEFAULT_RETRY_DEADLINE`. This is because the
+# `jobs.getQueryResults` REST API translates a job failure into an HTTP error.
+#
+# TODO(https://github.com/googleapis/python-bigquery/issues/1903): Investigate
+# if we can fail early for ambiguous errors in `QueryJob.result()`'s call to
+# the `jobs.getQueryResult` API.
+#
+# We need `_DEFAULT_JOB_DEADLINE` to be some multiple of
+# `_DEFAULT_RETRY_DEADLINE` to allow for a few retries after the retry
+# timeout is reached.
+#
+# Note: This multiple should actually be a multiple of
+# (2 * _DEFAULT_RETRY_DEADLINE). After an ambiguous exception, the first
+# call from `job_retry()` refreshes the job state without actually restarting
+# the query. The second `job_retry()` actually restarts the query. For a more
+# detailed explanation, see the comments where we set `restart_query_job = True`
+# in `QueryJob.result()`'s  inner `is_job_done()` function.
+_DEFAULT_JOB_DEADLINE = 2.0 * (2.0 * _DEFAULT_RETRY_DEADLINE)
 
 
 def _should_retry(exc):
@@ -66,6 +81,11 @@ on ``DEFAULT_RETRY``. For example, to change the deadline to 30 seconds,
 pass ``retry=bigquery.DEFAULT_RETRY.with_deadline(30)``.
 """
 
+# Note: Take care when updating DEFAULT_TIMEOUT to anything but None. We
+# briefly had a default timeout, but even setting it at more than twice the
+# theoretical server-side default timeout of 2 minutes was not enough for
+# complex queries. See:
+# https://github.com/googleapis/python-bigquery/issues/970#issuecomment-921934647
 DEFAULT_TIMEOUT = None
 """The default API timeout.
 

@@ -1550,13 +1550,31 @@ class QueryJob(_AsyncJob):
                 # jobs.getQueryResults.
                 if self.done(retry=retry, timeout=timeout):
                     # If it's already failed, we might as well stop.
-                    if self.exception() is not None:
+                    job_failed_exception = self.exception()
+                    if job_failed_exception is not None:
                         # Only try to restart the query job if the job failed for
                         # a retriable reason. For example, don't restart the query
                         # if the call to reload the job metadata within self.done()
                         # timed out.
+                        #
+                        # The `restart_query_job` must only be called after a
+                        # successful call to the `jobs.get` REST API and we
+                        # determine that the job has failed.
+                        #
+                        # The `jobs.get` REST API
+                        # (https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/get)
+                        #  is called via `self.done()` which calls
+                        # `self.reload()`.
+                        #
+                        # To determine if the job failed, the `self.exception()`
+                        # is set from `self.reload()` via
+                        # `self._set_properties()`, which translates the
+                        # `Job.status.errorResult` field
+                        # (https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatus.FIELDS.error_result)
+                        # into an exception that can be processed by the
+                        # `job_retry` predicate.
                         restart_query_job = True
-                        raise self.exception()
+                        raise job_failed_exception
                     else:
                         # Make sure that the _query_results are cached so we
                         # can return a complete RowIterator.
@@ -1584,9 +1602,23 @@ class QueryJob(_AsyncJob):
             if retry_do_query is not None and job_retry is not None:
                 is_job_done = job_retry(is_job_done)
 
-            # timeout can be `None` or an object from our superclass
-            # indicating a default timeout.
-            remaining_timeout = timeout if isinstance(timeout, (float, int)) else None
+            # timeout can be a number of seconds, `None`, or a
+            # `google.api_core.future.polling.PollingFuture._DEFAULT_VALUE`
+            # sentinel object indicating a default timeout if we choose to add
+            # one some day. This value can come from our PollingFuture
+            # superclass and was introduced in
+            # https://github.com/googleapis/python-api-core/pull/462.
+            if isinstance(timeout, (float, int)):
+                remaining_timeout = timeout
+            else:
+                # Note: we may need to handle _DEFAULT_VALUE as a separate
+                # case someday, but even then the best we can do for queries
+                # is 72+ hours for hyperpareter tuning jobs:
+                # https://cloud.google.com/bigquery/quotas#query_jobs
+                #
+                # The timeout for a multi-statement query is 24+ hours. See:
+                # https://cloud.google.com/bigquery/quotas#multi_statement_query_limits
+                remaining_timeout = None
 
             if remaining_timeout is None:
                 # Since is_job_done() calls jobs.getQueryResults, which is a

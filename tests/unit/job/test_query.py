@@ -840,7 +840,12 @@ class TestQueryJob(_Base):
         assert isinstance(job.search_stats, SearchStats)
         assert job.search_stats.mode == "INDEX_USAGE_MODE_UNSPECIFIED"
 
-    def test_result(self):
+    def test_result_reloads_job_state_until_done(self):
+        """Verify that result() doesn't return until state == 'DONE'.
+
+        This test verifies correctness for a possible sequence of API responses
+        that might cause internal customer issue b/332850329.
+        """
         from google.cloud.bigquery.table import RowIterator
 
         query_resource = {
@@ -877,11 +882,53 @@ class TestQueryJob(_Base):
             "rows": [{"f": [{"v": "abc"}]}],
         }
         conn = make_connection(
+            # QueryJob.result() makes a pair of jobs.get & jobs.getQueryResults
+            # REST API calls each iteration to determine if the job has finished
+            # or not.
+            #
+            # jobs.get (https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/get)
+            # is necessary to make sure the job has really finished via
+            # `Job.status.state == "DONE"` and to get necessary properties for
+            # `RowIterator` like the destination table.
+            #
+            # jobs.getQueryResults
+            # (https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults)
+            # with maxResults == 0 is technically optional,
+            # but it hangs up to 10 seconds until the job has finished. This
+            # makes sure we can know when the query has finished as close as
+            # possible to when the query finishes. It also gets properties
+            # necessary for `RowIterator` that isn't available on the job
+            # resource such as the schema
+            # (https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/getQueryResults#body.GetQueryResultsResponse.FIELDS.schema)
+            # of the results.
             job_resource,
             query_resource,
+            # The query wasn't finished in the last call to jobs.get, so try
+            # again with a call to both jobs.get & jobs.getQueryResults.
             job_resource,
             query_resource_done,
+            # Even though, the previous jobs.getQueryResults response says
+            # the job is complete, we haven't downloaded the full job status
+            # yet.
+            #
+            # Important: per internal issue 332850329, this reponse has
+            # `Job.status.state = "RUNNING"`. This ensures we are protected
+            # against possible eventual consistency issues where
+            # `jobs.getQueryResults` says jobComplete == True, but our next
+            # call to `jobs.get` still doesn't have
+            # `Job.status.state == "DONE"`.
+            job_resource,
+            # Try again until `Job.status.state == "DONE"`.
+            #
+            # Note: the call to `jobs.getQueryResults` is missing here as
+            # an optimization. We already received a "completed" response, so
+            # we won't learn anything new by calling that API again.
+            job_resource,
             job_resource_done,
+            # When we iterate over the `RowIterator` we return from
+            # `QueryJob.result()`, we make additional calls to
+            # `jobs.getQueryResults` but this time allowing the actual rows
+            # to be returned as well.
             query_page_resource,
         )
         client = _make_client(self.PROJECT, connection=conn)
@@ -925,13 +972,30 @@ class TestQueryJob(_Base):
             },
             timeout=None,
         )
+        # Ensure that we actually made the expected API calls in the sequence
+        # we thought above at the make_connection() call above.
+        #
+        # Note: The responses from jobs.get and jobs.getQueryResults can be
+        # deceptively similar, so this check ensures we actually made the
+        # requests we expected.
         conn.api_request.assert_has_calls(
             [
+                # jobs.get & jobs.getQueryResults because the job just started.
                 reload_call,
                 query_results_call,
+                # jobs.get & jobs.getQueryResults because the query is still
+                # running.
                 reload_call,
                 query_results_call,
+                # We got a jobComplete response from the most recent call to
+                # jobs.getQueryResults, so now call jobs.get until we get
+                # `Jobs.status.state == "DONE"`. This tests a fix for internal
+                # issue b/332850329.
                 reload_call,
+                reload_call,
+                reload_call,
+                # jobs.getQueryResults without `maxResults` set to download
+                # the rows as we iterate over the `RowIterator`.
                 query_page_call,
             ]
         )
@@ -1154,7 +1218,7 @@ class TestQueryJob(_Base):
             query_page_request[1]["query_params"]["maxResults"], max_results
         )
 
-    def test_result_w_retry(self):
+    def test_result_w_custom_retry(self):
         from google.cloud.bigquery.table import RowIterator
 
         query_resource = {
@@ -1178,16 +1242,24 @@ class TestQueryJob(_Base):
         }
 
         connection = make_connection(
+            # Also, for each API request, raise an exception that we know can
+            # be retried. Because of this, for each iteration we do:
+            # jobs.get (x2) & jobs.getQueryResults (x2)
+            exceptions.NotFound("not normally retriable"),
+            job_resource,
+            exceptions.NotFound("not normally retriable"),
+            query_resource,
+            # Query still not done, repeat both.
             exceptions.NotFound("not normally retriable"),
             job_resource,
             exceptions.NotFound("not normally retriable"),
             query_resource,
             exceptions.NotFound("not normally retriable"),
-            job_resource,
+            # Query still not done, repeat both.
+            job_resource_done,
             exceptions.NotFound("not normally retriable"),
             query_resource_done,
-            exceptions.NotFound("not normally retriable"),
-            job_resource_done,
+            # Query finished!
         )
         client = _make_client(self.PROJECT, connection=connection)
         job = self._get_target_class().from_api_repr(job_resource, client)
@@ -1207,7 +1279,10 @@ class TestQueryJob(_Base):
             method="GET",
             path=f"/projects/{self.PROJECT}/queries/{self.JOB_ID}",
             query_params={"maxResults": 0, "location": "asia-northeast1"},
-            timeout=None,
+            # TODO(tswast): Why do we end up setting timeout to
+            # google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT in
+            # some cases but not others?
+            timeout=mock.ANY,
         )
         reload_call = mock.call(
             method="GET",
@@ -1218,16 +1293,24 @@ class TestQueryJob(_Base):
 
         connection.api_request.assert_has_calls(
             [
+                # See make_connection() call above for explanation of the
+                # expected API calls.
+                #
+                # Query not done.
                 reload_call,
                 reload_call,
                 query_results_call,
                 query_results_call,
+                # Query still not done.
                 reload_call,
                 reload_call,
                 query_results_call,
                 query_results_call,
+                # Query done!
                 reload_call,
                 reload_call,
+                query_results_call,
+                query_results_call,
             ]
         )
 

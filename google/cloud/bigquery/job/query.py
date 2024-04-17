@@ -1528,7 +1528,7 @@ class QueryJob(_AsyncJob):
                 if restart_query_job:
                     restart_query_job = False
 
-                    # The orinal job is failed. Create a new one.
+                    # The original job has failed. Create a new one.
                     #
                     # Note that we won't get here if retry_do_query is
                     # None, because we won't use a retry.

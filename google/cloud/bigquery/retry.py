@@ -36,7 +36,7 @@ _UNSTRUCTURED_RETRYABLE_TYPES = (
 
 _DEFAULT_RETRY_DEADLINE = 10.0 * 60.0  # 10 minutes
 
-# Allow for a few retries after the API request times out. This relevant for
+# Allow for a few retries after the API request times out. This is relevant for
 # rateLimitExceeded errors, which can be raised either by the Google load
 # balancer or the BigQuery job server.
 _DEFAULT_JOB_DEADLINE = 4.0 * _DEFAULT_RETRY_DEADLINE
@@ -84,7 +84,7 @@ job_retry_reasons = (
 def _job_should_retry(exc):
     # Sometimes we have ambiguous errors, such as 'backendError' which could
     # be due to an API problem or a job problem. For these, make sure we retry
-    # our is_job_done function.
+    # our is_job_done() function.
     #
     # Note: This won't restart the job unless we know for sure it's because of
     # the job status and set restart_query_job = True in that loop. This means

@@ -318,7 +318,7 @@ def _range_element_from_json(value, field):
     if field.element_type in _SUPPORTED_RANGE_ELEMENTS:
         return _CELLDATA_FROM_JSON[field.element_type](value, field.element_type)
     else:
-        raise ValueError(f"Unsupported range field type: {field.element_type}")
+        raise ValueError(f"Unsupported range element type: {field.element_type}")
 
 
 def _range_from_json(value, field):

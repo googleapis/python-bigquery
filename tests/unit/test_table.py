@@ -3497,9 +3497,13 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings(record=True) as warned:
             df = row_iterator.to_dataframe(create_bqstorage_client=False)
 
+        user_warnings = [
+            warning for warning in warned if warning.category is UserWarning
+        ]
+        self.assertEqual(len(user_warnings), 0)
         self.assertEqual(len(df), 4)
 
     @mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm", new=None)
@@ -3521,11 +3525,16 @@ class TestRowIterator(unittest.TestCase):
         api_request = mock.Mock(return_value={"rows": rows})
         row_iterator = self._make_one(_mock_client(), api_request, path, schema)
 
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings(record=True) as warned:
             df = row_iterator.to_dataframe(
                 progress_bar_type="tqdm",
                 create_bqstorage_client=False,
             )
+
+        user_warnings = [
+            warning for warning in warned if warning.category is UserWarning
+        ]
+        self.assertEqual(len(user_warnings), 1)
 
         # Even though the progress bar won't show, downloading the dataframe
         # should still work.

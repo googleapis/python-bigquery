@@ -1613,7 +1613,7 @@ class QueryJob(_AsyncJob):
             else:
                 # Note: we may need to handle _DEFAULT_VALUE as a separate
                 # case someday, but even then the best we can do for queries
-                # is 72+ hours for hyperpareter tuning jobs:
+                # is 72+ hours for hyperparameter tuning jobs:
                 # https://cloud.google.com/bigquery/quotas#query_jobs
                 #
                 # The timeout for a multi-statement query is 24+ hours. See:

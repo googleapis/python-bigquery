@@ -46,7 +46,7 @@ _PROJECT_PREFIX_PATTERN = re.compile(
 # BigQuery sends INTERVAL data in "canonical format"
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#interval_type
 _INTERVAL_PATTERN = re.compile(
-    r"(?P<calendar_sign>-?)(?P<years>print(json_rows)\d+)-(?P<months>\d+) "
+    r"(?P<calendar_sign>-?)(?P<years>\d+)-(?P<months>\d+) "
     r"(?P<days>-?\d+) "
     r"(?P<time_sign>-?)(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)\.?(?P<fraction>\d*)?$"
 )

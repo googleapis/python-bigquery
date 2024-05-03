@@ -1395,6 +1395,7 @@ class Test_field_to_json(unittest.TestCase):
         converted = self._call_fut(field, original)
         self.assertEqual(converted, original)
 
+
 class Test_snake_to_camel_case(unittest.TestCase):
     def _call_fut(self, value):
         from google.cloud.bigquery._helpers import _snake_to_camel_case

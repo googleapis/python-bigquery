@@ -1050,12 +1050,12 @@ class Test_time_to_json(unittest.TestCase):
 
 
 def _make_field(
-        field_type,
-        mode="NULLABLE",
-        name="testing",
-        fields=(),
-        range_element_type=None,
-    ):
+    field_type,
+    mode="NULLABLE",
+    name="testing",
+    fields=(),
+    range_element_type=None,
+):
     from google.cloud.bigquery.schema import SchemaField
 
     return SchemaField(
@@ -1317,8 +1317,6 @@ class Test_range_field_to_json(unittest.TestCase):
         self.assertEqual(converted, expected)
 
     def test_w_timestamp_float(self):
-        from google.cloud._helpers import UTC
-
         field = _make_field("RANGE", range_element_type="TIMESTAMP")
         original = {"start": 12.34567}
         converted = self._call_fut(field.range_element_type, original)

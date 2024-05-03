@@ -542,13 +542,17 @@ def _range_element_to_json(value, element_type=None):
             # We do not enforce range element value to be valid to reduce
             # redundancy with backend.
             return value
-    elif element_type and element_type.element_type.upper() in _SUPPORTED_RANGE_ELEMENTS:
+    elif (
+        element_type and element_type.element_type.upper() in _SUPPORTED_RANGE_ELEMENTS
+    ):
         converter = _SCALAR_VALUE_TO_JSON_ROW.get(element_type.element_type.upper())
         return converter(value)
     else:
-        raise ValueError(f"Unsupported RANGE element type {element_type}, or " 
-                         "element type is empty. Must be DATE, DATETIME, or "
-                         "TIMESTAMP")
+        raise ValueError(
+            f"Unsupported RANGE element type {element_type}, or "
+            "element type is empty. Must be DATE, DATETIME, or "
+            "TIMESTAMP"
+        )
 
 
 def _range_field_to_json(range_element_type, value):
@@ -564,8 +568,9 @@ def _range_field_to_json(range_element_type, value):
         start = value.get("start")
         end = value.get("end")
     else:
-        raise ValueError(f"Unsupported type of RANGE value {value}, must be "
-                         "string or dict")
+        raise ValueError(
+            f"Unsupported type of RANGE value {value}, must be " "string or dict"
+        )
 
     start = _range_element_to_json(start, range_element_type)
     end = _range_element_to_json(end, range_element_type)

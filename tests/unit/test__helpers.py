@@ -1389,6 +1389,11 @@ class Test_field_to_json(unittest.TestCase):
         converted = self._call_fut(field, original)
         self.assertEqual(converted, str(original))
 
+    def test_w_range(self):
+        field = _make_field("RANGE", range_element_type="DATE")
+        original = {"start": "2016-12-03", "end": "2024-12-03"}
+        converted = self._call_fut(field, original)
+        self.assertEqual(converted, original)
 
 class Test_snake_to_camel_case(unittest.TestCase):
     def _call_fut(self, value):

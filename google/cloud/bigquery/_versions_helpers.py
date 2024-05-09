@@ -26,6 +26,9 @@ _MIN_BQ_STORAGE_VERSION = packaging.version.Version("2.0.0")
 _BQ_STORAGE_OPTIONAL_READ_SESSION_VERSION = packaging.version.Version("2.6.0")
 _MIN_PANDAS_VERSION = packaging.version.Version("1.1.0")
 
+_MIN_PANDAS_VERSION_RANGE = packaging.version.Version("1.5.0")
+_MIN_PYARROW_VERSION_RANGE = packaging.version.Version("10.0.1")
+
 
 class PyarrowVersions:
     """Version comparisons for pyarrow package."""
@@ -234,3 +237,10 @@ class PandasVersions:
 
 
 PANDAS_VERSIONS = PandasVersions()
+
+SUPPORTS_RANGE_PYARROW = (
+    PANDAS_VERSIONS.try_import() is not None
+    and PANDAS_VERSIONS.installed_version >= _MIN_PANDAS_VERSION_RANGE
+    and PYARROW_VERSIONS.try_import() is not None
+    and PYARROW_VERSIONS.installed_version >= _MIN_PYARROW_VERSION_RANGE
+)

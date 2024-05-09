@@ -238,6 +238,10 @@ class PandasVersions:
 
 PANDAS_VERSIONS = PandasVersions()
 
+# Since RANGE support in pandas requires specific versions
+# of both pyarrow and pandas, we make this a separate
+# constant instead of as a property of PANDAS_VERSIONS
+# or PYARROW_VERSIONS.
 SUPPORTS_RANGE_PYARROW = (
     PANDAS_VERSIONS.try_import() is not None
     and PANDAS_VERSIONS.installed_version >= _MIN_PANDAS_VERSION_RANGE

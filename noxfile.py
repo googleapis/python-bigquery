@@ -59,6 +59,7 @@ nox.options.sessions = [
 import time
 from functools import wraps
 
+
 def timed(func):
     """This decorator prints the execution time for the decorated function."""
 
@@ -69,17 +70,18 @@ def timed(func):
         result = func(*args, **kwargs)
         end = time.time()
         total_seconds = round(end - start)
-        hours = total_seconds // 3600     # Integer division to get hours
+        hours = total_seconds // 3600  # Integer division to get hours
         remaining_seconds = total_seconds % 3600  # Modulo to find remaining seconds
         minutes = remaining_seconds // 60
         seconds = remaining_seconds % 60
         human_time = f"{hours:}:{minutes:0>2}:{seconds:0>2}"
         print(f"session ran in {total_seconds} seconds ({human_time})")
 
-        #logger.debug("{} ran in {}s".format(func.__name__, round(end - start, 2)))
+        # logger.debug("{} ran in {}s".format(func.__name__, round(end - start, 2)))
         return result
 
     return wrapper
+
 
 def default(session, install_extras=True):
     """Default unit test session.

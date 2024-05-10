@@ -56,6 +56,30 @@ nox.options.sessions = [
     "docs",
 ]
 
+import time
+from functools import wraps
+
+def timed(func):
+    """This decorator prints the execution time for the decorated function."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print("Starting session timer")
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        total_seconds = round(end - start)
+        hours = total_seconds // 3600     # Integer division to get hours
+        remaining_seconds = total_seconds % 3600  # Modulo to find remaining seconds
+        minutes = remaining_seconds // 60
+        seconds = remaining_seconds % 60
+        human_time = f"{hours:}:{minutes:0>2}:{seconds:0>2}"
+        print(f"session ran in {total_seconds} seconds ({human_time})")
+
+        #logger.debug("{} ran in {}s".format(func.__name__, round(end - start, 2)))
+        return result
+
+    return wrapper
 
 def default(session, install_extras=True):
     """Default unit test session.
@@ -105,6 +129,7 @@ def default(session, install_extras=True):
 
 
 @nox.session(python=UNIT_TEST_PYTHON_VERSIONS)
+@timed
 def unit(session):
     """Run the unit test suite."""
 
@@ -112,6 +137,7 @@ def unit(session):
 
 
 @nox.session(python=[UNIT_TEST_PYTHON_VERSIONS[0], UNIT_TEST_PYTHON_VERSIONS[-1]])
+@timed
 def unit_noextras(session):
     """Run the unit test suite."""
 
@@ -129,6 +155,7 @@ def unit_noextras(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
+@timed
 def mypy(session):
     """Run type checks with mypy."""
 
@@ -151,6 +178,7 @@ def mypy(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
+@timed
 def pytype(session):
     """Run type checks with pytype."""
     # An indirect dependecy attrs==21.1.0 breaks the check, and installing a less
@@ -169,6 +197,7 @@ def pytype(session):
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
+@timed
 def system(session):
     """Run the system test suite."""
 
@@ -221,6 +250,7 @@ def system(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
+@timed
 def mypy_samples(session):
     """Run type checks with mypy."""
 
@@ -260,6 +290,7 @@ def mypy_samples(session):
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
+@timed
 def snippets(session):
     """Run the snippets test suite."""
 
@@ -299,6 +330,7 @@ def snippets(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
+@timed
 def cover(session):
     """Run the final coverage report.
 
@@ -312,6 +344,7 @@ def cover(session):
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
+@timed
 def prerelease_deps(session):
     """Run all tests with prerelease versions of dependencies installed.
 
@@ -402,6 +435,7 @@ def prerelease_deps(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
+@timed
 def lint(session):
     """Run linters.
 
@@ -424,6 +458,7 @@ def lint(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
+@timed
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
@@ -436,6 +471,7 @@ def lint_setup_py(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
+@timed
 def blacken(session):
     """Run black.
     Format code to uniform standard.
@@ -450,6 +486,7 @@ def blacken(session):
 
 
 @nox.session(python="3.9")
+@timed
 def docs(session):
     """Build the docs."""
 
@@ -486,6 +523,7 @@ def docs(session):
 
 
 @nox.session(python="3.10")
+@timed
 def docfx(session):
     """Build the docfx yaml files for this library."""
 

@@ -108,7 +108,6 @@ def default(session, install_extras=True):
 
 
 @nox.session(python=UNIT_TEST_PYTHON_VERSIONS)
-@timed
 def unit(session):
     """Run the unit test suite."""
 
@@ -116,7 +115,6 @@ def unit(session):
 
 
 @nox.session(python=[UNIT_TEST_PYTHON_VERSIONS[0], UNIT_TEST_PYTHON_VERSIONS[-1]])
-@timed
 def unit_noextras(session):
     """Run the unit test suite."""
 
@@ -134,7 +132,6 @@ def unit_noextras(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
-@timed
 def mypy(session):
     """Run type checks with mypy."""
 
@@ -153,7 +150,6 @@ def mypy(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
-@timed
 def pytype(session):
     """Run type checks with pytype."""
     # An indirect dependecy attrs==21.1.0 breaks the check, and installing a less
@@ -168,7 +164,6 @@ def pytype(session):
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
-@timed
 def system(session):
     """Run the system test suite."""
 
@@ -221,7 +216,6 @@ def system(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
-@timed
 def mypy_samples(session):
     """Run type checks with mypy."""
 
@@ -257,7 +251,6 @@ def mypy_samples(session):
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
-@timed
 def snippets(session):
     """Run the snippets test suite."""
 
@@ -297,7 +290,6 @@ def snippets(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
-@timed
 def cover(session):
     """Run the final coverage report.
 
@@ -311,7 +303,6 @@ def cover(session):
 
 
 @nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
-@timed
 def prerelease_deps(session):
     """Run all tests with prerelease versions of dependencies installed.
 
@@ -402,7 +393,6 @@ def prerelease_deps(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
-@timed
 def lint(session):
     """Run linters.
 
@@ -421,7 +411,6 @@ def lint(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
-@timed
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
@@ -430,7 +419,6 @@ def lint_setup_py(session):
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
-@timed
 def blacken(session):
     """Run black.
     Format code to uniform standard.
@@ -441,7 +429,6 @@ def blacken(session):
 
 
 @nox.session(python="3.9")
-@timed
 def docs(session):
     """Build the docs."""
 
@@ -478,7 +465,6 @@ def docs(session):
 
 
 @nox.session(python="3.10")
-@timed
 def docfx(session):
     """Build the docfx yaml files for this library."""
 

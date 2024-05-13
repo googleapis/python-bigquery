@@ -60,29 +60,6 @@ import time
 from functools import wraps
 
 
-def timed(func):
-    """This decorator prints the execution time for the decorated function."""
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        print("Starting session timer")
-        start = time.time()
-        result = func(*args, **kwargs)
-        end = time.time()
-        total_seconds = round(end - start)
-        hours = total_seconds // 3600  # Integer division to get hours
-        remaining_seconds = total_seconds % 3600  # Modulo to find remaining seconds
-        minutes = remaining_seconds // 60
-        seconds = remaining_seconds % 60
-        human_time = f"{hours:}:{minutes:0>2}:{seconds:0>2}"
-        print(f"session ran in {total_seconds} seconds ({human_time})")
-
-        # logger.debug("{} ran in {}s".format(func.__name__, round(end - start, 2)))
-        return result
-
-    return wrapper
-
-
 def default(session, install_extras=True):
     """Default unit test session.
 
@@ -161,10 +138,6 @@ def unit_noextras(session):
 def mypy(session):
     """Run type checks with mypy."""
 
-    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
-    # if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
-    #    session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
-
     session.install("-e", ".[all]")
     session.install(MYPY_VERSION)
 
@@ -187,10 +160,6 @@ def pytype(session):
     # recent version avoids the error until a possibly better fix is found.
     # https://github.com/googleapis/python-bigquery/issues/655
 
-    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
-    # if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
-    #   session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
-
     session.install("attrs==20.3.0")
     session.install("-e", ".[all]")
     session.install(PYTYPE_VERSION)
@@ -208,8 +177,8 @@ def system(session):
     )
 
     # Check the value of `RUN_SYSTEM_TESTS` env var. It defaults to true.
-    # if os.environ.get("RUN_SYSTEM_TESTS", "true") == "false":
-    #    session.skip("RUN_SYSTEM_TESTS is set to false, skipping")
+    if os.environ.get("RUN_SYSTEM_TESTS", "true") == "false":
+        session.skip("RUN_SYSTEM_TESTS is set to false, skipping")
 
     # Sanity check: Only run system tests if the environment variable is set.
     if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):
@@ -256,10 +225,6 @@ def system(session):
 def mypy_samples(session):
     """Run type checks with mypy."""
 
-    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
-    # if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
-    #     session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
-
     session.install("pytest")
     for requirements_path in CURRENT_DIRECTORY.glob("samples/*/requirements.txt"):
         session.install("-r", str(requirements_path))
@@ -297,8 +262,8 @@ def snippets(session):
     """Run the snippets test suite."""
 
     # Check the value of `RUN_SNIPPETS_TESTS` env var. It defaults to true.
-    # if os.environ.get("RUN_SNIPPETS_TESTS", "true") == "false":
-    #     session.skip("RUN_SNIPPETS_TESTS is set to false, skipping")
+    if os.environ.get("RUN_SNIPPETS_TESTS", "true") == "false":
+        session.skip("RUN_SNIPPETS_TESTS is set to false, skipping")
 
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
@@ -445,10 +410,6 @@ def lint(session):
     serious code quality issues.
     """
 
-    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
-    # if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
-    #     session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
-
     session.install("flake8", BLACK_VERSION)
     session.install("-e", ".")
     session.run("flake8", os.path.join("google", "cloud", "bigquery"))
@@ -464,10 +425,6 @@ def lint(session):
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
-    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
-    # if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
-    #    session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
-
     session.install("docutils", "Pygments")
     session.run("python", "setup.py", "check", "--restructuredtext", "--strict")
 
@@ -478,10 +435,6 @@ def blacken(session):
     """Run black.
     Format code to uniform standard.
     """
-
-    # Check the value of `RUN_LINTING_TYPING_TESTS` env var. It defaults to true.
-    # if os.environ.get("RUN_LINTING_TYPING_TESTS", "true") == "false":
-    #     session.skip("RUN_LINTING_TYPING_TESTS is set to false, skipping")
 
     session.install(BLACK_VERSION)
     session.run("black", *BLACK_PATHS)

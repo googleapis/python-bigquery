@@ -56,9 +56,6 @@ nox.options.sessions = [
     "docs",
 ]
 
-import time
-from functools import wraps
-
 
 def default(session, install_extras=True):
     """Default unit test session.

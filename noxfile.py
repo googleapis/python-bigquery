@@ -48,10 +48,9 @@ def _calculate_duration(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print("Starting session timer")
-        start = time.time()
+        start = time.monotonic()
         result = func(*args, **kwargs)
-        end = time.time()
+        end = time.monotonic()
         total_seconds = round(end - start)
         hours = total_seconds // 3600     # Integer division to get hours
         remaining_seconds = total_seconds % 3600  # Modulo to find remaining seconds
@@ -59,10 +58,7 @@ def _calculate_duration(func):
         seconds = remaining_seconds % 60
         human_time = f"{hours:}:{minutes:0>2}:{seconds:0>2}"
         print(f"Session ran in {total_seconds} seconds ({human_time})")
-
-        #logger.debug("{} ran in {}s".format(func.__name__, round(end - start, 2)))
         return result
-
     return wrapper
 
 

@@ -52,13 +52,14 @@ def _calculate_duration(func):
         result = func(*args, **kwargs)
         end = time.monotonic()
         total_seconds = round(end - start)
-        hours = total_seconds // 3600     # Integer division to get hours
+        hours = total_seconds // 3600  # Integer division to get hours
         remaining_seconds = total_seconds % 3600  # Modulo to find remaining seconds
         minutes = remaining_seconds // 60
         seconds = remaining_seconds % 60
         human_time = f"{hours:}:{minutes:0>2}:{seconds:0>2}"
         print(f"Session ran in {total_seconds} seconds ({human_time})")
         return result
+
     return wrapper
 
 

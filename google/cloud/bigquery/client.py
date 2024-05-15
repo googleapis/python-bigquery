@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Client for interacting with the Google BigQuery API."""
+"""Client for interacting with the Google BigQuery V2 API."""
 
 from __future__ import absolute_import
 from __future__ import division

@@ -108,7 +108,10 @@ _RANGE_PYARROW_WARNING = (
 
 # How many of the total rows need to be downloaded already for us to skip
 # calling the BQ Storage API?
-ALMOST_COMPLETELY_CACHED_RATIO = 0.333
+# In microbenchmarks, the first full page will be about 10 MB. If a page is
+# about 2 MB, then it's the same speed or faster to download all the results
+# using the BigQuery Storage Read API.
+ALMOST_COMPLETELY_CACHED_RATIO = 10 / (10 + 2)
 
 
 def _reference_getter(table):

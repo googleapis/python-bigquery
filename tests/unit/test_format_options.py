@@ -54,6 +54,7 @@ class TestParquetOptions:
         )
         assert not config.enum_as_string
         assert config.enable_list_inference
+        assert config.map_target_type is None
 
     def test_to_api_repr(self):
         config = self._get_target_class()()

@@ -63,4 +63,8 @@ class TestParquetOptions:
         config.map_target_type = "ARRAY_OF_STRUCT"
 
         result = config.to_api_repr()
-        assert result == {"enumAsString": True, "enableListInference": False, "mapTargetType": "ARRAY_OF_STRUCT"}
+        assert result == {
+            "enumAsString": True,
+            "enableListInference": False,
+            "mapTargetType": "ARRAY_OF_STRUCT",
+        }

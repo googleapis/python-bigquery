@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import logging
-from contextlib import contextmanager
+from contextlib import contextmanager, asynccontextmanager
 from google.api_core.exceptions import GoogleAPICallError  # type: ignore
 
 logger = logging.getLogger(__name__)
@@ -78,6 +78,37 @@ def create_span(name, attributes=None, client=None, job_ref=None):
 
     # yield new span value
     with tracer.start_as_current_span(name=name, attributes=final_attributes) as span:
+        try:
+            yield span
+        except GoogleAPICallError as error:
+            if error.code is not None:
+                span.set_status(Status(http_status_to_status_code(error.code)))
+            raise
+
+
+@asynccontextmanager
+async def async_create_span(name, attributes=None, client=None, job_ref=None):
+    """Asynchronous context manager for creating and exporting OpenTelemetry spans."""
+    global _warned_telemetry
+    final_attributes = _get_final_span_attributes(attributes, client, job_ref)
+
+    if not HAS_OPENTELEMETRY:
+        if not _warned_telemetry:
+            logger.debug(
+                "This service is instrumented using OpenTelemetry. "
+                "OpenTelemetry or one of its components could not be imported; "
+                "please add compatible versions of opentelemetry-api and "
+                "opentelemetry-instrumentation packages in order to get BigQuery "
+                "Tracing data."
+            )
+            _warned_telemetry = True
+        yield None
+        return
+    tracer = trace.get_tracer(__name__)
+
+    async with tracer.start_as_current_span(
+        name=name, attributes=final_attributes
+    ) as span:
         try:
             yield span
         except GoogleAPICallError as error:

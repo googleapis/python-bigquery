@@ -57,6 +57,8 @@ else:
 import google.api_core.exceptions
 from google.api_core.page_iterator import HTTPIterator
 
+# from google.api_core.page_iterator_async import AsyncHTTPIterator <- when supported in google api core
+
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import _pandas_helpers
@@ -2563,6 +2565,10 @@ class RowIterator(HTTPIterator):
         return geopandas.GeoDataFrame(
             df, crs=_COORDINATE_REFERENCE_SYSTEM, geometry=geography_column
         )
+
+
+# class AsyncRowIterator(AsyncHTTPIterator):
+#     pass
 
 
 class _EmptyRowIterator(RowIterator):

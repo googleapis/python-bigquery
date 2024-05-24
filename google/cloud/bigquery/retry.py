@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from google.api_core import exceptions
-from google.api_core import retry
+from google.api_core import retry, retry_async
 from google.auth import exceptions as auth_exceptions  # type: ignore
 import requests.exceptions
 
@@ -140,3 +140,12 @@ DEFAULT_JOB_RETRY = retry.Retry(
 """
 The default job retry object.
 """
+
+DEFAULT_ASYNC_RETRY = retry_async.AsyncRetry(
+    predicate=_should_retry, deadline=_DEFAULT_RETRY_DEADLINE
+)  # deadline is deprecated
+
+DEFAULT_ASYNC_JOB_RETRY = retry_async.AsyncRetry(
+    predicate=_job_should_retry,
+    deadline=_DEFAULT_JOB_DEADLINE,  # deadline is deprecated
+)

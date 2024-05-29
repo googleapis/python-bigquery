@@ -30,20 +30,18 @@ from .helpers import make_client, make_connection
 
 
 _RETRY_NOT_FOUND = {
-    "job_retry":
-        google.api_core.retry.Retry(
-            predicate=google.api_core.retry.if_exception_type(
-                google.api_core.exceptions.NotFound,
-            ),
+    "job_retry": google.api_core.retry.Retry(
+        predicate=google.api_core.retry.if_exception_type(
+            google.api_core.exceptions.NotFound,
         ),
+    ),
 }
 _RETRY_BAD_REQUEST = {
-    "job_retry":
-        google.api_core.retry.Retry(
-            predicate=google.api_core.retry.if_exception_type(
-                google.api_core.exceptions.BadRequest,
-            ),
+    "job_retry": google.api_core.retry.Retry(
+        predicate=google.api_core.retry.if_exception_type(
+            google.api_core.exceptions.BadRequest,
         ),
+    ),
 }
 
 
@@ -86,9 +84,18 @@ def test_retry_failed_jobs(sleep, reason, job_retry, result_retry):
     client = make_client()
     err = dict(reason=reason)
     conn = client._connection = make_connection(
-        dict(status=dict(state="DONE", errors=[err], errorResult=err), jobReference={"jobId": "id_1"}),
-        dict(status=dict(state="DONE", errors=[err], errorResult=err), jobReference={"jobId": "id_1"}),
-        dict(status=dict(state="DONE", errors=[err], errorResult=err), jobReference={"jobId": "id_1"}),
+        dict(
+            status=dict(state="DONE", errors=[err], errorResult=err),
+            jobReference={"jobId": "id_1"},
+        ),
+        dict(
+            status=dict(state="DONE", errors=[err], errorResult=err),
+            jobReference={"jobId": "id_1"},
+        ),
+        dict(
+            status=dict(state="DONE", errors=[err], errorResult=err),
+            jobReference={"jobId": "id_1"},
+        ),
         dict(status=dict(state="DONE"), jobReference={"jobId": "id_2"}),
         dict(rows=[{"f": [{"v": "1"}]}], totalRows="1"),
     )
@@ -116,7 +123,7 @@ def test_retry_failed_jobs(sleep, reason, job_retry, result_retry):
 
     # We can ask for the result again:
     conn = client._connection = make_connection(
-        dict(rows=[{"f": [{"v": "1"}]}], totalRows="1"), 
+        dict(rows=[{"f": [{"v": "1"}]}], totalRows="1"),
     )
     result = job.result()
 

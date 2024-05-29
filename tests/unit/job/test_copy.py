@@ -531,10 +531,10 @@ class TestCopyJob(_Base):
                 "path": PATH,
                 "job_id": self.JOB_ID,
                 "location": None,
-            }, 
+            },
             client2,
             None,
-            )
+        )
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(

@@ -984,6 +984,7 @@ class Test_AsyncJob(unittest.TestCase):
 
     def test_result_default_wo_state(self):
         from google.cloud.bigquery.retry import DEFAULT_GET_JOB_TIMEOUT
+
         begun_job_resource = _make_job_resource(
             job_id=self.JOB_ID, project_id=self.PROJECT, location="US", started=True
         )

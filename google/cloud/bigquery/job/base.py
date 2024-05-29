@@ -831,9 +831,11 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         elif isinstance(timeout, (int, float)):
             kwargs["timeout"] = timeout
         else:
-            raise ValueError(f"Unsupported timeout type {type(timeout)}. "
-                             "Must be float, int, None, or "
-                             "google.api_core.future.polling.PollingFuture._DEFAULT_VALUE.")
+            raise ValueError(
+                f"Unsupported timeout type {type(timeout)}. "
+                "Must be float, int, None, or "
+                "google.api_core.future.polling.PollingFuture._DEFAULT_VALUE."
+            )
 
         got_job = client.get_job(
             self,

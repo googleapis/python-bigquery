@@ -2166,7 +2166,7 @@ class TestQueryJob(_Base):
                 "path": PATH,
                 "job_id": self.JOB_ID,
                 "location": None,
-            }, 
+            },
             client,
             None,
         )
@@ -2207,7 +2207,7 @@ class TestQueryJob(_Base):
                 "path": PATH,
                 "job_id": self.JOB_ID,
                 "location": None,
-            }, 
+            },
             client2,
             None,
         )
@@ -2245,7 +2245,7 @@ class TestQueryJob(_Base):
                 "path": PATH,
                 "job_id": self.JOB_ID,
                 "location": None,
-            }, 
+            },
             client,
             None,
         )

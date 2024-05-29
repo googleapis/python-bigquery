@@ -28,6 +28,7 @@ import requests
 from google.cloud.bigquery.client import _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS
 import google.cloud.bigquery._job_helpers
 import google.cloud.bigquery.query
+from google.cloud.bigquery.retry import DEFAULT_GET_JOB_TIMEOUT
 from google.cloud.bigquery.table import _EmptyRowIterator
 
 from ..helpers import make_connection
@@ -959,8 +960,8 @@ class TestQueryJob(_Base):
         reload_call = mock.call(
             method="GET",
             path=f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}",
-            query_params={"location": "EU"},
-            timeout=None,
+            query_params={"projection": "full", "location": "EU"},
+            timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
         query_page_call = mock.call(
             method="GET",
@@ -1104,8 +1105,8 @@ class TestQueryJob(_Base):
         conn.api_request.assert_called_once_with(
             method="GET",
             path=job_path,
-            query_params={},
-            timeout=None,
+            query_params={"projection": "full"},
+            timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
 
     def test_result_with_done_jobs_query_response_and_page_size_invalidates_cache(self):
@@ -1287,8 +1288,8 @@ class TestQueryJob(_Base):
         reload_call = mock.call(
             method="GET",
             path=f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}",
-            query_params={"location": "asia-northeast1"},
-            timeout=None,
+            query_params={"projection": "full", "location": "asia-northeast1"},
+            timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
 
         connection.api_request.assert_has_calls(
@@ -1367,7 +1368,7 @@ class TestQueryJob(_Base):
         reload_call = mock.call(
             method="GET",
             path=f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}",
-            query_params={"location": "US"},
+            query_params={"projection": "full", "location": "US"},
             timeout=1.125,
         )
         get_query_results_call = mock.call(
@@ -1412,7 +1413,7 @@ class TestQueryJob(_Base):
         reload_call = mock.call(
             method="GET",
             path=f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}",
-            query_params={"location": "US"},
+            query_params={"projection": "full", "location": "US"},
             timeout=1.125,
         )
         get_query_results_call = mock.call(
@@ -2160,12 +2161,23 @@ class TestQueryJob(_Base):
         ) as final_attributes:
             job.reload()
 
-        final_attributes.assert_called_with({"path": PATH}, client, job)
+        final_attributes.assert_called_with(
+            {
+                "path": PATH,
+                "job_id": self.JOB_ID,
+                "location": None,
+            }, 
+            client,
+            None,
+        )
 
         self.assertNotEqual(job.destination, table_ref)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path=PATH, query_params={}, timeout=None
+            method="GET",
+            path=PATH,
+            query_params={"projection": "full"},
+            timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
         self._verifyResourceProperties(job, RESOURCE)
 
@@ -2190,11 +2202,22 @@ class TestQueryJob(_Base):
         ) as final_attributes:
             job.reload(client=client2)
 
-        final_attributes.assert_called_with({"path": PATH}, client2, job)
+        final_attributes.assert_called_with(
+            {
+                "path": PATH,
+                "job_id": self.JOB_ID,
+                "location": None,
+            }, 
+            client2,
+            None,
+        )
 
         conn1.api_request.assert_not_called()
         conn2.api_request.assert_called_once_with(
-            method="GET", path=PATH, query_params={}, timeout=None
+            method="GET",
+            path=PATH,
+            query_params={"projection": "full"},
+            timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
         self._verifyResourceProperties(job, RESOURCE)
 
@@ -2217,13 +2240,23 @@ class TestQueryJob(_Base):
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
             job.reload(timeout=4.2)
-
-        final_attributes.assert_called_with({"path": PATH}, client, job)
+        final_attributes.assert_called_with(
+            {
+                "path": PATH,
+                "job_id": self.JOB_ID,
+                "location": None,
+            }, 
+            client,
+            None,
+        )
 
         self.assertNotEqual(job.destination, table_ref)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path=PATH, query_params={}, timeout=4.2
+            method="GET",
+            path=PATH,
+            query_params={"projection": "full"},
+            timeout=4.2,
         )
 
     def test_iter(self):

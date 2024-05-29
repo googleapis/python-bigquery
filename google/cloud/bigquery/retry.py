@@ -132,3 +132,8 @@ DEFAULT_JOB_RETRY = retry.Retry(
 """
 The default job retry object.
 """
+
+DEFAULT_GET_JOB_TIMEOUT = 128
+"""
+Default timeout for Client.get_job().
+"""

@@ -20,6 +20,7 @@ from unittest import mock
 from google.api_core import exceptions
 import google.api_core.retry
 from google.api_core.future import polling
+from google.api_core.future.polling import PollingFuture
 import pytest
 
 from ..helpers import make_connection
@@ -709,7 +710,7 @@ class Test_AsyncJob(unittest.TestCase):
         )
 
     def test_reload_defaults(self):
-        from google.cloud.bigquery.retry import DEFAULT_RETRY
+        from google.cloud.bigquery.retry import DEFAULT_RETRY, DEFAULT_GET_JOB_TIMEOUT
 
         resource = {
             "jobReference": {
@@ -729,15 +730,19 @@ class Test_AsyncJob(unittest.TestCase):
 
         call_api.assert_called_once_with(
             DEFAULT_RETRY,
-            span_name="BigQuery.job.reload",
+            span_name="BigQuery.getJob",
             span_attributes={
-                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
+                "job_id": "job-id",
+                "location": "us-central",
             },
-            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
-            query_params={"location": self.LOCATION},
-            timeout=None,
+            query_params={
+                "projection": "full",
+                "location": "us-central",
+            },
+            timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
         self.assertEqual(job._properties, expected)
 
@@ -764,14 +769,15 @@ class Test_AsyncJob(unittest.TestCase):
 
         call_api.assert_called_once_with(
             retry,
-            span_name="BigQuery.job.reload",
+            span_name="BigQuery.getJob",
             span_attributes={
-                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID)
+                "path": "/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
+                "job_id": "job-id",
+                "location": None,
             },
-            job_ref=job,
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
-            query_params={},
+            query_params={"projection": "full"},
             timeout=4.2,
         )
         self.assertEqual(job._properties, expected)
@@ -952,7 +958,10 @@ class Test_AsyncJob(unittest.TestCase):
 
         self.assertFalse(job.done())
 
-        reload_.assert_called_once_with(retry=DEFAULT_RETRY, timeout=None)
+        reload_.assert_called_once_with(
+            retry=DEFAULT_RETRY,
+            timeout=PollingFuture._DEFAULT_VALUE,
+        )
 
     def test_done_explicit_wo_state(self):
         from google.cloud.bigquery.retry import DEFAULT_RETRY
@@ -974,6 +983,7 @@ class Test_AsyncJob(unittest.TestCase):
         self.assertTrue(job.done())
 
     def test_result_default_wo_state(self):
+        from google.cloud.bigquery.retry import DEFAULT_GET_JOB_TIMEOUT
         begun_job_resource = _make_job_resource(
             job_id=self.JOB_ID, project_id=self.PROJECT, location="US", started=True
         )
@@ -1003,12 +1013,17 @@ class Test_AsyncJob(unittest.TestCase):
         reload_call = mock.call(
             method="GET",
             path=f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}",
-            query_params={"location": "US"},
-            timeout=None,
+            query_params={
+                "projection": "full",
+                "location": "US",
+            },
+            timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
         conn.api_request.assert_has_calls([begin_call, begin_call, reload_call])
 
     def test_result_w_retry_wo_state(self):
+        from google.cloud.bigquery.retry import DEFAULT_GET_JOB_TIMEOUT
+
         begun_job_resource = _make_job_resource(
             job_id=self.JOB_ID, project_id=self.PROJECT, location="EU", started=True
         )
@@ -1054,8 +1069,11 @@ class Test_AsyncJob(unittest.TestCase):
         reload_call = mock.call(
             method="GET",
             path=f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}",
-            query_params={"location": "EU"},
-            timeout=None,
+            query_params={
+                "projection": "full",
+                "location": "EU",
+            },
+            timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
         conn.api_request.assert_has_calls(
             [begin_call, begin_call, reload_call, reload_call]

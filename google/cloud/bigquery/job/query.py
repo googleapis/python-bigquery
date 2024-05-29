@@ -23,6 +23,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 from google.api_core import exceptions
 from google.api_core import retry as retries
+from google.api_core.future.polling import PollingFuture
 import requests
 
 from google.cloud.bigquery.dataset import Dataset
@@ -1437,7 +1438,7 @@ class QueryJob(_AsyncJob):
         page_size: Optional[int] = None,
         max_results: Optional[int] = None,
         retry: Optional[retries.Retry] = DEFAULT_RETRY,
-        timeout: Optional[float] = None,
+        timeout: Optional[Union[float, object]] = PollingFuture._DEFAULT_VALUE,
         start_index: Optional[int] = None,
         job_retry: Optional[retries.Retry] = DEFAULT_JOB_RETRY,
     ) -> Union["RowIterator", _EmptyRowIterator]:
@@ -1457,9 +1458,13 @@ class QueryJob(_AsyncJob):
                 is ``DONE``, retrying is aborted early even if the
                 results are not available, as this will not change
                 anymore.
-            timeout (Optional[float]):
+            timeout (Optinal[Union[float, \
+                google.api_core.future.polling.PollingFuture._DEFAULT_VALUE, \
+            ]]):
                 The number of seconds to wait for the underlying HTTP transport
-                before using ``retry``.
+                before using ``retry``. If ``None``, wait indefinitely
+                unless a retriable error is returned. If unset, only the
+                underlying Client.get_job() has timeout.
                 If multiple requests are made under the hood, ``timeout``
                 applies to each individual request.
             start_index (Optional[int]):
@@ -1507,6 +1512,15 @@ class QueryJob(_AsyncJob):
                 # Intentionally omit job_id and query_id since this doesn't
                 # actually correspond to a finished query job.
             )
+
+        # When timeout has default sentinel value, only pass the sentinel
+        # timeout to QueryJob.done(), and use None for the other timeouts.
+        if type(timeout) is object:
+            timeout = None
+            get_job_timeout = PollingFuture._DEFAULT_VALUE
+        else:
+            get_job_timeout = timeout
+
         try:
             retry_do_query = getattr(self, "_retry_do_query", None)
             if retry_do_query is not None:
@@ -1548,7 +1562,7 @@ class QueryJob(_AsyncJob):
                 # rateLimitExceeded errors are ambiguous. We want to know if
                 # the query job failed and not just the call to
                 # jobs.getQueryResults.
-                if self.done(retry=retry, timeout=timeout):
+                if self.done(retry=retry, timeout=get_job_timeout):
                     # If it's already failed, we might as well stop.
                     job_failed_exception = self.exception()
                     if job_failed_exception is not None:

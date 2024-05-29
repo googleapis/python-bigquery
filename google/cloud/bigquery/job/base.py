@@ -19,11 +19,12 @@ import copy
 import http
 import threading
 import typing
-from typing import ClassVar, Dict, Optional, Sequence
+from typing import ClassVar, Dict, Optional, Sequence, Union
 
 from google.api_core import retry as retries
 from google.api_core import exceptions
 import google.api_core.future.polling
+from google.api_core.future.polling import PollingFuture
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery.retry import DEFAULT_RETRY
@@ -801,7 +802,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         self,
         client=None,
         retry: "retries.Retry" = DEFAULT_RETRY,
-        timeout: Optional[float] = None,
+        timeout: Optional[Union[float, object]] = PollingFuture._DEFAULT_VALUE,
     ):
         """API call:  refresh job properties via a GET request.
 
@@ -814,28 +815,34 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
                 ``client`` stored on the current dataset.
 
             retry (Optional[google.api_core.retry.Retry]): How to retry the RPC.
-            timeout (Optional[float]):
+            timeout (Optinal[Union[float, \
+                google.api_core.future.polling.PollingFuture._DEFAULT_VALUE, \
+            ]]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
         """
         client = self._require_client(client)
 
-        extra_params = {}
-        if self.location:
-            extra_params["location"] = self.location
-        span_attributes = {"path": self.path}
+        kwargs = {}
+        if timeout is PollingFuture._DEFAULT_VALUE:
+            pass
+        elif timeout is None:
+            kwargs["timeout"] = None
+        elif isinstance(timeout, (int, float)):
+            kwargs["timeout"] = timeout
+        else:
+            raise ValueError(f"Unsupported timeout type {type(timeout)}. "
+                             "Must be float, int, None, or "
+                             "google.api_core.future.polling.PollingFuture._DEFAULT_VALUE.")
 
-        api_response = client._call_api(
-            retry,
-            span_name="BigQuery.job.reload",
-            span_attributes=span_attributes,
-            job_ref=self,
-            method="GET",
-            path=self.path,
-            query_params=extra_params,
-            timeout=timeout,
+        got_job = client.get_job(
+            self,
+            project=self.project,
+            location=self.location,
+            retry=retry,
+            **kwargs,
         )
-        self._set_properties(api_response)
+        self._set_properties(got_job._properties)
 
     def cancel(
         self,
@@ -913,7 +920,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
     def done(
         self,
         retry: "retries.Retry" = DEFAULT_RETRY,
-        timeout: Optional[float] = None,
+        timeout: Optional[Union[float, object]] = PollingFuture._DEFAULT_VALUE,
         reload: bool = True,
     ) -> bool:
         """Checks if the job is complete.
@@ -922,7 +929,9 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the RPC. If the job state is ``DONE``, retrying is aborted
                 early, as the job will not change anymore.
-            timeout (Optional[float]):
+            timeout (Optinal[Union[float, \
+                google.api_core.future.polling.PollingFuture._DEFAULT_VALUE, \
+            ]]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
             reload (Optional[bool]):

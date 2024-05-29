@@ -823,7 +823,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         """
         client = self._require_client(client)
 
-        kwargs = {}
+        kwargs: Dict[str, any] = {}
         if type(timeout) is object:
             pass
         elif timeout is None:

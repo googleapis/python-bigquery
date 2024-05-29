@@ -824,7 +824,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         client = self._require_client(client)
 
         kwargs = {}
-        if timeout is PollingFuture._DEFAULT_VALUE:
+        if type(timeout) is object:
             pass
         elif timeout is None:
             kwargs["timeout"] = None

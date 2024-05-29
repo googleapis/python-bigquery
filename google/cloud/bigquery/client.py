@@ -53,7 +53,6 @@ import google.api_core.exceptions as core_exceptions
 from google.api_core.iam import Policy
 from google.api_core import page_iterator
 from google.api_core import retry as retries
-from google.api_core.future.polling import PollingFuture
 import google.cloud._helpers  # type: ignore
 from google.cloud import exceptions  # pytype: disable=import-error
 from google.cloud.client import ClientWithProject  # type: ignore  # pytype: disable=import-error
@@ -2141,7 +2140,7 @@ class Client(ClientWithProject):
         project: Optional[str] = None,
         location: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: Union[TimeoutType, object] = DEFAULT_GET_JOB_TIMEOUT,
+        timeout: Optional[Union[TimeoutType, object]] = DEFAULT_GET_JOB_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
         """Fetch a job for the project associated with this client.
 

@@ -19,7 +19,7 @@ import copy
 import http
 import threading
 import typing
-from typing import ClassVar, Dict, Optional, Sequence, Union
+from typing import Any, ClassVar, Dict, Optional, Sequence, Union
 
 from google.api_core import retry as retries
 from google.api_core import exceptions
@@ -823,7 +823,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         """
         client = self._require_client(client)
 
-        kwargs: Dict[str, any] = {}
+        kwargs: Dict[str, Any] = {}
         if type(timeout) is object:
             pass
         elif timeout is None:

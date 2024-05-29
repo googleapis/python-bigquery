@@ -767,6 +767,10 @@ class Test_AsyncJob(unittest.TestCase):
         retry = DEFAULT_RETRY.with_deadline(1)
         job.reload(client=client, retry=retry, timeout=4.2)
 
+        # Unsupported timeout type
+        with pytest.raises(ValueError):
+            job.reload(client=client, retry=retry, timeout="4.2")
+
         call_api.assert_called_once_with(
             retry,
             span_name="BigQuery.getJob",

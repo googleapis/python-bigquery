@@ -219,8 +219,8 @@ def test_retry_connection_error_with_default_retries_and_successful_first_job(
             mock.call(
                 method="GET",
                 path="/projects/PROJECT/jobs/1",
-                query_params={"location": "test-loc"},
-                timeout=None,
+                query_params={"location": "test-loc", "projection": "full"},
+                timeout=google.cloud.bigquery.retry.DEFAULT_GET_JOB_TIMEOUT,
             ),
             # jobs.getQueryResults x2
             mock.call(
@@ -239,8 +239,8 @@ def test_retry_connection_error_with_default_retries_and_successful_first_job(
             mock.call(
                 method="GET",
                 path="/projects/PROJECT/jobs/1",
-                query_params={"location": "test-loc"},
-                timeout=None,
+                query_params={"location": "test-loc", "projection": "full"},
+                timeout=google.cloud.bigquery.retry.DEFAULT_GET_JOB_TIMEOUT,
             ),
             # jobs.getQueryResults
             mock.call(

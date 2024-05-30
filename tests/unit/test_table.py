@@ -2368,7 +2368,7 @@ class TestRowIterator(unittest.TestCase):
             return "bigquery_storage" in name or (
                 fromlist is not None and "bigquery_storage" in fromlist
             )
-
+        # maybe_fail_import() returns ImportError if the predicate is True
         no_bqstorage = maybe_fail_import(predicate=fail_bqstorage_import)
 
         with no_bqstorage, warnings.catch_warnings(record=True) as warned:

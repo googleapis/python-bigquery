@@ -20,8 +20,9 @@ from unittest import mock
 from google.api_core import exceptions
 import google.api_core.retry
 from google.api_core.future import polling
-from google.api_core.future.polling import PollingFuture
 import pytest
+
+from google.cloud.bigquery.retry import POLLING_DEFAULT_VALUE
 
 from ..helpers import make_connection
 
@@ -964,7 +965,7 @@ class Test_AsyncJob(unittest.TestCase):
 
         reload_.assert_called_once_with(
             retry=DEFAULT_RETRY,
-            timeout=PollingFuture._DEFAULT_VALUE,
+            timeout=POLLING_DEFAULT_VALUE,
         )
 
     def test_done_explicit_wo_state(self):

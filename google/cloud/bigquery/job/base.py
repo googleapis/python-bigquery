@@ -24,10 +24,9 @@ from typing import Any, ClassVar, Dict, Optional, Sequence, Union
 from google.api_core import retry as retries
 from google.api_core import exceptions
 import google.api_core.future.polling
-from google.api_core.future.polling import PollingFuture
 
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery.retry import DEFAULT_RETRY
+from google.cloud.bigquery.retry import DEFAULT_RETRY, POLLING_DEFAULT_VALUE
 from google.cloud.bigquery._helpers import _int_or_none
 
 
@@ -802,7 +801,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         self,
         client=None,
         retry: "retries.Retry" = DEFAULT_RETRY,
-        timeout: Optional[Union[float, object]] = PollingFuture._DEFAULT_VALUE,
+        timeout: Optional[Union[float, object]] = POLLING_DEFAULT_VALUE,
     ):
         """API call:  refresh job properties via a GET request.
 
@@ -825,8 +824,11 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
 
         kwargs: Dict[str, Any] = {}
         if type(timeout) is object:
+            # When timeout is the sentinel value, we use the default API-level
+            # timeout at Client.get_job().
             pass
         elif timeout is None:
+            # If timeout is None, wait indefinitely even at API-level.
             kwargs["timeout"] = None
         elif isinstance(timeout, (int, float)):
             kwargs["timeout"] = timeout
@@ -922,7 +924,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
     def done(
         self,
         retry: "retries.Retry" = DEFAULT_RETRY,
-        timeout: Optional[Union[float, object]] = PollingFuture._DEFAULT_VALUE,
+        timeout: Optional[Union[float, object]] = POLLING_DEFAULT_VALUE,
         reload: bool = True,
     ) -> bool:
         """Checks if the job is complete.

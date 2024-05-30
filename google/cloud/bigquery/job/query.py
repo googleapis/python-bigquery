@@ -23,7 +23,6 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 from google.api_core import exceptions
 from google.api_core import retry as retries
-from google.api_core.future.polling import PollingFuture
 import requests
 
 from google.cloud.bigquery.dataset import Dataset
@@ -41,7 +40,11 @@ from google.cloud.bigquery.query import (
     StructQueryParameter,
     UDFResource,
 )
-from google.cloud.bigquery.retry import DEFAULT_RETRY, DEFAULT_JOB_RETRY
+from google.cloud.bigquery.retry import (
+    DEFAULT_RETRY,
+    DEFAULT_JOB_RETRY,
+    POLLING_DEFAULT_VALUE,
+)
 from google.cloud.bigquery.routine import RoutineReference
 from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery.table import _EmptyRowIterator
@@ -1438,7 +1441,7 @@ class QueryJob(_AsyncJob):
         page_size: Optional[int] = None,
         max_results: Optional[int] = None,
         retry: Optional[retries.Retry] = DEFAULT_RETRY,
-        timeout: Optional[Union[float, object]] = PollingFuture._DEFAULT_VALUE,
+        timeout: Optional[Union[float, object]] = POLLING_DEFAULT_VALUE,
         start_index: Optional[int] = None,
         job_retry: Optional[retries.Retry] = DEFAULT_JOB_RETRY,
     ) -> Union["RowIterator", _EmptyRowIterator]:
@@ -1464,9 +1467,8 @@ class QueryJob(_AsyncJob):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``. If ``None``, wait indefinitely
                 unless a retriable error is returned. If unset, only the
-                underlying Client.get_job() has timeout.
-                If multiple requests are made under the hood, ``timeout``
-                applies to each individual request.
+                underlying Client.get_job() API call has timeout, but we still
+                wait indefinitely for the job to finish.
             start_index (Optional[int]):
                 The zero-based index of the starting row to read.
             job_retry (Optional[google.api_core.retry.Retry]):
@@ -1517,7 +1519,7 @@ class QueryJob(_AsyncJob):
         # timeout to QueryJob.done(), and use None for the other timeouts.
         if type(timeout) is object:
             timeout = None
-            get_job_timeout = PollingFuture._DEFAULT_VALUE
+            get_job_timeout = POLLING_DEFAULT_VALUE
         else:
             get_job_timeout = timeout
 

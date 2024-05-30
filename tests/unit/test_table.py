@@ -2362,8 +2362,9 @@ class TestRowIterator(unittest.TestCase):
 
     def test__should_use_bqstorage_returns_false_w_warning_if_missing_dependency(self):
         iterator = self._make_one(first_page_response=None)  # not cached
-
+ 
         def fail_bqstorage_import(name, globals, locals, fromlist, level):
+            """Returns True if bigquery_storage has been imported."""
             # NOTE: *very* simplified, assuming a straightforward absolute import
             return "bigquery_storage" in name or (
                 fromlist is not None and "bigquery_storage" in fromlist

@@ -1461,7 +1461,7 @@ class QueryJob(_AsyncJob):
                 is ``DONE``, retrying is aborted early even if the
                 results are not available, as this will not change
                 anymore.
-            timeout (Optinal[Union[float, \
+            timeout (Optional[Union[float, \
                 google.api_core.future.polling.PollingFuture._DEFAULT_VALUE, \
             ]]):
                 The number of seconds to wait for the underlying HTTP transport

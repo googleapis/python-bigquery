@@ -917,7 +917,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the RPC. If the job state is ``DONE``, retrying is aborted
                 early, as the job will not change anymore.
-            timeout (Optinal[float]):
+            timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
             reload (Optional[bool]):

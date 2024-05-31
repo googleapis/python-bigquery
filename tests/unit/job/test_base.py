@@ -768,25 +768,6 @@ class Test_AsyncJob(unittest.TestCase):
         retry = DEFAULT_RETRY.with_deadline(1)
         job.reload(client=client, retry=retry, timeout=4.2)
 
-    def test_reload_none_timeout(self):
-        from google.cloud.bigquery.retry import DEFAULT_RETRY
-
-        other_project = "other-project-234"
-        resource = {
-            "jobReference": {
-                "jobId": self.JOB_ID,
-                "projectId": self.PROJECT,
-                "location": None,
-            },
-            "configuration": {"test": True},
-        }
-        job = self._set_properties_job()
-        client = _make_client(project=other_project)
-        call_api = client._call_api = mock.Mock()
-        call_api.return_value = resource
-        retry = DEFAULT_RETRY.with_deadline(1)
-        job.reload(client=client, retry=retry, timeout=None)
-
         call_api.assert_called_once_with(
             retry,
             span_name="BigQuery.getJob",
@@ -795,6 +776,41 @@ class Test_AsyncJob(unittest.TestCase):
                 "job_id": "job-id",
                 "location": None,
             },
+            method="GET",
+            path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
+            query_params={"projection": "full"},
+            timeout=4.2,
+        )
+        self.assertEqual(job._properties, expected)
+
+    def test_reload_unsupported_timeout_type(self):
+        from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+        job = self._set_properties_job()
+        client = _make_client(project=self.PROJECT)
+        retry = DEFAULT_RETRY.with_deadline(1)
+
+        with pytest.raises(ValueError):
+            job.reload(client=client, retry=retry, timeout="4.2")
+
+    def test_reload_none_timeout(self):
+        from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+        resource = {
+            "jobReference": {
+                "jobId": self.JOB_ID,
+                "projectId": self.PROJECT,
+                "location": None,
+            },
+            "configuration": {"test": True},
+        }
+        client = _make_client(project=self.PROJECT)
+        conn = client._connection = make_connection(resource)
+        job = self._set_properties_job()
+        retry = DEFAULT_RETRY.with_deadline(1)
+        job.reload(client=client, retry=retry, timeout=None)
+
+        conn.api_request.assert_called_once_with(
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={"projection": "full"},

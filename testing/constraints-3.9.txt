@@ -4,5 +4,6 @@
 #
 # NOTE: Not comprehensive yet, will eventually be maintained semi-automatically by
 # the renovate bot.
+aiohttp==3.6.2
 grpcio==1.47.0
 pyarrow>=4.0.0

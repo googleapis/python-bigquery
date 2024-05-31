@@ -1517,7 +1517,7 @@ class QueryJob(_AsyncJob):
 
         # When timeout has default sentinel value ``object()``, do not pass
         # anything to invoke default timeouts in subsequent calls.
-        kwargs: Dict[str, _helpers.TimeoutType] = {}
+        kwargs: Dict[str, Union[_helpers.TimeoutType, object]] = {}
         if type(timeout) is not object:
             kwargs["timeout"] = timeout
 

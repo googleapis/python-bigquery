@@ -1466,7 +1466,7 @@ class QueryJob(_AsyncJob):
             ]]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``. If ``None``, wait indefinitely
-                unless a retriable error is returned. If unset, only the
+                unless an error is returned. If unset, only the
                 underlying Client.get_job() API call has timeout, but we still
                 wait indefinitely for the job to finish.
             start_index (Optional[int]):

@@ -19,15 +19,18 @@ import copy
 import http
 import threading
 import typing
-from typing import Any, ClassVar, Dict, Optional, Sequence, Union
+from typing import ClassVar, Dict, Optional, Sequence
 
 from google.api_core import retry as retries
 from google.api_core import exceptions
 import google.api_core.future.polling
 
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery.retry import DEFAULT_RETRY, POLLING_DEFAULT_VALUE
 from google.cloud.bigquery._helpers import _int_or_none
+from google.cloud.bigquery.retry import (
+    DEFAULT_GET_JOB_TIMEOUT,
+    DEFAULT_RETRY,
+)
 
 
 _DONE_STATE = "DONE"
@@ -801,7 +804,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         self,
         client=None,
         retry: "retries.Retry" = DEFAULT_RETRY,
-        timeout: Optional[Union[float, object]] = POLLING_DEFAULT_VALUE,
+        timeout: Optional[float] = DEFAULT_GET_JOB_TIMEOUT,
     ):
         """API call:  refresh job properties via a GET request.
 
@@ -814,37 +817,18 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
                 ``client`` stored on the current dataset.
 
             retry (Optional[google.api_core.retry.Retry]): How to retry the RPC.
-            timeout (Optinal[Union[float, \
-                google.api_core.future.polling.PollingFuture._DEFAULT_VALUE, \
-            ]]):
+            timeout (Optinal[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
         """
         client = self._require_client(client)
-
-        kwargs: Dict[str, Any] = {}
-        if type(timeout) is object:
-            # When timeout is the sentinel value, we use the default API-level
-            # timeout at Client.get_job().
-            pass
-        elif timeout is None:
-            # If timeout is None, wait indefinitely even at API-level.
-            kwargs["timeout"] = None
-        elif isinstance(timeout, (int, float)):
-            kwargs["timeout"] = timeout
-        else:
-            raise ValueError(
-                f"Unsupported timeout type {type(timeout)}. "
-                "Must be float, int, None, or "
-                "google.api_core.future.polling.PollingFuture._DEFAULT_VALUE."
-            )
 
         got_job = client.get_job(
             self,
             project=self.project,
             location=self.location,
             retry=retry,
-            **kwargs,
+            timeout=timeout,
         )
         self._set_properties(got_job._properties)
 
@@ -924,7 +908,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
     def done(
         self,
         retry: "retries.Retry" = DEFAULT_RETRY,
-        timeout: Optional[Union[float, object]] = POLLING_DEFAULT_VALUE,
+        timeout: Optional[float] = DEFAULT_GET_JOB_TIMEOUT,
         reload: bool = True,
     ) -> bool:
         """Checks if the job is complete.
@@ -933,9 +917,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the RPC. If the job state is ``DONE``, retrying is aborted
                 early, as the job will not change anymore.
-            timeout (Optinal[Union[float, \
-                google.api_core.future.polling.PollingFuture._DEFAULT_VALUE, \
-            ]]):
+            timeout (Optinal[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
             reload (Optional[bool]):

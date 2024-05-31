@@ -22,7 +22,7 @@ import google.api_core.retry
 from google.api_core.future import polling
 import pytest
 
-from google.cloud.bigquery.retry import POLLING_DEFAULT_VALUE
+from google.cloud.bigquery.retry import DEFAULT_GET_JOB_TIMEOUT
 
 from ..helpers import make_connection
 
@@ -783,16 +783,6 @@ class Test_AsyncJob(unittest.TestCase):
         )
         self.assertEqual(job._properties, expected)
 
-    def test_reload_unsupported_timeout_type(self):
-        from google.cloud.bigquery.retry import DEFAULT_RETRY
-
-        job = self._set_properties_job()
-        client = _make_client(project=self.PROJECT)
-        retry = DEFAULT_RETRY.with_deadline(1)
-
-        with pytest.raises(ValueError):
-            job.reload(client=client, retry=retry, timeout="4.2")
-
     def test_reload_none_timeout(self):
         from google.cloud.bigquery.retry import DEFAULT_RETRY
 
@@ -995,7 +985,7 @@ class Test_AsyncJob(unittest.TestCase):
 
         reload_.assert_called_once_with(
             retry=DEFAULT_RETRY,
-            timeout=POLLING_DEFAULT_VALUE,
+            timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
 
     def test_done_explicit_wo_state(self):

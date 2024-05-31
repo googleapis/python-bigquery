@@ -1515,13 +1515,11 @@ class QueryJob(_AsyncJob):
                 # actually correspond to a finished query job.
             )
 
-        # When timeout has default sentinel value, only pass the sentinel
-        # timeout to QueryJob.done(), and use None for the other timeouts.
-        if type(timeout) is object:
-            timeout = None
-            get_job_timeout = POLLING_DEFAULT_VALUE
-        else:
-            get_job_timeout = timeout
+        # When timeout has default sentinel value ``object()``, do not pass
+        # anything to invoke default timeouts in subsequent calls.
+        kwargs: Dict[str, _helpers.TimeoutType] = {}
+        if type(timeout) is not object:
+            kwargs["timeout"] = timeout
 
         try:
             retry_do_query = getattr(self, "_retry_do_query", None)
@@ -1564,7 +1562,7 @@ class QueryJob(_AsyncJob):
                 # rateLimitExceeded errors are ambiguous. We want to know if
                 # the query job failed and not just the call to
                 # jobs.getQueryResults.
-                if self.done(retry=retry, timeout=get_job_timeout):
+                if self.done(retry=retry, **kwargs):
                     # If it's already failed, we might as well stop.
                     job_failed_exception = self.exception()
                     if job_failed_exception is not None:
@@ -1601,14 +1599,14 @@ class QueryJob(_AsyncJob):
                         # response from the REST API. This ensures we aren't
                         # making any extra API calls if the previous loop
                         # iteration fetched the finished job.
-                        self._reload_query_results(retry=retry, timeout=timeout)
+                        self._reload_query_results(retry=retry, **kwargs)
                         return True
 
                 # Call jobs.getQueryResults with max results set to 0 just to
                 # wait for the query to finish. Unlike most methods,
                 # jobs.getQueryResults hangs as long as it can to ensure we
                 # know when the query has finished as soon as possible.
-                self._reload_query_results(retry=retry, timeout=timeout)
+                self._reload_query_results(retry=retry, **kwargs)
 
                 # Even if the query is finished now according to
                 # jobs.getQueryResults, we'll want to reload the job status if
@@ -1698,10 +1696,10 @@ class QueryJob(_AsyncJob):
             max_results=max_results,
             start_index=start_index,
             retry=retry,
-            timeout=timeout,
             query_id=self.query_id,
             first_page_response=first_page_response,
             num_dml_affected_rows=self._query_results.num_dml_affected_rows,
+            **kwargs,
         )
         rows._preserve_order = _contains_order_by(self.query)
         return rows

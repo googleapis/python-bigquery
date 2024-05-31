@@ -82,6 +82,7 @@ from google.cloud.bigquery._helpers import _DEFAULT_HOST_TEMPLATE
 from google.cloud.bigquery._helpers import _DEFAULT_UNIVERSE
 from google.cloud.bigquery._helpers import _validate_universe
 from google.cloud.bigquery._helpers import _get_client_universe
+from google.cloud.bigquery._helpers import TimeoutType
 from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
@@ -124,7 +125,6 @@ pandas = (
     _versions_helpers.PANDAS_VERSIONS.try_import()
 )  # mypy check fails because pandas import is outside module, there are type: ignore comments related to this
 
-TimeoutType = Union[float, None]
 ResumableTimeoutType = Union[
     None, float, Tuple[float, float]
 ]  # for resumable media methods

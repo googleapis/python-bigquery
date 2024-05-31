@@ -1109,6 +1109,36 @@ class TestQueryJob(_Base):
             timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
 
+    def test_result_with_none_timeout(self):
+        # Verifies that with an intentional None timeout, get job uses None
+        # instead of the default timeout.
+        job_resource = self._make_resource(started=True, ended=True, location="EU")
+        conn = make_connection(job_resource)
+        client = _make_client(self.PROJECT, connection=conn)
+        query_resource_done = {
+            "jobComplete": True,
+            "jobReference": {"projectId": self.PROJECT, "jobId": self.JOB_ID},
+            "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
+            "rows": [{"f": [{"v": "abc"}]}],
+            "totalRows": "1",
+        }
+        job = google.cloud.bigquery._job_helpers._to_query_job(
+            client,
+            "SELECT 'abc' AS col1",
+            request_config=None,
+            query_response=query_resource_done,
+        )
+
+        job.result(timeout=None)
+
+        job_path = f"/projects/{self.PROJECT}/jobs/{self.JOB_ID}"
+        conn.api_request.assert_called_once_with(
+            method="GET",
+            path=job_path,
+            query_params={"projection": "full"},
+            timeout=None,
+        )
+
     def test_result_with_done_jobs_query_response_and_page_size_invalidates_cache(self):
         """We don't call jobs.query with a page size, so if the user explicitly
         requests a certain size, invalidate the cache.

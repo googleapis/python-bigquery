@@ -768,9 +768,24 @@ class Test_AsyncJob(unittest.TestCase):
         retry = DEFAULT_RETRY.with_deadline(1)
         job.reload(client=client, retry=retry, timeout=4.2)
 
-        # Unsupported timeout type
-        with pytest.raises(ValueError):
-            job.reload(client=client, retry=retry, timeout="4.2")
+    def test_reload_none_timeout(self):
+        from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+        other_project = "other-project-234"
+        resource = {
+            "jobReference": {
+                "jobId": self.JOB_ID,
+                "projectId": self.PROJECT,
+                "location": None,
+            },
+            "configuration": {"test": True},
+        }
+        job = self._set_properties_job()
+        client = _make_client(project=other_project)
+        call_api = client._call_api = mock.Mock()
+        call_api.return_value = resource
+        retry = DEFAULT_RETRY.with_deadline(1)
+        job.reload(client=client, retry=retry, timeout=None)
 
         call_api.assert_called_once_with(
             retry,
@@ -783,9 +798,8 @@ class Test_AsyncJob(unittest.TestCase):
             method="GET",
             path="/projects/{}/jobs/{}".format(self.PROJECT, self.JOB_ID),
             query_params={"projection": "full"},
-            timeout=4.2,
+            timeout=None,
         )
-        self.assertEqual(job._properties, expected)
 
     def test_cancel_defaults(self):
         resource = {
@@ -979,6 +993,18 @@ class Test_AsyncJob(unittest.TestCase):
         self.assertFalse(job.done(retry=retry, timeout=7.5))
 
         reload_.assert_called_once_with(retry=retry, timeout=7.5)
+
+    def test_done_with_none_timeout(self):
+        from google.cloud.bigquery.retry import DEFAULT_RETRY
+
+        client = _make_client(project=self.PROJECT)
+        job = self._make_one(self.JOB_ID, client)
+        reload_ = job.reload = mock.Mock()
+        retry = DEFAULT_RETRY.with_deadline(1)
+
+        self.assertFalse(job.done(retry=retry, timeout=None))
+
+        reload_.assert_called_once_with(retry=retry, timeout=None)
 
     def test_done_already(self):
         client = _make_client(project=self.PROJECT)

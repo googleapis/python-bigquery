@@ -22,6 +22,7 @@ import pytest
 
 from google.cloud.bigquery import _job_helpers
 from google.cloud.bigquery import enums
+from google.cloud.bigquery import retry
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery.job import copy_ as job_copy
 from google.cloud.bigquery.job import extract as job_extract
@@ -1050,7 +1051,7 @@ def test_query_and_wait_incomplete_query():
         method="GET",
         path=jobs_get_path,
         query_params={"projection": "full", "location": "response-location"},
-        timeout=None,
+        timeout=retry.DEFAULT_GET_JOB_TIMEOUT,
     )
 
     # Fetch the remaining two pages.

@@ -2140,7 +2140,7 @@ class Client(ClientWithProject):
         project: Optional[str] = None,
         location: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: Optional[TimeoutType] = DEFAULT_GET_JOB_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_GET_JOB_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
         """Fetch a job for the project associated with this client.
 
@@ -2163,7 +2163,7 @@ class Client(ClientWithProject):
                 object.
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the RPC.
-            timeout (Optinal[TimeoutType]):
+            timeout (Optinal[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
 

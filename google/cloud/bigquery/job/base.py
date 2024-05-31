@@ -817,7 +817,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
                 ``client`` stored on the current dataset.
 
             retry (Optional[google.api_core.retry.Retry]): How to retry the RPC.
-            timeout (Optinal[float]):
+            timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
         """

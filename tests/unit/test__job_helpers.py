@@ -20,9 +20,9 @@ import google.api_core.exceptions
 from google.api_core import retry as retries
 import pytest
 
-from google.cloud.bigquery.client import Client
-from google.cloud.bigquery import enums
 from google.cloud.bigquery import _job_helpers
+from google.cloud.bigquery import enums
+from google.cloud.bigquery.client import Client
 from google.cloud.bigquery.job import copy_ as job_copy
 from google.cloud.bigquery.job import extract as job_extract
 from google.cloud.bigquery.job import load as job_load

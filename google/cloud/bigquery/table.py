@@ -1759,7 +1759,12 @@ class RowIterator(HTTPIterator):
         if self._page_size is not None:
             if self.page_number and "startIndex" in params:
                 del params["startIndex"]
-            params["maxResults"] = self._page_size
+
+            if "maxResults" not in params:
+                params["maxResults"] = self._page_size
+            else:
+                params["maxResults"] = min(self._page_size, params["maxResults"])
+
         return self.api_request(
             method=self._HTTP_METHOD, path=self.path, query_params=params
         )

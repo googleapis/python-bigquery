@@ -1167,7 +1167,6 @@ class TestQueryJob(_Base):
                 {"f": [{"v": "stu"}]},
                 {"f": [{"v": "vwx"}]},
                 {"f": [{"v": "yz0"}]},
-                {"f": [{"v": "123"}]},
             ],
         }
         job_resource_running = self._make_resource(
@@ -1215,7 +1214,7 @@ class TestQueryJob(_Base):
             path=query_results_path,
             query_params={
                 "pageToken": "first-page-token",
-                "maxResults": 9,
+                "maxResults": 3,
                 "fields": _LIST_ROWS_FROM_QUERY_RESULTS_FIELDS,
                 "location": "US",
                 "formatOptions.useInt64Timestamp": True,

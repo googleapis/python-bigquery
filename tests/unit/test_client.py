@@ -58,6 +58,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery.dataset import DatasetReference
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import ParquetOptions
+import google.cloud.bigquery.retry
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
 import google.cloud.bigquery.table
 
@@ -5541,7 +5542,25 @@ class TestClient(unittest.TestCase):
                 mock.call(
                     method="GET",
                     path="/projects/my-jobs-project/jobs/my-jobs-id",
-                    # TODO: This should be our default timeout for jobs.get.
+                    query_params={
+                        "projection": "full",
+                        "location": "my-jobs-location",
+                    },
+                    timeout=google.cloud.bigquery.retry.DEFAULT_GET_JOB_TIMEOUT,
+                ),
+                # jobs.getQueryResults: wait for the query / fetch first page
+                mock.call(
+                    method="GET",
+                    path="/projects/my-jobs-project/queries/my-jobs-id",
+                    query_params={
+                        # We should still pass through the page size to the
+                        # subsequent calls to jobs.getQueryResults.
+                        #
+                        # See internal issue 344008814.
+                        "maxResults": 11,
+                        "formatOptions.useInt64Timestamp": True,
+                        "location": "my-jobs-location",
+                    },
                     timeout=None,
                 ),
             ]

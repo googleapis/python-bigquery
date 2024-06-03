@@ -109,6 +109,7 @@ from google.cloud.bigquery.retry import (
     DEFAULT_RETRY,
     DEFAULT_TIMEOUT,
     DEFAULT_GET_JOB_TIMEOUT,
+    POLLING_DEFAULT_VALUE,
 )
 from google.cloud.bigquery.routine import Routine
 from google.cloud.bigquery.routine import RoutineReference
@@ -3511,7 +3512,7 @@ class Client(ClientWithProject):
         location: Optional[str] = None,
         project: Optional[str] = None,
         api_timeout: TimeoutType = DEFAULT_TIMEOUT,
-        wait_timeout: TimeoutType = None,
+        wait_timeout: Union[Optional[float], object] = POLLING_DEFAULT_VALUE,
         retry: retries.Retry = DEFAULT_RETRY,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
         page_size: Optional[int] = None,
@@ -3545,10 +3546,12 @@ class Client(ClientWithProject):
             api_timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
-            wait_timeout (Optional[float]):
+            wait_timeout (Optional[Union[float, object]]):
                 The number of seconds to wait for the query to finish. If the
                 query doesn't finish before this timeout, the client attempts
-                to cancel the query.
+                to cancel the query. If unset, the underlying REST API calls
+                have timeouts, but we still wait indefinitely for the job to
+                finish.
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the RPC.  This only applies to making RPC
                 calls.  It isn't used to retry failed jobs.  This has

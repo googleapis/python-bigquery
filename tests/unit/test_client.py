@@ -5444,6 +5444,109 @@ class TestClient(unittest.TestCase):
         sent = req["data"]
         self.assertEqual(sent["location"], "not-the-client-location")
 
+    def test_query_and_wait_w_max_results(self):
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        jobs_query_response = {
+            "jobComplete": True,
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(jobs_query_response)
+
+        _ = client.query_and_wait(query, max_results=11)
+
+        # Verify the request we send is to jobs.query.
+        conn.api_request.assert_called_once()
+        _, req = conn.api_request.call_args
+        self.assertEqual(req["method"], "POST")
+        self.assertEqual(req["path"], f"/projects/{self.PROJECT}/queries")
+        sent = req["data"]
+        self.assertTrue(sent["formatOptions"]["useInt64Timestamp"])
+        self.assertTrue(sent["maxResults"], 11)
+
+    def test_query_and_wait_w_page_size(self):
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        jobs_query_response = {
+            "jobComplete": True,
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(jobs_query_response)
+
+        _ = client.query_and_wait(query, page_size=11)
+
+        # Verify the request we send is to jobs.query.
+        conn.api_request.assert_called_once()
+        _, req = conn.api_request.call_args
+        self.assertEqual(req["method"], "POST")
+        self.assertEqual(req["path"], f"/projects/{self.PROJECT}/queries")
+        sent = req["data"]
+        self.assertTrue(sent["formatOptions"]["useInt64Timestamp"])
+        self.assertTrue(sent["maxResults"], 11)
+
+    def test_query_and_wait_w_page_size_multiple_requests(self):
+        """
+        For queries that last longer than the intial (about 10s) call to
+        jobs.query, we should still pass through the page size to the
+        subsequent calls to jobs.getQueryResults.
+
+        See internal issue 344008814.
+        """
+        query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
+        job_reference = {
+            "projectId": "my-jobs-project",
+            "location": "my-jobs-location",
+            "jobId": "my-jobs-id",
+        }
+        jobs_query_response = {
+            "jobComplete": False,
+            "jobReference": job_reference,
+        }
+        jobs_get_response = {
+            "jobReference": job_reference,
+            "status": {"state": "DONE"},
+        }
+        get_query_results_response = {
+            "jobComplete": True,
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(
+            jobs_query_response,
+            jobs_get_response,
+            get_query_results_response,
+        )
+
+        _ = client.query_and_wait(query, page_size=11)
+
+        conn.api_request.assert_has_calls(
+            [
+                # Verify the request we send is to jobs.query.
+                mock.call(
+                    method="POST",
+                    path=f"/projects/{self.PROJECT}/queries",
+                    data={
+                        "useLegacySql": False,
+                        "query": query,
+                        "formatOptions": {"useInt64Timestamp": True},
+                        "maxResults": 11,
+                        "requestId": mock.ANY,
+                    },
+                    timeout=None,
+                ),
+                # jobs.get: Check if the job has finished.
+                mock.call(
+                    method="GET",
+                    path="/projects/my-jobs-project/jobs/my-jobs-id",
+                    # TODO: This should be our default timeout for jobs.get.
+                    timeout=None,
+                ),
+            ]
+        )
+
     def test_query_and_wait_w_project(self):
         query = "select count(*) from `bigquery-public-data.usa_names.usa_1910_2013`"
         jobs_query_response = {

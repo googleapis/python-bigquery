@@ -1963,6 +1963,7 @@ class Client(ClientWithProject):
         timeout_ms: Optional[int] = None,
         location: Optional[str] = None,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
+        page_size: int = 0,
     ) -> _QueryResults:
         """Get the query results object for a query job.
 
@@ -1981,19 +1982,25 @@ class Client(ClientWithProject):
                 before using ``retry``. If set, this connection timeout may be
                 increased to a minimum value. This prevents retries on what
                 would otherwise be a successful response.
+            page_size (int):
+                Maximum number of rows in a single response. See maxResults in
+                the jobs.getQueryResults REST API.
 
         Returns:
             google.cloud.bigquery.query._QueryResults:
                 A new ``_QueryResults`` instance.
         """
 
-        extra_params: Dict[str, Any] = {"maxResults": 0}
+        extra_params: Dict[str, Any] = {"maxResults": page_size}
 
         if timeout is not None:
             if not isinstance(timeout, (int, float)):
                 timeout = _MIN_GET_QUERY_RESULTS_TIMEOUT
             else:
                 timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
+
+        if page_size > 0:
+            extra_params["formatOptions.useInt64Timestamp"] = True
 
         if project is None:
             project = self.project
@@ -4127,11 +4134,6 @@ class Client(ClientWithProject):
 
         if start_index is not None:
             params["startIndex"] = start_index
-
-        # We don't call jobs.query with a page size, so if the user explicitly
-        # requests a certain size, invalidate the cache.
-        if page_size is not None:
-            first_page_response = None
 
         params["formatOptions.useInt64Timestamp"] = True
         row_iterator = RowIterator(

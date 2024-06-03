@@ -842,6 +842,22 @@ class TestQueryJob(_Base):
         assert isinstance(job.search_stats, SearchStats)
         assert job.search_stats.mode == "INDEX_USAGE_MODE_UNSPECIFIED"
 
+    def test_reload_query_results_uses_transport_timeout(self):
+        conn = make_connection({})
+        client = _make_client(self.PROJECT, connection=conn)
+        job = self._make_one(self.JOB_ID, self.QUERY, client)
+        job._transport_timeout = 123
+
+        job._reload_query_results()
+
+        query_results_path = f"/projects/{self.PROJECT}/queries/{self.JOB_ID}"
+        conn.api_request.assert_called_once_with(
+            method="GET",
+            path=query_results_path,
+            query_params={"maxResults": 0},
+            timeout=123,
+        )
+
     def test_result_reloads_job_state_until_done(self):
         """Verify that result() doesn't return until state == 'DONE'.
 

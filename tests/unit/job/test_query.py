@@ -1106,9 +1106,10 @@ class TestQueryJob(_Base):
             timeout=None,
         )
 
-        # assert connection.api_request.call_args == []
         connection.api_request.assert_has_calls(
             [
+                # Make sure we start a job that hasn't started yet. See:
+                # https://github.com/googleapis/python-bigquery/issues/1940
                 create_job_call,
                 reload_call,
                 get_query_results_call,

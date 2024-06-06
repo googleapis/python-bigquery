@@ -82,6 +82,7 @@ from google.cloud.bigquery._helpers import _DEFAULT_HOST_TEMPLATE
 from google.cloud.bigquery._helpers import _DEFAULT_UNIVERSE
 from google.cloud.bigquery._helpers import _validate_universe
 from google.cloud.bigquery._helpers import _get_client_universe
+from google.cloud.bigquery._helpers import TimeoutType
 from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
@@ -107,6 +108,8 @@ from google.cloud.bigquery.retry import (
     DEFAULT_JOB_RETRY,
     DEFAULT_RETRY,
     DEFAULT_TIMEOUT,
+    DEFAULT_GET_JOB_TIMEOUT,
+    POLLING_DEFAULT_VALUE,
 )
 from google.cloud.bigquery.routine import Routine
 from google.cloud.bigquery.routine import RoutineReference
@@ -123,7 +126,6 @@ pandas = (
     _versions_helpers.PANDAS_VERSIONS.try_import()
 )  # mypy check fails because pandas import is outside module, there are type: ignore comments related to this
 
-TimeoutType = Union[float, None]
 ResumableTimeoutType = Union[
     None, float, Tuple[float, float]
 ]  # for resumable media methods
@@ -1962,6 +1964,7 @@ class Client(ClientWithProject):
         timeout_ms: Optional[int] = None,
         location: Optional[str] = None,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
+        page_size: int = 0,
     ) -> _QueryResults:
         """Get the query results object for a query job.
 
@@ -1980,19 +1983,25 @@ class Client(ClientWithProject):
                 before using ``retry``. If set, this connection timeout may be
                 increased to a minimum value. This prevents retries on what
                 would otherwise be a successful response.
+            page_size (int):
+                Maximum number of rows in a single response. See maxResults in
+                the jobs.getQueryResults REST API.
 
         Returns:
             google.cloud.bigquery.query._QueryResults:
                 A new ``_QueryResults`` instance.
         """
 
-        extra_params: Dict[str, Any] = {"maxResults": 0}
+        extra_params: Dict[str, Any] = {"maxResults": page_size}
 
         if timeout is not None:
             if not isinstance(timeout, (int, float)):
                 timeout = _MIN_GET_QUERY_RESULTS_TIMEOUT
             else:
                 timeout = max(timeout, _MIN_GET_QUERY_RESULTS_TIMEOUT)
+
+        if page_size > 0:
+            extra_params["formatOptions.useInt64Timestamp"] = True
 
         if project is None:
             project = self.project
@@ -2139,7 +2148,7 @@ class Client(ClientWithProject):
         project: Optional[str] = None,
         location: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
-        timeout: TimeoutType = DEFAULT_TIMEOUT,
+        timeout: TimeoutType = DEFAULT_GET_JOB_TIMEOUT,
     ) -> Union[job.LoadJob, job.CopyJob, job.ExtractJob, job.QueryJob, job.UnknownJob]:
         """Fetch a job for the project associated with this client.
 
@@ -3503,7 +3512,7 @@ class Client(ClientWithProject):
         location: Optional[str] = None,
         project: Optional[str] = None,
         api_timeout: TimeoutType = DEFAULT_TIMEOUT,
-        wait_timeout: TimeoutType = None,
+        wait_timeout: Union[Optional[float], object] = POLLING_DEFAULT_VALUE,
         retry: retries.Retry = DEFAULT_RETRY,
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
         page_size: Optional[int] = None,
@@ -3537,10 +3546,12 @@ class Client(ClientWithProject):
             api_timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
-            wait_timeout (Optional[float]):
+            wait_timeout (Optional[Union[float, object]]):
                 The number of seconds to wait for the query to finish. If the
                 query doesn't finish before this timeout, the client attempts
-                to cancel the query.
+                to cancel the query. If unset, the underlying REST API calls
+                have timeouts, but we still wait indefinitely for the job to
+                finish.
             retry (Optional[google.api_core.retry.Retry]):
                 How to retry the RPC.  This only applies to making RPC
                 calls.  It isn't used to retry failed jobs.  This has
@@ -4126,11 +4137,6 @@ class Client(ClientWithProject):
 
         if start_index is not None:
             params["startIndex"] = start_index
-
-        # We don't call jobs.query with a page size, so if the user explicitly
-        # requests a certain size, invalidate the cache.
-        if page_size is not None:
-            first_page_response = None
 
         params["formatOptions.useInt64Timestamp"] = True
         row_iterator = RowIterator(

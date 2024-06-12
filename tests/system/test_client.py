@@ -1820,8 +1820,6 @@ class TestBigQuery(unittest.TestCase):
             ],
         ]
 
-        print(f"DINOSAUR fetched:\n{fetched_data}")
-        print(f"DINOSAUR expected:\n{expected_data}")
         self.assertEqual(fetched_data, expected_data)
 
     def test_dbapi_dry_run_query(self):

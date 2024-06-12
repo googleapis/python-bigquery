@@ -872,3 +872,13 @@ class TestLoadJobConfig(_Base):
             config._properties["load"]["columnNameCharacterMap"],
             ColumnNameCharacterMap.V1,
         )
+
+    def test_column_name_character_map_none(self):
+        from google.cloud.bigquery.job.load import ColumnNameCharacterMap
+
+        config = self._get_target_class()()
+        config.column_name_character_map = None
+        self.assertEqual(
+            config._properties["load"]["columnNameCharacterMap"],
+            ColumnNameCharacterMap.COLUMN_NAME_CHARACTER_MAP_UNSPECIFIED,
+        )

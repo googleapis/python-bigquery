@@ -1652,7 +1652,17 @@ class TestQueryJob(_Base):
 
         start_index = 1
 
-        result = job.result(start_index=start_index)
+        # Verifies that page_size isn't overwritten by max_results when
+        # start_index is not None. See
+        # https://github.com/googleapis/python-bigquery/issues/1950
+        page_size = 10
+        max_results = 100
+
+        result = job.result(
+            page_size=page_size,
+            max_results=max_results,
+            start_index=start_index,
+        )
 
         self.assertIsInstance(result, RowIterator)
         self.assertEqual(result.total_rows, 5)
@@ -1665,6 +1675,7 @@ class TestQueryJob(_Base):
         self.assertEqual(
             tabledata_list_request[1]["query_params"]["startIndex"], start_index
         )
+        self.assertEqual(tabledata_list_request[1]["query_params"]["maxResults"], 10)
 
     def test_result_error(self):
         from google.cloud import exceptions

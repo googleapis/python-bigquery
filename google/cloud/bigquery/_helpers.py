@@ -206,7 +206,7 @@ def _timestamp_from_json(value, field):
     """Coerce 'value' to a datetime, if set or not nullable."""
     if _not_null(value, field):
         # value will be a integer in seconds, to microsecond precision, in UTC.
-        return _datetime_from_microseconds(int(value))
+        return _datetime_from_microseconds(int(float(value)))
 
 
 def _timestamp_query_param_from_json(value, field):

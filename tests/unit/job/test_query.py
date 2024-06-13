@@ -1675,7 +1675,9 @@ class TestQueryJob(_Base):
         self.assertEqual(
             tabledata_list_request[1]["query_params"]["startIndex"], start_index
         )
-        self.assertEqual(tabledata_list_request[1]["query_params"]["maxResults"], 10)
+        self.assertEqual(
+            tabledata_list_request[1]["query_params"]["maxResults"], page_size
+        )
 
     def test_result_error(self):
         from google.cloud import exceptions

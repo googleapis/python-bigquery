@@ -51,7 +51,7 @@ from google.cloud.bigquery.dbapi import _helpers
 from google.cloud.bigquery.magics import line_arg_parser as lap
 
 try:
-    import bigquery_magics
+    import bigquery_magics  # type: ignore
 except ImportError:
     bigquery_magics = None
 

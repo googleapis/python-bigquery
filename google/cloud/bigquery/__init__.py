@@ -116,7 +116,7 @@ from google.cloud.bigquery.table import TimePartitioning
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 
 try:
-    import bigquery_magics
+    import bigquery_magics  # type: ignore
 except ImportError:
     bigquery_magics = None
 

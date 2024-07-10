@@ -24,9 +24,6 @@ TEST_CONFIG_OVERRIDE = {
     # You can opt out from the test for specific Python versions.
     "ignored_versions": [
         "2.7",
-        # TODO: Enable 3.10 once there is a geopandas/fiona release.
-        # https://github.com/Toblerity/Fiona/issues/1043
-        "3.10",
     ],
     # An envvar key for determining the project id to use. Change it
     # to 'BUILD_SPECIFIC_GCLOUD_PROJECT' if you want to opt in using a

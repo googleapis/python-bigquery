@@ -26,9 +26,9 @@ def client_query_shortmode() -> None:
 
     query = """
         SELECT
-  			name,
+            name,
             gender,
-  			SUM(number) AS total
+            SUM(number) AS total
 		FROM
 			bigquery-public-data.usa_names.usa_1910_2013
 		GROUP BY 
@@ -37,7 +37,8 @@ def client_query_shortmode() -> None:
 			total DESC
 		LIMIT 10
     """
-    # Run the query and process the returned row iterator.
+    # Run the query.  The returned `rows` iterator can return information about
+    # how the query was executed as well as the result data.
     rows = client.query_and_wait(query)
 
     if rows.job_id is not None:

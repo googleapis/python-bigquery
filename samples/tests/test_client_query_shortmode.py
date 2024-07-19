@@ -21,6 +21,6 @@ if typing.TYPE_CHECKING:
 
 
 def test_client_query_shortmode(capsys: "pytest.CaptureFixture[str]") -> None:
-    job = client_query_shortmode.client_query_shortmode()
+    client_query_shortmode.client_query_shortmode()
     out, err = capsys.readouterr()
     assert "Query was run" in out

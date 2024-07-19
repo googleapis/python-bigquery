@@ -16,7 +16,7 @@
 def client_query_shortmode() -> None:
     # [START bigquery_query_shortquery]
     # This example demonstrates issuing a query that may be run in short query mode.
-    # 
+    #
     # To enable the short query mode preview feature, the QUERY_PREVIEW_ENABLED
     # environmental variable should be set to `TRUE`.
     from google.cloud import bigquery
@@ -31,7 +31,7 @@ def client_query_shortmode() -> None:
             SUM(number) AS total
         FROM
             bigquery-public-data.usa_names.usa_1910_2013
-        GROUP BY 
+        GROUP BY
             name, gender
         ORDER BY
             total DESC

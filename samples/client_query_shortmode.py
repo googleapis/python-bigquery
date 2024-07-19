@@ -29,13 +29,13 @@ def client_query_shortmode() -> None:
             name,
             gender,
             SUM(number) AS total
-		FROM
-			bigquery-public-data.usa_names.usa_1910_2013
-		GROUP BY 
-			name, gender
-		ORDER BY
-			total DESC
-		LIMIT 10
+        FROM
+            bigquery-public-data.usa_names.usa_1910_2013
+        GROUP BY 
+            name, gender
+        ORDER BY
+            total DESC
+        LIMIT 10
     """
     # Run the query.  The returned `rows` iterator can return information about
     # how the query was executed as well as the result data.

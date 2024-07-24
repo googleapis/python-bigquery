@@ -5,15 +5,16 @@
 #
 # e.g., if setup.py has "foo >= 1.14.0, < 2.0.0dev",
 # Then this file should have foo==1.14.0
+bigquery-magics==0.1.0
 db-dtypes==0.3.0
 geopandas==0.9.0
-google-api-core==2.17.1
-google-auth==2.28.1
+google-api-core==2.11.1
+google-auth==2.14.1
 google-cloud-bigquery-storage==2.24.0
 google-cloud-core==2.4.1
 google-cloud-testutils==1.4.0
 google-crc32c==1.5.0
-google-resumable-media==2.7.0
+google-resumable-media==2.0.0
 googleapis-common-protos==1.62.0
 grpcio==1.47.0
 grpcio-status==1.47.0
@@ -25,8 +26,8 @@ opentelemetry-instrumentation==0.20b0
 opentelemetry-sdk==1.1.0
 packaging==20.0.0
 pandas==1.1.0
-proto-plus==1.22.0
-protobuf==3.19.5
+proto-plus==1.22.3
+protobuf==3.20.2
 pyarrow==3.0.0
 python-dateutil==2.7.3
 requests==2.21.0

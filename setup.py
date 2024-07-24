@@ -29,18 +29,12 @@ description = "Google BigQuery API client library"
 # 'Development Status :: 5 - Production/Stable'
 release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
-    # NOTE: Maintainers, please do not require google-api-core>=2.x.x
-    # Until this issue is closed
-    # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-api-core[grpc] >= 1.34.1, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,!=2.8.*,!=2.9.*,!=2.10.*",
+    "google-api-core[grpc] >= 2.11.1, <3.0.0dev",
     "google-auth >= 2.14.1, <3.0.0dev",
-    # NOTE: Maintainers, please do not require google-cloud-core>=2.x.x
-    # Until this issue is closed
-    # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-cloud-core >= 1.6.0, <3.0.0dev",
-    "google-resumable-media >= 0.6.0, < 3.0dev",
+    "google-cloud-core >= 2.4.1, <3.0.0dev",
+    "google-resumable-media >= 2.0.0, < 3.0dev",
     "packaging >= 20.0.0",
-    "python-dateutil >= 2.7.2, <3.0dev",
+    "python-dateutil >= 2.7.3, <3.0dev",
     "requests >= 2.21.0, < 3.0.0dev",
 ]
 pyarrow_dependency = "pyarrow >= 3.0.0"
@@ -72,8 +66,7 @@ extras = {
     ],
     "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.8.4, <3.0.0dev"],
     "ipython": [
-        "ipython>=7.23.1,!=8.1.0",
-        "ipykernel>=6.0.0",
+        "bigquery-magics >= 0.1.0",
     ],
     "tqdm": ["tqdm >= 4.7.4, <5.0.0dev"],
     "opentelemetry": [
@@ -82,8 +75,8 @@ extras = {
         "opentelemetry-instrumentation >= 0.20b0",
     ],
     "bigquery_v2": [
-        "proto-plus >= 1.15.0, <2.0.0dev",
-        "protobuf>=3.19.5,<5.0.0dev,!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",  # For the legacy proto-based types.
+        "proto-plus >= 1.22.3, <2.0.0dev",
+        "protobuf>=3.20.2,<6.0.0dev,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",  # For the legacy proto-based types.
     ],
 }
 

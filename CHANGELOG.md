@@ -5,6 +5,28 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.26.0](https://github.com/googleapis/python-bigquery/compare/v3.25.0...v3.26.0) (2024-07-25)
+
+
+### Features
+
+* Use `bigquery-magics` package for the `%%bigquery` magic ([#1965](https://github.com/googleapis/python-bigquery/issues/1965)) ([60128a5](https://github.com/googleapis/python-bigquery/commit/60128a522375823422f238312521a2ce356d9177))
+
+
+### Bug Fixes
+
+* Allow protobuf 5.x; require protobuf &gt;=3.20.2; proto-plus >=1.22.3 ([#1976](https://github.com/googleapis/python-bigquery/issues/1976)) ([57bf873](https://github.com/googleapis/python-bigquery/commit/57bf873474382cc2cb34243b704bc928fa1b64c6))
+
+
+### Dependencies
+
+* Bump min version of google-api-core and google-cloud-core to 2.x ([#1972](https://github.com/googleapis/python-bigquery/issues/1972)) ([a958732](https://github.com/googleapis/python-bigquery/commit/a958732aed7d9bd51ffde3dc0e6cae9ad7455b54))
+
+
+### Documentation
+
+* Add short mode query sample & test ([#1978](https://github.com/googleapis/python-bigquery/issues/1978)) ([ba61a8a](https://github.com/googleapis/python-bigquery/commit/ba61a8ab0da541ba1940211875d7ea2e9e17dfa8))
+
 ## [3.25.0](https://github.com/googleapis/python-bigquery/compare/v3.24.0...v3.25.0) (2024-06-17)
 
 

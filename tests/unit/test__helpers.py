@@ -17,6 +17,7 @@ import datetime
 import decimal
 import json
 import os
+import warnings
 import pytest
 import packaging
 import unittest
@@ -632,13 +633,30 @@ class Test_row_tuple_from_json(unittest.TestCase):
         from google.cloud.bigquery._helpers import _row_tuple_from_json
 
         with _field_isinstance_patcher():
-            return _row_tuple_from_json(row, schema)
+            ret = _row_tuple_from_json(row, schema)
+            return ret
 
     def test_w_single_scalar_column(self):
         # SELECT 1 AS col
         col = _Field("REQUIRED", "col", "INTEGER")
         row = {"f": [{"v": "1"}]}
         self.assertEqual(self._call_fut(row, schema=[col]), (1,))
+
+    def test_w_unknown_type(self):
+        # SELECT 1 AS col
+        col = _Field("REQUIRED", "col", "UNKNOWN")
+        row = {"f": [{"v": "1"}]}
+        with pytest.warns(FutureWarning, match="Unknown field type 'UNKNOWN'.") as record: 
+            self.assertEqual(self._call_fut(row, schema=[col]), ('1',))
+        self.assertEqual(len(record), 1)
+
+    def test_w_unknown_type_repeated(self):
+        # SELECT 1 AS col
+        col = _Field("REPEATED", "col", "UNKNOWN")
+        row = {"f": [{"v": [{"v": "1"}, {"v": "2"}, {"v": "3"}]}]}
+        with pytest.warns(FutureWarning, match="Unknown field type 'UNKNOWN'.") as record: 
+            self.assertEqual(self._call_fut(row, schema=[col]), (['1', '2', '3'],))
+        self.assertEqual(len(record), 1)
 
     def test_w_single_scalar_geography_column(self):
         # SELECT 1 AS col

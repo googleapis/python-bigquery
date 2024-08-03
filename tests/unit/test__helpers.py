@@ -674,7 +674,7 @@ class Test_row_tuple_from_json(unittest.TestCase):
         row = {"f": [{"v": [{"v": "1"}, {"v": "2"}, {"v": "3"}]}]}
         with pytest.warns(FutureWarning, match="Unknown field type 'UNKNOWN'.") as record: 
             self.assertEqual(self._call_fut(row, schema=[col]), (['1', '2', '3'],))
-        self.assertEqual(len(record), 1)
+        self.assertEqual(len(record), 1) # only 1 warning for repeated field.
 
     def test_w_struct_w_nested_array_column(self):
         # SELECT ([1, 2], 3, [4, 5]) as col
@@ -724,7 +724,7 @@ class Test_row_tuple_from_json(unittest.TestCase):
                 self._call_fut(row, schema=[col]),
                 ({"first": ['1', '2'], "second": '3', "third": [4, 5]},),
             )
-        self.assertEqual(len(record), 2)
+        self.assertEqual(len(record), 2) # 1 warning per unknown field.
 
     def test_w_array_of_struct(self):
         # SELECT [(1, 2, 3), (4, 5, 6)] as col

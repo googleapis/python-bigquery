@@ -702,6 +702,32 @@ class Test_row_tuple_from_json(unittest.TestCase):
             ({"first": [1, 2], "second": 3, "third": [4, 5]},),
         )
 
+    def test_w_unknown_type_subfield(self):
+     # SELECT [(1, 2, 3), (4, 5, 6)] as col
+        first = _Field("REPEATED", "first", "UNKNOWN1")
+        second = _Field("REQUIRED", "second", "UNKNOWN2")
+        third = _Field("REPEATED", "third", "INTEGER")
+        col = _Field("REQUIRED", "col", "RECORD", fields=[first, second, third])
+        row = {
+            "f": [
+                {
+                    "v": {
+                        "f": [
+                            {"v": [{"v": "1"}, {"v": "2"}]},
+                            {"v": "3"},
+                            {"v": [{"v": "4"}, {"v": "5"}]},
+                        ]
+                    }
+                }
+            ]
+        }
+        with pytest.warns(FutureWarning, match="Unknown field type") as record: 
+            self.assertEqual(
+                self._call_fut(row, schema=[col]),
+                ({"first": ['1', '2'], "second": '3', "third": [4, 5]},),
+            )
+        self.assertEqual(len(record), 2)
+
     def test_w_array_of_struct(self):
         # SELECT [(1, 2, 3), (4, 5, 6)] as col
         first = _Field("REQUIRED", "first", "INTEGER")

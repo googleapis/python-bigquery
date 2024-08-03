@@ -648,14 +648,6 @@ class Test_row_tuple_from_json(unittest.TestCase):
             self.assertEqual(self._call_fut(row, schema=[col]), ('1',))
         self.assertEqual(len(record), 1)
 
-    def test_w_unknown_type_repeated(self):
-        # SELECT 1 AS col
-        col = _Field("REPEATED", "col", "UNKNOWN")
-        row = {"f": [{"v": [{"v": "1"}, {"v": "2"}, {"v": "3"}]}]}
-        with pytest.warns(FutureWarning, match="Unknown field type 'UNKNOWN'.") as record: 
-            self.assertEqual(self._call_fut(row, schema=[col]), (['1', '2', '3'],))
-        self.assertEqual(len(record), 1)
-
     def test_w_single_scalar_geography_column(self):
         # SELECT 1 AS col
         col = _Field("REQUIRED", "geo", "GEOGRAPHY")
@@ -675,6 +667,14 @@ class Test_row_tuple_from_json(unittest.TestCase):
         col = _Field("REPEATED", "col", "INTEGER")
         row = {"f": [{"v": [{"v": "1"}, {"v": "2"}, {"v": "3"}]}]}
         self.assertEqual(self._call_fut(row, schema=[col]), ([1, 2, 3],))
+
+    def test_w_unknown_type_repeated(self):
+        # SELECT 1 AS col
+        col = _Field("REPEATED", "col", "UNKNOWN")
+        row = {"f": [{"v": [{"v": "1"}, {"v": "2"}, {"v": "3"}]}]}
+        with pytest.warns(FutureWarning, match="Unknown field type 'UNKNOWN'.") as record: 
+            self.assertEqual(self._call_fut(row, schema=[col]), (['1', '2', '3'],))
+        self.assertEqual(len(record), 1)
 
     def test_w_struct_w_nested_array_column(self):
         # SELECT ([1, 2], 3, [4, 5]) as col

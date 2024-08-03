@@ -632,8 +632,7 @@ class Test_row_tuple_from_json(unittest.TestCase):
         from google.cloud.bigquery._helpers import _row_tuple_from_json
 
         with _field_isinstance_patcher():
-            ret = _row_tuple_from_json(row, schema)
-            return ret
+            return _row_tuple_from_json(row, schema)
 
     def test_w_single_scalar_column(self):
         # SELECT 1 AS col

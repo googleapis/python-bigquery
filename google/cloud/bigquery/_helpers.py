@@ -378,10 +378,11 @@ def _field_to_index_mapping(schema):
 
 
 def _field_from_json(resource, field):
-    converter = _CELLDATA_FROM_JSON.get(field.field_type)
-    if not converter:
-        warnings.warn("Unknown field type '{}'.".format(field.field_type), FutureWarning)
-        converter = lambda value, _: value
+    if field.field_type not in _CELLDATA_FROM_JSON:
+        warnings.warn(
+            "Unknown field type '{}'.".format(field.field_type), FutureWarning
+        )
+    converter = _CELLDATA_FROM_JSON.get(field.field_type, lambda value, _: value)
     if field.mode == "REPEATED":
         return [converter(item["v"], field) for item in resource]
     else:

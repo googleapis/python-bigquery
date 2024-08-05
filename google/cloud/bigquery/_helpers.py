@@ -380,7 +380,9 @@ def _field_to_index_mapping(schema):
 def _field_from_json(resource, field):
     def default_converter(value, field):
         warnings.warn(
-            "Unknown type '{}' for field '{}'.".format(field.field_type, field.name),
+            "Unknown type '{}' for field '{}'. Behavior reading this type is not officially supported and may change in the future.".format(
+                field.field_type, field.name
+            ),
             FutureWarning,
         )
         return value
@@ -485,6 +487,11 @@ def _json_to_json(value):
     if value is None:
         return None
     return json.dumps(value)
+
+
+def _string_to_json(value):
+    """NOOP string -> string coercion"""
+    return value
 
 
 def _timestamp_to_json_parameter(value):
@@ -599,6 +606,7 @@ _SCALAR_VALUE_TO_JSON_ROW = {
     "DATE": _date_to_json,
     "TIME": _time_to_json,
     "JSON": _json_to_json,
+    "STRING": _string_to_json,
     # Make sure DECIMAL and BIGDECIMAL are handled, even though
     # requests for them should be converted to NUMERIC.  Better safe
     # than sorry.
@@ -625,7 +633,13 @@ def _scalar_field_to_json(field, row_value):
         Any: A JSON-serializable object.
     """
     converter = _SCALAR_VALUE_TO_JSON_ROW.get(field.field_type)
-    if converter is None:  # STRING doesn't need converting
+    if converter is None:
+        warnings.warn(
+            "Unknown type '{}' for field '{}'. Behavior writing this type is not officially supported and may change in the future.".format(
+                field.field_type, field.name
+            ),
+            FutureWarning,
+        )
         return row_value
     return converter(row_value)
 

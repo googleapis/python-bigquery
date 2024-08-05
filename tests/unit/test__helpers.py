@@ -1132,8 +1132,12 @@ class Test_scalar_field_to_json(unittest.TestCase):
     def test_w_unknown_field_type(self):
         field = _make_field("UNKNOWN")
         original = object()
-        converted = self._call_fut(field, original)
+        with warnings.catch_warnings(record=True) as warned:
+            converted = self._call_fut(field, original)
         self.assertIs(converted, original)
+        self.assertEqual(len(warned), 1)
+        warning = warned[0]
+        self.assertTrue("UNKNOWN" in str(warning))
 
     def test_w_known_field_type(self):
         field = _make_field("INT64")

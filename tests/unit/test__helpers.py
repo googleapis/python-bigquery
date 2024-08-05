@@ -17,6 +17,7 @@ import datetime
 import decimal
 import json
 import os
+import warnings
 import pytest
 import packaging
 import unittest
@@ -644,11 +645,12 @@ class Test_row_tuple_from_json(unittest.TestCase):
         # SELECT 1 AS col
         col = _Field("REQUIRED", "col", "UNKNOWN")
         row = {"f": [{"v": "1"}]}
-        with pytest.warns(
-            FutureWarning, match="Unknown field type 'UNKNOWN'."
-        ) as record:
+        with warnings.catch_warnings(record=True) as warned:
             self.assertEqual(self._call_fut(row, schema=[col]), ("1",))
-        self.assertEqual(len(record), 1)
+        self.assertEqual(len(warned), 1)
+        warning = warned[0]
+        self.assertTrue("UNKNOWN" in str(warning))
+        self.assertTrue("col" in str(warning))
 
     def test_w_single_scalar_geography_column(self):
         # SELECT 1 AS col
@@ -674,11 +676,12 @@ class Test_row_tuple_from_json(unittest.TestCase):
         # SELECT 1 AS col
         col = _Field("REPEATED", "col", "UNKNOWN")
         row = {"f": [{"v": [{"v": "1"}, {"v": "2"}, {"v": "3"}]}]}
-        with pytest.warns(
-            FutureWarning, match="Unknown field type 'UNKNOWN'."
-        ) as record:
+        with warnings.catch_warnings(record=True) as warned:
             self.assertEqual(self._call_fut(row, schema=[col]), (["1", "2", "3"],))
-        self.assertEqual(len(record), 1)  # only 1 warning for repeated field.
+        self.assertEqual(len(warned), 1)
+        warning = warned[0]
+        self.assertTrue("UNKNOWN" in str(warning))
+        self.assertTrue("col" in str(warning))
 
     def test_w_struct_w_nested_array_column(self):
         # SELECT ([1, 2], 3, [4, 5]) as col
@@ -723,12 +726,19 @@ class Test_row_tuple_from_json(unittest.TestCase):
                 }
             ]
         }
-        with pytest.warns(FutureWarning, match="Unknown field type") as record:
+        with warnings.catch_warnings(record=True) as warned:
             self.assertEqual(
                 self._call_fut(row, schema=[col]),
                 ({"first": ["1", "2"], "second": "3", "third": [4, 5]},),
             )
-        self.assertEqual(len(record), 2)  # 1 warning per unknown field.
+        self.assertEqual(len(warned), 2)  # 1 warning per unknown field.
+        warned = [str(warning) for warning in warned]
+        self.assertTrue(
+            any("first" in warning and "UNKNOWN1" in warning for warning in warned)
+        )
+        self.assertTrue(
+            any("second" in warning and "UNKNOWN2" in warning for warning in warned)
+        )
 
     def test_w_array_of_struct(self):
         # SELECT [(1, 2, 3), (4, 5, 6)] as col

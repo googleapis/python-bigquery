@@ -792,7 +792,7 @@ class ArrayQueryParameter(_AbstractQueryParameter):
 
 
 class StructQueryParameter(_AbstractQueryParameter):
-    """Named / positional query parameters for struct values.
+    """Name / positional query parameters for struct values.
 
     Args:
         name (Optional[str]):

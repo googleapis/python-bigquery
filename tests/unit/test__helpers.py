@@ -734,10 +734,10 @@ class Test_row_tuple_from_json(unittest.TestCase):
         self.assertEqual(len(warned), 2)  # 1 warning per unknown field.
         warned = [str(warning) for warning in warned]
         self.assertTrue(
-            any("first" in warning and "UNKNOWN1" in warning for warning in warned)
+            any(["first" in warning and "UNKNOWN1" in warning for warning in warned])
         )
         self.assertTrue(
-            any("second" in warning and "UNKNOWN2" in warning for warning in warned)
+            any(["second" in warning and "UNKNOWN2" in warning for warning in warned])
         )
 
     def test_w_array_of_struct(self):
@@ -1633,6 +1633,18 @@ def test_decimal_as_float_api_repr():
     assert param.to_api_repr() == {
         "parameterType": {"type": "FLOAT64"},
         "parameterValue": {"value": 42.0},
+        "name": "x",
+    }
+
+
+def test_unknown_type_as_api_repr():
+    """Make sure decimals get converted to float."""
+    import google.cloud.bigquery.query
+
+    param = google.cloud.bigquery.query.ScalarQueryParameter("x", "UNKNOWN_TYPE", 54)
+    assert param.to_api_repr() == {
+        "parameterType": {"type": "UNKNOWN_TYPE"},
+        "parameterValue": {"value": 54},
         "name": "x",
     }
 

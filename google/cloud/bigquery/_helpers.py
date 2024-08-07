@@ -379,12 +379,7 @@ def _field_to_index_mapping(schema):
 
 def _field_from_json(resource, field):
     def default_converter(value, field):
-        warnings.warn(
-            "Unknown type '{}' for field '{}'. Behavior reading this type is not officially supported and may change in the future.".format(
-                field.field_type, field.name
-            ),
-            FutureWarning,
-        )
+        _warn_unknown_field_type(field)
         return value
 
     converter = _CELLDATA_FROM_JSON.get(field.field_type, default_converter)
@@ -620,6 +615,15 @@ _SCALAR_VALUE_TO_JSON_PARAM = _SCALAR_VALUE_TO_JSON_ROW.copy()
 _SCALAR_VALUE_TO_JSON_PARAM["TIMESTAMP"] = _timestamp_to_json_parameter
 
 
+def _warn_unknown_field_type(field):
+    warnings.warn(
+        "Unknown type '{}' for field '{}'. Behavior reading and writing this type is not officially supported and may change in the future.".format(
+            field.field_type, field.name
+        ),
+        FutureWarning,
+    )
+
+
 def _scalar_field_to_json(field, row_value):
     """Maps a field and value to a JSON-safe value.
 
@@ -632,15 +636,12 @@ def _scalar_field_to_json(field, row_value):
     Returns:
         Any: A JSON-serializable object.
     """
-    converter = _SCALAR_VALUE_TO_JSON_ROW.get(field.field_type)
-    if converter is None:
-        warnings.warn(
-            "Unknown type '{}' for field '{}'. Behavior writing this type is not officially supported and may change in the future.".format(
-                field.field_type, field.name
-            ),
-            FutureWarning,
-        )
-        return row_value
+
+    def default_converter(value):
+        _warn_unknown_field_type(field)
+        return value
+
+    converter = _SCALAR_VALUE_TO_JSON_ROW.get(field.field_type, default_converter)
     return converter(row_value)
 
 

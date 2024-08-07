@@ -747,7 +747,9 @@ class ArrayQueryParameter(_AbstractQueryParameter):
             else:
                 a_type = self.array_type.to_api_repr()
 
-            converter = _SCALAR_VALUE_TO_JSON_PARAM.get(a_type["type"], lambda value: value)
+            converter = _SCALAR_VALUE_TO_JSON_PARAM.get(
+                a_type["type"], lambda value: value
+            )
             values = [converter(value) for value in values]  # type: ignore
             a_values = [{"value": value} for value in values]
 

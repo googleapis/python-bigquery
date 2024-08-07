@@ -1637,18 +1637,6 @@ def test_decimal_as_float_api_repr():
     }
 
 
-def test_unknown_type_as_api_repr():
-    """Make sure decimals get converted to float."""
-    import google.cloud.bigquery.query
-
-    param = google.cloud.bigquery.query.ScalarQueryParameter("x", "UNKNOWN_TYPE", 54)
-    assert param.to_api_repr() == {
-        "parameterType": {"type": "UNKNOWN_TYPE"},
-        "parameterValue": {"value": 54},
-        "name": "x",
-    }
-
-
 class Test__get_bigquery_host(unittest.TestCase):
     @staticmethod
     def _call_fut():

@@ -404,10 +404,6 @@ def prerelease_deps(session):
     session.run("python", "-m", "pip", "freeze")
 
     # Run all tests, except a few samples tests which require extra dependencies.
-    # session.run("py.test", "tests/unit")
-    # session.run("py.test", "tests/system")
-    # session.run("py.test", "samples/tests")
-
     session.run(
         "py.test",
         "tests/unit",

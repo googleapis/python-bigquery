@@ -120,6 +120,19 @@ try:
 except ImportError:
     bigquery_magics = None
 
+import sys
+import warnings
+
+if sys.version_info.major == 3 and sys.version_info.minor in (7, 8):
+    warnings.warn(
+        "The python-bigquery library will stop supporting Python 3.7 "
+        "and Python 3.8 in a future major release expected in Q4 2024. "
+        f"Your Python version is {sys.version}. We recommend that you "
+        "update soon to ensure ongoing support. For more details, see: "
+        "<blog post URL>",
+        PendingDeprecationWarning,
+    )
+
 __all__ = [
     "__version__",
     "Client",

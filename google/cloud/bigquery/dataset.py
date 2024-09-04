@@ -530,6 +530,7 @@ class Dataset(object):
         "storage_billing_model": "storageBillingModel",
         "max_time_travel_hours": "maxTimeTravelHours",
         "default_rounding_mode": "defaultRoundingMode",
+        "external_catalog_dataset_options": "externalCatalogDatasetOptions",
     }
 
     def __init__(self, dataset_ref) -> None:
@@ -937,6 +938,24 @@ class Dataset(object):
         """Generate a resource for ``update``."""
         return _helpers._build_resource_from_properties(self, filter_fields)
 
+    @property
+    def external_catalog_dataset_options(self):
+        """Options defining open source compatible datasets living in the
+        BigQuery catalog. Contains metadata of open source database, schema
+        or namespace represented by the current dataset."""
+       
+        return self._properties.get("externalCatalogDatasetOptions")
+
+    @external_catalog_dataset_options.setter
+    def external_catalog_dataset_options(self, value):
+        if not isinstance(value, ExternalCatalogDatasetOptions) and value is not None:
+            raise ValueError(
+                "external_catalog_dataset_options must be an "
+                "ExternalCatalogDatasetOptions object or None. "
+                f"Got {repr(value)}."
+            )
+        self._properties["externalCatalogDatasetOptions"] = value
+
     table = _get_table_reference
 
     model = _get_model_reference
@@ -1026,3 +1045,36 @@ class DatasetListItem(object):
     model = _get_model_reference
 
     routine = _get_routine_reference
+
+
+class ExternalCatalogDatasetOptions(object):
+    """Options defining open source compatible datasets living in the BigQuery
+    catalog. Contains metadata of open source database, schema or namespace
+    represented by the current dataset.
+    
+    Args:
+        defaultStorageLocationUri:
+            Optional. The storage location URI for all tables in the dataset.
+            Equivalent to hive metastore's database locationUri. Maximum length
+            of 1024 characters. (str)
+
+        parameters:
+            Optional. A map of key value pairs defining the parameters and
+            properties of the open source schema. Maximum size of 2Mib.
+
+    Raises:
+        ValueError: If either argument is not of type ``str``.
+    """
+
+    def __init__(
+        self,
+        default_storage_location_uri: Optional[str] = None,
+        parameters: Optional[dict] = None
+    ):
+        self._properties = {}
+        if not isinstance(default_storage_location_uri, str):
+            raise ValueError("Pass a string as default_storage_location_uri")
+        if not isinstance(parameters, dict):
+            raise ValueError("Pass a dict as parameters to define the schema.")
+        self._properties["default_storage_location_uri"] = default_storage_location_uri
+        self._properties["parameters"] = parameters

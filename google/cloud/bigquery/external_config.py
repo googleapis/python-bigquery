@@ -1003,3 +1003,95 @@ class ExternalConfig(object):
         config = cls(resource["sourceFormat"])
         config._properties = copy.deepcopy(resource)
         return config
+
+
+class ExternalCatalogDatasetOptions(object):
+    """Options defining open source compatible datasets living in the BigQuery catalog.
+    Contains metadata of open source database, schema or namespace represented
+    by the current dataset.
+
+    Args:
+        defaultStorageLocationUri: Optional. The storage location URI for all
+            tables in the dataset. Equivalent to hive metastore's database
+            locationUri. Maximum length of 1024 characters. (str)
+        parameters: Optional. A map of key value pairs defining the parameters
+            and properties of the open source schema. Maximum size of 2Mib.
+    """
+
+    def __init__(self, defaultStorageLocationUri: Optional[str] = None, parameters: Optional[dict] = None):
+        self._properties = {}
+        if not isinstance(defaultStorageLocationUri, (str, None)):
+            raise ValueError(
+                "Pass defaultStorageLocationUri as a 'str'."
+                f"Got {repr(dtype)}."
+            )
+        if not isinstance(parameters, (dict, None)):
+            raise ValueError(
+                "Pass parameters as a ''."
+                f"Got {repr(dtype)}."
+            )
+        self._properties["defaultStorageLocationUri"] = defaultStorageLocationUri
+        self._properties["parameters"] = parameters
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        config = copy.deepcopy(self._properties)
+        return config
+
+class ExternalCatalogTableOptions(object):
+    """Metadata about open source compatible table. The fields contained in these
+    options correspond to hive metastore's table level properties.
+
+    Args:
+        connectionId: Optional. The connection specifying the credentials to be
+            used to read external storage, such as Azure Blob, Cloud Storage, or
+            S3. The connection is needed to read the open source table from
+            BigQuery Engine. The connection_id can have the form `..` or
+            `projects//locations//connections/`. (str)
+        parameters: Optional. A map of key value pairs defining the parameters
+            and properties of the open source table. Corresponds with hive meta
+            store table parameters. Maximum size of 4Mib. (dict)
+        storageDescriptor: Optional. A storage descriptor containing information
+            about the physical storage of this table. (StorageDescriptor)
+    """
+
+    def __init__(
+            self, 
+            connectionId: Optional[str] = None,
+            parameters: Optional[dict] = None,
+            storageDescriptor: Optional[str] = None # TODO implement StorageDescriptor, correct this type hint 
+        ):
+        self._properties = {}
+        if not isinstance(connectionId, str):
+            raise ValueError(
+                "Pass connectionId as a 'str'."
+                f"Got {repr(dtype)}."
+            )
+        if not isinstance(parameters, dict):
+            raise ValueError(
+                "Pass parameters as a 'dict'."
+                f"Got {repr(dtype)}."
+            )
+        if not isinstance(storageDescriptor, str): # TODO implement StorageDescriptor, correct this type hint 
+            raise ValueError(
+                "Pass storageDescriptor as a 'StorageDescriptor'."
+                f"Got {repr(dtype)}."
+            )
+        self._properties["connectionId"] = connectionId
+        self._properties["parameters"] = parameters
+        self._properties["storageDescriptor"] = storageDescriptor        
+    
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        config = copy.deepcopy(self._properties)
+        return config

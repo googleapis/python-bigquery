@@ -27,6 +27,8 @@ from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.routine import Routine, RoutineReference
 from google.cloud.bigquery.table import Table, TableReference
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
+from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
+
 
 from typing import Optional, List, Dict, Any, Union
 
@@ -1045,36 +1047,3 @@ class DatasetListItem(object):
     model = _get_model_reference
 
     routine = _get_routine_reference
-
-
-class ExternalCatalogDatasetOptions(object):
-    """Options defining open source compatible datasets living in the BigQuery
-    catalog. Contains metadata of open source database, schema or namespace
-    represented by the current dataset.
-    
-    Args:
-        defaultStorageLocationUri:
-            Optional. The storage location URI for all tables in the dataset.
-            Equivalent to hive metastore's database locationUri. Maximum length
-            of 1024 characters. (str)
-
-        parameters:
-            Optional. A map of key value pairs defining the parameters and
-            properties of the open source schema. Maximum size of 2Mib.
-
-    Raises:
-        ValueError: If either argument is not of type ``str``.
-    """
-
-    def __init__(
-        self,
-        default_storage_location_uri: Optional[str] = None,
-        parameters: Optional[dict] = None
-    ):
-        self._properties = {}
-        if not isinstance(default_storage_location_uri, str):
-            raise ValueError("Pass a string as default_storage_location_uri")
-        if not isinstance(parameters, dict):
-            raise ValueError("Pass a dict as parameters to define the schema.")
-        self._properties["default_storage_location_uri"] = default_storage_location_uri
-        self._properties["parameters"] = parameters

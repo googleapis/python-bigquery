@@ -18,7 +18,7 @@ google-auth==2.34.0
 google-cloud-bigquery==3.25.0
 google-cloud-bigquery-storage==2.26.0
 google-cloud-core==2.4.1
-google-crc32c==1.5.0; python_version < '3.9'
+google-crc32c==1.6.0; python_version < '3.9'
 google-crc32c==1.6.0; python_version >= '3.9'
 google-resumable-media==2.7.2
 googleapis-common-protos==1.65.0

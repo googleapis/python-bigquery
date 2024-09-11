@@ -1020,17 +1020,17 @@ class ExternalCatalogDatasetOptions(object):
 
     def __init__(self, default_storage_location_uri: Optional[str] = None, parameters: Optional[dict] = None):
         self._properties = {}
-        if not isinstance(default_storage_location_uri, (str, None)):
+        if not isinstance(default_storage_location_uri, str) and default_storage_location_uri is not None:
             raise ValueError(
-                "Pass default_storage_location_uri as a 'str' or None."
+                "Pass default_storage_location_uri as a str or None."
                 f"Got {repr(default_storage_location_uri)}."
             )
-        if not isinstance(parameters, (dict, None)):
+        if not isinstance(parameters, dict) and parameters is not None:
             raise ValueError(
-                "Pass parameters as a ''."
+                "Pass parameters as a dict or None."
                 f"Got {repr(parameters)}."
             )
-        self._properties["defaultStorageLocationUri"] =default_storage_location_uri
+        self._properties["defaultStorageLocationUri"] = default_storage_location_uri
         self._properties["parameters"] = parameters
 
     def to_api_repr(self) -> dict:

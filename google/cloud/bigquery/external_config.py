@@ -1023,12 +1023,12 @@ class ExternalCatalogDatasetOptions(object):
         if not isinstance(default_storage_location_uri, (str, None)):
             raise ValueError(
                 "Pass default_storage_location_uri as a 'str' or None."
-                f"Got {repr(dtype)}."
+                f"Got {repr(default_storage_location_uri)}."
             )
         if not isinstance(parameters, (dict, None)):
             raise ValueError(
                 "Pass parameters as a ''."
-                f"Got {repr(dtype)}."
+                f"Got {repr(parameters)}."
             )
         self._properties["defaultStorageLocationUri"] =default_storage_location_uri
         self._properties["parameters"] = parameters
@@ -1070,17 +1070,17 @@ class ExternalCatalogTableOptions(object):
         if not isinstance(connection_id, str):
             raise ValueError(
                 "Pass connection_id as a 'str'."
-                f"Got {repr(dtype)}."
+                f"Got {repr(connection_id)}."
             )
         if not isinstance(parameters, dict):
             raise ValueError(
                 "Pass parameters as a 'dict'."
-                f"Got {repr(dtype)}."
+                f"Got {repr(parameters)}."
             )
         if not isinstance(storage_descriptor, str): # TODO implement StorageDescriptor, correct this type hint 
             raise ValueError(
                 "Pass storage_descriptor as a 'StorageDescriptor' object."
-                f"Got {repr(dtype)}."
+                f"Got {repr(storage_descriptor)}."
             )
         self._properties["connectionId"] = connection_id
         self._properties["parameters"] = parameters

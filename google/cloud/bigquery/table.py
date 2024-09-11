@@ -1016,7 +1016,7 @@ class Table(_TableBase):
                 "ExternalCatalogTableOptions object or None. "
                 f"Got {repr(value)}."
             )
-        self._properties["externalCatalogTableOptions"] = value
+        self._properties["externalCatalogTableOptions"] = value.to_api_repr()
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":

@@ -1011,18 +1011,18 @@ class ExternalCatalogDatasetOptions(object):
     by the current dataset.
 
     Args:
-        defaultStorageLocationUri: Optional. The storage location URI for all
+        default_storage_location_uri: Optional. The storage location URI for all
             tables in the dataset. Equivalent to hive metastore's database
             locationUri. Maximum length of 1024 characters. (str)
         parameters: Optional. A map of key value pairs defining the parameters
             and properties of the open source schema. Maximum size of 2Mib.
     """
 
-    def __init__(self, defaultStorageLocationUri: Optional[str] = None, parameters: Optional[dict] = None):
+    def __init__(self, default_storage_location_uri: Optional[str] = None, parameters: Optional[dict] = None):
         self._properties = {}
-        if not isinstance(defaultStorageLocationUri, (str, None)):
+        if not isinstance(default_storage_location_uri, (str, None)):
             raise ValueError(
-                "Pass defaultStorageLocationUri as a 'str'."
+                "Pass default_storage_location_uri as a 'str' or None."
                 f"Got {repr(dtype)}."
             )
         if not isinstance(parameters, (dict, None)):
@@ -1030,7 +1030,7 @@ class ExternalCatalogDatasetOptions(object):
                 "Pass parameters as a ''."
                 f"Got {repr(dtype)}."
             )
-        self._properties["defaultStorageLocationUri"] = defaultStorageLocationUri
+        self._properties["defaultStorageLocationUri"] =default_storage_location_uri
         self._properties["parameters"] = parameters
 
     def to_api_repr(self) -> dict:
@@ -1048,7 +1048,7 @@ class ExternalCatalogTableOptions(object):
     options correspond to hive metastore's table level properties.
 
     Args:
-        connectionId: Optional. The connection specifying the credentials to be
+        connection_id: Optional. The connection specifying the credentials to be
             used to read external storage, such as Azure Blob, Cloud Storage, or
             S3. The connection is needed to read the open source table from
             BigQuery Engine. The connection_id can have the form `..` or
@@ -1056,20 +1056,20 @@ class ExternalCatalogTableOptions(object):
         parameters: Optional. A map of key value pairs defining the parameters
             and properties of the open source table. Corresponds with hive meta
             store table parameters. Maximum size of 4Mib. (dict)
-        storageDescriptor: Optional. A storage descriptor containing information
+        storage_descriptor: Optional. A storage descriptor containing information
             about the physical storage of this table. (StorageDescriptor)
     """
 
     def __init__(
             self, 
-            connectionId: Optional[str] = None,
+            connection_id: Optional[str] = None,
             parameters: Optional[dict] = None,
-            storageDescriptor: Optional[str] = None # TODO implement StorageDescriptor, correct this type hint 
+            storage_descriptor: Optional[str] = None # TODO implement StorageDescriptor, correct this type hint 
         ):
         self._properties = {}
-        if not isinstance(connectionId, str):
+        if not isinstance(connection_id, str):
             raise ValueError(
-                "Pass connectionId as a 'str'."
+                "Pass connection_id as a 'str'."
                 f"Got {repr(dtype)}."
             )
         if not isinstance(parameters, dict):
@@ -1077,14 +1077,14 @@ class ExternalCatalogTableOptions(object):
                 "Pass parameters as a 'dict'."
                 f"Got {repr(dtype)}."
             )
-        if not isinstance(storageDescriptor, str): # TODO implement StorageDescriptor, correct this type hint 
+        if not isinstance(storage_descriptor, str): # TODO implement StorageDescriptor, correct this type hint 
             raise ValueError(
-                "Pass storageDescriptor as a 'StorageDescriptor'."
+                "Pass storage_descriptor as a 'StorageDescriptor' object."
                 f"Got {repr(dtype)}."
             )
-        self._properties["connectionId"] = connectionId
+        self._properties["connectionId"] = connection_id
         self._properties["parameters"] = parameters
-        self._properties["storageDescriptor"] = storageDescriptor        
+        self._properties["storageDescriptor"] = storage_descriptor        
     
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.

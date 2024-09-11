@@ -956,7 +956,7 @@ class Dataset(object):
                 "ExternalCatalogDatasetOptions object or None. "
                 f"Got {repr(value)}."
             )
-        self._properties["externalCatalogDatasetOptions"] = value
+        self._properties["externalCatalogDatasetOptions"] = value.to_api_repr()
 
     table = _get_table_reference
 

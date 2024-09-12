@@ -1021,19 +1021,19 @@ class ExternalCatalogDatasetOptions(object):
     def __init__(
         self,
         default_storage_location_uri: Optional[str] = None,
-        parameters: Optional[dict] = None,
+        parameters: Optional[Dict[str, Any]] = None,
     ):
-        self._properties = {}
+        self._properties = {}  # type: Dict[str, Any]
         if (
             not isinstance(default_storage_location_uri, str)
             and default_storage_location_uri is not None
         ):
-            raise ValueError(
+            raise TypeError(
                 "Pass default_storage_location_uri as a str or None."
                 f"Got {repr(default_storage_location_uri)}."
             )
         if not isinstance(parameters, dict) and parameters is not None:
-            raise ValueError(
+            raise TypeError(
                 "Pass parameters as a dict or None." f"Got {repr(parameters)}."
             )
         self._properties["defaultStorageLocationUri"] = default_storage_location_uri
@@ -1070,23 +1070,25 @@ class ExternalCatalogTableOptions(object):
     def __init__(
         self,
         connection_id: Optional[str] = None,
-        parameters: Optional[dict] = None,
+        parameters: Union[Dict[str, Any], None] = None,
         storage_descriptor: Optional[
             str
-        ] = None,  # TODO implement StorageDescriptor, correct this type hint
+        ] = None,  # TODO implement StorageDescriptor, then correct this type hint
     ):
-        self._properties = {}
-        if not isinstance(connection_id, str):
-            raise ValueError(
-                "Pass connection_id as a 'str'." f"Got {repr(connection_id)}."
+        self._properties = {}  # type: Dict[str, Any]
+        if not isinstance(connection_id, str) and connection_id is not None:
+            raise TypeError(
+                "Pass connection_id as a 'str' or None. " f"Got {repr(connection_id)}."
             )
-        if not isinstance(parameters, dict):
-            raise ValueError("Pass parameters as a 'dict'." f"Got {repr(parameters)}.")
-        if not isinstance(
-            storage_descriptor, str
+        if not isinstance(parameters, dict) and parameters is not None:
+            raise TypeError(
+                "Pass parameters as a 'dict' or None. " f"Got {repr(parameters)}."
+            )
+        if (
+            not isinstance(storage_descriptor, str) and storage_descriptor is not None
         ):  # TODO implement StorageDescriptor, correct this type hint
-            raise ValueError(
-                "Pass storage_descriptor as a 'StorageDescriptor' object."
+            raise TypeError(
+                "Pass storage_descriptor as a 'StorageDescriptor' object. "
                 f"Got {repr(storage_descriptor)}."
             )
         self._properties["connectionId"] = connection_id

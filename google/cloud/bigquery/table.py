@@ -1005,7 +1005,7 @@ class Table(_TableBase):
         """Options defining open source compatible datasets living in the
         BigQuery catalog. Contains metadata of open source database, schema
         or namespace represented by the current dataset."""
-       
+
         return self._properties.get("externalCatalogTableOptions")
 
     @external_catalog_table_options.setter
@@ -3327,43 +3327,3 @@ def _table_arg_to_table(value, default_project=None) -> Table:
         value = newvalue
 
     return value
-
-
-class ExternalCatalogTableOptions
-    """Metadata about open source compatible table. The fields contained in these options correspond to hive metastore's table level properties.
-    Args:
-        connectionId: Optional. The connection specifying the credentials to be
-            used to read external storage, such as Azure Blob, Cloud Storage, or
-            S3. The connection is needed to read the open source table from
-            BigQuery Engine. The connection_id can have the form `..` or
-            `projects//locations//connections/`. (str)
-        parameters: Optional. A map of key value pairs defining the parameters
-            and properties of the open source table. Corresponds with hive meta
-            store table parameters. Maximum size of 4Mib.
-        storageDescriptor: Optional. A storage descriptor containing information
-            about the physical storage of this table.
-    """
-
-    def __init__(self, connectionId=None, parameters=None, storageDescriptor=None):
-        self._properties = {}
-        self.connectionId = connectionId
-        self.parameters = parameters
-        self.storageDescriptor = storageDescriptor
-
-        if not isinstance(connectionId, str):
-            raise ValueError(
-                connectionId must be a str.
-                Got 'connectionId'.
-            )
-
-        if not isinstance(parameters, ):
-            raise ValueError(
-                parameters must be a .
-                Got 'parameters'.
-            )
-
-        if not isinstance(storageDescriptor, ):
-            raise ValueError(
-                storageDescriptor must be a .
-                Got 'storageDescriptor'.
-            )

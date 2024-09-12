@@ -945,7 +945,7 @@ class Dataset(object):
         """Options defining open source compatible datasets living in the
         BigQuery catalog. Contains metadata of open source database, schema
         or namespace represented by the current dataset."""
-       
+
         return self._properties.get("externalCatalogDatasetOptions")
 
     @external_catalog_dataset_options.setter

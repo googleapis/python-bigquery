@@ -19,6 +19,8 @@ import unittest
 from google.cloud.bigquery import external_config
 from google.cloud.bigquery import schema
 
+import pytest
+
 
 class TestExternalConfig(unittest.TestCase):
     SOURCE_URIS = ["gs://foo", "gs://bar"]
@@ -890,3 +892,62 @@ def _copy_and_update(d, u):
     d = copy.deepcopy(d)
     d.update(u)
     return d
+
+
+class TestExternalCatalogDatasetOptions:
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
+
+        return ExternalCatalogDatasetOptions
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_ctor_defaults(self):
+        """Test ExternalCatalogDatasetOptions constructor with default values."""
+        instance = self._make_one()
+
+        assert instance._properties["defaultStorageLocationUri"] is None
+        assert instance._properties["parameters"] is None
+
+    def test_ctor_explicit(
+        self,
+    ):
+        """Test ExternalCatalogDatasetOptions constructor with explicit values."""
+
+        default_storage_location_uri = "gs://test-bucket/test-path"
+        parameters = {"key": "value"}
+
+        instance = self._make_one(
+            default_storage_location_uri=default_storage_location_uri,
+            parameters=parameters,
+        )
+
+        assert (
+            instance._properties["defaultStorageLocationUri"]
+            == default_storage_location_uri
+        )
+        assert instance._properties["parameters"] == parameters
+
+    def test_ctor_invalid_input(self):
+        """Test ExternalCatalogDatasetOptions constructor with invalid input."""
+
+        with pytest.raises(ValueError):
+            self._make_one(default_storage_location_uri=123)
+        with pytest.raises(ValueError):
+            self._make_one(parameters=123)
+
+    def test_to_api_repr(self):
+        """Test ExternalCatalogDatasetOptions.to_api_repr method."""
+
+        default_storage_location_uri = "gs://test-bucket/test-path"
+        parameters = {"key": "value"}
+
+        instance = self._make_one(
+            default_storage_location_uri=default_storage_location_uri,
+            parameters=parameters,
+        )
+        resource = instance.to_api_repr()
+        assert resource["defaultStorageLocationUri"] == default_storage_location_uri
+        assert resource["parameters"] == parameters

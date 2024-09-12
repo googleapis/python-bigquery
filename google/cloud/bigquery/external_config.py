@@ -1018,17 +1018,23 @@ class ExternalCatalogDatasetOptions(object):
             and properties of the open source schema. Maximum size of 2Mib.
     """
 
-    def __init__(self, default_storage_location_uri: Optional[str] = None, parameters: Optional[dict] = None):
+    def __init__(
+        self,
+        default_storage_location_uri: Optional[str] = None,
+        parameters: Optional[dict] = None,
+    ):
         self._properties = {}
-        if not isinstance(default_storage_location_uri, str) and default_storage_location_uri is not None:
+        if (
+            not isinstance(default_storage_location_uri, str)
+            and default_storage_location_uri is not None
+        ):
             raise ValueError(
                 "Pass default_storage_location_uri as a str or None."
                 f"Got {repr(default_storage_location_uri)}."
             )
         if not isinstance(parameters, dict) and parameters is not None:
             raise ValueError(
-                "Pass parameters as a dict or None."
-                f"Got {repr(parameters)}."
+                "Pass parameters as a dict or None." f"Got {repr(parameters)}."
             )
         self._properties["defaultStorageLocationUri"] = default_storage_location_uri
         self._properties["parameters"] = parameters
@@ -1042,6 +1048,7 @@ class ExternalCatalogDatasetOptions(object):
         """
         config = copy.deepcopy(self._properties)
         return config
+
 
 class ExternalCatalogTableOptions(object):
     """Metadata about open source compatible table. The fields contained in these
@@ -1061,31 +1068,31 @@ class ExternalCatalogTableOptions(object):
     """
 
     def __init__(
-            self, 
-            connection_id: Optional[str] = None,
-            parameters: Optional[dict] = None,
-            storage_descriptor: Optional[str] = None # TODO implement StorageDescriptor, correct this type hint 
-        ):
+        self,
+        connection_id: Optional[str] = None,
+        parameters: Optional[dict] = None,
+        storage_descriptor: Optional[
+            str
+        ] = None,  # TODO implement StorageDescriptor, correct this type hint
+    ):
         self._properties = {}
         if not isinstance(connection_id, str):
             raise ValueError(
-                "Pass connection_id as a 'str'."
-                f"Got {repr(connection_id)}."
+                "Pass connection_id as a 'str'." f"Got {repr(connection_id)}."
             )
         if not isinstance(parameters, dict):
-            raise ValueError(
-                "Pass parameters as a 'dict'."
-                f"Got {repr(parameters)}."
-            )
-        if not isinstance(storage_descriptor, str): # TODO implement StorageDescriptor, correct this type hint 
+            raise ValueError("Pass parameters as a 'dict'." f"Got {repr(parameters)}.")
+        if not isinstance(
+            storage_descriptor, str
+        ):  # TODO implement StorageDescriptor, correct this type hint
             raise ValueError(
                 "Pass storage_descriptor as a 'StorageDescriptor' object."
                 f"Got {repr(storage_descriptor)}."
             )
         self._properties["connectionId"] = connection_id
         self._properties["parameters"] = parameters
-        self._properties["storageDescriptor"] = storage_descriptor        
-    
+        self._properties["storageDescriptor"] = storage_descriptor
+
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.
 

@@ -64,7 +64,7 @@ extras = {
         "ipywidgets>=7.7.0",
         "ipykernel>=6.0.0",
     ],
-    "geopandas": ["geopandas>=0.9.0, <1.0dev", "Shapely>=1.8.4, <3.0.0dev"],
+    "geopandas": ["geopandas>=1.0", "Shapely>=2.0.6, <3.0.0dev"],
     "ipython": [
         "bigquery-magics >= 0.1.0",
     ],

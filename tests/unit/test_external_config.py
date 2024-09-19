@@ -934,9 +934,9 @@ class TestExternalCatalogDatasetOptions:
     def test_ctor_invalid_input(self):
         """Test ExternalCatalogDatasetOptions constructor with invalid input."""
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             self._make_one(default_storage_location_uri=123)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             self._make_one(parameters=123)
 
     def test_to_api_repr(self):

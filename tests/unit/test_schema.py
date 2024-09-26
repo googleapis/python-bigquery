@@ -14,7 +14,8 @@
 
 from google.cloud import bigquery
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
-from google.cloud.bigquery.schema import PolicyTagList
+from google.cloud.bigquery.schema import PolicyTagList, ForeignTypeInfo
+
 import unittest
 from unittest import mock
 
@@ -1108,3 +1109,36 @@ def test_to_api_repr_parameterized(field, api):
     from google.cloud.bigquery.schema import SchemaField
 
     assert SchemaField(**field).to_api_repr() == api
+
+
+class TestForeignTypeSystem:
+    """TODO: add doc string."""
+
+    def test_foreign_type_system_constructor_valid_type_system(self):
+        foreign_type_info = ForeignTypeInfo("my_type_system")
+        assert foreign_type_info.type_system == "my_type_system"
+
+    @pytest.mark.parametrize("value", [(42), (None)])
+    def test_foreign_type_system_constructor_invalid_type_system(self, value):
+        foreign_type_info = ForeignTypeInfo("my_type_system")
+        with pytest.raises(ValueError) as exc_info:
+            foreign_type_info.type_system = value
+        assert "Pass type_system as a 'str'." in str(exc_info.value)
+
+    @pytest.mark.parametrize(
+        "type_system, expected_api_repr",
+        [
+            ("TYPE_SYSTEM_UNSPECIFIED", {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}),
+            ("HIVE", {"typeSystem": "HIVE"}),
+        ],
+    )
+    def test_to_api_repr(self, type_system, expected_api_repr):
+        foreign_type_info = ForeignTypeInfo(type_system)
+        actual = foreign_type_info.to_api_repr()
+        assert actual == expected_api_repr
+
+    def test_to_api_repr_type_system_unspecified(self):
+        foreign_type_info = ForeignTypeInfo()
+        expected_api_repr = {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}
+        actual = foreign_type_info.to_api_repr()
+        assert actual == expected_api_repr

@@ -28,6 +28,8 @@ from google.cloud.bigquery._helpers import _to_bytes
 from google.cloud.bigquery._helpers import _bytes_to_json
 from google.cloud.bigquery._helpers import _int_or_none
 from google.cloud.bigquery._helpers import _str_or_none
+from google.cloud.bigquery._helpers import _isinstance_raise
+from google.cloud.bigquery._helpers import ResourceBase
 from google.cloud.bigquery.format_options import AvroOptions, ParquetOptions
 from google.cloud.bigquery.schema import SchemaField
 
@@ -1005,16 +1007,16 @@ class ExternalConfig(object):
         return config
 
 
-class ExternalCatalogDatasetOptions(object):
+class ExternalCatalogDatasetOptions(ResourceBase):
     """Options defining open source compatible datasets living in the BigQuery catalog.
     Contains metadata of open source database, schema or namespace represented
     by the current dataset.
 
     Args:
-        default_storage_location_uri: Optional. The storage location URI for all
+        default_storage_location_uri (Optional[str]): The storage location URI for all
             tables in the dataset. Equivalent to hive metastore's database
             locationUri. Maximum length of 1024 characters. (str)
-        parameters: Optional. A map of key value pairs defining the parameters
+        parameters (Optional[dict[str, Any]]): A map of key value pairs defining the parameters
             and properties of the open source schema. Maximum size of 2Mib.
     """
 
@@ -1023,21 +1025,34 @@ class ExternalCatalogDatasetOptions(object):
         default_storage_location_uri: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None,
     ):
-        self._properties = {}  # type: Dict[str, Any]
-        if (
-            not isinstance(default_storage_location_uri, str)
-            and default_storage_location_uri is not None
-        ):
-            raise TypeError(
-                "Pass default_storage_location_uri as a str or None."
-                f"Got {repr(default_storage_location_uri)}."
-            )
-        if not isinstance(parameters, dict) and parameters is not None:
-            raise TypeError(
-                "Pass parameters as a dict or None." f"Got {repr(parameters)}."
-            )
+        self._properties = {}
         self._properties["defaultStorageLocationUri"] = default_storage_location_uri
         self._properties["parameters"] = parameters
+
+    @property
+    def default_storage_location_uri(self) -> Any:
+        """Optional. The storage location URI for all tables in the dataset.
+        Equivalent to hive metastore's database locationUri. Maximum length of
+        1024 characters."""
+
+        return self._properties.get("defaultStorageLocationUri")
+
+    @default_storage_location_uri.setter
+    def default_storage_location_uri(self, value: str) -> str:
+        value = _isinstance_raise(value, str)
+        self._properties["defaultStorageLocationUri"] = value
+
+    @property
+    def parameters(self) -> Any:
+        """Optional. A map of key value pairs defining the parameters and
+        properties of the open source schema. Maximum size of 2Mib."""
+
+        return self._properties.get("parameters")
+
+    @parameters.setter
+    def parameters(self, value: dict[str, Any]) -> str:
+        value = _isinstance_raise(value, dict)
+        self._properties["parameters"] = value
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.
@@ -1050,7 +1065,7 @@ class ExternalCatalogDatasetOptions(object):
         return config
 
 
-class ExternalCatalogTableOptions(object):
+class ExternalCatalogTableOptions(ResourceBase):
     """Metadata about open source compatible table. The fields contained in these
     options correspond to hive metastore's table level properties.
 

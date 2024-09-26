@@ -15,10 +15,12 @@
 """Schemas for BigQuery tables / queries."""
 
 import collections
+import copy
 import enum
 from typing import Any, Dict, Iterable, Optional, Union, cast
 
 from google.cloud.bigquery import standard_sql
+from google.cloud.bigquery._helpers import ResourceBase
 from google.cloud.bigquery.enums import StandardSqlTypeNames
 
 
@@ -588,3 +590,91 @@ class PolicyTagList(object):
         """
         answer = {"names": list(self.names)}
         return answer
+
+
+class TableSchema(ResourceBase):
+    """Schema of a table
+
+    Args:
+        fields (list): Describes the fields in a table.
+        foreignTypeInfo: Optional. Specifies metadata of the foreign data type
+            definition in field schema
+            (TableFieldSchema.foreign_type_definition).
+    """
+
+    def __init__(self, fields: list = None, foreign_type_info: Optional[str] = None):
+        self._properties = {}
+        self._properties["fields"] = fields
+        self._properties["foreignTypeInfo"] = foreign_type_info
+
+    @property
+    def fields(self) -> Any:
+        """Describes the fields in a table."""
+
+        return self._properties.get("fields")
+
+    @fields.setter
+    def fields(self, value: list, dtype: str) -> str:
+        if not isinstance(value, list):
+            raise ValueError(f"Pass fields as a '{repr(dtype)}'." f"Got {type(value)}.")
+        self._properties["fields"] = value
+
+    @property
+    def foreign_type_info(self) -> Any:
+        """Optional. Specifies metadata of the foreign data type definition in
+        field schema (TableFieldSchema.foreign_type_definition)."""
+
+        return self._properties.get("foreignTypeInfo")
+
+    @foreign_type_info.setter
+    def foreign_type_info(self, value: str, dtype: str) -> str:
+        if not isinstance(value, str):
+            raise ValueError(
+                f"Pass {value} as a '{repr(dtype)}'." f"Got {type(value)}."
+            )
+        self._properties["foreignTypeInfo"] = value
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return copy.deepcopy(self._properties)
+
+
+class ForeignTypeInfo(ResourceBase):
+    """Metadata about the foreign data type definition such as the system in which the
+    type is defined.
+
+    Args:
+        typeSystem (str): Required. Specifies the system which defines the
+            foreign data type.
+    """
+
+    def __init__(self, type_system_="TYPE_SYSTEM_UNSPECIFIED"):
+        self._properties = {}
+        self._properties["typeSystem"] = type_system_
+
+    @property
+    def type_system(self):
+        """Required. Specifies the system which defines the foreign data
+        type."""
+
+        return self._properties.get("typeSystem")
+
+    @type_system.setter
+    def type_system(self, value: str):
+        if not isinstance(value, str) or value is None:
+            raise ValueError("Pass type_system as a 'str'." f" Got {type(value)}.")
+        self._properties["typeSystem"] = value
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return copy.deepcopy(self._properties)

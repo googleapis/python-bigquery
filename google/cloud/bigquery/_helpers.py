@@ -15,6 +15,7 @@
 """Shared helper functions for BigQuery API classes."""
 
 import base64
+import copy
 import datetime
 import decimal
 import json
@@ -1004,3 +1005,33 @@ def _verify_job_config_type(job_config, expected_type, param_name="job_config"):
                 job_config=job_config,
             )
         )
+
+
+class ResourceBase:
+    """Base class providing the from_api_repr method."""
+
+    def __init__(self):
+        self._properties = {}
+
+    @classmethod
+    def from_api_repr(cls, resource: dict):
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            ResourceBase: An instance of the class initialized with data
+                from 'resource'.
+        """
+        config = cls()
+        config._properties = copy.deepcopy(resource)
+        return config
+
+
+def _isinstance_raise(value, dtype):
+    if not isinstance(value, dtype):
+        raise TypeError(f"Pass {value} as a 'repr({dtype})'. " f"Got {type(value)}.")
+    return value

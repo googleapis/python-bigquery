@@ -1072,16 +1072,16 @@ class ExternalCatalogTableOptions(ResourceBase):
     options correspond to hive metastore's table level properties.
 
     Args:
-        connection_id: Optional. The connection specifying the credentials to be
+        connection_id  (Optional[str]): The connection specifying the credentials to be
             used to read external storage, such as Azure Blob, Cloud Storage, or
             S3. The connection is needed to read the open source table from
             BigQuery Engine. The connection_id can have the form `..` or
-            `projects//locations//connections/`. (str)
-        parameters: Optional. A map of key value pairs defining the parameters
+            `projects//locations//connections/`.
+        parameters (Union[Dict[str, Any], None]): A map of key value pairs defining the parameters
             and properties of the open source table. Corresponds with hive meta
-            store table parameters. Maximum size of 4Mib. (dict)
-        storage_descriptor: Optional. A storage descriptor containing information
-            about the physical storage of this table. (StorageDescriptor)
+            store table parameters. Maximum size of 4Mib.
+        storage_descriptor (Optional[StorageDescriptor]): A storage descriptor containing information
+            about the physical storage of this table.
     """
 
     def __init__(
@@ -1116,7 +1116,8 @@ class ExternalCatalogTableOptions(ResourceBase):
     def parameters(self) -> Any:
         """Optional. A map of key value pairs defining the parameters and
         properties of the open source table. Corresponds with hive meta
-        store table parameters. Maximum size of 4Mib."""
+        store table parameters. Maximum size of 4Mib.
+        """
 
         return self._properties.get("parameters")
 

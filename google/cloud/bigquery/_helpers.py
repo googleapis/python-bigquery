@@ -1042,7 +1042,8 @@ def _isinstance_or_raise(value: Any, dtype: Optional[Union[Any, Tuple[Any, ...]]
         Any: Returns the input value if the type check is successful.
 
     Raises:
-        TypeError: If the input value's type does not match the expected data type(s).    """
+        TypeError: If the input value's type does not match the expected data type(s).
+    """
     
     # Simplest case
     if dtype is None and value is None:

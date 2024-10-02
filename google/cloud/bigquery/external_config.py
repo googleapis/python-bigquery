@@ -24,12 +24,14 @@ import base64
 import copy
 from typing import Any, Dict, FrozenSet, Iterable, Optional, Union
 
-from google.cloud.bigquery._helpers import _to_bytes
-from google.cloud.bigquery._helpers import _bytes_to_json
-from google.cloud.bigquery._helpers import _int_or_none
-from google.cloud.bigquery._helpers import _str_or_none
-from google.cloud.bigquery._helpers import _isinstance_raise
-from google.cloud.bigquery._helpers import ResourceBase
+from google.cloud.bigquery._helpers import (
+    _to_bytes,
+    _bytes_to_json,
+    _int_or_none,
+    _str_or_none,
+    _isinstance_or_raise,
+    ResourceBase,
+)
 from google.cloud.bigquery.format_options import AvroOptions, ParquetOptions
 from google.cloud.bigquery.schema import SchemaField
 
@@ -1026,8 +1028,8 @@ class ExternalCatalogDatasetOptions(ResourceBase):
         parameters: Optional[Dict[str, Any]] = None,
     ):
         self._properties = {}
-        self._properties["defaultStorageLocationUri"] = default_storage_location_uri
-        self._properties["parameters"] = parameters
+        self.default_storage_location_uri = default_storage_location_uri
+        self.parameters = parameters
 
     @property
     def default_storage_location_uri(self) -> Any:
@@ -1038,8 +1040,8 @@ class ExternalCatalogDatasetOptions(ResourceBase):
         return self._properties.get("defaultStorageLocationUri")
 
     @default_storage_location_uri.setter
-    def default_storage_location_uri(self, value: str) -> str:
-        value = _isinstance_raise(value, str)
+    def default_storage_location_uri(self, value: str):
+        value = _isinstance_or_raise(value, (str, None))
         self._properties["defaultStorageLocationUri"] = value
 
     @property
@@ -1050,8 +1052,8 @@ class ExternalCatalogDatasetOptions(ResourceBase):
         return self._properties.get("parameters")
 
     @parameters.setter
-    def parameters(self, value: dict[str, Any]) -> str:
-        value = _isinstance_raise(value, dict)
+    def parameters(self, value: dict[str, Any]):
+        value = _isinstance_or_raise(value, (dict, None))
         self._properties["parameters"] = value
 
     def to_api_repr(self) -> dict:
@@ -1091,6 +1093,15 @@ class ExternalCatalogTableOptions(ResourceBase):
         ] = None,  # TODO implement StorageDescriptor, then correct this type hint
     ):
         self._properties = {}  # type: Dict[str, Any]
+        self._properties["connectionId"] = connection_id
+        self._properties["parameters"] = parameters
+        self._properties["storageDescriptor"] = storage_descriptor
+
+        # TODO: revise to create validators
+    @property
+    def connection_id(self, value: str):
+        
+        
         if not isinstance(connection_id, str) and connection_id is not None:
             raise TypeError(
                 "Pass connection_id as a 'str' or None. " f"Got {repr(connection_id)}."
@@ -1106,9 +1117,6 @@ class ExternalCatalogTableOptions(ResourceBase):
                 "Pass storage_descriptor as a 'StorageDescriptor' object. "
                 f"Got {repr(storage_descriptor)}."
             )
-        self._properties["connectionId"] = connection_id
-        self._properties["parameters"] = parameters
-        self._properties["storageDescriptor"] = storage_descriptor
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.

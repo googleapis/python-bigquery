@@ -23,7 +23,7 @@ import math
 import re
 import os
 import warnings
-from typing import Optional, Union
+from typing import Optional, Union, Any, Tuple
 
 from dateutil import relativedelta
 from google.cloud._helpers import UTC  # type: ignore
@@ -1031,7 +1031,34 @@ class ResourceBase:
         return config
 
 
-def _isinstance_raise(value, dtype):
-    if not isinstance(value, dtype):
-        raise TypeError(f"Pass {value} as a 'repr({dtype})'. " f"Got {type(value)}.")
+def _isinstance_or_raise(value: Any, dtype: Optional[Union[Any, Tuple[Any, ...]]]):
+    """Determine whether a value type matches a given datatype or None.
+
+    Args:
+        value (Any): Value to be checked.
+        dtype (Optional[Union[Any, Tuple[Any, ...]]]): Expected data type(s).
+
+    Returns:
+        Any: Returns the input value if the type check is successful.
+
+    Raises:
+        TypeError: If the input value's type does not match the expected data type(s).    """
+    
+    # Simplest case
+    if dtype is None and value is None:
+        return value
+    
+    elif isinstance(dtype, tuple):
+        # Another simple case
+        if None in dtype and value is None:
+            return value
+        # Iterate through the tuple and check if value is an instance of any type
+        if not any(isinstance(value, t) for t in dtype if t is not None):
+            valid_types_str = ", ".join(str(t) for t in dtype if t is not None)
+            msg = f"Pass {value} as one of '{valid_types_str}' or None. Got {type(value)}."
+            raise TypeError(msg)
+    else:
+        if not isinstance(value, dtype):
+            msg = f"Pass {value} as a '{dtype}'. Got {type(value)}."
+            raise TypeError(msg)
     return value

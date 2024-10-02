@@ -1111,34 +1111,43 @@ def test_to_api_repr_parameterized(field, api):
     assert SchemaField(**field).to_api_repr() == api
 
 
-class TestForeignTypeSystem:
+class TestForeignTypeInfo:
     """TODO: add doc string."""
 
-    def test_foreign_type_system_constructor_valid_type_system(self):
-        foreign_type_info = ForeignTypeInfo("my_type_system")
-        assert foreign_type_info.type_system == "my_type_system"
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.schema import ForeignTypeInfo
+        return ForeignTypeInfo
 
-    @pytest.mark.parametrize("value", [(42), (None)])
-    def test_foreign_type_system_constructor_invalid_type_system(self, value):
-        foreign_type_info = ForeignTypeInfo("my_type_system")
-        with pytest.raises(ValueError) as exc_info:
-            foreign_type_info.type_system = value
-        assert "Pass type_system as a 'str'." in str(exc_info.value)
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
 
     @pytest.mark.parametrize(
-        "type_system, expected_api_repr",
+        "type_system,expected",
+        [
+            (None, None),
+            ("TYPE_SYSTEM_UNSPECIFIED", "TYPE_SYSTEM_UNSPECIFIED"),
+            ("HIVE", "HIVE"),
+        ],
+    )
+    def test_ctor_valid_input(self, type_system, expected):
+        result = self._make_one(type_system=type_system)
+        
+        assert result._properties['typeSystem'] == expected
+
+    def test_ctor_invalid_input(self):
+        with pytest.raises(TypeError) as e:
+            result = self._make_one(type_system=123)
+            assert result == e
+
+    @pytest.mark.parametrize(
+        "type_system,expected",
         [
             ("TYPE_SYSTEM_UNSPECIFIED", {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}),
             ("HIVE", {"typeSystem": "HIVE"}),
+            (None, {"typeSystem": None}),
         ],
     )
-    def test_to_api_repr(self, type_system, expected_api_repr):
-        foreign_type_info = ForeignTypeInfo(type_system)
-        actual = foreign_type_info.to_api_repr()
-        assert actual == expected_api_repr
-
-    def test_to_api_repr_type_system_unspecified(self):
-        foreign_type_info = ForeignTypeInfo()
-        expected_api_repr = {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}
-        actual = foreign_type_info.to_api_repr()
-        assert actual == expected_api_repr
+    def test_to_api_repr(self, type_system, expected):
+        result = self._make_one(type_system=type_system)
+        assert result.to_api_repr() == expected

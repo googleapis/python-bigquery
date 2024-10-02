@@ -20,7 +20,7 @@ import enum
 from typing import Any, Dict, Iterable, Optional, Union, cast
 
 from google.cloud.bigquery import standard_sql
-from google.cloud.bigquery._helpers import ResourceBase
+from google.cloud.bigquery._helpers import ResourceBase, _isinstance_or_raise
 from google.cloud.bigquery.enums import StandardSqlTypeNames
 
 
@@ -596,16 +596,15 @@ class TableSchema(ResourceBase):
     """Schema of a table
 
     Args:
-        fields (list): Describes the fields in a table.
-        foreignTypeInfo: Optional. Specifies metadata of the foreign data type
-            definition in field schema
-            (TableFieldSchema.foreign_type_definition).
+        fields (Optional[list]): Describes the fields in a table.
+        foreignTypeInfo (Optional[str]): Specifies metadata of the foreign data type
+            definition in field schema.
     """
 
-    def __init__(self, fields: list = None, foreign_type_info: Optional[str] = None):
+    def __init__(self, fields: Optional[list] = None, foreign_type_info: Optional[str] = None):
         self._properties = {}
-        self._properties["fields"] = fields
-        self._properties["foreignTypeInfo"] = foreign_type_info
+        self.fields = fields
+        self.foreign_type_info = foreign_type_info
 
     @property
     def fields(self) -> Any:
@@ -615,8 +614,7 @@ class TableSchema(ResourceBase):
 
     @fields.setter
     def fields(self, value: list, dtype: str) -> str:
-        if not isinstance(value, list):
-            raise ValueError(f"Pass fields as a '{repr(dtype)}'." f"Got {type(value)}.")
+        value = _isinstance_or_raise(value, (list, None))
         self._properties["fields"] = value
 
     @property
@@ -653,9 +651,9 @@ class ForeignTypeInfo(ResourceBase):
             foreign data type.
     """
 
-    def __init__(self, type_system_="TYPE_SYSTEM_UNSPECIFIED"):
+    def __init__(self, type_system="TYPE_SYSTEM_UNSPECIFIED"):
         self._properties = {}
-        self._properties["typeSystem"] = type_system_
+        self.type_system = type_system
 
     @property
     def type_system(self):
@@ -666,8 +664,7 @@ class ForeignTypeInfo(ResourceBase):
 
     @type_system.setter
     def type_system(self, value: str):
-        if not isinstance(value, str) or value is None:
-            raise ValueError("Pass type_system as a 'str'." f" Got {type(value)}.")
+        value = _isinstance_or_raise(value, (str, None))
         self._properties["typeSystem"] = value
 
     def to_api_repr(self) -> dict:
@@ -678,3 +675,7 @@ class ForeignTypeInfo(ResourceBase):
                 A dictionary in the format used by the BigQuery API.
         """
         return copy.deepcopy(self._properties)
+
+
+
+

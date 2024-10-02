@@ -957,8 +957,6 @@ class TestExternalCatalogDatasetOptions:
 
 
 class TestExternalCatalogTableOptions:
-    # TODO add docstring(s)
-
     @staticmethod
     def _get_target_class():
         from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
@@ -968,11 +966,6 @@ class TestExternalCatalogTableOptions:
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)
 
-        # connection_id: Optional[str] = None,
-        # parameters: Optional[dict] = None,
-        # storage_descriptor: Optional[
-        #     str
-        # ] = None
 
     @pytest.mark.parametrize(
         "connection_id,parameters,storage_descriptor",
@@ -981,7 +974,7 @@ class TestExternalCatalogTableOptions:
             ("connection123", None, None),  # set only one parameter at a time
             (None, {"key": "value"}, None),
             (None, None, "placeholder"),
-            (None, None, None),  # all default parameters
+            (None, None, None),  # use default parameters
         ],
     )
     def test_ctor_initialization(self, connection_id, parameters, storage_descriptor):
@@ -1051,6 +1044,3 @@ class TestExternalCatalogTableOptions:
                 parameters=parameters,
                 storage_descriptor=storage_descriptor,
             )
-
-
-# ===============================================

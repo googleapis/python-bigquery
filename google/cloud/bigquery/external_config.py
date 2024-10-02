@@ -1093,30 +1093,50 @@ class ExternalCatalogTableOptions(ResourceBase):
         ] = None,  # TODO implement StorageDescriptor, then correct this type hint
     ):
         self._properties = {}  # type: Dict[str, Any]
-        self._properties["connectionId"] = connection_id
-        self._properties["parameters"] = parameters
-        self._properties["storageDescriptor"] = storage_descriptor
+        self.connection_id = connection_id
+        self.parameters = parameters
+        self.storage_descriptor = storage_descriptor
 
-        # TODO: revise to create validators
     @property
-    def connection_id(self, value: str):
-        
-        
-        if not isinstance(connection_id, str) and connection_id is not None:
-            raise TypeError(
-                "Pass connection_id as a 'str' or None. " f"Got {repr(connection_id)}."
-            )
-        if not isinstance(parameters, dict) and parameters is not None:
-            raise TypeError(
-                "Pass parameters as a 'dict' or None. " f"Got {repr(parameters)}."
-            )
-        if (
-            not isinstance(storage_descriptor, str) and storage_descriptor is not None
-        ):  # TODO implement StorageDescriptor, correct this type hint
-            raise TypeError(
-                "Pass storage_descriptor as a 'StorageDescriptor' object. "
-                f"Got {repr(storage_descriptor)}."
-            )
+    def connection_id(self):
+        """Optional. The connection specifying the credentials to be
+        used to read external storage, such as Azure Blob, Cloud Storage, or
+        S3. The connection is needed to read the open source table from
+        BigQuery Engine. The connection_id can have the form `..` or
+        `projects//locations//connections/`. (str)
+        """
+        return self._properties.get("connectionId")
+
+    @connection_id.setter
+    def connection_id(self, value: Optional[str]):
+        value = _isinstance_or_raise(value, (str, None))
+        self._properties["connectionId"] = value
+
+    @property
+    def parameters(self) -> Any:
+        """Optional. A map of key value pairs defining the parameters and
+        properties of the open source table. Corresponds with hive meta
+        store table parameters. Maximum size of 4Mib."""
+
+        return self._properties.get("parameters")
+
+    @parameters.setter
+    def parameters(self, value: Union[Dict[str, Any], None]):
+        value = _isinstance_or_raise(value, (dict, None))
+        self._properties["parameters"] = value
+
+    @property
+    def storage_descriptor(self) -> Any:
+        """Optional. A storage descriptor containing information about the
+        physical storage of this table."""
+
+        return self._properties.get("storageDescriptor")
+
+    @storage_descriptor.setter
+    def storage_descriptor(self, value: Optional[str]):
+        value = _isinstance_or_raise(value, (str, None))
+        self._properties["storageDescriptor"] = value
+   
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.

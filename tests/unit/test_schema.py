@@ -1232,17 +1232,6 @@ class TestStorageDescriptor:
 
 
 
-    ''' TODO, consider these when SERDE if finished... 
-    @pytest.mark.parametrize(
-        "serde_info,expected",
-        [
-            ({"key": "value"}, {"key": "value"}),
-            ([1, 2, 3], [1, 2, 3]),
-            (123, 123),
-            ("string", "string"),
-        ],
-    )
-    '''
 
 class TestSerDeInfo:
     """Tests for the SerDeInfo class."""

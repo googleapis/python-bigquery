@@ -677,5 +677,158 @@ class ForeignTypeInfo(ResourceBase):
         return copy.deepcopy(self._properties)
 
 
+class StorageDescriptor(ResourceBase):
+    """Contains information about how a table's data is stored and accessed by open
+    source query engines.
+
+    Args:
+        inputFormat (Optional[str]): Specifies the fully qualified class name of
+            the InputFormat (e.g.
+            "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"). The maximum
+            length is 128 characters.
+        locationUri (Optional[str]): The physical location of the table (e.g.
+            `gs://spark-dataproc-data/pangea-data/case_sensitive/` or
+            `gs://spark-dataproc-data/pangea-data/*`). The maximum length is
+            2056 bytes.
+        outputFormat (Optional[str]): Specifies the fully qualified class name
+            of the OutputFormat (e.g.
+            "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat"). The maximum
+            length is 128 characters.
+        serdeInfo (Optional[Any]): Serializer and deserializer information.
+    """
+
+    def __init__(self, input_format: Optional[str] = None, location_uri: Optional[str] = None, output_format: Optional[str] = None, serde_info: Optional[Any] = None):
+        self._properties = {}
+        self.input_format = input_format
+        self.location_uri = location_uri
+        self.output_format = output_format
+        self.serde_info = serde_info        
+    
+    @property
+    def input_format(self) -> Any:
+        '''Optional. Specifies the fully qualified class name of the InputFormat
+        (e.g. "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"). The maximum
+        length is 128 characters.'''
+
+        return self._properties.get("inputFormat")
+
+    @input_format.setter
+    def input_format(self, value: Optional[str]):
+        value = _isinstance_or_raise(value, (str, None))
+        self._properties['inputFormat'] = value
+
+    @property
+    def location_uri(self) -> Any:
+        '''Optional. The physical location of the table (e.g. `gs://spark-
+        dataproc-data/pangea-data/case_sensitive/` or `gs://spark-dataproc-
+        data/pangea-data/*`). The maximum length is 2056 bytes.'''
+
+        return self._properties.get("locationUri")
+
+    @location_uri.setter
+    def location_uri(self, value: Optional[str]):
+        value = _isinstance_or_raise(value, (str, None))
+        self._properties['locationUri'] = value
+
+    @property
+    def output_format(self) -> Any:
+        '''Optional. Specifies the fully qualified class name of the
+        OutputFormat (e.g. "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat").
+        The maximum length is 128 characters.'''
+
+        return self._properties.get("outputFormat")
+
+    @output_format.setter
+    def output_format(self, value: Optional[str]):
+        value = _isinstance_or_raise(value, (str, None))
+        self._properties['outputFormat'] = value
+
+    @property
+    def serde_info(self) -> Any:
+        '''Optional. Serializer and deserializer information.'''
+
+        return self._properties.get("serdeInfo")
+
+    @serde_info.setter
+    def serde_info(self, value: Optional[Any]):
+        value = _isinstance_or_raise(value, (str, None)) #TODO fix, when serde class is done
+        self._properties['serdeInfo'] = value
 
 
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return copy.deepcopy(self._properties)
+
+
+class SerDeInfo(ResourceBase):
+    """Serializer and deserializer information.
+
+    Args:
+        serializationLibrary (str): Required. Specifies a fully-qualified class
+            name of the serialization library that is responsible for the
+            translation of data between table representation and the underlying
+            low-level input and output format structures. The maximum length is
+            256 characters.
+        name (Optional[str]): Name of the SerDe. The maximum length is 256
+            characters.
+        parameters: (Optional[dict[str, str]]): Key-value pairs that define the initialization
+            parameters for the serialization library. Maximum size 10 Kib.
+    """
+
+    def __init__(self, serialization_library: str, name: Optional[str] = None, parameters: Optional[dict[str, str]] = None):
+        self._properties = {}
+        self.serialization_library = serialization_library        
+        self.name = name
+        self.parameters = parameters
+
+    @property
+    def serialization_library(self) -> Any:
+        '''Required. Specifies a fully-qualified class name of the serialization
+        library that is responsible for the translation of data between table
+        representation and the underlying low-level input and output format
+        structures. The maximum length is 256 characters.'''
+
+        return self._properties.get('serializationLibrary')
+
+    @serialization_library.setter
+    def serialization_library(self, value: str):
+        value = _isinstance_or_raise(value, str)
+        self._properties['serializationLibrary'] = value
+
+    
+    @property
+    def name(self) -> Any:
+        '''Optional. Name of the SerDe. The maximum length is 256 characters.'''
+
+        return self._properties.get('name')
+
+    @name.setter
+    def name(self, value: Optional[str] = None):
+        value = _isinstance_or_raise(value, (str, None))
+        self._properties['name'] = value
+
+    @property
+    def parameters(self) -> Any:
+        '''Optional. Key-value pairs that define the initialization parameters
+        for the serialization library. Maximum size 10 Kib.'''
+
+        return self._properties.get('parameters')
+
+    @parameters.setter
+    def parameters(self, value: Optional[dict[str, str]] = None):
+        value = _isinstance_or_raise(value, (dict, None))
+        self._properties['parameters'] = value
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return copy.deepcopy(self._properties)

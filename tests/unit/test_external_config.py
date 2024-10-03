@@ -935,11 +935,11 @@ class TestExternalCatalogDatasetOptions:
         """Test ExternalCatalogDatasetOptions constructor with invalid input."""
         with pytest.raises(TypeError) as e:
             result = self._make_one(default_storage_location_uri=123)
-            assert result == e
+        assert "Pass" in str(e.value)
+
         with pytest.raises(TypeError) as e:
             result = self._make_one(parameters=123)
-            assert result == e
-
+        assert "Pass" in str(e.value)
 
     def test_to_api_repr(self):
         """Test ExternalCatalogDatasetOptions.to_api_repr method."""
@@ -1006,27 +1006,24 @@ class TestExternalCatalogTableOptions:
         }
 
     @pytest.mark.parametrize(
-        "connection_id, parameters, storage_descriptor, exception_class",
+        "connection_id, parameters, storage_descriptor",
         [
             pytest.param(
                 123,
-                {"key": "value"},
-                "placeholder",
-                TypeError,
+                {"test_key": "test_value"},
+                "test placeholder",
                 id="connection_id-invalid-type",
             ),
             pytest.param(
                 "connection123",
                 123,
-                "placeholder",
-                TypeError,
+                "test placeholder",
                 id="parameters-invalid-type",
             ),
             pytest.param(
                 "connection123",
-                {"key": "value"},
+                {"test_key": "test_value"},
                 123,
-                TypeError,
                 id="storage_descriptor-invalid-type",
             ),
         ],
@@ -1036,11 +1033,12 @@ class TestExternalCatalogTableOptions:
         connection_id: str,
         parameters: Dict[str, Any],
         storage_descriptor: str,
-        exception_class: TypeError,
     ):
-        with pytest.raises(exception_class):
+        with pytest.raises(TypeError) as e:
             external_config.ExternalCatalogTableOptions(
                 connection_id=connection_id,
                 parameters=parameters,
                 storage_descriptor=storage_descriptor,
             )
+        
+        assert "Pass" in str(e.value)

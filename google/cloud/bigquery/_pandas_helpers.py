@@ -710,7 +710,7 @@ def _row_iterator_page_to_arrow(page, column_names, arrow_types):
     return pyarrow.RecordBatch.from_arrays(arrays, names=column_names)
 
 
-def download_arrow_row_iterator(pages, bq_schema):
+def download_arrow_row_iterator(pages, bq_schema, types_mapper=None):
     """Use HTTP JSON RowIterator to construct an iterable of RecordBatches.
 
     Args:
@@ -725,7 +725,7 @@ def download_arrow_row_iterator(pages, bq_schema):
         :class:`pyarrow.RecordBatch`
         The next page of records as a ``pyarrow`` record batch.
     """
-    bq_schema = schema._to_schema_fields(bq_schema)
+    bq_schema = schema._to_schema_fields(bq_schema, types_mapper)
     column_names = bq_to_arrow_schema(bq_schema) or [field.name for field in bq_schema]
     arrow_types = [bq_to_arrow_data_type(field) for field in bq_schema]
 

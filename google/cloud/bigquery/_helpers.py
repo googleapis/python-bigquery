@@ -389,7 +389,7 @@ def _field_from_json(resource, field):
         return converter(resource, field)
 
 
-def _row_tuple_from_json(row, schema):
+def _row_tuple_from_json(row, schema, types_mapper):
     """Convert JSON row data to row with appropriate types.
 
     Note:  ``row['f']`` and ``schema`` are presumed to be of the same length.
@@ -406,7 +406,7 @@ def _row_tuple_from_json(row, schema):
     """
     from google.cloud.bigquery.schema import _to_schema_fields
 
-    schema = _to_schema_fields(schema)
+    schema = _to_schema_fields(schema, types_mapper)
 
     row_data = []
     for field, cell in zip(schema, row["f"]):

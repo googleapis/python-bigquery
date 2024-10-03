@@ -1594,11 +1594,12 @@ class RowIterator(HTTPIterator):
         project: Optional[str] = None,
         num_dml_affected_rows: Optional[int] = None,
     ):
+        _item_to_row_with_mapper = functools.partial(_item_to_row, types_mapper=client._types_mapper)
         super(RowIterator, self).__init__(
             client,
             api_request,
             path,
-            item_to_value=_item_to_row,
+            item_to_value=_item_to_row_with_mapper,
             items_key="rows",
             page_token=page_token,
             max_results=max_results,
@@ -1606,7 +1607,7 @@ class RowIterator(HTTPIterator):
             page_start=_rows_page_start,
             next_token="pageToken",
         )
-        schema = _to_schema_fields(schema)
+        schema = _to_schema_fields(schema, client._types_mapper)
         self._field_to_index = _helpers._field_to_index_mapping(schema)
         self._page_size = page_size
         self._preserve_order = False
@@ -1854,7 +1855,7 @@ class RowIterator(HTTPIterator):
             max_queue_size=max_queue_size,
         )
         tabledata_list_download = functools.partial(
-            _pandas_helpers.download_arrow_row_iterator, iter(self.pages), self.schema
+            _pandas_helpers.download_arrow_row_iterator, iter(self.pages), self.schema, types_mapper=self.client._types_mapper,
         )
         return self._to_page_iterable(
             bqstorage_download,
@@ -3218,7 +3219,7 @@ class TableConstraints:
         return cls(primary_key, foreign_keys)
 
 
-def _item_to_row(iterator, resource):
+def _item_to_row(iterator, resource, types_mapper):
     """Convert a JSON row to the native object.
 
     .. note::
@@ -3235,7 +3236,7 @@ def _item_to_row(iterator, resource):
         google.cloud.bigquery.table.Row: The next row in the page.
     """
     return Row(
-        _helpers._row_tuple_from_json(resource, iterator.schema),
+        _helpers._row_tuple_from_json(resource, iterator.schema, types_mapper),
         iterator._field_to_index,
     )
 

@@ -823,7 +823,71 @@ def _download_table_bqstorage(
     selected_fields=None,
     page_to_item=None,
     max_queue_size=_MAX_QUEUE_SIZE_DEFAULT,
+    max_stream_count=None,
 ):
+
+    
+    # project_id: str,
+    # table: 'bigquery.table.Table',  # Assuming this is a BigQuery Table object
+    # bqstorage_client: 'bigquery_storage.BigQueryReadClient',
+    # preserve_order: bool = False,
+    # selected_fields: Optional[List['bigquery.schema.SchemaField']] = None,
+    # page_to_item: Optional[Callable] = None,
+    # max_queue_size: Optional[int] = _MAX_QUEUE_SIZE_DEFAULT,
+    # max_stream_count: Optional[int] = None,
+    # ) -> Generator['pandas.DataFrame', None, None]:
+
+
+    """Downloads a BigQuery table using the BigQuery Storage API.
+
+    This method uses the faster, but potentially more expensive, BigQuery
+    Storage API to download a table as a Pandas DataFrame. It supports
+    parallel downloads and optional data transformations.
+
+    Args:
+        project_id (str): The ID of the Google Cloud project containing
+            the table.
+        table (bigquery.table.Table): The BigQuery table to download.
+        bqstorage_client (bigquery_storage.BigQueryReadClient): An
+            authenticated BigQuery Storage API client.
+        preserve_order (bool, optional): Whether to preserve the order
+            of the rows as they are read from BigQuery. Defaults to False.
+        selected_fields (Optional[List[bigquery.schema.SchemaField]], optional):
+            A list of BigQuery schema fields to select for download. If None,
+            all fields are downloaded. Defaults to None.
+        page_to_item (Optional[Callable], optional): An optional callable
+            function that takes a page of data from the BigQuery Storage API
+            and returns an iterable of individual items. If not provided,
+            each page is treated as a single item. Defaults to None.
+        max_queue_size (Optional[int], optional): The maximum size of
+            the queue used to buffer downloaded data. If None, the queue
+            is unbounded. Defaults to _MAX_QUEUE_SIZE_DEFAULT.
+        max_stream_count (Optional[int], optional): The maximum number of
+            concurrent streams to use for downloading data. If None, the
+            number of streams is determined automatically based on the
+            `preserve_order` parameter. Defaults to None.
+
+    Yields:
+        pandas.DataFrame: Pandas DataFrames, one for each chunk of data
+            downloaded from BigQuery.
+
+    Raises:
+        ValueError: If attempting to read from a specific partition or snapshot.
+
+    Note:
+        This method requires the `google-cloud-bigquery-storage` library
+        to be installed.
+    """
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     """Use (faster, but billable) BQ Storage API to construct DataFrame."""
 
     # Passing a BQ Storage client in implies that the BigQuery Storage library
@@ -837,7 +901,9 @@ def _download_table_bqstorage(
     if "@" in table.table_id:
         raise ValueError("Reading from a specific snapshot is not currently supported.")
 
-    requested_streams = 1 if preserve_order else 0
+    # Compare preserve_order vs max_stream_count to determine how many
+    # streams to use.
+    requested_streams = determine_requested_streams(preserve_order, max_stream_count)
 
     requested_session = bigquery_storage.types.ReadSession(
         table=table.to_bqstorage(), data_format=bigquery_storage.types.DataFormat.ARROW
@@ -949,6 +1015,7 @@ def download_arrow_bqstorage(
     preserve_order=False,
     selected_fields=None,
     max_queue_size=_MAX_QUEUE_SIZE_DEFAULT,
+    max_stream_count=None,
 ):
     return _download_table_bqstorage(
         project_id,
@@ -958,6 +1025,7 @@ def download_arrow_bqstorage(
         selected_fields=selected_fields,
         page_to_item=_bqstorage_page_to_arrow,
         max_queue_size=max_queue_size,
+        max_stream_count=max_stream_count,
     )
 
 
@@ -970,6 +1038,7 @@ def download_dataframe_bqstorage(
     preserve_order=False,
     selected_fields=None,
     max_queue_size=_MAX_QUEUE_SIZE_DEFAULT,
+    max_stream_count=None,
 ):
     page_to_item = functools.partial(_bqstorage_page_to_dataframe, column_names, dtypes)
     return _download_table_bqstorage(
@@ -980,6 +1049,7 @@ def download_dataframe_bqstorage(
         selected_fields=selected_fields,
         page_to_item=page_to_item,
         max_queue_size=max_queue_size,
+        max_stream_count=max_stream_count,
     )
 
 
@@ -1024,3 +1094,34 @@ def verify_pandas_imports():
         raise ValueError(_NO_PANDAS_ERROR) from pandas_import_exception
     if db_dtypes is None:
         raise ValueError(_NO_DB_TYPES_ERROR) from db_dtypes_import_exception
+
+
+def determine_requested_streams(
+        preserve_order: bool,
+        max_stream_count: Union[int, None],
+    ) -> int:
+    """Determines the value of requested_streams based on the values of
+    preserver_order and max_stream_count.
+
+    Args:
+        preserve_order (bool): Whether to preserve the order of streams. (If True,
+            this limits the number of streams to one.)
+        max_stream_count (Union[int, None]]): The maximum number of streams 
+            allowed. Must be a non-negative number or None, where None indicates
+            the value is unset.
+
+    Returns:
+        (int) The appropriate value for requested_streams.
+    """
+
+    if max_stream_count is not None:
+        # If max_stream_count is set, use it regardless of preserve_order
+        return max_stream_count
+    elif preserve_order:
+        # If max_stream_count is unset but preserve_order is set,
+        # use 1 (to limit the max_stream_count to 1, to ensure that order
+        # is preserved)
+        return 1 
+    else:
+        # If both max_stream_count and preserve_order are unset, use 0
+        return 0

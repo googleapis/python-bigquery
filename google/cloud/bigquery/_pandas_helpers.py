@@ -27,9 +27,8 @@ from typing import Any, Union, Optional, Callable, Generator, List
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
-from google.cloud.bigquery.schema import SchemaField
-from google.cloud.bigquery.table import Table
 from google.cloud.bigquery_storage import BigQueryReadClient
+
 
 try:
     import pandas  # type: ignore
@@ -820,10 +819,10 @@ def _nowait(futures):
 
 def _download_table_bqstorage(
     project_id: str,
-    table: Table,
+    table: Any,
     bqstorage_client: BigQueryReadClient,
     preserve_order: bool = False,
-    selected_fields: Optional[List[SchemaField]] = None,
+    selected_fields: Optional[List[Any]] = None,
     page_to_item: Optional[Callable] = None,
     max_queue_size: Any = _MAX_QUEUE_SIZE_DEFAULT,
     max_stream_count: Optional[int] = None,

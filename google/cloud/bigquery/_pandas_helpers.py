@@ -21,7 +21,7 @@ from itertools import islice
 import logging
 import queue
 import warnings
-from typing import Any, Union, Optional, Callable, Generator
+from typing import Any, Union, Optional, Callable, Generator, List
 
 
 from google.cloud.bigquery import _pyarrow_helpers
@@ -78,7 +78,7 @@ else:
         _to_wkb = _to_wkb()
 
 try:
-    from google.cloud.bigquery_storage import ArrowSerializationOptions
+    from google.cloud.bigquery_storage_v1.types import ArrowSerializationOptions
 except ImportError:
     _ARROW_COMPRESSION_SUPPORT = False
 else:
@@ -823,9 +823,9 @@ def _download_table_bqstorage(
     table: Table,
     bqstorage_client: BigQueryReadClient,
     preserve_order: bool = False,
-    selected_fields: Optional[list[SchemaField]] = None,
+    selected_fields: Optional[List[SchemaField]] = None,
     page_to_item: Optional[Callable] = None,
-    max_queue_size: Optional[int] = _MAX_QUEUE_SIZE_DEFAULT,
+    max_queue_size: Any = _MAX_QUEUE_SIZE_DEFAULT,
     max_stream_count: Optional[int] = None,
 ) -> Generator[pandas.DataFrame, None, None]:
     """Downloads a BigQuery table using the BigQuery Storage API.
@@ -837,15 +837,15 @@ def _download_table_bqstorage(
     Args:
         project_id (str): The ID of the Google Cloud project containing
             the table.
-        table (bigquery.table.Table): The BigQuery table to download.
-        bqstorage_client (bigquery_storage.BigQueryReadClient): An
+        table (Table): The BigQuery table to download.
+        bqstorage_client (BigQueryReadClient): An
             authenticated BigQuery Storage API client.
         preserve_order (bool, optional): Whether to preserve the order
             of the rows as they are read from BigQuery. Defaults to False.
             If True and `max_stream_count` is not set, this limits the number
             of streams to one. If `max_stream_count` is set, that will override
             values for `preserve_order`.
-        selected_fields (Optional[list[bigquery.schema.SchemaField]]):
+        selected_fields (Optional[List[SchemaField]]):
             A list of BigQuery schema fields to select for download. If None,
             all fields are downloaded. Defaults to None.
         page_to_item (Optional[Callable]): An optional callable
@@ -887,8 +887,9 @@ def _download_table_bqstorage(
     # streams to use.
     requested_streams = determine_requested_streams(preserve_order, max_stream_count)
 
-    requested_session = bigquery_storage.types.ReadSession(
-        table=table.to_bqstorage(), data_format=bigquery_storage.types.DataFormat.ARROW
+    requested_session = bigquery_storage.types.stream.ReadSession(
+        table=table.to_bqstorage(),
+        data_format=bigquery_storage.types.stream.DataFormat.ARROW,
     )
     if selected_fields is not None:
         for field in selected_fields:
@@ -896,7 +897,8 @@ def _download_table_bqstorage(
 
     if _ARROW_COMPRESSION_SUPPORT:
         requested_session.read_options.arrow_serialization_options.buffer_compression = (
-            ArrowSerializationOptions.CompressionCodec.LZ4_FRAME
+            # CompressionCodec(1) -> LZ4_FRAME
+            ArrowSerializationOptions.CompressionCodec(1)
         )
 
     session = bqstorage_client.create_read_session(
@@ -932,7 +934,7 @@ def _download_table_bqstorage(
     elif max_queue_size is None:
         max_queue_size = 0  # unbounded
 
-    worker_queue = queue.Queue(maxsize=max_queue_size)
+    worker_queue: queue.Queue[int] = queue.Queue(maxsize=max_queue_size)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=total_streams) as pool:
         try:

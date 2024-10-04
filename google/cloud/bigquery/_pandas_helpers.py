@@ -21,12 +21,15 @@ from itertools import islice
 import logging
 import queue
 import warnings
-from typing import Any, Union
+from typing import Any, Union, Optional, Callable, Generator
 
 
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
+from google.cloud.bigquery.schema import SchemaField
+from google.cloud.bigquery.table import Table
+from google.cloud.bigquery_storage import BigQueryReadClient
 
 try:
     import pandas  # type: ignore
@@ -816,28 +819,15 @@ def _nowait(futures):
 
 
 def _download_table_bqstorage(
-    project_id,
-    table,
-    bqstorage_client,
-    preserve_order=False,
-    selected_fields=None,
-    page_to_item=None,
-    max_queue_size=_MAX_QUEUE_SIZE_DEFAULT,
-    max_stream_count=None,
-):
-
-    
-    # project_id: str,
-    # table: 'bigquery.table.Table',  # Assuming this is a BigQuery Table object
-    # bqstorage_client: 'bigquery_storage.BigQueryReadClient',
-    # preserve_order: bool = False,
-    # selected_fields: Optional[List['bigquery.schema.SchemaField']] = None,
-    # page_to_item: Optional[Callable] = None,
-    # max_queue_size: Optional[int] = _MAX_QUEUE_SIZE_DEFAULT,
-    # max_stream_count: Optional[int] = None,
-    # ) -> Generator['pandas.DataFrame', None, None]:
-
-
+    project_id: str,
+    table: Table,
+    bqstorage_client: BigQueryReadClient,
+    preserve_order: bool = False,
+    selected_fields: Optional[list[SchemaField]] = None,
+    page_to_item: Optional[Callable] = None,
+    max_queue_size: Optional[int] = _MAX_QUEUE_SIZE_DEFAULT,
+    max_stream_count: Optional[int] = None,
+) -> Generator[pandas.DataFrame, None, None]:
     """Downloads a BigQuery table using the BigQuery Storage API.
 
     This method uses the faster, but potentially more expensive, BigQuery
@@ -852,20 +842,25 @@ def _download_table_bqstorage(
             authenticated BigQuery Storage API client.
         preserve_order (bool, optional): Whether to preserve the order
             of the rows as they are read from BigQuery. Defaults to False.
-        selected_fields (Optional[List[bigquery.schema.SchemaField]], optional):
+            If True and `max_stream_count` is not set, this limits the number
+            of streams to one. If `max_stream_count` is set, that will override
+            values for `preserve_order`.
+        selected_fields (Optional[list[bigquery.schema.SchemaField]]):
             A list of BigQuery schema fields to select for download. If None,
             all fields are downloaded. Defaults to None.
-        page_to_item (Optional[Callable], optional): An optional callable
+        page_to_item (Optional[Callable]): An optional callable
             function that takes a page of data from the BigQuery Storage API
             and returns an iterable of individual items. If not provided,
             each page is treated as a single item. Defaults to None.
-        max_queue_size (Optional[int], optional): The maximum size of
+        max_queue_size (Optional[int]): The maximum size of
             the queue used to buffer downloaded data. If None, the queue
             is unbounded. Defaults to _MAX_QUEUE_SIZE_DEFAULT.
-        max_stream_count (Optional[int], optional): The maximum number of
+        max_stream_count (Optional[int]): The maximum number of
             concurrent streams to use for downloading data. If None, the
             number of streams is determined automatically based on the
-            `preserve_order` parameter. Defaults to None.
+            `preserve_order` parameter. If `max_stream_count` is set to a
+            non-negative value it will override values for `preserve_order`.
+            Defaults to None.
 
     Yields:
         pandas.DataFrame: Pandas DataFrames, one for each chunk of data
@@ -878,20 +873,7 @@ def _download_table_bqstorage(
         This method requires the `google-cloud-bigquery-storage` library
         to be installed.
     """
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    """Use (faster, but billable) BQ Storage API to construct DataFrame."""
 
-    # Passing a BQ Storage client in implies that the BigQuery Storage library
-    # is available and can be imported.
     from google.cloud import bigquery_storage
 
     if "$" in table.table_id:
@@ -901,7 +883,7 @@ def _download_table_bqstorage(
     if "@" in table.table_id:
         raise ValueError("Reading from a specific snapshot is not currently supported.")
 
-    # Compare preserve_order vs max_stream_count to determine how many
+    # Compares preserve_order vs max_stream_count to determine how many
     # streams to use.
     requested_streams = determine_requested_streams(preserve_order, max_stream_count)
 
@@ -976,7 +958,7 @@ def _download_table_bqstorage(
                 # we want to block on the queue's get method, instead. This
                 # prevents the queue from filling up, because the main thread
                 # has smaller gaps in time between calls to the queue's get
-                # method. For a detailed explaination, see:
+                # method. For a detailed explanation, see:
                 # https://friendliness.dev/2019/06/18/python-nowait/
                 done, not_done = _nowait(not_done)
                 for future in done:
@@ -1097,18 +1079,19 @@ def verify_pandas_imports():
 
 
 def determine_requested_streams(
-        preserve_order: bool,
-        max_stream_count: Union[int, None],
-    ) -> int:
+    preserve_order: bool,
+    max_stream_count: Union[int, None],
+) -> int:
     """Determines the value of requested_streams based on the values of
-    preserver_order and max_stream_count.
+    `preserve_order` and `max_stream_count`.
 
     Args:
-        preserve_order (bool): Whether to preserve the order of streams. (If True,
-            this limits the number of streams to one.)
-        max_stream_count (Union[int, None]]): The maximum number of streams 
+        preserve_order (bool): Whether to preserve the order of streams. If True,
+            this limits the number of streams to one.
+        max_stream_count (Union[int, None]]): The maximum number of streams
             allowed. Must be a non-negative number or None, where None indicates
-            the value is unset.
+            the value is unset. If `max_stream_count` is set, it overrides
+            `preserve_order`.
 
     Returns:
         (int) The appropriate value for requested_streams.
@@ -1121,7 +1104,7 @@ def determine_requested_streams(
         # If max_stream_count is unset but preserve_order is set,
         # use 1 (to limit the max_stream_count to 1, to ensure that order
         # is preserved)
-        return 1 
+        return 1
     else:
-        # If both max_stream_count and preserve_order are unset, use 0
+        # If both max_stream_count and preserve_order are unset, use 0 (unbounded)
         return 0

@@ -27,7 +27,6 @@ from typing import Any, Union, Optional, Callable, Generator, List
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
-from google.cloud.bigquery_storage import BigQueryReadClient
 
 
 try:
@@ -820,7 +819,7 @@ def _nowait(futures):
 def _download_table_bqstorage(
     project_id: str,
     table: Any,
-    bqstorage_client: BigQueryReadClient,
+    bqstorage_client: Any,
     preserve_order: bool = False,
     selected_fields: Optional[List[Any]] = None,
     page_to_item: Optional[Callable] = None,
@@ -836,8 +835,8 @@ def _download_table_bqstorage(
     Args:
         project_id (str): The ID of the Google Cloud project containing
             the table.
-        table (Table): The BigQuery table to download.
-        bqstorage_client (BigQueryReadClient): An
+        table (Any): The BigQuery table to download.
+        bqstorage_client (Any): An
             authenticated BigQuery Storage API client.
         preserve_order (bool, optional): Whether to preserve the order
             of the rows as they are read from BigQuery. Defaults to False.

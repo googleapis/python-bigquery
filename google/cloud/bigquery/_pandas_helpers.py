@@ -825,7 +825,7 @@ def _download_table_bqstorage(
     page_to_item: Optional[Callable] = None,
     max_queue_size: Any = _MAX_QUEUE_SIZE_DEFAULT,
     max_stream_count: Optional[int] = None,
-) -> Generator[pandas.DataFrame, None, None]:
+) -> Generator[Any, None, None]:
     """Downloads a BigQuery table using the BigQuery Storage API.
 
     This method uses the faster, but potentially more expensive, BigQuery

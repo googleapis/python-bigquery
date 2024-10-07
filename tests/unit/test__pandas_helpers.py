@@ -18,6 +18,7 @@ import decimal
 import functools
 import operator
 import queue
+from typing import Union
 from unittest import mock
 import warnings
 
@@ -46,6 +47,7 @@ from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
+from google.cloud.bigquery._pandas_helpers import determine_requested_streams
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
@@ -2053,3 +2055,30 @@ def test_verify_pandas_imports_no_db_dtypes(module_under_test, monkeypatch):
     monkeypatch.setattr(module_under_test, "db_dtypes", None)
     with pytest.raises(ValueError, match="Please install the 'db-dtypes' package"):
         module_under_test.verify_pandas_imports()
+
+
+@pytest.mark.parametrize(
+    "preserve_order, max_stream_count, expected_requested_streams",
+    [
+        (True, 10, 10),  # max_stream_count takes precedence
+        (False, 5, 5),  # max_stream_count takes precedence
+        (True, None, 1),  # preserve_order (1) respected when max_stream_count is None
+        (False, None, 0),  # Unbounded when both are unset
+    ],
+)
+def test_determine_requested_streams(
+    preserve_order: bool,
+    max_stream_count: Union[int, None],
+    expected_requested_streams: int,
+):
+    """Tests various combinations of preserve_order and max_stream_count."""
+    actual_requested_streams = determine_requested_streams(
+        preserve_order, max_stream_count
+    )
+    assert actual_requested_streams == expected_requested_streams
+
+
+def test_determine_requested_streams_invalid_max_stream_count():
+    """Tests that a ValueError is raised if max_stream_count is negative."""
+    with pytest.raises(ValueError):
+        determine_requested_streams(preserve_order=False, max_stream_count=-1)

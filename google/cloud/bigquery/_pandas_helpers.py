@@ -1099,6 +1099,8 @@ def determine_requested_streams(
 
     if max_stream_count is not None:
         # If max_stream_count is set, use it regardless of preserve_order
+        if max_stream_count <= -1:
+            raise ValueError("max_stream_count must be non-negative OR None")
         return max_stream_count
     elif preserve_order:
         # If max_stream_count is unset but preserve_order is set,

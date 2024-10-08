@@ -856,7 +856,7 @@ def _download_table_bqstorage(
             concurrent streams to use for downloading data. If `preserve_order`
             is True, `max_stream_count` is ignored. If `preserve_order` is False
             and `max_stream_count` is set to a non-negative integer, that number
-            of streams will be requested. If `max_stream_count` is None, then the 
+            of streams will be requested. If `max_stream_count` is None, then the
             number of requested streams will be unbounded. Defaults to None.
 
     Yields:

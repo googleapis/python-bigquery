@@ -839,10 +839,9 @@ def _download_table_bqstorage(
         bqstorage_client (Any): An
             authenticated BigQuery Storage API client.
         preserve_order (bool, optional): Whether to preserve the order
-            of the rows as they are read from BigQuery. Defaults to False.
-            If True and `max_stream_count` is not set, this limits the number
-            of streams to one. If `max_stream_count` is set, that will override
-            values for `preserve_order`.
+            of the rows as they are read from BigQuery. If True this limits
+            the number of streams to one and overrides `max_stream_count`.
+            Defaults to False.
         selected_fields (Optional[List[SchemaField]]):
             A list of BigQuery schema fields to select for download. If None,
             all fields are downloaded. Defaults to None.
@@ -854,11 +853,11 @@ def _download_table_bqstorage(
             the queue used to buffer downloaded data. If None, the queue
             is unbounded. Defaults to _MAX_QUEUE_SIZE_DEFAULT.
         max_stream_count (Optional[int]): The maximum number of
-            concurrent streams to use for downloading data. If None, the
-            number of streams is determined automatically based on the
-            `preserve_order` parameter. If `max_stream_count` is set to a
-            non-negative value it will override values for `preserve_order`.
-            Defaults to None.
+            concurrent streams to use for downloading data. If `preserve_order`
+            is True, `max_stream_count` is ignored. If `preserve_order` is False
+            and `max_stream_count` is set to a non-negative integer, that number
+            of streams will be requested. If `max_stream_count` is None, then the 
+            number of requested streams will be unbounded. Defaults to None.
 
     Yields:
         pandas.DataFrame: Pandas DataFrames, one for each chunk of data

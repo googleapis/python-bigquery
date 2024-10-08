@@ -1087,7 +1087,7 @@ def determine_requested_streams(
 
     Args:
         preserve_order (bool): Whether to preserve the order of streams. If True,
-            this limits the number of streams to one. `preserve_order` takes 
+            this limits the number of streams to one. `preserve_order` takes
             precedence over `max_stream_count`.
         max_stream_count (Union[int, None]]): The maximum number of streams
             allowed. Must be a non-negative number or None, where None indicates
@@ -1098,7 +1098,7 @@ def determine_requested_streams(
     Returns:
         (int) The appropriate value for requested_streams.
     """
-    
+
     if preserve_order:
         # If preserve order is set, it takes precendence.
         # Limit the requested streams to 1, to ensure that order
@@ -1110,7 +1110,7 @@ def determine_requested_streams(
         if max_stream_count <= -1:
             raise ValueError("max_stream_count must be non-negative OR None")
         return max_stream_count
-    
+
     else:
         # When preserve_order is False and max_stream_count is None, # of
         # requested streams is zero (unbounded)

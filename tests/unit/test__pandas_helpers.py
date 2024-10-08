@@ -2061,10 +2061,10 @@ def test_verify_pandas_imports_no_db_dtypes(module_under_test, monkeypatch):
     "preserve_order, max_stream_count, expected_requested_streams",
     [
         # If preserve_order is set/True, it takes precedence:
-        (True, 10, 1),   # use 1
-        (True, None, 1), # use 1
+        (True, 10, 1),  # use 1
+        (True, None, 1),  # use 1
         # If preserve_order is not set check max_stream_count:
-        (False, 10, 10),   # max_stream_count (X) takes precedence
+        (False, 10, 10),  # max_stream_count (X) takes precedence
         (False, None, 0),  # Unbounded (0) when both are unset
     ],
 )

@@ -24,6 +24,7 @@ import unittest
 from unittest import mock
 
 import google.api_core
+from google.cloud.bigquery._helpers import _isinstance_or_raise
 
 
 @pytest.mark.skipif(
@@ -1661,3 +1662,40 @@ class Test__get_bigquery_host(unittest.TestCase):
             host = self._call_fut()
 
         self.assertEqual(host, HOST)
+
+
+class Test__isinstance_or_raise:
+    @pytest.mark.parametrize(
+        "value,dtype,expected",
+        [
+            (None, None, None),
+            ('hello world.uri', str, 'hello world.uri'),
+            (None, (str, None), None),
+            (None, (None, str), None),
+            (None, (str, None), None),
+            ('hello world.uri', (None, str), 'hello world.uri'),
+            ('hello world.uri', (str, None), 'hello world.uri'),
+        ],
+    )
+    def test__valid_isinstance_or_raise(self, value, dtype, expected):
+        result = _isinstance_or_raise(value, dtype)
+            
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "value,dtype,expected",
+        [
+            (None, str, pytest.raises(TypeError)),
+            ({"key": "value"}, str, pytest.raises(TypeError)),
+            ({"key": "value"}, None, pytest.raises(TypeError)),
+            ({"key": "value"}, (str, None), pytest.raises(TypeError)),
+            ({"key": "value"}, (None, str), pytest.raises(TypeError)),
+        ],
+    )
+    def test__invalid_isinstance_or_raise(self, value, dtype, expected):
+        with expected as e:
+            result = _isinstance_or_raise(value, dtype)
+            
+            assert result == e
+
+

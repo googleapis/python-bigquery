@@ -1105,6 +1105,5 @@ def determine_requested_streams(
         return max_stream_count
 
     else:
-        # When preserve_order is False and max_stream_count is None, # of
-        # requested streams is zero (unbounded)
+        # Default to zero requested streams (unbounded).
         return 0

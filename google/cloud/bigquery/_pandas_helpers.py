@@ -874,8 +874,6 @@ def _download_table_bqstorage(
     if "@" in table.table_id:
         raise ValueError("Reading from a specific snapshot is not currently supported.")
 
-    # Compares preserve_order vs max_stream_count to determine how many
-    # streams to use.
     requested_streams = determine_requested_streams(preserve_order, max_stream_count)
 
     requested_session = bigquery_storage.types.stream.ReadSession(

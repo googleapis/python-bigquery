@@ -1102,6 +1102,5 @@ def determine_requested_streams(
             raise ValueError("max_stream_count must be non-negative OR None")
         return max_stream_count
 
-    else:
-        # Default to zero requested streams (unbounded).
-        return 0
+    # Default to zero requested streams (unbounded).
+    return 0

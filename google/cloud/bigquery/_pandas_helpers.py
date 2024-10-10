@@ -849,7 +849,7 @@ def _download_table_bqstorage(
             function that takes a page of data from the BigQuery Storage API
         max_stream_count (Optional[int]): The maximum number of
             concurrent streams to use for downloading data. If `preserve_order`
-            is True, the requested streams are limited to 1 regardless of the 
+            is True, the requested streams are limited to 1 regardless of the
             `max_stream_count` value. If 0 or None, then the number of
             requested streams will be unbounded. Defaults to None.
 

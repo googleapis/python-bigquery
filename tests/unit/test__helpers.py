@@ -1669,16 +1669,16 @@ class Test__isinstance_or_raise:
         "value,dtype,none_allowed,expected",
         [
             (None, str, True, None),
-            ('hello world.uri', str, True, 'hello world.uri'),
-            ('hello world.uri', str, False, 'hello world.uri'),
+            ("hello world.uri", str, True, "hello world.uri"),
+            ("hello world.uri", str, False, "hello world.uri"),
             (None, (str, float), True, None),
-            ('hello world.uri', (str, float), True, 'hello world.uri'),
-            ('hello world.uri', (str, float), False, 'hello world.uri'),
+            ("hello world.uri", (str, float), True, "hello world.uri"),
+            ("hello world.uri", (str, float), False, "hello world.uri"),
         ],
     )
     def test__valid_isinstance_or_raise(self, value, dtype, none_allowed, expected):
         result = _isinstance_or_raise(value, dtype, none_allowed=none_allowed)
-            
+
         assert result == expected
 
     @pytest.mark.parametrize(
@@ -1694,7 +1694,5 @@ class Test__isinstance_or_raise:
     def test__invalid_isinstance_or_raise(self, value, dtype, none_allowed, expected):
         with expected as e:
             result = _isinstance_or_raise(value, dtype, none_allowed=none_allowed)
-            
+
             assert result == e
-
-

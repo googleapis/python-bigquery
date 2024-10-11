@@ -30,7 +30,7 @@ from google.cloud.bigquery._helpers import (
     _int_or_none,
     _str_or_none,
     _isinstance_or_raise,
-    ResourceBase,
+    _from_api_repr,
 )
 from google.cloud.bigquery.format_options import AvroOptions, ParquetOptions
 from google.cloud.bigquery.schema import SchemaField
@@ -1009,7 +1009,7 @@ class ExternalConfig(object):
         return config
 
 
-class ExternalCatalogDatasetOptions(ResourceBase):
+class ExternalCatalogDatasetOptions:
     """Options defining open source compatible datasets living in the BigQuery catalog.
     Contains metadata of open source database, schema or namespace represented
     by the current dataset.
@@ -1041,7 +1041,7 @@ class ExternalCatalogDatasetOptions(ResourceBase):
 
     @default_storage_location_uri.setter
     def default_storage_location_uri(self, value: str):
-        value = _isinstance_or_raise(value, (str, None))
+        value = _isinstance_or_raise(value, str, none_allowed=True)
         self._properties["defaultStorageLocationUri"] = value
 
     @property
@@ -1053,7 +1053,7 @@ class ExternalCatalogDatasetOptions(ResourceBase):
 
     @parameters.setter
     def parameters(self, value: dict[str, Any]):
-        value = _isinstance_or_raise(value, (dict, None))
+        value = _isinstance_or_raise(value, dict, none_allowed=True)
         self._properties["parameters"] = value
 
     def to_api_repr(self) -> dict:
@@ -1066,8 +1066,11 @@ class ExternalCatalogDatasetOptions(ResourceBase):
         config = copy.deepcopy(self._properties)
         return config
 
+    def from_api_repr(self, resource):
+        return _from_api_repr(self, resource)
 
-class ExternalCatalogTableOptions(ResourceBase):
+
+class ExternalCatalogTableOptions:
     """Metadata about open source compatible table. The fields contained in these
     options correspond to hive metastore's table level properties.
 
@@ -1109,7 +1112,7 @@ class ExternalCatalogTableOptions(ResourceBase):
 
     @connection_id.setter
     def connection_id(self, value: Optional[str]):
-        value = _isinstance_or_raise(value, (str, None))
+        value = _isinstance_or_raise(value, str, none_allowed=True)
         self._properties["connectionId"] = value
 
     @property
@@ -1123,7 +1126,7 @@ class ExternalCatalogTableOptions(ResourceBase):
 
     @parameters.setter
     def parameters(self, value: Union[Dict[str, Any], None]):
-        value = _isinstance_or_raise(value, (dict, None))
+        value = _isinstance_or_raise(value, dict, none_allowed=True)
         self._properties["parameters"] = value
 
     @property
@@ -1135,9 +1138,8 @@ class ExternalCatalogTableOptions(ResourceBase):
 
     @storage_descriptor.setter
     def storage_descriptor(self, value: Optional[str]):
-        value = _isinstance_or_raise(value, (str, None))
+        value = _isinstance_or_raise(value, str, none_allowed=True)
         self._properties["storageDescriptor"] = value
-   
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.
@@ -1148,3 +1150,6 @@ class ExternalCatalogTableOptions(ResourceBase):
         """
         config = copy.deepcopy(self._properties)
         return config
+
+    def from_api_repr(self, resource):
+        return _from_api_repr(self, resource)

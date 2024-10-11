@@ -16,7 +16,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
 from google.cloud.bigquery.schema import (
     PolicyTagList,
-    ForeignTypeInfo,
+    # ForeignTypeInfo,
     StorageDescriptor,
     SerDeInfo,
 )
@@ -1122,6 +1122,7 @@ class TestForeignTypeInfo:
     @staticmethod
     def _get_target_class():
         from google.cloud.bigquery.schema import ForeignTypeInfo
+
         return ForeignTypeInfo
 
     def _make_one(self, *args, **kw):
@@ -1137,12 +1138,12 @@ class TestForeignTypeInfo:
     )
     def test_ctor_valid_input(self, type_system, expected):
         result = self._make_one(type_system=type_system)
-        
-        assert result._properties['typeSystem'] == expected
+
+        assert result._properties["typeSystem"] == expected
 
     def test_ctor_invalid_input(self):
         with pytest.raises(TypeError) as e:
-            result = self._make_one(type_system=123)
+            self._make_one(type_system=123)
         assert "Pass" in str(e.value)
 
     @pytest.mark.parametrize(
@@ -1176,10 +1177,17 @@ class TestStorageDescriptor:
             (None, "gs://test/path/", None, None),
             (None, None, "testpath.to.OrcOutputFormat", None),
             (None, None, None, "TODO fix serde info"),
-            ("testpath.to.OrcInputFormat", "gs://test/path/", "testpath.to.OrcOutputFormat", "TODO fix serde info"),
+            (
+                "testpath.to.OrcInputFormat",
+                "gs://test/path/",
+                "testpath.to.OrcOutputFormat",
+                "TODO fix serde info",
+            ),
         ],
     )
-    def test_ctor_valid_input(self, input_format, location_uri, output_format, serde_info):
+    def test_ctor_valid_input(
+        self, input_format, location_uri, output_format, serde_info
+    ):
         storage_descriptor = self._make_one(
             input_format=input_format,
             location_uri=location_uri,
@@ -1197,21 +1205,26 @@ class TestStorageDescriptor:
         assert storage_descriptor.output_format == output_format
         assert storage_descriptor.serde_info == serde_info
 
-
     @pytest.mark.parametrize(
-        "arg,value",
+        "input_format,location_uri,output_format,serde_info",
         [
-            ("input_format", 123),
-            ("location", 123),
-            ("output_format", 123),
-            ("serde_info", 123),
-        ]
+            (123, None, None, None),
+            (None, 123, None, None),
+            (None, None, 123, None),
+            (None, None, None, 123),
+        ],
     )
-    def test_ctor_invalid_input(self, arg, value):
+    def test_ctor_invalid_input(
+        self, input_format, location_uri, output_format, serde_info
+    ):
         with pytest.raises(TypeError) as e:
-            result = self._make_one(arg=value)
+            self._make_one(
+                input_format=input_format,
+                location_uri=location_uri,
+                output_format=output_format,
+                serde_info=serde_info,
+            )
         assert "Pass" in str(e.value)
-
 
     def test_to_api_repr(self):
         storage_descriptor = self._make_one(
@@ -1227,10 +1240,6 @@ class TestStorageDescriptor:
             "serdeInfo": "TODO fix serde info",
         }
         assert storage_descriptor.to_api_repr() == expected_repr
-
-
-
-
 
 
 class TestSerDeInfo:
@@ -1272,18 +1281,18 @@ class TestSerDeInfo:
         [
             (123, None, None),
             ("testpath.to.LazySimpleSerDe", 123, None),
-            ("testpath.to.LazySimpleSerDe", None, ['test', 'list']),
+            ("testpath.to.LazySimpleSerDe", None, ["test", "list"]),
             ("testpath.to.LazySimpleSerDe", None, 123),
         ],
     )
     def test_ctor_invalid_input(self, serialization_library, name, parameters):
         with pytest.raises(TypeError) as e:
-            result = self._make_one(
+            self._make_one(
                 serialization_library=serialization_library,
                 name=name,
                 parameters=parameters,
             )
-            
+
         assert "Pass" in str(e.value)
 
     def test_to_api_repr(self):

@@ -1007,35 +1007,11 @@ def _verify_job_config_type(job_config, expected_type, param_name="job_config"):
         )
 
 
-class ResourceBase:
-    """Base class providing the from_api_repr method."""
-
-    def __init__(self):
-        self._properties = {}
-
-    @classmethod
-    def from_api_repr(cls, resource: dict):
-        """Factory: constructs an instance of the class (cls)
-        given its API representation.
-
-        Args:
-            resource (Dict[str, Any]):
-                API representation of the object to be instantiated.
-
-        Returns:
-            ResourceBase: An instance of the class initialized with data
-                from 'resource'.
-        """
-        config = cls()
-        config._properties = copy.deepcopy(resource)
-        return config
-
-
 def _isinstance_or_raise(
-        value: Any,
-        dtype: Union[Type, Tuple[Type, ...]],
-        none_allowed: Optional[bool]=False,
-    ) -> Any:
+    value: Any,
+    dtype: Union[Type, Tuple[Type, ...], None],
+    none_allowed: Optional[bool] = False,
+) -> Any:
     """Determine whether a value type matches a given datatype or None.
 
     Args:
@@ -1055,10 +1031,26 @@ def _isinstance_or_raise(
 
     if isinstance(value, dtype):
         return value
-    
-    or_none = ''
+
+    or_none = ""
     if none_allowed:
-        or_none = ' (or None)'
+        or_none = " (or None)"
 
     msg = f"Pass {value} as a '{dtype}'{or_none}. Got {type(value)}."
     raise TypeError(msg)
+
+
+def _from_api_repr(obj, resource: dict):
+    """Factory: constructs an instance of the class (cls)
+    given its API representation.
+
+    Args:
+        resource (Dict[str, Any]):
+            API representation of the object to be instantiated.
+
+    Returns:
+        An instance of the class initialized with data from 'resource'.
+    """
+    config = obj
+    config._properties = copy.deepcopy(resource)
+    return config

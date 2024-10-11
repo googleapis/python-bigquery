@@ -934,11 +934,11 @@ class TestExternalCatalogDatasetOptions:
     def test_ctor_invalid_input(self):
         """Test ExternalCatalogDatasetOptions constructor with invalid input."""
         with pytest.raises(TypeError) as e:
-            result = self._make_one(default_storage_location_uri=123)
+            self._make_one(default_storage_location_uri=123)
         assert "Pass" in str(e.value)
 
         with pytest.raises(TypeError) as e:
-            result = self._make_one(parameters=123)
+            self._make_one(parameters=123)
         assert "Pass" in str(e.value)
 
     def test_to_api_repr(self):
@@ -965,7 +965,6 @@ class TestExternalCatalogTableOptions:
 
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)
-
 
     @pytest.mark.parametrize(
         "connection_id,parameters,storage_descriptor",
@@ -1040,5 +1039,5 @@ class TestExternalCatalogTableOptions:
                 parameters=parameters,
                 storage_descriptor=storage_descriptor,
             )
-        
+
         assert "Pass" in str(e.value)

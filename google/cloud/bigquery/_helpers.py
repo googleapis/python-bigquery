@@ -23,7 +23,7 @@ import math
 import re
 import os
 import warnings
-from typing import Optional, Union, Any, Tuple
+from typing import Optional, Union, Any, Tuple, Type
 
 from dateutil import relativedelta
 from google.cloud._helpers import UTC  # type: ignore
@@ -1031,13 +1031,18 @@ class ResourceBase:
         return config
 
 
-def _isinstance_or_raise(value: Any, dtype: type, none_allowed: Optional[bool]):
+def _isinstance_or_raise(
+        value: Any,
+        dtype: Union[Type, Tuple[Type, ...]],
+        none_allowed: Optional[bool]=False,
+    ) -> Any:
     """Determine whether a value type matches a given datatype or None.
 
     Args:
         value (Any): Value to be checked.
-        dtype (type): Expected data type(s).
-        none_allowed Optional(bool): whether value is allowed to be None.
+        dtype (type): Expected data type or tuple of data types.
+        none_allowed Optional(bool): whether value is allowed to be None. Default
+           is False.
 
     Returns:
         Any: Returns the input value if the type check is successful.
@@ -1051,5 +1056,9 @@ def _isinstance_or_raise(value: Any, dtype: type, none_allowed: Optional[bool]):
     if isinstance(value, dtype):
         return value
     
-    msg = f"Pass {value} as a '{dtype}' (or None). Got {type(value)}." # Add the 'or None' conditionally
+    or_none = ''
+    if none_allowed:
+        or_none = ' (or None)'
+
+    msg = f"Pass {value} as a '{dtype}'{or_none}. Got {type(value)}."
     raise TypeError(msg)

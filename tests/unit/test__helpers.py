@@ -1666,35 +1666,34 @@ class Test__get_bigquery_host(unittest.TestCase):
 
 class Test__isinstance_or_raise:
     @pytest.mark.parametrize(
-        "value,dtype,expected",
+        "value,dtype,none_allowed,expected",
         [
-            (None, None, None),
-            ('hello world.uri', str, 'hello world.uri'),
-            (None, (str, None), None),
-            (None, (None, str), None),
-            (None, (str, None), None),
-            ('hello world.uri', (None, str), 'hello world.uri'),
-            ('hello world.uri', (str, None), 'hello world.uri'),
+            (None, str, True, None),
+            ('hello world.uri', str, True, 'hello world.uri'),
+            ('hello world.uri', str, False, 'hello world.uri'),
+            (None, (str, float), True, None),
+            ('hello world.uri', (str, float), True, 'hello world.uri'),
+            ('hello world.uri', (str, float), False, 'hello world.uri'),
         ],
     )
-    def test__valid_isinstance_or_raise(self, value, dtype, expected):
-        result = _isinstance_or_raise(value, dtype)
+    def test__valid_isinstance_or_raise(self, value, dtype, none_allowed, expected):
+        result = _isinstance_or_raise(value, dtype, none_allowed=none_allowed)
             
         assert result == expected
 
     @pytest.mark.parametrize(
-        "value,dtype,expected",
+        "value,dtype,none_allowed,expected",
         [
-            (None, str, pytest.raises(TypeError)),
-            ({"key": "value"}, str, pytest.raises(TypeError)),
-            ({"key": "value"}, None, pytest.raises(TypeError)),
-            ({"key": "value"}, (str, None), pytest.raises(TypeError)),
-            ({"key": "value"}, (None, str), pytest.raises(TypeError)),
+            (None, str, False, pytest.raises(TypeError)),
+            ({"key": "value"}, str, True, pytest.raises(TypeError)),
+            ({"key": "value"}, str, False, pytest.raises(TypeError)),
+            ({"key": "value"}, (str, float), True, pytest.raises(TypeError)),
+            ({"key": "value"}, (str, float), False, pytest.raises(TypeError)),
         ],
     )
-    def test__invalid_isinstance_or_raise(self, value, dtype, expected):
+    def test__invalid_isinstance_or_raise(self, value, dtype, none_allowed, expected):
         with expected as e:
-            result = _isinstance_or_raise(value, dtype)
+            result = _isinstance_or_raise(value, dtype, none_allowed=none_allowed)
             
             assert result == e
 

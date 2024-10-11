@@ -1031,12 +1031,13 @@ class ResourceBase:
         return config
 
 
-def _isinstance_or_raise(value: Any, dtype: Optional[Union[Any, Tuple[Any, ...]]]):
+def _isinstance_or_raise(value: Any, dtype: type, none_allowed: Optional[bool]):
     """Determine whether a value type matches a given datatype or None.
 
     Args:
         value (Any): Value to be checked.
-        dtype (Optional[Union[Any, Tuple[Any, ...]]]): Expected data type(s).
+        dtype (type): Expected data type(s).
+        none_allowed Optional(bool): whether value is allowed to be None.
 
     Returns:
         Any: Returns the input value if the type check is successful.
@@ -1044,22 +1045,11 @@ def _isinstance_or_raise(value: Any, dtype: Optional[Union[Any, Tuple[Any, ...]]
     Raises:
         TypeError: If the input value's type does not match the expected data type(s).
     """
-    
-    # Simplest case
-    if dtype is None and value is None:
+    if none_allowed and value is None:
+        return value
+
+    if isinstance(value, dtype):
         return value
     
-    elif isinstance(dtype, tuple):
-        # Another simple case
-        if None in dtype and value is None:
-            return value
-        # Iterate through the tuple and check if value is an instance of any type
-        if not any(isinstance(value, t) for t in dtype if t is not None):
-            valid_types_str = ", ".join(str(t) for t in dtype if t is not None)
-            msg = f"Pass {value} as one of '{valid_types_str}' or None. Got {type(value)}."
-            raise TypeError(msg)
-    else:
-        if not isinstance(value, dtype):
-            msg = f"Pass {value} as a '{dtype}'. Got {type(value)}."
-            raise TypeError(msg)
-    return value
+    msg = f"Pass {value} as a '{dtype}' (or None). Got {type(value)}." # Add the 'or None' conditionally
+    raise TypeError(msg)

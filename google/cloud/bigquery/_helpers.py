@@ -1009,7 +1009,7 @@ def _verify_job_config_type(job_config, expected_type, param_name="job_config"):
 
 def _isinstance_or_raise(
     value: Any,
-    dtype: Union[Type, Tuple[Type, ...], None],
+    dtype: Union[Type, Tuple[Type, ...]],
     none_allowed: Optional[bool] = False,
 ) -> Any:
     """Determine whether a value type matches a given datatype or None.

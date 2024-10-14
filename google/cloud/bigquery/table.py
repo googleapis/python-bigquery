@@ -69,6 +69,7 @@ from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
+from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
@@ -998,6 +999,24 @@ class Table(_TableBase):
         if table_constraints is not None:
             table_constraints = TableConstraints.from_api_repr(table_constraints)
         return table_constraints
+
+    @property
+    def external_catalog_table_options(self):
+        """Options defining open source compatible datasets living in the
+        BigQuery catalog. Contains metadata of open source database, schema
+        or namespace represented by the current dataset."""
+
+        return self._properties.get("externalCatalogTableOptions")
+
+    @external_catalog_table_options.setter
+    def external_catalog_table_options(self, value):
+        if not isinstance(value, ExternalCatalogTableOptions) and value is not None:
+            raise ValueError(
+                "external_catalog_table_options must be an "
+                "ExternalCatalogTableOptions object or None. "
+                f"Got {repr(value)}."
+            )
+        self._properties["externalCatalogTableOptions"] = value.to_api_repr()
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":

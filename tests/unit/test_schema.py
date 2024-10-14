@@ -14,7 +14,13 @@
 
 from google.cloud import bigquery
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
-from google.cloud.bigquery.schema import PolicyTagList
+from google.cloud.bigquery.schema import (
+    PolicyTagList,
+    # ForeignTypeInfo,
+    StorageDescriptor,
+    SerDeInfo,
+)
+
 import unittest
 from unittest import mock
 
@@ -1108,3 +1114,196 @@ def test_to_api_repr_parameterized(field, api):
     from google.cloud.bigquery.schema import SchemaField
 
     assert SchemaField(**field).to_api_repr() == api
+
+
+class TestForeignTypeInfo:
+    """TODO: add doc string."""
+
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.schema import ForeignTypeInfo
+
+        return ForeignTypeInfo
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    @pytest.mark.parametrize(
+        "type_system,expected",
+        [
+            (None, None),
+            ("TYPE_SYSTEM_UNSPECIFIED", "TYPE_SYSTEM_UNSPECIFIED"),
+            ("HIVE", "HIVE"),
+        ],
+    )
+    def test_ctor_valid_input(self, type_system, expected):
+        result = self._make_one(type_system=type_system)
+
+        assert result._properties["typeSystem"] == expected
+
+    def test_ctor_invalid_input(self):
+        with pytest.raises(TypeError) as e:
+            self._make_one(type_system=123)
+        assert "Pass" in str(e.value)
+
+    @pytest.mark.parametrize(
+        "type_system,expected",
+        [
+            ("TYPE_SYSTEM_UNSPECIFIED", {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}),
+            ("HIVE", {"typeSystem": "HIVE"}),
+            (None, {"typeSystem": None}),
+        ],
+    )
+    def test_to_api_repr(self, type_system, expected):
+        result = self._make_one(type_system=type_system)
+        assert result.to_api_repr() == expected
+
+
+class TestStorageDescriptor:
+    """Tests for the StorageDescriptor class."""
+
+    @staticmethod
+    def _get_target_class():
+        return StorageDescriptor
+
+    def _make_one(self, *args, **kwargs):
+        return self._get_target_class()(*args, **kwargs)
+
+    @pytest.mark.parametrize(
+        "input_format,location_uri,output_format,serde_info",
+        [
+            (None, None, None, None),
+            ("testpath.to.OrcInputFormat", None, None, None),
+            (None, "gs://test/path/", None, None),
+            (None, None, "testpath.to.OrcOutputFormat", None),
+            (None, None, None, "TODO fix serde info"),
+            (
+                "testpath.to.OrcInputFormat",
+                "gs://test/path/",
+                "testpath.to.OrcOutputFormat",
+                "TODO fix serde info",
+            ),
+        ],
+    )
+    def test_ctor_valid_input(
+        self, input_format, location_uri, output_format, serde_info
+    ):
+        storage_descriptor = self._make_one(
+            input_format=input_format,
+            location_uri=location_uri,
+            output_format=output_format,
+            serde_info=serde_info,
+        )
+        assert storage_descriptor._properties["inputFormat"] == input_format
+        assert storage_descriptor._properties["locationUri"] == location_uri
+        assert storage_descriptor._properties["outputFormat"] == output_format
+        assert storage_descriptor._properties["serdeInfo"] == serde_info
+        # QUESTION: which makes more sense? check against the background dict
+        # OR check against the getter attribute?
+        assert storage_descriptor.input_format == input_format
+        assert storage_descriptor.location_uri == location_uri
+        assert storage_descriptor.output_format == output_format
+        assert storage_descriptor.serde_info == serde_info
+
+    @pytest.mark.parametrize(
+        "input_format,location_uri,output_format,serde_info",
+        [
+            (123, None, None, None),
+            (None, 123, None, None),
+            (None, None, 123, None),
+            (None, None, None, 123),
+        ],
+    )
+    def test_ctor_invalid_input(
+        self, input_format, location_uri, output_format, serde_info
+    ):
+        with pytest.raises(TypeError) as e:
+            self._make_one(
+                input_format=input_format,
+                location_uri=location_uri,
+                output_format=output_format,
+                serde_info=serde_info,
+            )
+        assert "Pass" in str(e.value)
+
+    def test_to_api_repr(self):
+        storage_descriptor = self._make_one(
+            input_format="input_format",
+            location_uri="location_uri",
+            output_format="output_format",
+            serde_info="TODO fix serde info",
+        )
+        expected_repr = {
+            "inputFormat": "input_format",
+            "locationUri": "location_uri",
+            "outputFormat": "output_format",
+            "serdeInfo": "TODO fix serde info",
+        }
+        assert storage_descriptor.to_api_repr() == expected_repr
+
+
+class TestSerDeInfo:
+    """Tests for the SerDeInfo class."""
+
+    @staticmethod
+    def _get_target_class():
+        return SerDeInfo
+
+    def _make_one(self, *args, **kwargs):
+        return self._get_target_class()(*args, **kwargs)
+
+    @pytest.mark.parametrize(
+        "serialization_library,name,parameters",
+        [
+            ("testpath.to.LazySimpleSerDe", None, None),
+            ("testpath.to.LazySimpleSerDe", "serde_name", None),
+            ("testpath.to.LazySimpleSerDe", None, {"key": "value"}),
+            ("testpath.to.LazySimpleSerDe", "serde_name", {"key": "value"}),
+        ],
+    )
+    def test_ctor_valid_input(self, serialization_library, name, parameters):
+        serde_info = self._make_one(
+            serialization_library=serialization_library,
+            name=name,
+            parameters=parameters,
+        )
+        assert serde_info._properties["serializationLibrary"] == serialization_library
+        assert serde_info._properties["name"] == name
+        assert serde_info._properties["parameters"] == parameters
+        # QUESTION: which makes more sense? check against the background dict
+        # OR check against the getter attribute?
+        assert serde_info.serialization_library == serialization_library
+        assert serde_info.name == name
+        assert serde_info.parameters == parameters
+
+    @pytest.mark.parametrize(
+        "serialization_library,name,parameters",
+        [
+            (123, None, None),
+            ("testpath.to.LazySimpleSerDe", 123, None),
+            ("testpath.to.LazySimpleSerDe", None, ["test", "list"]),
+            ("testpath.to.LazySimpleSerDe", None, 123),
+        ],
+    )
+    def test_ctor_invalid_input(self, serialization_library, name, parameters):
+        with pytest.raises(TypeError) as e:
+            self._make_one(
+                serialization_library=serialization_library,
+                name=name,
+                parameters=parameters,
+            )
+
+        assert "Pass" in str(e.value)
+
+    def test_to_api_repr(self):
+        serde_info = self._make_one(
+            serialization_library="testpath.to.LazySimpleSerDe",
+            name="serde_name",
+            parameters={"key": "value"},
+        )
+        expected_repr = {
+            "serializationLibrary": "testpath.to.LazySimpleSerDe",
+            "name": "serde_name",
+            "parameters": {"key": "value"},
+        }
+        assert serde_info.to_api_repr() == expected_repr

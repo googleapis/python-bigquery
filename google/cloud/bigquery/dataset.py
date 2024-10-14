@@ -27,6 +27,8 @@ from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.routine import Routine, RoutineReference
 from google.cloud.bigquery.table import Table, TableReference
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
+from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
+
 
 from typing import Optional, List, Dict, Any, Union
 
@@ -530,6 +532,7 @@ class Dataset(object):
         "storage_billing_model": "storageBillingModel",
         "max_time_travel_hours": "maxTimeTravelHours",
         "default_rounding_mode": "defaultRoundingMode",
+        "external_catalog_dataset_options": "externalCatalogDatasetOptions",
     }
 
     def __init__(self, dataset_ref) -> None:
@@ -936,6 +939,24 @@ class Dataset(object):
     def _build_resource(self, filter_fields):
         """Generate a resource for ``update``."""
         return _helpers._build_resource_from_properties(self, filter_fields)
+
+    @property
+    def external_catalog_dataset_options(self):
+        """Options defining open source compatible datasets living in the
+        BigQuery catalog. Contains metadata of open source database, schema
+        or namespace represented by the current dataset."""
+
+        return self._properties.get("externalCatalogDatasetOptions")
+
+    @external_catalog_dataset_options.setter
+    def external_catalog_dataset_options(self, value):
+        if not isinstance(value, ExternalCatalogDatasetOptions) and value is not None:
+            raise ValueError(
+                "external_catalog_dataset_options must be an "
+                "ExternalCatalogDatasetOptions object or None. "
+                f"Got {repr(value)}."
+            )
+        self._properties["externalCatalogDatasetOptions"] = value.to_api_repr()
 
     table = _get_table_reference
 

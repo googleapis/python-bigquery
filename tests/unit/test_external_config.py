@@ -14,10 +14,13 @@
 
 import base64
 import copy
+from typing import Any, Dict
 import unittest
 
 from google.cloud.bigquery import external_config
 from google.cloud.bigquery import schema
+
+import pytest
 
 
 class TestExternalConfig(unittest.TestCase):
@@ -890,3 +893,151 @@ def _copy_and_update(d, u):
     d = copy.deepcopy(d)
     d.update(u)
     return d
+
+
+class TestExternalCatalogDatasetOptions:
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
+
+        return ExternalCatalogDatasetOptions
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_ctor_defaults(self):
+        """Test ExternalCatalogDatasetOptions constructor with default values."""
+        instance = self._make_one()
+
+        assert instance._properties["defaultStorageLocationUri"] is None
+        assert instance._properties["parameters"] is None
+
+    def test_ctor_explicit(
+        self,
+    ):
+        """Test ExternalCatalogDatasetOptions constructor with explicit values."""
+
+        default_storage_location_uri = "gs://test-bucket/test-path"
+        parameters = {"key": "value"}
+
+        instance = self._make_one(
+            default_storage_location_uri=default_storage_location_uri,
+            parameters=parameters,
+        )
+
+        assert (
+            instance._properties["defaultStorageLocationUri"]
+            == default_storage_location_uri
+        )
+        assert instance._properties["parameters"] == parameters
+
+    def test_ctor_invalid_input(self):
+        """Test ExternalCatalogDatasetOptions constructor with invalid input."""
+        with pytest.raises(TypeError) as e:
+            self._make_one(default_storage_location_uri=123)
+        assert "Pass" in str(e.value)
+
+        with pytest.raises(TypeError) as e:
+            self._make_one(parameters=123)
+        assert "Pass" in str(e.value)
+
+    def test_to_api_repr(self):
+        """Test ExternalCatalogDatasetOptions.to_api_repr method."""
+
+        default_storage_location_uri = "gs://test-bucket/test-path"
+        parameters = {"key": "value"}
+
+        instance = self._make_one(
+            default_storage_location_uri=default_storage_location_uri,
+            parameters=parameters,
+        )
+        resource = instance.to_api_repr()
+        assert resource["defaultStorageLocationUri"] == default_storage_location_uri
+        assert resource["parameters"] == parameters
+
+
+class TestExternalCatalogTableOptions:
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
+
+        return ExternalCatalogTableOptions
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    @pytest.mark.parametrize(
+        "connection_id,parameters,storage_descriptor",
+        [
+            ("connection123", {"key": "value"}, "placeholder"),  # set all params
+            ("connection123", None, None),  # set only one parameter at a time
+            (None, {"key": "value"}, None),
+            (None, None, "placeholder"),
+            (None, None, None),  # use default parameters
+        ],
+    )
+    def test_ctor_initialization(self, connection_id, parameters, storage_descriptor):
+        instance = self._make_one(
+            connection_id=connection_id,
+            parameters=parameters,
+            storage_descriptor=storage_descriptor,
+        )
+        assert instance._properties == {
+            "connectionId": connection_id,
+            "parameters": parameters,
+            "storageDescriptor": storage_descriptor,
+        }
+
+    def test_to_api_repr(self):
+        instance = self._make_one()
+        instance._properties = {
+            "connectionId": "connection123",
+            "parameters": {"key": "value"},
+            "storageDescriptor": "placeholder",
+        }
+
+        resource = instance.to_api_repr()
+
+        assert resource == {
+            "connectionId": "connection123",
+            "parameters": {"key": "value"},
+            "storageDescriptor": "placeholder",
+        }
+
+    @pytest.mark.parametrize(
+        "connection_id, parameters, storage_descriptor",
+        [
+            pytest.param(
+                123,
+                {"test_key": "test_value"},
+                "test placeholder",
+                id="connection_id-invalid-type",
+            ),
+            pytest.param(
+                "connection123",
+                123,
+                "test placeholder",
+                id="parameters-invalid-type",
+            ),
+            pytest.param(
+                "connection123",
+                {"test_key": "test_value"},
+                123,
+                id="storage_descriptor-invalid-type",
+            ),
+        ],
+    )
+    def test_ctor_invalid_input(
+        self,
+        connection_id: str,
+        parameters: Dict[str, Any],
+        storage_descriptor: str,
+    ):
+        with pytest.raises(TypeError) as e:
+            external_config.ExternalCatalogTableOptions(
+                connection_id=connection_id,
+                parameters=parameters,
+                storage_descriptor=storage_descriptor,
+            )
+
+        assert "Pass" in str(e.value)

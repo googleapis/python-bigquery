@@ -11,9 +11,9 @@ description = "Google BigQuery API client library"
 readme = "README.rst"
 classifiers = [
   # Should be one of:
-  # 'Development Status :: 3 - Alpha'
-  # 'Development Status :: 4 - Beta'
-  # 'Development Status :: 5 - Production/Stable'
+  # "Development Status :: 3 - Alpha"
+  # "Development Status :: 4 - Beta"
+  # "Development Status :: 5 - Production/Stable"
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: Apache Software License",

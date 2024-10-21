@@ -65,6 +65,7 @@ except ImportError:
     DEFAULT_BQSTORAGE_CLIENT_INFO = None  # type: ignore
 
 
+from google.auth.credentials import Credentials
 from google.cloud.bigquery._http import Connection
 from google.cloud.bigquery import _job_helpers
 from google.cloud.bigquery import _pandas_helpers
@@ -122,9 +123,7 @@ from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.table import RowIterator
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
-pandas = (
-    _versions_helpers.PANDAS_VERSIONS.try_import()
-)  # mypy check fails because pandas import is outside module, there are type: ignore comments related to this
+pandas = _versions_helpers.PANDAS_VERSIONS.try_import()  # mypy check fails because pandas import is outside module, there are type: ignore comments related to this
 
 ResumableTimeoutType = Union[
     None, float, Tuple[float, float]
@@ -231,15 +230,23 @@ class Client(ClientWithProject):
 
     def __init__(
         self,
-        project=None,
-        credentials=None,
-        _http=None,
-        location=None,
-        default_query_job_config=None,
-        default_load_job_config=None,
-        client_info=None,
-        client_options=None,
+        project: Optional[str] = None,
+        credentials: Optional[Credentials] = None,
+        _http: Optional[requests.Session] = None,
+        location: Optional[str] = None,
+        default_query_job_config: Optional[QueryJobConfig] = None,
+        default_load_job_config: Optional[LoadJobConfig] = None,
+        client_info: Optional[google.api_core.client_info.ClientInfo] = None,
+        client_options: Optional[
+            Union[google.api_core.client_options.ClientOptions, Dict[str, Any]]
+        ] = None,
     ) -> None:
+        if client_options is None:
+            client_options = {}
+        if isinstance(client_options, dict):
+            client_options = google.api_core.client_options.from_dict(client_options)
+        assert isinstance(client_options, google.api_core.client_options.ClientOptions)
+
         super(Client, self).__init__(
             project=project,
             credentials=credentials,
@@ -251,10 +258,6 @@ class Client(ClientWithProject):
         bq_host = _get_bigquery_host()
         kw_args["api_endpoint"] = bq_host if bq_host != _DEFAULT_HOST else None
         client_universe = None
-        if client_options is None:
-            client_options = {}
-        if isinstance(client_options, dict):
-            client_options = google.api_core.client_options.from_dict(client_options)
         if client_options.api_endpoint:
             api_endpoint = client_options.api_endpoint
             kw_args["api_endpoint"] = api_endpoint

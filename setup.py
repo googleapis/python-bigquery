@@ -29,7 +29,7 @@ description = "Google BigQuery API client library"
 # 'Development Status :: 5 - Production/Stable'
 release_status = "Development Status :: 5 - Production/Stable"
 dependencies = [
-    "google-api-core[grpc] >= 2.11.1, <3.0.0dev",
+    "google-api-core[grpc] @ git+https://github.com/googleapis/python-api-core.git@main",
     "google-auth >= 2.14.1, <3.0.0dev",
     "google-cloud-core >= 2.4.1, <3.0.0dev",
     "google-resumable-media >= 2.0.0, < 3.0dev",

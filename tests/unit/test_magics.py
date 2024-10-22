@@ -195,7 +195,7 @@ def test_context_with_default_connection(monkeypatch):
         query_params=mock.ANY,
         timeout=mock.ANY,
     )
-    default_conn.api_request.assert_has_calls([begin_call, query_results_call])
+    assert default_conn.api_request.call_args_list == ([begin_call, query_results_call])
 
 
 def test_context_credentials_and_project_can_be_set_explicitly():
@@ -260,7 +260,7 @@ def test_context_with_custom_connection(monkeypatch):
         query_params=mock.ANY,
         timeout=mock.ANY,
     )
-    context_conn.api_request.assert_has_calls([begin_call, query_results_call])
+    assert context_conn.api_request.call_args_list == ([begin_call, query_results_call])
 
 
 def test__run_query():

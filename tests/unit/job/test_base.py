@@ -1057,7 +1057,7 @@ class Test_AsyncJob(unittest.TestCase):
             },
             timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
-        conn.api_request.assert_has_calls([begin_call, begin_call, reload_call])
+        assert conn.api_request.call_args_list == ([begin_call, begin_call, reload_call])
 
     def test_result_w_retry_wo_state(self):
         from google.cloud.bigquery.retry import DEFAULT_GET_JOB_TIMEOUT
@@ -1113,7 +1113,7 @@ class Test_AsyncJob(unittest.TestCase):
             },
             timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
-        conn.api_request.assert_has_calls(
+        assert conn.api_request.call_args_list == (
             [begin_call, begin_call, reload_call, reload_call]
         )
 

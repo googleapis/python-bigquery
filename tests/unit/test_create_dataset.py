@@ -355,7 +355,7 @@ def test_create_dataset_alreadyexists_w_exists_ok_true(PROJECT, DS_ID, LOCATION)
     assert dataset.full_dataset_id == resource["id"]
     assert dataset.location == LOCATION
 
-    conn.api_request.assert_has_calls(
+    assert conn.api_request.call_args_list == (
         [
             mock.call(
                 method="POST",

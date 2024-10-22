@@ -201,7 +201,7 @@ def test_retry_connection_error_with_default_retries_and_successful_first_job(
     assert job_counter == 1
 
     # Double-check that we made the API calls we expected to make.
-    conn.api_request.assert_has_calls(
+    assert conn.api_request.call_args_list == (
         [
             # jobs.insert
             mock.call(
@@ -249,7 +249,7 @@ def test_retry_connection_error_with_default_retries_and_successful_first_job(
                 query_params={"maxResults": 0, "location": "test-loc"},
                 timeout=None,
             ),
-        ],
+        ]
     )
 
 
@@ -332,7 +332,7 @@ def test_query_retry_with_default_retry_and_ambiguous_errors_only_retries_with_f
         job = client.query("select 1")
         job.result()
 
-    conn.api_request.assert_has_calls(
+    assert conn.api_request.call_args_list == (
         [
             # jobs.insert
             mock.call(

@@ -1055,7 +1055,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(actual_routine.project, "test-routine-project")
         self.assertEqual(actual_routine.dataset_id, "test_routines")
         self.assertEqual(actual_routine.routine_id, "minimal_routine")
-        conn.api_request.assert_has_calls(
+        assert conn.api_request.call_args_list == (
             [
                 mock.call(
                     method="POST",
@@ -1507,7 +1507,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(got.dataset_id, self.DS_ID)
         self.assertEqual(got.table_id, self.TABLE_ID)
 
-        conn.api_request.assert_has_calls(
+        assert conn.api_request.call_args_list == (
             [
                 mock.call(
                     method="POST",
@@ -5523,7 +5523,7 @@ class TestClient(unittest.TestCase):
 
         _ = client.query_and_wait(query, page_size=11)
 
-        conn.api_request.assert_has_calls(
+        assert conn.api_request.call_args_list == (
             [
                 # Verify the request we send is to jobs.query.
                 mock.call(
@@ -6855,7 +6855,7 @@ class TestClient(unittest.TestCase):
             extra_params, {"startIndex": 1, "formatOptions.useInt64Timestamp": True}
         )
 
-        conn.api_request.assert_has_calls(
+        assert conn.api_request.call_args_list == (
             [
                 mock.call(
                     method="GET",

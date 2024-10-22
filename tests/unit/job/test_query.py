@@ -996,7 +996,7 @@ class TestQueryJob(_Base):
         # Note: The responses from jobs.get and jobs.getQueryResults can be
         # deceptively similar, so this check ensures we actually made the
         # requests we expected.
-        conn.api_request.assert_has_calls(
+        assert conn.api_request.call_args_list == (
             [
                 # jobs.get & jobs.getQueryResults because the job just started.
                 reload_call,
@@ -1106,7 +1106,7 @@ class TestQueryJob(_Base):
             timeout=None,
         )
 
-        connection.api_request.assert_has_calls(
+        assert connection.api_request.call_args_list == (
             [
                 # Make sure we start a job that hasn't started yet. See:
                 # https://github.com/googleapis/python-bigquery/issues/1940
@@ -1162,7 +1162,7 @@ class TestQueryJob(_Base):
             },
             timeout=None,
         )
-        conn.api_request.assert_has_calls([query_results_call, query_results_page_call])
+        assert conn.api_request.call_args_list == ([query_results_call, query_results_page_call])
         assert conn.api_request.call_count == 2
 
     def test_result_with_done_jobs_query_response_doesnt_call_get_query_results(self):
@@ -1320,7 +1320,7 @@ class TestQueryJob(_Base):
         # first page if max_results is set. This allows customers to
         # more finely tune when we fallback to the BQ Storage API.
         # See internal issue: 344008814.
-        conn.api_request.assert_has_calls(
+        assert conn.api_request.call_args_list == (
             [jobs_get_call, query_page_waiting_call, query_page_2_call]
         )
 
@@ -1397,7 +1397,7 @@ class TestQueryJob(_Base):
             timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
 
-        connection.api_request.assert_has_calls(
+        assert connection.api_request.call_args_list == (
             [
                 # See make_connection() call above for explanation of the
                 # expected API calls.
@@ -1486,7 +1486,7 @@ class TestQueryJob(_Base):
             },
             timeout=google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
         )
-        connection.api_request.assert_has_calls(
+        assert connection.api_request.call_args_list == (
             [
                 reload_call,
                 get_query_results_call,
@@ -1532,7 +1532,7 @@ class TestQueryJob(_Base):
             },
             timeout=google.cloud.bigquery.client._MIN_GET_QUERY_RESULTS_TIMEOUT,
         )
-        connection.api_request.assert_has_calls(
+        assert connection.api_request.call_args_list == (
             [
                 reload_call,
                 get_query_results_call,
@@ -1622,7 +1622,7 @@ class TestQueryJob(_Base):
                 "formatOptions.useInt64Timestamp": True,
             },
         )
-        conn.api_request.assert_has_calls(
+        assert conn.api_request.call_args_list == (
             [jobs_get_call, query_page_waiting_call, jobs_get_call, query_page_2_call]
         )
 

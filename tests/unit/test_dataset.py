@@ -1014,6 +1014,55 @@ class TestDataset(unittest.TestCase):
         with self.assertRaises(ValueError):
             cls.from_string("string-project:string_dataset")
 
+    API_REPR = {
+        "datasetReference": {"projectId": "project", "datasetId": "dataset-id"},
+        "labels": {},
+        "externalCatalogDatasetOptions": {
+            "defaultStorageLocationUri": "gs://test-bucket/test-path",
+            "parameters": {"key": "value"},
+        },
+    }
+
+    def test_external_catalog_dataset_options_setter(self):
+        from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
+
+        dataset = self._make_one(self.DS_REF)
+        external_dataset_catalog_options = ExternalCatalogDatasetOptions(
+            default_storage_location_uri="gs://test-bucket/test-path",
+            parameters={"key": "value"},
+        )
+
+        # test the setter
+        dataset.external_catalog_dataset_options = external_dataset_catalog_options
+        expected = self.API_REPR
+        result = dataset.to_api_repr()
+        assert result == expected
+
+    def test_external_catalog_dataset_options_getter(self):
+        from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
+
+        dataset = self._make_one(self.DS_REF)
+        external_dataset_catalog_options = ExternalCatalogDatasetOptions(
+            default_storage_location_uri="gs://test-bucket/test-path",
+            parameters={"key": "value"},
+        )
+        dataset.external_catalog_dataset_options = external_dataset_catalog_options
+        print("DINOSAUR test_dataset.py dataset: ", dataset, type(dataset))
+        expected = external_dataset_catalog_options
+        result = dataset.external_catalog_dataset_options
+
+        assert result == expected
+
+    def test_external_catalog_dataset_options_from_api_repr(self):
+        from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
+
+        resource = self.API_REPR
+
+        dataset = self._make_one(self.DS_REF)
+        dataset = dataset.from_api_repr(resource)
+        result = dataset.external_catalog_dataset_options
+        assert result == resource["externalCatalogDatasetOptions"]
+
     def test__build_resource_w_custom_field(self):
         dataset = self._make_one(self.DS_REF)
         dataset._properties["newAlphaProperty"] = "unreleased property"

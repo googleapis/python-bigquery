@@ -59,6 +59,7 @@ from google.api_core.page_iterator import HTTPIterator
 
 import google.cloud._helpers  # type: ignore
 from google.cloud.bigquery import _helpers
+from google.cloud.bigquery._helpers import _isinstance_or_raise
 from google.cloud.bigquery import _pandas_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions as bq_exceptions
@@ -407,6 +408,7 @@ class Table(_TableBase):
         "view_query": "view",
         "require_partition_filter": "requirePartitionFilter",
         "table_constraints": "tableConstraints",
+        "external_catalog_table_options": "externalCatalogTableOptions",
     }
 
     def __init__(self, table_ref, schema=None) -> None:
@@ -1006,17 +1008,21 @@ class Table(_TableBase):
         BigQuery catalog. Contains metadata of open source database, schema
         or namespace represented by the current dataset."""
 
-        return self._properties.get("externalCatalogTableOptions")
+        prop = self._properties.get(
+            self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
+        )
+        if prop is not None:
+            prop = ExternalCatalogTableOptions.from_api_repr(prop)
+        return prop
 
     @external_catalog_table_options.setter
     def external_catalog_table_options(self, value):
-        if not isinstance(value, ExternalCatalogTableOptions) and value is not None:
-            raise ValueError(
-                "external_catalog_table_options must be an "
-                "ExternalCatalogTableOptions object or None. "
-                f"Got {repr(value)}."
-            )
-        self._properties["externalCatalogTableOptions"] = value.to_api_repr()
+        value = _isinstance_or_raise(
+            value, ExternalCatalogTableOptions, none_allowed=False
+        )
+        self._properties[
+            self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
+        ] = value.to_api_repr()
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":

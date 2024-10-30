@@ -23,6 +23,7 @@ import typing
 import google.cloud._helpers  # type: ignore
 
 from google.cloud.bigquery import _helpers
+from google.cloud.bigquery._helpers import _isinstance_or_raise, _get_sub_prop
 from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.routine import Routine, RoutineReference
 from google.cloud.bigquery.table import Table, TableReference
@@ -946,17 +947,28 @@ class Dataset(object):
         BigQuery catalog. Contains metadata of open source database, schema
         or namespace represented by the current dataset."""
 
-        return self._properties.get("externalCatalogDatasetOptions")
+        prop = _helpers._get_sub_prop(
+            self._properties, ["externalCatalogDatasetOptions"]
+        )
+        # self._PROPERTY_TO_API_FIELD["external_catalog_dataset_options"]
+        # )
+
+        if prop is not None:
+            prop = ExternalCatalogDatasetOptions().from_api_repr(prop)
+            print("DINOSAUR dataset.py prop: ", prop, type(prop))
+        return prop
+
+        # prop = self._get_sub_prop("destinationEncryptionConfiguration")
+        # if prop is not None:
+        #     prop = EncryptionConfiguration.from_api_repr(prop)
+        # return prop
 
     @external_catalog_dataset_options.setter
     def external_catalog_dataset_options(self, value):
-        if not isinstance(value, ExternalCatalogDatasetOptions) and value is not None:
-            raise ValueError(
-                "external_catalog_dataset_options must be an "
-                "ExternalCatalogDatasetOptions object or None. "
-                f"Got {repr(value)}."
-            )
-        self._properties["externalCatalogDatasetOptions"] = value.to_api_repr()
+        value = _isinstance_or_raise(value, ExternalCatalogDatasetOptions)
+        self._properties[
+            self._PROPERTY_TO_API_FIELD["external_catalog_dataset_options"]
+        ] = value.to_api_repr()
 
     table = _get_table_reference
 

@@ -1040,7 +1040,7 @@ def _isinstance_or_raise(
     raise TypeError(msg)
 
 
-def _from_api_repr(obj, resource: dict):
+def _from_api_repr(cls, resource: dict):
     """Factory: constructs an instance of the class (cls)
     given its API representation.
 
@@ -1051,6 +1051,6 @@ def _from_api_repr(obj, resource: dict):
     Returns:
         An instance of the class initialized with data from 'resource'.
     """
-    config = obj
+    config = cls
     config._properties = copy.deepcopy(resource)
     return config

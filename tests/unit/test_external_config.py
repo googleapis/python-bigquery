@@ -955,6 +955,14 @@ class TestExternalCatalogDatasetOptions:
         assert resource["defaultStorageLocationUri"] == default_storage_location_uri
         assert resource["parameters"] == parameters
 
+    def test_from_api_repr(self):
+        instance = self._make_one()
+        resource = {
+            "defaultStorageLocationUri": "gs://test-bucket/test-path",
+            "parameters": {"key": "value"},
+        }
+        instance.from_api_repr(resource)
+
 
 class TestExternalCatalogTableOptions:
     @staticmethod
@@ -1041,3 +1049,12 @@ class TestExternalCatalogTableOptions:
             )
 
         assert "Pass" in str(e.value)
+
+    def test_from_api_repr(self):
+        instance = self._make_one()
+        resource = {
+            "connectionId": "connection123",
+            "parameters": {"key": "value"},
+            "storageDescriptor": "placeholder",
+        }
+        instance.from_api_repr(resource)

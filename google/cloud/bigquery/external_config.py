@@ -18,7 +18,7 @@
    Job.configuration.query.tableDefinitions.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, annotations
 
 import base64
 import copy

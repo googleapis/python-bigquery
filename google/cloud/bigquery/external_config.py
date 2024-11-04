@@ -1067,9 +1067,20 @@ class ExternalCatalogDatasetOptions:
         return config
 
     @classmethod
-    def from_api_repr(self, resource):
-        return _from_api_repr(self, resource)
+    def from_api_repr(cls, resource: dict) -> "TODO":
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
 
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls()
+        config._properties = copy.deepcopy(resource)
+        return config
 
 class ExternalCatalogTableOptions:
     """Metadata about open source compatible table. The fields contained in these

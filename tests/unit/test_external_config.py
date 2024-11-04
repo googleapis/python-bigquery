@@ -18,6 +18,10 @@ from typing import Any, Dict
 import unittest
 
 from google.cloud.bigquery import external_config
+from google.cloud.bigquery.external_config import (
+    ExternalCatalogDatasetOptions,
+    ExternalCatalogTableOptions
+)
 from google.cloud.bigquery import schema
 
 import pytest
@@ -905,41 +909,41 @@ class TestExternalCatalogDatasetOptions:
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)
 
-    def test_ctor_defaults(self):
-        """Test ExternalCatalogDatasetOptions constructor with default values."""
-        instance = self._make_one()
 
-        assert instance._properties["defaultStorageLocationUri"] is None
-        assert instance._properties["parameters"] is None
-
-    def test_ctor_explicit(
+    @pytest.mark.parametrize(
+        "default_storage_location_uri,parameters",
+        [
+            ("gs://test-bucket/test-path", {"key": "value"}),  # set all params
+            ("gs://test-bucket/test-path", None),  # set only one parameter at a time
+            (None, {"key": "value"}),
+            (None, None),  # use default parameters
+        ],
+    )
+    def test_ctor_initialization(
         self,
+        default_storage_location_uri,
+        parameters,
     ):
         """Test ExternalCatalogDatasetOptions constructor with explicit values."""
-
-        default_storage_location_uri = "gs://test-bucket/test-path"
-        parameters = {"key": "value"}
-
         instance = self._make_one(
             default_storage_location_uri=default_storage_location_uri,
             parameters=parameters,
         )
 
-        assert (
-            instance._properties["defaultStorageLocationUri"]
-            == default_storage_location_uri
-        )
-        assert instance._properties["parameters"] == parameters
+        assert instance._properties == {
+            "defaultStorageLocationUri": default_storage_location_uri,
+            "parameters": parameters,
+        }
 
     def test_ctor_invalid_input(self):
         """Test ExternalCatalogDatasetOptions constructor with invalid input."""
         with pytest.raises(TypeError) as e:
             self._make_one(default_storage_location_uri=123)
-        assert "Pass" in str(e.value)
+        assert "Pass " in str(e.value)
 
         with pytest.raises(TypeError) as e:
             self._make_one(parameters=123)
-        assert "Pass" in str(e.value)
+        assert "Pass " in str(e.value)
 
     def test_to_api_repr(self):
         """Test ExternalCatalogDatasetOptions.to_api_repr method."""
@@ -961,14 +965,15 @@ class TestExternalCatalogDatasetOptions:
             "defaultStorageLocationUri": "gs://test-bucket/test-path",
             "parameters": {"key": "value"},
         }
-        instance.from_api_repr(resource)
+        result = instance.from_api_repr(resource)
+
+        assert isinstance(result, ExternalCatalogDatasetOptions)
+        assert result._properties == resource
 
 
 class TestExternalCatalogTableOptions:
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
-
         return ExternalCatalogTableOptions
 
     def _make_one(self, *args, **kw):
@@ -994,22 +999,6 @@ class TestExternalCatalogTableOptions:
             "connectionId": connection_id,
             "parameters": parameters,
             "storageDescriptor": storage_descriptor,
-        }
-
-    def test_to_api_repr(self):
-        instance = self._make_one()
-        instance._properties = {
-            "connectionId": "connection123",
-            "parameters": {"key": "value"},
-            "storageDescriptor": "placeholder",
-        }
-
-        resource = instance.to_api_repr()
-
-        assert resource == {
-            "connectionId": "connection123",
-            "parameters": {"key": "value"},
-            "storageDescriptor": "placeholder",
         }
 
     @pytest.mark.parametrize(
@@ -1048,7 +1037,24 @@ class TestExternalCatalogTableOptions:
                 storage_descriptor=storage_descriptor,
             )
 
-        assert "Pass" in str(e.value)
+        assert "Pass " in str(e.value)
+
+    def test_to_api_repr(self):
+        instance = self._make_one()
+        instance._properties = {
+            "connectionId": "connection123",
+            "parameters": {"key": "value"},
+            "storageDescriptor": "placeholder",
+        }
+
+        resource = instance.to_api_repr()
+
+        assert resource == {
+            "connectionId": "connection123",
+            "parameters": {"key": "value"},
+            "storageDescriptor": "placeholder",
+        }
+
 
     def test_from_api_repr(self):
         instance = self._make_one()
@@ -1057,4 +1063,8 @@ class TestExternalCatalogTableOptions:
             "parameters": {"key": "value"},
             "storageDescriptor": "placeholder",
         }
-        instance.from_api_repr(resource)
+        result = instance.from_api_repr(resource)
+        
+        assert isinstance(result, ExternalCatalogTableOptions)
+        assert result._properties == resource
+        

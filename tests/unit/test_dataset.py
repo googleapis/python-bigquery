@@ -1027,13 +1027,12 @@ class TestDataset(unittest.TestCase):
         from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
 
         dataset = self._make_one(self.DS_REF)
-        external_dataset_catalog_options = ExternalCatalogDatasetOptions(
+        ecdo_obj = ExternalCatalogDatasetOptions(
             default_storage_location_uri="gs://test-bucket/test-path",
             parameters={"key": "value"},
         )
 
-        # test the setter
-        dataset.external_catalog_dataset_options = external_dataset_catalog_options
+        dataset.external_catalog_dataset_options = ecdo_obj
         expected = self.API_REPR
         result = dataset.to_api_repr()
         assert result == expected
@@ -1042,26 +1041,25 @@ class TestDataset(unittest.TestCase):
         from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
 
         dataset = self._make_one(self.DS_REF)
-        external_dataset_catalog_options = ExternalCatalogDatasetOptions(
+        ecdo_obj = ExternalCatalogDatasetOptions(
             default_storage_location_uri="gs://test-bucket/test-path",
             parameters={"key": "value"},
         )
-        dataset.external_catalog_dataset_options = external_dataset_catalog_options
-        print("DINOSAUR test_dataset.py dataset: ", dataset, type(dataset))
-        expected = external_dataset_catalog_options
-        result = dataset.external_catalog_dataset_options
-
+        dataset.external_catalog_dataset_options = ecdo_obj
+        expected = ecdo_obj._properties
+        result = dataset.external_catalog_dataset_options._properties
+        
         assert result == expected
 
     def test_external_catalog_dataset_options_from_api_repr(self):
         from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
 
         resource = self.API_REPR
-
-        dataset = self._make_one(self.DS_REF)
-        dataset = dataset.from_api_repr(resource)
-        result = dataset.external_catalog_dataset_options
-        assert result == resource["externalCatalogDatasetOptions"]
+        klass = self._get_target_class()
+        dataset = klass.from_api_repr(resource)
+        result = dataset.external_catalog_dataset_options._properties
+        expected = resource["externalCatalogDatasetOptions"]
+        assert result == expected
 
     def test__build_resource_w_custom_field(self):
         dataset = self._make_one(self.DS_REF)

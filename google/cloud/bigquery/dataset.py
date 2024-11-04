@@ -950,18 +950,11 @@ class Dataset(object):
         prop = _helpers._get_sub_prop(
             self._properties, ["externalCatalogDatasetOptions"]
         )
-        # self._PROPERTY_TO_API_FIELD["external_catalog_dataset_options"]
-        # )
 
         if prop is not None:
             prop = ExternalCatalogDatasetOptions().from_api_repr(prop)
-            print("DINOSAUR dataset.py prop: ", prop, type(prop))
         return prop
 
-        # prop = self._get_sub_prop("destinationEncryptionConfiguration")
-        # if prop is not None:
-        #     prop = EncryptionConfiguration.from_api_repr(prop)
-        # return prop
 
     @external_catalog_dataset_options.setter
     def external_catalog_dataset_options(self, value):
@@ -970,10 +963,9 @@ class Dataset(object):
             self._PROPERTY_TO_API_FIELD["external_catalog_dataset_options"]
         ] = value.to_api_repr()
 
+
     table = _get_table_reference
-
     model = _get_model_reference
-
     routine = _get_routine_reference
 
     def __repr__(self):

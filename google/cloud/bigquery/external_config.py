@@ -30,10 +30,10 @@ from google.cloud.bigquery._helpers import (
     _int_or_none,
     _str_or_none,
     _isinstance_or_raise,
-    _from_api_repr,
+    _get_sub_prop,
 )
 from google.cloud.bigquery.format_options import AvroOptions, ParquetOptions
-from google.cloud.bigquery.schema import SchemaField
+from google.cloud.bigquery.schema import SchemaField, StorageDescriptor
 
 
 class ExternalSourceFormat(object):
@@ -1067,7 +1067,7 @@ class ExternalCatalogDatasetOptions:
         return config
 
     @classmethod
-    def from_api_repr(cls, resource: dict) -> "TODO":
+    def from_api_repr(cls, resource: dict) -> ExternalCatalogDatasetOptions:
         """Factory: constructs an instance of the class (cls)
         given its API representation.
 
@@ -1081,6 +1081,7 @@ class ExternalCatalogDatasetOptions:
         config = cls()
         config._properties = copy.deepcopy(resource)
         return config
+
 
 class ExternalCatalogTableOptions:
     """Metadata about open source compatible table. The fields contained in these
@@ -1104,7 +1105,7 @@ class ExternalCatalogTableOptions:
         connection_id: Optional[str] = None,
         parameters: Union[Dict[str, Any], None] = None,
         storage_descriptor: Optional[
-            str
+            StorageDescriptor
         ] = None,  # TODO implement StorageDescriptor, then correct this type hint
     ):
         self._properties = {}  # type: Dict[str, Any]
@@ -1146,12 +1147,19 @@ class ExternalCatalogTableOptions:
         """Optional. A storage descriptor containing information about the
         physical storage of this table."""
 
-        return self._properties.get("storageDescriptor")
+        prop = _get_sub_prop(self._properties, ["storageDescriptor"])
+
+        if prop is not None:
+            prop = StorageDescriptor().from_api_repr(prop)
+        return prop
 
     @storage_descriptor.setter
-    def storage_descriptor(self, value: Optional[str]):
-        value = _isinstance_or_raise(value, str, none_allowed=True)
-        self._properties["storageDescriptor"] = value
+    def storage_descriptor(self, value):
+        value = _isinstance_or_raise(value, StorageDescriptor, none_allowed=True)
+        if value is not None:
+            self._properties["storageDescriptor"] = value.to_api_repr()
+        else:
+            self._properties["storageDescriptor"] = value
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.
@@ -1164,7 +1172,7 @@ class ExternalCatalogTableOptions:
         return config
 
     @classmethod
-    def from_api_repr(cls, resource: dict) -> "TODO":
+    def from_api_repr(cls, resource: dict) -> ExternalCatalogTableOptions:
         """Factory: constructs an instance of the class (cls)
         given its API representation.
 

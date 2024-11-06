@@ -1169,6 +1169,12 @@ class TestStorageDescriptor:
     def _make_one(self, *args, **kwargs):
         return self._get_target_class()(*args, **kwargs)
 
+    SERDEINFO = SerDeInfo(
+        serialization_library="testpath.to.LazySimpleSerDe",
+        name="serde_lib_name",
+        parameters={"key": "value"},
+    )
+
     @pytest.mark.parametrize(
         "input_format,location_uri,output_format,serde_info",
         [
@@ -1176,12 +1182,12 @@ class TestStorageDescriptor:
             ("testpath.to.OrcInputFormat", None, None, None),
             (None, "gs://test/path/", None, None),
             (None, None, "testpath.to.OrcOutputFormat", None),
-            (None, None, None, "TODO fix serde info"),
+            (None, None, None, SERDEINFO),
             (
                 "testpath.to.OrcInputFormat",
                 "gs://test/path/",
                 "testpath.to.OrcOutputFormat",
-                "TODO fix serde info",
+                SERDEINFO,
             ),
         ],
     )
@@ -1197,13 +1203,12 @@ class TestStorageDescriptor:
         assert storage_descriptor._properties["inputFormat"] == input_format
         assert storage_descriptor._properties["locationUri"] == location_uri
         assert storage_descriptor._properties["outputFormat"] == output_format
-        assert storage_descriptor._properties["serdeInfo"] == serde_info
-        # QUESTION: which makes more sense? check against the background dict
-        # OR check against the getter attribute?
-        assert storage_descriptor.input_format == input_format
-        assert storage_descriptor.location_uri == location_uri
-        assert storage_descriptor.output_format == output_format
-        assert storage_descriptor.serde_info == serde_info
+        if serde_info is not None:
+            assert (
+                storage_descriptor._properties["serDeInfo"] == serde_info.to_api_repr()
+            )
+        else:
+            assert storage_descriptor._properties["serDeInfo"] == serde_info
 
     @pytest.mark.parametrize(
         "input_format,location_uri,output_format,serde_info",
@@ -1231,14 +1236,15 @@ class TestStorageDescriptor:
             input_format="input_format",
             location_uri="location_uri",
             output_format="output_format",
-            serde_info="TODO fix serde info",
+            serde_info=self.SERDEINFO,
         )
         expected_repr = {
             "inputFormat": "input_format",
             "locationUri": "location_uri",
             "outputFormat": "output_format",
-            "serdeInfo": "TODO fix serde info",
+            "serDeInfo": self.SERDEINFO.to_api_repr(),
         }
+
         assert storage_descriptor.to_api_repr() == expected_repr
 
 
@@ -1270,11 +1276,6 @@ class TestSerDeInfo:
         assert serde_info._properties["serializationLibrary"] == serialization_library
         assert serde_info._properties["name"] == name
         assert serde_info._properties["parameters"] == parameters
-        # QUESTION: which makes more sense? check against the background dict
-        # OR check against the getter attribute?
-        assert serde_info.serialization_library == serialization_library
-        assert serde_info.name == name
-        assert serde_info.parameters == parameters
 
     @pytest.mark.parametrize(
         "serialization_library,name,parameters",

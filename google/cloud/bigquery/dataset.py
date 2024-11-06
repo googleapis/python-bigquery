@@ -23,7 +23,7 @@ import typing
 import google.cloud._helpers  # type: ignore
 
 from google.cloud.bigquery import _helpers
-from google.cloud.bigquery._helpers import _isinstance_or_raise, _get_sub_prop
+from google.cloud.bigquery._helpers import _isinstance_or_raise
 from google.cloud.bigquery.model import ModelReference
 from google.cloud.bigquery.routine import Routine, RoutineReference
 from google.cloud.bigquery.table import Table, TableReference
@@ -955,14 +955,14 @@ class Dataset(object):
             prop = ExternalCatalogDatasetOptions().from_api_repr(prop)
         return prop
 
-
     @external_catalog_dataset_options.setter
     def external_catalog_dataset_options(self, value):
-        value = _isinstance_or_raise(value, ExternalCatalogDatasetOptions)
+        value = _isinstance_or_raise(
+            value, ExternalCatalogDatasetOptions, none_allowed=True
+        )
         self._properties[
             self._PROPERTY_TO_API_FIELD["external_catalog_dataset_options"]
         ] = value.to_api_repr()
-
 
     table = _get_table_reference
     model = _get_model_reference

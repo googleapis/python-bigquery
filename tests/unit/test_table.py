@@ -31,6 +31,7 @@ from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery.schema import SerDeInfo, StorageDescriptor
 
 
 def _mock_client():
@@ -2011,7 +2012,7 @@ class TestRowIterator(unittest.TestCase):
         path=None,
         schema=None,
         table=None,
-        **kwargs
+        **kwargs,
     ):
         from google.cloud.bigquery.table import TableReference
 
@@ -5824,14 +5825,31 @@ def test_table_reference_to_bqstorage_v1_stable(table_path):
         assert got == expected
 
 
-@pytest.fixture(scope="class")
-def external_catalog_table_options():
+@pytest.fixture
+def _make_storage_descriptor():
+    serdeinfo = SerDeInfo(
+        serialization_library="testpath.to.LazySimpleSerDe",
+        name="serde_lib_name",
+        parameters={"key": "value"},
+    )
+
+    obj = StorageDescriptor(
+        input_format="testpath.to.OrcInputFormat",
+        location_uri="gs://test/path/",
+        output_format="testpath.to.OrcOutputFormat",
+        serde_info=serdeinfo,
+    )
+    return obj
+
+
+@pytest.fixture()
+def external_catalog_table_options(_make_storage_descriptor):
     from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
 
     return ExternalCatalogTableOptions(
         connection_id="connection123",
         parameters={"key": "value"},
-        storage_descriptor="placeholder",
+        storage_descriptor=_make_storage_descriptor,
     )
 
 
@@ -5851,7 +5869,10 @@ class TestExternalCatalogTableOptions:
         return self._get_target_class()(*args, **kw)
 
     def test_external_catalog_table_options_getter(
-        self, external_catalog_table_options
+        self,
+        external_catalog_table_options,
+        _make_storage_descriptor,
+        request,
     ):
         from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
 
@@ -5876,21 +5897,24 @@ class TestExternalCatalogTableOptions:
         # ExternalCatalogTableOptions object
         assert isinstance(ecto_output, ExternalCatalogTableOptions)
 
+        storage_descriptor = request.getfixturevalue("_make_storage_descriptor")
+
         expected = {
             "connectionId": "connection123",
             "parameters": {"key": "value"},
-            "storageDescriptor": "placeholder",
+            "storageDescriptor": storage_descriptor.to_api_repr(),
         }
         result = ecto_output.to_api_repr()
 
         # Confirm that the api_repr of the ecto_output matches the inputs
+        print(f"DINOSAUR : {result}\n\n{expected}")
         assert result == expected
 
     def test_external_catalog_table_options_setter(
-        self, external_catalog_table_options
+        self,
+        external_catalog_table_options,
+        _make_storage_descriptor,
     ):
-        # from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
-
         # create objects for the test
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
@@ -5908,7 +5932,7 @@ class TestExternalCatalogTableOptions:
             "externalCatalogTableOptions": {
                 "connectionId": "connection123",
                 "parameters": {"key": "value"},
-                "storageDescriptor": "placeholder",
+                "storageDescriptor": _make_storage_descriptor.to_api_repr(),
             },
         }
         # Confirm that the api_repr of the ecto_output matches the inputs

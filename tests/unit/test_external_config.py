@@ -14,15 +14,16 @@
 
 import base64
 import copy
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import unittest
 
 from google.cloud.bigquery import external_config
 from google.cloud.bigquery.external_config import (
     ExternalCatalogDatasetOptions,
-    ExternalCatalogTableOptions
+    ExternalCatalogTableOptions,
 )
 from google.cloud.bigquery import schema
+from google.cloud.bigquery.schema import StorageDescriptor, SerDeInfo
 
 import pytest
 
@@ -909,7 +910,6 @@ class TestExternalCatalogDatasetOptions:
     def _make_one(self, *args, **kw):
         return self._get_target_class()(*args, **kw)
 
-
     @pytest.mark.parametrize(
         "default_storage_location_uri,parameters",
         [
@@ -971,6 +971,23 @@ class TestExternalCatalogDatasetOptions:
         assert result._properties == resource
 
 
+@pytest.fixture
+def _make_storage_descriptor():
+    serdeinfo = SerDeInfo(
+        serialization_library="testpath.to.LazySimpleSerDe",
+        name="serde_lib_name",
+        parameters={"key": "value"},
+    )
+
+    obj = StorageDescriptor(
+        input_format="testpath.to.OrcInputFormat",
+        location_uri="gs://test/path/",
+        output_format="testpath.to.OrcOutputFormat",
+        serde_info=serdeinfo,
+    )
+    return obj
+
+
 class TestExternalCatalogTableOptions:
     @staticmethod
     def _get_target_class():
@@ -982,24 +999,38 @@ class TestExternalCatalogTableOptions:
     @pytest.mark.parametrize(
         "connection_id,parameters,storage_descriptor",
         [
-            ("connection123", {"key": "value"}, "placeholder"),  # set all params
+            (
+                "connection123",
+                {"key": "value"},
+                "_make_storage_descriptor",
+            ),  # set all params
             ("connection123", None, None),  # set only one parameter at a time
             (None, {"key": "value"}, None),
-            (None, None, "placeholder"),
+            (None, None, "_make_storage_descriptor"),
             (None, None, None),  # use default parameters
         ],
     )
-    def test_ctor_initialization(self, connection_id, parameters, storage_descriptor):
+    def test_ctor_initialization(
+        self, connection_id, parameters, storage_descriptor, request
+    ):
+        if storage_descriptor == "_make_storage_descriptor":
+            storage_descriptor = request.getfixturevalue(storage_descriptor)
+
         instance = self._make_one(
             connection_id=connection_id,
             parameters=parameters,
             storage_descriptor=storage_descriptor,
         )
-        assert instance._properties == {
-            "connectionId": connection_id,
-            "parameters": parameters,
-            "storageDescriptor": storage_descriptor,
-        }
+
+        assert instance._properties["connectionId"] == connection_id
+        assert instance._properties["parameters"] == parameters
+        if storage_descriptor is not None:
+            assert (
+                instance._properties["storageDescriptor"]
+                == storage_descriptor.to_api_repr()
+            )
+        else:
+            assert instance._properties["storageDescriptor"] == storage_descriptor
 
     @pytest.mark.parametrize(
         "connection_id, parameters, storage_descriptor",
@@ -1007,13 +1038,13 @@ class TestExternalCatalogTableOptions:
             pytest.param(
                 123,
                 {"test_key": "test_value"},
-                "test placeholder",
+                "_make_storage_descriptor",
                 id="connection_id-invalid-type",
             ),
             pytest.param(
                 "connection123",
                 123,
-                "test placeholder",
+                "_make_storage_descriptor",
                 id="parameters-invalid-type",
             ),
             pytest.param(
@@ -1028,8 +1059,11 @@ class TestExternalCatalogTableOptions:
         self,
         connection_id: str,
         parameters: Dict[str, Any],
-        storage_descriptor: str,
+        storage_descriptor: Optional[StorageDescriptor],
+        request,
     ):
+        if storage_descriptor == "_make_storage_descriptor":
+            storage_descriptor = request.getfixturevalue(storage_descriptor)
         with pytest.raises(TypeError) as e:
             external_config.ExternalCatalogTableOptions(
                 connection_id=connection_id,
@@ -1039,32 +1073,36 @@ class TestExternalCatalogTableOptions:
 
         assert "Pass " in str(e.value)
 
-    def test_to_api_repr(self):
+    def test_to_api_repr(self, _make_storage_descriptor):
         instance = self._make_one()
+
         instance._properties = {
             "connectionId": "connection123",
             "parameters": {"key": "value"},
-            "storageDescriptor": "placeholder",
+            "storageDescriptor": _make_storage_descriptor.to_api_repr(),
         }
 
         resource = instance.to_api_repr()
-
-        assert resource == {
+        expected = {
             "connectionId": "connection123",
             "parameters": {"key": "value"},
-            "storageDescriptor": "placeholder",
+            "storageDescriptor": _make_storage_descriptor.to_api_repr(),
         }
+        assert resource == expected
 
-
-    def test_from_api_repr(self):
+    def test_from_api_repr(self, _make_storage_descriptor):
         instance = self._make_one()
+        storage_descriptor = _make_storage_descriptor
         resource = {
             "connectionId": "connection123",
             "parameters": {"key": "value"},
-            "storageDescriptor": "placeholder",
+            "storageDescriptor": storage_descriptor,
         }
         result = instance.from_api_repr(resource)
-        
         assert isinstance(result, ExternalCatalogTableOptions)
-        assert result._properties == resource
-        
+        assert result._properties["connectionId"] == "connection123"
+        assert result._properties["parameters"] == {"key": "value"}
+        assert (
+            result._properties["storageDescriptor"].to_api_repr()
+            == storage_descriptor.to_api_repr()
+        )

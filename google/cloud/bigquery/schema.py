@@ -25,6 +25,7 @@ from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery._helpers import (
     _isinstance_or_raise,
     _from_api_repr,
+    _get_sub_prop,
 )
 from google.cloud.bigquery.enums import StandardSqlTypeNames
 
@@ -715,7 +716,7 @@ class StorageDescriptor:
         input_format: Optional[str] = None,
         location_uri: Optional[str] = None,
         output_format: Optional[str] = None,
-        serde_info: Optional[Any] = None,
+        serde_info: Optional[SerDeInfo] = None,
     ):
         self._properties = {}
         self.input_format = input_format
@@ -766,14 +767,20 @@ class StorageDescriptor:
     def serde_info(self) -> Any:
         """Optional. Serializer and deserializer information."""
 
-        return self._properties.get("serdeInfo")
+        prop = _get_sub_prop(self._properties, ["serDeInfo"])
+        print(f"DINOSAUR in SD: {prop}\n\n{self._properties}")
+        if prop is not None:
+            prop = SerDeInfo().from_api_repr(prop)
+
+        return prop
 
     @serde_info.setter
-    def serde_info(self, value: Optional[Any]):
-        value = _isinstance_or_raise(
-            value, str, none_allowed=True
-        )  # TODO fix, when serde class is done
-        self._properties["serdeInfo"] = value
+    def serde_info(self, value):
+        value = _isinstance_or_raise(value, SerDeInfo, none_allowed=True)
+        if value is not None:
+            self._properties["serDeInfo"] = value.to_api_repr()
+        else:
+            self._properties["serDeInfo"] = value
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.
@@ -784,8 +791,21 @@ class StorageDescriptor:
         """
         return copy.deepcopy(self._properties)
 
-    def from_api_repr(self, resource):
-        return _from_api_repr(self, resource)
+    @classmethod
+    def from_api_repr(cls, resource: dict) -> StorageDescriptor:
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls()
+        config._properties = copy.deepcopy(resource)
+        return config
 
 
 class SerDeInfo:
@@ -825,7 +845,7 @@ class SerDeInfo:
 
     @serialization_library.setter
     def serialization_library(self, value: str):
-        value = _isinstance_or_raise(value, str)
+        value = _isinstance_or_raise(value, str, none_allowed=False)
         self._properties["serializationLibrary"] = value
 
     @property
@@ -860,5 +880,18 @@ class SerDeInfo:
         """
         return copy.deepcopy(self._properties)
 
-    def from_api_repr(self, resource):
-        return _from_api_repr(self, resource)
+    @classmethod
+    def from_api_repr(cls, resource: dict) -> SerDeInfo:
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls()
+        config._properties = copy.deepcopy(resource)
+        return config

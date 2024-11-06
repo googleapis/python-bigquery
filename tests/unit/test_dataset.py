@@ -1048,12 +1048,10 @@ class TestDataset(unittest.TestCase):
         dataset.external_catalog_dataset_options = ecdo_obj
         expected = ecdo_obj._properties
         result = dataset.external_catalog_dataset_options._properties
-        
+
         assert result == expected
 
     def test_external_catalog_dataset_options_from_api_repr(self):
-        from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
-
         resource = self.API_REPR
         klass = self._get_target_class()
         dataset = klass.from_api_repr(resource)

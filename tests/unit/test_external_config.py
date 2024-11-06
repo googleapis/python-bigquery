@@ -939,10 +939,13 @@ class TestExternalCatalogDatasetOptions:
         """Test ExternalCatalogDatasetOptions constructor with invalid input."""
         with pytest.raises(TypeError) as e:
             self._make_one(default_storage_location_uri=123)
+
+        # Looking for the first word from the string "Pass <variable> as..."
         assert "Pass " in str(e.value)
 
         with pytest.raises(TypeError) as e:
             self._make_one(parameters=123)
+        # Looking for the first word from the string "Pass <variable> as..."
         assert "Pass " in str(e.value)
 
     def test_to_api_repr(self):
@@ -1071,6 +1074,7 @@ class TestExternalCatalogTableOptions:
                 storage_descriptor=storage_descriptor,
             )
 
+        # Looking for the first word from the string "Pass <variable> as..."
         assert "Pass " in str(e.value)
 
     def test_to_api_repr(self, _make_storage_descriptor):

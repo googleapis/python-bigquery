@@ -1055,9 +1055,19 @@ class TestDataset(unittest.TestCase):
         resource = self.API_REPR
         klass = self._get_target_class()
         dataset = klass.from_api_repr(resource)
+        result = dataset.external_catalog_dataset_options.to_api_repr()
+        expected = resource["externalCatalogDatasetOptions"]
+        assert result == expected
+
+    def test_external_catalog_dataset_options_to_api_repr(self):
+        resource = self.API_REPR
+        klass = self._get_target_class()
+        dataset = klass.from_api_repr(resource)
         result = dataset.external_catalog_dataset_options._properties
         expected = resource["externalCatalogDatasetOptions"]
         assert result == expected
+
+
 
     def test__build_resource_w_custom_field(self):
         dataset = self._make_one(self.DS_REF)

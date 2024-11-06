@@ -1144,7 +1144,9 @@ class TestForeignTypeInfo:
     def test_ctor_invalid_input(self):
         with pytest.raises(TypeError) as e:
             self._make_one(type_system=123)
-        assert "Pass" in str(e.value)
+
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
 
     @pytest.mark.parametrize(
         "type_system,expected",
@@ -1229,7 +1231,9 @@ class TestStorageDescriptor:
                 output_format=output_format,
                 serde_info=serde_info,
             )
-        assert "Pass" in str(e.value)
+
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
 
     def test_to_api_repr(self):
         storage_descriptor = self._make_one(
@@ -1246,6 +1250,7 @@ class TestStorageDescriptor:
         }
 
         assert storage_descriptor.to_api_repr() == expected_repr
+    # TODO: needs a from_api_repr() test.
 
 
 class TestSerDeInfo:
@@ -1293,8 +1298,8 @@ class TestSerDeInfo:
                 name=name,
                 parameters=parameters,
             )
-
-        assert "Pass" in str(e.value)
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
 
     def test_to_api_repr(self):
         serde_info = self._make_one(
@@ -1308,3 +1313,5 @@ class TestSerDeInfo:
             "parameters": {"key": "value"},
         }
         assert serde_info.to_api_repr() == expected_repr
+
+    # TODO: needs a from_api_repr() test.

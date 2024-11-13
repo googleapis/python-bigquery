@@ -96,7 +96,7 @@ all = [
 ]
 
 [tool.setuptools.dynamic]
-version = { attr = "google.cloud.bigquery.__version__" }
+version = { attr = "google.cloud.bigquery.version.__version__" }
 
 [tool.setuptools.packages.find]
 # Only include packages under the 'google' namespace. Do not include tests,

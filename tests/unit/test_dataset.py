@@ -650,6 +650,16 @@ class TestDataset(unittest.TestCase):
     DS_ID = "dataset-id"
     DS_REF = DatasetReference(PROJECT, DS_ID)
     KMS_KEY_NAME = "projects/1/locations/us/keyRings/1/cryptoKeys/1"
+    DEFAULT_STORAGE_LOCATION_URI = "gs://test-bucket/test-path"
+    PARAMETERS = {"key": "value"}
+    API_REPR = {
+        "datasetReference": {"projectId": "project", "datasetId": "dataset-id"},
+        "labels": {},
+        "externalCatalogDatasetOptions": {
+            "defaultStorageLocationUri": DEFAULT_STORAGE_LOCATION_URI,
+            "parameters": PARAMETERS,
+        },
+    }
 
     @staticmethod
     def _get_target_class():
@@ -1014,27 +1024,23 @@ class TestDataset(unittest.TestCase):
         with self.assertRaises(ValueError):
             cls.from_string("string-project:string_dataset")
 
-    API_REPR = {
-        "datasetReference": {"projectId": "project", "datasetId": "dataset-id"},
-        "labels": {},
-        "externalCatalogDatasetOptions": {
-            "defaultStorageLocationUri": "gs://test-bucket/test-path",
-            "parameters": {"key": "value"},
-        },
-    }
-
     def test_external_catalog_dataset_options_setter(self):
         from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
 
         dataset = self._make_one(self.DS_REF)
-        ecdo_obj = ExternalCatalogDatasetOptions(
-            default_storage_location_uri="gs://test-bucket/test-path",
-            parameters={"key": "value"},
-        )
 
+        # GIVEN the parameters DEFAULT_STORAGE_LOCATION_URI and PARAMETERS
+        # WHEN an ExternalCatalogDatasetOptions obj is created
+        #     and added to a dataset.
+        ecdo_obj = ExternalCatalogDatasetOptions(
+            default_storage_location_uri=self.DEFAULT_STORAGE_LOCATION_URI,
+            parameters=self.PARAMETERS,
+        )
         dataset.external_catalog_dataset_options = ecdo_obj
-        expected = self.API_REPR
+
+        # THEN the api representation of the dataset will match API_REPR
         result = dataset.to_api_repr()
+        expected = self.API_REPR
         assert result == expected
 
     def test_external_catalog_dataset_options_getter(self):
@@ -1066,8 +1072,6 @@ class TestDataset(unittest.TestCase):
         result = dataset.external_catalog_dataset_options._properties
         expected = resource["externalCatalogDatasetOptions"]
         assert result == expected
-
-
 
     def test__build_resource_w_custom_field(self):
         dataset = self._make_one(self.DS_REF)

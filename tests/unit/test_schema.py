@@ -1250,6 +1250,7 @@ class TestStorageDescriptor:
         }
 
         assert storage_descriptor.to_api_repr() == expected_repr
+
     # TODO: needs a from_api_repr() test.
 
 

@@ -29,9 +29,7 @@ except ImportError:
     HAS_OPENTELEMETRY = False
     _warned_telemetry = False
 
-_default_attributes = {
-    "db.system": "BigQuery"
-}  # static, default values assigned to all spans
+_default_attributes = {"db.system": "BigQuery"}  # static, default values assigned to all spans
 
 
 @contextmanager
@@ -160,5 +158,9 @@ def _set_job_attributes(job_ref):
     total_bytes_processed = getattr(job_ref, "total_bytes_processed", None)
     if total_bytes_processed is not None:
         job_attributes["total_bytes_processed"] = total_bytes_processed
+
+    query = getattr(job_ref, "query", None)
+    if query is not None:
+        job_attributes["db.query.text"] = query
 
     return job_attributes

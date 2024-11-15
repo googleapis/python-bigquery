@@ -1043,7 +1043,10 @@ class TestDataset(unittest.TestCase):
         expected = self.API_REPR
         assert result == expected
 
-    def test_external_catalog_dataset_options_getter(self):
+    # PATH A: prop is not None
+    def test_external_catalog_dataset_options_getter_prop_exists(self):
+        # GIVEN default dataset PLUS an ExternalCatalogDatasetOptions
+        # THEN confirm that external_catalog_dataset_options is set
         from google.cloud.bigquery.external_config import ExternalCatalogDatasetOptions
 
         dataset = self._make_one(self.DS_REF)
@@ -1054,6 +1057,15 @@ class TestDataset(unittest.TestCase):
         dataset.external_catalog_dataset_options = ecdo_obj
         expected = ecdo_obj._properties
         result = dataset.external_catalog_dataset_options._properties
+
+        assert result == expected
+
+    def test_external_catalog_dataset_options_getter_prop_is_none(self):
+        # GIVEN only the default dataset
+        # THEN confirm that external_catalog_dataset_options is None
+        dataset = self._make_one(self.DS_REF)
+        expected = None
+        result = dataset.external_catalog_dataset_options
 
         assert result == expected
 

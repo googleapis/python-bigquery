@@ -31,6 +31,7 @@ from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
+from google.cloud.bigquery.schema import SerDeInfo, StorageDescriptor
 
 
 def _mock_client():
@@ -5822,3 +5823,118 @@ def test_table_reference_to_bqstorage_v1_stable(table_path):
     for klass in (mut.TableReference, mut.Table, mut.TableListItem):
         got = klass.from_string(table_path).to_bqstorage()
         assert got == expected
+
+
+@pytest.fixture
+def _make_storage_descriptor():
+    serdeinfo = SerDeInfo(
+        serialization_library="testpath.to.LazySimpleSerDe",
+        name="serde_lib_name",
+        parameters={"key": "value"},
+    )
+
+    obj = StorageDescriptor(
+        input_format="testpath.to.OrcInputFormat",
+        location_uri="gs://test/path/",
+        output_format="testpath.to.OrcOutputFormat",
+        serde_info=serdeinfo,
+    )
+    return obj
+
+
+@pytest.fixture()
+def external_catalog_table_options(_make_storage_descriptor):
+    from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
+
+    return ExternalCatalogTableOptions(
+        connection_id="connection123",
+        parameters={"key": "value"},
+        storage_descriptor=_make_storage_descriptor,
+    )
+
+
+class TestExternalCatalogTableOptions:
+    PROJECT = "project_id"
+    DS_ID = "dataset_id"
+    TABLE_NAME = "table_name"
+
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import Table
+
+        return Table
+
+    @classmethod
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    def test_external_catalog_table_options_getter(
+        self,
+        external_catalog_table_options,
+        _make_storage_descriptor,
+        request,
+    ):
+        from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
+
+        # create objects for the test
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        # Confirm that external catalog table options have not been set
+        assert table.external_catalog_table_options is None
+
+        # Add an ExternalCatalogTableOptions object to the table.
+        table._properties[
+            "externalCatalogTableOptions"
+        ] = external_catalog_table_options
+        table_repr = table.to_api_repr()
+
+        # Extract the ecto object.
+        ecto_output = table_repr["externalCatalogTableOptions"]
+
+        # Confirm that external catalog table options are an
+        # ExternalCatalogTableOptions object
+        assert isinstance(ecto_output, ExternalCatalogTableOptions)
+
+        storage_descriptor = request.getfixturevalue("_make_storage_descriptor")
+
+        expected = {
+            "connectionId": "connection123",
+            "parameters": {"key": "value"},
+            "storageDescriptor": storage_descriptor.to_api_repr(),
+        }
+        result = ecto_output.to_api_repr()
+
+        # Confirm that the api_repr of the ecto_output matches the inputs
+        print(f"DINOSAUR : {result}\n\n{expected}")
+        assert result == expected
+
+    def test_external_catalog_table_options_setter(
+        self,
+        external_catalog_table_options,
+        _make_storage_descriptor,
+    ):
+        # create objects for the test
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        # Add an ExternalCatalogTableOptions object to the table.
+        table.external_catalog_table_options = external_catalog_table_options
+        expected = {
+            "tableReference": {
+                "projectId": "project_id",
+                "datasetId": "dataset_id",
+                "tableId": "table_name",
+            },
+            "labels": {},
+            "externalCatalogTableOptions": {
+                "connectionId": "connection123",
+                "parameters": {"key": "value"},
+                "storageDescriptor": _make_storage_descriptor.to_api_repr(),
+            },
+        }
+        # Confirm that the api_repr of the ecto_output matches the inputs
+        result = table.to_api_repr()
+        assert result == expected

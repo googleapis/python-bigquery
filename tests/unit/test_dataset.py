@@ -1043,7 +1043,6 @@ class TestDataset(unittest.TestCase):
         expected = self.API_REPR
         assert result == expected
 
-    # PATH A: prop is not None
     def test_external_catalog_dataset_options_getter_prop_exists(self):
         # GIVEN default dataset PLUS an ExternalCatalogDatasetOptions
         # THEN confirm that external_catalog_dataset_options is set

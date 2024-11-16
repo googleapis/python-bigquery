@@ -1846,11 +1846,12 @@ class RowIterator(HTTPIterator):
                 is deterministically ordered with ORDER BY,
                 in which case, the number of download stream is always 1.
 
-                By default, this value is unnset, and the number of download
+                If set to 0 or None (the default), the number of download
                 streams is determined by BigQuery the server. However, this behaviour
                 can require a lot of memory to store temporary download result,
-                especially with very large queries. If that's the case,
-                this parameter can be used to reduce memory consumption.
+                especially with very large queries. In that case,
+                setting this parameter value to a value > 0 can help
+                reduce system resource consumption.
 
         Returns:
             pyarrow.RecordBatch:
@@ -2035,11 +2036,12 @@ class RowIterator(HTTPIterator):
                 is deterministically ordered with ORDER BY,
                 in which case, the number of download stream is always 1.
 
-                By default, this value is unnset, and the number of download
+                If set to 0 or None (the default), the number of download
                 streams is determined by BigQuery the server. However, this behaviour
                 can require a lot of memory to store temporary download result,
-                especially with very large queries. If that's the case,
-                this parameter can be used to reduce memory consumption.
+                especially with very large queries. In that case,
+                setting this parameter value to a value > 0 can help
+                reduce system resource consumption.
 
         Returns:
             pandas.DataFrame:

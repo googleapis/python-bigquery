@@ -1842,6 +1842,10 @@ class RowIterator(HTTPIterator):
                 using BigQuery Storage API. Ignored if
                 BigQuery Storage API is not used.
 
+                This setting also has no effect if the query result
+                is deterministically ordered with ORDER BY,
+                in which case, the number of download stream is always 1.
+
                 By default, this value is unnset, and the number of download
                 streams is determined by BigQuery the server. However, this behaviour
                 can require a lot of memory to store temporary download result,
@@ -2026,6 +2030,10 @@ class RowIterator(HTTPIterator):
                 The maximum number of parallel download streams when
                 using BigQuery Storage API. Ignored if
                 BigQuery Storage API is not used.
+
+                This setting also has no effect if the query result
+                is deterministically ordered with ORDER BY,
+                in which case, the number of download stream is always 1.
 
                 By default, this value is unnset, and the number of download
                 streams is determined by BigQuery the server. However, this behaviour

@@ -2724,6 +2724,7 @@ class _EmptyRowIterator(RowIterator):
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Optional[Dict[str, Any]] = None,
         max_queue_size: Optional[int] = None,
+        max_stream_count: Optional[int] = None,
     ) -> Iterator["pandas.DataFrame"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -2737,6 +2738,9 @@ class _EmptyRowIterator(RowIterator):
                 Ignored. Added for compatibility with RowIterator.
 
             max_queue_size:
+                Ignored. Added for compatibility with RowIterator.
+
+            max_stream_count:
                 Ignored. Added for compatibility with RowIterator.
 
         Returns:
@@ -2753,6 +2757,7 @@ class _EmptyRowIterator(RowIterator):
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         max_queue_size: Optional[int] = None,
+        max_stream_count: Optional[int] = None,
     ) -> Iterator["pyarrow.RecordBatch"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -2763,6 +2768,9 @@ class _EmptyRowIterator(RowIterator):
                 Ignored. Added for compatibility with RowIterator.
 
             max_queue_size:
+                Ignored. Added for compatibility with RowIterator.
+
+            max_stream_count:
                 Ignored. Added for compatibility with RowIterator.
 
         Returns:

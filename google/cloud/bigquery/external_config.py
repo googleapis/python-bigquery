@@ -1027,7 +1027,7 @@ class ExternalCatalogDatasetOptions:
         default_storage_location_uri: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None,
     ):
-        self._properties = {}
+        self._properties: Dict[str, Any] = {}
         self.default_storage_location_uri = default_storage_location_uri
         self.parameters = parameters
 

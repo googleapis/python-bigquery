@@ -610,7 +610,7 @@ class TableSchema:
     def __init__(
         self, fields: Optional[list] = None, foreign_type_info: Optional[str] = None
     ):
-        self._properties: Dict[str, Any] = {} 
+        self._properties: Dict[str, Any] = {}
         self.fields = fields
         self.foreign_type_info = foreign_type_info
 
@@ -768,9 +768,9 @@ class StorageDescriptor:
         """Optional. Serializer and deserializer information."""
 
         prop = _get_sub_prop(self._properties, ["serDeInfo"])
-        print(f"DINOSAUR in SD: {prop}\n\n{self._properties}")
         if prop is not None:
-            prop = SerDeInfo().from_api_repr(prop)
+            prop = StorageDescriptor().from_api_repr(prop)
+            print(f"DINOSAUR prop: {prop}")
 
         return prop
 
@@ -892,6 +892,6 @@ class SerDeInfo:
         Returns:
             An instance of the class initialized with data from 'resource'.
         """
-        config = cls()
+        config = cls("")
         config._properties = copy.deepcopy(resource)
         return config

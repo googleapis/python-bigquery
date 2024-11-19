@@ -892,6 +892,6 @@ class SerDeInfo:
         Returns:
             An instance of the class initialized with data from 'resource'.
         """
-        config = cls()
+        config = cls("")
         config._properties = copy.deepcopy(resource)
         return config

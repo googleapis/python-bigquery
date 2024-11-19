@@ -701,8 +701,8 @@ class StorageDescriptor:
             "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"). The maximum
             length is 128 characters.
         locationUri (Optional[str]): The physical location of the table (e.g.
-            `gs://spark-dataproc-data/pangea-data/case_sensitive/` or
-            `gs://spark-dataproc-data/pangea-data/*`). The maximum length is
+            'gs://spark-dataproc-data/pangea-data/case_sensitive/' or
+            'gs://spark-dataproc-data/pangea-data/*'). The maximum length is
             2056 bytes.
         outputFormat (Optional[str]): Specifies the fully qualified class name
             of the OutputFormat (e.g.
@@ -739,9 +739,9 @@ class StorageDescriptor:
 
     @property
     def location_uri(self) -> Any:
-        """Optional. The physical location of the table (e.g. `gs://spark-
-        dataproc-data/pangea-data/case_sensitive/` or `gs://spark-dataproc-
-        data/pangea-data/*`). The maximum length is 2056 bytes."""
+        """Optional. The physical location of the table (e.g. 'gs://spark-
+        dataproc-data/pangea-data/case_sensitive/' or 'gs://spark-dataproc-
+        data/pangea-data/*'). The maximum length is 2056 bytes."""
 
         return self._properties.get("locationUri")
 

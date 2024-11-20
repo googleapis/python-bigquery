@@ -5889,7 +5889,7 @@ class TestExternalCatalogTableOptions:
         table._properties[
             "externalCatalogTableOptions"
         ] = external_catalog_table_options
-        
+
         # Extract the ecto object.
         result = table.external_catalog_table_options
 

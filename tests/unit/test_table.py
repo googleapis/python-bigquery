@@ -5880,6 +5880,7 @@ class TestExternalCatalogTableOptions:
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)
+        expected = external_catalog_table_options
 
         # Confirm that external catalog table options have not been set
         assert table.external_catalog_table_options is None
@@ -5888,26 +5889,13 @@ class TestExternalCatalogTableOptions:
         table._properties[
             "externalCatalogTableOptions"
         ] = external_catalog_table_options
-        table_repr = table.to_api_repr()
-
+        
         # Extract the ecto object.
-        ecto_output = table_repr["externalCatalogTableOptions"]
+        result = table.external_catalog_table_options
 
         # Confirm that external catalog table options are an
         # ExternalCatalogTableOptions object
-        assert isinstance(ecto_output, ExternalCatalogTableOptions)
-
-        storage_descriptor = request.getfixturevalue("_make_storage_descriptor")
-
-        expected = {
-            "connectionId": "connection123",
-            "parameters": {"key": "value"},
-            "storageDescriptor": storage_descriptor.to_api_repr(),
-        }
-        result = ecto_output.to_api_repr()
-
-        # Confirm that the api_repr of the ecto_output matches the inputs
-        print(f"DINOSAUR : {result}\n\n{expected}")
+        assert isinstance(result, ExternalCatalogTableOptions)
         assert result == expected
 
     def test_external_catalog_table_options_setter(

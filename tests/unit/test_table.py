@@ -5888,7 +5888,7 @@ class TestExternalCatalogTableOptions:
         # Add an ExternalCatalogTableOptions object to the table.
         table._properties[
             "externalCatalogTableOptions"
-        ] = external_catalog_table_options
+        ] = external_catalog_table_options.to_api_repr()
 
         # Extract the ecto object.
         result = table.external_catalog_table_options
@@ -5896,6 +5896,7 @@ class TestExternalCatalogTableOptions:
         # Confirm that external catalog table options are an
         # ExternalCatalogTableOptions object
         assert isinstance(result, ExternalCatalogTableOptions)
+        assert isinstance(expected, ExternalCatalogTableOptions)
         assert result == expected
 
     def test_external_catalog_table_options_setter(

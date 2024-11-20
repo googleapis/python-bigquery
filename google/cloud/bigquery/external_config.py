@@ -1168,7 +1168,9 @@ class ExternalCatalogTableOptions:
             Dict[str, Any]:
                 A dictionary in the format used by the BigQuery API.
         """
+
         config = copy.deepcopy(self._properties)
+        # print("CONFIG: ", config, dir(config))
         return config
 
     @classmethod
@@ -1186,3 +1188,6 @@ class ExternalCatalogTableOptions:
         config = cls()
         config._properties = copy.deepcopy(resource)
         return config
+
+    def __eq__(self, value):
+        return self.to_api_repr() == value.to_api_repr()

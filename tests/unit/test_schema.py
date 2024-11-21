@@ -16,9 +16,10 @@ from google.cloud import bigquery
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
 from google.cloud.bigquery.schema import (
     PolicyTagList,
-    # ForeignTypeInfo,
+    ForeignTypeInfo,
     StorageDescriptor,
     SerDeInfo,
+    TableSchema,
 )
 
 import unittest
@@ -1121,8 +1122,6 @@ class TestForeignTypeInfo:
 
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.schema import ForeignTypeInfo
-
         return ForeignTypeInfo
 
     def _make_one(self, *args, **kw):
@@ -1316,3 +1315,40 @@ class TestSerDeInfo:
         assert serde_info.to_api_repr() == expected_repr
 
     # TODO: needs a from_api_repr() test.
+
+@pytest.fixture
+def _make_foreign_type_info():
+    return ForeignTypeInfo(
+        type_system="TODO_fake_type_system",
+    )
+
+
+class TestTableSchema:
+    @staticmethod
+    def _get_target_class():
+        return TableSchema
+
+    def _make_one(self, *args, **kwargs):
+        return self._get_target_class()(*args, **kwargs)
+
+    def test_ctor_valid_input(self, _make_foreign_type_info):
+        table_schema = self._make_one(
+            fields="TODO needs a fields object",
+            foreign_type_info=_make_foreign_type_info.to_api_repr(),
+        )
+        # Test default constructors
+        # Create expected TableSchema object
+        # * use target_class
+        # * use make_one
+        # Create result TableSchema object
+        # compare the two
+        assert False
+
+    def test_ctor_invalid_input(self):
+        assert False
+
+    def test_to_api_repr(self):
+        assert False
+        
+    def test_from_api_repr(self):
+        assert False

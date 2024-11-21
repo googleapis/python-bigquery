@@ -1170,7 +1170,6 @@ class ExternalCatalogTableOptions:
         """
 
         config = copy.deepcopy(self._properties)
-        # print("CONFIG: ", config, dir(config))
         return config
 
     @classmethod

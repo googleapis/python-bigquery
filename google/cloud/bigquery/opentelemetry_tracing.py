@@ -29,7 +29,9 @@ except ImportError:
     HAS_OPENTELEMETRY = False
     _warned_telemetry = False
 
-_default_attributes = {"db.system": "BigQuery"}  # static, default values assigned to all spans
+_default_attributes = {
+    "db.system": "BigQuery"
+}  # static, default values assigned to all spans
 
 
 @contextmanager

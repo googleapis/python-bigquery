@@ -1027,7 +1027,7 @@ class ExternalCatalogDatasetOptions:
         default_storage_location_uri: Optional[str] = None,
         parameters: Optional[Dict[str, Any]] = None,
     ):
-        self._properties = {}
+        self._properties: Dict[str, Any] = {}
         self.default_storage_location_uri = default_storage_location_uri
         self.parameters = parameters
 
@@ -1168,6 +1168,7 @@ class ExternalCatalogTableOptions:
             Dict[str, Any]:
                 A dictionary in the format used by the BigQuery API.
         """
+
         config = copy.deepcopy(self._properties)
         return config
 
@@ -1186,3 +1187,6 @@ class ExternalCatalogTableOptions:
         config = cls()
         config._properties = copy.deepcopy(resource)
         return config
+
+    def __eq__(self, value):
+        return self.to_api_repr() == value.to_api_repr()

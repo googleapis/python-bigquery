@@ -659,8 +659,8 @@ class StorageDescriptor:
             "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"). The maximum
             length is 128 characters.
         locationUri (Optional[str]): The physical location of the table (e.g.
-            `gs://spark-dataproc-data/pangea-data/case_sensitive/` or
-            `gs://spark-dataproc-data/pangea-data/*`). The maximum length is
+            'gs://spark-dataproc-data/pangea-data/case_sensitive/' or
+            'gs://spark-dataproc-data/pangea-data/'). The maximum length is
             2056 bytes.
         outputFormat (Optional[str]): Specifies the fully qualified class name
             of the OutputFormat (e.g.
@@ -676,7 +676,7 @@ class StorageDescriptor:
         output_format: Optional[str] = None,
         serde_info: Optional[SerDeInfo] = None,
     ):
-        self._properties = {}
+        self._properties: Dict[str, Any] = {}
         self.input_format = input_format
         self.location_uri = location_uri
         self.output_format = output_format
@@ -697,9 +697,9 @@ class StorageDescriptor:
 
     @property
     def location_uri(self) -> Any:
-        """Optional. The physical location of the table (e.g. `gs://spark-
-        dataproc-data/pangea-data/case_sensitive/` or `gs://spark-dataproc-
-        data/pangea-data/*`). The maximum length is 2056 bytes."""
+        """Optional. The physical location of the table (e.g. 'gs://spark-
+        dataproc-data/pangea-data/case_sensitive/' or 'gs://spark-dataproc-
+        data/pangea-data/'). The maximum length is 2056 bytes."""
 
         return self._properties.get("locationUri")
 
@@ -726,9 +726,9 @@ class StorageDescriptor:
         """Optional. Serializer and deserializer information."""
 
         prop = _get_sub_prop(self._properties, ["serDeInfo"])
-        print(f"DINOSAUR in SD: {prop}\n\n{self._properties}")
         if prop is not None:
-            prop = SerDeInfo().from_api_repr(prop)
+            prop = StorageDescriptor().from_api_repr(prop)
+            print(f"DINOSAUR prop: {prop}")
 
         return prop
 
@@ -787,7 +787,7 @@ class SerDeInfo:
         name: Optional[str] = None,
         parameters: Optional[dict[str, str]] = None,
     ):
-        self._properties = {}
+        self._properties: Dict[str, Any] = {}
         self.serialization_library = serialization_library
         self.name = name
         self.parameters = parameters
@@ -850,6 +850,6 @@ class SerDeInfo:
         Returns:
             An instance of the class initialized with data from 'resource'.
         """
-        config = cls()
+        config = cls("")
         config._properties = copy.deepcopy(resource)
         return config

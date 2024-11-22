@@ -19,7 +19,7 @@ from google.cloud.bigquery.schema import (
     ForeignTypeInfo,
     StorageDescriptor,
     SerDeInfo,
-    TableSchema,
+    # TODO: delete this line...TableSchema,
 )
 
 import unittest
@@ -1159,6 +1159,26 @@ class TestForeignTypeInfo:
         result = self._make_one(type_system=type_system)
         assert result.to_api_repr() == expected
 
+    def test_from_api_repr(self):
+        """GIVEN an api representation of a ForeignTypeInfo object (i.e. resource)
+        WHEN converted into a ForeignTypeInfo object using from_api_repr() and
+        displayed as a dict
+        THEN it will have the same representation a ForeignTypeInfo object created
+        directly (via _make_one()) and displayed as a dict.
+        """
+        resource = {
+            "typeSystem": "TYPE_SYSTEM_UNSPECIFIED"
+        }
+
+        expected = self._make_one(
+            type_system="TYPE_SYSTEM_UNSPECIFIED"
+        )
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(resource)
+
+        assert result.to_api_repr() == expected.to_api_repr()
+
 
 class TestStorageDescriptor:
     """Tests for the StorageDescriptor class."""
@@ -1316,39 +1336,39 @@ class TestSerDeInfo:
 
     # TODO: needs a from_api_repr() test.
 
-@pytest.fixture
-def _make_foreign_type_info():
-    return ForeignTypeInfo(
-        type_system="TODO_fake_type_system",
-    )
+# @pytest.fixture
+# def _make_foreign_type_info():
+#     return ForeignTypeInfo(
+#         type_system="TODO_fake_type_system",
+#     )
 
 
-class TestTableSchema:
-    @staticmethod
-    def _get_target_class():
-        return TableSchema
+# class TestTableSchema:
+#     @staticmethod
+#     def _get_target_class():
+#         return TableSchema
 
-    def _make_one(self, *args, **kwargs):
-        return self._get_target_class()(*args, **kwargs)
+#     def _make_one(self, *args, **kwargs):
+#         return self._get_target_class()(*args, **kwargs)
 
-    def test_ctor_valid_input(self, _make_foreign_type_info):
-        table_schema = self._make_one(
-            fields="TODO needs a fields object",
-            foreign_type_info=_make_foreign_type_info.to_api_repr(),
-        )
-        # Test default constructors
-        # Create expected TableSchema object
-        # * use target_class
-        # * use make_one
-        # Create result TableSchema object
-        # compare the two
-        assert False
+#     def test_ctor_valid_input(self, _make_foreign_type_info):
+#         table_schema = self._make_one(
+#             fields="TODO needs a fields object",
+#             foreign_type_info=_make_foreign_type_info.to_api_repr(),
+#         )
+#         # Test default constructors
+#         # Create expected TableSchema object
+#         # * use target_class
+#         # * use make_one
+#         # Create result TableSchema object
+#         # compare the two
+#         assert False
 
-    def test_ctor_invalid_input(self):
-        assert False
+#     def test_ctor_invalid_input(self):
+#         assert False
 
-    def test_to_api_repr(self):
-        assert False
+#     def test_to_api_repr(self):
+#         assert False
         
-    def test_from_api_repr(self):
-        assert False
+#     def test_from_api_repr(self):
+#         assert False

@@ -501,6 +501,7 @@ def _to_schema_fields(schema):
         sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
         instance or a compatible mapping representation of the field.
     """
+
     for field in schema:
         if not isinstance(field, (SchemaField, collections.abc.Mapping)):
             raise ValueError(
@@ -598,59 +599,59 @@ class PolicyTagList(object):
         return answer
 
 
-class TableSchema:
-    """Schema of a table
+# class TableSchema:
+#     """Schema of a table
 
-    Args:
-        fields (Optional[list]): Describes the fields in a table.
-        foreignTypeInfo (Optional[str]): Specifies metadata of the foreign data type
-            definition in field schema.
-    """
+#     Args:
+#         fields (Optional[list]): Describes the fields in a table.
+#         foreignTypeInfo (Optional[str]): Specifies metadata of the foreign data type
+#             definition in field schema.
+#     """
 
-    def __init__(
-        self, fields: Optional[list] = None, foreign_type_info: Optional[str] = None
-    ):
-        self._properties = {}
-        self.fields = fields
-        self.foreign_type_info = foreign_type_info
+#     def __init__(
+#         self, fields: Optional[list] = None, foreign_type_info: Optional[str] = None
+#     ):
+#         self._properties = {}
+#         self.fields = fields
+#         self.foreign_type_info = foreign_type_info
 
-    @property
-    def fields(self) -> Any:
-        """Describes the fields in a table."""
+#     @property
+#     def fields(self) -> Any:
+#         """Describes the fields in a table."""
 
-        return self._properties.get("fields")
+#         return self._properties.get("fields")
 
-    @fields.setter
-    def fields(self, value: list, dtype: str) -> str:
-        value = _isinstance_or_raise(value, list, none_allowed=True)
-        self._properties["fields"] = value
+#     @fields.setter
+#     def fields(self, value: list, dtype: str) -> str:
+#         value = _isinstance_or_raise(value, list, none_allowed=True)
+#         self._properties["fields"] = value
 
-    @property
-    def foreign_type_info(self) -> Any:
-        """Optional. Specifies metadata of the foreign data type definition in
-        field schema (TableFieldSchema.foreign_type_definition)."""
+#     @property
+#     def foreign_type_info(self) -> Any:
+#         """Optional. Specifies metadata of the foreign data type definition in
+#         field schema (TableFieldSchema.foreign_type_definition)."""
 
-        return self._properties.get("foreignTypeInfo")
+#         return self._properties.get("foreignTypeInfo")
 
-    @foreign_type_info.setter
-    def foreign_type_info(self, value: str, dtype: str) -> str:
-        if not isinstance(value, str):
-            raise ValueError(
-                f"Pass {value} as a '{repr(dtype)}'." f"Got {type(value)}."
-            )
-        self._properties["foreignTypeInfo"] = value
+#     @foreign_type_info.setter
+#     def foreign_type_info(self, value: str, dtype: str) -> str:
+#         if not isinstance(value, str):
+#             raise ValueError(
+#                 f"Pass {value} as a '{repr(dtype)}'." f"Got {type(value)}."
+#             )
+#         self._properties["foreignTypeInfo"] = value
 
-    def to_api_repr(self) -> dict:
-        """Build an API representation of this object.
+#     def to_api_repr(self) -> dict:
+#         """Build an API representation of this object.
 
-        Returns:
-            Dict[str, Any]:
-                A dictionary in the format used by the BigQuery API.
-        """
-        return copy.deepcopy(self._properties)
+#         Returns:
+#             Dict[str, Any]:
+#                 A dictionary in the format used by the BigQuery API.
+#         """
+#         return copy.deepcopy(self._properties)
 
-    def from_api_repr(self, resource):
-        return _from_api_repr(self, resource)
+#     def from_api_repr(self, resource):
+#         return _from_api_repr(self, resource)
 
 
 class ForeignTypeInfo:
@@ -686,9 +687,22 @@ class ForeignTypeInfo:
                 A dictionary in the format used by the BigQuery API.
         """
         return copy.deepcopy(self._properties)
+    
+    @classmethod
+    def from_api_repr(cls, resource):
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
 
-    def from_api_repr(self, resource):
-        return _from_api_repr(self, resource)
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls()
+        config._properties = copy.deepcopy(resource)
+        return config
 
 
 class StorageDescriptor:

@@ -574,7 +574,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.schema import Schema
 
-
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
         full_name = SchemaField("full_name", "STRING", mode="REQUIRED")
@@ -583,12 +582,12 @@ class TestTable(unittest.TestCase, _SchemaBase):
         schema = Schema(foreign_type_info="EXAMPLE FTF", fields=[full_name, age])
 
         table = self._make_one(table_ref, schema=schema)
-        print(f"DINOSAUR: {schema}\n{dir(schema)}\n{type(schema)}\n{type(table.schema)}")
+        print(
+            f"DINOSAUR: {schema}\n{dir(schema)}\n{type(schema)}\n{type(table.schema)}"
+        )
         self.assertEqual(table.schema, [full_name, age])
         # ADDITIONAL CHECK TEST
         self.assertEqual(table.schema.foreign_type_info, "EXAMPLE FTF")
-
-
 
     def test_ctor_string(self):
         table = self._make_one("some-project.some_dset.some_tbl")

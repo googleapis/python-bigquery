@@ -1371,13 +1371,13 @@ class TestSerDeInfo:
             "name": "serde_name",
             "parameters": {"key": "value"},
         }
-        
+
         expected = self._make_one(
             serialization_library="testpath.to.LazySimpleSerDe",
             name="serde_name",
             parameters={"key": "value"},
         )
-                
+
         klass = self._get_target_class()
         result = klass.from_api_repr(resource)
 

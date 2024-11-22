@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from google.cloud import bigquery
+from google.cloud.bigquery.enums import RoundingMode
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
 from google.cloud.bigquery.schema import (
     PolicyTagList,
@@ -52,9 +53,12 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields, ())
         self.assertIsNone(field.policy_tags)
         self.assertIsNone(field.default_value_expression)
+        self.assertEqual(field.rounding_mode, None)
+        self.assertEqual(field.foreign_type_definition, None)
 
     def test_constructor_explicit(self):
         FIELD_DEFAULT_VALUE_EXPRESSION = "This is the default value for this field"
+        ROUNDINGMODE = RoundingMode.ROUNDING_MODE_UNSPECIFIED
         field = self._make_one(
             "test",
             "STRING",
@@ -67,6 +71,8 @@ class TestSchemaField(unittest.TestCase):
                 )
             ),
             default_value_expression=FIELD_DEFAULT_VALUE_EXPRESSION,
+            rounding_mode=ROUNDINGMODE,
+            foreign_type_definition="INTEGER",
         )
         self.assertEqual(field.name, "test")
         self.assertEqual(field.field_type, "STRING")
@@ -83,9 +89,16 @@ class TestSchemaField(unittest.TestCase):
                 )
             ),
         )
+        self.assertEqual(field.rounding_mode, ROUNDINGMODE.name)
+        self.assertEqual(field.foreign_type_definition, "INTEGER")
 
     def test_constructor_explicit_none(self):
-        field = self._make_one("test", "STRING", description=None, policy_tags=None)
+        field = self._make_one(
+            "test",
+            "STRING",
+            description=None,
+            policy_tags=None,
+        )
         self.assertIsNone(field.description)
         self.assertIsNone(field.policy_tags)
 
@@ -141,10 +154,18 @@ class TestSchemaField(unittest.TestCase):
             policy.to_api_repr(),
             {"names": ["foo", "bar"]},
         )
+        ROUNDINGMODE = RoundingMode.ROUNDING_MODE_UNSPECIFIED
 
         field = self._make_one(
-            "foo", "INTEGER", "NULLABLE", description="hello world", policy_tags=policy
+            "foo",
+            "INTEGER",
+            "NULLABLE",
+            description="hello world",
+            policy_tags=policy,
+            rounding_mode=ROUNDINGMODE,
+            foreign_type_definition="INTEGER",
         )
+
         self.assertEqual(
             field.to_api_repr(),
             {
@@ -153,6 +174,8 @@ class TestSchemaField(unittest.TestCase):
                 "type": "INTEGER",
                 "description": "hello world",
                 "policyTags": {"names": ["foo", "bar"]},
+                "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
+                "foreignTypeDefinition": "INTEGER",
             },
         )
 
@@ -186,6 +209,8 @@ class TestSchemaField(unittest.TestCase):
                 "description": "test_description",
                 "name": "foo",
                 "type": "record",
+                "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
+                "foreignTypeDefinition": "INTEGER",
             }
         )
         self.assertEqual(field.name, "foo")
@@ -197,6 +222,8 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].field_type, "INTEGER")
         self.assertEqual(field.fields[0].mode, "NULLABLE")
         self.assertEqual(field.range_element_type, None)
+        self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
+        self.assertEqual(field.foreign_type_definition, "INTEGER")
 
     def test_from_api_repr_policy(self):
         field = self._get_target_class().from_api_repr(
@@ -1117,7 +1144,17 @@ def test_to_api_repr_parameterized(field, api):
 
 
 class TestForeignTypeInfo:
-    """TODO: add doc string."""
+    """Tests metadata re: the foreign data type definition in field schema.
+
+    Specifies the system which defines the foreign data type.
+
+    TypeSystems are external systems, such as query engines or table formats,
+    that have their own data types.
+
+    TypeSystem may be:
+        TypeSystem not specified: TYPE_SYSTEM_UNSPECIFIED
+        Represents Hive data types: HIVE
+    """
 
     @staticmethod
     def _get_target_class():

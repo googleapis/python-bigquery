@@ -306,6 +306,8 @@ class SqlTypeNames(str, enum.Enum):
     DATETIME = "DATETIME"
     INTERVAL = "INTERVAL"  # NOTE: not available in legacy types
     RANGE = "RANGE"  # NOTE: not available in legacy types
+    FOREIGN = "FOREIGN"  # NOTE: type acts as a wrapper for data types
+    # not natively understood by BigQuery unless translated
 
 
 class WriteDisposition(object):
@@ -344,3 +346,9 @@ class DeterminismLevel:
 
     NOT_DETERMINISTIC = "NOT_DETERMINISTIC"
     """The UDF is not deterministic."""
+
+
+class RoundingMode(enum.Enum):
+    ROUNDING_MODE_UNSPECIFIED = 0
+    ROUND_HALF_AWAY_FROM_ZERO = 1
+    ROUND_HALF_EVEN = 2

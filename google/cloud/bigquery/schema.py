@@ -27,7 +27,7 @@ from google.cloud.bigquery._helpers import (
     _from_api_repr,
     _get_sub_prop,
 )
-from google.cloud.bigquery.enums import StandardSqlTypeNames
+from google.cloud.bigquery.enums import StandardSqlTypeNames, RoundingMode
 
 
 _STRUCT_TYPES = ("RECORD", "STRUCT")
@@ -186,6 +186,8 @@ class SchemaField(object):
         scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         range_element_type: Union[FieldElementType, str, None] = None,
+        rounding_mode: Union[RoundingMode, str, None] = None,
+        foreign_type_definition: Optional[str] = None,
     ):
         self._properties: Dict[str, Any] = {
             "name": name,
@@ -211,6 +213,12 @@ class SchemaField(object):
             self._properties["rangeElementType"] = {"type": range_element_type}
         if isinstance(range_element_type, FieldElementType):
             self._properties["rangeElementType"] = range_element_type.to_api_repr()
+        if isinstance(rounding_mode, RoundingMode):
+            self._properties["roundingMode"] = rounding_mode.name
+        if isinstance(rounding_mode, str):
+            self._properties["roundingMode"] = rounding_mode
+        if isinstance(foreign_type_definition, str):
+            self._properties["foreignTypeDefinition"] = foreign_type_definition
 
         self._fields = tuple(fields)
 
@@ -252,6 +260,9 @@ class SchemaField(object):
         else:
             element_type = None
 
+        rounding_mode = api_repr.get("roundingMode")
+        foreign_type_definition = api_repr.get("foreignTypeDefinition")
+
         return cls(
             field_type=field_type,
             fields=[cls.from_api_repr(f) for f in fields],
@@ -264,6 +275,8 @@ class SchemaField(object):
             scale=cls.__get_int(api_repr, "scale"),
             max_length=cls.__get_int(api_repr, "maxLength"),
             range_element_type=element_type,
+            rounding_mode=rounding_mode,
+            foreign_type_definition=foreign_type_definition,
         )
 
     @property
@@ -330,6 +343,40 @@ class SchemaField(object):
         if self._properties.get("rangeElementType"):
             ret = self._properties.get("rangeElementType")
             return FieldElementType.from_api_repr(ret)
+
+    @property
+    def rounding_mode(self):
+        """Specifies the rounding mode to be used when storing values of
+        NUMERIC and BIGNUMERIC type.
+
+        Unspecified will default to using ROUND_HALF_AWAY_FROM_ZERO.
+
+        ROUND_HALF_AWAY_FROM_ZERO rounds half values away from zero
+        when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
+        values.
+        For Scale: 0
+        1.1, 1.2, 1.3, 1.4 => 1
+        1.5, 1.6, 1.7, 1.8, 1.9 => 2
+
+        ROUND_HALF_EVEN rounds half values to the nearest even value
+        when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
+        values.
+        For Scale: 0
+        1.1, 1.2, 1.3, 1.4 => 1
+        1.5 => 2
+        1.6, 1.7, 1.8, 1.9 => 2
+        2.5 => 2
+        """
+        return self._properties.get("roundingMode")
+
+    @property
+    def foreign_type_definition(self):
+        """Definition of the foreign data type.
+
+        Only valid for top-level schema fields (not nested fields).
+        If the type is FOREIGN, this field is required.
+        """
+        return self._properties.get("foreignTypeDefinition")
 
     @property
     def fields(self):

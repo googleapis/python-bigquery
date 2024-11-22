@@ -1166,13 +1166,9 @@ class TestForeignTypeInfo:
         THEN it will have the same representation a ForeignTypeInfo object created
         directly (via _make_one()) and displayed as a dict.
         """
-        resource = {
-            "typeSystem": "TYPE_SYSTEM_UNSPECIFIED"
-        }
+        resource = {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}
 
-        expected = self._make_one(
-            type_system="TYPE_SYSTEM_UNSPECIFIED"
-        )
+        expected = self._make_one(type_system="TYPE_SYSTEM_UNSPECIFIED")
 
         klass = self._get_target_class()
         result = klass.from_api_repr(resource)
@@ -1336,6 +1332,7 @@ class TestSerDeInfo:
 
     # TODO: needs a from_api_repr() test.
 
+
 # @pytest.fixture
 # def _make_foreign_type_info():
 #     return ForeignTypeInfo(
@@ -1369,6 +1366,6 @@ class TestSerDeInfo:
 
 #     def test_to_api_repr(self):
 #         assert False
-        
+
 #     def test_from_api_repr(self):
 #         assert False

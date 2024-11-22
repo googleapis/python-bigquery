@@ -687,7 +687,7 @@ class ForeignTypeInfo:
                 A dictionary in the format used by the BigQuery API.
         """
         return copy.deepcopy(self._properties)
-    
+
     @classmethod
     def from_api_repr(cls, resource):
         """Factory: constructs an instance of the class (cls)

@@ -16,7 +16,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
 from google.cloud.bigquery.schema import (
     PolicyTagList,
-    # ForeignTypeInfo,
+    ForeignTypeInfo,
     StorageDescriptor,
     SerDeInfo,
 )
@@ -1121,8 +1121,6 @@ class TestForeignTypeInfo:
 
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.schema import ForeignTypeInfo
-
         return ForeignTypeInfo
 
     def _make_one(self, *args, **kw):
@@ -1159,6 +1157,22 @@ class TestForeignTypeInfo:
     def test_to_api_repr(self, type_system, expected):
         result = self._make_one(type_system=type_system)
         assert result.to_api_repr() == expected
+
+    def test_from_api_repr(self):
+        """GIVEN an api representation of a ForeignTypeInfo object (i.e. resource)
+        WHEN converted into a ForeignTypeInfo object using from_api_repr() and
+        displayed as a dict
+        THEN it will have the same representation a ForeignTypeInfo object created
+        directly (via _make_one()) and displayed as a dict.
+        """
+        resource = {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}
+
+        expected = self._make_one(type_system="TYPE_SYSTEM_UNSPECIFIED")
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(resource)
+
+        assert result.to_api_repr() == expected.to_api_repr()
 
 
 @pytest.fixture

@@ -17,7 +17,7 @@ from google.cloud.bigquery.enums import RoundingMode
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
 from google.cloud.bigquery.schema import (
     PolicyTagList,
-    # ForeignTypeInfo,
+    ForeignTypeInfo,
     StorageDescriptor,
     SerDeInfo,
 )
@@ -1158,8 +1158,6 @@ class TestForeignTypeInfo:
 
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.schema import ForeignTypeInfo
-
         return ForeignTypeInfo
 
     def _make_one(self, *args, **kw):
@@ -1196,6 +1194,39 @@ class TestForeignTypeInfo:
     def test_to_api_repr(self, type_system, expected):
         result = self._make_one(type_system=type_system)
         assert result.to_api_repr() == expected
+
+    def test_from_api_repr(self):
+        """GIVEN an api representation of a ForeignTypeInfo object (i.e. resource)
+        WHEN converted into a ForeignTypeInfo object using from_api_repr() and
+        displayed as a dict
+        THEN it will have the same representation a ForeignTypeInfo object created
+        directly (via _make_one()) and displayed as a dict.
+        """
+        resource = {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}
+
+        expected = self._make_one(type_system="TYPE_SYSTEM_UNSPECIFIED")
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(resource)
+
+        assert result.to_api_repr() == expected.to_api_repr()
+
+
+@pytest.fixture
+def _make_storage_descriptor():
+    serdeinfo = SerDeInfo(
+        serialization_library="testpath.to.LazySimpleSerDe",
+        name="serde_lib_name",
+        parameters={"key": "value"},
+    )
+
+    obj = StorageDescriptor(
+        input_format="testpath.to.OrcInputFormat",
+        location_uri="gs://test/path/",
+        output_format="testpath.to.OrcOutputFormat",
+        serde_info=serdeinfo,
+    )
+    return obj
 
 
 class TestStorageDescriptor:
@@ -1288,7 +1319,34 @@ class TestStorageDescriptor:
 
         assert storage_descriptor.to_api_repr() == expected_repr
 
-    # TODO: needs a from_api_repr() test.
+    SERDEINFO = SerDeInfo(
+        serialization_library="testpath.to.LazySimpleSerDe",
+        name="serde_lib_name",
+        parameters={"key": "value"},
+    )
+
+    API_REPR = {
+        "inputFormat": "testpath.to.OrcInputFormat",
+        "locationUri": "gs://test/path/",
+        "outputFormat": "testpath.to.OrcOutputFormat",
+        "serDeInfo": SERDEINFO.to_api_repr(),
+    }
+
+    def test_from_api_repr(self, _make_storage_descriptor):
+        """GIVEN an api representation of a StorageDescriptor (i.e. API_REPR)
+        WHEN converted into a StorageDescriptor using from_api_repr() and
+        displayed as a dict
+        THEN it will have the same representation a StorageDescriptor created
+        directly (via the fixture) and displayed as a dict.
+        """
+        # generate via fixture
+        expected = _make_storage_descriptor
+        resource = self.API_REPR
+        klass = self._get_target_class()
+        # generate via API_REPR
+        result = klass.from_api_repr(resource)
+
+        assert result.to_api_repr() == expected.to_api_repr()
 
 
 class TestSerDeInfo:
@@ -1352,4 +1410,26 @@ class TestSerDeInfo:
         }
         assert serde_info.to_api_repr() == expected_repr
 
-    # TODO: needs a from_api_repr() test.
+    def test_from_api_repr(self, _make_storage_descriptor):
+        """GIVEN an api representation of a SerDeInfo object (i.e. resource)
+        WHEN converted into a SerDeInfo using from_api_repr() and
+        displayed as a dict
+        THEN it will have the same representation a SerDeInfo object created
+        directly (via _make_one()) and displayed as a dict.
+        """
+        resource = {
+            "serializationLibrary": "testpath.to.LazySimpleSerDe",
+            "name": "serde_name",
+            "parameters": {"key": "value"},
+        }
+
+        expected = self._make_one(
+            serialization_library="testpath.to.LazySimpleSerDe",
+            name="serde_name",
+            parameters={"key": "value"},
+        )
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(resource)
+
+        assert result.to_api_repr() == expected.to_api_repr()

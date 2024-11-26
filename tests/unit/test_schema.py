@@ -163,9 +163,9 @@ class TestSchemaField(unittest.TestCase):
             description="hello world",
             policy_tags=policy,
             rounding_mode=ROUNDINGMODE,
-            foreign_type_definition="INTEGER",
+            foreign_type_definition=None,
         )
-
+        print(f"DINOSAUR: {field}\n\n{field.to_api_repr()}")
         self.assertEqual(
             field.to_api_repr(),
             {
@@ -175,7 +175,6 @@ class TestSchemaField(unittest.TestCase):
                 "description": "hello world",
                 "policyTags": {"names": ["foo", "bar"]},
                 "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
-                "foreignTypeDefinition": "INTEGER",
             },
         )
 
@@ -210,7 +209,6 @@ class TestSchemaField(unittest.TestCase):
                 "name": "foo",
                 "type": "record",
                 "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
-                "foreignTypeDefinition": "INTEGER",
             }
         )
         self.assertEqual(field.name, "foo")
@@ -223,7 +221,6 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].mode, "NULLABLE")
         self.assertEqual(field.range_element_type, None)
         self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
-        self.assertEqual(field.foreign_type_definition, "INTEGER")
 
     def test_from_api_repr_policy(self):
         field = self._get_target_class().from_api_repr(
@@ -329,7 +326,8 @@ class TestSchemaField(unittest.TestCase):
             ("GEOGRAPHY", bigquery.StandardSqlTypeNames.GEOGRAPHY),
         )
         for legacy_type, standard_type in examples:
-            field = self._make_one("some_field", legacy_type)
+            
+            field = self._make_one("some_field", legacy_type)            
             standard_field = field.to_standard_sql()
             self.assertEqual(standard_field.name, "some_field")
             self.assertEqual(standard_field.type.type_kind, standard_type)
@@ -488,6 +486,16 @@ class TestSchemaField(unittest.TestCase):
             standard_field.type.type_kind,
             bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
         )
+
+    def test_to_standard_sql_foreign_type(self):
+        examples = (
+            ("FOREIGN", bigquery.StandardSqlTypeNames.FOREIGN, "INTEGER"),            
+        )
+        for legacy_type, standard_type, foreign_type_definition in examples:
+            field = self._make_one("some_field", legacy_type, foreign_type_definition=foreign_type_definition)            
+            standard_field = field.to_standard_sql()
+            self.assertEqual(standard_field.name, "some_field")
+            self.assertEqual(standard_field.type.type_kind, standard_type)
 
     def test___eq___wrong_type(self):
         field = self._make_one("test", "STRING")

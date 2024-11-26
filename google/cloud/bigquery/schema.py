@@ -32,8 +32,8 @@ from google.cloud.bigquery.enums import StandardSqlTypeNames, RoundingMode
 _STRUCT_TYPES = ("RECORD", "STRUCT")
 
 # SQL types reference:
-# https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
-# https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+# LEGACY SQL: https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
+# GoogleSQL: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
 LEGACY_TO_STANDARD_TYPES = {
     "STRING": StandardSqlTypeNames.STRING,
     "BYTES": StandardSqlTypeNames.BYTES,
@@ -52,6 +52,7 @@ LEGACY_TO_STANDARD_TYPES = {
     "DATE": StandardSqlTypeNames.DATE,
     "TIME": StandardSqlTypeNames.TIME,
     "DATETIME": StandardSqlTypeNames.DATETIME,
+    "FOREIGN": StandardSqlTypeNames.FOREIGN,
     # no direct conversion from ARRAY, the latter is represented by mode="REPEATED"
 }
 """String names of the legacy SQL types to integer codes of Standard SQL standard_sql."""
@@ -170,6 +171,7 @@ class SchemaField(object):
             the type is RANGE, this field is required. Possible values for the
             field element type of a RANGE include `DATE`, `DATETIME` and
             `TIMESTAMP`.
+        TODO: add docstring here.
     """
 
     def __init__(
@@ -188,10 +190,9 @@ class SchemaField(object):
         rounding_mode: Union[RoundingMode, str, None] = None,
         foreign_type_definition: Optional[str] = None,
     ):
-        self._properties: Dict[str, Any] = {
-            "name": name,
-            "type": field_type,
-        }
+        self._properties: Dict[str, Any] = {}
+        
+        self._properties["name"] = name
         if mode is not None:
             self._properties["mode"] = mode.upper()
         if description is not _DEFAULT_VALUE:
@@ -218,7 +219,16 @@ class SchemaField(object):
             self._properties["roundingMode"] = rounding_mode
         if isinstance(foreign_type_definition, str):
             self._properties["foreignTypeDefinition"] = foreign_type_definition
-
+        
+        # The order of operations is important: 
+        # If field_type is FOREIGN, then foreign_type_definition must be set.
+        if field_type != "FOREIGN":
+            self._properties["type"] = field_type
+        else:
+            if self._properties.get("foreignTypeDefinition") is None:
+                raise ValueError("If the 'field_type' is 'FOREIGN', then 'foreign_type_definition' is required.")
+            self._properties["type"] = field_type
+        
         self._fields = tuple(fields)
 
     @staticmethod

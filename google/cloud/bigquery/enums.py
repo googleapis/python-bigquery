@@ -272,8 +272,9 @@ class StandardSqlTypeNames(str, enum.Enum):
     ARRAY = enum.auto()
     STRUCT = enum.auto()
     RANGE = enum.auto()
-    FOREIGN = enum.auto()  # NOTE: FOREIGN acts as a wrapper for data types
+    # NOTE: FOREIGN acts as a wrapper for data types
     # not natively understood by BigQuery unless translated
+    FOREIGN = enum.auto()
 
 
 class EntityTypes(str, enum.Enum):
@@ -316,8 +317,9 @@ class SqlTypeNames(str, enum.Enum):
     DATETIME = "DATETIME"
     INTERVAL = "INTERVAL"  # NOTE: not available in legacy types
     RANGE = "RANGE"  # NOTE: not available in legacy types
-    FOREIGN = "FOREIGN"  # NOTE: FOREIGN acts as a wrapper for data types
+    # NOTE: FOREIGN acts as a wrapper for data types
     # not natively understood by BigQuery unless translated
+    FOREIGN = "FOREIGN"
 
 
 class WriteDisposition(object):

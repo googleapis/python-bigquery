@@ -326,8 +326,7 @@ class TestSchemaField(unittest.TestCase):
             ("GEOGRAPHY", bigquery.StandardSqlTypeNames.GEOGRAPHY),
         )
         for legacy_type, standard_type in examples:
-            
-            field = self._make_one("some_field", legacy_type)            
+            field = self._make_one("some_field", legacy_type)
             standard_field = field.to_standard_sql()
             self.assertEqual(standard_field.name, "some_field")
             self.assertEqual(standard_field.type.type_kind, standard_type)
@@ -487,15 +486,31 @@ class TestSchemaField(unittest.TestCase):
             bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
         )
 
-    def test_to_standard_sql_foreign_type(self):
-        examples = (
-            ("FOREIGN", bigquery.StandardSqlTypeNames.FOREIGN, "INTEGER"),            
+    def test_to_standard_sql_foreign_type_valid(self):
+        legacy_type = "FOREIGN"
+        standard_type = bigquery.StandardSqlTypeNames.FOREIGN
+        foreign_type_definition = "INTEGER"
+
+        field = self._make_one(
+            "some_field",
+            field_type=legacy_type,
+            foreign_type_definition=foreign_type_definition,
         )
-        for legacy_type, standard_type, foreign_type_definition in examples:
-            field = self._make_one("some_field", legacy_type, foreign_type_definition=foreign_type_definition)            
-            standard_field = field.to_standard_sql()
-            self.assertEqual(standard_field.name, "some_field")
-            self.assertEqual(standard_field.type.type_kind, standard_type)
+        standard_field = field.to_standard_sql()
+        self.assertEqual(standard_field.name, "some_field")
+        self.assertEqual(standard_field.type.type_kind, standard_type)
+
+    def test_to_standard_sql_foreign_type_invalid(self):
+        legacy_type = "FOREIGN"
+        foreign_type_definition = None
+
+        with self.assertRaises(ValueError) as context:
+            self._make_one(
+                "some_field",
+                field_type=legacy_type,
+                foreign_type_definition=foreign_type_definition,
+            )
+        self.assertTrue("If the 'field_type'" in context.exception.args[0])
 
     def test___eq___wrong_type(self):
         field = self._make_one("test", "STRING")

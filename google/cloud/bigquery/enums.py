@@ -248,9 +248,9 @@ class KeyResultStatementKind:
 class StandardSqlTypeNames(str, enum.Enum):
     """Enum of allowed SQL type names in schema.SchemaField.
 
-    Datatype used in GoogleSQL. 
+    Datatype used in GoogleSQL.
     """
-    
+
     def _generate_next_value_(name, start, count, last_values):
         return name
 
@@ -273,7 +273,7 @@ class StandardSqlTypeNames(str, enum.Enum):
     STRUCT = enum.auto()
     RANGE = enum.auto()
     FOREIGN = enum.auto()  # NOTE: FOREIGN acts as a wrapper for data types
-                           # not natively understood by BigQuery unless translated
+    # not natively understood by BigQuery unless translated
 
 
 class EntityTypes(str, enum.Enum):
@@ -317,7 +317,7 @@ class SqlTypeNames(str, enum.Enum):
     INTERVAL = "INTERVAL"  # NOTE: not available in legacy types
     RANGE = "RANGE"  # NOTE: not available in legacy types
     FOREIGN = "FOREIGN"  # NOTE: FOREIGN acts as a wrapper for data types
-                           # not natively understood by BigQuery unless translated
+    # not natively understood by BigQuery unless translated
 
 
 class WriteDisposition(object):

@@ -5928,6 +5928,7 @@ class TestExternalCatalogTableOptions:
         result = table.to_api_repr()
         assert result == expected
 
+
 @pytest.mark.parametrize("preserve_order", [True, False])
 def test_to_arrow_iterable_w_bqstorage_max_stream_count(preserve_order):
     pytest.importorskip("pandas")

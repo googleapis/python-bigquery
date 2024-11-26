@@ -171,7 +171,34 @@ class SchemaField(object):
             the type is RANGE, this field is required. Possible values for the
             field element type of a RANGE include `DATE`, `DATETIME` and
             `TIMESTAMP`.
-        TODO: add docstring here.
+
+        rounding_mode: Union[RoundingMode, str, None]
+            Specifies the rounding mode to be used when storing values of
+            NUMERIC and BIGNUMERIC type.
+
+            Unspecified will default to using ROUND_HALF_AWAY_FROM_ZERO.
+
+            ROUND_HALF_AWAY_FROM_ZERO rounds half values away from zero
+            when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
+            values.
+            For Scale: 0
+            1.1, 1.2, 1.3, 1.4 => 1
+            1.5, 1.6, 1.7, 1.8, 1.9 => 2
+
+            ROUND_HALF_EVEN rounds half values to the nearest even value
+            when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
+            values.
+            For Scale: 0
+            1.1, 1.2, 1.3, 1.4 => 1
+            1.5 => 2
+            1.6, 1.7, 1.8, 1.9 => 2
+            2.5 => 2
+
+        foreign_type_definition: Optional[str]
+            Definition of the foreign data type.
+
+            Only valid for top-level schema fields (not nested fields).
+            If the type is FOREIGN, this field is required.
     """
 
     def __init__(
@@ -191,7 +218,7 @@ class SchemaField(object):
         foreign_type_definition: Optional[str] = None,
     ):
         self._properties: Dict[str, Any] = {}
-        
+
         self._properties["name"] = name
         if mode is not None:
             self._properties["mode"] = mode.upper()
@@ -219,16 +246,18 @@ class SchemaField(object):
             self._properties["roundingMode"] = rounding_mode
         if isinstance(foreign_type_definition, str):
             self._properties["foreignTypeDefinition"] = foreign_type_definition
-        
-        # The order of operations is important: 
+
+        # The order of operations is important:
         # If field_type is FOREIGN, then foreign_type_definition must be set.
         if field_type != "FOREIGN":
             self._properties["type"] = field_type
         else:
             if self._properties.get("foreignTypeDefinition") is None:
-                raise ValueError("If the 'field_type' is 'FOREIGN', then 'foreign_type_definition' is required.")
+                raise ValueError(
+                    "If the 'field_type' is 'FOREIGN', then 'foreign_type_definition' is required."
+                )
             self._properties["type"] = field_type
-        
+
         self._fields = tuple(fields)
 
     @staticmethod
@@ -355,26 +384,8 @@ class SchemaField(object):
 
     @property
     def rounding_mode(self):
-        """Specifies the rounding mode to be used when storing values of
+        """Enum that specifies the rounding mode to be used when storing values of
         NUMERIC and BIGNUMERIC type.
-
-        Unspecified will default to using ROUND_HALF_AWAY_FROM_ZERO.
-
-        ROUND_HALF_AWAY_FROM_ZERO rounds half values away from zero
-        when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
-        values.
-        For Scale: 0
-        1.1, 1.2, 1.3, 1.4 => 1
-        1.5, 1.6, 1.7, 1.8, 1.9 => 2
-
-        ROUND_HALF_EVEN rounds half values to the nearest even value
-        when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
-        values.
-        For Scale: 0
-        1.1, 1.2, 1.3, 1.4 => 1
-        1.5 => 2
-        1.6, 1.7, 1.8, 1.9 => 2
-        2.5 => 2
         """
         return self._properties.get("roundingMode")
 

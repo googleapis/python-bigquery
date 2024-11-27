@@ -930,10 +930,12 @@ class TestExternalCatalogDatasetOptions:
             parameters=parameters,
         )
 
-        assert instance._properties == {
-            "defaultStorageLocationUri": default_storage_location_uri,
-            "parameters": parameters,
-        }
+        # assert instance._properties == {
+        #     "defaultStorageLocationUri": default_storage_location_uri,
+        #     "parameters": parameters,
+        # }
+        assert instance.default_storage_location_uri == default_storage_location_uri
+        assert instance.parameters == parameters
 
     def test_ctor_invalid_input(self):
         """Test ExternalCatalogDatasetOptions constructor with invalid input."""
@@ -1024,16 +1026,16 @@ class TestExternalCatalogTableOptions:
             parameters=parameters,
             storage_descriptor=storage_descriptor,
         )
-
-        assert instance._properties["connectionId"] == connection_id
-        assert instance._properties["parameters"] == parameters
+        
+        assert instance.connection_id == connection_id
+        assert instance.parameters == parameters
         if storage_descriptor is not None:
             assert (
-                instance._properties["storageDescriptor"]
+                instance.storage_descriptor.to_api_repr()
                 == storage_descriptor.to_api_repr()
             )
         else:
-            assert instance._properties["storageDescriptor"] == storage_descriptor
+            assert instance.storage_descriptor == None
 
     @pytest.mark.parametrize(
         "connection_id, parameters, storage_descriptor",

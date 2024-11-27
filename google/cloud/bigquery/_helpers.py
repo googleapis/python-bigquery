@@ -15,7 +15,6 @@
 """Shared helper functions for BigQuery API classes."""
 
 import base64
-import copy
 import datetime
 import decimal
 import json
@@ -1038,19 +1037,3 @@ def _isinstance_or_raise(
 
     msg = f"Pass {value} as a '{dtype}'{or_none}. Got {type(value)}."
     raise TypeError(msg)
-
-
-def _from_api_repr(cls, resource: dict):
-    """Factory: constructs an instance of the class (cls)
-    given its API representation.
-
-    Args:
-        resource (Dict[str, Any]):
-            API representation of the object to be instantiated.
-
-    Returns:
-        An instance of the class initialized with data from 'resource'.
-    """
-    config = cls
-    config._properties = copy.deepcopy(resource)
-    return config

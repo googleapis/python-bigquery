@@ -930,10 +930,6 @@ class TestExternalCatalogDatasetOptions:
             parameters=parameters,
         )
 
-        # assert instance._properties == {
-        #     "defaultStorageLocationUri": default_storage_location_uri,
-        #     "parameters": parameters,
-        # }
         assert instance.default_storage_location_uri == default_storage_location_uri
         assert instance.parameters == parameters
 
@@ -1026,7 +1022,7 @@ class TestExternalCatalogTableOptions:
             parameters=parameters,
             storage_descriptor=storage_descriptor,
         )
-        
+
         assert instance.connection_id == connection_id
         assert instance.parameters == parameters
         if storage_descriptor is not None:
@@ -1035,7 +1031,7 @@ class TestExternalCatalogTableOptions:
                 == storage_descriptor.to_api_repr()
             )
         else:
-            assert instance.storage_descriptor == None
+            assert instance.storage_descriptor is None
 
     @pytest.mark.parametrize(
         "connection_id, parameters, storage_descriptor",

@@ -1298,10 +1298,10 @@ class TestStorageDescriptor:
         assert storage_descriptor.output_format == output_format
         if serde_info is not None:
             assert (
-                storage_descriptor.serde_info == serde_info.to_api_repr()
+                storage_descriptor.serde_info.to_api_repr() == serde_info.to_api_repr()
             )
         else:
-            assert storage_descriptor.serde_info == serde_info
+            assert storage_descriptor.serde_info is None
 
     @pytest.mark.parametrize(
         "input_format,location_uri,output_format,serde_info",

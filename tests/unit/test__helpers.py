@@ -26,7 +26,6 @@ from unittest import mock
 import google.api_core
 from google.cloud.bigquery._helpers import (
     _isinstance_or_raise,
-    _from_api_repr,
 )
 
 
@@ -1695,25 +1694,5 @@ class Test__isinstance_or_raise:
         ],
     )
     def test__invalid_isinstance_or_raise(self, value, dtype, none_allowed, expected):
-        with expected as e:
-            result = _isinstance_or_raise(value, dtype, none_allowed=none_allowed)
-
-            assert result == e
-
-
-class _MockClass:
-    def __init__(self):
-        self._properties = {}
-
-
-@pytest.fixture
-def mock_class():
-    return _MockClass
-
-
-class Test__from_api_repr:
-    def test_from_api_repr(self, mock_class):
-        resource = {"foo": "bar", "baz": {"qux": 1}}
-        config = _from_api_repr(mock_class, resource)
-        assert config._properties == resource
-        assert config._properties is not resource
+        with expected:
+            _isinstance_or_raise(value, dtype, none_allowed=none_allowed)

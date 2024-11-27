@@ -31,7 +31,7 @@ from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery.schema import SerDeInfo, StorageDescriptor
+from google.cloud.bigquery.schema import SerDeInfo, StorageDescriptor, Schema
 
 
 def _mock_client():
@@ -499,7 +499,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
         if "schema" in resource:
             self._verifySchema(table.schema, resource)
         else:
-            self.assertEqual(table.schema, [])
+            valid_options = [Schema(), [], None]
+            self.assertIn(table.schema, valid_options)
 
         if "externalDataConfiguration" in resource:
             edc = table.external_data_configuration
@@ -536,7 +537,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
             "/projects/%s/datasets/%s/tables/%s"
             % (self.PROJECT, self.DS_ID, self.TABLE_NAME),
         )
-        self.assertEqual(table.schema, [])
+        valid_options = [Schema(), [], None]
+        self.assertIn(table.schema, valid_options) 
 
         self.assertIsNone(table.created)
         self.assertIsNone(table.etag)

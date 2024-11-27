@@ -547,39 +547,65 @@ def _build_schema_resource(fields):
     """
     return [field.to_api_repr() for field in fields]
 
-
 def _to_schema_fields(schema):
-    """Coerce `schema` to a list of schema field instances.
+    """TODO docstring
+    QUESTION: do we want a flag to force the generation of a Schema object?
 
-    Args:
-        schema(Sequence[Union[ \
-            :class:`~google.cloud.bigquery.schema.SchemaField`, \
-            Mapping[str, Any] \
-        ]]):
-            Table schema to convert. If some items are passed as mappings,
-            their content must be compatible with
-            :meth:`~google.cloud.bigquery.schema.SchemaField.from_api_repr`.
-
-    Returns:
-        Sequence[:class:`~google.cloud.bigquery.schema.SchemaField`]
-
-    Raises:
-        Exception: If ``schema`` is not a sequence, or if any item in the
-        sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
-        instance or a compatible mapping representation of the field.
+    CAST a list of elements to either:
+    * a Schema object with SchemaFields and an attribute
+    * a list of SchemaFields but no attribute
     """
-
     for field in schema:
         if not isinstance(field, (SchemaField, collections.abc.Mapping)):
             raise ValueError(
                 "Schema items must either be fields or compatible "
                 "mapping representations."
             )
-
+    
+    if isinstance(schema, Schema):
+        schema = Schema([
+            field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
+            for field in schema
+        ], foreign_type_info=schema.foreign_type_info)
+        return schema
     return [
         field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
         for field in schema
     ]
+
+# OLD TO DELETE
+# def _to_schema_fields(schema):
+#     """Coerce `schema` to a list of schema field instances.
+
+#     Args:
+#         schema(Sequence[Union[ \
+#             :class:`~google.cloud.bigquery.schema.SchemaField`, \
+#             Mapping[str, Any] \
+#         ]]):
+#             Table schema to convert. If some items are passed as mappings,
+#             their content must be compatible with
+#             :meth:`~google.cloud.bigquery.schema.SchemaField.from_api_repr`.
+
+#     Returns:
+#         Sequence[:class:`~google.cloud.bigquery.schema.SchemaField`]
+
+#     Raises:
+#         Exception: If ``schema`` is not a sequence, or if any item in the
+#         sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
+#         instance or a compatible mapping representation of the field.
+#     """
+
+#     for field in schema:
+#         if not isinstance(field, (SchemaField, collections.abc.Mapping)):
+#             raise ValueError(
+#                 "Schema items must either be fields or compatible "
+#                 "mapping representations."
+#             )
+
+#     return [
+#         field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
+#         for field in schema
+#     ]
 
 
 class PolicyTagList(object):
@@ -921,3 +947,58 @@ class SerDeInfo:
         config = cls("")
         config._properties = copy.deepcopy(resource)
         return config
+
+
+class Schema:
+    def __init__(self, fields=None, foreign_type_info=None):
+        self._properties = {}
+        self._fields = [] if fields is None else list(fields) #Internal List
+        self.foreign_type_info = foreign_type_info
+    
+    @property
+    def foreign_type_info(self) -> Any:
+        """TODO: docstring"""
+        return self._properties.get("foreignTypeInfo")
+
+    @foreign_type_info.setter
+    def foreign_type_info(self, value: str) -> None:
+        value = _isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["foreignTypeInfo"] = value
+
+    @property
+    def _fields(self) -> Any:
+        """TODO: docstring"""
+        return self._properties.get("_fields")
+
+    @_fields.setter
+    def _fields(self, value: list) -> None:
+        value = _isinstance_or_raise(value, list, none_allowed=True)
+        self._properties["_fields"] = value
+
+
+    def __len__(self):
+        return len(self._properties["_fields"])
+
+    def __getitem__(self, index):
+        return self._properties["_fields"][index]
+
+    def __setitem__(self, index, value):
+        self._properties["_fields"][index] = value
+    
+    def __delitem__(self, index):
+        del self._properties["_fields"][index]
+
+    def __iter__(self):
+        return iter(self._properties["_fields"])
+        
+    def __str__(self):
+        return str(self._properties["_fields"])
+        
+    def __repr__(self):
+        return f"Schema({self.foreign_type_info!r}, {self._properties['_fields']!r})"
+        
+    def append(self, item):
+        self._properties["_fields"].append(item)
+
+    def extend(self, iterable):
+        self._properties["_fields"].extend(iterable)

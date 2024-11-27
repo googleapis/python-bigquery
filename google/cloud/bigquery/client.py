@@ -3680,7 +3680,7 @@ class Client(ClientWithProject):
         if selected_fields is not None:
             schema = selected_fields
 
-        if len(schema) == 0:
+        if not schema:
             raise ValueError(
                 (
                     "Could not determine schema for table '{}'. Call client.get_table() "
@@ -4029,7 +4029,7 @@ class Client(ClientWithProject):
 
         # No schema, but no selected_fields. Assume the developer wants all
         # columns, so get the table resource for them rather than failing.
-        elif len(schema) == 0:
+        elif not schema:
             table = self.get_table(table.reference, retry=retry, timeout=timeout)
             schema = table.schema
 

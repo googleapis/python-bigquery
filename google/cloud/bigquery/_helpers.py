@@ -389,7 +389,7 @@ def _field_from_json(resource, field):
         return converter(resource, field)
 
 
-def _row_tuple_from_json(row, schema, types_mapper):
+def _row_tuple_from_json(row, schema, types_mapper=None):
     """Convert JSON row data to row with appropriate types.
 
     Note:  ``row['f']`` and ``schema`` are presumed to be of the same length.

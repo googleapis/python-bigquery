@@ -36,8 +36,10 @@ from google.cloud.bigquery.dataset import DatasetReference
 def _mock_client():
     from google.cloud.bigquery import client
 
-    mock_client = mock.create_autospec(client.Client)
-    mock_client.project = "my-project"
+    mock_client = client.Client(project="my-project")
+    mock_client._ensure_bqstorage_client = mock.MagicMock(
+        mock_client._ensure_bqstorage_client,
+    )
     return mock_client
 
 
@@ -2085,6 +2087,7 @@ class TestRowIterator(unittest.TestCase):
         ]
 
         iterator = self._make_one(schema=schema)
+        #breakpoint()
 
         expected_schema = [
             SchemaField("full_name", "STRING", mode="REQUIRED"),

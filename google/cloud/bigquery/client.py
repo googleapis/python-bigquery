@@ -31,6 +31,7 @@ import tempfile
 import typing
 from typing import (
     Any,
+    Callable,
     Dict,
     IO,
     Iterable,
@@ -315,6 +316,17 @@ class Client(ClientWithProject):
     @default_load_job_config.setter
     def default_load_job_config(self, value: LoadJobConfig):
         self._default_load_job_config = copy.deepcopy(value)
+
+    
+    @property
+    def types_mapper(self):
+        """TODO: add docstring
+        """
+        return self._types_mapper
+
+    @types_mapper.setter
+    def types_mapper(self, value: Optional[Callable]):
+        self._types_mapper = value
 
     def close(self):
         """Close the underlying transport objects, releasing system resources.

@@ -474,7 +474,7 @@ def _build_schema_resource(fields):
     return [field.to_api_repr() for field in fields]
 
 
-def _to_schema_fields(schema, types_mapper):
+def _to_schema_fields(schema, types_mapper=None):
     """Coerce `schema` to a list of schema field instances.
 
     Args:
@@ -496,26 +496,23 @@ def _to_schema_fields(schema, types_mapper):
     """
     schema_fields = []
     for field in schema:
-        if not isinstance(field, (SchemaField, collections.abc.Mapping)):
+        if isinstance(field, SchemaField):
+            current_field = copy.deepcopy(field)
+            field_name = field.name
+        elif isinstance(field, collections.abc.Mapping):
+            current_field = SchemaField.from_api_repr(field)
+            field_name = field["name"]
+        else:
             raise ValueError(
                 "Schema items must either be fields or compatible "
                 "mapping representations."
-            )
-        if types_mapper and types_mapper(field.name):
-            custom_field = copy.deepcopy(field)
-            custom_field._properties["type"] = types_mapper(field.name)
-            schema_fields.append(custom_field)
-        elif isinstance(field, SchemaField):
-            schema_fields.append(field)
-        else:
-            schema_fields.append(SchemaField.from_api_repr(field))
+            )            
 
+        if types_mapper and types_mapper(field_name):
+            current_field._properties["type"] = types_mapper(field_name)
+
+        schema_fields.append(current_field)
     return schema_fields
-
-    return [
-        field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
-        for field in schema
-    ]
 
 
 class PolicyTagList(object):

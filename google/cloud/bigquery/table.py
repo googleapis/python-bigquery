@@ -1604,7 +1604,6 @@ class RowIterator(HTTPIterator):
         else: 
             _item_to_row_with_mapper = _item_to_row
 
-        # breakpoint()
         super(RowIterator, self).__init__(
             client,
             api_request,

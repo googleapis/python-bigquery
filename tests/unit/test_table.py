@@ -2087,7 +2087,6 @@ class TestRowIterator(unittest.TestCase):
         ]
 
         iterator = self._make_one(schema=schema)
-        #breakpoint()
 
         expected_schema = [
             SchemaField("full_name", "STRING", mode="REQUIRED"),

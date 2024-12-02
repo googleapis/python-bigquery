@@ -452,10 +452,8 @@ class Table(_TableBase):
                 instance or a compatible mapping representation of the field.
         """
         prop = self._properties.get(self._PROPERTY_TO_API_FIELD["schema"])
-        if not prop: # if empty Schema, empty list, None
-            if prop is None:
-                return None
-            return prop
+        if not prop:  # if empty Schema, empty list, None
+            return []
         elif isinstance(prop, Schema):
             return prop
         return _parse_schema_resource(prop)

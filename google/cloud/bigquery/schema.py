@@ -547,6 +547,7 @@ def _build_schema_resource(fields):
     """
     return [field.to_api_repr() for field in fields]
 
+
 def _to_schema_fields(schema):
     """TODO docstring
     QUESTION: do we want a flag to force the generation of a Schema object?
@@ -561,17 +562,23 @@ def _to_schema_fields(schema):
                 "Schema items must either be fields or compatible "
                 "mapping representations."
             )
-    
+
     if isinstance(schema, Schema):
-        schema = Schema([
-            field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
-            for field in schema
-        ], foreign_type_info=schema.foreign_type_info)
+        schema = Schema(
+            [
+                field
+                if isinstance(field, SchemaField)
+                else SchemaField.from_api_repr(field)
+                for field in schema
+            ],
+            foreign_type_info=schema.foreign_type_info,
+        )
         return schema
     return [
         field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
         for field in schema
     ]
+
 
 # OLD TO DELETE
 # def _to_schema_fields(schema):
@@ -952,9 +959,9 @@ class SerDeInfo:
 class Schema:
     def __init__(self, fields=None, foreign_type_info=None):
         self._properties = {}
-        self._fields = [] if fields is None else list(fields) #Internal List
+        self._fields = [] if fields is None else list(fields)  # Internal List
         self.foreign_type_info = foreign_type_info
-    
+
     @property
     def foreign_type_info(self) -> Any:
         """TODO: docstring"""
@@ -975,30 +982,29 @@ class Schema:
         value = _isinstance_or_raise(value, list, none_allowed=True)
         self._properties["_fields"] = value
 
-
     def __len__(self):
-        return len(self._properties["_fields"])
+        return len(self._fields)
 
     def __getitem__(self, index):
-        return self._properties["_fields"][index]
+        return self._fields[index]
 
     def __setitem__(self, index, value):
-        self._properties["_fields"][index] = value
-    
+        self._fields[index] = value
+
     def __delitem__(self, index):
-        del self._properties["_fields"][index]
+        del self._fields[index]
 
     def __iter__(self):
-        return iter(self._properties["_fields"])
-        
+        return iter(self._fields)
+
     def __str__(self):
-        return str(self._properties["_fields"])
-        
+        return str(self._fields)
+
     def __repr__(self):
         return f"Schema({self.foreign_type_info!r}, {self._properties['_fields']!r})"
-        
+
     def append(self, item):
-        self._properties["_fields"].append(item)
+        self._fields.append(item)
 
     def extend(self, iterable):
-        self._properties["_fields"].extend(iterable)
+        self._fields.extend(iterable)

@@ -538,7 +538,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
             % (self.PROJECT, self.DS_ID, self.TABLE_NAME),
         )
         valid_options = [Schema(), [], None]
-        self.assertIn(table.schema, valid_options) 
+        self.assertIn(table.schema, valid_options)
 
         self.assertIsNone(table.created)
         self.assertIsNone(table.etag)

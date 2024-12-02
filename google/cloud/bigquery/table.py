@@ -931,7 +931,8 @@ class Table(_TableBase):
 
     @property
     def mview_allow_non_incremental_definition(self):
-        """Optional[bool]: Allow non-incremental definition of the materialized view.
+        """Optional[bool]: This option declares the intention to construct a
+        materialized view that isn't refreshed incrementally.
         The default value is :data:`False`.
         """
         api_field = self._PROPERTY_TO_API_FIELD[

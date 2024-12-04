@@ -1001,7 +1001,7 @@ class Schema:
         return str(self._fields)
 
     def __repr__(self):
-        return f"Schema({self.foreign_type_info!r}, {self._properties['_fields']!r})"
+        return f"Schema({self.foreign_type_info!r}, {self._fields!r})"
 
     def append(self, item):
         self._fields.append(item)

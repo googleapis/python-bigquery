@@ -1120,7 +1120,7 @@ class Table(_TableBase):
     def max_staleness(self):
         """Union[str, None]: The maximum staleness of data that could be returned when the table is queried.
 
-        Staleness is encoded as a string representing a time interval.
+        Staleness encoded as a string encoding of sql IntervalValue type.
         This property is optional and defaults to None.
 
         According to the BigQuery API documentation, maxStaleness specifies the maximum time

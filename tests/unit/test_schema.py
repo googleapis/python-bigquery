@@ -681,21 +681,6 @@ class TestFieldElementType(unittest.TestCase):
         self.assertEqual(None, self._get_target_class().from_api_repr(None))
 
 
-# TODO: dedup with the same class in test_table.py.
-class _SchemaBase(object):
-    def _verify_field(self, field, r_field):
-        self.assertEqual(field.name, r_field["name"])
-        self.assertEqual(field.field_type, r_field["type"])
-        self.assertEqual(field.mode, r_field.get("mode", "NULLABLE"))
-
-    def _verifySchema(self, schema, resource):
-        r_fields = resource["schema"]["fields"]
-        self.assertEqual(len(schema), len(r_fields))
-
-        for field, r_field in zip(schema, r_fields):
-            self._verify_field(field, r_field)
-
-
 # BEGIN PYTEST BASED SCHEMA TESTS ====================
 @pytest.fixture
 def basic_resource():
@@ -902,6 +887,18 @@ class TestToSchemaFields:  # Test class for _to_schema_fields
         result = _to_schema_fields(schema)
         assert result == expected_schema
 
+    def test_valid_schema_object(self):
+        schema = Schema(
+            fields=[SchemaField("name", "STRING")],
+            foreign_type_info="TestInfo",
+        )
+        result = _to_schema_fields(schema)
+        expected = Schema(
+            [SchemaField("name", "STRING", "NULLABLE", None, None, (), None)],
+            "TestInfo",
+        )
+        assert result.to_api_repr() == expected.to_api_repr()
+
 
 # Testing the new Schema Class =================
 class TestSchemaObject:  # New test class for Schema object interactions
@@ -925,6 +922,16 @@ class TestSchemaObject:  # New test class for Schema object interactions
 
         with pytest.raises(TypeError):
             schema.foreign_type_info = 123  # Type check
+
+    def test_str(self):
+        schema = Schema(
+            fields=[SchemaField("name", "STRING")],
+            foreign_type_info="TestInfo",
+        )
+        assert (
+            str(schema)
+            == "Schema([SchemaField('name', 'STRING', 'NULLABLE', None, None, (), None)], TestInfo)"
+        )
 
     @pytest.mark.parametrize(
         "schema, expected_repr",
@@ -1434,15 +1441,16 @@ class TestStorageDescriptor:
             output_format=output_format,
             serde_info=serde_info,
         )
-        assert storage_descriptor._properties["inputFormat"] == input_format
-        assert storage_descriptor._properties["locationUri"] == location_uri
-        assert storage_descriptor._properties["outputFormat"] == output_format
+        assert storage_descriptor.input_format == input_format
+        assert storage_descriptor.location_uri == location_uri
+        assert storage_descriptor.output_format == output_format
+
         if serde_info is not None:
             assert (
-                storage_descriptor._properties["serDeInfo"] == serde_info.to_api_repr()
+                storage_descriptor.serde_info.to_api_repr() == serde_info.to_api_repr()
             )
         else:
-            assert storage_descriptor._properties["serDeInfo"] == serde_info
+            assert storage_descriptor.serde_info is None
 
     @pytest.mark.parametrize(
         "input_format,location_uri,output_format,serde_info",

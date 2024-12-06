@@ -578,41 +578,6 @@ def _to_schema_fields(schema):
     ]
 
 
-# OLD TO DELETE
-# def _to_schema_fields(schema):
-#     """Coerce `schema` to a list of schema field instances.
-
-#     Args:
-#         schema(Sequence[Union[ \
-#             :class:`~google.cloud.bigquery.schema.SchemaField`, \
-#             Mapping[str, Any] \
-#         ]]):
-#             Table schema to convert. If some items are passed as mappings,
-#             their content must be compatible with
-#             :meth:`~google.cloud.bigquery.schema.SchemaField.from_api_repr`.
-
-#     Returns:
-#         Sequence[:class:`~google.cloud.bigquery.schema.SchemaField`]
-
-#     Raises:
-#         Exception: If ``schema`` is not a sequence, or if any item in the
-#         sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
-#         instance or a compatible mapping representation of the field.
-#     """
-
-#     for field in schema:
-#         if not isinstance(field, (SchemaField, collections.abc.Mapping)):
-#             raise ValueError(
-#                 "Schema items must either be fields or compatible "
-#                 "mapping representations."
-#             )
-
-#     return [
-#         field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
-#         for field in schema
-#     ]
-
-
 class PolicyTagList(object):
     """Define Policy Tags for a column.
 
@@ -995,7 +960,7 @@ class Schema:
         return iter(self._fields)
 
     def __str__(self):
-        return str(self._fields)  # This does not handle the case where FTI exists
+        return f"Schema({self._fields}, {self.foreign_type_info})"
 
     def __repr__(self):
         return f"Schema({self._fields!r}, {self.foreign_type_info!r})"

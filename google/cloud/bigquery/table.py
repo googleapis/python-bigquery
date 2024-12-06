@@ -464,6 +464,8 @@ class Table(_TableBase):
 
         if value is None:
             self._properties[api_field] = None
+        elif isinstance(value, Schema):
+            self._properties[api_field] = value
         else:
             value = _to_schema_fields(value)
             self._properties[api_field] = {"fields": _build_schema_resource(value)}

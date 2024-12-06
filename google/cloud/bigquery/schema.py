@@ -550,8 +550,6 @@ def _build_schema_resource(fields):
 
 def _to_schema_fields(schema):
     """TODO docstring
-    QUESTION: do we want a flag to force the generation of a Schema object?
-
     CAST a list of elements to either:
     * a Schema object with SchemaFields and an attribute
     * a list of SchemaFields but no attribute
@@ -829,8 +827,6 @@ class StorageDescriptor:
         prop = _get_sub_prop(self._properties, ["serDeInfo"])
         if prop is not None:
             prop = StorageDescriptor().from_api_repr(prop)
-            print(f"DINOSAUR prop: {prop}")
-
         return prop
 
     @serde_info.setter
@@ -957,6 +953,7 @@ class SerDeInfo:
 
 
 class Schema:
+    # TODO docstrings and type hints
     def __init__(self, fields=None, foreign_type_info=None):
         self._properties = {}
         self._fields = [] if fields is None else list(fields)  # Internal List
@@ -998,13 +995,38 @@ class Schema:
         return iter(self._fields)
 
     def __str__(self):
-        return str(self._fields)
+        return str(self._fields)  # This does not handle the case where FTI exists
 
     def __repr__(self):
-        return f"Schema({self.foreign_type_info!r}, {self._fields!r})"
+        return f"Schema({self._fields!r}, {self.foreign_type_info!r})"
 
     def append(self, item):
         self._fields.append(item)
 
     def extend(self, iterable):
         self._fields.extend(iterable)
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return copy.deepcopy(self._properties)
+
+    @classmethod
+    def from_api_repr(cls, resource: dict) -> Schema:
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls("")
+        config._properties = copy.deepcopy(resource)
+        return config

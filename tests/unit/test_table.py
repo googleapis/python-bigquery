@@ -29,9 +29,14 @@ from test_utils.imports import maybe_fail_import
 
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
-from google.cloud.bigquery.table import TableReference
+from google.cloud.bigquery.table import Table, TableReference
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery.schema import SerDeInfo, StorageDescriptor, Schema
+from google.cloud.bigquery.schema import (
+    SerDeInfo,
+    StorageDescriptor,
+    Schema,
+    SchemaField,
+)
 
 
 def _mock_client():
@@ -1537,6 +1542,32 @@ class Test_row_from_mapping(unittest.TestCase, _SchemaBase):
             self._call_fut(MAPPING, table.schema),
             ("Phred Phlyntstone", 32, ["red", "green"], None),
         )
+
+
+# BEGIN PYTEST BASED TABLE.SCHEMA TESTS ====================
+# Sample SchemaField instances for testing
+name_field = SchemaField("name", "STRING")
+age_field = SchemaField("age", "INTEGER")
+
+
+class TestTableSchema:
+    def test_table_schema_as_list(self):
+        table = Table("project.dataset.table_name")
+        table.schema = [name_field, age_field]
+        assert isinstance(table.schema, list)
+        assert table.schema == [name_field, age_field]
+
+    def test_table_schema_as_schema_object(self):
+        table = Table("project.dataset.table_name")
+        schema_object = Schema(
+            fields=[name_field, age_field], foreign_type_info="TEST_INFO"
+        )
+        table.schema = schema_object
+        assert isinstance(table.schema, Schema)
+        assert table.schema == schema_object
+
+
+# END PYTEST BASED TABLE.SCHEMA TESTS ====================
 
 
 class TestTableListItem(unittest.TestCase):

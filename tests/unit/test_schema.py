@@ -20,6 +20,11 @@ from google.cloud.bigquery.schema import (
     ForeignTypeInfo,
     StorageDescriptor,
     SerDeInfo,
+    Schema,
+    SchemaField,
+    _parse_schema_resource,
+    _build_schema_resource,
+    _to_schema_fields,
 )
 
 import unittest
@@ -165,7 +170,6 @@ class TestSchemaField(unittest.TestCase):
             rounding_mode=ROUNDINGMODE,
             foreign_type_definition=None,
         )
-        print(f"DINOSAUR: {field}\n\n{field.to_api_repr()}")
         self.assertEqual(
             field.to_api_repr(),
             {
@@ -333,35 +337,6 @@ class TestSchemaField(unittest.TestCase):
 
     def test_to_standard_sql_struct_type(self):
         from google.cloud.bigquery import standard_sql
-
-        # Expected result object:
-        #
-        # name: "image_usage"
-        # type {
-        #     type_kind: STRUCT
-        #     struct_type {
-        #         fields {
-        #             name: "image_content"
-        #             type {type_kind: BYTES}
-        #         }
-        #         fields {
-        #             name: "last_used"
-        #             type {
-        #                 type_kind: STRUCT
-        #                 struct_type {
-        #                     fields {
-        #                         name: "date_field"
-        #                         type {type_kind: DATE}
-        #                     }
-        #                     fields {
-        #                         name: "time_field"
-        #                         type {type_kind: TIME}
-        #                     }
-        #                 }
-        #             }
-        #         }
-        #     }
-        # }
 
         sql_type = self._get_standard_sql_data_type_class()
 
@@ -721,201 +696,367 @@ class _SchemaBase(object):
             self._verify_field(field, r_field)
 
 
-class Test_parse_schema_resource(unittest.TestCase, _SchemaBase):
-    def _call_fut(self, resource):
-        from google.cloud.bigquery.schema import _parse_schema_resource
+# BEGIN PYTEST BASED SCHEMA TESTS ====================
+@pytest.fixture
+def basic_resource():
+    return {
+        "schema": {
+            "fields": [
+                {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
+            ]
+        }
+    }
 
-        return _parse_schema_resource(resource)
 
-    def _make_resource(self):
-        return {
-            "schema": {
-                "fields": [
+@pytest.fixture
+def resource_with_subfields(basic_resource):
+    basic_resource["schema"]["fields"].append(
+        {
+            "name": "phone",
+            "type": "RECORD",
+            "mode": "REPEATED",
+            "fields": [
+                {"name": "type", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "number", "type": "STRING", "mode": "REQUIRED"},
+            ],
+        }
+    )
+    return basic_resource
+
+
+@pytest.fixture
+def resource_without_mode(basic_resource):
+    basic_resource["schema"]["fields"].append({"name": "phone", "type": "STRING"})
+    return basic_resource
+
+
+class TestParseSchemaResource:
+    def verify_field(self, field, r_field):
+        assert field.name == r_field["name"]
+        assert field.field_type == r_field["type"]
+        assert field.mode == r_field.get("mode", "NULLABLE")
+
+    def verify_schema(self, schema, resource):
+        r_fields = resource["schema"]["fields"]
+        assert len(schema) == len(r_fields)
+
+        for field, r_field in zip(schema, r_fields):
+            self.verify_field(field, r_field)
+
+    # Tests focused on exercising the parse_schema_resource() method
+    def test_parse_schema_resource_defaults(self, basic_resource):
+        schema = _parse_schema_resource(basic_resource["schema"])
+        self.verify_schema(schema, basic_resource)
+
+    def test_parse_schema_resource_subfields(self, resource_with_subfields):
+        schema = _parse_schema_resource(resource_with_subfields["schema"])
+        self.verify_schema(schema, resource_with_subfields)
+
+    def test_parse_schema_resource_fields_without_mode(self, resource_without_mode):
+        schema = _parse_schema_resource(resource_without_mode["schema"])
+        self.verify_schema(schema, resource_without_mode)
+
+
+class TestBuildSchemaResource:
+    # Tests focused on exercising the build_schema_resource() method
+    @pytest.mark.parametrize(
+        "fields, expected_resource",
+        [
+            pytest.param(  # Test case 1: Basic fields
+                [
+                    SchemaField("full_name", "STRING", mode="REQUIRED"),
+                    SchemaField("age", "INTEGER", mode="REQUIRED"),
+                ],
+                [
                     {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
                     {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
-                ]
-            }
-        }
-
-    def test__parse_schema_resource_defaults(self):
-        RESOURCE = self._make_resource()
-        schema = self._call_fut(RESOURCE["schema"])
-        self._verifySchema(schema, RESOURCE)
-
-    def test__parse_schema_resource_subfields(self):
-        RESOURCE = self._make_resource()
-        RESOURCE["schema"]["fields"].append(
-            {
-                "name": "phone",
-                "type": "RECORD",
-                "mode": "REPEATED",
-                "fields": [
-                    {"name": "type", "type": "STRING", "mode": "REQUIRED"},
-                    {"name": "number", "type": "STRING", "mode": "REQUIRED"},
                 ],
-            }
-        )
-        schema = self._call_fut(RESOURCE["schema"])
-        self._verifySchema(schema, RESOURCE)
-
-    def test__parse_schema_resource_fields_without_mode(self):
-        RESOURCE = self._make_resource()
-        RESOURCE["schema"]["fields"].append({"name": "phone", "type": "STRING"})
-
-        schema = self._call_fut(RESOURCE["schema"])
-        self._verifySchema(schema, RESOURCE)
-
-
-class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
-    def _call_fut(self, resource):
-        from google.cloud.bigquery.schema import _build_schema_resource
-
-        return _build_schema_resource(resource)
-
-    def test_defaults(self):
-        from google.cloud.bigquery.schema import SchemaField
-
-        full_name = SchemaField("full_name", "STRING", mode="REQUIRED")
-        age = SchemaField("age", "INTEGER", mode="REQUIRED")
-        resource = self._call_fut([full_name, age])
-        self.assertEqual(len(resource), 2)
-        self.assertEqual(
-            resource[0],
-            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-        )
-        self.assertEqual(
-            resource[1],
-            {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
-        )
-
-    def test_w_description(self):
-        from google.cloud.bigquery.schema import SchemaField
-
-        DESCRIPTION = "DESCRIPTION"
-        full_name = SchemaField(
-            "full_name", "STRING", mode="REQUIRED", description=DESCRIPTION
-        )
-        age = SchemaField(
-            "age",
-            "INTEGER",
-            mode="REQUIRED",
-            # Explicitly unset description.
-            description=None,
-        )
-        resource = self._call_fut([full_name, age])
-        self.assertEqual(len(resource), 2)
-        self.assertEqual(
-            resource[0],
-            {
-                "name": "full_name",
-                "type": "STRING",
-                "mode": "REQUIRED",
-                "description": DESCRIPTION,
-            },
-        )
-        self.assertEqual(
-            resource[1],
-            {
-                "name": "age",
-                "type": "INTEGER",
-                "mode": "REQUIRED",
-                "description": None,
-            },
-        )
-
-    def test_w_subfields(self):
-        from google.cloud.bigquery.schema import SchemaField
-
-        full_name = SchemaField("full_name", "STRING", mode="REQUIRED")
-        ph_type = SchemaField("type", "STRING", "REQUIRED")
-        ph_num = SchemaField("number", "STRING", "REQUIRED")
-        phone = SchemaField(
-            "phone", "RECORD", mode="REPEATED", fields=[ph_type, ph_num]
-        )
-        resource = self._call_fut([full_name, phone])
-        self.assertEqual(len(resource), 2)
-        self.assertEqual(
-            resource[0],
-            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-        )
-        self.assertEqual(
-            resource[1],
-            {
-                "name": "phone",
-                "type": "RECORD",
-                "mode": "REPEATED",
-                "fields": [
-                    {"name": "type", "type": "STRING", "mode": "REQUIRED"},
-                    {"name": "number", "type": "STRING", "mode": "REQUIRED"},
+                id="basic fields",
+            ),
+            pytest.param(  # Test case 2: Field without mode
+                [SchemaField("phone", "STRING")],
+                [{"name": "phone", "type": "STRING", "mode": "NULLABLE"}],
+                id="field without mode yields NULLABLE mode",
+            ),
+            pytest.param(  # Test case 3: Field with description
+                [
+                    SchemaField(
+                        "full_name",
+                        "STRING",
+                        mode="REQUIRED",
+                        description="DESCRIPTION",
+                    ),
+                    SchemaField("age", "INTEGER", mode="REQUIRED", description=None),
                 ],
-            },
-        )
+                [
+                    {
+                        "name": "full_name",
+                        "type": "STRING",
+                        "mode": "REQUIRED",
+                        "description": "DESCRIPTION",
+                    },
+                    {
+                        "name": "age",
+                        "type": "INTEGER",
+                        "mode": "REQUIRED",
+                        "description": None,
+                    },
+                ],
+                id="fields including description",
+            ),
+            pytest.param(  # Test case 4: Field with subfields
+                [
+                    SchemaField("full_name", "STRING", mode="REQUIRED"),
+                    SchemaField(
+                        "phone",
+                        "RECORD",
+                        mode="REPEATED",
+                        fields=[
+                            SchemaField("type", "STRING", "REQUIRED"),
+                            SchemaField("number", "STRING", "REQUIRED"),
+                        ],
+                    ),
+                ],
+                [
+                    {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                    {
+                        "name": "phone",
+                        "type": "RECORD",
+                        "mode": "REPEATED",
+                        "fields": [
+                            {"name": "type", "type": "STRING", "mode": "REQUIRED"},
+                            {"name": "number", "type": "STRING", "mode": "REQUIRED"},
+                        ],
+                    },
+                ],
+                id="field with subfields",
+            ),
+        ],
+    )
+    def test_build_schema_resource(self, fields, expected_resource):
+        resource = _build_schema_resource(fields)
+        assert resource == expected_resource
 
 
-class Test_to_schema_fields(unittest.TestCase):
-    @staticmethod
-    def _call_fut(schema):
-        from google.cloud.bigquery.schema import _to_schema_fields
-
-        return _to_schema_fields(schema)
-
+class TestToSchemaFields:  # Test class for _to_schema_fields
     def test_invalid_type(self):
         schema = [
             ("full_name", "STRING", "REQUIRED"),
             ("address", "STRING", "REQUIRED"),
         ]
-        with self.assertRaises(ValueError):
-            self._call_fut(schema)
+        with pytest.raises(ValueError):
+            _to_schema_fields(schema)
 
     def test_schema_fields_sequence(self):
-        from google.cloud.bigquery.schema import SchemaField
-
         schema = [
             SchemaField("full_name", "STRING", mode="REQUIRED"),
-            SchemaField("age", "INT64", mode="NULLABLE"),
+            SchemaField(
+                "age", "INT64", mode="NULLABLE"
+            ),  # Using correct type name INT64
         ]
-        result = self._call_fut(schema)
-        self.assertEqual(result, schema)
+        result = _to_schema_fields(schema)
+        assert result == schema
 
     def test_invalid_mapping_representation(self):
         schema = [
             {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
             {"name": "address", "typeooo": "STRING", "mode": "REQUIRED"},
         ]
-        with self.assertRaises(Exception):
-            self._call_fut(schema)
+        with pytest.raises(Exception):  # Or a more specific exception if known
+            _to_schema_fields(schema)
 
-    def test_valid_mapping_representation(self):
-        from google.cloud.bigquery.schema import SchemaField
-
-        schema = [
-            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-            {
-                "name": "residence",
-                "type": "STRUCT",
-                "mode": "NULLABLE",
-                "fields": [
-                    {"name": "foo", "type": "DATE", "mode": "NULLABLE"},
-                    {"name": "bar", "type": "BYTES", "mode": "REQUIRED"},
+    @pytest.mark.parametrize(
+        "schema, expected_schema",
+        [
+            pytest.param(
+                [
+                    {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                    {
+                        "name": "residence",
+                        "type": "STRUCT",  # Or RECORD, depending on usage
+                        "mode": "NULLABLE",
+                        "fields": [
+                            {"name": "foo", "type": "DATE", "mode": "NULLABLE"},
+                            {"name": "bar", "type": "BYTES", "mode": "REQUIRED"},
+                        ],
+                    },
                 ],
-            },
-        ]
-
-        expected_schema = [
-            SchemaField("full_name", "STRING", mode="REQUIRED"),
-            SchemaField(
-                "residence",
-                "STRUCT",
-                mode="NULLABLE",
-                fields=[
-                    SchemaField("foo", "DATE", mode="NULLABLE"),
-                    SchemaField("bar", "BYTES", mode="REQUIRED"),
+                [
+                    SchemaField("full_name", "STRING", mode="REQUIRED"),
+                    SchemaField(
+                        "residence",
+                        "STRUCT",  # Or RECORD
+                        mode="NULLABLE",
+                        fields=[
+                            SchemaField("foo", "DATE", mode="NULLABLE"),
+                            SchemaField("bar", "BYTES", mode="REQUIRED"),
+                        ],
+                    ),
                 ],
+                id="valid mapping representation",
+            )
+        ],
+    )
+    def test_valid_mapping_representation(self, schema, expected_schema):
+        result = _to_schema_fields(schema)
+        assert result == expected_schema
+
+
+# Testing the new Schema Class =================
+class TestSchemaObject:  # New test class for Schema object interactions
+    def test_schema_object_field_access(self):
+        schema = Schema(
+            fields=[
+                SchemaField("name", "STRING"),
+                SchemaField("age", "INTEGER"),
+            ]
+        )
+        assert len(schema) == 2
+        assert schema[0].name == "name"  # Access fields using indexing
+        assert schema[1].field_type == "INTEGER"
+
+    def test_schema_object_foreign_type_info(self):
+        schema = Schema(foreign_type_info="External")
+        assert schema.foreign_type_info == "External"
+
+        schema.foreign_type_info = None
+        assert schema.foreign_type_info is None
+
+        with pytest.raises(TypeError):
+            schema.foreign_type_info = 123  # Type check
+
+    @pytest.mark.parametrize(
+        "schema, expected_repr",
+        [
+            pytest.param(
+                Schema(
+                    fields=[SchemaField("name", "STRING")],
+                    foreign_type_info="TestInfo",
+                ),
+                "Schema([SchemaField('name', 'STRING', 'NULLABLE', None, None, (), None)], 'TestInfo')",
+                id="repr with foreign type info",
             ),
-        ]
+            pytest.param(
+                Schema(fields=[SchemaField("name", "STRING")]),
+                "Schema([SchemaField('name', 'STRING', 'NULLABLE', None, None, (), None)], None)",
+                id="repr without foreign type info",
+            ),
+        ],
+    )
+    def test_repr(self, schema, expected_repr):
+        assert repr(schema) == expected_repr  # Test __repr__
 
-        result = self._call_fut(schema)
-        self.assertEqual(result, expected_schema)
+    def test_schema_iteration(self):
+        schema = Schema(
+            fields=[SchemaField("name", "STRING"), SchemaField("age", "INTEGER")]
+        )
+
+        field_names = [field.name for field in schema]
+        assert field_names == ["name", "age"]
+
+    def test_schema_object_mutability(self):  # Tests __setitem__ and __delitem__
+        schema = Schema(
+            fields=[SchemaField("name", "STRING"), SchemaField("age", "INTEGER")]
+        )
+
+        schema[0] = SchemaField(
+            "updated_name", "STRING"
+        )  # Modify a field using setitem
+        assert schema[0].name == "updated_name"
+
+        del schema[1]  # Test __delitem__
+        assert len(schema) == 1
+        assert schema[0].name == "updated_name"
+
+    def test_schema_append(self):
+        schema = Schema()  # create an empty schema object
+        schema.append(
+            SchemaField("name", "STRING")
+        )  # use the append method to add a schema field
+        assert len(schema) == 1
+        assert schema[0].name == "name"
+
+    def test_schema_extend(self):
+        schema = Schema()  # create an empty schema object
+        schema.extend(
+            [SchemaField("name", "STRING"), SchemaField("age", "INTEGER")]
+        )  # use the extend method to add multiple schema fields
+        assert len(schema) == 2
+        assert schema[0].name == "name"
+        assert schema[1].name == "age"
+
+    @pytest.mark.parametrize(
+        "schema, expected_api_repr",
+        [
+            pytest.param(
+                Schema(
+                    fields=[SchemaField("name", "STRING")],
+                    foreign_type_info="TestInfo",
+                ),
+                {
+                    "_fields": [
+                        SchemaField("name", "STRING", "NULLABLE", None, None, (), None)
+                    ],
+                    "foreignTypeInfo": "TestInfo",
+                },
+                id="repr with foreign type info",
+            ),
+            pytest.param(
+                Schema(fields=[SchemaField("name", "STRING")]),
+                {
+                    "_fields": [
+                        SchemaField("name", "STRING", "NULLABLE", None, None, (), None)
+                    ],
+                    "foreignTypeInfo": None,
+                },
+                id="repr without foreign type info",
+            ),
+        ],
+    )
+    def test_to_api_repr(self, schema, expected_api_repr):
+        assert schema.to_api_repr() == expected_api_repr
+
+    @pytest.mark.parametrize(
+        "api_repr, expected",
+        [
+            pytest.param(
+                {
+                    "_fields": [
+                        SchemaField("name", "STRING", "NULLABLE", None, None, (), None)
+                    ],
+                    "foreignTypeInfo": "TestInfo",
+                },
+                Schema(
+                    fields=[SchemaField("name", "STRING")],
+                    foreign_type_info="TestInfo",
+                ),
+                id="repr with foreign type info",
+            ),
+            pytest.param(
+                {
+                    "_fields": [
+                        SchemaField("name", "STRING", "NULLABLE", None, None, (), None)
+                    ],
+                    "foreignTypeInfo": None,
+                },
+                Schema(fields=[SchemaField("name", "STRING")]),
+                id="repr without foreign type info",
+            ),
+        ],
+    )
+    def test_from_api_repr(self, api_repr, expected):
+        """GIVEN an api representation of a Schema object (i.e. resource)
+        WHEN converted into a Schema object using from_api_repr() and
+        displayed as a dict
+        THEN it will have the same representation a Schema object created
+        directly and displayed as a dict.
+        """
+        result = Schema.from_api_repr(api_repr)
+        assert result.to_api_repr() == expected.to_api_repr()
+
+
+# END PYTEST BASED SCHEMA TESTS ====================
 
 
 class TestPolicyTags(unittest.TestCase):

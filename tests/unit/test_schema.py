@@ -1345,7 +1345,7 @@ class TestForeignTypeInfo:
     def test_ctor_valid_input(self, type_system, expected):
         result = self._make_one(type_system=type_system)
 
-        assert result._properties["typeSystem"] == expected
+        assert result.type_system == expected
 
     def test_ctor_invalid_input(self):
         with pytest.raises(TypeError) as e:
@@ -1444,7 +1444,6 @@ class TestStorageDescriptor:
         assert storage_descriptor.input_format == input_format
         assert storage_descriptor.location_uri == location_uri
         assert storage_descriptor.output_format == output_format
-
         if serde_info is not None:
             assert (
                 storage_descriptor.serde_info.to_api_repr() == serde_info.to_api_repr()
@@ -1546,9 +1545,9 @@ class TestSerDeInfo:
             name=name,
             parameters=parameters,
         )
-        assert serde_info._properties["serializationLibrary"] == serialization_library
-        assert serde_info._properties["name"] == name
-        assert serde_info._properties["parameters"] == parameters
+        assert serde_info.serialization_library == serialization_library
+        assert serde_info.name == name
+        assert serde_info.parameters == parameters
 
     @pytest.mark.parametrize(
         "serialization_library,name,parameters",

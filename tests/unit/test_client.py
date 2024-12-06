@@ -60,6 +60,7 @@ from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import ParquetOptions
 import google.cloud.bigquery.retry
 from google.cloud.bigquery.retry import DEFAULT_TIMEOUT
+from google.cloud.bigquery.schema import Schema
 import google.cloud.bigquery.table
 
 from test_utils.imports import maybe_fail_import
@@ -2608,7 +2609,8 @@ class TestClient(unittest.TestCase):
         sent = {"schema": None}
         self.assertEqual(req[1]["data"], sent)
         self.assertEqual(req[1]["path"], "/%s" % path)
-        self.assertEqual(len(updated_table.schema), 0)
+        valid_options = [Schema(), [], None]
+        self.assertIn(updated_table.schema, valid_options)
 
     def test_update_table_delete_property(self):
         from google.cloud.bigquery.table import Table

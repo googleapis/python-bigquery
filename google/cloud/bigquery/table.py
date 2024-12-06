@@ -70,6 +70,7 @@ from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
+from google.cloud.bigquery.schema import Schema
 from google.cloud.bigquery.external_config import ExternalCatalogTableOptions
 
 if typing.TYPE_CHECKING:  # pragma: NO COVER
@@ -452,10 +453,11 @@ class Table(_TableBase):
                 instance or a compatible mapping representation of the field.
         """
         prop = self._properties.get(self._PROPERTY_TO_API_FIELD["schema"])
-        if not prop:
+        if not prop:  # if empty Schema, empty list, None
             return []
-        else:
-            return _parse_schema_resource(prop)
+        elif isinstance(prop, Schema):
+            return prop
+        return _parse_schema_resource(prop)
 
     @schema.setter
     def schema(self, value):
@@ -463,6 +465,8 @@ class Table(_TableBase):
 
         if value is None:
             self._properties[api_field] = None
+        elif isinstance(value, Schema):
+            self._properties[api_field] = value
         else:
             value = _to_schema_fields(value)
             self._properties[api_field] = {"fields": _build_schema_resource(value)}
@@ -1359,7 +1363,8 @@ def _row_from_mapping(mapping, schema):
     Raises:
         ValueError: If schema is empty.
     """
-    if len(schema) == 0:
+
+    if not schema:
         raise ValueError(_TABLE_HAS_NO_SCHEMA)
 
     row = []

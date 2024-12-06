@@ -64,6 +64,7 @@ if pyarrow:
         "GEOGRAPHY": pyarrow.string,
         "INT64": pyarrow.int64,
         "INTEGER": pyarrow.int64,
+        "JSON": pyarrow.string,
         "NUMERIC": pyarrow_numeric,
         "STRING": pyarrow.string,
         "TIME": pyarrow_time,

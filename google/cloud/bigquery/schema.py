@@ -15,6 +15,7 @@
 """Schemas for BigQuery tables / queries."""
 
 import collections
+import copy
 import enum
 from typing import Any, Dict, Iterable, Optional, Union, cast
 
@@ -473,7 +474,7 @@ def _build_schema_resource(fields):
     return [field.to_api_repr() for field in fields]
 
 
-def _to_schema_fields(schema):
+def _to_schema_fields(schema, types_mapper=None):
     """Coerce `schema` to a list of schema field instances.
 
     Args:
@@ -493,17 +494,25 @@ def _to_schema_fields(schema):
         sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
         instance or a compatible mapping representation of the field.
     """
+    schema_fields = []
     for field in schema:
-        if not isinstance(field, (SchemaField, collections.abc.Mapping)):
+        if isinstance(field, SchemaField):
+            current_field = copy.deepcopy(field)
+            field_name = field.name
+        elif isinstance(field, collections.abc.Mapping):
+            current_field = SchemaField.from_api_repr(field)
+            field_name = field["name"]
+        else:
             raise ValueError(
                 "Schema items must either be fields or compatible "
                 "mapping representations."
-            )
+            )            
 
-    return [
-        field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
-        for field in schema
-    ]
+        if types_mapper and types_mapper(field_name):
+            current_field._properties["type"] = types_mapper(field_name)
+
+        schema_fields.append(current_field)
+    return schema_fields
 
 
 class PolicyTagList(object):

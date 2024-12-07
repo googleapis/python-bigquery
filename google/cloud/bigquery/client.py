@@ -31,6 +31,7 @@ import tempfile
 import typing
 from typing import (
     Any,
+    Callable,
     Dict,
     IO,
     Iterable,
@@ -219,6 +220,9 @@ class Client(ClientWithProject):
         client_options (Optional[Union[google.api_core.client_options.ClientOptions, Dict]]):
             Client options used to set user options on the client. API Endpoint
             should be set through client_options.
+        types_mapper (typing.Callable):
+            Client options used to set user options on the client. API Endpoint
+            should be set through client_options.
 
     Raises:
         google.auth.exceptions.DefaultCredentialsError:
@@ -239,6 +243,8 @@ class Client(ClientWithProject):
         default_load_job_config=None,
         client_info=None,
         client_options=None,
+        *,
+        types_mapper=None,
     ) -> None:
         super(Client, self).__init__(
             project=project,
@@ -275,6 +281,9 @@ class Client(ClientWithProject):
         # Use property setter so validation can run.
         self.default_query_job_config = default_query_job_config
 
+        # Client level types mapper setting.
+        self._types_mapper = types_mapper
+
     @property
     def location(self):
         """Default location for jobs / datasets / tables."""
@@ -307,6 +316,17 @@ class Client(ClientWithProject):
     @default_load_job_config.setter
     def default_load_job_config(self, value: LoadJobConfig):
         self._default_load_job_config = copy.deepcopy(value)
+
+    
+    @property
+    def types_mapper(self):
+        """TODO: add docstring
+        """
+        return self._types_mapper
+
+    @types_mapper.setter
+    def types_mapper(self, value: Optional[Callable]):
+        self._types_mapper = value
 
     def close(self):
         """Close the underlying transport objects, releasing system resources.

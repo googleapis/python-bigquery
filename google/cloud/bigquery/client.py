@@ -44,6 +44,8 @@ from typing import (
 import uuid
 import warnings
 
+import requests
+
 from google import resumable_media  # type: ignore
 from google.resumable_media.requests import MultipartUpload  # type: ignore
 from google.resumable_media.requests import ResumableUpload
@@ -132,8 +134,7 @@ ResumableTimeoutType = Union[
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # os.PathLike is only subscriptable in Python 3.9+, thus shielding with a condition.
     PathType = Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]
-    import requests  # required by api-core
-
+    
 _DEFAULT_CHUNKSIZE = 100 * 1024 * 1024  # 100 MB
 _MAX_MULTIPART_SIZE = 5 * 1024 * 1024
 _DEFAULT_NUM_RETRIES = 6

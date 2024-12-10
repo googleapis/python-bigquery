@@ -5,6 +5,27 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.28.0](https://github.com/googleapis/python-bigquery/compare/v3.27.0...v3.28.0) (2024-12-10)
+
+
+### Features
+
+* Add property for `allowNonIncrementalDefinition` for materialized view ([#2084](https://github.com/googleapis/python-bigquery/issues/2084)) ([3359ef3](https://github.com/googleapis/python-bigquery/commit/3359ef37b90243bea2d9e68bb996fe5d736f304c))
+* Add property for maxStaleness in table definitions ([#2087](https://github.com/googleapis/python-bigquery/issues/2087)) ([729322c](https://github.com/googleapis/python-bigquery/commit/729322c2288a30464f2f135ba18b9c4aa7d2f0da))
+* Add type hints to Client ([#2044](https://github.com/googleapis/python-bigquery/issues/2044)) ([40529de](https://github.com/googleapis/python-bigquery/commit/40529de923e25c41c6728c121b9c82a042967ada))
+* Migrate to pyproject.toml ([#2041](https://github.com/googleapis/python-bigquery/issues/2041)) ([1061611](https://github.com/googleapis/python-bigquery/commit/106161180ead01aca1ead909cf06ca559f68666d))
+* Support setting max_stream_count when fetching query result ([#2051](https://github.com/googleapis/python-bigquery/issues/2051)) ([d461297](https://github.com/googleapis/python-bigquery/commit/d4612979b812d2a835e47200f27a87a66bcb856a))
+
+
+### Bug Fixes
+
+* Allow geopandas 1.x ([#2065](https://github.com/googleapis/python-bigquery/issues/2065)) ([f2ab8cb](https://github.com/googleapis/python-bigquery/commit/f2ab8cbfe00d442ad3b40683ecfec320e53b4688))
+
+
+### Documentation
+
+* Render fields correctly for update calls ([#2055](https://github.com/googleapis/python-bigquery/issues/2055)) ([a4d9534](https://github.com/googleapis/python-bigquery/commit/a4d9534a900f13ae7355904cda05097d781f27e3))
+
 ## [3.27.0](https://github.com/googleapis/python-bigquery/compare/v3.26.0...v3.27.0) (2024-11-01)
 
 

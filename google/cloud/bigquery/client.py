@@ -245,7 +245,7 @@ class Client(ClientWithProject):
             client_options = {}
         if isinstance(client_options, dict):
             client_options = google.api_core.client_options.from_dict(client_options)
-        assert isinstance(client_options, google.api_core.client_options.ClientOptions)
+        # assert isinstance(client_options, google.api_core.client_options.ClientOptions)
 
         super(Client, self).__init__(
             project=project,
@@ -254,7 +254,7 @@ class Client(ClientWithProject):
             _http=_http,
         )
 
-        kw_args = {"client_info": client_info}
+        kw_args: Dict[str, Any] = {"client_info": client_info}
         bq_host = _get_bigquery_host()
         kw_args["api_endpoint"] = bq_host if bq_host != _DEFAULT_HOST else None
         client_universe = None

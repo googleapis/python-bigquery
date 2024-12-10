@@ -549,26 +549,11 @@ def _build_schema_resource(fields):
 
 
 def _to_schema_fields(schema):
-    """Coerce `schema` to a list of schema field instances.
-
-    Args:
-        schema(Sequence[Union[ \
-            :class:`~google.cloud.bigquery.schema.SchemaField`, \
-            Mapping[str, Any] \
-        ]]):
-            Table schema to convert. If some items are passed as mappings,
-            their content must be compatible with
-            :meth:`~google.cloud.bigquery.schema.SchemaField.from_api_repr`.
-
-    Returns:
-        Sequence[:class:`~google.cloud.bigquery.schema.SchemaField`]
-
-    Raises:
-        Exception: If ``schema`` is not a sequence, or if any item in the
-        sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
-        instance or a compatible mapping representation of the field.
+    """TODO docstring
+    CAST a list of elements to either:
+    * a Schema object with SchemaFields and an attribute
+    * a list of SchemaFields but no attribute
     """
-
     for field in schema:
         if not isinstance(field, (SchemaField, collections.abc.Mapping)):
             raise ValueError(
@@ -576,6 +561,17 @@ def _to_schema_fields(schema):
                 "mapping representations."
             )
 
+    if isinstance(schema, Schema):
+        schema = Schema(
+            [
+                field
+                if isinstance(field, SchemaField)
+                else SchemaField.from_api_repr(field)
+                for field in schema
+            ],
+            foreign_type_info=schema.foreign_type_info,
+        )
+        return schema
     return [
         field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
         for field in schema
@@ -796,8 +792,6 @@ class StorageDescriptor:
         prop = _get_sub_prop(self._properties, ["serDeInfo"])
         if prop is not None:
             prop = StorageDescriptor().from_api_repr(prop)
-            print(f"DINOSAUR prop: {prop}")
-
         return prop
 
     @serde_info.setter
@@ -908,6 +902,86 @@ class SerDeInfo:
 
     @classmethod
     def from_api_repr(cls, resource: dict) -> SerDeInfo:
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls("")
+        config._properties = copy.deepcopy(resource)
+        return config
+
+
+class Schema:
+    # TODO docstrings and type hints
+    def __init__(self, fields=None, foreign_type_info=None):
+        self._properties = {}
+        self._fields = [] if fields is None else list(fields)  # Internal List
+        self.foreign_type_info = foreign_type_info
+
+    @property
+    def foreign_type_info(self) -> Any:
+        """TODO: docstring"""
+        return self._properties.get("foreignTypeInfo")
+
+    @foreign_type_info.setter
+    def foreign_type_info(self, value: str) -> None:
+        value = _isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["foreignTypeInfo"] = value
+
+    @property
+    def _fields(self) -> Any:
+        """TODO: docstring"""
+        return self._properties.get("_fields")
+
+    @_fields.setter
+    def _fields(self, value: list) -> None:
+        value = _isinstance_or_raise(value, list, none_allowed=True)
+        self._properties["_fields"] = value
+
+    def __len__(self):
+        return len(self._fields)
+
+    def __getitem__(self, index):
+        return self._fields[index]
+
+    def __setitem__(self, index, value):
+        self._fields[index] = value
+
+    def __delitem__(self, index):
+        del self._fields[index]
+
+    def __iter__(self):
+        return iter(self._fields)
+
+    def __str__(self):
+        return f"Schema({self._fields}, {self.foreign_type_info})"
+
+    def __repr__(self):
+        return f"Schema({self._fields!r}, {self.foreign_type_info!r})"
+
+    def append(self, item):
+        self._fields.append(item)
+
+    def extend(self, iterable):
+        self._fields.extend(iterable)
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return copy.deepcopy(self._properties)
+
+    @classmethod
+    def from_api_repr(cls, resource: dict) -> Schema:
         """Factory: constructs an instance of the class (cls)
         given its API representation.
 

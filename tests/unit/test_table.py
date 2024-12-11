@@ -1050,6 +1050,16 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table.mview_refresh_interval = None
         self.assertIsNone(table.mview_refresh_interval)
 
+    def test_mview_allow_non_incremental_definition(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_allow_non_incremental_definition)
+        table.mview_allow_non_incremental_definition = True
+        self.assertTrue(table.mview_allow_non_incremental_definition)
+        table.mview_allow_non_incremental_definition = False
+        self.assertFalse(table.mview_allow_non_incremental_definition)
+        table.mview_allow_non_incremental_definition = None
+        self.assertIsNone(table.mview_allow_non_incremental_definition)
+
     def test_from_string(self):
         cls = self._get_target_class()
         got = cls.from_string("string-project.string_dataset.string_table")
@@ -1464,6 +1474,49 @@ class TestTable(unittest.TestCase, _SchemaBase):
         dataset = DatasetReference("project1", "dataset1")
         table1 = self._make_one(TableReference(dataset, "table1"))
         self.assertEqual(str(table1), "project1.dataset1.table1")
+
+    def test_max_staleness_getter(self):
+        """Test getting max_staleness property."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Initially None
+        self.assertIsNone(table.max_staleness)
+        # Set max_staleness using setter
+        table.max_staleness = "1h"
+        self.assertEqual(table.max_staleness, "1h")
+
+    def test_max_staleness_setter(self):
+        """Test setting max_staleness property."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Set valid max_staleness
+        table.max_staleness = "30m"
+        self.assertEqual(table.max_staleness, "30m")
+        # Set to None
+        table.max_staleness = None
+        self.assertIsNone(table.max_staleness)
+
+    def test_max_staleness_setter_invalid_type(self):
+        """Test setting max_staleness with an invalid type raises ValueError."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Try setting invalid type
+        with self.assertRaises(ValueError):
+            table.max_staleness = 123  # Not a string
+
+    def test_max_staleness_to_api_repr(self):
+        """Test max_staleness is correctly represented in API representation."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Set max_staleness
+        table.max_staleness = "1h"
+        # Convert to API representation
+        resource = table.to_api_repr()
+        self.assertEqual(resource.get("maxStaleness"), "1h")
 
 
 class Test_row_from_mapping(unittest.TestCase, _SchemaBase):
@@ -5822,3 +5875,73 @@ def test_table_reference_to_bqstorage_v1_stable(table_path):
     for klass in (mut.TableReference, mut.Table, mut.TableListItem):
         got = klass.from_string(table_path).to_bqstorage()
         assert got == expected
+
+
+@pytest.mark.parametrize("preserve_order", [True, False])
+def test_to_arrow_iterable_w_bqstorage_max_stream_count(preserve_order):
+    pytest.importorskip("pandas")
+    pytest.importorskip("google.cloud.bigquery_storage")
+    from google.cloud.bigquery import schema
+    from google.cloud.bigquery import table as mut
+    from google.cloud import bigquery_storage
+
+    bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+    session = bigquery_storage.types.ReadSession()
+    bqstorage_client.create_read_session.return_value = session
+
+    row_iterator = mut.RowIterator(
+        _mock_client(),
+        api_request=None,
+        path=None,
+        schema=[
+            schema.SchemaField("colA", "INTEGER"),
+        ],
+        table=mut.TableReference.from_string("proj.dset.tbl"),
+    )
+    row_iterator._preserve_order = preserve_order
+
+    max_stream_count = 132
+    result_iterable = row_iterator.to_arrow_iterable(
+        bqstorage_client=bqstorage_client, max_stream_count=max_stream_count
+    )
+    list(result_iterable)
+    bqstorage_client.create_read_session.assert_called_once_with(
+        parent=mock.ANY,
+        read_session=mock.ANY,
+        max_stream_count=max_stream_count if not preserve_order else 1,
+    )
+
+
+@pytest.mark.parametrize("preserve_order", [True, False])
+def test_to_dataframe_iterable_w_bqstorage_max_stream_count(preserve_order):
+    pytest.importorskip("pandas")
+    pytest.importorskip("google.cloud.bigquery_storage")
+    from google.cloud.bigquery import schema
+    from google.cloud.bigquery import table as mut
+    from google.cloud import bigquery_storage
+
+    bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+    session = bigquery_storage.types.ReadSession()
+    bqstorage_client.create_read_session.return_value = session
+
+    row_iterator = mut.RowIterator(
+        _mock_client(),
+        api_request=None,
+        path=None,
+        schema=[
+            schema.SchemaField("colA", "INTEGER"),
+        ],
+        table=mut.TableReference.from_string("proj.dset.tbl"),
+    )
+    row_iterator._preserve_order = preserve_order
+
+    max_stream_count = 132
+    result_iterable = row_iterator.to_dataframe_iterable(
+        bqstorage_client=bqstorage_client, max_stream_count=max_stream_count
+    )
+    list(result_iterable)
+    bqstorage_client.create_read_session.assert_called_once_with(
+        parent=mock.ANY,
+        read_session=mock.ANY,
+        max_stream_count=max_stream_count if not preserve_order else 1,
+    )

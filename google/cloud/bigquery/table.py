@@ -390,6 +390,7 @@ class Table(_TableBase):
         "mview_last_refresh_time": ["materializedView", "lastRefreshTime"],
         "mview_query": "materializedView",
         "mview_refresh_interval": "materializedView",
+        "mview_allow_non_incremental_definition": "materializedView",
         "num_bytes": "numBytes",
         "num_rows": "numRows",
         "partition_expiration": "timePartitioning",
@@ -406,6 +407,7 @@ class Table(_TableBase):
         "view_query": "view",
         "require_partition_filter": "requirePartitionFilter",
         "table_constraints": "tableConstraints",
+        "max_staleness": "maxStaleness",
     }
 
     def __init__(self, table_ref, schema=None) -> None:
@@ -929,6 +931,28 @@ class Table(_TableBase):
         )
 
     @property
+    def mview_allow_non_incremental_definition(self):
+        """Optional[bool]: This option declares the intention to construct a
+        materialized view that isn't refreshed incrementally.
+        The default value is :data:`False`.
+        """
+        api_field = self._PROPERTY_TO_API_FIELD[
+            "mview_allow_non_incremental_definition"
+        ]
+        return _helpers._get_sub_prop(
+            self._properties, [api_field, "allowNonIncrementalDefinition"]
+        )
+
+    @mview_allow_non_incremental_definition.setter
+    def mview_allow_non_incremental_definition(self, value):
+        api_field = self._PROPERTY_TO_API_FIELD[
+            "mview_allow_non_incremental_definition"
+        ]
+        _helpers._set_sub_prop(
+            self._properties, [api_field, "allowNonIncrementalDefinition"], value
+        )
+
+    @property
     def streaming_buffer(self):
         """google.cloud.bigquery.StreamingBuffer: Information about a table's
         streaming buffer.
@@ -1091,6 +1115,40 @@ class Table(_TableBase):
 
     def __str__(self):
         return f"{self.project}.{self.dataset_id}.{self.table_id}"
+
+    @property
+    def max_staleness(self):
+        """Union[str, None]: The maximum staleness of data that could be returned when the table is queried.
+
+        Staleness encoded as a string encoding of sql IntervalValue type.
+        This property is optional and defaults to None.
+
+        According to the BigQuery API documentation, maxStaleness specifies the maximum time
+        interval for which stale data can be returned when querying the table.
+        It helps control data freshness in scenarios like metadata-cached external tables.
+
+        Returns:
+            Optional[str]: A string representing the maximum staleness interval
+            (e.g., '1h', '30m', '15s' for hours, minutes, seconds respectively).
+        """
+        return self._properties.get(self._PROPERTY_TO_API_FIELD["max_staleness"])
+
+    @max_staleness.setter
+    def max_staleness(self, value):
+        """Set the maximum staleness for the table.
+
+        Args:
+            value (Optional[str]): A string representing the maximum staleness interval.
+                Must be a valid time interval string.
+                Examples include '1h' (1 hour), '30m' (30 minutes), '15s' (15 seconds).
+
+        Raises:
+            ValueError: If the value is not None and not a string.
+        """
+        if value is not None and not isinstance(value, str):
+            raise ValueError("max_staleness must be a string or None")
+
+        self._properties[self._PROPERTY_TO_API_FIELD["max_staleness"]] = value
 
 
 class TableListItem(_TableBase):
@@ -1812,6 +1870,7 @@ class RowIterator(HTTPIterator):
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
+        max_stream_count: Optional[int] = None,
     ) -> Iterator["pyarrow.RecordBatch"]:
         """[Beta] Create an iterable of class:`pyarrow.RecordBatch`, to process the table as a stream.
 
@@ -1836,6 +1895,22 @@ class RowIterator(HTTPIterator):
                 created by the server. If ``max_queue_size`` is :data:`None`, the queue
                 size is infinite.
 
+            max_stream_count (Optional[int]):
+                The maximum number of parallel download streams when
+                using BigQuery Storage API. Ignored if
+                BigQuery Storage API is not used.
+
+                This setting also has no effect if the query result
+                is deterministically ordered with ORDER BY,
+                in which case, the number of download stream is always 1.
+
+                If set to 0 or None (the default), the number of download
+                streams is determined by BigQuery the server. However, this behaviour
+                can require a lot of memory to store temporary download result,
+                especially with very large queries. In that case,
+                setting this parameter value to a value > 0 can help
+                reduce system resource consumption.
+
         Returns:
             pyarrow.RecordBatch:
                 A generator of :class:`~pyarrow.RecordBatch`.
@@ -1852,6 +1927,7 @@ class RowIterator(HTTPIterator):
             preserve_order=self._preserve_order,
             selected_fields=self._selected_fields,
             max_queue_size=max_queue_size,
+            max_stream_count=max_stream_count,
         )
         tabledata_list_download = functools.partial(
             _pandas_helpers.download_arrow_row_iterator, iter(self.pages), self.schema
@@ -1978,6 +2054,7 @@ class RowIterator(HTTPIterator):
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Optional[Dict[str, Any]] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
+        max_stream_count: Optional[int] = None,
     ) -> "pandas.DataFrame":
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -2008,6 +2085,22 @@ class RowIterator(HTTPIterator):
 
                 .. versionadded:: 2.14.0
 
+            max_stream_count (Optional[int]):
+                The maximum number of parallel download streams when
+                using BigQuery Storage API. Ignored if
+                BigQuery Storage API is not used.
+
+                This setting also has no effect if the query result
+                is deterministically ordered with ORDER BY,
+                in which case, the number of download stream is always 1.
+
+                If set to 0 or None (the default), the number of download
+                streams is determined by BigQuery the server. However, this behaviour
+                can require a lot of memory to store temporary download result,
+                especially with very large queries. In that case,
+                setting this parameter value to a value > 0 can help
+                reduce system resource consumption.
+
         Returns:
             pandas.DataFrame:
                 A generator of :class:`~pandas.DataFrame`.
@@ -2034,6 +2127,7 @@ class RowIterator(HTTPIterator):
             preserve_order=self._preserve_order,
             selected_fields=self._selected_fields,
             max_queue_size=max_queue_size,
+            max_stream_count=max_stream_count,
         )
         tabledata_list_download = functools.partial(
             _pandas_helpers.download_dataframe_row_iterator,
@@ -2690,6 +2784,7 @@ class _EmptyRowIterator(RowIterator):
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         dtypes: Optional[Dict[str, Any]] = None,
         max_queue_size: Optional[int] = None,
+        max_stream_count: Optional[int] = None,
     ) -> Iterator["pandas.DataFrame"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -2703,6 +2798,9 @@ class _EmptyRowIterator(RowIterator):
                 Ignored. Added for compatibility with RowIterator.
 
             max_queue_size:
+                Ignored. Added for compatibility with RowIterator.
+
+            max_stream_count:
                 Ignored. Added for compatibility with RowIterator.
 
         Returns:
@@ -2719,6 +2817,7 @@ class _EmptyRowIterator(RowIterator):
         self,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         max_queue_size: Optional[int] = None,
+        max_stream_count: Optional[int] = None,
     ) -> Iterator["pyarrow.RecordBatch"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -2729,6 +2828,9 @@ class _EmptyRowIterator(RowIterator):
                 Ignored. Added for compatibility with RowIterator.
 
             max_queue_size:
+                Ignored. Added for compatibility with RowIterator.
+
+            max_stream_count:
                 Ignored. Added for compatibility with RowIterator.
 
         Returns:

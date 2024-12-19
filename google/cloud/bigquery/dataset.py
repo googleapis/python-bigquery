@@ -530,6 +530,7 @@ class Dataset(object):
         "storage_billing_model": "storageBillingModel",
         "max_time_travel_hours": "maxTimeTravelHours",
         "default_rounding_mode": "defaultRoundingMode",
+        "resource_tags": "resourceTags",
     }
 
     def __init__(self, dataset_ref) -> None:

@@ -917,7 +917,7 @@ class SerDeInfo:
         return config
 
 
-class Schema:
+class Schema(collections.UserList):
     # TODO docstrings and type hints
     def __init__(self, fields=None, foreign_type_info=None):
         self._properties = {}
@@ -942,6 +942,15 @@ class Schema:
     @_fields.setter
     def _fields(self, value: list) -> None:
         value = _isinstance_or_raise(value, list, none_allowed=True)
+        self._properties["_fields"] = value
+
+    @property
+    def data(self):
+        return self._properties.get("_fields")
+
+    @data.setter
+    def data(self, value: list):
+        # for simplicity, no validation in this proof of concept
         self._properties["_fields"] = value
 
     def __len__(self):

@@ -894,6 +894,27 @@ class TestDataset(unittest.TestCase):
         dataset.location = "LOCATION"
         self.assertEqual(dataset.location, "LOCATION")
 
+    def test_resource_tags_update_in_place(self):
+        dataset = self._make_one(self.DS_REF)
+        del dataset._properties["resourceTags"]  # don't start w/ existing dict
+        tags = dataset.resource_tags
+        tags["123456789012/foo"] = "bar"  # update in place
+        self.assertEqual(dataset.resource_tags, {"123456789012/foo": "bar"})
+
+    def test_resource_tags_setter(self):
+        dataset = self._make_one(self.DS_REF)
+        dataset.resource_tags = {"123456789012/foo": "bar"}
+        self.assertEqual(dataset.labels, {"123456789012/foo": "bar"})
+
+    def test_resource_tags_setter_bad_value(self):
+        dataset = self._make_one(self.DS_REF)
+        with self.assertRaises(ValueError):
+            dataset.resource_tags = None
+
+    def test_resource_tags_getter_missing_value(self):
+        dataset = self._make_one(self.DS_REF)
+        self.assertEqual(dataset.resource_tags, {})
+
     def test_labels_update_in_place(self):
         dataset = self._make_one(self.DS_REF)
         del dataset._properties["labels"]  # don't start w/ existing dict
@@ -1065,6 +1086,7 @@ class TestDatasetListItem(unittest.TestCase):
             "datasetReference": {"projectId": project, "datasetId": dataset_id},
             "friendlyName": "Data of the Test",
             "labels": {"some-stuff": "this-is-a-label"},
+            "resourceTags": {"123456789012/foo": "bar"},
         }
 
         dataset = self._make_one(resource)
@@ -1075,6 +1097,7 @@ class TestDatasetListItem(unittest.TestCase):
         self.assertEqual(dataset.reference.dataset_id, dataset_id)
         self.assertEqual(dataset.friendly_name, "Data of the Test")
         self.assertEqual(dataset.labels["some-stuff"], "this-is-a-label")
+        self.assertEqual(dataset.resource_tags["123456789012/foo"], "bar")
 
     def test_ctor_missing_properties(self):
         resource = {
@@ -1086,6 +1109,7 @@ class TestDatasetListItem(unittest.TestCase):
         self.assertIsNone(dataset.full_dataset_id)
         self.assertIsNone(dataset.friendly_name)
         self.assertEqual(dataset.labels, {})
+        self.assertEqual(dataset.resource_tags, {})
 
     def test_ctor_wo_project(self):
         resource = {"datasetReference": {"datasetId": "testdataset"}}

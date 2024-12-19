@@ -802,6 +802,26 @@ class Dataset(object):
         self._properties["labels"] = value
 
     @property
+    def resource_tags(self):
+        """Dict[str, str]: Resource tags of the dataset.
+
+        This method always returns a dict. To change a dataset's resource tags,
+        modify the dict, then call
+        :meth:`google.cloud.bigquery.client.Client.update_dataset`. To delete
+        a resource tag, set its value to :data:`None` before updating.
+
+        Raises:
+            ValueError: for invalid value types.
+        """
+        return self._properties.setdefault("resourceTags", {})
+
+    @resource_tags.setter
+    def resource_tags(self, value):
+        if not isinstance(value, dict):
+            raise ValueError("Pass a dict")
+        self._properties["resourceTags"] = value
+
+    @property
     def default_encryption_configuration(self):
         """google.cloud.bigquery.encryption_configuration.EncryptionConfiguration: Custom
         encryption configuration for all tables in the dataset.

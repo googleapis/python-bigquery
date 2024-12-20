@@ -56,18 +56,19 @@ else:
     _read_wkt = wkt.loads
 
 import google.api_core.exceptions
-from google.api_core.page_iterator import HTTPIterator
-
 import google.cloud._helpers  # type: ignore
-from google.cloud.bigquery import _helpers
-from google.cloud.bigquery import _pandas_helpers
-from google.cloud.bigquery import _versions_helpers
+from google.api_core.page_iterator import HTTPIterator
+from google.cloud.bigquery import (
+    _helpers,
+    _pandas_helpers,
+    _versions_helpers,
+    external_config,
+)
 from google.cloud.bigquery import exceptions as bq_exceptions
 from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import DefaultPandasDTypes
 from google.cloud.bigquery.external_config import ExternalConfig
-from google.cloud.bigquery import schema as _schema
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
@@ -76,9 +77,10 @@ from google.cloud.bigquery import external_config
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
     # they are not None, avoiding false "no attribute" errors.
+    import geopandas  # type: ignore
     import pandas
     import pyarrow
-    import geopandas  # type: ignore
+
     from google.cloud import bigquery_storage  # type: ignore
     from google.cloud.bigquery.dataset import DatasetReference
 
@@ -437,9 +439,9 @@ class Table(_TableBase):
 
     @require_partition_filter.setter
     def require_partition_filter(self, value):
-        self._properties[
-            self._PROPERTY_TO_API_FIELD["require_partition_filter"]
-        ] = value
+        self._properties[self._PROPERTY_TO_API_FIELD["require_partition_filter"]] = (
+            value
+        )
 
     @property
     def schema(self):
@@ -537,9 +539,9 @@ class Table(_TableBase):
         api_repr = value
         if value is not None:
             api_repr = value.to_api_repr()
-        self._properties[
-            self._PROPERTY_TO_API_FIELD["encryption_configuration"]
-        ] = api_repr
+        self._properties[self._PROPERTY_TO_API_FIELD["encryption_configuration"]] = (
+            api_repr
+        )
 
     @property
     def created(self):
@@ -678,7 +680,7 @@ class Table(_TableBase):
             api_repr = value.to_api_repr()
         elif value is not None:
             raise ValueError(
-                "value must be google.cloud.bigquery.table.TimePartitioning " "or None"
+                "value must be google.cloud.bigquery.table.TimePartitioning or None"
             )
         self._properties[self._PROPERTY_TO_API_FIELD["time_partitioning"]] = api_repr
 
@@ -814,9 +816,9 @@ class Table(_TableBase):
         if not isinstance(value, datetime.datetime) and value is not None:
             raise ValueError("Pass a datetime, or None")
         value_ms = google.cloud._helpers._millis_from_datetime(value)
-        self._properties[
-            self._PROPERTY_TO_API_FIELD["expires"]
-        ] = _helpers._str_or_none(value_ms)
+        self._properties[self._PROPERTY_TO_API_FIELD["expires"]] = (
+            _helpers._str_or_none(value_ms)
+        )
 
     @property
     def friendly_name(self):
@@ -1012,9 +1014,9 @@ class Table(_TableBase):
         api_repr = value
         if value is not None:
             api_repr = value.to_api_repr()
-        self._properties[
-            self._PROPERTY_TO_API_FIELD["external_data_configuration"]
-        ] = api_repr
+        self._properties[self._PROPERTY_TO_API_FIELD["external_data_configuration"]] = (
+            api_repr
+        )
 
     @property
     def snapshot_definition(self) -> Optional["SnapshotDefinition"]:
@@ -1100,43 +1102,6 @@ class Table(_TableBase):
             self._properties[
                 self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
             ] = value
-
-    @property
-    def foreign_type_info(self) -> Optional[_schema.ForeignTypeInfo]:
-        """Optional. Specifies metadata of the foreign data type definition in
-        field schema (TableFieldSchema.foreign_type_definition).
-
-        Returns:
-            Optional[schema.ForeignTypeInfo]:
-                Foreign type information, or :data:`None` if not set.
-
-        .. Note::
-            foreign_type_info is only required if you are referencing an
-            external catalog such as a Hive table.
-            For details, see:
-            https://cloud.google.com/bigquery/docs/external-tables
-            https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
-        """
-
-        prop = _helpers._get_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["foreign_type_info"]
-        )
-        if prop is not None:
-            return _schema.ForeignTypeInfo.from_api_repr(prop)
-        return None
-
-    @foreign_type_info.setter
-    def foreign_type_info(self, value: Union[_schema.ForeignTypeInfo, dict, None]):
-        value = _helpers._isinstance_or_raise(
-            value,
-            (_schema.ForeignTypeInfo, dict),
-            none_allowed=True,
-        )
-        if isinstance(value, _schema.ForeignTypeInfo):
-            value = value.to_api_repr()
-        _helpers._set_sub_prop(
-            self._properties, self._PROPERTY_TO_API_FIELD["foreign_type_info"], value
-        )
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":
@@ -2746,8 +2711,7 @@ class RowIterator(HTTPIterator):
         )
         if not geography_columns:
             raise TypeError(
-                "There must be at least one GEOGRAPHY column"
-                " to create a GeoDataFrame"
+                "There must be at least one GEOGRAPHY column to create a GeoDataFrame"
             )
 
         if geography_column:
@@ -3398,6 +3362,20 @@ class ForeignKey:
             ],
         )
 
+    def to_api_repr(self) -> Dict[str, Any]:
+        """Return a dictionary representing this object."""
+        return {
+            "name": self.name,
+            "referencedTable": self.referenced_table.to_api_repr(),
+            "columnReferences": [
+                {
+                    "referencingColumn": column_reference.referencing_column,
+                    "referencedColumn": column_reference.referenced_column,
+                }
+                for column_reference in self.column_references
+            ],
+        }
+
 
 class TableConstraints:
     """The TableConstraints defines the primary key and foreign key.
@@ -3433,6 +3411,17 @@ class TableConstraints:
                 for foreign_key_resource in resource["foreignKeys"]
             ]
         return cls(primary_key, foreign_keys)
+
+    def to_api_repr(self) -> Dict[str, Any]:
+        """Return a dictionary representing this object."""
+        resource = {}
+        if self.primary_key:
+            resource["primaryKey"] = {"columns": self.primary_key.columns}
+        if self.foreign_keys:
+            resource["foreignKeys"] = [
+                foreign_key.to_api_repr() for foreign_key in self.foreign_keys
+            ]
+        return resource
 
 
 def _item_to_row(iterator, resource):

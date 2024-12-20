@@ -894,6 +894,20 @@ class TestTable(unittest.TestCase, _SchemaBase):
         assert isinstance(table_constraints, TableConstraints)
         assert table_constraints.primary_key == PrimaryKey(columns=["id"])
 
+    def test_table_constraints_property_setter(self):
+        from google.cloud.bigquery.table import PrimaryKey, TableConstraints
+
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        table_constraints = TableConstraints(primary_key=PrimaryKey(columns=["id"]), foreign_keys=[])
+        table.table_constraints = table_constraints
+
+        assert table._properties["tableConstraints"] == {
+            "primaryKey": {"columns": ["id"]},
+        }
+
     def test_description_setter_bad_value(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)

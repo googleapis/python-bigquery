@@ -1022,6 +1022,18 @@ class Table(_TableBase):
             table_constraints = TableConstraints.from_api_repr(table_constraints)
         return table_constraints
 
+    @table_constraints.setter
+    def table_constraints(self, value):
+        """Tables Primary Key and Foreign Key information."""
+        api_repr = value
+        if isinstance(value, TableConstraints):
+            api_repr = value.to_api_repr()
+        elif value is not None:
+            raise ValueError(
+                "value must be google.cloud.bigquery.table.TableConstraints " "or None"
+            )
+        self._properties[self._PROPERTY_TO_API_FIELD["table_constraints"]] = api_repr
+
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":
         """Construct a table from fully-qualified table ID.
@@ -3247,7 +3259,20 @@ class ForeignKey:
                 for column_reference_resource in api_repr["columnReferences"]
             ],
         )
-
+    
+    def to_api_repr(self) -> Dict[str, Any]:
+        """Return a dictionary representing this object."""
+        return {
+            "name": self.name,
+            "referencedTable": self.referenced_table.to_api_repr(),
+            "columnReferences": [
+                {
+                    "referencingColumn": column_reference.referencing_column,
+                    "referencedColumn": column_reference.referenced_column,
+                }
+                for column_reference in self.column_references
+            ],
+        }
 
 class TableConstraints:
     """The TableConstraints defines the primary key and foreign key.
@@ -3284,6 +3309,16 @@ class TableConstraints:
             ]
         return cls(primary_key, foreign_keys)
 
+    def to_api_repr(self) -> Dict[str, Any]:
+        """Return a dictionary representing this object."""
+        resource = {}
+        if self.primary_key:
+            resource["primaryKey"] = {"columns": self.primary_key.columns}
+        if self.foreign_keys:
+            resource["foreignKeys"] = [
+                foreign_key.to_api_repr() for foreign_key in self.foreign_keys
+            ]
+        return resource
 
 def _item_to_row(iterator, resource):
     """Convert a JSON row to the native object.

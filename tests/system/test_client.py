@@ -45,6 +45,8 @@ from google.cloud.bigquery import dbapi, enums
 from google.cloud import storage
 from google.cloud.datacatalog_v1 import types as datacatalog_types
 from google.cloud.datacatalog_v1 import PolicyTagManagerClient
+from google.cloud.resourcemanager_v3 import types as resourcemanager_types
+from google.cloud.resourcemanager_v3 import TagKeysClient, TagValuesClient
 import psutil
 import pytest
 from test_utils.retry import RetryErrors
@@ -159,6 +161,8 @@ class TestBigQuery(unittest.TestCase):
 
     def tearDown(self):
         policy_tag_client = PolicyTagManagerClient()
+        tag_keys_client = TagKeysClient()
+        tag_values_client = TagValuesClient()
 
         def _still_in_use(bad_request):
             return any(
@@ -178,6 +182,10 @@ class TestBigQuery(unittest.TestCase):
                 retry_in_use(Config.CLIENT.delete_table)(doomed)
             elif isinstance(doomed, datacatalog_types.Taxonomy):
                 policy_tag_client.delete_taxonomy(name=doomed.name)
+            elif isinstance(doomed, resourcemanager_types.TagKey):
+                tag_keys_client.delete_tag_key(name=doomed.name).result()
+            elif isinstance(doomed, resourcemanager_types.TagValue):
+                tag_values_client.delete_tag_value(name=doomed.name).result()
             else:
                 doomed.delete()
 
@@ -646,6 +654,30 @@ class TestBigQuery(unittest.TestCase):
     def test_update_table(self):
         dataset = self.temp_dataset(_make_dataset_id("update_table"))
 
+        def _create_resource_tag_key_and_values(key, values):
+            tag_key_client = TagKeysClient()
+            tag_value_client = TagValuesClient()
+
+            tag_key_parent = f"projects/{Config.CLIENT.project}"
+            new_tag_key = resourcemanager_types.TagKey(
+                short_name=key, parent=tag_key_parent
+            )
+            tag_key = tag_key_client.create_tag_key(tag_key=new_tag_key).result()
+            self.to_delete.insert(0, tag_key)
+
+            for value in values:
+                new_tag_value = resourcemanager_types.TagValue(
+                    short_name=value, parent=tag_key.name
+                )
+                tag_value = tag_value_client.create_tag_value(
+                    tag_value=new_tag_value
+                ).result()
+                self.to_delete.insert(0, tag_value)
+
+        _create_resource_tag_key_and_values("owner", ["Alice", "Bob"])
+        _create_resource_tag_key_and_values("classification", ["public"])
+        _create_resource_tag_key_and_values("env", ["dev"])
+
         TABLE_NAME = "test_table"
         table_arg = Table(dataset.table(TABLE_NAME), schema=SCHEMA)
         self.assertFalse(_table_exists(table_arg))
@@ -658,7 +690,10 @@ class TestBigQuery(unittest.TestCase):
         table.friendly_name = "Friendly"
         table.description = "Description"
         table.labels = {"priority": "high", "color": "blue"}
-        table.resource_tags = {"123456789012/owner": "Alice", "123456789012/env": "dev"}
+        table.resource_tags = {
+            f"{Config.CLIENT.project}/owner": "Alice",
+            f"{Config.CLIENT.project}/env": "dev",
+        }
 
         table2 = Config.CLIENT.update_table(
             table, ["friendly_name", "description", "labels", "resource_tags"]
@@ -669,7 +704,10 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(table2.labels, {"priority": "high", "color": "blue"})
         self.assertEqual(
             table2.resource_tags,
-            {"123456789012/owner": "Alice", "123456789012/env": "dev"},
+            {
+                f"{Config.CLIENT.project}/owner": "Alice",
+                f"{Config.CLIENT.project}/env": "dev",
+            },
         )
 
         table2.description = None
@@ -679,17 +717,27 @@ class TestBigQuery(unittest.TestCase):
             "priority": None,  # delete
         }
         table2.resource_tags = {
-            "123456789012/owner": "Bob",  # change
-            "123456789012/classification": "public",  # add
-            "123456789012/env": None,  # delete
+            f"{Config.CLIENT.project}/owner": "Bob",  # change
+            f"{Config.CLIENT.project}/classification": "public",  # add
+            f"{Config.CLIENT.project}/env": None,  # delete
         }
-        table3 = Config.CLIENT.update_table(table2, ["description", "labels"])
+        table3 = Config.CLIENT.update_table(
+            table2, ["description", "labels", "resource_tags"]
+        )
         self.assertIsNone(table3.description)
         self.assertEqual(table3.labels, {"color": "green", "shape": "circle"})
         self.assertEqual(
             table3.resource_tags,
-            {"123456789012/owner": "Bob", "123456789012/classification": "public"},
+            {
+                f"{Config.CLIENT.project}/owner": "Bob",
+                f"{Config.CLIENT.project}/classification": "public",
+            },
         )
+
+        # Delete resource tag bindings.
+        table3.resource_tags = None
+        table4 = Config.CLIENT.update_table(table3, ["resource_tags"])
+        self.assertEqual(table4.resource_tags, {})
 
         # If we try to update using table2 again, it will fail because the
         # previous update changed the ETag.

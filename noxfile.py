@@ -369,7 +369,8 @@ def prerelease_deps(session):
     session.install(
         "freezegun",
         "google-cloud-datacatalog",
-        "google-cloud-resource-manager" "google-cloud-storage",
+        "google-cloud-resource-manager",
+        "google-cloud-storage",
         "google-cloud-testutils",
         "psutil",
         "pytest",

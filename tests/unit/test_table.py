@@ -1483,7 +1483,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)
         with self.assertRaises(ValueError):
-            table.resource_tags = None
+            table.resource_tags = 12345
 
     def test___repr__(self):
         from google.cloud.bigquery.table import TableReference

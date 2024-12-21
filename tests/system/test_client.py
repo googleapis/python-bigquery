@@ -658,14 +658,19 @@ class TestBigQuery(unittest.TestCase):
         table.friendly_name = "Friendly"
         table.description = "Description"
         table.labels = {"priority": "high", "color": "blue"}
+        table.resource_tags = {"123456789012/owner": "Alice", "123456789012/env": "dev"}
 
         table2 = Config.CLIENT.update_table(
-            table, ["friendly_name", "description", "labels"]
+            table, ["friendly_name", "description", "labels", "resource_tags"]
         )
 
         self.assertEqual(table2.friendly_name, "Friendly")
         self.assertEqual(table2.description, "Description")
         self.assertEqual(table2.labels, {"priority": "high", "color": "blue"})
+        self.assertEqual(
+            table2.resource_tags,
+            {"123456789012/owner": "Alice", "123456789012/env": "dev"},
+        )
 
         table2.description = None
         table2.labels = {
@@ -673,9 +678,18 @@ class TestBigQuery(unittest.TestCase):
             "shape": "circle",  # add
             "priority": None,  # delete
         }
+        table2.resource_tags = {
+            "123456789012/owner": "Bob",  # change
+            "123456789012/classification": "public",  # add
+            "123456789012/env": None,  # delete
+        }
         table3 = Config.CLIENT.update_table(table2, ["description", "labels"])
         self.assertIsNone(table3.description)
         self.assertEqual(table3.labels, {"color": "green", "shape": "circle"})
+        self.assertEqual(
+            table3.resource_tags,
+            {"123456789012/owner": "Bob", "123456789012/classification": "public"},
+        )
 
         # If we try to update using table2 again, it will fail because the
         # previous update changed the ETag.

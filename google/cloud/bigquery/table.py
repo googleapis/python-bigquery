@@ -408,6 +408,7 @@ class Table(_TableBase):
         "require_partition_filter": "requirePartitionFilter",
         "table_constraints": "tableConstraints",
         "max_staleness": "maxStaleness",
+        "resource_tags": "resourceTags",
     }
 
     def __init__(self, table_ref, schema=None) -> None:
@@ -1022,6 +1023,25 @@ class Table(_TableBase):
         if table_constraints is not None:
             table_constraints = TableConstraints.from_api_repr(table_constraints)
         return table_constraints
+
+    @property
+    def resource_tags(self):
+        """Dict[str, str]: Resource tags for the table.
+
+        See: https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Table.FIELDS.resource_tags
+
+        Raises:
+            ValueError: For invalid value types.
+        """
+        return self._properties.setdefault(
+            self._PROPERTY_TO_API_FIELD["resource_tags"], {}
+        )
+
+    @resource_tags.setter
+    def resource_tags(self, value):
+        if not isinstance(value, dict):
+            raise ValueError("resource_tags must be a dict")
+        self._properties[self._PROPERTY_TO_API_FIELD["resource_tags"]] = value
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":

@@ -97,6 +97,10 @@ TIME_PARTITIONING_CLUSTERING_FIELDS_SCHEMA = [
         ],
     ),
 ]
+TABLE_CONSTRAINTS_SCHEMA = [
+    bigquery.SchemaField("id", "INTEGER", mode="REQUIRED"),
+    bigquery.SchemaField("product_id", "STRING", mode="REQUIRED"),
+]
 
 SOURCE_URIS_AVRO = [
     "gs://cloud-samples-data/bigquery/federated-formats-reference-file-schema/a-twitter.avro",
@@ -900,6 +904,57 @@ class TestBigQuery(unittest.TestCase):
         table2.clustering_fields = None
         table3 = Config.CLIENT.update_table(table2, ["clustering_fields"])
         self.assertIsNone(table3.clustering_fields, None)
+
+    def test_update_table_constraints(self):
+        dataset = self.temp_dataset(_make_dataset_id("update_table"))
+
+        TABLE_NAME = "test_table"
+        table_arg = Table(dataset.table(TABLE_NAME), schema=TABLE_CONSTRAINTS_SCHEMA)
+        self.assertFalse(_table_exists(table_arg))
+
+        table = helpers.retry_403(Config.CLIENT.create_table)(table_arg)
+        self.to_delete.insert(0, table)
+        self.assertTrue(_table_exists(table))
+
+        table.table_constraints = {
+            "primaryKey": {
+                "columns": ["id"]
+            },
+            "foreignKeys": [
+                {
+                    "name": "fk_product_id",
+                    "referencedTable": "products",
+                    "columnReferences": [
+                        {
+                            "referencingColumn": "product_id",
+                            "referencedColumn": "id"
+                        }
+                    ]
+                }
+            ]
+        }
+        table2 = Config.CLIENT.update_table(table, ["table_constraints"])
+        self.assertEqual(table2.table_constraints, {
+            "primaryKey": {
+                "columns": ["id"]
+            },
+            "foreignKeys": [
+                {
+                    "name": "fk_product_id",
+                    "referencedTable": "products",
+                    "columnReferences": [
+                        {
+                            "referencingColumn": "product_id",
+                            "referencedColumn": "id"
+                        }
+                    ]
+                }
+            ]
+        })
+
+        table2.table_constraints = None
+        table3 = Config.CLIENT.update_table(table2, ["table_constraints"])
+        self.assertIsNone(table3.table_constraints, None)
 
     @staticmethod
     def _fetch_single_page(table, selected_fields=None):

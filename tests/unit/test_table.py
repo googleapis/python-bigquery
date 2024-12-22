@@ -891,19 +891,114 @@ class TestTable(unittest.TestCase, _SchemaBase):
         assert table_constraints.primary_key == PrimaryKey(columns=["id"])
 
     def test_table_constraints_property_setter(self):
+        from google.cloud.bigquery.table import (
+            ColumnReference,
+            ForeignKey,
+            PrimaryKey,
+            TableConstraints,
+            TableReference,
+        )
+
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        primary_key = PrimaryKey(columns=["id"])
+        foreign_keys = [
+            ForeignKey(
+                name="fk_name",
+                referenced_table=TableReference.from_string(
+                    "my_project.my_dataset.table"
+                ),
+                column_references=[
+                    ColumnReference(
+                        referenced_column="product_id", referencing_column="id"
+                    )
+                ],
+            )
+        ]
+        table_constraints = TableConstraints(
+            primary_key=primary_key, foreign_keys=foreign_keys
+        )
+        table.table_constraints = table_constraints
+
+        assert table._properties["tableConstraints"] == {
+            "primaryKey": {"columns": ["id"]},
+            "foreignKeys": [
+                {
+                    "name": "fk_name",
+                    "referencedTable": {
+                        "projectId": "my_project",
+                        "datasetId": "my_dataset",
+                        "tableId": "table",
+                    },
+                    "columnReferences": [
+                        {"referencedColumn": "product_id", "referencingColumn": "id"}
+                    ],
+                }
+            ],
+        }
+
+    def test_table_constraints_property_setter_only_primary_key(self):
         from google.cloud.bigquery.table import PrimaryKey, TableConstraints
 
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)
 
+        primary_key = PrimaryKey(columns=["id"])
+
+        table_constraints = TableConstraints(primary_key=primary_key, foreign_keys=None)
+        table.table_constraints = table_constraints
+
+        assert table._properties["tableConstraints"] == {
+            "primaryKey": {"columns": ["id"]}
+        }
+
+    def test_table_constraints_property_setter_only_foriegn_keys(self):
+        from google.cloud.bigquery.table import (
+            ColumnReference,
+            ForeignKey,
+            TableConstraints,
+            TableReference,
+        )
+
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        foreign_keys = [
+            ForeignKey(
+                name="fk_name",
+                referenced_table=TableReference.from_string(
+                    "my_project.my_dataset.table"
+                ),
+                column_references=[
+                    ColumnReference(
+                        referenced_column="product_id", referencing_column="id"
+                    )
+                ],
+            )
+        ]
         table_constraints = TableConstraints(
-            primary_key=PrimaryKey(columns=["id"]), foreign_keys=[]
+            primary_key=None, foreign_keys=foreign_keys
         )
         table.table_constraints = table_constraints
 
         assert table._properties["tableConstraints"] == {
-            "primaryKey": {"columns": ["id"]},
+            "foreignKeys": [
+                {
+                    "name": "fk_name",
+                    "referencedTable": {
+                        "projectId": "my_project",
+                        "datasetId": "my_dataset",
+                        "tableId": "table",
+                    },
+                    "columnReferences": [
+                        {"referencedColumn": "product_id", "referencingColumn": "id"}
+                    ],
+                }
+            ]
         }
 
     def test_description_setter_bad_value(self):

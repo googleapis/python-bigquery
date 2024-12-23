@@ -298,10 +298,10 @@ class TestBigQuery(unittest.TestCase):
         dataset.friendly_name = "Friendly"
         dataset.description = "Description"
         dataset.labels = {"priority": "high", "color": "blue"}
-        dataset.resource_tags = {"123456789012/key": "value", "123456789012/key1": "value1"}
+        dataset.resource_tags =  {"123456789012/env": "prod", "123456789012/component": "batch"}
         dataset.is_case_insensitive = True
         ds2 = Config.CLIENT.update_dataset(
-            dataset, ("friendly_name", "description", "labels", "is_case_insensitive")
+            dataset, ("friendly_name", "description", "labels", "resource_tags", "is_case_insensitive")
         )
         self.assertEqual(ds2.friendly_name, "Friendly")
         self.assertEqual(ds2.description, "Description")

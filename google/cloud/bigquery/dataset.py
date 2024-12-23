@@ -806,10 +806,12 @@ class Dataset(object):
     def resource_tags(self):
         """Dict[str, str]: Resource tags of the dataset.
 
-        This method always returns a dict. To change a dataset's resource tags,
-        modify the dict, then call
-        :meth:`google.cloud.bigquery.client.Client.update_dataset`. To delete
-        a resource tag, set its value to :data:`None` before updating.
+        Optional. The tags attached to this dataset. Tag keys are globally
+        unique. Tag key is expected to be in the namespaced format, for
+        example "123456789012/environment" where 123456789012 is
+        the ID of the parent organization or project resource for this tag
+        key. Tag value is expected to be the short name, for example
+        "Production".
 
         Raises:
             ValueError: for invalid value types.

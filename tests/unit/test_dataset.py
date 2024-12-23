@@ -908,7 +908,9 @@ class TestDataset(unittest.TestCase):
     def test_resource_tags_setter_bad_value(self):
         dataset = self._make_one(self.DS_REF)
         with self.assertRaises(ValueError):
-            dataset.resource_tags = None
+            dataset.resource_tags = "invalid"
+        with self.assertRaises(ValueError):
+            dataset.resource_tags = 123
 
     def test_resource_tags_getter_missing_value(self):
         dataset = self._make_one(self.DS_REF)

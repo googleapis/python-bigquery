@@ -45,6 +45,8 @@ from google.cloud.bigquery import dbapi, enums
 from google.cloud import storage
 from google.cloud.datacatalog_v1 import types as datacatalog_types
 from google.cloud.datacatalog_v1 import PolicyTagManagerClient
+from google.cloud.resourcemanager_v3 import types as resourcemanager_types
+from google.cloud.resourcemanager_v3 import TagKeysClient, TagValuesClient
 import psutil
 import pytest
 from test_utils.retry import RetryErrors
@@ -159,6 +161,8 @@ class TestBigQuery(unittest.TestCase):
 
     def tearDown(self):
         policy_tag_client = PolicyTagManagerClient()
+        tag_keys_client = TagKeysClient()
+        tag_values_client = TagValuesClient()
 
         def _still_in_use(bad_request):
             return any(
@@ -178,6 +182,10 @@ class TestBigQuery(unittest.TestCase):
                 retry_in_use(Config.CLIENT.delete_table)(doomed)
             elif isinstance(doomed, datacatalog_types.Taxonomy):
                 policy_tag_client.delete_taxonomy(name=doomed.name)
+            elif isinstance(doomed, resourcemanager_types.TagKey):
+                tag_keys_client.delete_tag_key(name=doomed.name).result()
+            elif isinstance(doomed, resourcemanager_types.TagValue):
+                tag_values_client.delete_tag_value(name=doomed.name).result()
             else:
                 doomed.delete()
 
@@ -284,11 +292,13 @@ class TestBigQuery(unittest.TestCase):
         self.assertIsNone(dataset.friendly_name)
         self.assertIsNone(dataset.description)
         self.assertEqual(dataset.labels, {})
+        self.assertEqual(dataset.resource_tags, {})
         self.assertIs(dataset.is_case_insensitive, False)
 
         dataset.friendly_name = "Friendly"
         dataset.description = "Description"
         dataset.labels = {"priority": "high", "color": "blue"}
+        dataset.resource_tags = {"123456789012/key": "value", "123456789012/key1": "value1"}
         dataset.is_case_insensitive = True
         ds2 = Config.CLIENT.update_dataset(
             dataset, ("friendly_name", "description", "labels", "is_case_insensitive")
@@ -296,6 +306,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(ds2.friendly_name, "Friendly")
         self.assertEqual(ds2.description, "Description")
         self.assertEqual(ds2.labels, {"priority": "high", "color": "blue"})
+        self.assertEqual(ds2.resource_tags, {"123456789012/env": "prod", "123456789012/component": "batch"})
         self.assertIs(ds2.is_case_insensitive, True)
 
         ds2.labels = {
@@ -303,8 +314,19 @@ class TestBigQuery(unittest.TestCase):
             "shape": "circle",  # add
             "priority": None,  # delete
         }
-        ds3 = Config.CLIENT.update_dataset(ds2, ["labels"])
+        ds2.resource_tags = {
+            "123456789012/env": "dev",          # change
+            "123456789012/project": "atlas",    # add
+            "123456789012/component": None,     # delete
+        }
+        ds3 = Config.CLIENT.update_dataset(ds2, ["labels", "resource_tags"])
         self.assertEqual(ds3.labels, {"color": "green", "shape": "circle"})
+        self.assertEqual(ds3.resource_tags, {"123456789012/env": "dev", "123456789012/project": "atlas"})
+
+        # Remove all tags
+        ds3.resource_tags = None
+        ds4 = Config.CLIENT.update_table(ds3, ["resource_tags"])
+        self.assertEqual(ds4.resource_tags, {})
 
         # If we try to update using d2 again, it will fail because the
         # previous update changed the ETag.

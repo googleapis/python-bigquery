@@ -820,7 +820,7 @@ class Dataset(object):
 
     @resource_tags.setter
     def resource_tags(self, value):
-        if not isinstance(value, dict):
+        if not isinstance(value, dict) or value is not None:
             raise ValueError("Pass a dict")
         self._properties["resourceTags"] = value
 

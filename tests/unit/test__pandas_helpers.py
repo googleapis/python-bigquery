@@ -35,6 +35,11 @@ except ImportError:
     pandas = None
 
 try:
+    import pandas_gbq.schema.pandas_to_bigquery
+except ImportError:
+    pandas_gbq = None
+
+try:
     import geopandas
 except ImportError:
     geopandas = None
@@ -1280,7 +1285,19 @@ def test_dataframe_to_parquet_compression_method(module_under_test):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_dataframe_to_bq_schema_w_named_index(module_under_test):
+@pytest.mark.skipif(pandas_gbq is None, reason="Requires `pandas-gbq`")
+def test_dataframe_to_bq_schema_returns_schema_with_pandas_gbq(module_under_test, monkeypatch):
+    monkeypatch.setattr(module_under_test, "pandas_gbq", None)
+    dataframe = pandas.DataFrame({"field00": ["foo", "bar"]})
+    got = module_under_test.dataframe_to_bq_schema(dataframe, [])
+    # Don't assert beyond this, since pandas-gbq is now source of truth.
+    assert got is not None
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_dataframe_to_bq_schema_w_named_index(module_under_test, monkeypatch):
+    monkeypatch.setattr(module_under_test, "pandas_gbq", None)
+    
     df_data = collections.OrderedDict(
         [
             ("str_column", ["hello", "world"]),
@@ -1291,7 +1308,8 @@ def test_dataframe_to_bq_schema_w_named_index(module_under_test):
     index = pandas.Index(["a", "b"], name="str_index")
     dataframe = pandas.DataFrame(df_data, index=index)
 
-    returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, [])
+    with pytest.warns(FutureWarning, match="pandas-gbq"):
+        returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, [])
 
     expected_schema = (
         schema.SchemaField("str_index", "STRING", "NULLABLE"),
@@ -1303,7 +1321,9 @@ def test_dataframe_to_bq_schema_w_named_index(module_under_test):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_dataframe_to_bq_schema_w_multiindex(module_under_test):
+def test_dataframe_to_bq_schema_w_multiindex(module_under_test, monkeypatch):
+    monkeypatch.setattr(module_under_test, "pandas_gbq", None)
+    
     df_data = collections.OrderedDict(
         [
             ("str_column", ["hello", "world"]),
@@ -1320,7 +1340,8 @@ def test_dataframe_to_bq_schema_w_multiindex(module_under_test):
     )
     dataframe = pandas.DataFrame(df_data, index=index)
 
-    returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, [])
+    with pytest.warns(FutureWarning, match="pandas-gbq"):
+        returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, [])
 
     expected_schema = (
         schema.SchemaField("str_index", "STRING", "NULLABLE"),
@@ -1334,7 +1355,9 @@ def test_dataframe_to_bq_schema_w_multiindex(module_under_test):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_dataframe_to_bq_schema_w_bq_schema(module_under_test):
+def test_dataframe_to_bq_schema_w_bq_schema(module_under_test, monkeypatch):
+    monkeypatch.setattr(module_under_test, "pandas_gbq", None)
+
     df_data = collections.OrderedDict(
         [
             ("str_column", ["hello", "world"]),
@@ -1349,7 +1372,8 @@ def test_dataframe_to_bq_schema_w_bq_schema(module_under_test):
         {"name": "bool_column", "type": "BOOL", "mode": "REQUIRED"},
     ]
 
-    returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, dict_schema)
+    with pytest.warns(FutureWarning, match="pandas-gbq"):
+        returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, dict_schema)
 
     expected_schema = (
         schema.SchemaField("str_column", "STRING", "NULLABLE"),
@@ -1360,7 +1384,9 @@ def test_dataframe_to_bq_schema_w_bq_schema(module_under_test):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_dataframe_to_bq_schema_fallback_needed_wo_pyarrow(module_under_test):
+def test_dataframe_to_bq_schema_fallback_needed_wo_pyarrow(module_under_test, monkeypatch):
+    monkeypatch.setattr(module_under_test, "pandas_gbq", None)
+
     dataframe = pandas.DataFrame(
         data=[
             {"id": 10, "status": "FOO", "execution_date": datetime.date(2019, 5, 10)},
@@ -1388,7 +1414,9 @@ def test_dataframe_to_bq_schema_fallback_needed_wo_pyarrow(module_under_test):
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
-def test_dataframe_to_bq_schema_fallback_needed_w_pyarrow(module_under_test):
+def test_dataframe_to_bq_schema_fallback_needed_w_pyarrow(module_under_test, monkeypatch):
+    monkeypatch.setattr(module_under_test, "pandas_gbq", None)
+    
     dataframe = pandas.DataFrame(
         data=[
             {"id": 10, "status": "FOO", "created_at": datetime.date(2019, 5, 10)},
@@ -1418,7 +1446,9 @@ def test_dataframe_to_bq_schema_fallback_needed_w_pyarrow(module_under_test):
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
-def test_dataframe_to_bq_schema_pyarrow_fallback_fails(module_under_test):
+def test_dataframe_to_bq_schema_pyarrow_fallback_fails(module_under_test, monkeypatch):
+    monkeypatch.setattr(module_under_test, "pandas_gbq", None)
+
     dataframe = pandas.DataFrame(
         data=[
             {"struct_field": {"one": 2}, "status": "FOO"},
@@ -1442,8 +1472,10 @@ def test_dataframe_to_bq_schema_pyarrow_fallback_fails(module_under_test):
 
 
 @pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
-def test_dataframe_to_bq_schema_geography(module_under_test):
+def test_dataframe_to_bq_schema_geography(module_under_test, monkeypatch):
     from shapely import wkt
+    
+    monkeypatch.setattr(module_under_test, "pandas_gbq", None)
 
     df = geopandas.GeoDataFrame(
         pandas.DataFrame(
@@ -1455,7 +1487,10 @@ def test_dataframe_to_bq_schema_geography(module_under_test):
         ),
         geometry="geo1",
     )
-    bq_schema = module_under_test.dataframe_to_bq_schema(df, [])
+
+    with pytest.warns(FutureWarning, match="pandas-gbq"):
+        bq_schema = module_under_test.dataframe_to_bq_schema(df, [])
+
     assert bq_schema == (
         schema.SchemaField("name", "STRING"),
         schema.SchemaField("geo1", "GEOGRAPHY"),

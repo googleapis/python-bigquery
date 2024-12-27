@@ -472,7 +472,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
         )
     else:
         return pandas_gbq.schema.pandas_to_bigquery.dataframe_to_bigquery_fields(
-            dataframe, override_bigquery_fields=bq_schema,
+            dataframe, override_bigquery_fields=bq_schema, index=True,
         )
 
     if bq_schema:

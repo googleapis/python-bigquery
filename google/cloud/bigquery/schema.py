@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import collections
-
 import copy
 import enum
 from typing import Any, cast, Dict, Iterable, Optional, Union

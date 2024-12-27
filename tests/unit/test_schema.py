@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+<<<<<<< HEAD
 from google.cloud import bigquery
 from google.cloud.bigquery.enums import RoundingMode
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
@@ -27,10 +28,17 @@ from google.cloud.bigquery.schema import (
     _to_schema_fields,
 )
 
+=======
+import copy
+>>>>>>> aaf1eb85 (feat: preserve unknown fields from the REST API representation in `SchemaField` (#2097))
 import unittest
 from unittest import mock
 
 import pytest
+
+from google.cloud import bigquery
+from google.cloud.bigquery.standard_sql import StandardSqlStructType
+from google.cloud.bigquery.schema import PolicyTagList
 
 
 class TestSchemaField(unittest.TestCase):
@@ -843,13 +851,40 @@ class TestToSchemaFields:  # Test class for _to_schema_fields
         result = _to_schema_fields(schema)
         assert result == schema
 
-    def test_invalid_mapping_representation(self):
+    def test_unknown_properties(self):
         schema = [
+<<<<<<< HEAD
             {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
             {"name": "address", "invalid_key": "STRING", "mode": "REQUIRED"},
         ]
         with pytest.raises(Exception):  # Or a more specific exception if known
             _to_schema_fields(schema)
+=======
+            {
+                "name": "full_name",
+                "type": "STRING",
+                "mode": "REQUIRED",
+                "someNewProperty": "test-value",
+            },
+            {
+                "name": "age",
+                # Note: This type should be included, too. Avoid client-side
+                # validation, as it could prevent backwards-compatible
+                # evolution of the server-side behavior.
+                "typo": "INTEGER",
+                "mode": "REQUIRED",
+                "anotherNewProperty": "another-test",
+            },
+        ]
+
+        # Make sure the setter doesn't mutate schema.
+        expected_schema = copy.deepcopy(schema)
+
+        result = self._call_fut(schema)
+
+        for api_repr, field in zip(expected_schema, result):
+            assert field.to_api_repr() == api_repr
+>>>>>>> aaf1eb85 (feat: preserve unknown fields from the REST API representation in `SchemaField` (#2097))
 
     @pytest.mark.parametrize(
         "schema, expected_schema",

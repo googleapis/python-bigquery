@@ -16,7 +16,7 @@
 
 import collections
 import enum
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, cast, Dict, Iterable, Optional, Union
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
@@ -243,7 +243,7 @@ class SchemaField(object):
         type_ = self._properties.get("type")
         if type_ is None:  # Shouldn't happen, but some unit tests do this.
             return None
-        return type_.upper()
+        return cast(str, type_).upper()
 
     @property
     def mode(self):
@@ -252,7 +252,7 @@ class SchemaField(object):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.mode
         """
-        return self._properties.get("mode", "NULLABLE").upper()
+        return cast(str, self._properties.get("mode", "NULLABLE")).upper()
 
     @property
     def is_nullable(self):

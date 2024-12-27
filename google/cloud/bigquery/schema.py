@@ -269,7 +269,7 @@ class SchemaField(object):
         return v
 
     @classmethod
-    def from_api_repr(cls, api_repr: dict) -> "SchemaField":
+    def from_api_repr(cls, api_repr: Mapping[str, Any]) -> "SchemaField":
         """Return a ``SchemaField`` object deserialized from a dictionary.
 
         Args:
@@ -942,67 +942,118 @@ class SerDeInfo:
 
 
 class Schema(collections.UserList):
-    # TODO docstrings and type hints
-    def __init__(self, fields=None, foreign_type_info=None):
-        self._properties = {}
+    """
+    Represents a BigQuery schema, defining the structure and types of data.
+
+    This class manages a list of schema fields and provides methods for
+    serialization and deserialization with the BigQuery API. It extends the
+    `collections.UserList` class to allow for list-like behavior.
+
+    Args:
+        fields (Optional[List[Any]], optional): A list of SchemaField objects representing the fields
+            in the schema. Defaults to None, which creates an empty schema.
+        foreign_type_info (Optional[str], optional): Optional type information relevant for foreign
+            systems. Defaults to None.
+    """
+
+    def __init__(
+        self,
+        fields: Optional[List[Any]] = None,
+        foreign_type_info: Optional[str] = None,
+    ):
+        self._properties: Dict[str, Any] = {}
         self._fields = [] if fields is None else list(fields)  # Internal List
         self.foreign_type_info = foreign_type_info
 
     @property
-    def foreign_type_info(self) -> Any:
-        """TODO: docstring"""
+    def foreign_type_info(self) -> Optional[str]:
         return self._properties.get("foreignTypeInfo")
 
     @foreign_type_info.setter
-    def foreign_type_info(self, value: str) -> None:
+    def foreign_type_info(self, value: Optional[str]) -> None:
+        """
+        Sets the foreign type information for this schema.
+
+        Args:
+            value (Optional[str]): The foreign type information, can be set to None.
+        """
         value = _isinstance_or_raise(value, str, none_allowed=True)
         self._properties["foreignTypeInfo"] = value
 
     @property
-    def _fields(self) -> Any:
-        """TODO: docstring"""
+    def _fields(self) -> Optional[List[Any]]:
         return self._properties.get("fields")
 
     @_fields.setter
-    def _fields(self, value: list) -> None:
+    def _fields(self, value: Optional[List[Any]]) -> None:
+        """
+        Sets the internal list of field definitions.
+
+        NOTE: In the API representation the 'fields' key points to a sequence of schema fields.
+        To maintain a similarity in names, the 'Schema._fields' attribute points to the
+        '_properties["fields"]' key. Schema class is superclassed by UserList, which requires the
+        use of a '.data' attribute. The decision was made to have both of these attributes point to
+        the same key "fields" in the '_properties' dictionary. Thus '.data' is an alias
+        for '_fields'.
+
+        Args:
+            value (Optional[List[Any]]): A list of schema fields, can be set to None.
+        """
         value = _isinstance_or_raise(value, list, none_allowed=True)
         value = _build_schema_resource(value)
         self._properties["fields"] = value
 
     @property
-    def data(self):
+    def data(self) -> Any:
         return self._properties.get("fields")
 
     @data.setter
-    def data(self, value: list):
-        # for simplicity, no validation in this proof of concept
+    def data(self, value) -> None:
+        """
+        Sets the list of schema fields.
+
+        NOTE: In the API representation the 'fields' key points to a sequence of schema fields.
+        To maintain a similarity in names, the 'Schema._fields' attribute points to the
+        '_properties["fields"]' key. Schema class is superclassed by UserList, which requires the
+        use of a '.data' attribute. The decision was made to have both of these attributes point to
+        the same key "fields" in the '_properties' dictionary. Thus '.data' is an alias
+        for '_fields'.
+
+        Args:
+            value (Optional[List[Any]]): A list of schema fields, can be set to None.
+        """
+
         value = _isinstance_or_raise(value, list, none_allowed=True)
         value = _build_schema_resource(value)
         self._properties["fields"] = value
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Schema({self._fields}, {self.foreign_type_info})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Schema({self._fields!r}, {self.foreign_type_info!r})"
 
-    def to_api_repr(self) -> dict:
+    def to_api_repr(self) -> Dict[str, Any]:
         """Build an API representation of this object.
 
         Returns:
             Dict[str, Any]:
                 A dictionary in the format used by the BigQuery API.
+                If the schema contains SchemaField objects, the fields are
+                also converted to their API representations.
         """
         # If this is a RECORD type, then sub-fields are also included,
         # add this to the serialized representation.
         answer = self._properties.copy()
+        if self._fields is None:
+            return answer
         schemafields = any([isinstance(f, SchemaField) for f in self._fields])
         if schemafields:
             answer["fields"] = [f.to_api_repr() for f in self._fields]
         return answer
 
     @classmethod
-    def from_api_repr(cls, resource: dict) -> Schema:
+    def from_api_repr(cls, resource: Dict[str, Any]) -> "Schema":
         """Factory: constructs an instance of the class (cls)
         given its API representation.
 
@@ -1013,6 +1064,6 @@ class Schema(collections.UserList):
         Returns:
             An instance of the class initialized with data from 'resource'.
         """
-        config = cls("")
+        config = cls([])
         config._properties = copy.copy(resource)
         return config

@@ -841,7 +841,7 @@ class Test_to_schema_fields(unittest.TestCase):
                 "anotherNewProperty": "another-test",
             },
         ]
-        
+
         # Make sure the setter doesn't mutate schema.
         expected_schema = copy.deepcopy(schema)
 

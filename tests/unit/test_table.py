@@ -733,12 +733,12 @@ class TestTable(unittest.TestCase, _SchemaBase):
                 "anotherNewProperty": "another-test",
             },
         ]
-        
+
         # Make sure the setter doesn't mutate schema.
         expected_schema = copy.deepcopy(schema)
-        
+
         table.schema = schema
-        
+
         # _properties should include all fields, including unknown ones.
         assert table._properties["schema"]["fields"] == expected_schema
 

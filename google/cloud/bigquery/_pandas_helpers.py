@@ -47,7 +47,7 @@ else:
 
 try:
     import pandas_gbq.schema.pandas_to_bigquery  # type: ignore
-    
+
     pandas_gbq_import_exception = None
 except ImportError as exc:
     pandas_gbq = None
@@ -472,7 +472,9 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
         )
     else:
         return pandas_gbq.schema.pandas_to_bigquery.dataframe_to_bigquery_fields(
-            dataframe, override_bigquery_fields=bq_schema, index=True,
+            dataframe,
+            override_bigquery_fields=bq_schema,
+            index=True,
         )
 
     if bq_schema:

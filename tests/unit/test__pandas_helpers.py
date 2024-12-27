@@ -1286,7 +1286,9 @@ def test_dataframe_to_parquet_compression_method(module_under_test):
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(pandas_gbq is None, reason="Requires `pandas-gbq`")
-def test_dataframe_to_bq_schema_returns_schema_with_pandas_gbq(module_under_test, monkeypatch):
+def test_dataframe_to_bq_schema_returns_schema_with_pandas_gbq(
+    module_under_test, monkeypatch
+):
     monkeypatch.setattr(module_under_test, "pandas_gbq", None)
     dataframe = pandas.DataFrame({"field00": ["foo", "bar"]})
     got = module_under_test.dataframe_to_bq_schema(dataframe, [])
@@ -1297,7 +1299,7 @@ def test_dataframe_to_bq_schema_returns_schema_with_pandas_gbq(module_under_test
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_bq_schema_w_named_index(module_under_test, monkeypatch):
     monkeypatch.setattr(module_under_test, "pandas_gbq", None)
-    
+
     df_data = collections.OrderedDict(
         [
             ("str_column", ["hello", "world"]),
@@ -1323,7 +1325,7 @@ def test_dataframe_to_bq_schema_w_named_index(module_under_test, monkeypatch):
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_bq_schema_w_multiindex(module_under_test, monkeypatch):
     monkeypatch.setattr(module_under_test, "pandas_gbq", None)
-    
+
     df_data = collections.OrderedDict(
         [
             ("str_column", ["hello", "world"]),
@@ -1373,7 +1375,9 @@ def test_dataframe_to_bq_schema_w_bq_schema(module_under_test, monkeypatch):
     ]
 
     with pytest.warns(FutureWarning, match="pandas-gbq"):
-        returned_schema = module_under_test.dataframe_to_bq_schema(dataframe, dict_schema)
+        returned_schema = module_under_test.dataframe_to_bq_schema(
+            dataframe, dict_schema
+        )
 
     expected_schema = (
         schema.SchemaField("str_column", "STRING", "NULLABLE"),
@@ -1384,7 +1388,9 @@ def test_dataframe_to_bq_schema_w_bq_schema(module_under_test, monkeypatch):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
-def test_dataframe_to_bq_schema_fallback_needed_wo_pyarrow(module_under_test, monkeypatch):
+def test_dataframe_to_bq_schema_fallback_needed_wo_pyarrow(
+    module_under_test, monkeypatch
+):
     monkeypatch.setattr(module_under_test, "pandas_gbq", None)
 
     dataframe = pandas.DataFrame(
@@ -1414,9 +1420,11 @@ def test_dataframe_to_bq_schema_fallback_needed_wo_pyarrow(module_under_test, mo
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
-def test_dataframe_to_bq_schema_fallback_needed_w_pyarrow(module_under_test, monkeypatch):
+def test_dataframe_to_bq_schema_fallback_needed_w_pyarrow(
+    module_under_test, monkeypatch
+):
     monkeypatch.setattr(module_under_test, "pandas_gbq", None)
-    
+
     dataframe = pandas.DataFrame(
         data=[
             {"id": 10, "status": "FOO", "created_at": datetime.date(2019, 5, 10)},
@@ -1474,7 +1482,7 @@ def test_dataframe_to_bq_schema_pyarrow_fallback_fails(module_under_test, monkey
 @pytest.mark.skipif(geopandas is None, reason="Requires `geopandas`")
 def test_dataframe_to_bq_schema_geography(module_under_test, monkeypatch):
     from shapely import wkt
-    
+
     monkeypatch.setattr(module_under_test, "pandas_gbq", None)
 
     df = geopandas.GeoDataFrame(

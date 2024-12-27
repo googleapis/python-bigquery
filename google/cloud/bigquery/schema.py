@@ -18,6 +18,7 @@ import collections
 import enum
 from typing import Any, Dict, Iterable, Optional, Union
 
+from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.enums import StandardSqlTypeNames
 
@@ -206,13 +207,6 @@ class SchemaField(object):
         if fields:  # Don't set the property if it's not set.
             self._properties["fields"] = [field.to_api_repr() for field in fields]
 
-    @staticmethod
-    def __get_int(api_repr, name):
-        v = api_repr.get(name, _DEFAULT_VALUE)
-        if v is not _DEFAULT_VALUE:
-            v = int(v)
-        return v
-
     @classmethod
     def from_api_repr(cls, api_repr: dict) -> "SchemaField":
         """Return a ``SchemaField`` object deserialized from a dictionary.
@@ -278,17 +272,17 @@ class SchemaField(object):
     @property
     def precision(self):
         """Optional[int]: Precision (number of digits) for the NUMERIC field."""
-        return self._properties.get("precision")
+        return _helpers._int_or_none(self._properties.get("precision"))
 
     @property
     def scale(self):
         """Optional[int]: Scale (digits after decimal) for the NUMERIC field."""
-        return self._properties.get("scale")
+        return _helpers._int_or_none(self._properties.get("scale"))
 
     @property
     def max_length(self):
         """Optional[int]: Maximum length for the STRING or BYTES field."""
-        return self._properties.get("maxLength")
+        return _helpers._int_or_none(self._properties.get("maxLength"))
 
     @property
     def range_element_type(self):

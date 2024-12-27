@@ -16,7 +16,7 @@
 
 import collections
 import enum
-from typing import Any, Dict, Iterable, Optional, Union, cast
+from typing import Any, Dict, Iterable, Optional, Union
 
 from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery.enums import StandardSqlTypeNames
@@ -327,8 +327,7 @@ class SchemaField(object):
         # Note: we don't make a copy of _properties because this can cause
         # unnecessary slowdowns, especially on deeply nested STRUCT / RECORD
         # fields. See https://github.com/googleapis/python-bigquery/issues/6
-        answer = self._properties
-        return answer
+        return self._properties
 
     def _key(self):
         """A tuple key that uniquely describes this field.

@@ -8608,11 +8608,9 @@ class TestClientUpload(object):
         assert sent_config.source_format == job.SourceFormat.PARQUET
         assert (
             # Accept either the GoogleSQL or legacy SQL type name from pandas-gbq.
-            tuple(sent_config.schema) == (
-                SchemaField("x", "INT64", "NULLABLE", None),
-            ) or tuple(sent_config.schema) == (
-                SchemaField("x", "INTEGER", "NULLABLE", None),
-            )
+            tuple(sent_config.schema) == (SchemaField("x", "INT64", "NULLABLE", None),)
+            or tuple(sent_config.schema)
+            == (SchemaField("x", "INTEGER", "NULLABLE", None),)
         )
 
     def test_load_table_from_dataframe_struct_fields(self):
@@ -8809,7 +8807,10 @@ class TestClientUpload(object):
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.PARQUET
-        assert sent_config.schema == expected_schema_googlesql or sent_config.schema == expected_schema_legacy_sql
+        assert (
+            sent_config.schema == expected_schema_googlesql
+            or sent_config.schema == expected_schema_legacy_sql
+        )
 
     def test_load_table_from_dataframe_w_partial_schema(self):
         pandas = pytest.importorskip("pandas")

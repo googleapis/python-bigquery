@@ -19,8 +19,9 @@ from __future__ import annotations
 import collections
 import copy
 import enum
-from typing import Any, Dict, Iterable, Optional, Union, cast
+from typing import Any, cast, Dict, Iterable, Optional, Union
 
+from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
 from google.cloud.bigquery._helpers import (
     _isinstance_or_raise,
@@ -240,32 +241,9 @@ class SchemaField(object):
             self._properties["rangeElementType"] = {"type": range_element_type}
         if isinstance(range_element_type, FieldElementType):
             self._properties["rangeElementType"] = range_element_type.to_api_repr()
-        if isinstance(rounding_mode, RoundingMode):
-            self._properties["roundingMode"] = rounding_mode.name
-        if isinstance(rounding_mode, str):
-            self._properties["roundingMode"] = rounding_mode
-        if isinstance(foreign_type_definition, str):
-            self._properties["foreignTypeDefinition"] = foreign_type_definition
+        if fields:  # Don't set the property if it's not set.
+            self._properties["fields"] = [field.to_api_repr() for field in fields]
 
-        # The order of operations is important:
-        # If field_type is FOREIGN, then foreign_type_definition must be set.
-        if field_type != "FOREIGN":
-            self._properties["type"] = field_type
-        else:
-            if self._properties.get("foreignTypeDefinition") is None:
-                raise ValueError(
-                    "If the 'field_type' is 'FOREIGN', then 'foreign_type_definition' is required."
-                )
-            self._properties["type"] = field_type
-
-        self._fields = tuple(fields)
-
-    @staticmethod
-    def __get_int(api_repr, name):
-        v = api_repr.get(name, _DEFAULT_VALUE)
-        if v is not _DEFAULT_VALUE:
-            v = int(v)
-        return v
 
     @classmethod
     def from_api_repr(cls, api_repr: dict) -> "SchemaField":
@@ -279,48 +257,19 @@ class SchemaField(object):
         Returns:
             google.cloud.bigquery.schema.SchemaField: The ``SchemaField`` object.
         """
-        field_type = api_repr["type"].upper()
+        placeholder = cls("this_will_be_replaced", "PLACEHOLDER")
 
-        # Handle optional properties with default values
-        mode = api_repr.get("mode", "NULLABLE")
-        description = api_repr.get("description", _DEFAULT_VALUE)
-        fields = api_repr.get("fields", ())
-        policy_tags = api_repr.get("policyTags", _DEFAULT_VALUE)
+        # Note: we don't make a copy of api_repr because this can cause
+        # unnecessary slowdowns, especially on deeply nested STRUCT / RECORD
+        # fields. See https://github.com/googleapis/python-bigquery/issues/6
+        placeholder._properties = api_repr
 
-        default_value_expression = api_repr.get("defaultValueExpression", None)
-
-        if policy_tags is not None and policy_tags is not _DEFAULT_VALUE:
-            policy_tags = PolicyTagList.from_api_repr(policy_tags)
-
-        if api_repr.get("rangeElementType"):
-            range_element_type = cast(dict, api_repr.get("rangeElementType"))
-            element_type = range_element_type.get("type")
-        else:
-            element_type = None
-
-        rounding_mode = api_repr.get("roundingMode")
-        foreign_type_definition = api_repr.get("foreignTypeDefinition")
-
-        return cls(
-            field_type=field_type,
-            fields=[cls.from_api_repr(f) for f in fields],
-            mode=mode.upper(),
-            default_value_expression=default_value_expression,
-            description=description,
-            name=api_repr["name"],
-            policy_tags=policy_tags,
-            precision=cls.__get_int(api_repr, "precision"),
-            scale=cls.__get_int(api_repr, "scale"),
-            max_length=cls.__get_int(api_repr, "maxLength"),
-            range_element_type=element_type,
-            rounding_mode=rounding_mode,
-            foreign_type_definition=foreign_type_definition,
-        )
+        return placeholder
 
     @property
     def name(self):
         """str: The name of the field."""
-        return self._properties["name"]
+        return self._properties.get("name", "")
 
     @property
     def field_type(self):
@@ -329,7 +278,10 @@ class SchemaField(object):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.type
         """
-        return self._properties["type"]
+        type_ = self._properties.get("type")
+        if type_ is None:  # Shouldn't happen, but some unit tests do this.
+            return None
+        return cast(str, type_).upper()
 
     @property
     def mode(self):
@@ -338,7 +290,7 @@ class SchemaField(object):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.mode
         """
-        return self._properties.get("mode")
+        return cast(str, self._properties.get("mode", "NULLABLE")).upper()
 
     @property
     def is_nullable(self):
@@ -358,17 +310,17 @@ class SchemaField(object):
     @property
     def precision(self):
         """Optional[int]: Precision (number of digits) for the NUMERIC field."""
-        return self._properties.get("precision")
+        return _helpers._int_or_none(self._properties.get("precision"))
 
     @property
     def scale(self):
         """Optional[int]: Scale (digits after decimal) for the NUMERIC field."""
-        return self._properties.get("scale")
+        return _helpers._int_or_none(self._properties.get("scale"))
 
     @property
     def max_length(self):
         """Optional[int]: Maximum length for the STRING or BYTES field."""
-        return self._properties.get("maxLength")
+        return _helpers._int_or_none(self._properties.get("maxLength"))
 
     @property
     def range_element_type(self):
@@ -404,7 +356,7 @@ class SchemaField(object):
 
         Must be empty unset if ``field_type`` is not 'RECORD'.
         """
-        return self._fields
+        return tuple(_to_schema_fields(self._properties.get("fields", [])))
 
     @property
     def policy_tags(self):
@@ -420,15 +372,10 @@ class SchemaField(object):
         Returns:
             Dict: A dictionary representing the SchemaField in a serialized form.
         """
-        answer = self._properties.copy()
-
-        # If this is a RECORD type, then sub-fields are also included,
-        # add this to the serialized representation.
-        if self.field_type.upper() in _STRUCT_TYPES:
-            answer["fields"] = [f.to_api_repr() for f in self.fields]
-
-        # Done; return the serialized dictionary.
-        return answer
+        # Note: we don't make a copy of _properties because this can cause
+        # unnecessary slowdowns, especially on deeply nested STRUCT / RECORD
+        # fields. See https://github.com/googleapis/python-bigquery/issues/6
+        return self._properties
 
     def _key(self):
         """A tuple key that uniquely describes this field.
@@ -464,7 +411,7 @@ class SchemaField(object):
             self.mode.upper(),  # pytype: disable=attribute-error
             self.default_value_expression,
             self.description,
-            self._fields,
+            self.fields,
             policy_tags,
         )
 

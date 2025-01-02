@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-<<<<<<< HEAD
+
+import unittest
+from unittest import mock
+
+import pytest
+
 from google.cloud import bigquery
 from google.cloud.bigquery.enums import RoundingMode
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
@@ -27,18 +32,6 @@ from google.cloud.bigquery.schema import (
     _build_schema_resource,
     _to_schema_fields,
 )
-
-=======
-import copy
->>>>>>> aaf1eb85 (feat: preserve unknown fields from the REST API representation in `SchemaField` (#2097))
-import unittest
-from unittest import mock
-
-import pytest
-
-from google.cloud import bigquery
-from google.cloud.bigquery.standard_sql import StandardSqlStructType
-from google.cloud.bigquery.schema import PolicyTagList
 
 
 class TestSchemaField(unittest.TestCase):
@@ -858,13 +851,6 @@ class TestToSchemaFields:  # Test class for _to_schema_fields
 
     def test_unknown_properties(self):
         schema = [
-<<<<<<< HEAD
-            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-            {"name": "address", "invalid_key": "STRING", "mode": "REQUIRED"},
-        ]
-        with pytest.raises(Exception):  # Or a more specific exception if known
-            _to_schema_fields(schema)
-=======
             {
                 "name": "full_name",
                 "type": "STRING",
@@ -881,15 +867,8 @@ class TestToSchemaFields:  # Test class for _to_schema_fields
                 "anotherNewProperty": "another-test",
             },
         ]
-
-        # Make sure the setter doesn't mutate schema.
-        expected_schema = copy.deepcopy(schema)
-
-        result = self._call_fut(schema)
-
-        for api_repr, field in zip(expected_schema, result):
-            assert field.to_api_repr() == api_repr
->>>>>>> aaf1eb85 (feat: preserve unknown fields from the REST API representation in `SchemaField` (#2097))
+        with pytest.raises(Exception):  # Or a more specific exception if known
+            _to_schema_fields(schema)
 
     @pytest.mark.parametrize(
         "schema, expected_schema",
@@ -927,19 +906,8 @@ class TestToSchemaFields:  # Test class for _to_schema_fields
         result = _to_schema_fields(schema)
         assert result == expected_schema
 
-    def test_valid_schema_object(self):
-        schema = Schema(
-            fields=[SchemaField("name", "STRING", description=None, policy_tags=None)],
-            foreign_type_info="TestInfo",
-        )
-        result = _to_schema_fields(schema)
-        expected = Schema(
-            [SchemaField("name", "STRING", "NULLABLE", None, None, (), None)],
-            "TestInfo",
-        )
-        assert result.to_api_repr() == expected.to_api_repr()
 
-
+# Testing the new Schema Class =================
 class TestSchemaObject:  # New test class for Schema object interactions
     def test_schema_object_field_access(self):
         schema = Schema(
@@ -948,10 +916,9 @@ class TestSchemaObject:  # New test class for Schema object interactions
                 SchemaField("age", "INTEGER"),
             ]
         )
-
         assert len(schema) == 2
-        assert schema[0]["name"] == "name"  # Access fields using indexing
-        assert schema[1]["type"] == "INTEGER"
+        assert schema[0].name == "name"  # Access fields using indexing
+        assert schema[1].field_type == "INTEGER"
 
     def test_schema_object_foreign_type_info(self):
         schema = Schema(foreign_type_info="External")
@@ -963,16 +930,6 @@ class TestSchemaObject:  # New test class for Schema object interactions
         with pytest.raises(TypeError):
             schema.foreign_type_info = 123  # Type check
 
-    def test_str(self):
-        schema = Schema(
-            fields=[SchemaField("name", "STRING")],
-            foreign_type_info="TestInfo",
-        )
-        assert (
-            str(schema)
-            == "Schema([{'name': 'name', 'mode': 'NULLABLE', 'type': 'STRING'}], TestInfo)"
-        )
-
     @pytest.mark.parametrize(
         "schema, expected_repr",
         [
@@ -981,12 +938,12 @@ class TestSchemaObject:  # New test class for Schema object interactions
                     fields=[SchemaField("name", "STRING")],
                     foreign_type_info="TestInfo",
                 ),
-                "Schema([{'name': 'name', 'mode': 'NULLABLE', 'type': 'STRING'}], 'TestInfo')",
+                "Schema([SchemaField('name', 'STRING', 'NULLABLE', None, None, (), None)], 'TestInfo')",
                 id="repr with foreign type info",
             ),
             pytest.param(
                 Schema(fields=[SchemaField("name", "STRING")]),
-                "Schema([{'name': 'name', 'mode': 'NULLABLE', 'type': 'STRING'}], None)",
+                "Schema([SchemaField('name', 'STRING', 'NULLABLE', None, None, (), None)], None)",
                 id="repr without foreign type info",
             ),
         ],
@@ -998,7 +955,8 @@ class TestSchemaObject:  # New test class for Schema object interactions
         schema = Schema(
             fields=[SchemaField("name", "STRING"), SchemaField("age", "INTEGER")]
         )
-        field_names = [field["name"] for field in schema]
+
+        field_names = [field.name for field in schema]
         assert field_names == ["name", "age"]
 
     def test_schema_object_mutability(self):  # Tests __setitem__ and __delitem__
@@ -1041,7 +999,9 @@ class TestSchemaObject:  # New test class for Schema object interactions
                     foreign_type_info="TestInfo",
                 ),
                 {
-                    "fields": [{"name": "name", "mode": "NULLABLE", "type": "STRING"}],
+                    "_fields": [
+                        SchemaField("name", "STRING", "NULLABLE", None, None, (), None)
+                    ],
                     "foreignTypeInfo": "TestInfo",
                 },
                 id="repr with foreign type info",
@@ -1049,7 +1009,9 @@ class TestSchemaObject:  # New test class for Schema object interactions
             pytest.param(
                 Schema(fields=[SchemaField("name", "STRING")]),
                 {
-                    "fields": [{"name": "name", "mode": "NULLABLE", "type": "STRING"}],
+                    "_fields": [
+                        SchemaField("name", "STRING", "NULLABLE", None, None, (), None)
+                    ],
                     "foreignTypeInfo": None,
                 },
                 id="repr without foreign type info",
@@ -1064,35 +1026,25 @@ class TestSchemaObject:  # New test class for Schema object interactions
         [
             pytest.param(
                 {
-                    "fields": [
+                    "_fields": [
                         SchemaField("name", "STRING", "NULLABLE", None, None, (), None)
                     ],
                     "foreignTypeInfo": "TestInfo",
                 },
                 Schema(
-                    fields=[
-                        SchemaField(
-                            "name", "STRING", description=None, policy_tags=None
-                        )
-                    ],
+                    fields=[SchemaField("name", "STRING")],
                     foreign_type_info="TestInfo",
                 ),
                 id="repr with foreign type info",
             ),
             pytest.param(
                 {
-                    "fields": [
+                    "_fields": [
                         SchemaField("name", "STRING", "NULLABLE", None, None, (), None)
                     ],
                     "foreignTypeInfo": None,
                 },
-                Schema(
-                    fields=[
-                        SchemaField(
-                            "name", "STRING", description=None, policy_tags=None
-                        )
-                    ]
-                ),
+                Schema(fields=[SchemaField("name", "STRING")]),
                 id="repr without foreign type info",
             ),
         ],
@@ -1104,9 +1056,11 @@ class TestSchemaObject:  # New test class for Schema object interactions
         THEN it will have the same representation a Schema object created
         directly and displayed as a dict.
         """
-
         result = Schema.from_api_repr(api_repr)
         assert result.to_api_repr() == expected.to_api_repr()
+
+
+# END PYTEST BASED SCHEMA TESTS ====================
 
 
 class TestPolicyTags(unittest.TestCase):

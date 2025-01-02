@@ -906,6 +906,18 @@ class TestToSchemaFields:  # Test class for _to_schema_fields
         result = _to_schema_fields(schema)
         assert result == expected_schema
 
+    def test_valid_schema_object(self):
+        schema = Schema(
+            fields=[SchemaField("name", "STRING")],
+            foreign_type_info="TestInfo",
+        )
+        result = _to_schema_fields(schema)
+        expected = Schema(
+            [SchemaField("name", "STRING", "NULLABLE", None, None, (), None)],
+            "TestInfo",
+        )
+        assert result.to_api_repr() == expected.to_api_repr()
+
 
 # Testing the new Schema Class =================
 class TestSchemaObject:  # New test class for Schema object interactions
@@ -929,6 +941,16 @@ class TestSchemaObject:  # New test class for Schema object interactions
 
         with pytest.raises(TypeError):
             schema.foreign_type_info = 123  # Type check
+
+    def test_str(self):
+        schema = Schema(
+            fields=[SchemaField("name", "STRING")],
+            foreign_type_info="TestInfo",
+        )
+        assert (
+            str(schema)
+            == "Schema([SchemaField('name', 'STRING', 'NULLABLE', None, None, (), None)], TestInfo)"
+        )
 
     @pytest.mark.parametrize(
         "schema, expected_repr",

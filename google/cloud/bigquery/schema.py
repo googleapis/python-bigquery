@@ -259,10 +259,9 @@ class SchemaField(object):
             if self._properties.get("foreignTypeDefinition") is None:
                 raise ValueError(
                     "If the 'field_type' is 'FOREIGN', then 'foreign_type_definition' is required."
-                )            
+                )
         if fields:  # Don't set the property if it's not set.
             self._properties["fields"] = [field.to_api_repr() for field in fields]
-
 
     @classmethod
     def from_api_repr(cls, api_repr: dict) -> "SchemaField":

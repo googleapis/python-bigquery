@@ -1,4 +1,5 @@
-attrs==24.3.0
+attrs===24.2.0; python_version == '3.7'
+attrs==24.3.0; python_version >= '3.8'
 certifi==2024.12.14
 cffi===1.15.1; python_version == '3.7'
 cffi==1.17.1; python_version >= '3.8'

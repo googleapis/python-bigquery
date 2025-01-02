@@ -218,7 +218,10 @@ class SchemaField(object):
         rounding_mode: Union[RoundingMode, str, None] = None,
         foreign_type_definition: Optional[str] = None,
     ):
-        self._properties: Dict[str, Any] = {}
+        self._properties: Dict[str, Any] = {
+            "name": name,
+            "type": field_type,
+        }
 
         self._properties["name"] = name
         if mode is not None:

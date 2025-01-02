@@ -19,7 +19,7 @@ from __future__ import annotations
 import collections
 import copy
 import enum
-from typing import Any, cast, Dict, Iterable, Optional, Union
+from typing import Any, cast, Dict, Iterable, Optional, Union, Mapping, List
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
@@ -260,8 +260,6 @@ class SchemaField(object):
                 raise ValueError(
                     "If the 'field_type' is 'FOREIGN', then 'foreign_type_definition' is required."
                 )
-            self._properties["type"] = field_type
-
         if fields:  # Don't set the property if it's not set.
             self._properties["fields"] = [field.to_api_repr() for field in fields]
 

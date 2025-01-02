@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import copy
 import unittest
 from unittest import mock
 
@@ -851,11 +852,30 @@ class TestToSchemaFields:  # Test class for _to_schema_fields
 
     def test_unknown_properties(self):
         schema = [
-            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-            {"name": "address", "invalid_key": "STRING", "mode": "REQUIRED"},
+            {
+                "name": "full_name",
+                "type": "STRING",
+                "mode": "REQUIRED",
+                "someNewProperty": "test-value",
+            },
+            {
+                "name": "age",
+                # Note: This type should be included, too. Avoid client-side
+                # validation, as it could prevent backwards-compatible
+                # evolution of the server-side behavior.
+                "typo": "INTEGER",
+                "mode": "REQUIRED",
+                "anotherNewProperty": "another-test",
+            },
         ]
-        with pytest.raises(Exception):  # Or a more specific exception if known
-            _to_schema_fields(schema)
+
+        # Make sure the setter doesn't mutate schema.
+        expected_schema = copy.deepcopy(schema)
+
+        result = self._call_fut(schema)
+
+        for api_repr, field in zip(expected_schema, result):
+            assert field.to_api_repr() == api_repr
 
     @pytest.mark.parametrize(
         "schema, expected_schema",

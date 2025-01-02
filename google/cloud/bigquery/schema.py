@@ -261,11 +261,13 @@ class SchemaField(object):
                 raise ValueError(
                     "If the 'field_type' is 'FOREIGN', then 'foreign_type_definition' is required."
                 )
+<<<<<<< HEAD
             self._properties["type"] = field_type
 
+=======
+>>>>>>> 100708d8 (Fix: add roundingmode as str test (#2098))
         if fields:  # Don't set the property if it's not set.
             self._properties["fields"] = [field.to_api_repr() for field in fields]
-
 
     @classmethod
     def from_api_repr(cls, api_repr: Mapping[str, Any]) -> "SchemaField":

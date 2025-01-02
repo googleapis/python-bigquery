@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import copy
+import unittest
+from unittest import mock
+
+import pytest
+
 from google.cloud import bigquery
 from google.cloud.bigquery.enums import RoundingMode
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
@@ -26,11 +33,6 @@ from google.cloud.bigquery.schema import (
     _build_schema_resource,
     _to_schema_fields,
 )
-
-import unittest
-from unittest import mock
-
-import pytest
 
 
 class TestSchemaField(unittest.TestCase):
@@ -315,6 +317,11 @@ class TestSchemaField(unittest.TestCase):
         fields = (sub_field1, sub_field2)
         schema_field = self._make_one("boat", "RECORD", fields=fields)
         self.assertEqual(schema_field.fields, fields)
+
+    def test_roundingmode_property_str(self):
+        ROUNDINGMODE = "ROUNDING_MODE_UNSPECIFIED"
+        schema_field = self._make_one("test", "STRING", rounding_mode=ROUNDINGMODE)
+        self.assertEqual(schema_field.rounding_mode, ROUNDINGMODE)
 
     def test_to_standard_sql_simple_type(self):
         examples = (
@@ -843,13 +850,32 @@ class TestToSchemaFields:  # Test class for _to_schema_fields
         result = _to_schema_fields(schema)
         assert result == schema
 
-    def test_invalid_mapping_representation(self):
+    def test_unknown_properties(self):
         schema = [
-            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-            {"name": "address", "invalid_key": "STRING", "mode": "REQUIRED"},
+            {
+                "name": "full_name",
+                "type": "STRING",
+                "mode": "REQUIRED",
+                "someNewProperty": "test-value",
+            },
+            {
+                "name": "age",
+                # Note: This type should be included, too. Avoid client-side
+                # validation, as it could prevent backwards-compatible
+                # evolution of the server-side behavior.
+                "typo": "INTEGER",
+                "mode": "REQUIRED",
+                "anotherNewProperty": "another-test",
+            },
         ]
-        with pytest.raises(Exception):  # Or a more specific exception if known
-            _to_schema_fields(schema)
+
+        # Make sure the setter doesn't mutate schema.
+        expected_schema = copy.deepcopy(schema)
+
+        result = self._call_fut(schema)
+
+        for api_repr, field in zip(expected_schema, result):
+            assert field.to_api_repr() == api_repr
 
     @pytest.mark.parametrize(
         "schema, expected_schema",

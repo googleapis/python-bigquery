@@ -19,7 +19,7 @@ from __future__ import annotations
 import collections
 import copy
 import enum
-from typing import Any, cast, Dict, Iterable, Optional, Union
+from typing import Any, cast, Dict, Iterable, Optional, Union, List
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
@@ -264,11 +264,11 @@ class SchemaField(object):
             self._properties["fields"] = [field.to_api_repr() for field in fields]
 
     @classmethod
-    def from_api_repr(cls, api_repr: dict) -> "SchemaField":
+    def from_api_repr(cls, api_repr: Dict[str, Any]) -> "SchemaField":
         """Return a ``SchemaField`` object deserialized from a dictionary.
 
         Args:
-            api_repr (Mapping[str, str]): The serialized representation
+            api_repr (Dict[str, str]): The serialized representation
                 of the SchemaField, such as what is output by
                 :meth:`to_api_repr`.
 
@@ -489,7 +489,7 @@ class SchemaField(object):
 
 
 def _parse_schema_resource(info):
-    """Parse a resource fragment into a schema field.
+    """Parse a resource fragment into a sequence of schema fields.
 
     Args:
         info: (Mapping[str, Dict]): should contain a "fields" key to be parsed
@@ -513,25 +513,33 @@ def _build_schema_resource(fields):
     return [field.to_api_repr() for field in fields]
 
 
-def _to_schema_fields(schema):
-    """Coerce `schema` to a list of schema field instances.
+def _to_schema_fields(
+    schema: Union[Schema, List[Union[SchemaField, Dict[str, Any]]]]
+) -> Union[Schema, List[SchemaField]]:
+    """Convert the input to either a Schema object OR a list of SchemaField objects.
+
+    This helper method ensures that the fields in the schema are SchemaField objects.
+    It accepts:
+
+    *   A :class:`~google.cloud.bigquery.schema.Schema` instance: It will
+        convert items that are mappings to
+        :class:`~google.cloud.bigquery.schema.SchemaField` instances and
+        preserve foreign_type_info.
+
+    *   A list of
+        :class:`~google.cloud.bigquery.schema.SchemaField` instances.
+
+    *   A list of mappings: It will convert each of the mapping items to
+        a :class:`~google.cloud.bigquery.schema.SchemaField` instance.
 
     Args:
-        schema(Sequence[Union[ \
-            :class:`~google.cloud.bigquery.schema.SchemaField`, \
-            Mapping[str, Any] \
-        ]]):
-            Table schema to convert. If some items are passed as mappings,
-            their content must be compatible with
-            :meth:`~google.cloud.bigquery.schema.SchemaField.from_api_repr`.
+        schema: The schema to convert.
 
     Returns:
-        Sequence[:class:`~google.cloud.bigquery.schema.SchemaField`]
+        The schema as a list of SchemaField objects or a Schema object.
 
     Raises:
-        Exception: If ``schema`` is not a sequence, or if any item in the
-        sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
-        instance or a compatible mapping representation of the field.
+        ValueError: If the items in ``schema`` are not valid.
     """
 
     for field in schema:
@@ -541,6 +549,17 @@ def _to_schema_fields(schema):
                 "mapping representations."
             )
 
+    if isinstance(schema, Schema):
+        schema = Schema(
+            [
+                field
+                if isinstance(field, SchemaField)
+                else SchemaField.from_api_repr(field)
+                for field in schema
+            ],
+            foreign_type_info=schema.foreign_type_info,
+        )
+        return schema
     return [
         field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
         for field in schema
@@ -761,8 +780,6 @@ class StorageDescriptor:
         prop = _get_sub_prop(self._properties, ["serDeInfo"])
         if prop is not None:
             prop = StorageDescriptor().from_api_repr(prop)
-            print(f"DINOSAUR prop: {prop}")
-
         return prop
 
     @serde_info.setter
@@ -885,4 +902,132 @@ class SerDeInfo:
         """
         config = cls("")
         config._properties = copy.deepcopy(resource)
+        return config
+
+
+class Schema(collections.UserList):
+    """
+    Represents a BigQuery schema, defining the structure and types of data.
+
+    This class manages a list of schema fields and provides methods for
+    serialization and deserialization with the BigQuery API. It extends the
+    `collections.UserList` class to allow for list-like behavior.
+
+    Args:
+        fields (Optional[List[Any]], optional): A list of SchemaField objects representing the fields
+            in the schema. Defaults to None, which creates an empty schema.
+        foreign_type_info (Optional[str], optional): Optional type information relevant for foreign
+            systems. Defaults to None.
+    """
+
+    def __init__(
+        self,
+        fields: Optional[List[Any]] = None,
+        foreign_type_info: Optional[str] = None,
+    ):
+        self._properties: Dict[str, Any] = {}
+        self._fields = [] if fields is None else list(fields)  # Internal List
+        self.foreign_type_info = foreign_type_info
+
+    @property
+    def foreign_type_info(self) -> Optional[str]:
+        return self._properties.get("foreignTypeInfo")
+
+    @foreign_type_info.setter
+    def foreign_type_info(self, value: Optional[str]) -> None:
+        """
+        Sets the foreign type information for this schema.
+
+        Args:
+            value (Optional[str]): The foreign type information, can be set to None.
+        """
+        value = _isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["foreignTypeInfo"] = value
+
+    @property
+    def _fields(self) -> Optional[List[Any]]:
+        return self._properties.get("fields")
+
+    @_fields.setter
+    def _fields(self, value: Optional[List[Any]]) -> None:
+        """
+        Sets the internal list of field definitions.
+
+        NOTE: In the API representation the 'fields' key points to a sequence of schema fields.
+        To maintain a similarity in names, the 'Schema._fields' attribute points to the
+        '_properties["fields"]' key. Schema class is superclassed by UserList, which requires the
+        use of a '.data' attribute. The decision was made to have both of these attributes point to
+        the same key "fields" in the '_properties' dictionary. Thus '.data' is an alias
+        for '_fields'.
+
+        Args:
+            value (Optional[List[Any]]): A list of schema fields, can be set to None.
+        """
+        value = _isinstance_or_raise(value, list, none_allowed=True)
+        value = _build_schema_resource(value)
+        self._properties["fields"] = value
+
+    @property
+    def data(self) -> Any:
+        return self._properties.get("fields")
+
+    @data.setter
+    def data(self, value) -> None:
+        """
+        Sets the list of schema fields.
+
+        NOTE: In the API representation the 'fields' key points to a sequence of schema fields.
+        To maintain a similarity in names, the 'Schema._fields' attribute points to the
+        '_properties["fields"]' key. Schema class is superclassed by UserList, which requires the
+        use of a '.data' attribute. The decision was made to have both of these attributes point to
+        the same key "fields" in the '_properties' dictionary. Thus '.data' is an alias
+        for '_fields'.
+
+        Args:
+            value (Optional[List[Any]]): A list of schema fields, can be set to None.
+        """
+
+        value = _isinstance_or_raise(value, list, none_allowed=True)
+        value = _build_schema_resource(value)
+        self._properties["fields"] = value
+
+    def __str__(self) -> str:
+        return f"Schema({self._fields}, {self.foreign_type_info})"
+
+    def __repr__(self) -> str:
+        return f"Schema({self._fields!r}, {self.foreign_type_info!r})"
+
+    def to_api_repr(self) -> Dict[str, Any]:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+                If the schema contains SchemaField objects, the fields are
+                also converted to their API representations.
+        """
+        # If this is a RECORD type, then sub-fields are also included,
+        # add this to the serialized representation.
+        answer = self._properties.copy()
+        if self._fields == []:
+            return answer
+        schemafields = any([isinstance(f, SchemaField) for f in self._fields])
+        if schemafields:
+            answer["fields"] = [f.to_api_repr() for f in self._fields]
+        return answer
+
+    @classmethod
+    def from_api_repr(cls, resource: Dict[str, Any]) -> "Schema":
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls([])
+        config._properties = copy.copy(resource)
         return config

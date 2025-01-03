@@ -831,6 +831,12 @@ class TestBuildSchemaResource:
 
 
 class TestToSchemaFields:  # Test class for _to_schema_fields
+    @staticmethod
+    def _call_fut(schema):
+        from google.cloud.bigquery.schema import _to_schema_fields
+
+        return _to_schema_fields(schema)
+
     def test_invalid_type(self):
         """Invalid list of tuples instead of list of mappings"""
         schema = [
@@ -956,7 +962,7 @@ class TestSchemaObject:  # New test class for Schema object interactions
         )
         assert (
             str(schema)
-            == "Schema([{'name': 'name', 'mode': 'NULLABLE', 'type': 'STRING'}], TestInfo)"
+            == "Schema([{'name': 'name', 'type': 'STRING', 'mode': 'NULLABLE'}], TestInfo)"
         )
 
     @pytest.mark.parametrize(
@@ -967,12 +973,12 @@ class TestSchemaObject:  # New test class for Schema object interactions
                     fields=[SchemaField("name", "STRING")],
                     foreign_type_info="TestInfo",
                 ),
-                "Schema([{'name': 'name', 'mode': 'NULLABLE', 'type': 'STRING'}], 'TestInfo')",
+                "Schema([{'name': 'name', 'type': 'STRING', 'mode': 'NULLABLE'}], 'TestInfo')",
                 id="repr with foreign type info",
             ),
             pytest.param(
                 Schema(fields=[SchemaField("name", "STRING")]),
-                "Schema([{'name': 'name', 'mode': 'NULLABLE', 'type': 'STRING'}], None)",
+                "Schema([{'name': 'name', 'type': 'STRING', 'mode': 'NULLABLE'}], None)",
                 id="repr without foreign type info",
             ),
         ],

@@ -19,7 +19,7 @@ from __future__ import annotations
 import collections
 import copy
 import enum
-from typing import Any, cast, Dict, Iterable, Optional, Union, Mapping, List
+from typing import Any, cast, Dict, Iterable, Optional, Union, List
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
@@ -264,11 +264,11 @@ class SchemaField(object):
             self._properties["fields"] = [field.to_api_repr() for field in fields]
 
     @classmethod
-    def from_api_repr(cls, api_repr: Mapping[str, Any]) -> "SchemaField":
+    def from_api_repr(cls, api_repr: Dict[str, Any]) -> "SchemaField":
         """Return a ``SchemaField`` object deserialized from a dictionary.
 
         Args:
-            api_repr (Mapping[str, str]): The serialized representation
+            api_repr (Dict[str, str]): The serialized representation
                 of the SchemaField, such as what is output by
                 :meth:`to_api_repr`.
 
@@ -514,7 +514,7 @@ def _build_schema_resource(fields):
 
 
 def _to_schema_fields(
-    schema: Union[Schema, List[Union[SchemaField, Mapping[str, Any]]]]
+    schema: Union[Schema, List[Union[SchemaField, Dict[str, Any]]]]
 ) -> Union[Schema, List[SchemaField]]:
     """Convert the input to either a Schema object OR a list of SchemaField objects.
 

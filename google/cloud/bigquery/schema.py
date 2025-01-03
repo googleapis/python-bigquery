@@ -1009,7 +1009,7 @@ class Schema(collections.UserList):
         # If this is a RECORD type, then sub-fields are also included,
         # add this to the serialized representation.
         answer = self._properties.copy()
-        if self._fields is None:
+        if self._fields == []:
             return answer
         schemafields = any([isinstance(f, SchemaField) for f in self._fields])
         if schemafields:

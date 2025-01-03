@@ -945,6 +945,33 @@ class TestSchemaObject:  # New test class for Schema object interactions
         assert schema[0]["name"] == "name"  # Access fields using indexing
         assert schema[1]["type"] == "INTEGER"
 
+    def test_schema_object_data_access(self):
+        """Schema class is superclassed by UserList, which requires the
+        use of a '.data' attribute. The decision was made to have both of these attributes point to
+        the same key "fields" in the '_properties' dictionary. Thus '.data' is an alias
+        for '_fields'.
+
+        This test assures that .data functions as an alias to the underlying data.
+        """
+
+        schema = Schema(
+            fields=[
+                SchemaField("name", "STRING"),
+                SchemaField("age", "INTEGER"),
+            ]
+        )
+
+        assert len(schema.data) == 2
+        assert schema.data[0]["name"] == "name"  # Access fields using indexing
+        assert schema.data[1]["type"] == "INTEGER"
+
+        new_fields = [
+            SchemaField("new_name", "STRING"),
+            SchemaField("new_age", "INTEGER"),
+        ]
+        schema.data = new_fields
+        assert schema.data[0]["name"] == "new_name"
+
     def test_schema_object_foreign_type_info(self):
         schema = Schema(foreign_type_info="External")
         assert schema.foreign_type_info == "External"
@@ -1045,6 +1072,14 @@ class TestSchemaObject:  # New test class for Schema object interactions
                     "foreignTypeInfo": None,
                 },
                 id="repr without foreign type info",
+            ),
+            pytest.param(
+                Schema(fields=None),
+                {
+                    "fields": [],
+                    "foreignTypeInfo": None,
+                },
+                id="repr with no fields",
             ),
         ],
     )

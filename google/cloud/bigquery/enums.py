@@ -246,6 +246,11 @@ class KeyResultStatementKind:
 
 
 class StandardSqlTypeNames(str, enum.Enum):
+    """Enum of allowed SQL type names in schema.SchemaField.
+
+    Datatype used in GoogleSQL.
+    """
+
     def _generate_next_value_(name, start, count, last_values):
         return name
 
@@ -267,6 +272,9 @@ class StandardSqlTypeNames(str, enum.Enum):
     ARRAY = enum.auto()
     STRUCT = enum.auto()
     RANGE = enum.auto()
+    # NOTE: FOREIGN acts as a wrapper for data types
+    # not natively understood by BigQuery unless translated
+    FOREIGN = enum.auto()
 
 
 class EntityTypes(str, enum.Enum):
@@ -285,7 +293,10 @@ class EntityTypes(str, enum.Enum):
 # See also: https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
 # and https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
 class SqlTypeNames(str, enum.Enum):
-    """Enum of allowed SQL type names in schema.SchemaField."""
+    """Enum of allowed SQL type names in schema.SchemaField.
+
+    Datatype used in Legacy SQL.
+    """
 
     STRING = "STRING"
     BYTES = "BYTES"
@@ -306,6 +317,9 @@ class SqlTypeNames(str, enum.Enum):
     DATETIME = "DATETIME"
     INTERVAL = "INTERVAL"  # NOTE: not available in legacy types
     RANGE = "RANGE"  # NOTE: not available in legacy types
+    # NOTE: FOREIGN acts as a wrapper for data types
+    # not natively understood by BigQuery unless translated
+    FOREIGN = "FOREIGN"
 
 
 class WriteDisposition(object):
@@ -344,3 +358,9 @@ class DeterminismLevel:
 
     NOT_DETERMINISTIC = "NOT_DETERMINISTIC"
     """The UDF is not deterministic."""
+
+
+class RoundingMode(enum.Enum):
+    ROUNDING_MODE_UNSPECIFIED = 0
+    ROUND_HALF_AWAY_FROM_ZERO = 1
+    ROUND_HALF_EVEN = 2

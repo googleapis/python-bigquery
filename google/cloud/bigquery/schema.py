@@ -14,20 +14,27 @@
 
 """Schemas for BigQuery tables / queries."""
 
+from __future__ import annotations
+
 import collections
+import copy
 import enum
 from typing import Any, cast, Dict, Iterable, Optional, Union
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
-from google.cloud.bigquery.enums import StandardSqlTypeNames
+from google.cloud.bigquery._helpers import (
+    _isinstance_or_raise,
+    _get_sub_prop,
+)
+from google.cloud.bigquery.enums import StandardSqlTypeNames, RoundingMode
 
 
 _STRUCT_TYPES = ("RECORD", "STRUCT")
 
 # SQL types reference:
-# https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
-# https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+# LEGACY SQL: https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
+# GoogleSQL: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
 LEGACY_TO_STANDARD_TYPES = {
     "STRING": StandardSqlTypeNames.STRING,
     "BYTES": StandardSqlTypeNames.BYTES,
@@ -46,6 +53,7 @@ LEGACY_TO_STANDARD_TYPES = {
     "DATE": StandardSqlTypeNames.DATE,
     "TIME": StandardSqlTypeNames.TIME,
     "DATETIME": StandardSqlTypeNames.DATETIME,
+    "FOREIGN": StandardSqlTypeNames.FOREIGN,
     # no direct conversion from ARRAY, the latter is represented by mode="REPEATED"
 }
 """String names of the legacy SQL types to integer codes of Standard SQL standard_sql."""
@@ -164,6 +172,34 @@ class SchemaField(object):
             the type is RANGE, this field is required. Possible values for the
             field element type of a RANGE include `DATE`, `DATETIME` and
             `TIMESTAMP`.
+
+        rounding_mode: Union[RoundingMode, str, None]
+            Specifies the rounding mode to be used when storing values of
+            NUMERIC and BIGNUMERIC type.
+
+            Unspecified will default to using ROUND_HALF_AWAY_FROM_ZERO.
+
+            ROUND_HALF_AWAY_FROM_ZERO rounds half values away from zero
+            when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
+            values.
+            For Scale: 0
+            1.1, 1.2, 1.3, 1.4 => 1
+            1.5, 1.6, 1.7, 1.8, 1.9 => 2
+
+            ROUND_HALF_EVEN rounds half values to the nearest even value
+            when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
+            values.
+            For Scale: 0
+            1.1, 1.2, 1.3, 1.4 => 1
+            1.5 => 2
+            1.6, 1.7, 1.8, 1.9 => 2
+            2.5 => 2
+
+        foreign_type_definition: Optional[str]
+            Definition of the foreign data type.
+
+            Only valid for top-level schema fields (not nested fields).
+            If the type is FOREIGN, this field is required.
     """
 
     def __init__(
@@ -179,11 +215,15 @@ class SchemaField(object):
         scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         range_element_type: Union[FieldElementType, str, None] = None,
+        rounding_mode: Union[RoundingMode, str, None] = None,
+        foreign_type_definition: Optional[str] = None,
     ):
         self._properties: Dict[str, Any] = {
             "name": name,
             "type": field_type,
         }
+
+        self._properties["name"] = name
         if mode is not None:
             self._properties["mode"] = mode.upper()
         if description is not _DEFAULT_VALUE:
@@ -204,6 +244,22 @@ class SchemaField(object):
             self._properties["rangeElementType"] = {"type": range_element_type}
         if isinstance(range_element_type, FieldElementType):
             self._properties["rangeElementType"] = range_element_type.to_api_repr()
+        if isinstance(rounding_mode, RoundingMode):
+            self._properties["roundingMode"] = rounding_mode.name
+        if isinstance(rounding_mode, str):
+            self._properties["roundingMode"] = rounding_mode
+        if isinstance(foreign_type_definition, str):
+            self._properties["foreignTypeDefinition"] = foreign_type_definition
+
+        # The order of operations is important:
+        # If field_type is FOREIGN, then foreign_type_definition must be set.
+        if field_type != "FOREIGN":
+            self._properties["type"] = field_type
+        else:
+            if self._properties.get("foreignTypeDefinition") is None:
+                raise ValueError(
+                    "If the 'field_type' is 'FOREIGN', then 'foreign_type_definition' is required."
+                )
         if fields:  # Don't set the property if it's not set.
             self._properties["fields"] = [field.to_api_repr() for field in fields]
 
@@ -295,6 +351,22 @@ class SchemaField(object):
         if self._properties.get("rangeElementType"):
             ret = self._properties.get("rangeElementType")
             return FieldElementType.from_api_repr(ret)
+
+    @property
+    def rounding_mode(self):
+        """Enum that specifies the rounding mode to be used when storing values of
+        NUMERIC and BIGNUMERIC type.
+        """
+        return self._properties.get("roundingMode")
+
+    @property
+    def foreign_type_definition(self):
+        """Definition of the foreign data type.
+
+        Only valid for top-level schema fields (not nested fields).
+        If the type is FOREIGN, this field is required.
+        """
+        return self._properties.get("foreignTypeDefinition")
 
     @property
     def fields(self):
@@ -461,6 +533,7 @@ def _to_schema_fields(schema):
         sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
         instance or a compatible mapping representation of the field.
     """
+
     for field in schema:
         if not isinstance(field, (SchemaField, collections.abc.Mapping)):
             raise ValueError(
@@ -556,3 +629,260 @@ class PolicyTagList(object):
         """
         answer = {"names": list(self.names)}
         return answer
+
+
+class ForeignTypeInfo:
+    """Metadata about the foreign data type definition such as the system in which the
+    type is defined.
+
+    Args:
+        typeSystem (str): Required. Specifies the system which defines the
+            foreign data type.
+    """
+
+    def __init__(self, type_system="TYPE_SYSTEM_UNSPECIFIED"):
+        self._properties = {}
+        self.type_system = type_system
+
+    @property
+    def type_system(self):
+        """Required. Specifies the system which defines the foreign data
+        type."""
+
+        return self._properties.get("typeSystem")
+
+    @type_system.setter
+    def type_system(self, value: str):
+        value = _isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["typeSystem"] = value
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return copy.deepcopy(self._properties)
+
+    @classmethod
+    def from_api_repr(cls, resource):
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls()
+        config._properties = copy.deepcopy(resource)
+        return config
+
+
+class StorageDescriptor:
+    """Contains information about how a table's data is stored and accessed by open
+    source query engines.
+
+    Args:
+        inputFormat (Optional[str]): Specifies the fully qualified class name of
+            the InputFormat (e.g.
+            "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"). The maximum
+            length is 128 characters.
+        locationUri (Optional[str]): The physical location of the table (e.g.
+            'gs://spark-dataproc-data/pangea-data/case_sensitive/' or
+            'gs://spark-dataproc-data/pangea-data/'). The maximum length is
+            2056 bytes.
+        outputFormat (Optional[str]): Specifies the fully qualified class name
+            of the OutputFormat (e.g.
+            "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat"). The maximum
+            length is 128 characters.
+        serdeInfo (Optional[Any]): Serializer and deserializer information.
+    """
+
+    def __init__(
+        self,
+        input_format: Optional[str] = None,
+        location_uri: Optional[str] = None,
+        output_format: Optional[str] = None,
+        serde_info: Optional[SerDeInfo] = None,
+    ):
+        self._properties: Dict[str, Any] = {}
+        self.input_format = input_format
+        self.location_uri = location_uri
+        self.output_format = output_format
+        self.serde_info = serde_info
+
+    @property
+    def input_format(self) -> Any:
+        """Optional. Specifies the fully qualified class name of the InputFormat
+        (e.g. "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"). The maximum
+        length is 128 characters."""
+
+        return self._properties.get("inputFormat")
+
+    @input_format.setter
+    def input_format(self, value: Optional[str]):
+        value = _isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["inputFormat"] = value
+
+    @property
+    def location_uri(self) -> Any:
+        """Optional. The physical location of the table (e.g. 'gs://spark-
+        dataproc-data/pangea-data/case_sensitive/' or 'gs://spark-dataproc-
+        data/pangea-data/'). The maximum length is 2056 bytes."""
+
+        return self._properties.get("locationUri")
+
+    @location_uri.setter
+    def location_uri(self, value: Optional[str]):
+        value = _isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["locationUri"] = value
+
+    @property
+    def output_format(self) -> Any:
+        """Optional. Specifies the fully qualified class name of the
+        OutputFormat (e.g. "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat").
+        The maximum length is 128 characters."""
+
+        return self._properties.get("outputFormat")
+
+    @output_format.setter
+    def output_format(self, value: Optional[str]):
+        value = _isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["outputFormat"] = value
+
+    @property
+    def serde_info(self) -> Any:
+        """Optional. Serializer and deserializer information."""
+
+        prop = _get_sub_prop(self._properties, ["serDeInfo"])
+        if prop is not None:
+            prop = StorageDescriptor().from_api_repr(prop)
+            print(f"DINOSAUR prop: {prop}")
+
+        return prop
+
+    @serde_info.setter
+    def serde_info(self, value):
+        value = _isinstance_or_raise(value, SerDeInfo, none_allowed=True)
+        if value is not None:
+            self._properties["serDeInfo"] = value.to_api_repr()
+        else:
+            self._properties["serDeInfo"] = value
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return copy.deepcopy(self._properties)
+
+    @classmethod
+    def from_api_repr(cls, resource: dict) -> StorageDescriptor:
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls()
+        config._properties = copy.deepcopy(resource)
+        return config
+
+
+class SerDeInfo:
+    """Serializer and deserializer information.
+
+    Args:
+        serializationLibrary (str): Required. Specifies a fully-qualified class
+            name of the serialization library that is responsible for the
+            translation of data between table representation and the underlying
+            low-level input and output format structures. The maximum length is
+            256 characters.
+        name (Optional[str]): Name of the SerDe. The maximum length is 256
+            characters.
+        parameters: (Optional[dict[str, str]]): Key-value pairs that define the initialization
+            parameters for the serialization library. Maximum size 10 Kib.
+    """
+
+    def __init__(
+        self,
+        serialization_library: str,
+        name: Optional[str] = None,
+        parameters: Optional[dict[str, str]] = None,
+    ):
+        self._properties: Dict[str, Any] = {}
+        self.serialization_library = serialization_library
+        self.name = name
+        self.parameters = parameters
+
+    @property
+    def serialization_library(self) -> Any:
+        """Required. Specifies a fully-qualified class name of the serialization
+        library that is responsible for the translation of data between table
+        representation and the underlying low-level input and output format
+        structures. The maximum length is 256 characters."""
+
+        return self._properties.get("serializationLibrary")
+
+    @serialization_library.setter
+    def serialization_library(self, value: str):
+        value = _isinstance_or_raise(value, str, none_allowed=False)
+        self._properties["serializationLibrary"] = value
+
+    @property
+    def name(self) -> Any:
+        """Optional. Name of the SerDe. The maximum length is 256 characters."""
+
+        return self._properties.get("name")
+
+    @name.setter
+    def name(self, value: Optional[str] = None):
+        value = _isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["name"] = value
+
+    @property
+    def parameters(self) -> Any:
+        """Optional. Key-value pairs that define the initialization parameters
+        for the serialization library. Maximum size 10 Kib."""
+
+        return self._properties.get("parameters")
+
+    @parameters.setter
+    def parameters(self, value: Optional[dict[str, str]] = None):
+        value = _isinstance_or_raise(value, dict, none_allowed=True)
+        self._properties["parameters"] = value
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return copy.deepcopy(self._properties)
+
+    @classmethod
+    def from_api_repr(cls, resource: dict) -> SerDeInfo:
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            resource (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'resource'.
+        """
+        config = cls("")
+        config._properties = copy.deepcopy(resource)
+        return config

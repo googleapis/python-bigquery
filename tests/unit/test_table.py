@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import datetime
 import logging
 import re
@@ -711,14 +712,35 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table.schema = [full_name, age]
         self.assertEqual(table.schema, [full_name, age])
 
-    def test_schema_setter_invalid_mapping_representation(self):
+    def test_schema_setter_allows_unknown_properties(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)
-        full_name = {"name": "full_name", "type": "STRING", "mode": "REQUIRED"}
-        invalid_field = {"name": "full_name", "typeooo": "STRING", "mode": "REQUIRED"}
-        with self.assertRaises(Exception):
-            table.schema = [full_name, invalid_field]
+        schema = [
+            {
+                "name": "full_name",
+                "type": "STRING",
+                "mode": "REQUIRED",
+                "someNewProperty": "test-value",
+            },
+            {
+                "name": "age",
+                # Note: This type should be included, too. Avoid client-side
+                # validation, as it could prevent backwards-compatible
+                # evolution of the server-side behavior.
+                "typo": "INTEGER",
+                "mode": "REQUIRED",
+                "anotherNewProperty": "another-test",
+            },
+        ]
+
+        # Make sure the setter doesn't mutate schema.
+        expected_schema = copy.deepcopy(schema)
+
+        table.schema = schema
+
+        # _properties should include all fields, including unknown ones.
+        assert table._properties["schema"]["fields"] == expected_schema
 
     def test_schema_setter_valid_mapping_representation(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -1049,6 +1071,16 @@ class TestTable(unittest.TestCase, _SchemaBase):
         )
         table.mview_refresh_interval = None
         self.assertIsNone(table.mview_refresh_interval)
+
+    def test_mview_allow_non_incremental_definition(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_allow_non_incremental_definition)
+        table.mview_allow_non_incremental_definition = True
+        self.assertTrue(table.mview_allow_non_incremental_definition)
+        table.mview_allow_non_incremental_definition = False
+        self.assertFalse(table.mview_allow_non_incremental_definition)
+        table.mview_allow_non_incremental_definition = None
+        self.assertIsNone(table.mview_allow_non_incremental_definition)
 
     def test_from_string(self):
         cls = self._get_target_class()
@@ -1464,6 +1496,49 @@ class TestTable(unittest.TestCase, _SchemaBase):
         dataset = DatasetReference("project1", "dataset1")
         table1 = self._make_one(TableReference(dataset, "table1"))
         self.assertEqual(str(table1), "project1.dataset1.table1")
+
+    def test_max_staleness_getter(self):
+        """Test getting max_staleness property."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Initially None
+        self.assertIsNone(table.max_staleness)
+        # Set max_staleness using setter
+        table.max_staleness = "1h"
+        self.assertEqual(table.max_staleness, "1h")
+
+    def test_max_staleness_setter(self):
+        """Test setting max_staleness property."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Set valid max_staleness
+        table.max_staleness = "30m"
+        self.assertEqual(table.max_staleness, "30m")
+        # Set to None
+        table.max_staleness = None
+        self.assertIsNone(table.max_staleness)
+
+    def test_max_staleness_setter_invalid_type(self):
+        """Test setting max_staleness with an invalid type raises ValueError."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Try setting invalid type
+        with self.assertRaises(ValueError):
+            table.max_staleness = 123  # Not a string
+
+    def test_max_staleness_to_api_repr(self):
+        """Test max_staleness is correctly represented in API representation."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Set max_staleness
+        table.max_staleness = "1h"
+        # Convert to API representation
+        resource = table.to_api_repr()
+        self.assertEqual(resource.get("maxStaleness"), "1h")
 
 
 class Test_row_from_mapping(unittest.TestCase, _SchemaBase):

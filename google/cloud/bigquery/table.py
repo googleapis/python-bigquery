@@ -1033,7 +1033,7 @@ class Table(_TableBase):
         Raises:
             ValueError: For invalid value types.
         """
-        return self._properties.setdefault(
+        return self._properties.get(
             self._PROPERTY_TO_API_FIELD["resource_tags"], {}
         )
 

@@ -2374,7 +2374,7 @@ class TestClient(unittest.TestCase):
             "resourceTags": {"123456789012/key": "value"},
         }
         conn.api_request.assert_called_once_with(
-            method="PATCH", path="/" + path, data=sent, timeout=7.5
+            method="PATCH", data=sent, path="/" + path, timeout=7.5
         )
         self.assertEqual(updated_table.description, table.description)
         self.assertEqual(updated_table.friendly_name, table.friendly_name)

@@ -1029,9 +1029,6 @@ class Table(_TableBase):
         """Dict[str, str]: Resource tags for the table.
 
         See: https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Table.FIELDS.resource_tags
-
-        Raises:
-            ValueError: For invalid value types.
         """
         return self._properties.get(
             self._PROPERTY_TO_API_FIELD["resource_tags"], {}

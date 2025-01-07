@@ -74,7 +74,7 @@ bqstorage = [
 ]
 pandas = [
   "pandas >= 1.1.0",
-  "pandas-gbq >= 0.26.0",
+  "pandas-gbq >= 0.26.1",
   "pyarrow >= 3.0.0",
   "db-dtypes >= 0.3.0, < 2.0.0dev",
   "importlib_metadata >= 1.0.0; python_version < '3.8'",

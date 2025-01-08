@@ -298,7 +298,7 @@ class TestBigQuery(unittest.TestCase):
         dataset.friendly_name = "Friendly"
         dataset.description = "Description"
         dataset.labels = {"priority": "high", "color": "blue"}
-        dataset.resource_tags =  {"123456789012/env": "prod", "123456789012/component": "batch"}
+        dataset.resource_tags =  {f"{Config.CLIENT.project}/env": "prod", f"{Config.CLIENT.project}/component": "batch"}
         dataset.is_case_insensitive = True
         ds2 = Config.CLIENT.update_dataset(
             dataset, ("friendly_name", "description", "labels", "resource_tags", "is_case_insensitive")
@@ -306,7 +306,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(ds2.friendly_name, "Friendly")
         self.assertEqual(ds2.description, "Description")
         self.assertEqual(ds2.labels, {"priority": "high", "color": "blue"})
-        self.assertEqual(ds2.resource_tags, {"123456789012/env": "prod", "123456789012/component": "batch"})
+        self.assertEqual(ds2.resource_tags, {f"{Config.CLIENT.project}/env": "prod", f"{Config.CLIENT.project}/component": "batch"})
         self.assertIs(ds2.is_case_insensitive, True)
 
         ds2.labels = {
@@ -315,13 +315,13 @@ class TestBigQuery(unittest.TestCase):
             "priority": None,  # delete
         }
         ds2.resource_tags = {
-            "123456789012/env": "dev",          # change
-            "123456789012/project": "atlas",    # add
-            "123456789012/component": None,     # delete
+            f"{Config.CLIENT.project}/env": "dev",          # change
+            f"{Config.CLIENT.project}/project": "atlas",    # add
+            f"{Config.CLIENT.project}/component": None,     # delete
         }
         ds3 = Config.CLIENT.update_dataset(ds2, ["labels", "resource_tags"])
         self.assertEqual(ds3.labels, {"color": "green", "shape": "circle"})
-        self.assertEqual(ds3.resource_tags, {"123456789012/env": "dev", "123456789012/project": "atlas"})
+        self.assertEqual(ds3.resource_tags, {f"{Config.CLIENT.project}/env": "dev", f"{Config.CLIENT.project}/project": "atlas"})
 
         # Remove all tags
         ds3.resource_tags = None

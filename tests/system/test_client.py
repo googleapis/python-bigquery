@@ -286,6 +286,26 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(_dataset_exists(dataset))
         self.assertEqual(dataset.default_rounding_mode, "ROUND_HALF_EVEN")
 
+    def _create_resource_tag_key_and_values(self, key, values):
+        tag_key_client = TagKeysClient()
+        tag_value_client = TagValuesClient()
+
+        tag_key_parent = f"projects/{Config.CLIENT.project}"
+        new_tag_key = resourcemanager_types.TagKey(
+            short_name=key, parent=tag_key_parent
+        )
+        tag_key = tag_key_client.create_tag_key(tag_key=new_tag_key).result()
+        self.to_delete.insert(0, tag_key)
+
+        for value in values:
+            new_tag_value = resourcemanager_types.TagValue(
+                short_name=value, parent=tag_key.name
+            )
+            tag_value = tag_value_client.create_tag_value(
+                tag_value=new_tag_value
+            ).result()
+            self.to_delete.insert(0, tag_value)
+
     def test_update_dataset(self):
         dataset = self.temp_dataset(_make_dataset_id("update_dataset"))
         self.assertTrue(_dataset_exists(dataset))
@@ -294,6 +314,11 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(dataset.labels, {})
         self.assertEqual(dataset.resource_tags, {})
         self.assertIs(dataset.is_case_insensitive, False)
+
+        # Tags need to be created before they can be used in a dataset.
+        self._create_resource_tag_key_and_values("env", ["prod", "dev"])
+        self._create_resource_tag_key_and_values("component", ["batch"])
+        self._create_resource_tag_key_and_values("project", ["atlas"])
 
         dataset.friendly_name = "Friendly"
         dataset.description = "Description"

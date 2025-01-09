@@ -37,9 +37,13 @@ BLACK_PATHS = (
     "setup.py",
 )
 
-DEFAULT_PYTHON_VERSION = "3.8"
-SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.11", "3.12"]
-UNIT_TEST_PYTHON_VERSIONS = ["3.7", "3.8", "3.12"]
+DEFAULT_PYTHON_VERSION = "3.9"
+SYSTEM_TEST_PYTHON_VERSIONS = [
+    "3.9",
+    "3.12",
+    "3.13",
+]  # Two highest, one lowest versions
+UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.12", "3.13"]  # Two highest, one lowest versions
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 
@@ -103,7 +107,8 @@ def default(session, install_extras=True):
         constraints_path,
     )
 
-    if install_extras and session.python in ["3.11", "3.12"]:
+    # Testing two highest versions with extras
+    if install_extras and session.python in UNIT_TEST_PYTHON_VERSIONS[-2:]:
         install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     elif install_extras:
         install_target = ".[all]"
@@ -136,6 +141,7 @@ def unit(session):
     default(session)
 
 
+# Testing lowest and highest with no extras
 @nox.session(python=[UNIT_TEST_PYTHON_VERSIONS[0], UNIT_TEST_PYTHON_VERSIONS[-1]])
 @_calculate_duration
 def unit_noextras(session):
@@ -288,7 +294,8 @@ def snippets(session):
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
-    if session.python in ["3.11", "3.12"]:
+    # Testing snippets against two most recent versions
+    if session.python in UNIT_TEST_PYTHON_VERSIONS[-2:]:
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"

@@ -47,6 +47,7 @@ from google.cloud.datacatalog_v1 import types as datacatalog_types
 from google.cloud.datacatalog_v1 import PolicyTagManagerClient
 from google.cloud.resourcemanager_v3 import types as resourcemanager_types
 from google.cloud.resourcemanager_v3 import TagKeysClient, TagValuesClient
+from google.api_core.exceptions import AlreadyExists
 import psutil
 import pytest
 from test_utils.retry import RetryErrors
@@ -294,16 +295,22 @@ class TestBigQuery(unittest.TestCase):
         new_tag_key = resourcemanager_types.TagKey(
             short_name=key, parent=tag_key_parent
         )
-        tag_key = tag_key_client.create_tag_key(tag_key=new_tag_key).result()
+        try:
+            tag_key = tag_key_client.create_tag_key(tag_key=new_tag_key).result()
+        except AlreadyExists:   # When system tests runs in parallel for multiple Python versions, the tag key may already exist
+            tag_key = new_tag_key.name
         self.to_delete.insert(0, tag_key)
 
         for value in values:
             new_tag_value = resourcemanager_types.TagValue(
                 short_name=value, parent=tag_key.name
             )
-            tag_value = tag_value_client.create_tag_value(
-                tag_value=new_tag_value
-            ).result()
+            try:
+                tag_value = tag_value_client.create_tag_value(
+                    tag_value=new_tag_value
+                ).result()
+            except AlreadyExists:   # When system tests runs in parallel for multiple Python versions, the tag value may already exist
+                tag_value = new_tag_value.name
             self.to_delete.insert(0, tag_value)
 
     def test_update_dataset(self):
@@ -323,7 +330,7 @@ class TestBigQuery(unittest.TestCase):
         dataset.friendly_name = "Friendly"
         dataset.description = "Description"
         dataset.labels = {"priority": "high", "color": "blue"}
-        dataset.resource_tags =  {f"{Config.CLIENT.project}/env": "prod", f"{Config.CLIENT.project}/component": "batch"}
+        dataset.resource_tags = {f"{Config.CLIENT.project}/env": "prod", f"{Config.CLIENT.project}/component": "batch"}
         dataset.is_case_insensitive = True
         ds2 = Config.CLIENT.update_dataset(
             dataset, ("friendly_name", "description", "labels", "resource_tags", "is_case_insensitive")
@@ -350,7 +357,7 @@ class TestBigQuery(unittest.TestCase):
 
         # Remove all tags
         ds3.resource_tags = None
-        ds4 = Config.CLIENT.update_table(ds3, ["resource_tags"])
+        ds4 = Config.CLIENT.update_dataset(ds3, ["resource_tags"])
         self.assertEqual(ds4.resource_tags, {})
 
         # If we try to update using d2 again, it will fail because the

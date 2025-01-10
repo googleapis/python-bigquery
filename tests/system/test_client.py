@@ -159,6 +159,7 @@ def setUpModule():
 class TestBigQuery(unittest.TestCase):
     def setUp(self):
         self.to_delete = []
+        self.to_delete_tag_keys_values = []
 
     def tearDown(self):
         policy_tag_client = PolicyTagManagerClient()
@@ -183,12 +184,20 @@ class TestBigQuery(unittest.TestCase):
                 retry_in_use(Config.CLIENT.delete_table)(doomed)
             elif isinstance(doomed, datacatalog_types.Taxonomy):
                 policy_tag_client.delete_taxonomy(name=doomed.name)
-            elif isinstance(doomed, resourcemanager_types.TagKey):
-                tag_keys_client.delete_tag_key(name=doomed.name).result()
-            elif isinstance(doomed, resourcemanager_types.TagValue):
-                tag_values_client.delete_tag_value(name=doomed.name).result()
             else:
                 doomed.delete()
+
+        # The TagKey cannot be deleted if it has any child TagValues.
+        for key_values in self.to_delete_tag_keys_values:
+            tag_key = key_values.pop()
+
+            # Delete tag keys first
+            [
+                tag_values_client.delete_tag_value(name=tag_value.name).result()
+                for tag_value in key_values
+            ]
+
+            tag_keys_client.delete_tag_key(name=tag_key.name).result()
 
     def test_get_service_account_email(self):
         client = Config.CLIENT
@@ -297,9 +306,11 @@ class TestBigQuery(unittest.TestCase):
         )
         try:
             tag_key = tag_key_client.create_tag_key(tag_key=new_tag_key).result()
-        except AlreadyExists:   # When system tests runs in parallel for multiple Python versions, the tag key may already exist
-            tag_key = new_tag_key.name
-        self.to_delete.insert(0, tag_key)
+        except (
+            AlreadyExists
+        ):  # When system tests runs in parallel for multiple Python versions, the tag key may already exist
+            tag_key = tag_key_client.get_tag_key(name=new_tag_key.name)
+        self.to_delete_tag_keys_values.insert(0, [tag_key])
 
         for value in values:
             new_tag_value = resourcemanager_types.TagValue(
@@ -309,9 +320,11 @@ class TestBigQuery(unittest.TestCase):
                 tag_value = tag_value_client.create_tag_value(
                     tag_value=new_tag_value
                 ).result()
-            except AlreadyExists:   # When system tests runs in parallel for multiple Python versions, the tag value may already exist
-                tag_value = new_tag_value.name
-            self.to_delete.insert(0, tag_value)
+            except (
+                AlreadyExists
+            ):  # When system tests runs in parallel for multiple Python versions, the tag value may already exist
+                tag_value = tag_value_client.get_tag_value(name=new_tag_value.name)
+            self.to_delete_tag_keys_values[0].insert(0, tag_value)
 
     def test_update_dataset(self):
         dataset = self.temp_dataset(_make_dataset_id("update_dataset"))
@@ -330,15 +343,31 @@ class TestBigQuery(unittest.TestCase):
         dataset.friendly_name = "Friendly"
         dataset.description = "Description"
         dataset.labels = {"priority": "high", "color": "blue"}
-        dataset.resource_tags = {f"{Config.CLIENT.project}/env": "prod", f"{Config.CLIENT.project}/component": "batch"}
+        dataset.resource_tags = {
+            f"{Config.CLIENT.project}/env": "prod",
+            f"{Config.CLIENT.project}/component": "batch",
+        }
         dataset.is_case_insensitive = True
         ds2 = Config.CLIENT.update_dataset(
-            dataset, ("friendly_name", "description", "labels", "resource_tags", "is_case_insensitive")
+            dataset,
+            (
+                "friendly_name",
+                "description",
+                "labels",
+                "resource_tags",
+                "is_case_insensitive",
+            ),
         )
         self.assertEqual(ds2.friendly_name, "Friendly")
         self.assertEqual(ds2.description, "Description")
         self.assertEqual(ds2.labels, {"priority": "high", "color": "blue"})
-        self.assertEqual(ds2.resource_tags, {f"{Config.CLIENT.project}/env": "prod", f"{Config.CLIENT.project}/component": "batch"})
+        self.assertEqual(
+            ds2.resource_tags,
+            {
+                f"{Config.CLIENT.project}/env": "prod",
+                f"{Config.CLIENT.project}/component": "batch",
+            },
+        )
         self.assertIs(ds2.is_case_insensitive, True)
 
         ds2.labels = {
@@ -347,13 +376,19 @@ class TestBigQuery(unittest.TestCase):
             "priority": None,  # delete
         }
         ds2.resource_tags = {
-            f"{Config.CLIENT.project}/env": "dev",          # change
-            f"{Config.CLIENT.project}/project": "atlas",    # add
-            f"{Config.CLIENT.project}/component": None,     # delete
+            f"{Config.CLIENT.project}/env": "dev",  # change
+            f"{Config.CLIENT.project}/project": "atlas",  # add
+            f"{Config.CLIENT.project}/component": None,  # delete
         }
         ds3 = Config.CLIENT.update_dataset(ds2, ["labels", "resource_tags"])
         self.assertEqual(ds3.labels, {"color": "green", "shape": "circle"})
-        self.assertEqual(ds3.resource_tags, {f"{Config.CLIENT.project}/env": "dev", f"{Config.CLIENT.project}/project": "atlas"})
+        self.assertEqual(
+            ds3.resource_tags,
+            {
+                f"{Config.CLIENT.project}/env": "dev",
+                f"{Config.CLIENT.project}/project": "atlas",
+            },
+        )
 
         # Remove all tags
         ds3.resource_tags = None

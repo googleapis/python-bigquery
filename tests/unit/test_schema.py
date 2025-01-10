@@ -20,10 +20,8 @@ import pytest
 
 from google.cloud import bigquery
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
-from google.cloud.bigquery.schema import (
-    PolicyTagList,
-    SerDeInfo,
-)
+from google.cloud.bigquery import schema
+from google.cloud.bigquery.schema import PolicyTagList
 
 
 class TestSchemaField(unittest.TestCase):
@@ -133,8 +131,6 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.range_element_type.element_type, "DATETIME")
 
     def test_to_api_repr(self):
-        from google.cloud.bigquery.schema import PolicyTagList
-
         policy = PolicyTagList(names=("foo", "bar"))
         self.assertEqual(
             policy.to_api_repr(),
@@ -889,8 +885,6 @@ class Test_to_schema_fields(unittest.TestCase):
 class TestPolicyTags(unittest.TestCase):
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.schema import PolicyTagList
-
         return PolicyTagList
 
     def _make_one(self, *args, **kw):
@@ -1139,7 +1133,7 @@ class TestSerDeInfo:
 
     @staticmethod
     def _get_target_class():
-        return SerDeInfo
+        return schema.SerDeInfo
 
     def _make_one(self, *args, **kwargs):
         return self._get_target_class()(*args, **kwargs)

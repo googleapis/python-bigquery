@@ -17,13 +17,11 @@
 from __future__ import annotations
 import collections
 import enum
+import typing
 from typing import Any, cast, Dict, Iterable, Optional, Union
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
-from google.cloud.bigquery._helpers import (
-    _isinstance_or_raise,
-)
 from google.cloud.bigquery.enums import StandardSqlTypeNames
 
 
@@ -564,8 +562,9 @@ class PolicyTagList(object):
 
 class SerDeInfo:
     """Serializer and deserializer information.
+
     Args:
-        serializationLibrary (str): Required. Specifies a fully-qualified class
+        serialization_library (str): Required. Specifies a fully-qualified class
             name of the serialization library that is responsible for the
             translation of data between table representation and the underlying
             low-level input and output format structures. The maximum length is
@@ -588,32 +587,32 @@ class SerDeInfo:
         self.parameters = parameters
 
     @property
-    def serialization_library(self) -> Any:
+    def serialization_library(self) -> str:
         """Required. Specifies a fully-qualified class name of the serialization
         library that is responsible for the translation of data between table
         representation and the underlying low-level input and output format
         structures. The maximum length is 256 characters."""
 
-        return self._properties.get("serializationLibrary")
+        return typing.cast(str, self._properties.get("serializationLibrary"))
 
     @serialization_library.setter
     def serialization_library(self, value: str):
-        value = _isinstance_or_raise(value, str, none_allowed=False)
+        value = _helpers._isinstance_or_raise(value, str, none_allowed=False)
         self._properties["serializationLibrary"] = value
 
     @property
-    def name(self) -> Any:
+    def name(self) -> Optional[str]:
         """Optional. Name of the SerDe. The maximum length is 256 characters."""
 
         return self._properties.get("name")
 
     @name.setter
     def name(self, value: Optional[str] = None):
-        value = _isinstance_or_raise(value, str, none_allowed=True)
+        value = _helpers._isinstance_or_raise(value, str, none_allowed=True)
         self._properties["name"] = value
 
     @property
-    def parameters(self) -> Any:
+    def parameters(self) -> Optional[dict[str, str]]:
         """Optional. Key-value pairs that define the initialization parameters
         for the serialization library. Maximum size 10 Kib."""
 
@@ -621,7 +620,7 @@ class SerDeInfo:
 
     @parameters.setter
     def parameters(self, value: Optional[dict[str, str]] = None):
-        value = _isinstance_or_raise(value, dict, none_allowed=True)
+        value = _helpers._isinstance_or_raise(value, dict, none_allowed=True)
         self._properties["parameters"] = value
 
     def to_api_repr(self) -> dict:

@@ -191,7 +191,7 @@ class TestBigQuery(unittest.TestCase):
         for key_values in self.to_delete_tag_keys_values:
             tag_key = key_values.pop()
 
-            # Delete tag keys first
+            # Delete tag values first
             [
                 tag_values_client.delete_tag_value(name=tag_value.name).result()
                 for tag_value in key_values

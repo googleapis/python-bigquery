@@ -25,6 +25,8 @@ import pathlib
 import time
 import unittest
 import uuid
+import random
+import string
 from typing import Optional
 
 from google.api_core.exceptions import PreconditionFailed
@@ -304,26 +306,16 @@ class TestBigQuery(unittest.TestCase):
         new_tag_key = resourcemanager_types.TagKey(
             short_name=key, parent=tag_key_parent
         )
-        try:
-            tag_key = tag_key_client.create_tag_key(tag_key=new_tag_key).result()
-        except (
-            AlreadyExists
-        ):  # When system tests runs in parallel for multiple Python versions, the tag key may already exist
-            tag_key = tag_key_client.get_tag_key(name=new_tag_key.name)
+        tag_key = tag_key_client.create_tag_key(tag_key=new_tag_key).result()
         self.to_delete_tag_keys_values.insert(0, [tag_key])
 
         for value in values:
             new_tag_value = resourcemanager_types.TagValue(
                 short_name=value, parent=tag_key.name
             )
-            try:
-                tag_value = tag_value_client.create_tag_value(
-                    tag_value=new_tag_value
-                ).result()
-            except (
-                AlreadyExists
-            ):  # When system tests runs in parallel for multiple Python versions, the tag value may already exist
-                tag_value = tag_value_client.get_tag_value(name=new_tag_value.name)
+            tag_value = tag_value_client.create_tag_value(
+                tag_value=new_tag_value
+            ).result()
             self.to_delete_tag_keys_values[0].insert(0, tag_value)
 
     def test_update_dataset(self):
@@ -335,17 +327,23 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(dataset.resource_tags, {})
         self.assertIs(dataset.is_case_insensitive, False)
 
+        # This creates unique tag keys for each of test runnings for different Python versions
+        tag_postfix = "".join(random.choices(string.ascii_letters + string.digits, k=4))
+        tag_1 = f"env_{tag_postfix}"
+        tag_2 = f"component_{tag_postfix}"
+        tag_3 = f"project_{tag_postfix}"
+
         # Tags need to be created before they can be used in a dataset.
-        self._create_resource_tag_key_and_values("env", ["prod", "dev"])
-        self._create_resource_tag_key_and_values("component", ["batch"])
-        self._create_resource_tag_key_and_values("project", ["atlas"])
+        self._create_resource_tag_key_and_values(tag_1, ["prod", "dev"])
+        self._create_resource_tag_key_and_values(tag_2, ["batch"])
+        self._create_resource_tag_key_and_values(tag_3, ["atlas"])
 
         dataset.friendly_name = "Friendly"
         dataset.description = "Description"
         dataset.labels = {"priority": "high", "color": "blue"}
         dataset.resource_tags = {
-            f"{Config.CLIENT.project}/env": "prod",
-            f"{Config.CLIENT.project}/component": "batch",
+            f"{Config.CLIENT.project}/{tag_1}": "prod",
+            f"{Config.CLIENT.project}/{tag_2}": "batch",
         }
         dataset.is_case_insensitive = True
         ds2 = Config.CLIENT.update_dataset(
@@ -364,8 +362,8 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(
             ds2.resource_tags,
             {
-                f"{Config.CLIENT.project}/env": "prod",
-                f"{Config.CLIENT.project}/component": "batch",
+                f"{Config.CLIENT.project}/{tag_1}": "prod",
+                f"{Config.CLIENT.project}/{tag_2}": "batch",
             },
         )
         self.assertIs(ds2.is_case_insensitive, True)
@@ -376,17 +374,17 @@ class TestBigQuery(unittest.TestCase):
             "priority": None,  # delete
         }
         ds2.resource_tags = {
-            f"{Config.CLIENT.project}/env": "dev",  # change
-            f"{Config.CLIENT.project}/project": "atlas",  # add
-            f"{Config.CLIENT.project}/component": None,  # delete
+            f"{Config.CLIENT.project}/{tag_1}": "dev",  # change
+            f"{Config.CLIENT.project}/{tag_3}": "atlas",  # add
+            f"{Config.CLIENT.project}/{tag_2}": None,  # delete
         }
         ds3 = Config.CLIENT.update_dataset(ds2, ["labels", "resource_tags"])
         self.assertEqual(ds3.labels, {"color": "green", "shape": "circle"})
         self.assertEqual(
             ds3.resource_tags,
             {
-                f"{Config.CLIENT.project}/env": "dev",
-                f"{Config.CLIENT.project}/project": "atlas",
+                f"{Config.CLIENT.project}/{tag_1}": "dev",
+                f"{Config.CLIENT.project}/{tag_3}": "atlas",
             },
         )
 

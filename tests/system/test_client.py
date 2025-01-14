@@ -49,7 +49,6 @@ from google.cloud.datacatalog_v1 import types as datacatalog_types
 from google.cloud.datacatalog_v1 import PolicyTagManagerClient
 from google.cloud.resourcemanager_v3 import types as resourcemanager_types
 from google.cloud.resourcemanager_v3 import TagKeysClient, TagValuesClient
-from google.api_core.exceptions import AlreadyExists
 import psutil
 import pytest
 from test_utils.retry import RetryErrors

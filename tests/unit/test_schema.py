@@ -1151,7 +1151,7 @@ class TestForeignTypeInfo:
     def test_ctor_valid_input(self, type_system, expected):
         result = self._make_one(type_system=type_system)
 
-        assert result._properties["typeSystem"] == expected
+        assert result.type_system == expected
 
     def test_ctor_invalid_input(self):
         with pytest.raises(TypeError) as e:

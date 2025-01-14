@@ -563,6 +563,7 @@ class PolicyTagList(object):
 class ForeignTypeInfo:
     """Metadata about the foreign data type definition such as the system in which the
     type is defined.
+
     Args:
         type_system (str): Required. Specifies the system which defines the
             foreign data type.

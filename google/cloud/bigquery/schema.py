@@ -649,20 +649,21 @@ class SerDeInfo:
 class StorageDescriptor:
     """Contains information about how a table's data is stored and accessed by open
     source query engines.
+
     Args:
-        inputFormat (Optional[str]): Specifies the fully qualified class name of
+        input_format (Optional[str]): Specifies the fully qualified class name of
             the InputFormat (e.g.
             "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"). The maximum
             length is 128 characters.
-        locationUri (Optional[str]): The physical location of the table (e.g.
+        location_uri (Optional[str]): The physical location of the table (e.g.
             'gs://spark-dataproc-data/pangea-data/case_sensitive/' or
             'gs://spark-dataproc-data/pangea-data/'). The maximum length is
             2056 bytes.
-        outputFormat (Optional[str]): Specifies the fully qualified class name
+        output_format (Optional[str]): Specifies the fully qualified class name
             of the OutputFormat (e.g.
             "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat"). The maximum
             length is 128 characters.
-        serdeInfo (Union[SerDeInfo, dict, None]): Serializer and deserializer information.
+        serde_info (Union[SerDeInfo, dict, None]): Serializer and deserializer information.
     """
 
     def __init__(
@@ -676,7 +677,10 @@ class StorageDescriptor:
         self.input_format = input_format
         self.location_uri = location_uri
         self.output_format = output_format
-        self.serde_info = serde_info
+        # Using typing.cast() because mypy cannot wrap it's head around the fact that:
+        # the setter can accept Union[SerDeInfo, dict, None]
+        # but the getter will only ever return Optional[SerDeInfo].
+        self.serde_info = typing.cast(Optional[SerDeInfo], serde_info)
 
     @property
     def input_format(self) -> Optional[str]:
@@ -718,13 +722,13 @@ class StorageDescriptor:
         self._properties["outputFormat"] = value
 
     @property
-    def serde_info(self) -> Union[SerDeInfo, dict, None]:
+    def serde_info(self) -> Optional[SerDeInfo]:
         """Optional. Serializer and deserializer information."""
 
         prop = _helpers._get_sub_prop(self._properties, ["serDeInfo"])
         if prop is not None:
-            prop = SerDeInfo("PLACEHOLDER").from_api_repr(prop)
-        return prop
+            return typing.cast(SerDeInfo, SerDeInfo.from_api_repr(prop))
+        return None
 
     @serde_info.setter
     def serde_info(self, value: Union[SerDeInfo, dict, None]):
@@ -732,10 +736,10 @@ class StorageDescriptor:
             value, (SerDeInfo, dict), none_allowed=True
         )
 
-        if value is not None:
-            if isinstance(value, SerDeInfo):
-                value = value.to_api_repr()
-        self._properties["serDeInfo"] = value
+        if isinstance(value, SerDeInfo):
+            self._properties["serDeInfo"] = value.to_api_repr()
+        else:
+            self._properties["serDeInfo"] = value
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.

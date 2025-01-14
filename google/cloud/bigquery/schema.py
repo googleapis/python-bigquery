@@ -682,6 +682,7 @@ class SerDeInfo:
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.
+
         Returns:
             Dict[str, Any]:
                 A dictionary in the format used by the BigQuery API.
@@ -692,9 +693,11 @@ class SerDeInfo:
     def from_api_repr(cls, api_repr: dict) -> SerDeInfo:
         """Factory: constructs an instance of the class (cls)
         given its API representation.
+
         Args:
             api_repr (Dict[str, Any]):
                 API representation of the object to be instantiated.
+
         Returns:
             An instance of the class initialized with data from 'api_repr'.
         """

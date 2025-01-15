@@ -151,7 +151,7 @@ def unit_noextras(session):
     # so that it continues to be an optional dependency.
     # https://github.com/googleapis/python-bigquery/issues/1877
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        session.install("pyarrow==5.0.0")
+        session.install("pyarrow==4.0.0")
 
     default(session, install_extras=False)
 

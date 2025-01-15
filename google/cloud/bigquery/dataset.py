@@ -911,7 +911,7 @@ class Dataset(object):
         )
 
         if prop is not None:
-            prop = external_config.ExternalCatalogDatasetOptions().from_api_repr(prop)
+            prop = external_config.ExternalCatalogDatasetOptions.from_api_repr(prop)
         return prop
 
     @external_catalog_dataset_options.setter

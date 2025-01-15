@@ -921,7 +921,7 @@ class Dataset(object):
         )
         self._properties[
             self._PROPERTY_TO_API_FIELD["external_catalog_dataset_options"]
-        ] = value.to_api_repr()
+        ] = value.to_api_repr() if value is not None else None
 
     @classmethod
     def from_string(cls, full_dataset_id: str) -> "Dataset":

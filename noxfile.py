@@ -269,8 +269,6 @@ def mypy_samples(session):
         "types-setuptools",
     )
 
-    session.install("typing-extensions")  # for TypedDict in pre-3.8 Python versions
-
     session.run(
         "mypy",
         "--config-file",

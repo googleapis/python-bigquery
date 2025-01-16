@@ -1030,7 +1030,7 @@ class Table(_TableBase):
 
         See: https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#Table.FIELDS.resource_tags
         """
-        return self._properties.get(
+        return self._properties.setdefault(
             self._PROPERTY_TO_API_FIELD["resource_tags"], {}
         )
 

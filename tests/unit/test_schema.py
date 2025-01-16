@@ -20,6 +20,7 @@ import pytest
 
 from google.cloud import bigquery
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
+from google.cloud.bigquery import schema
 from google.cloud.bigquery.schema import PolicyTagList
 
 
@@ -130,8 +131,6 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.range_element_type.element_type, "DATETIME")
 
     def test_to_api_repr(self):
-        from google.cloud.bigquery.schema import PolicyTagList
-
         policy = PolicyTagList(names=("foo", "bar"))
         self.assertEqual(
             policy.to_api_repr(),
@@ -886,8 +885,6 @@ class Test_to_schema_fields(unittest.TestCase):
 class TestPolicyTags(unittest.TestCase):
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.schema import PolicyTagList
-
         return PolicyTagList
 
     def _make_one(self, *args, **kw):
@@ -1129,3 +1126,285 @@ def test_to_api_repr_parameterized(field, api):
     from google.cloud.bigquery.schema import SchemaField
 
     assert SchemaField(**field).to_api_repr() == api
+
+
+class TestForeignTypeInfo:
+    """Tests for ForeignTypeInfo objects."""
+
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.schema import ForeignTypeInfo
+
+        return ForeignTypeInfo
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    @pytest.mark.parametrize(
+        "type_system,expected",
+        [
+            (None, None),
+            ("TYPE_SYSTEM_UNSPECIFIED", "TYPE_SYSTEM_UNSPECIFIED"),
+            ("HIVE", "HIVE"),
+        ],
+    )
+    def test_ctor_valid_input(self, type_system, expected):
+        result = self._make_one(type_system=type_system)
+
+        assert result.type_system == expected
+
+    def test_ctor_invalid_input(self):
+        with pytest.raises(TypeError) as e:
+            self._make_one(type_system=123)
+
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
+
+    @pytest.mark.parametrize(
+        "type_system,expected",
+        [
+            ("TYPE_SYSTEM_UNSPECIFIED", {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}),
+            ("HIVE", {"typeSystem": "HIVE"}),
+            (None, {"typeSystem": None}),
+        ],
+    )
+    def test_to_api_repr(self, type_system, expected):
+        result = self._make_one(type_system=type_system)
+
+        assert result.to_api_repr() == expected
+
+    def test_from_api_repr(self):
+        """GIVEN an api representation of a ForeignTypeInfo object (i.e. api_repr)
+        WHEN converted into a ForeignTypeInfo object using from_api_repr()
+        THEN it will have the same representation in dict format as a ForeignTypeInfo
+        object made directly (via _make_one()) and represented in dict format.
+        """
+        api_repr = {
+            "typeSystem": "TYPE_SYSTEM_UNSPECIFIED",
+        }
+
+        expected = self._make_one(
+            type_system="TYPE_SYSTEM_UNSPECIFIED",
+        )
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(api_repr)
+
+        # We convert both to dict format because these classes do not have a
+        # __eq__() method to facilitate direct equality comparisons.
+        assert result.to_api_repr() == expected.to_api_repr()
+
+
+class TestSerDeInfo:
+    """Tests for the SerDeInfo class."""
+
+    @staticmethod
+    def _get_target_class():
+        return schema.SerDeInfo
+
+    def _make_one(self, *args, **kwargs):
+        return self._get_target_class()(*args, **kwargs)
+
+    @pytest.mark.parametrize(
+        "serialization_library,name,parameters",
+        [
+            ("testpath.to.LazySimpleSerDe", None, None),
+            ("testpath.to.LazySimpleSerDe", "serde_name", None),
+            ("testpath.to.LazySimpleSerDe", None, {"key": "value"}),
+            ("testpath.to.LazySimpleSerDe", "serde_name", {"key": "value"}),
+        ],
+    )
+    def test_ctor_valid_input(self, serialization_library, name, parameters):
+        serde_info = self._make_one(
+            serialization_library=serialization_library,
+            name=name,
+            parameters=parameters,
+        )
+        assert serde_info.serialization_library == serialization_library
+        assert serde_info.name == name
+        assert serde_info.parameters == parameters
+
+    @pytest.mark.parametrize(
+        "serialization_library,name,parameters",
+        [
+            (123, None, None),
+            ("testpath.to.LazySimpleSerDe", 123, None),
+            ("testpath.to.LazySimpleSerDe", None, ["test", "list"]),
+            ("testpath.to.LazySimpleSerDe", None, 123),
+        ],
+    )
+    def test_ctor_invalid_input(self, serialization_library, name, parameters):
+        with pytest.raises(TypeError) as e:
+            self._make_one(
+                serialization_library=serialization_library,
+                name=name,
+                parameters=parameters,
+            )
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
+
+    def test_to_api_repr(self):
+        serde_info = self._make_one(
+            serialization_library="testpath.to.LazySimpleSerDe",
+            name="serde_name",
+            parameters={"key": "value"},
+        )
+        expected_repr = {
+            "serializationLibrary": "testpath.to.LazySimpleSerDe",
+            "name": "serde_name",
+            "parameters": {"key": "value"},
+        }
+        assert serde_info.to_api_repr() == expected_repr
+
+    def test_from_api_repr(self):
+        """GIVEN an api representation of a SerDeInfo object (i.e. api_repr)
+        WHEN converted into a SerDeInfo object using from_api_repr()
+        THEN it will have the same representation in dict format as a SerDeInfo
+        object made directly (via _make_one()) and represented in dict format.
+        """
+        api_repr = {
+            "serializationLibrary": "testpath.to.LazySimpleSerDe",
+            "name": "serde_name",
+            "parameters": {"key": "value"},
+        }
+
+        expected = self._make_one(
+            serialization_library="testpath.to.LazySimpleSerDe",
+            name="serde_name",
+            parameters={"key": "value"},
+        )
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(api_repr)
+
+        # We convert both to dict format because these classes do not have a
+        # __eq__() method to facilitate direct equality comparisons.
+        assert result.to_api_repr() == expected.to_api_repr()
+
+
+class TestStorageDescriptor:
+    """Tests for the StorageDescriptor class."""
+
+    @staticmethod
+    def _get_target_class():
+        return schema.StorageDescriptor
+
+    def _make_one(self, *args, **kwargs):
+        return self._get_target_class()(*args, **kwargs)
+
+    serdeinfo_resource = {
+        "serialization_library": "testpath.to.LazySimpleSerDe",
+        "name": "serde_lib_name",
+        "parameters": {"key": "value"},
+    }
+
+    SERDEINFO = schema.SerDeInfo("PLACEHOLDER").from_api_repr(serdeinfo_resource)
+
+    STORAGEDESCRIPTOR = {
+        "inputFormat": "testpath.to.OrcInputFormat",
+        "locationUri": "gs://test/path/",
+        "outputFormat": "testpath.to.OrcOutputFormat",
+        "serDeInfo": SERDEINFO.to_api_repr(),
+    }
+
+    @pytest.mark.parametrize(
+        "input_format,location_uri,output_format,serde_info",
+        [
+            (None, None, None, None),
+            ("testpath.to.OrcInputFormat", None, None, None),
+            (None, "gs://test/path/", None, None),
+            (None, None, "testpath.to.OrcOutputFormat", None),
+            (None, None, None, SERDEINFO),
+            (
+                "testpath.to.OrcInputFormat",
+                "gs://test/path/",
+                "testpath.to.OrcOutputFormat",
+                SERDEINFO,  # uses SERDEINFO class format
+            ),
+            (
+                "testpath.to.OrcInputFormat",
+                "gs://test/path/",
+                "testpath.to.OrcOutputFormat",
+                serdeinfo_resource,  # uses api resource format (dict)
+            ),
+        ],
+    )
+    def test_ctor_valid_input(
+        self, input_format, location_uri, output_format, serde_info
+    ):
+        storage_descriptor = self._make_one(
+            input_format=input_format,
+            location_uri=location_uri,
+            output_format=output_format,
+            serde_info=serde_info,
+        )
+        assert storage_descriptor.input_format == input_format
+        assert storage_descriptor.location_uri == location_uri
+        assert storage_descriptor.output_format == output_format
+        if isinstance(serde_info, schema.SerDeInfo):
+            assert (
+                storage_descriptor.serde_info.to_api_repr() == serde_info.to_api_repr()
+            )
+        elif isinstance(serde_info, dict):
+            assert storage_descriptor.serde_info.to_api_repr() == serde_info
+        else:
+            assert storage_descriptor.serde_info is None
+
+    @pytest.mark.parametrize(
+        "input_format,location_uri,output_format,serde_info",
+        [
+            (123, None, None, None),
+            (None, 123, None, None),
+            (None, None, 123, None),
+            (None, None, None, 123),
+        ],
+    )
+    def test_ctor_invalid_input(
+        self, input_format, location_uri, output_format, serde_info
+    ):
+        with pytest.raises(TypeError) as e:
+            self._make_one(
+                input_format=input_format,
+                location_uri=location_uri,
+                output_format=output_format,
+                serde_info=serde_info,
+            )
+
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
+
+    def test_to_api_repr(self):
+        storage_descriptor = self._make_one(
+            input_format="input_format",
+            location_uri="location_uri",
+            output_format="output_format",
+            serde_info=self.SERDEINFO,
+        )
+        expected_repr = {
+            "inputFormat": "input_format",
+            "locationUri": "location_uri",
+            "outputFormat": "output_format",
+            "serDeInfo": self.SERDEINFO.to_api_repr(),
+        }
+        assert storage_descriptor.to_api_repr() == expected_repr
+
+    def test_from_api_repr(self):
+        """GIVEN an api representation of a StorageDescriptor (i.e. STORAGEDESCRIPTOR)
+        WHEN converted into a StorageDescriptor using from_api_repr() and
+        displayed as a dict
+        THEN it will have the same representation a StorageDescriptor created
+        directly (via the _make_one() func) and displayed as a dict.
+        """
+
+        # generate via STORAGEDESCRIPTOR
+        resource = self.STORAGEDESCRIPTOR
+        result = self._get_target_class().from_api_repr(resource)
+        # result = klass.from_api_repr(resource)
+
+        expected = self._make_one(
+            input_format="testpath.to.OrcInputFormat",
+            location_uri="gs://test/path/",
+            output_format="testpath.to.OrcOutputFormat",
+            serde_info=self.SERDEINFO,
+        )
+        assert result.to_api_repr() == expected.to_api_repr()

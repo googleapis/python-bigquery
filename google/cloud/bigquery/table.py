@@ -1026,7 +1026,9 @@ class Table(_TableBase):
         return table_constraints
 
     @property
-    def external_catalog_table_options(self):
+    def external_catalog_table_options(
+        self,
+    ) -> Optional[external_config.ExternalCatalogTableOptions]:
         """Options defining open source compatible datasets living in the
         BigQuery catalog. Contains metadata of open source database, schema
         or namespace represented by the current dataset."""
@@ -1035,17 +1037,26 @@ class Table(_TableBase):
             self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
         )
         if prop is not None:
-            prop = external_config.ExternalCatalogTableOptions.from_api_repr(prop)
-        return prop
+            return external_config.ExternalCatalogTableOptions.from_api_repr(prop)
+        return None
 
     @external_catalog_table_options.setter
-    def external_catalog_table_options(self, value):
+    def external_catalog_table_options(
+        self, value: Union[external_config.ExternalCatalogTableOptions, dict, None]
+    ):
         value = _helpers._isinstance_or_raise(
-            value, external_config.ExternalCatalogTableOptions, none_allowed=True
+            value,
+            (external_config.ExternalCatalogTableOptions, dict),
+            none_allowed=True,
         )
-        self._properties[
-            self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
-        ] = value.to_api_repr()
+        if isinstance(value, external_config.ExternalCatalogTableOptions):
+            self._properties[
+                self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
+            ] = value.to_api_repr()
+        else:
+            self._properties[
+                self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
+            ] = value
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":

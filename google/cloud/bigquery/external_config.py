@@ -1109,7 +1109,7 @@ class ExternalCatalogTableOptions:
         self.storage_descriptor = storage_descriptor
 
     @property
-    def connection_id(self):
+    def connection_id(self) -> Optional[str]:
         """Optional. The connection specifying the credentials to be
         used to read external storage, such as Azure Blob, Cloud Storage, or
         S3. The connection is needed to read the open source table from
@@ -1125,7 +1125,7 @@ class ExternalCatalogTableOptions:
         self._properties["connectionId"] = value
 
     @property
-    def parameters(self) -> Any:
+    def parameters(self) -> Union[Dict[str, Any], None]:
         """Optional. A map of key value pairs defining the parameters and
         properties of the open source table. Corresponds with hive meta
         store table parameters. Maximum size of 4Mib.
@@ -1150,7 +1150,7 @@ class ExternalCatalogTableOptions:
         return None
 
     @storage_descriptor.setter
-    def storage_descriptor(self, value):
+    def storage_descriptor(self, value: Union[schema.StorageDescriptor, dict, None]):
         value = _helpers._isinstance_or_raise(
             value, (schema.StorageDescriptor, dict), none_allowed=True
         )

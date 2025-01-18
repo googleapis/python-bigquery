@@ -185,10 +185,6 @@ class TestBigQuery(unittest.TestCase):
                 retry_in_use(Config.CLIENT.delete_table)(doomed)
             elif isinstance(doomed, datacatalog_types.Taxonomy):
                 policy_tag_client.delete_taxonomy(name=doomed.name)
-            elif isinstance(doomed, resourcemanager_types.TagKey):
-                tag_keys_client.delete_tag_key(name=doomed.name).result()
-            elif isinstance(doomed, resourcemanager_types.TagValue):
-                tag_values_client.delete_tag_value(name=doomed.name).result()
             else:
                 doomed.delete()
 
@@ -736,29 +732,15 @@ class TestBigQuery(unittest.TestCase):
     def test_update_table(self):
         dataset = self.temp_dataset(_make_dataset_id("update_table"))
 
-        def _create_resource_tag_key_and_values(key, values):
-            tag_key_client = TagKeysClient()
-            tag_value_client = TagValuesClient()
+        # This creates unique tag keys for each of test runnings for different Python versions
+        tag_postfix = "".join(random.choices(string.ascii_letters + string.digits, k=4))
+        tag_1 = f"owner_{tag_postfix}"
+        tag_2 = f"classification_{tag_postfix}"
+        tag_3 = f"env_{tag_postfix}"
 
-            tag_key_parent = f"projects/{Config.CLIENT.project}"
-            new_tag_key = resourcemanager_types.TagKey(
-                short_name=key, parent=tag_key_parent
-            )
-            tag_key = tag_key_client.create_tag_key(tag_key=new_tag_key).result()
-            self.to_delete.insert(0, tag_key)
-
-            for value in values:
-                new_tag_value = resourcemanager_types.TagValue(
-                    short_name=value, parent=tag_key.name
-                )
-                tag_value = tag_value_client.create_tag_value(
-                    tag_value=new_tag_value
-                ).result()
-                self.to_delete.insert(0, tag_value)
-
-        _create_resource_tag_key_and_values("owner", ["Alice", "Bob"])
-        _create_resource_tag_key_and_values("classification", ["public"])
-        _create_resource_tag_key_and_values("env", ["dev"])
+        self._create_resource_tag_key_and_values(tag_1, ["Alice", "Bob"])
+        self._create_resource_tag_key_and_values(tag_2, ["public"])
+        self._create_resource_tag_key_and_values(tag_3, ["dev"])
 
         TABLE_NAME = "test_table"
         table_arg = Table(dataset.table(TABLE_NAME), schema=SCHEMA)
@@ -773,8 +755,8 @@ class TestBigQuery(unittest.TestCase):
         table.description = "Description"
         table.labels = {"priority": "high", "color": "blue"}
         table.resource_tags = {
-            f"{Config.CLIENT.project}/owner": "Alice",
-            f"{Config.CLIENT.project}/env": "dev",
+            f"{Config.CLIENT.project}/{tag_1}": "Alice",
+            f"{Config.CLIENT.project}/{tag_3}": "dev",
         }
 
         table2 = Config.CLIENT.update_table(
@@ -787,8 +769,8 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(
             table2.resource_tags,
             {
-                f"{Config.CLIENT.project}/owner": "Alice",
-                f"{Config.CLIENT.project}/env": "dev",
+                f"{Config.CLIENT.project}/{tag_1}": "Alice",
+                f"{Config.CLIENT.project}/{tag_3}": "dev",
             },
         )
 
@@ -799,9 +781,9 @@ class TestBigQuery(unittest.TestCase):
             "priority": None,  # delete
         }
         table2.resource_tags = {
-            f"{Config.CLIENT.project}/owner": "Bob",  # change
-            f"{Config.CLIENT.project}/classification": "public",  # add
-            f"{Config.CLIENT.project}/env": None,  # delete
+            f"{Config.CLIENT.project}/{tag_1}": "Bob",  # change
+            f"{Config.CLIENT.project}/{tag_2}": "public",  # add
+            f"{Config.CLIENT.project}/{tag_3}": None,  # delete
         }
         table3 = Config.CLIENT.update_table(
             table2, ["description", "labels", "resource_tags"]
@@ -811,8 +793,8 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(
             table3.resource_tags,
             {
-                f"{Config.CLIENT.project}/owner": "Bob",
-                f"{Config.CLIENT.project}/classification": "public",
+                f"{Config.CLIENT.project}/{tag_1}": "Bob",
+                f"{Config.CLIENT.project}/{tag_2}": "public",
             },
         )
 

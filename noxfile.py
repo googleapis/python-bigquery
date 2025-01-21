@@ -37,13 +37,9 @@ BLACK_PATHS = (
     "setup.py",
 )
 
-DEFAULT_PYTHON_VERSION = "3.9"
-SYSTEM_TEST_PYTHON_VERSIONS = [
-    "3.9",
-    "3.12",
-    "3.13",
-]  # Two highest, one lowest versions
-UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.12", "3.13"]  # Two highest, one lowest versions
+DEFAULT_PYTHON_VERSION = "3.10"
+SYSTEM_TEST_PYTHON_VERSIONS = ["3.9", "3.12", "3.13"]  # oldest, two most recent
+UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.12", "3.13"]  # oldest, two most recent
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 
@@ -228,7 +224,7 @@ def system(session):
     # Resource Manager needed for test with a real Resource Tag.
     session.install("google-cloud-resource-manager", "-c", constraints_path)
 
-    if session.python in ["3.11", "3.12"]:
+    if session.python in ["3.12", "3.13"]:  # two most recent
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"

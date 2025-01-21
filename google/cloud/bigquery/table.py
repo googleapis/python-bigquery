@@ -1042,6 +1042,7 @@ class Table(_TableBase):
             raise ValueError("resource_tags must be a dict or None")
         self._properties[self._PROPERTY_TO_API_FIELD["resource_tags"]] = value
 
+    @property
     def external_catalog_table_options(
         self,
     ) -> Optional[external_config.ExternalCatalogTableOptions]:

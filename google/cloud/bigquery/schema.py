@@ -228,6 +228,12 @@ class SchemaField(object):
         # fields. See https://github.com/googleapis/python-bigquery/issues/6
         placeholder._properties = api_repr
 
+        # Add the field `mode` with default value if it does not exist. Fixes
+        # an incompatibility issue with pandas-gbq:
+        # https://github.com/googleapis/python-bigquery-pandas/issues/854
+        if "mode" not in placeholder._properties:
+            placeholder._properties["mode"] = "NULLABLE"
+
         return placeholder
 
     @property
@@ -560,6 +566,63 @@ class PolicyTagList(object):
         return answer
 
 
+class ForeignTypeInfo:
+    """Metadata about the foreign data type definition such as the system in which the
+    type is defined.
+
+    Args:
+        type_system (str): Required. Specifies the system which defines the
+            foreign data type.
+
+            TypeSystem enum currently includes:
+            * "TYPE_SYSTEM_UNSPECIFIED"
+            * "HIVE"
+    """
+
+    def __init__(self, type_system: Optional[str] = None):
+        self._properties: Dict[str, Any] = {}
+        self.type_system = type_system
+
+    @property
+    def type_system(self) -> Optional[str]:
+        """Required. Specifies the system which defines the foreign data
+        type."""
+
+        return self._properties.get("typeSystem")
+
+    @type_system.setter
+    def type_system(self, value: Optional[str]):
+        value = _helpers._isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["typeSystem"] = value
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+
+        return self._properties
+
+    @classmethod
+    def from_api_repr(cls, api_repr: Dict[str, Any]) -> "ForeignTypeInfo":
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
+
+        Args:
+            api_repr (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'api_repr'.
+        """
+
+        config = cls()
+        config._properties = api_repr
+        return config
+
+
 class SerDeInfo:
     """Serializer and deserializer information.
 
@@ -625,6 +688,7 @@ class SerDeInfo:
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.
+
         Returns:
             Dict[str, Any]:
                 A dictionary in the format used by the BigQuery API.
@@ -635,12 +699,132 @@ class SerDeInfo:
     def from_api_repr(cls, api_repr: dict) -> SerDeInfo:
         """Factory: constructs an instance of the class (cls)
         given its API representation.
+
+        Args:
+            api_repr (Dict[str, Any]):
+                API representation of the object to be instantiated.
+
+        Returns:
+            An instance of the class initialized with data from 'api_repr'.
+        """
+        config = cls("PLACEHOLDER")
+        config._properties = api_repr
+        return config
+
+
+class StorageDescriptor:
+    """Contains information about how a table's data is stored and accessed by open
+    source query engines.
+
+    Args:
+        input_format (Optional[str]): Specifies the fully qualified class name of
+            the InputFormat (e.g.
+            "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"). The maximum
+            length is 128 characters.
+        location_uri (Optional[str]): The physical location of the table (e.g.
+            'gs://spark-dataproc-data/pangea-data/case_sensitive/' or
+            'gs://spark-dataproc-data/pangea-data/'). The maximum length is
+            2056 bytes.
+        output_format (Optional[str]): Specifies the fully qualified class name
+            of the OutputFormat (e.g.
+            "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat"). The maximum
+            length is 128 characters.
+        serde_info (Union[SerDeInfo, dict, None]): Serializer and deserializer information.
+    """
+
+    def __init__(
+        self,
+        input_format: Optional[str] = None,
+        location_uri: Optional[str] = None,
+        output_format: Optional[str] = None,
+        serde_info: Union[SerDeInfo, dict, None] = None,
+    ):
+        self._properties: Dict[str, Any] = {}
+        self.input_format = input_format
+        self.location_uri = location_uri
+        self.output_format = output_format
+        # Using typing.cast() because mypy cannot wrap it's head around the fact that:
+        # the setter can accept Union[SerDeInfo, dict, None]
+        # but the getter will only ever return Optional[SerDeInfo].
+        self.serde_info = typing.cast(Optional[SerDeInfo], serde_info)
+
+    @property
+    def input_format(self) -> Optional[str]:
+        """Optional. Specifies the fully qualified class name of the InputFormat
+        (e.g. "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat"). The maximum
+        length is 128 characters."""
+
+        return self._properties.get("inputFormat")
+
+    @input_format.setter
+    def input_format(self, value: Optional[str]):
+        value = _helpers._isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["inputFormat"] = value
+
+    @property
+    def location_uri(self) -> Optional[str]:
+        """Optional. The physical location of the table (e.g. 'gs://spark-
+        dataproc-data/pangea-data/case_sensitive/' or 'gs://spark-dataproc-
+        data/pangea-data/'). The maximum length is 2056 bytes."""
+
+        return self._properties.get("locationUri")
+
+    @location_uri.setter
+    def location_uri(self, value: Optional[str]):
+        value = _helpers._isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["locationUri"] = value
+
+    @property
+    def output_format(self) -> Optional[str]:
+        """Optional. Specifies the fully qualified class name of the
+        OutputFormat (e.g. "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat").
+        The maximum length is 128 characters."""
+
+        return self._properties.get("outputFormat")
+
+    @output_format.setter
+    def output_format(self, value: Optional[str]):
+        value = _helpers._isinstance_or_raise(value, str, none_allowed=True)
+        self._properties["outputFormat"] = value
+
+    @property
+    def serde_info(self) -> Optional[SerDeInfo]:
+        """Optional. Serializer and deserializer information."""
+
+        prop = _helpers._get_sub_prop(self._properties, ["serDeInfo"])
+        if prop is not None:
+            return typing.cast(SerDeInfo, SerDeInfo.from_api_repr(prop))
+        return None
+
+    @serde_info.setter
+    def serde_info(self, value: Union[SerDeInfo, dict, None]):
+        value = _helpers._isinstance_or_raise(
+            value, (SerDeInfo, dict), none_allowed=True
+        )
+
+        if isinstance(value, SerDeInfo):
+            self._properties["serDeInfo"] = value.to_api_repr()
+        else:
+            self._properties["serDeInfo"] = value
+
+    def to_api_repr(self) -> dict:
+        """Build an API representation of this object.
+        Returns:
+            Dict[str, Any]:
+                A dictionary in the format used by the BigQuery API.
+        """
+        return self._properties
+
+    @classmethod
+    def from_api_repr(cls, resource: dict) -> StorageDescriptor:
+        """Factory: constructs an instance of the class (cls)
+        given its API representation.
         Args:
             resource (Dict[str, Any]):
                 API representation of the object to be instantiated.
         Returns:
             An instance of the class initialized with data from 'resource'.
         """
-        config = cls("PLACEHOLDER")
-        config._properties = api_repr
+        config = cls()
+        config._properties = resource
         return config

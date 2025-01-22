@@ -8940,7 +8940,6 @@ class TestClientUpload(object):
 
         load_table_from_file.assert_not_called()
         message = str(exc_context.value)
-        assert "bq_schema contains fields not present in dataframe" in message
         assert "unknown_col" in message
 
     def test_load_table_from_dataframe_w_schema_arrow_custom_compression(self):

@@ -46,7 +46,7 @@ def ipython_interactive(
     for the duration of the test scope.
     """
 
-    if ipython.builtin_type is not None:
+    if ipython.builtin_trap is not None:
         with ipython.builtin_trap:
             yield ipython
 

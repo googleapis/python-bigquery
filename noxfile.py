@@ -24,7 +24,7 @@ import time
 
 
 MYPY_VERSION = "mypy==1.6.1"
-PYTYPE_VERSION = "pytype==2021.4.9"
+PYTYPE_VERSION = "pytype==2024.9.13"
 BLACK_VERSION = "black==23.7.0"
 BLACK_PATHS = (
     "benchmark",

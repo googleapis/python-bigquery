@@ -22,6 +22,7 @@ from __future__ import absolute_import, annotations
 
 import base64
 import copy
+import typing
 from typing import Any, Dict, FrozenSet, Iterable, Optional, Union
 
 from google.cloud.bigquery._helpers import _to_bytes
@@ -835,11 +836,15 @@ class ExternalConfig(object):
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.schema
         """
+
         prop = self._properties.get("schema", {})
-        return [SchemaField.from_api_repr(field) for field in prop.get("fields", [])]
+        return [
+            SchemaField.from_api_repr(field)
+            for field in typing.cast(dict, prop).get("fields", [])
+        ]
 
     @schema.setter
-    def schema(self, value):
+    def schema(self, value: Union[list, dict, None]):
         prop = value
         if value is not None:
             prop = {"fields": [field.to_api_repr() for field in value]}

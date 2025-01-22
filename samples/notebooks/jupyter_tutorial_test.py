@@ -45,8 +45,10 @@ def ipython_interactive(
 
     for the duration of the test scope.
     """
-    with ipython.builtin_trap:
-        yield ipython
+
+    if ipython.builtin_type is not None:
+        with ipython.builtin_trap:
+            yield ipython
 
 
 def _strip_region_tags(sample_text: str) -> str:

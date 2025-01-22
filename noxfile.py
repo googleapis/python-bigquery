@@ -224,7 +224,7 @@ def system(session):
     # Resource Manager needed for test with a real Resource Tag.
     session.install("google-cloud-resource-manager", "-c", constraints_path)
 
-    if session.python in ["3.12", "3.13"]:  # two most recent
+    if session.python in SYSTEM_TEST_PYTHON_VERSIONS[-2]:  # two most recent
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"

@@ -245,8 +245,8 @@ class SchemaField(object):
                 self._properties["roundingMode"] = rounding_mode.name
             elif isinstance(rounding_mode, str):
                 self._properties["roundingMode"] = rounding_mode
-            else:
-                self._properties["roundingMode"] = None
+        else:
+            self._properties["roundingMode"] = None
         if isinstance(foreign_type_definition, str):
             self._properties["foreignTypeDefinition"] = foreign_type_definition
 

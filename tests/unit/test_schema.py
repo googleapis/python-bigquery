@@ -303,9 +303,28 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(schema_field.fields, fields)
 
     def test_roundingmode_property_str(self):
-        ROUNDINGMODE = "ROUNDING_MODE_UNSPECIFIED"
+        # via init
+        ROUNDINGMODE = "ROUND_HALF_AWAY_FROM_ZERO"
         schema_field = self._make_one("test", "STRING", rounding_mode=ROUNDINGMODE)
         self.assertEqual(schema_field.rounding_mode, ROUNDINGMODE)
+
+        # via _properties
+        del schema_field
+        schema_field = self._make_one("test", "STRING")
+        schema_field._properties["roundingMode"] = ROUNDINGMODE
+        self.assertEqual(schema_field.rounding_mode, ROUNDINGMODE)
+
+    def test_foreign_type_definition_property_str(self):
+        FOREIGN_TYPE_DEFINITION = "INTEGER"
+        schema_field = self._make_one(
+            "test", "STRING", foreign_type_definition=FOREIGN_TYPE_DEFINITION
+        )
+        self.assertEqual(schema_field.foreign_type_definition, FOREIGN_TYPE_DEFINITION)
+
+        del schema_field
+        schema_field = self._make_one("test", "STRING")
+        schema_field._properties["foreignTypeDefinition"] = FOREIGN_TYPE_DEFINITION
+        self.assertEqual(schema_field.foreign_type_definition, FOREIGN_TYPE_DEFINITION)
 
     def test_to_standard_sql_simple_type(self):
         examples = (

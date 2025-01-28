@@ -242,11 +242,8 @@ class SchemaField(object):
             self._properties["rangeElementType"] = range_element_type.to_api_repr()
         if rounding_mode is not None:
             if isinstance(rounding_mode, enums.RoundingMode):
-                self._properties["roundingMode"] = rounding_mode.name
-            elif isinstance(rounding_mode, str):
-                self._properties["roundingMode"] = rounding_mode
-        else:
-            self._properties["roundingMode"] = None
+                rounding_mode = rounding_mode.name
+            self._properties["roundingMode"] = rounding_mode
         if isinstance(foreign_type_definition, str):
             self._properties["foreignTypeDefinition"] = foreign_type_definition
 

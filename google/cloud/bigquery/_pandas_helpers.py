@@ -466,7 +466,7 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     if pandas_gbq is None:
         warnings.warn(
             "Loading pandas DataFrame into BigQuery will require pandas-gbq "
-            "package version 0.26.1 or greater in future. "
+            "package version 0.26.1 or greater in the future. "
             f"Tried to import pandas-gbq and got: {pandas_gbq_import_exception}",
             category=FutureWarning,
         )

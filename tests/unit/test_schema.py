@@ -55,7 +55,6 @@ class TestSchemaField(unittest.TestCase):
 
     def test_constructor_explicit(self):
         FIELD_DEFAULT_VALUE_EXPRESSION = "This is the default value for this field"
-        ROUNDINGMODE = enums.RoundingMode.ROUNDING_MODE_UNSPECIFIED
         field = self._make_one(
             "test",
             "STRING",
@@ -68,7 +67,7 @@ class TestSchemaField(unittest.TestCase):
                 )
             ),
             default_value_expression=FIELD_DEFAULT_VALUE_EXPRESSION,
-            rounding_mode=ROUNDINGMODE,
+            rounding_mode=enums.RoundingMode.ROUNDING_MODE_UNSPECIFIED,
             foreign_type_definition="INTEGER",
         )
         self.assertEqual(field.name, "test")
@@ -86,7 +85,7 @@ class TestSchemaField(unittest.TestCase):
                 )
             ),
         )
-        self.assertEqual(field.rounding_mode, ROUNDINGMODE.name)
+        self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
         self.assertEqual(field.foreign_type_definition, "INTEGER")
 
     def test_constructor_explicit_none(self):
@@ -303,12 +302,10 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(schema_field.fields, fields)
 
     def test_roundingmode_property_str(self):
-        # via init
         ROUNDINGMODE = "ROUND_HALF_AWAY_FROM_ZERO"
         schema_field = self._make_one("test", "STRING", rounding_mode=ROUNDINGMODE)
         self.assertEqual(schema_field.rounding_mode, ROUNDINGMODE)
 
-        # via _properties
         del schema_field
         schema_field = self._make_one("test", "STRING")
         schema_field._properties["roundingMode"] = ROUNDINGMODE
@@ -513,18 +510,6 @@ class TestSchemaField(unittest.TestCase):
         standard_field = field.to_standard_sql()
         self.assertEqual(standard_field.name, "some_field")
         self.assertEqual(standard_field.type.type_kind, standard_type)
-
-    def test_to_standard_sql_foreign_type_invalid(self):
-        legacy_type = "FOREIGN"
-        foreign_type_definition = None
-
-        with self.assertRaises(ValueError) as context:
-            self._make_one(
-                "some_field",
-                field_type=legacy_type,
-                foreign_type_definition=foreign_type_definition,
-            )
-        self.assertTrue("If the 'field_type'" in context.exception.args[0])
 
     def test___eq___wrong_type(self):
         field = self._make_one("test", "STRING")

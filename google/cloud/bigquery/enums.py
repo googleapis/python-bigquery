@@ -360,7 +360,7 @@ class DeterminismLevel:
     """The UDF is not deterministic."""
 
 
-class RoundingMode(enum.Enum):
+class RoundingMode(str, enum.Enum):
     """Rounding mode options that can be used when storing NUMERIC or BIGNUMERIC
     values.
 
@@ -381,6 +381,9 @@ class RoundingMode(enum.Enum):
     * 2.5 => 2
     """
 
-    ROUNDING_MODE_UNSPECIFIED = 0
-    ROUND_HALF_AWAY_FROM_ZERO = 1
-    ROUND_HALF_EVEN = 2
+    def _generate_next_value_(name, start, count, last_values):
+        return name
+
+    ROUNDING_MODE_UNSPECIFIED = enum.auto()
+    ROUND_HALF_AWAY_FROM_ZERO = enum.auto()
+    ROUND_HALF_EVEN = enum.auto()

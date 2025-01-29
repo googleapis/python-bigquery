@@ -241,21 +241,10 @@ class SchemaField(object):
         if isinstance(range_element_type, FieldElementType):
             self._properties["rangeElementType"] = range_element_type.to_api_repr()
         if rounding_mode is not None:
-            if isinstance(rounding_mode, enums.RoundingMode):
-                rounding_mode = rounding_mode.name
             self._properties["roundingMode"] = rounding_mode
         if isinstance(foreign_type_definition, str):
             self._properties["foreignTypeDefinition"] = foreign_type_definition
 
-        # The order of operations is important:
-        # If field_type is FOREIGN, then foreign_type_definition must be set.
-        if field_type != "FOREIGN":
-            self._properties["type"] = field_type
-        else:
-            if self._properties.get("foreignTypeDefinition") is None:
-                raise ValueError(
-                    "If the 'field_type' is 'FOREIGN', then 'foreign_type_definition' is required."
-                )
         if fields:  # Don't set the property if it's not set.
             self._properties["fields"] = [field.to_api_repr() for field in fields]
 

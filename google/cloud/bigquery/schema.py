@@ -242,7 +242,7 @@ class SchemaField(object):
             self._properties["rangeElementType"] = range_element_type.to_api_repr()
         if rounding_mode is not None:
             self._properties["roundingMode"] = rounding_mode
-        if isinstance(foreign_type_definition, str):
+        if foreign_type_definition is not None:
             self._properties["foreignTypeDefinition"] = foreign_type_definition
 
         if fields:  # Don't set the property if it's not set.

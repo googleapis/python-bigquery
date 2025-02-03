@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import datetime
 import logging
 import re
@@ -29,6 +30,7 @@ from test_utils.imports import maybe_fail_import
 
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
+from google.cloud.bigquery import external_config
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
@@ -711,14 +713,35 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table.schema = [full_name, age]
         self.assertEqual(table.schema, [full_name, age])
 
-    def test_schema_setter_invalid_mapping_representation(self):
+    def test_schema_setter_allows_unknown_properties(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)
-        full_name = {"name": "full_name", "type": "STRING", "mode": "REQUIRED"}
-        invalid_field = {"name": "full_name", "typeooo": "STRING", "mode": "REQUIRED"}
-        with self.assertRaises(Exception):
-            table.schema = [full_name, invalid_field]
+        schema = [
+            {
+                "name": "full_name",
+                "type": "STRING",
+                "mode": "REQUIRED",
+                "someNewProperty": "test-value",
+            },
+            {
+                "name": "age",
+                # Note: This type should be included, too. Avoid client-side
+                # validation, as it could prevent backwards-compatible
+                # evolution of the server-side behavior.
+                "typo": "INTEGER",
+                "mode": "REQUIRED",
+                "anotherNewProperty": "another-test",
+            },
+        ]
+
+        # Make sure the setter doesn't mutate schema.
+        expected_schema = copy.deepcopy(schema)
+
+        table.schema = schema
+
+        # _properties should include all fields, including unknown ones.
+        assert table._properties["schema"]["fields"] == expected_schema
 
     def test_schema_setter_valid_mapping_representation(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -1049,6 +1072,16 @@ class TestTable(unittest.TestCase, _SchemaBase):
         )
         table.mview_refresh_interval = None
         self.assertIsNone(table.mview_refresh_interval)
+
+    def test_mview_allow_non_incremental_definition(self):
+        table = self._make_one()
+        self.assertIsNone(table.mview_allow_non_incremental_definition)
+        table.mview_allow_non_incremental_definition = True
+        self.assertTrue(table.mview_allow_non_incremental_definition)
+        table.mview_allow_non_incremental_definition = False
+        self.assertFalse(table.mview_allow_non_incremental_definition)
+        table.mview_allow_non_incremental_definition = None
+        self.assertIsNone(table.mview_allow_non_incremental_definition)
 
     def test_from_string(self):
         cls = self._get_target_class()
@@ -1448,6 +1481,33 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table.encryption_configuration = None
         self.assertIsNone(table.encryption_configuration)
 
+    def test_resource_tags_getter_empty(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+        self.assertEqual(table.resource_tags, {})
+
+    def test_resource_tags_update_in_place(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+        table.resource_tags["123456789012/key"] = "value"
+        self.assertEqual(table.resource_tags, {"123456789012/key": "value"})
+
+    def test_resource_tags_setter(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+        table.resource_tags = {"123456789012/key": "value"}
+        self.assertEqual(table.resource_tags, {"123456789012/key": "value"})
+
+    def test_resource_tags_setter_bad_value(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+        with self.assertRaises(ValueError):
+            table.resource_tags = 12345
+
     def test___repr__(self):
         from google.cloud.bigquery.table import TableReference
 
@@ -1464,6 +1524,49 @@ class TestTable(unittest.TestCase, _SchemaBase):
         dataset = DatasetReference("project1", "dataset1")
         table1 = self._make_one(TableReference(dataset, "table1"))
         self.assertEqual(str(table1), "project1.dataset1.table1")
+
+    def test_max_staleness_getter(self):
+        """Test getting max_staleness property."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Initially None
+        self.assertIsNone(table.max_staleness)
+        # Set max_staleness using setter
+        table.max_staleness = "1h"
+        self.assertEqual(table.max_staleness, "1h")
+
+    def test_max_staleness_setter(self):
+        """Test setting max_staleness property."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Set valid max_staleness
+        table.max_staleness = "30m"
+        self.assertEqual(table.max_staleness, "30m")
+        # Set to None
+        table.max_staleness = None
+        self.assertIsNone(table.max_staleness)
+
+    def test_max_staleness_setter_invalid_type(self):
+        """Test setting max_staleness with an invalid type raises ValueError."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Try setting invalid type
+        with self.assertRaises(ValueError):
+            table.max_staleness = 123  # Not a string
+
+    def test_max_staleness_to_api_repr(self):
+        """Test max_staleness is correctly represented in API representation."""
+        dataset = DatasetReference("test-project", "test_dataset")
+        table_ref = dataset.table("test_table")
+        table = self._make_one(table_ref)
+        # Set max_staleness
+        table.max_staleness = "1h"
+        # Convert to API representation
+        resource = table.to_api_repr()
+        self.assertEqual(resource.get("maxStaleness"), "1h")
 
 
 class Test_row_from_mapping(unittest.TestCase, _SchemaBase):
@@ -5804,6 +5907,92 @@ class TestTableConstraint(unittest.TestCase):
         self.assertIsNotNone(instance.foreign_keys)
 
 
+class TestExternalCatalogTableOptions:
+    PROJECT = "test-project"
+    DATASET_ID = "test_dataset"
+    TABLE_ID = "coffee_table"
+    DATASET = DatasetReference(PROJECT, DATASET_ID)
+    TABLEREF = DATASET.table(TABLE_ID)
+
+    @staticmethod
+    def _get_target_class(self):
+        from google.cloud.bigquery.table import Table
+
+        return Table
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class(self)(*args, **kw)
+
+    EXTERNALCATALOGTABLEOPTIONS = {
+        "connection_id": "connection123",
+        "parameters": {"key": "value"},
+        "storage_descriptor": {
+            "input_format": "testpath.to.OrcInputFormat",
+            "location_uri": "gs://test/path/",
+            "output_format": "testpath.to.OrcOutputFormat",
+            "serde_info": {
+                "serialization_library": "testpath.to.LazySimpleSerDe",
+                "name": "serde_lib_name",
+                "parameters": {"key": "value"},
+            },
+        },
+    }
+
+    def test_external_catalog_table_options_default_initialization(self):
+        table = self._make_one(self.TABLEREF)
+
+        assert table.external_catalog_table_options is None
+
+    def test_external_catalog_table_options_valid_inputs(self):
+        table = self._make_one(self.TABLEREF)
+
+        # supplied in api_repr format
+        table.external_catalog_table_options = self.EXTERNALCATALOGTABLEOPTIONS
+        result = table.external_catalog_table_options.to_api_repr()
+        expected = self.EXTERNALCATALOGTABLEOPTIONS
+        assert result == expected
+
+        # supplied in obj format
+        ecto = external_config.ExternalCatalogTableOptions.from_api_repr(
+            self.EXTERNALCATALOGTABLEOPTIONS
+        )
+        assert isinstance(ecto, external_config.ExternalCatalogTableOptions)
+
+        table.external_catalog_table_options = ecto
+        result = table.external_catalog_table_options.to_api_repr()
+        expected = self.EXTERNALCATALOGTABLEOPTIONS
+        assert result == expected
+
+    def test_external_catalog_table_options_invalid_input(self):
+        table = self._make_one(self.TABLEREF)
+
+        # invalid on the whole
+        with pytest.raises(TypeError) as e:
+            table.external_catalog_table_options = 123
+
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
+
+    def test_external_catalog_table_options_to_api_repr(self):
+        table = self._make_one(self.TABLEREF)
+
+        table.external_catalog_table_options = self.EXTERNALCATALOGTABLEOPTIONS
+        result = table.external_catalog_table_options.to_api_repr()
+        expected = self.EXTERNALCATALOGTABLEOPTIONS
+        assert result == expected
+
+    def test_external_catalog_table_options_from_api_repr(self):
+        table = self._make_one(self.TABLEREF)
+
+        table.external_catalog_table_options = self.EXTERNALCATALOGTABLEOPTIONS
+        ecto = external_config.ExternalCatalogTableOptions.from_api_repr(
+            self.EXTERNALCATALOGTABLEOPTIONS
+        )
+        result = ecto.to_api_repr()
+        expected = self.EXTERNALCATALOGTABLEOPTIONS
+        assert result == expected
+
+
 @pytest.mark.parametrize(
     "table_path",
     (
@@ -5822,3 +6011,73 @@ def test_table_reference_to_bqstorage_v1_stable(table_path):
     for klass in (mut.TableReference, mut.Table, mut.TableListItem):
         got = klass.from_string(table_path).to_bqstorage()
         assert got == expected
+
+
+@pytest.mark.parametrize("preserve_order", [True, False])
+def test_to_arrow_iterable_w_bqstorage_max_stream_count(preserve_order):
+    pytest.importorskip("pandas")
+    pytest.importorskip("google.cloud.bigquery_storage")
+    from google.cloud.bigquery import schema
+    from google.cloud.bigquery import table as mut
+    from google.cloud import bigquery_storage
+
+    bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+    session = bigquery_storage.types.ReadSession()
+    bqstorage_client.create_read_session.return_value = session
+
+    row_iterator = mut.RowIterator(
+        _mock_client(),
+        api_request=None,
+        path=None,
+        schema=[
+            schema.SchemaField("colA", "INTEGER"),
+        ],
+        table=mut.TableReference.from_string("proj.dset.tbl"),
+    )
+    row_iterator._preserve_order = preserve_order
+
+    max_stream_count = 132
+    result_iterable = row_iterator.to_arrow_iterable(
+        bqstorage_client=bqstorage_client, max_stream_count=max_stream_count
+    )
+    list(result_iterable)
+    bqstorage_client.create_read_session.assert_called_once_with(
+        parent=mock.ANY,
+        read_session=mock.ANY,
+        max_stream_count=max_stream_count if not preserve_order else 1,
+    )
+
+
+@pytest.mark.parametrize("preserve_order", [True, False])
+def test_to_dataframe_iterable_w_bqstorage_max_stream_count(preserve_order):
+    pytest.importorskip("pandas")
+    pytest.importorskip("google.cloud.bigquery_storage")
+    from google.cloud.bigquery import schema
+    from google.cloud.bigquery import table as mut
+    from google.cloud import bigquery_storage
+
+    bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
+    session = bigquery_storage.types.ReadSession()
+    bqstorage_client.create_read_session.return_value = session
+
+    row_iterator = mut.RowIterator(
+        _mock_client(),
+        api_request=None,
+        path=None,
+        schema=[
+            schema.SchemaField("colA", "INTEGER"),
+        ],
+        table=mut.TableReference.from_string("proj.dset.tbl"),
+    )
+    row_iterator._preserve_order = preserve_order
+
+    max_stream_count = 132
+    result_iterable = row_iterator.to_dataframe_iterable(
+        bqstorage_client=bqstorage_client, max_stream_count=max_stream_count
+    )
+    list(result_iterable)
+    bqstorage_client.create_read_session.assert_called_once_with(
+        parent=mock.ANY,
+        read_session=mock.ANY,
+        max_stream_count=max_stream_count if not preserve_order else 1,
+    )

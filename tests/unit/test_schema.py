@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from google.cloud import bigquery
-from google.cloud.bigquery.standard_sql import StandardSqlStructType
-from google.cloud.bigquery.schema import PolicyTagList
+import copy
 import unittest
 from unittest import mock
 
 import pytest
+
+from google.cloud import bigquery
+from google.cloud.bigquery import enums
+from google.cloud.bigquery.standard_sql import StandardSqlStructType
+from google.cloud.bigquery import schema
+from google.cloud.bigquery.schema import PolicyTagList
 
 
 class TestSchemaField(unittest.TestCase):
@@ -46,6 +50,8 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields, ())
         self.assertIsNone(field.policy_tags)
         self.assertIsNone(field.default_value_expression)
+        self.assertEqual(field.rounding_mode, None)
+        self.assertEqual(field.foreign_type_definition, None)
 
     def test_constructor_explicit(self):
         FIELD_DEFAULT_VALUE_EXPRESSION = "This is the default value for this field"
@@ -61,6 +67,8 @@ class TestSchemaField(unittest.TestCase):
                 )
             ),
             default_value_expression=FIELD_DEFAULT_VALUE_EXPRESSION,
+            rounding_mode=enums.RoundingMode.ROUNDING_MODE_UNSPECIFIED,
+            foreign_type_definition="INTEGER",
         )
         self.assertEqual(field.name, "test")
         self.assertEqual(field.field_type, "STRING")
@@ -77,6 +85,8 @@ class TestSchemaField(unittest.TestCase):
                 )
             ),
         )
+        self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
+        self.assertEqual(field.foreign_type_definition, "INTEGER")
 
     def test_constructor_explicit_none(self):
         field = self._make_one("test", "STRING", description=None, policy_tags=None)
@@ -128,16 +138,22 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.range_element_type.element_type, "DATETIME")
 
     def test_to_api_repr(self):
-        from google.cloud.bigquery.schema import PolicyTagList
-
         policy = PolicyTagList(names=("foo", "bar"))
         self.assertEqual(
             policy.to_api_repr(),
             {"names": ["foo", "bar"]},
         )
 
+        ROUNDINGMODE = enums.RoundingMode.ROUNDING_MODE_UNSPECIFIED
+
         field = self._make_one(
-            "foo", "INTEGER", "NULLABLE", description="hello world", policy_tags=policy
+            "foo",
+            "INTEGER",
+            "NULLABLE",
+            description="hello world",
+            policy_tags=policy,
+            rounding_mode=ROUNDINGMODE,
+            foreign_type_definition=None,
         )
         self.assertEqual(
             field.to_api_repr(),
@@ -147,6 +163,7 @@ class TestSchemaField(unittest.TestCase):
                 "type": "INTEGER",
                 "description": "hello world",
                 "policyTags": {"names": ["foo", "bar"]},
+                "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
             },
         )
 
@@ -180,6 +197,7 @@ class TestSchemaField(unittest.TestCase):
                 "description": "test_description",
                 "name": "foo",
                 "type": "record",
+                "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
             }
         )
         self.assertEqual(field.name, "foo")
@@ -191,6 +209,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].field_type, "INTEGER")
         self.assertEqual(field.fields[0].mode, "NULLABLE")
         self.assertEqual(field.range_element_type, None)
+        self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
 
     def test_from_api_repr_policy(self):
         field = self._get_target_class().from_api_repr(
@@ -281,6 +300,28 @@ class TestSchemaField(unittest.TestCase):
         fields = (sub_field1, sub_field2)
         schema_field = self._make_one("boat", "RECORD", fields=fields)
         self.assertEqual(schema_field.fields, fields)
+
+    def test_roundingmode_property_str(self):
+        ROUNDINGMODE = "ROUND_HALF_AWAY_FROM_ZERO"
+        schema_field = self._make_one("test", "STRING", rounding_mode=ROUNDINGMODE)
+        self.assertEqual(schema_field.rounding_mode, ROUNDINGMODE)
+
+        del schema_field
+        schema_field = self._make_one("test", "STRING")
+        schema_field._properties["roundingMode"] = ROUNDINGMODE
+        self.assertEqual(schema_field.rounding_mode, ROUNDINGMODE)
+
+    def test_foreign_type_definition_property_str(self):
+        FOREIGN_TYPE_DEFINITION = "INTEGER"
+        schema_field = self._make_one(
+            "test", "STRING", foreign_type_definition=FOREIGN_TYPE_DEFINITION
+        )
+        self.assertEqual(schema_field.foreign_type_definition, FOREIGN_TYPE_DEFINITION)
+
+        del schema_field
+        schema_field = self._make_one("test", "STRING")
+        schema_field._properties["foreignTypeDefinition"] = FOREIGN_TYPE_DEFINITION
+        self.assertEqual(schema_field.foreign_type_definition, FOREIGN_TYPE_DEFINITION)
 
     def test_to_standard_sql_simple_type(self):
         examples = (
@@ -455,6 +496,20 @@ class TestSchemaField(unittest.TestCase):
             standard_field.type.type_kind,
             bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
         )
+
+    def test_to_standard_sql_foreign_type_valid(self):
+        legacy_type = "FOREIGN"
+        standard_type = bigquery.StandardSqlTypeNames.FOREIGN
+        foreign_type_definition = "INTEGER"
+
+        field = self._make_one(
+            "some_field",
+            field_type=legacy_type,
+            foreign_type_definition=foreign_type_definition,
+        )
+        standard_field = field.to_standard_sql()
+        self.assertEqual(standard_field.name, "some_field")
+        self.assertEqual(standard_field.type.type_kind, standard_type)
 
     def test___eq___wrong_type(self):
         field = self._make_one("test", "STRING")
@@ -821,13 +876,32 @@ class Test_to_schema_fields(unittest.TestCase):
         result = self._call_fut(schema)
         self.assertEqual(result, schema)
 
-    def test_invalid_mapping_representation(self):
+    def test_unknown_properties(self):
         schema = [
-            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-            {"name": "address", "typeooo": "STRING", "mode": "REQUIRED"},
+            {
+                "name": "full_name",
+                "type": "STRING",
+                "mode": "REQUIRED",
+                "someNewProperty": "test-value",
+            },
+            {
+                "name": "age",
+                # Note: This type should be included, too. Avoid client-side
+                # validation, as it could prevent backwards-compatible
+                # evolution of the server-side behavior.
+                "typo": "INTEGER",
+                "mode": "REQUIRED",
+                "anotherNewProperty": "another-test",
+            },
         ]
-        with self.assertRaises(Exception):
-            self._call_fut(schema)
+
+        # Make sure the setter doesn't mutate schema.
+        expected_schema = copy.deepcopy(schema)
+
+        result = self._call_fut(schema)
+
+        for api_repr, field in zip(expected_schema, result):
+            assert field.to_api_repr() == api_repr
 
     def test_valid_mapping_representation(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -865,8 +939,6 @@ class Test_to_schema_fields(unittest.TestCase):
 class TestPolicyTags(unittest.TestCase):
     @staticmethod
     def _get_target_class():
-        from google.cloud.bigquery.schema import PolicyTagList
-
         return PolicyTagList
 
     def _make_one(self, *args, **kw):
@@ -1108,3 +1180,285 @@ def test_to_api_repr_parameterized(field, api):
     from google.cloud.bigquery.schema import SchemaField
 
     assert SchemaField(**field).to_api_repr() == api
+
+
+class TestForeignTypeInfo:
+    """Tests for ForeignTypeInfo objects."""
+
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.schema import ForeignTypeInfo
+
+        return ForeignTypeInfo
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    @pytest.mark.parametrize(
+        "type_system,expected",
+        [
+            (None, None),
+            ("TYPE_SYSTEM_UNSPECIFIED", "TYPE_SYSTEM_UNSPECIFIED"),
+            ("HIVE", "HIVE"),
+        ],
+    )
+    def test_ctor_valid_input(self, type_system, expected):
+        result = self._make_one(type_system=type_system)
+
+        assert result.type_system == expected
+
+    def test_ctor_invalid_input(self):
+        with pytest.raises(TypeError) as e:
+            self._make_one(type_system=123)
+
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
+
+    @pytest.mark.parametrize(
+        "type_system,expected",
+        [
+            ("TYPE_SYSTEM_UNSPECIFIED", {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}),
+            ("HIVE", {"typeSystem": "HIVE"}),
+            (None, {"typeSystem": None}),
+        ],
+    )
+    def test_to_api_repr(self, type_system, expected):
+        result = self._make_one(type_system=type_system)
+
+        assert result.to_api_repr() == expected
+
+    def test_from_api_repr(self):
+        """GIVEN an api representation of a ForeignTypeInfo object (i.e. api_repr)
+        WHEN converted into a ForeignTypeInfo object using from_api_repr()
+        THEN it will have the same representation in dict format as a ForeignTypeInfo
+        object made directly (via _make_one()) and represented in dict format.
+        """
+        api_repr = {
+            "typeSystem": "TYPE_SYSTEM_UNSPECIFIED",
+        }
+
+        expected = self._make_one(
+            type_system="TYPE_SYSTEM_UNSPECIFIED",
+        )
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(api_repr)
+
+        # We convert both to dict format because these classes do not have a
+        # __eq__() method to facilitate direct equality comparisons.
+        assert result.to_api_repr() == expected.to_api_repr()
+
+
+class TestSerDeInfo:
+    """Tests for the SerDeInfo class."""
+
+    @staticmethod
+    def _get_target_class():
+        return schema.SerDeInfo
+
+    def _make_one(self, *args, **kwargs):
+        return self._get_target_class()(*args, **kwargs)
+
+    @pytest.mark.parametrize(
+        "serialization_library,name,parameters",
+        [
+            ("testpath.to.LazySimpleSerDe", None, None),
+            ("testpath.to.LazySimpleSerDe", "serde_name", None),
+            ("testpath.to.LazySimpleSerDe", None, {"key": "value"}),
+            ("testpath.to.LazySimpleSerDe", "serde_name", {"key": "value"}),
+        ],
+    )
+    def test_ctor_valid_input(self, serialization_library, name, parameters):
+        serde_info = self._make_one(
+            serialization_library=serialization_library,
+            name=name,
+            parameters=parameters,
+        )
+        assert serde_info.serialization_library == serialization_library
+        assert serde_info.name == name
+        assert serde_info.parameters == parameters
+
+    @pytest.mark.parametrize(
+        "serialization_library,name,parameters",
+        [
+            (123, None, None),
+            ("testpath.to.LazySimpleSerDe", 123, None),
+            ("testpath.to.LazySimpleSerDe", None, ["test", "list"]),
+            ("testpath.to.LazySimpleSerDe", None, 123),
+        ],
+    )
+    def test_ctor_invalid_input(self, serialization_library, name, parameters):
+        with pytest.raises(TypeError) as e:
+            self._make_one(
+                serialization_library=serialization_library,
+                name=name,
+                parameters=parameters,
+            )
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
+
+    def test_to_api_repr(self):
+        serde_info = self._make_one(
+            serialization_library="testpath.to.LazySimpleSerDe",
+            name="serde_name",
+            parameters={"key": "value"},
+        )
+        expected_repr = {
+            "serializationLibrary": "testpath.to.LazySimpleSerDe",
+            "name": "serde_name",
+            "parameters": {"key": "value"},
+        }
+        assert serde_info.to_api_repr() == expected_repr
+
+    def test_from_api_repr(self):
+        """GIVEN an api representation of a SerDeInfo object (i.e. api_repr)
+        WHEN converted into a SerDeInfo object using from_api_repr()
+        THEN it will have the same representation in dict format as a SerDeInfo
+        object made directly (via _make_one()) and represented in dict format.
+        """
+        api_repr = {
+            "serializationLibrary": "testpath.to.LazySimpleSerDe",
+            "name": "serde_name",
+            "parameters": {"key": "value"},
+        }
+
+        expected = self._make_one(
+            serialization_library="testpath.to.LazySimpleSerDe",
+            name="serde_name",
+            parameters={"key": "value"},
+        )
+
+        klass = self._get_target_class()
+        result = klass.from_api_repr(api_repr)
+
+        # We convert both to dict format because these classes do not have a
+        # __eq__() method to facilitate direct equality comparisons.
+        assert result.to_api_repr() == expected.to_api_repr()
+
+
+class TestStorageDescriptor:
+    """Tests for the StorageDescriptor class."""
+
+    @staticmethod
+    def _get_target_class():
+        return schema.StorageDescriptor
+
+    def _make_one(self, *args, **kwargs):
+        return self._get_target_class()(*args, **kwargs)
+
+    serdeinfo_resource = {
+        "serialization_library": "testpath.to.LazySimpleSerDe",
+        "name": "serde_lib_name",
+        "parameters": {"key": "value"},
+    }
+
+    SERDEINFO = schema.SerDeInfo("PLACEHOLDER").from_api_repr(serdeinfo_resource)
+
+    STORAGEDESCRIPTOR = {
+        "inputFormat": "testpath.to.OrcInputFormat",
+        "locationUri": "gs://test/path/",
+        "outputFormat": "testpath.to.OrcOutputFormat",
+        "serDeInfo": SERDEINFO.to_api_repr(),
+    }
+
+    @pytest.mark.parametrize(
+        "input_format,location_uri,output_format,serde_info",
+        [
+            (None, None, None, None),
+            ("testpath.to.OrcInputFormat", None, None, None),
+            (None, "gs://test/path/", None, None),
+            (None, None, "testpath.to.OrcOutputFormat", None),
+            (None, None, None, SERDEINFO),
+            (
+                "testpath.to.OrcInputFormat",
+                "gs://test/path/",
+                "testpath.to.OrcOutputFormat",
+                SERDEINFO,  # uses SERDEINFO class format
+            ),
+            (
+                "testpath.to.OrcInputFormat",
+                "gs://test/path/",
+                "testpath.to.OrcOutputFormat",
+                serdeinfo_resource,  # uses api resource format (dict)
+            ),
+        ],
+    )
+    def test_ctor_valid_input(
+        self, input_format, location_uri, output_format, serde_info
+    ):
+        storage_descriptor = self._make_one(
+            input_format=input_format,
+            location_uri=location_uri,
+            output_format=output_format,
+            serde_info=serde_info,
+        )
+        assert storage_descriptor.input_format == input_format
+        assert storage_descriptor.location_uri == location_uri
+        assert storage_descriptor.output_format == output_format
+        if isinstance(serde_info, schema.SerDeInfo):
+            assert (
+                storage_descriptor.serde_info.to_api_repr() == serde_info.to_api_repr()
+            )
+        elif isinstance(serde_info, dict):
+            assert storage_descriptor.serde_info.to_api_repr() == serde_info
+        else:
+            assert storage_descriptor.serde_info is None
+
+    @pytest.mark.parametrize(
+        "input_format,location_uri,output_format,serde_info",
+        [
+            (123, None, None, None),
+            (None, 123, None, None),
+            (None, None, 123, None),
+            (None, None, None, 123),
+        ],
+    )
+    def test_ctor_invalid_input(
+        self, input_format, location_uri, output_format, serde_info
+    ):
+        with pytest.raises(TypeError) as e:
+            self._make_one(
+                input_format=input_format,
+                location_uri=location_uri,
+                output_format=output_format,
+                serde_info=serde_info,
+            )
+
+        # Looking for the first word from the string "Pass <variable> as..."
+        assert "Pass " in str(e.value)
+
+    def test_to_api_repr(self):
+        storage_descriptor = self._make_one(
+            input_format="input_format",
+            location_uri="location_uri",
+            output_format="output_format",
+            serde_info=self.SERDEINFO,
+        )
+        expected_repr = {
+            "inputFormat": "input_format",
+            "locationUri": "location_uri",
+            "outputFormat": "output_format",
+            "serDeInfo": self.SERDEINFO.to_api_repr(),
+        }
+        assert storage_descriptor.to_api_repr() == expected_repr
+
+    def test_from_api_repr(self):
+        """GIVEN an api representation of a StorageDescriptor (i.e. STORAGEDESCRIPTOR)
+        WHEN converted into a StorageDescriptor using from_api_repr() and
+        displayed as a dict
+        THEN it will have the same representation a StorageDescriptor created
+        directly (via the _make_one() func) and displayed as a dict.
+        """
+
+        # generate via STORAGEDESCRIPTOR
+        resource = self.STORAGEDESCRIPTOR
+        result = self._get_target_class().from_api_repr(resource)
+        # result = klass.from_api_repr(resource)
+
+        expected = self._make_one(
+            input_format="testpath.to.OrcInputFormat",
+            location_uri="gs://test/path/",
+            output_format="testpath.to.OrcOutputFormat",
+            serde_info=self.SERDEINFO,
+        )
+        assert result.to_api_repr() == expected.to_api_repr()

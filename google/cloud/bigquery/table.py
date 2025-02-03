@@ -411,6 +411,7 @@ class Table(_TableBase):
         "max_staleness": "maxStaleness",
         "resource_tags": "resourceTags",
         "external_catalog_table_options": "externalCatalogTableOptions",
+        "foreign_type_info": "foreignTypeInfo",
     }
 
     def __init__(self, table_ref, schema=None) -> None:
@@ -1074,6 +1075,10 @@ class Table(_TableBase):
             self._properties[
                 self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
             ] = value
+
+    @property
+    def foreign_type_info(self):
+        return None
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":

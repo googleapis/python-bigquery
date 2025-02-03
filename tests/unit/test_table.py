@@ -5993,6 +5993,45 @@ class TestExternalCatalogTableOptions:
         assert result == expected
 
 
+class TestForeignTypeInfo:
+    PROJECT = "test-project"
+    DATASET_ID = "test_dataset"
+    TABLE_ID = "coffee_table"
+    DATASET = DatasetReference(PROJECT, DATASET_ID)
+    TABLEREF = DATASET.table(TABLE_ID)
+
+    from google.cloud.bigquery.schema import ForeignTypeInfo
+
+    @staticmethod
+    def _get_target_class(self):
+        from google.cloud.bigquery.table import Table
+
+        return Table
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class(self)(*args, **kw)
+
+    def test_foreign_type_info_default_initialization(self):
+        table = self._make_one(self.TABLEREF)
+        assert table.foreign_type_info is None
+
+    def test_foreign_type_info_valid_inputs(self):
+        table = self._make_one(self.TABLEREF)
+        assert table is False
+
+    def test_foreign_type_info_invalid_inputs(self):
+        table = self._make_one(self.TABLEREF)
+        assert table is False
+
+    def test_foreign_type_info_to_api_repr(self):
+        table = self._make_one(self.TABLEREF)
+        assert table is False
+
+    def test_foreign_type_info_from_api_repr(self):
+        table = self._make_one(self.TABLEREF)
+        assert table is False
+
+
 @pytest.mark.parametrize(
     "table_path",
     (

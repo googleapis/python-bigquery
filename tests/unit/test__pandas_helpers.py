@@ -1874,10 +1874,10 @@ def test__download_table_bqstorage_shuts_down_workers(
         ]
     )
     arrow_rows = pyarrow.record_batch(
-        {
-            "int_col": [0, 1, 2],
-            "str_col": ["a", "b", "c"],
-        },
+        [
+            pyarrow.array([0, 1, 2], type=pyarrow.int64()),
+            pyarrow.array(["a", "b", "c"], type=pyarrow.string()),
+        ],
         schema=arrow_schema,
     )
     session = google.cloud.bigquery_storage_v1.types.ReadSession()

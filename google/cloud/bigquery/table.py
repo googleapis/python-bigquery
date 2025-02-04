@@ -66,6 +66,7 @@ from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import DefaultPandasDTypes
 from google.cloud.bigquery.external_config import ExternalConfig
+from google.cloud.bigquery import schema as _schema
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
@@ -1077,8 +1078,33 @@ class Table(_TableBase):
             ] = value
 
     @property
-    def foreign_type_info(self):
+    def foreign_type_info(self) -> Optional[_schema.ForeignTypeInfo]:
+        """Optional. Specifies metadata of the foreign data type definition in
+        field schema (TableFieldSchema.foreign_type_definition).
+
+        Returns:
+            Optional[schema.ForeignTypeInfo]:
+                Foreign type information, or :data:`None` if not set.
+        """
+
+        prop = self._properties.get(self._PROPERTY_TO_API_FIELD["foreign_type_info"])
+        if prop is not None:
+            return _schema.ForeignTypeInfo.from_api_repr(prop)
         return None
+
+    @foreign_type_info.setter
+    def foreign_type_info(self, value: Union[_schema.ForeignTypeInfo, dict, None]):
+        value = _helpers._isinstance_or_raise(
+            value,
+            (_schema.ForeignTypeInfo, dict),
+            none_allowed=True,
+        )
+        if isinstance(value, _schema.ForeignTypeInfo):
+            self._properties[
+                self._PROPERTY_TO_API_FIELD["foreign_type_info"]
+            ] = value.to_api_repr()
+        else:
+            self._properties[self._PROPERTY_TO_API_FIELD["foreign_type_info"]] = value
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":

@@ -31,6 +31,7 @@ from test_utils.imports import maybe_fail_import
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import external_config
+from google.cloud.bigquery import schema
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
@@ -5999,6 +6000,9 @@ class TestForeignTypeInfo:
     TABLE_ID = "coffee_table"
     DATASET = DatasetReference(PROJECT, DATASET_ID)
     TABLEREF = DATASET.table(TABLE_ID)
+    FOREIGNTYPEINFO = {
+        "typeSystem": "TYPE_SYSTEM_UNSPECIFIED",
+    }
 
     from google.cloud.bigquery.schema import ForeignTypeInfo
 
@@ -6017,19 +6021,42 @@ class TestForeignTypeInfo:
 
     def test_foreign_type_info_valid_inputs(self):
         table = self._make_one(self.TABLEREF)
-        assert table is False
+
+        table.foreign_type_info = self.ForeignTypeInfo(
+            type_system="TYPE_SYSTEM_UNSPECIFIED",
+        )
+
+        result = table.foreign_type_info.type_system
+        expected = self.FOREIGNTYPEINFO["typeSystem"]
+        assert result == expected
 
     def test_foreign_type_info_invalid_inputs(self):
         table = self._make_one(self.TABLEREF)
-        assert table is False
+
+        # invalid on the whole
+        with pytest.raises(TypeError, match="Pass .*"):
+            table.foreign_type_info = 123
 
     def test_foreign_type_info_to_api_repr(self):
         table = self._make_one(self.TABLEREF)
-        assert table is False
+
+        table.foreign_type_info = self.ForeignTypeInfo(
+            type_system="TYPE_SYSTEM_UNSPECIFIED",
+        )
+
+        result = table.to_api_repr()["foreignTypeInfo"]
+        expected = self.FOREIGNTYPEINFO
+        assert result == expected
 
     def test_foreign_type_info_from_api_repr(self):
         table = self._make_one(self.TABLEREF)
-        assert table is False
+        table.foreign_type_info = self.FOREIGNTYPEINFO
+
+        fti = schema.ForeignTypeInfo.from_api_repr(self.FOREIGNTYPEINFO)
+
+        result = fti.to_api_repr()
+        expected = self.FOREIGNTYPEINFO
+        assert result == expected
 
 
 @pytest.mark.parametrize(

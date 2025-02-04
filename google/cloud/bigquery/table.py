@@ -453,6 +453,15 @@ class Table(_TableBase):
                 If ``schema`` is not a sequence, or if any item in the sequence
                 is not a :class:`~google.cloud.bigquery.schema.SchemaField`
                 instance or a compatible mapping representation of the field.
+
+        NOTE: If you are referencing a schema for an external catalog table such
+        as a Hive table, it will also be necessary to populate the foreign_type_info
+        attribute. This is not necessary if defining the schema for a BigQuery table.
+
+        For details, see:
+        https://cloud.google.com/bigquery/docs/external-tables
+        https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
+
         """
         prop = self._properties.get(self._PROPERTY_TO_API_FIELD["schema"])
         if not prop:
@@ -1085,6 +1094,12 @@ class Table(_TableBase):
         Returns:
             Optional[schema.ForeignTypeInfo]:
                 Foreign type information, or :data:`None` if not set.
+
+        NOTE: foreign_type_info is only required if you are referencing an
+        external catalog such as a Hive table.
+        For details, see:
+        https://cloud.google.com/bigquery/docs/external-tables
+        https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
         """
 
         prop = self._properties.get(self._PROPERTY_TO_API_FIELD["foreign_type_info"])

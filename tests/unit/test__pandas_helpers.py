@@ -16,6 +16,7 @@ import collections
 import datetime
 import decimal
 import functools
+import gc
 import operator
 import queue
 from typing import Union
@@ -1929,7 +1930,11 @@ def test__download_table_bqstorage_shuts_down_workers(
     assert download_state.started_workers == 3
     assert download_state.finished_workers == 0
 
+    # Stop iteration early and simulate the variables going out of scope
+    # to be doubly sure that the worker threads are supposed to be cleaned up.
     del result_gen, result_gen_iter
+    gc.collect()
+
     assert download_state.started_workers == 3
     assert download_state.finished_workers == 3
 

@@ -489,6 +489,8 @@ def _parse_schema_resource(info):
         Optional[Sequence[google.cloud.bigquery.schema.SchemaField`]:
             A list of parsed fields, or ``None`` if no "fields" key found.
     """
+    if isinstance(info, list):
+        return [SchemaField.from_api_repr(f) for f in info]
     return [SchemaField.from_api_repr(f) for f in info.get("fields", ())]
 
 

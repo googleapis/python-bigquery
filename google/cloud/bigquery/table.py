@@ -399,7 +399,7 @@ class Table(_TableBase):
         "partitioning_type": "timePartitioning",
         "range_partitioning": "rangePartitioning",
         "time_partitioning": "timePartitioning",
-        "schema": "schema",
+        "schema": ["schema", "fields"],
         "snapshot_definition": "snapshotDefinition",
         "clone_definition": "cloneDefinition",
         "streaming_buffer": "streamingBuffer",
@@ -454,16 +454,19 @@ class Table(_TableBase):
                 is not a :class:`~google.cloud.bigquery.schema.SchemaField`
                 instance or a compatible mapping representation of the field.
 
-        NOTE: If you are referencing a schema for an external catalog table such
-        as a Hive table, it will also be necessary to populate the foreign_type_info
-        attribute. This is not necessary if defining the schema for a BigQuery table.
+        .. Note::
+            If you are referencing a schema for an external catalog table such
+            as a Hive table, it will also be necessary to populate the foreign_type_info
+            attribute. This is not necessary if defining the schema for a BigQuery table.
 
-        For details, see:
-        https://cloud.google.com/bigquery/docs/external-tables
-        https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
+            For details, see:
+            https://cloud.google.com/bigquery/docs/external-tables
+            https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
 
         """
-        prop = self._properties.get(self._PROPERTY_TO_API_FIELD["schema"])
+        prop = _helpers._get_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["schema"]
+        )
         if not prop:
             return []
         else:
@@ -474,10 +477,19 @@ class Table(_TableBase):
         api_field = self._PROPERTY_TO_API_FIELD["schema"]
 
         if value is None:
-            self._properties[api_field] = None
+            _helpers._set_sub_prop(
+                self._properties,
+                api_field,
+                None,
+            )
         else:
             value = _to_schema_fields(value)
-            self._properties[api_field] = {"fields": _build_schema_resource(value)}
+            value = _build_schema_resource(value)
+            _helpers._set_sub_prop(
+                self._properties,
+                api_field,
+                value,
+            )
 
     @property
     def labels(self):

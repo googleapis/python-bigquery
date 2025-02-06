@@ -739,6 +739,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
         # Make sure the setter doesn't mutate schema.
         expected_schema = copy.deepcopy(schema)
 
+        print(f"DINOSAUR:\n{table._properties}\n{table.to_api_repr()}\n{schema}\n")
+
         table.schema = schema
 
         # _properties should include all fields, including unknown ones.

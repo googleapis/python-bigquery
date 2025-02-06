@@ -977,11 +977,11 @@ def _build_resource_from_properties(obj, filter_fields):
     ``filter_fields``, which follow the name of the Python object.
     """
     partial = {}
-    for filter_field in filter_fields:  # "schema" in ["schema"]
-        api_field = _get_sub_prop(obj._PROPERTY_TO_API_FIELD, filter_field)  # "schema"
+    for filter_field in filter_fields:
+        api_field = _get_sub_prop(obj._PROPERTY_TO_API_FIELD, filter_field)
         if api_field is None and filter_field not in obj._properties:
             raise ValueError("No property %s" % filter_field)
-        elif api_field is not None:  # ["schema", "fields"]
+        elif api_field is not None:
             if isinstance(api_field, list):
                 api_field = api_field[0]
             partial[api_field] = obj._properties.get(api_field)

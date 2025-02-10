@@ -18,7 +18,7 @@ from google.cloud import bigquery
 import pytest
 
 from conftest import prefixer  # type: ignore
-from view_dataset_access_policy import view_dataset_access_policies # type: ignore
+from view_dataset_access_policy import view_dataset_access_policies  # type: ignore
 
 DATASET_ID = f"{prefixer.create_prefix()}_view_dataset_access_policies"
 
@@ -26,6 +26,7 @@ DATASET_ID = f"{prefixer.create_prefix()}_view_dataset_access_policies"
 @pytest.fixture(scope="module")
 def client() -> bigquery.Client:
     return bigquery.Client()
+
 
 @pytest.fixture()
 def create_dataset(client: bigquery.Client):

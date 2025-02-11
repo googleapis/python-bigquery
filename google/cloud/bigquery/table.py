@@ -412,7 +412,7 @@ class Table(_TableBase):
         "max_staleness": "maxStaleness",
         "resource_tags": "resourceTags",
         "external_catalog_table_options": "externalCatalogTableOptions",
-        "foreign_type_info": "foreignTypeInfo",
+        "foreign_type_info": ["schema", "foreignTypeInfo"],
     }
 
     def __init__(self, table_ref, schema=None) -> None:
@@ -1107,14 +1107,17 @@ class Table(_TableBase):
             Optional[schema.ForeignTypeInfo]:
                 Foreign type information, or :data:`None` if not set.
 
-        NOTE: foreign_type_info is only required if you are referencing an
-        external catalog such as a Hive table.
-        For details, see:
-        https://cloud.google.com/bigquery/docs/external-tables
-        https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
+        .. Note::
+            foreign_type_info is only required if you are referencing an
+            external catalog such as a Hive table.
+            For details, see:
+            https://cloud.google.com/bigquery/docs/external-tables
+            https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
         """
 
-        prop = self._properties.get(self._PROPERTY_TO_API_FIELD["foreign_type_info"])
+        prop = _helpers._get_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["foreign_type_info"]
+        )
         if prop is not None:
             return _schema.ForeignTypeInfo.from_api_repr(prop)
         return None
@@ -1127,11 +1130,10 @@ class Table(_TableBase):
             none_allowed=True,
         )
         if isinstance(value, _schema.ForeignTypeInfo):
-            self._properties[
-                self._PROPERTY_TO_API_FIELD["foreign_type_info"]
-            ] = value.to_api_repr()
-        else:
-            self._properties[self._PROPERTY_TO_API_FIELD["foreign_type_info"]] = value
+            value = value.to_api_repr()
+        _helpers._set_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["foreign_type_info"], value
+        )
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":

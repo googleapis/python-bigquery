@@ -15,7 +15,6 @@
 """Schemas for BigQuery tables / queries."""
 
 from __future__ import annotations
-import collections
 import enum
 import typing
 from typing import Any, cast, Dict, Iterable, Optional, Union
@@ -503,40 +502,78 @@ def _build_schema_resource(fields):
     Returns:
         Sequence[Dict]: Mappings describing the schema of the supplied fields.
     """
-    return [field.to_api_repr() for field in fields]
+    if isinstance(fields, (list, tuple)):
+        # Input is list-like: Process and return a list of SchemaFields
+        return [field.to_api_repr() for field in fields]
+
+    elif isinstance(fields, dict):
+        # Input is a dict: Update "fields" in place, if present
+
+        if "fields" not in fields:
+            return fields  # No fields to process, so nothing to convert
+
+        fields["fields"] = [field.to_api_repr() for field in fields["fields"]]
+        return fields  # Return the modified dictionary
+
+    else:
+        raise TypeError("Schema must be a Sequence (list) or a Mapping (dict).")
 
 
 def _to_schema_fields(schema):
-    """Coerce `schema` to a list of schema field instances.
+    """Coerces schema to a list of SchemaField instances while
+    preserving the original structure as much as possible.
 
     Args:
-        schema(Sequence[Union[ \
-            :class:`~google.cloud.bigquery.schema.SchemaField`, \
-            Mapping[str, Any] \
-        ]]):
-            Table schema to convert. If some items are passed as mappings,
-            their content must be compatible with
-            :meth:`~google.cloud.bigquery.schema.SchemaField.from_api_repr`.
+        schema (Union[ \
+               dict, \
+               Sequence[Union[ \
+                   :class:`~google.cloud.bigquery.schema.SchemaField`, \
+                   Mapping[str, Any] \
+                           ]
+                       ]
+                   ]
+               )::
+            Table schema to convert. Can be a list of SchemaField
+            objects or mappings, OR a dictionary with a "fields" key
+            containing such a list and optionally a "foreign_type_info" key.
 
     Returns:
-        Sequence[:class:`~google.cloud.bigquery.schema.SchemaField`]
+        A list of SchemaField objects if the input was a list.
+        A dictionary with a list of Schemafield objects assigned to the 'fields'
+        key, if the input was a dictionary. If a "foreign_type_info" key was present
+        in the dictionary, it will be preserved.
 
     Raises:
-        Exception: If ``schema`` is not a sequence, or if any item in the
-        sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
-        instance or a compatible mapping representation of the field.
+        TypeError: If schema is not a list or dictionary.
+        ValueError: If schema is a dictionary without a "fields" key, or
+            if any element within the "fields" is invalid.
     """
-    for field in schema:
-        if not isinstance(field, (SchemaField, collections.abc.Mapping)):
-            raise ValueError(
-                "Schema items must either be fields or compatible "
-                "mapping representations."
-            )
 
-    return [
-        field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
-        for field in schema
-    ]
+    if isinstance(schema, (list, tuple)):
+        # Input is a list: Process and return a new list of SchemaFields
+        return [
+            field
+            if isinstance(field, SchemaField)
+            else SchemaField.from_api_repr(field)
+            for field in schema
+        ]
+
+    elif isinstance(schema, dict):
+        # Input is a dict: Update "fields" in place if present
+
+        if "fields" not in schema:
+            return schema  # No fields to process, so nothing to convert
+
+        schema["fields"] = [
+            field
+            if isinstance(field, SchemaField)
+            else SchemaField.from_api_repr(field)
+            for field in schema["fields"]
+        ]
+        return schema  # Return the modified dictionary
+
+    else:
+        raise TypeError("Schema must be a Sequence (list) or a Mapping (dict).")
 
 
 class PolicyTagList(object):

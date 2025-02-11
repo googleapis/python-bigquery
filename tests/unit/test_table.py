@@ -700,7 +700,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)
         full_name = SchemaField("full_name", "STRING", mode="REQUIRED")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             table.schema = [full_name, object()]
 
     def test_schema_setter_valid_fields(self):
@@ -6003,6 +6003,20 @@ class TestForeignTypeInfo:
     FOREIGNTYPEINFO = {
         "typeSystem": "TYPE_SYSTEM_UNSPECIFIED",
     }
+    API_REPR = {
+        "tableReference": {
+            "projectId": PROJECT,
+            "datasetId": DATASET_ID,
+            "tableId": TABLE_ID,
+        },
+        "schema": {
+            "fields": [
+                {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
+            ],
+            "foreign_info_type": FOREIGNTYPEINFO,
+        },
+    }
 
     from google.cloud.bigquery.schema import ForeignTypeInfo
 
@@ -6019,15 +6033,29 @@ class TestForeignTypeInfo:
         table = self._make_one(self.TABLEREF)
         assert table.foreign_type_info is None
 
-    def test_foreign_type_info_valid_inputs(self):
+    @pytest.mark.parametrize(
+        "foreign_type_info, expected",
+        [
+            (
+                {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"},
+                "TYPE_SYSTEM_UNSPECIFIED",
+            ),
+            (None, None),
+            (
+                ForeignTypeInfo(type_system="TYPE_SYSTEM_UNSPECIFIED"),
+                "TYPE_SYSTEM_UNSPECIFIED",
+            ),
+        ],
+    )
+    def test_foreign_type_info_valid_inputs(self, foreign_type_info, expected):
         table = self._make_one(self.TABLEREF)
 
-        table.foreign_type_info = self.ForeignTypeInfo(
-            type_system="TYPE_SYSTEM_UNSPECIFIED",
-        )
+        table.foreign_type_info = foreign_type_info
 
-        result = table.foreign_type_info.type_system
-        expected = self.FOREIGNTYPEINFO["typeSystem"]
+        if foreign_type_info is None:
+            result = table.foreign_type_info
+        else:
+            result = table.foreign_type_info.type_system
         assert result == expected
 
     def test_foreign_type_info_invalid_inputs(self):
@@ -6044,7 +6072,7 @@ class TestForeignTypeInfo:
             type_system="TYPE_SYSTEM_UNSPECIFIED",
         )
 
-        result = table.to_api_repr()["foreignTypeInfo"]
+        result = table.to_api_repr()["schema"]["foreignTypeInfo"]
         expected = self.FOREIGNTYPEINFO
         assert result == expected
 
@@ -6057,6 +6085,18 @@ class TestForeignTypeInfo:
         result = fti.to_api_repr()
         expected = self.FOREIGNTYPEINFO
         assert result == expected
+
+    def test_table_w_foreign_type_info_to_api_repr(self):
+        table = self._make_one(self.TABLEREF)
+        table.schema = {
+            "fields": [
+                {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
+            ],
+            "foreign_info_type": self.FOREIGNTYPEINFO,
+        }
+
+        print(table.to_api_repr())
 
 
 @pytest.mark.parametrize(

@@ -787,28 +787,6 @@ class Test_build_schema_resource:
         [
             pytest.param([], [], id="empty list"),
             pytest.param([FULL_NAME, AGE], LIST_RESOURCE, id="list"),
-            pytest.param({}, {}, id="empty dict, no fields, no foreigntypeinfo"),
-            pytest.param(
-                {"fields": [FULL_NAME, AGE]},
-                {"fields": LIST_RESOURCE},
-                id="dict, fields, no foreigntypeinfo",
-            ),
-            pytest.param(
-                {"foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE},
-                {"foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE},
-                id="dict, no fields, foreigntypeinfo is unchanged",
-            ),
-            pytest.param(
-                {
-                    "fields": [FULL_NAME, AGE],
-                    "foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE,
-                },
-                {
-                    "fields": LIST_RESOURCE,
-                    "foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE,
-                },
-                id="dict, fields, foreigntypeinfo is unchanged",
-            ),
         ],
     )
     def test_ctor_valid_input(self, schema, expected):
@@ -927,44 +905,6 @@ class Test_to_schema_fields:
             pytest.param([], [], id="empty list"),
             pytest.param((), [], id="empty tuple"),
             pytest.param(LIST_RESOURCE, [FULL_NAME, AGE], id="list"),
-            pytest.param({}, {}, id="empty dict, no fields, no foreigntypeinfo"),
-            pytest.param(
-                {"fields": LIST_RESOURCE},
-                {"fields": [FULL_NAME, AGE]},
-                id="dict, fields as api_reprs, no foreigntypeinfo",
-            ),
-            pytest.param(
-                {"fields": [FULL_NAME, AGE]},
-                {"fields": [FULL_NAME, AGE]},
-                id="dict, fields as SchemaFields, no foreigntypeinfo",
-            ),
-            pytest.param(
-                {"foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE},
-                {"foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE},
-                id="dict, no fields, foreigntypeinfo is unchanged",
-            ),
-            pytest.param(
-                {
-                    "fields": LIST_RESOURCE,
-                    "foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE,
-                },
-                {
-                    "fields": [FULL_NAME, AGE],
-                    "foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE,
-                },
-                id="dict, fields as api_reprs, foreigntypeinfo is unchanged",
-            ),
-            pytest.param(
-                {
-                    "fields": [FULL_NAME, AGE],
-                    "foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE,
-                },
-                {
-                    "fields": [FULL_NAME, AGE],
-                    "foreignTypeInfo": FOREIGN_TYPE_INFO_RESOURCE,
-                },
-                id="dict, fields as SchemaFields, foreigntypeinfo is unchanged",
-            ),
         ],
     )
     def test_ctor_valid_input(self, schema, expected):
@@ -977,14 +917,12 @@ class Test_to_schema_fields:
         [
             pytest.param(123, TypeError, id="invalid schema type"),
             pytest.param([123, 123], TypeError, id="invalid SchemaField type"),
-            pytest.param({"fields": 123}, TypeError, id="invalid fields type"),
+            pytest.param({"fields": 123}, TypeError, id="invalid type, dict"),
             pytest.param(
                 {"fields": 123, "foreignTypeInfo": 123},
                 TypeError,
-                id="invalid fields type",
+                id="invalid type, dict",
             ),
-            # foreign_type_info is not converted OR changed, so it passes through
-            # regardless of value.
         ],
     )
     def test_ctor_invalid_input(self, schema, expected):

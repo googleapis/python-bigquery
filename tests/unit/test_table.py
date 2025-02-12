@@ -1214,6 +1214,83 @@ class TestTable(unittest.TestCase, _SchemaBase):
         }
         self.assertEqual(resource, exp_resource)
 
+    def test_to_api_repr_w_schema_and_foreign_type_info(self):
+        """Tests to ensure that to_api_repr works correctly with
+        both schema and foreign_type_info fields
+        """
+
+        PROJECT = "test-project"
+        DATASET_ID = "test_dataset"
+        TABLE_ID = "coffee_table"
+        FOREIGNTYPEINFO = {
+            "typeSystem": "TYPE_SYSTEM_UNSPECIFIED",
+        }
+        SCHEMA = {
+            "fields": [
+                {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
+            ],
+            "foreignTypeInfo": FOREIGNTYPEINFO,
+        }
+
+        API_REPR = {
+            "tableReference": {
+                "projectId": PROJECT,
+                "datasetId": DATASET_ID,
+                "tableId": TABLE_ID,
+            },
+            "schema": SCHEMA,
+        }
+
+        table = self._get_target_class().from_api_repr(API_REPR)
+        assert table._properties == table.to_api_repr()
+
+        # update schema (i.e. the fields), ensure foreign_type_info is unchanged
+        table.schema = []
+        expected = {
+            "fields": [],
+            "foreignTypeInfo": {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"},
+        }
+        assert table.to_api_repr()["schema"] == expected
+
+        # update foreign_type_info, ensure schema (i.e. the fields), is unchanged
+        table.foreign_type_info = {"typeSystem": "SCHEMA_SHOULD_NOT_CHANGE"}
+        expected = {
+            "fields": [],
+            "foreignTypeInfo": {"typeSystem": "SCHEMA_SHOULD_NOT_CHANGE"},
+        }
+        assert table.to_api_repr()["schema"] == expected
+
+    def test_from_api_repr_w_schema_and_foreign_type_info(self):
+        """Tests to ensure that to_api_repr works correctly with
+        both schema and foreign_type_info fields
+        """
+
+        PROJECT = "test-project"
+        DATASET_ID = "test_dataset"
+        TABLE_ID = "coffee_table"
+        FOREIGNTYPEINFO = {
+            "typeSystem": "TYPE_SYSTEM_UNSPECIFIED",
+        }
+        SCHEMA = {
+            "fields": [
+                {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
+            ],
+            "foreignTypeInfo": FOREIGNTYPEINFO,
+        }
+        API_REPR = {
+            "tableReference": {
+                "projectId": PROJECT,
+                "datasetId": DATASET_ID,
+                "tableId": TABLE_ID,
+            },
+            "schema": SCHEMA,
+        }
+
+        table = self._get_target_class().from_api_repr(API_REPR)
+        assert table._properties == API_REPR
+
     def test__build_resource_w_custom_field(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
@@ -6085,18 +6162,6 @@ class TestForeignTypeInfo:
         result = fti.to_api_repr()
         expected = self.FOREIGNTYPEINFO
         assert result == expected
-
-    def test_table_w_foreign_type_info_to_api_repr(self):
-        table = self._make_one(self.TABLEREF)
-        table.schema = {
-            "fields": [
-                {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-                {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
-            ],
-            "foreign_info_type": self.FOREIGNTYPEINFO,
-        }
-
-        print(table.to_api_repr())
 
 
 @pytest.mark.parametrize(

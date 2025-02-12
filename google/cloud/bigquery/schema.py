@@ -17,7 +17,7 @@
 from __future__ import annotations
 import enum
 import typing
-from typing import Any, cast, Dict, Iterable, Optional, Union
+from typing import Any, cast, Dict, Iterable, Optional, Union, Sequence
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
@@ -502,21 +502,12 @@ def _build_schema_resource(fields):
     Returns:
         Sequence[Dict]: Mappings describing the schema of the supplied fields.
     """
-    if isinstance(fields, (list, tuple)):
-        # Input is list-like: Process and return a list of SchemaFields
+    if isinstance(fields, Sequence):
+        # Input is a Sequence (e.g. a list): Process and return a list of SchemaFields
         return [field.to_api_repr() for field in fields]
 
-    elif isinstance(fields, dict):
-        # Input is a dict: Update "fields" in place, if present
-
-        if "fields" not in fields:
-            return fields  # No fields to process, so nothing to convert
-
-        fields["fields"] = [field.to_api_repr() for field in fields["fields"]]
-        return fields  # Return the modified dictionary
-
     else:
-        raise TypeError("Schema must be a Sequence (list) or a Mapping (dict).")
+        raise TypeError("Schema must be a Sequence (e.g. a list) or None.")
 
 
 def _to_schema_fields(schema):
@@ -524,33 +515,24 @@ def _to_schema_fields(schema):
     preserving the original structure as much as possible.
 
     Args:
-        schema (Union[ \
-               dict, \
-               Sequence[Union[ \
+        schema (Sequence[Union[ \
                    :class:`~google.cloud.bigquery.schema.SchemaField`, \
                    Mapping[str, Any] \
-                           ]
                        ]
                    ]
                )::
             Table schema to convert. Can be a list of SchemaField
-            objects or mappings, OR a dictionary with a "fields" key
-            containing such a list and optionally a "foreign_type_info" key.
+            objects or mappings.
 
     Returns:
-        A list of SchemaField objects if the input was a list.
-        A dictionary with a list of Schemafield objects assigned to the 'fields'
-        key, if the input was a dictionary. If a "foreign_type_info" key was present
-        in the dictionary, it will be preserved.
+        A list of SchemaField objects.
 
     Raises:
-        TypeError: If schema is not a list or dictionary.
-        ValueError: If schema is a dictionary without a "fields" key, or
-            if any element within the "fields" is invalid.
+        TypeError: If schema is not a Sequence.
     """
 
-    if isinstance(schema, (list, tuple)):
-        # Input is a list: Process and return a new list of SchemaFields
+    if isinstance(schema, Sequence):
+        # Input is a Sequence (e.g. a list): Process and return a list of SchemaFields
         return [
             field
             if isinstance(field, SchemaField)
@@ -558,22 +540,8 @@ def _to_schema_fields(schema):
             for field in schema
         ]
 
-    elif isinstance(schema, dict):
-        # Input is a dict: Update "fields" in place if present
-
-        if "fields" not in schema:
-            return schema  # No fields to process, so nothing to convert
-
-        schema["fields"] = [
-            field
-            if isinstance(field, SchemaField)
-            else SchemaField.from_api_repr(field)
-            for field in schema["fields"]
-        ]
-        return schema  # Return the modified dictionary
-
     else:
-        raise TypeError("Schema must be a Sequence (list) or a Mapping (dict).")
+        raise TypeError("Schema must be a Sequence (e.g. a list) or None.")
 
 
 class PolicyTagList(object):

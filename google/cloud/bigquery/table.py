@@ -21,7 +21,8 @@ import datetime
 import functools
 import operator
 import typing
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union, Sequence
+
 import warnings
 
 try:
@@ -482,7 +483,7 @@ class Table(_TableBase):
                 api_field,
                 None,
             )
-        else:
+        elif isinstance(value, Sequence):
             value = _to_schema_fields(value)
             value = _build_schema_resource(value)
             _helpers._set_sub_prop(
@@ -490,6 +491,8 @@ class Table(_TableBase):
                 api_field,
                 value,
             )
+        else:
+            raise TypeError("Schema must be a Sequence (e.g. a list) or None.")
 
     @property
     def labels(self):

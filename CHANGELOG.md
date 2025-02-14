@@ -5,6 +5,24 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.30.0](https://github.com/googleapis/python-bigquery/compare/v3.29.0...v3.30.0) (2025-02-14)
+
+
+### Features
+
+* Add roundingmode enum, wiring, and tests ([#2121](https://github.com/googleapis/python-bigquery/issues/2121)) ([3a48948](https://github.com/googleapis/python-bigquery/commit/3a4894827f6e73a4a88cb22933c2004697dabcc7))
+* Support resource_tags for table ([#2093](https://github.com/googleapis/python-bigquery/issues/2093)) ([d4070ca](https://github.com/googleapis/python-bigquery/commit/d4070ca21b5797e900a9e87b966837ee1c278217))
+
+
+### Bug Fixes
+
+* Avoid blocking in download thread when using BQ Storage API ([#2034](https://github.com/googleapis/python-bigquery/issues/2034)) ([54c8d07](https://github.com/googleapis/python-bigquery/commit/54c8d07f06a8ae460c9e0fb1614e1fbc21efb5df))
+
+
+### Documentation
+
+* Update magics.rst ([#2125](https://github.com/googleapis/python-bigquery/issues/2125)) ([b5bcfb3](https://github.com/googleapis/python-bigquery/commit/b5bcfb303d27015b747a3b0747ecd7f7ed0ed557))
+
 ## [3.29.0](https://github.com/googleapis/python-bigquery/compare/v3.28.0...v3.29.0) (2025-01-21)
 
 

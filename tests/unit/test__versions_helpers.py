@@ -195,6 +195,7 @@ def test_try_import_raises_no_error_w_recent_pandas(version):
         try:
             pandas = versions.try_import(raise_if_error=True)
             assert pandas is not None
+        # This line should generally not execute, hence the pragma.
         except exceptions.LegacyPandasError:  # pragma: NO COVER
             raise ("Legacy error raised with a non-legacy dependency version.")
 

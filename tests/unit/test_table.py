@@ -3617,11 +3617,10 @@ class TestRowIterator(unittest.TestCase):
         user_warnings = [
             warning for warning in warned if warning.category is UserWarning
         ]
-        # With Python 3.7 and 3.8, len(user_warnings) = 3. With pandas < 1.5,
-        # pandas.ArrowDtype is not supported. We raise warnings because
-        # range columns have to be converted to object.
-        # With higher Python versions and noextra tests, len(user_warnings) = 0
-        self.assertIn(len(user_warnings), [0, 3])
+        # With pandas < 1.5 pandas.ArrowDtype is not supported. We raise warnings
+        # because range columns have to be converted to object.
+        # With Python versions > 1.5 and noextra tests, len(user_warnings) = 0
+        self.assertEqual(len(user_warnings), 0)
         self.assertEqual(len(df), 4)
 
     @mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm", new=None)
@@ -3652,11 +3651,10 @@ class TestRowIterator(unittest.TestCase):
         user_warnings = [
             warning for warning in warned if warning.category is UserWarning
         ]
-        # With Python 3.7 and 3.8, len(user_warnings) = 4. With pandas < 1.5,
-        # pandas.ArrowDtype is not supported. We raise warnings because
-        # range columns have to be converted to object.
-        # With higher Python versions and noextra tests, len(user_warnings) = 1
-        self.assertIn(len(user_warnings), [1, 4])
+        # With pandas < 1.5 pandas.ArrowDtype is not supported. We raise warnings
+        # because range columns have to be converted to object.
+        # With Python versions > 1.5 and noextra tests, len(user_warnings) = 1
+        self.assertEqual(len(user_warnings), 1)
 
         # Even though the progress bar won't show, downloading the dataframe
         # should still work.

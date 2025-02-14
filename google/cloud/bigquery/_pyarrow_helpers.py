@@ -16,8 +16,6 @@
 
 from typing import Any
 
-from packaging import version
-
 try:
     import pyarrow  # type: ignore
 except ImportError:
@@ -96,14 +94,10 @@ if pyarrow:
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
     }
 
-    # Adds bignumeric support only if pyarrow version >= 3.0.0
-    # Decimal256 support was added to arrow 3.0.0
-    # https://arrow.apache.org/blog/2021/01/25/3.0.0-release/
-    if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
-        _BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
-        # The exact decimal's scale and precision are not important, as only
-        # the type ID matters, and it's the same for all decimal256 instances.
-        _ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
+    _BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
+    # The exact decimal's scale and precision are not important, as only
+    # the type ID matters, and it's the same for all decimal256 instances.
+    _ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
 
 
 def bq_to_arrow_scalars(bq_scalar: str):

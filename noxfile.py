@@ -24,7 +24,7 @@ import time
 
 
 MYPY_VERSION = "mypy==1.6.1"
-PYTYPE_VERSION = "pytype==2021.4.9"
+PYTYPE_VERSION = "pytype==2024.9.13"
 BLACK_VERSION = "black==23.7.0"
 BLACK_PATHS = (
     "benchmark",
@@ -37,9 +37,9 @@ BLACK_PATHS = (
     "setup.py",
 )
 
-DEFAULT_PYTHON_VERSION = "3.8"
-SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.11", "3.12"]
-UNIT_TEST_PYTHON_VERSIONS = ["3.7", "3.8", "3.12"]
+DEFAULT_PYTHON_VERSION = "3.9"
+SYSTEM_TEST_PYTHON_VERSIONS = ["3.9", "3.11", "3.12"]
+UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.11", "3.12"]
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 
@@ -149,7 +149,7 @@ def unit_noextras(session):
     # so that it continues to be an optional dependency.
     # https://github.com/googleapis/python-bigquery/issues/1877
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        session.install("pyarrow==1.0.0")
+        session.install("pyarrow==5.0.0")
 
     default(session, install_extras=False)
 
@@ -265,8 +265,6 @@ def mypy_samples(session):
         "types-requests",
         "types-setuptools",
     )
-
-    session.install("typing-extensions")  # for TypedDict in pre-3.8 Python versions
 
     session.run(
         "mypy",

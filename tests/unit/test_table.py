@@ -16,7 +16,6 @@ import copy
 import datetime
 import logging
 import re
-from sys import version_info
 import time
 import types
 import unittest
@@ -2093,10 +2092,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
         df = row_iterator.to_geodataframe(create_bqstorage_client=False)
         self.assertIsInstance(df, geopandas.GeoDataFrame)
         self.assertEqual(len(df), 0)  # verify the number of rows
-        if version_info.major == 3 and version_info.minor > 7:
-            assert not hasattr(df, "crs")  # used with Python > 3.7
-        else:
-            self.assertIsNone(df.crs)  # used with Python == 3.7
+        assert not hasattr(df, "crs")
 
 
 class TestRowIterator(unittest.TestCase):
@@ -3621,11 +3617,10 @@ class TestRowIterator(unittest.TestCase):
         user_warnings = [
             warning for warning in warned if warning.category is UserWarning
         ]
-        # With Python 3.7 and 3.8, len(user_warnings) = 3. With pandas < 1.5,
-        # pandas.ArrowDtype is not supported. We raise warnings because
-        # range columns have to be converted to object.
+        # With pandas < 1.5, pandas.ArrowDtype is not supported. We raise
+        # warnings because range columns have to be converted to object.
         # With higher Python versions and noextra tests, len(user_warnings) = 0
-        self.assertIn(len(user_warnings), [0, 3])
+        self.assertEqual(len(user_warnings), 0)
         self.assertEqual(len(df), 4)
 
     @mock.patch("google.cloud.bigquery._tqdm_helpers.tqdm", new=None)
@@ -3656,11 +3651,10 @@ class TestRowIterator(unittest.TestCase):
         user_warnings = [
             warning for warning in warned if warning.category is UserWarning
         ]
-        # With Python 3.7 and 3.8, len(user_warnings) = 4. With pandas < 1.5,
-        # pandas.ArrowDtype is not supported. We raise warnings because
-        # range columns have to be converted to object.
+        # With pandas < 1.5, pandas.ArrowDtype is not supported. We raise
+        # warnings because range columns have to be converted to object.
         # With higher Python versions and noextra tests, len(user_warnings) = 1
-        self.assertIn(len(user_warnings), [1, 4])
+        self.assertEqual(len(user_warnings), 1)
 
         # Even though the progress bar won't show, downloading the dataframe
         # should still work.

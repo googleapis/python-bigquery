@@ -20,7 +20,7 @@ build-backend = "setuptools.build_meta"
 name = "google-cloud-bigquery"
 authors = [{ name = "Google LLC", email = "googleapis-packages@google.com" }]
 license = { text = "Apache 2.0" }
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 description = "Google BigQuery API client library"
 readme = "README.rst"
 classifiers = [
@@ -33,12 +33,11 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Operating System :: OS Independent",
   "Topic :: Internet",
 ]
@@ -76,7 +75,6 @@ pandas = [
   "pandas >= 1.1.0",
   "pyarrow >= 3.0.0",
   "db-dtypes >= 0.3.0, < 2.0.0dev",
-  "importlib_metadata >= 1.0.0; python_version < '3.8'",
 ]
 ipywidgets = ["ipywidgets >= 7.7.0", "ipykernel >= 6.0.0"]
 geopandas = ["geopandas >= 0.9.0, < 2.0dev", "Shapely >= 1.8.4, < 3.0.0dev"]

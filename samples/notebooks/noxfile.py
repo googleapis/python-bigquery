@@ -89,7 +89,7 @@ def get_pytest_env_vars() -> Dict[str, str]:
 
 # DO NOT EDIT - automatically generated.
 # All versions used to test samples.
-ALL_VERSIONS = ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+ALL_VERSIONS = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 # Any default versions that should be ignored.
 IGNORED_VERSIONS = TEST_CONFIG["ignored_versions"]
@@ -231,6 +231,7 @@ def _session_tests(
 
     session.run(
         "pytest",
+        "-s",
         *(PYTEST_COMMON_ARGS + session.posargs + concurrent_args),
         # Pytest will return 5 when no tests are collected. This can happen
         # on travis where slow and flaky tests are excluded.

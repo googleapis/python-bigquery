@@ -24,7 +24,7 @@ import time
 
 
 MYPY_VERSION = "mypy==1.6.1"
-PYTYPE_VERSION = "pytype==2021.4.9"
+PYTYPE_VERSION = "pytype==2024.9.13"
 BLACK_VERSION = "black==23.7.0"
 BLACK_PATHS = (
     "benchmark",
@@ -37,9 +37,9 @@ BLACK_PATHS = (
     "setup.py",
 )
 
-DEFAULT_PYTHON_VERSION = "3.8"
-SYSTEM_TEST_PYTHON_VERSIONS = ["3.8", "3.11", "3.12"]
-UNIT_TEST_PYTHON_VERSIONS = ["3.7", "3.8", "3.12"]
+DEFAULT_PYTHON_VERSION = "3.10"
+SYSTEM_TEST_PYTHON_VERSIONS = ["3.9", "3.12", "3.13"]  # oldest, two most recent
+UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.12", "3.13"]  # oldest, two most recent
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 
@@ -103,7 +103,8 @@ def default(session, install_extras=True):
         constraints_path,
     )
 
-    if install_extras and session.python in ["3.11", "3.12"]:
+    # Testing two highest versions with extras
+    if install_extras and session.python in UNIT_TEST_PYTHON_VERSIONS[-2:]:
         install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     elif install_extras:
         install_target = ".[all]"
@@ -136,6 +137,7 @@ def unit(session):
     default(session)
 
 
+# Testing lowest and highest with no extras
 @nox.session(python=[UNIT_TEST_PYTHON_VERSIONS[0], UNIT_TEST_PYTHON_VERSIONS[-1]])
 @_calculate_duration
 def unit_noextras(session):
@@ -149,7 +151,7 @@ def unit_noextras(session):
     # so that it continues to be an optional dependency.
     # https://github.com/googleapis/python-bigquery/issues/1877
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        session.install("pyarrow==1.0.0")
+        session.install("pyarrow==4.0.0")
 
     default(session, install_extras=False)
 
@@ -222,7 +224,7 @@ def system(session):
     # Resource Manager needed for test with a real Resource Tag.
     session.install("google-cloud-resource-manager", "-c", constraints_path)
 
-    if session.python in ["3.11", "3.12"]:
+    if session.python in SYSTEM_TEST_PYTHON_VERSIONS[-2]:  # two most recent
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
@@ -266,8 +268,6 @@ def mypy_samples(session):
         "types-setuptools",
     )
 
-    session.install("typing-extensions")  # for TypedDict in pre-3.8 Python versions
-
     session.run(
         "mypy",
         "--config-file",
@@ -291,7 +291,8 @@ def snippets(session):
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
-    if session.python in ["3.11", "3.12"]:
+    # Testing snippets against two most recent versions
+    if session.python in UNIT_TEST_PYTHON_VERSIONS[-2:]:
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"

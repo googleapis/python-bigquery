@@ -266,6 +266,8 @@ def mypy_samples(session):
         "types-setuptools",
     )
 
+    session.run("python", "-m", "pip", "freeze")
+
     session.run(
         "mypy",
         "--config-file",

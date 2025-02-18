@@ -17,10 +17,7 @@ import pytest
 
 import warnings
 
-try:
-    import proto  # type: ignore
-except ImportError:
-    proto = None
+import proto  # type: ignore
 
 
 @pytest.mark.skipif(proto is None, reason="proto is not installed")

@@ -168,7 +168,12 @@ def query_jobs_insert(
         else:
             return query_job
 
-    future = do_query()
+    # Allow folks to turn off job_retry with an explicit None.
+    if job_retry is None:
+        future = do_query()
+    else:
+        future = job_retry(do_query)()
+
     # The future might be in a failed state now, but if it's
     # unrecoverable, we'll find out when we ask for it's result, at which
     # point, we may retry.

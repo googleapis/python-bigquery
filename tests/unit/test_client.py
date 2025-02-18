@@ -28,9 +28,10 @@ import unittest
 from unittest import mock
 import warnings
 
-import requests
+import freezegun
 import packaging
 import pytest
+import requests
 
 
 try:
@@ -5372,6 +5373,77 @@ class TestClient(unittest.TestCase):
             * 4,
         )
         assert result.job_id == job_id
+
+    def test_query_job_rpc_fail_w_conflict_random_id_job_fetch_retries_404_query_job(
+        self,
+    ):
+        """Regression test for https://github.com/googleapis/python-bigquery/issues/2134
+
+        Sometimes after a Conflict, the fetch fails with a 404. If it keeps
+        failing with a 404, assume that the job actually doesn't exist.
+        """
+        job_id_1 = "abc123"
+        job_id_2 = "xyz789"
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(
+            # We're mocking QueryJob._begin, so this is only going to be
+            # jobs.get requests and responses.
+            google.api_core.exceptions.NotFound("we lost your job again, sorry"),
+            {
+                "jobReference": {
+                    "projectId": self.PROJECT,
+                    "location": "TESTLOC",
+                    "jobId": job_id_2,
+                }
+            },
+        )
+
+        # Choose a small deadline so the 404 retries give up.
+        retry = google.cloud.bigquery.retry.DEFAULT_RETRY.with_deadline(1)
+        job_create_error = google.api_core.exceptions.Conflict("Job already exists.")
+        job_begin_patcher = mock.patch.object(
+            bqjob.QueryJob, "_begin", side_effect=job_create_error
+        )
+        job_id_patcher = mock.patch.object(
+            google.cloud.bigquery._job_helpers,
+            "make_job_id",
+            side_effect=[job_id_1, job_id_2],
+        )
+
+        with freezegun.freeze_time(
+            "2025-01-01 00:00:00",
+            # 10x the retry deadline to guarantee a timeout.
+            auto_tick_seconds=10,
+        ), job_begin_patcher, job_id_patcher:
+            # If get job request fails there does exist a job
+            # with this ID already, retry 404 until we get it (or fails for a
+            # non-retriable reason, see other tests).
+            result = client.query("SELECT 1;", job_id=None, retry=retry)
+
+        jobs_get_path_1 = mock.call(
+            method="GET",
+            path=f"/projects/{self.PROJECT}/jobs/{job_id_1}",
+            query_params={
+                "projection": "full",
+            },
+            timeout=google.cloud.bigquery.retry.DEFAULT_GET_JOB_TIMEOUT,
+        )
+        jobs_get_path_2 = mock.call(
+            method="GET",
+            path=f"/projects/{self.PROJECT}/jobs/{job_id_2}",
+            query_params={
+                "projection": "full",
+            },
+            timeout=google.cloud.bigquery.retry.DEFAULT_GET_JOB_TIMEOUT,
+        )
+        conn.api_request.assert_has_calls(
+            # Double-check that it was jobs.get that was called for each of our
+            # mocked responses.
+            [jobs_get_path_1, jobs_get_path_2],
+        )
+        assert result.job_id == job_id_2
 
     def test_query_job_rpc_fail_w_conflict_random_id_job_fetch_succeeds(self):
         from google.api_core.exceptions import Conflict

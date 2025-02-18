@@ -47,6 +47,7 @@ from google.api_core import retry as retries
 from google.cloud.bigquery import job
 import google.cloud.bigquery.query
 from google.cloud.bigquery import table
+import google.cloud.bigquery.retry
 from google.cloud.bigquery.retry import POLLING_DEFAULT_VALUE
 
 # Avoid circular imports
@@ -142,12 +143,23 @@ def query_jobs_insert(
                 raise create_exc
 
             try:
+                # Sometimes we get a 404 after a Conflict. In this case, we
+                # have pretty high confidence that by retrying the 404, we'll
+                # (hopefully) eventually recover the job.
+                # https://github.com/googleapis/python-bigquery/issues/2134
+                get_job_retry = retry
+                if get_job_retry is not None:
+                    get_job_retry = retry.with_predicate(
+                        lambda exc: isinstance(exc, core_exceptions.NotFound)
+                        or retry._predicate(exc)
+                    )
+
                 query_job = client.get_job(
                     job_id,
                     project=project,
                     location=location,
-                    retry=retry,
-                    timeout=timeout,
+                    retry=get_job_retry,
+                    timeout=google.cloud.bigquery.retry.DEFAULT_GET_JOB_TIMEOUT,
                 )
             except core_exceptions.GoogleAPIError:  # (includes RetryError)
                 raise

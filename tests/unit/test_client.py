@@ -5311,6 +5311,36 @@ class TestClient(unittest.TestCase):
             with pytest.raises(DataLoss, match="we lost your job, sorry"):
                 client.query("SELECT 1;", job_id=None)
 
+    def test_query_job_rpc_fail_w_conflict_random_id_job_fetch_fails_no_retries(self):
+        from google.api_core.exceptions import Conflict
+        from google.api_core.exceptions import DataLoss
+        from google.cloud.bigquery.job import QueryJob
+
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        job_create_error = Conflict("Job already exists.")
+        job_begin_patcher = mock.patch.object(
+            QueryJob, "_begin", side_effect=job_create_error
+        )
+        get_job_patcher = mock.patch.object(
+            client, "get_job", side_effect=DataLoss("we lost your job, sorry")
+        )
+
+        with job_begin_patcher, get_job_patcher:
+            # If get job request fails but supposedly there does exist a job
+            # with this ID already, raise the exception explaining why we
+            # couldn't recover the job.
+            with pytest.raises(DataLoss, match="we lost your job, sorry"):
+                client.query(
+                    "SELECT 1;",
+                    job_id=None,
+                    # Explicitly test with no retries to make sure those branches are covered.
+                    retry=None,
+                    job_retry=None,
+                )
+
     def test_query_job_rpc_fail_w_conflict_random_id_job_fetch_retries_404(self):
         """Regression test for https://github.com/googleapis/python-bigquery/issues/2134
 

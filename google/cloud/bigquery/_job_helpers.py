@@ -169,18 +169,17 @@ def query_jobs_insert(
         else:
             return query_job
 
-    if job_retry is None:
-        future = do_query()
-    else:
-        # Per https://github.com/googleapis/python-bigquery/issues/2134, sometimes
-        # we get a 404 error. In this case, if we get this far, assume that the job
-        # doesn't actually exist and try again. We can't add 404 to the default
-        # job_retry because that happens for errors like "this table does not
-        # exist", which probably won't resolve with a retry.
+    if job_retry is not None:
+
         def do_query_predicate(exc) -> bool:
             if isinstance(exc, core_exceptions.RetryError):
                 exc = exc.cause
 
+            # Per https://github.com/googleapis/python-bigquery/issues/2134, sometimes
+            # we get a 404 error. In this case, if we get this far, assume that the job
+            # doesn't actually exist and try again. We can't add 404 to the default
+            # job_retry because that happens for errors like "this table does not
+            # exist", which probably won't resolve with a retry.
             if isinstance(exc, core_exceptions.NotFound):
                 return True
 
@@ -188,7 +187,9 @@ def query_jobs_insert(
             return job_retry._predicate(exc)
 
         do_query_retry = job_retry.with_predicate(do_query_predicate)
-        future = do_query_retry(do_query)()
+        do_query = do_query_retry(do_query)
+
+    future = do_query()
 
     # The future might be in a failed state now, but if it's
     # unrecoverable, we'll find out when we ask for it's result, at which

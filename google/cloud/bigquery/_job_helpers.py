@@ -181,7 +181,10 @@ def query_jobs_insert(
             # job_retry because that happens for errors like "this table does not
             # exist", which probably won't resolve with a retry.
             if isinstance(exc, core_exceptions.NotFound):
-                return True
+                message = exc.message
+                # Don't try to retry table/dataset not found, just job not found.
+                # The URL contains jobs, so use whitespace to disambiguate.
+                return message is not None and " job" in message.lower()
 
             # Reference the original job_retry to avoid recursion.
             return job_retry._predicate(exc)

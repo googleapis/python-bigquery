@@ -147,12 +147,16 @@ def query_jobs_insert(
                 # have pretty high confidence that by retrying the 404, we'll
                 # (hopefully) eventually recover the job.
                 # https://github.com/googleapis/python-bigquery/issues/2134
+                #
+                # Allow users who want to completely disable retries to
+                # continue to do so by setting retry to None.
                 get_job_retry = retry
                 if retry is not None:
-                    get_job_retry = retry.with_predicate(
-                        lambda exc: isinstance(exc, core_exceptions.NotFound)
-                        # Reference the original retry to avoid recursion.
-                        or retry._predicate(exc)
+                    # TODO(tswast): Amend the user's retry object with allowing
+                    # 404 to retry when there's a public way to do so.
+                    # https://github.com/googleapis/python-api-core/issues/796
+                    get_job_retry = (
+                        google.cloud.bigquery.retry._DEFAULT_GET_JOB_CONFLICT_RETRY
                     )
 
                 query_job = client.get_job(
@@ -169,28 +173,10 @@ def query_jobs_insert(
         else:
             return query_job
 
+    # Allow users who want to completely disable retries to
+    # continue to do so by setting job_retry to None.
     if job_retry is not None:
-
-        def do_query_predicate(exc) -> bool:
-            if isinstance(exc, core_exceptions.RetryError):
-                exc = exc.cause
-
-            # Per https://github.com/googleapis/python-bigquery/issues/2134, sometimes
-            # we get a 404 error. In this case, if we get this far, assume that the job
-            # doesn't actually exist and try again. We can't add 404 to the default
-            # job_retry because that happens for errors like "this table does not
-            # exist", which probably won't resolve with a retry.
-            if isinstance(exc, core_exceptions.NotFound):
-                message = exc.message
-                # Don't try to retry table/dataset not found, just job not found.
-                # The URL contains jobs, so use whitespace to disambiguate.
-                return message is not None and " job" in message.lower()
-
-            # Reference the original job_retry to avoid recursion.
-            return job_retry._predicate(exc)
-
-        do_query_retry = job_retry.with_predicate(do_query_predicate)
-        do_query = do_query_retry(do_query)
+        do_query = google.cloud.bigquery.retry._DEFAULT_QUERY_JOB_INSERT_RETRY(do_query)
 
     future = do_query()
 

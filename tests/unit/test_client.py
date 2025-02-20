@@ -33,6 +33,8 @@ import packaging
 import pytest
 import requests
 
+import google.api
+
 
 try:
     import opentelemetry
@@ -5355,7 +5357,7 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(
             # We're mocking QueryJob._begin, so this is only going to be
             # jobs.get requests and responses.
-            ValueError("not normally retriable, but you said it was"),
+            google.api_core.exceptions.TooManyRequests("this is retriable by default"),
             google.api_core.exceptions.NotFound("we lost your job"),
             google.api_core.exceptions.NotFound("we lost your job again, sorry"),
             {
@@ -5367,11 +5369,6 @@ class TestClient(unittest.TestCase):
             },
         )
 
-        retry = google.cloud.bigquery.retry.DEFAULT_RETRY.with_predicate(
-            # We should respect the predicate the user provides,
-            # but amend it with allowing 404 in this particular situation.
-            lambda exc: isinstance(exc, ValueError)
-        )
         job_create_error = google.api_core.exceptions.Conflict("Job already exists.")
         job_begin_patcher = mock.patch.object(
             bqjob.QueryJob, "_begin", side_effect=job_create_error
@@ -5386,7 +5383,7 @@ class TestClient(unittest.TestCase):
             # If get job request fails there does exist a job
             # with this ID already, retry 404 until we get it (or fails for a
             # non-retriable reason, see other tests).
-            result = client.query("SELECT 1;", job_id=None, retry=retry)
+            result = client.query("SELECT 1;", job_id=None)
 
         jobs_get_path = mock.call(
             method="GET",
@@ -5404,7 +5401,7 @@ class TestClient(unittest.TestCase):
         )
         assert result.job_id == job_id
 
-    def test_query_job_rpc_fail_w_conflict_random_id_job_fetch_retries_404_query_job(
+    def test_query_job_rpc_fail_w_conflict_random_id_job_fetch_retries_404_and_query_job_insert(
         self,
     ):
         """Regression test for https://github.com/googleapis/python-bigquery/issues/2134
@@ -5441,16 +5438,21 @@ class TestClient(unittest.TestCase):
             "make_job_id",
             side_effect=[job_id_1, job_id_2],
         )
+        retry_patcher = mock.patch.object(
+            google.cloud.bigquery.retry,
+            "_DEFAULT_GET_JOB_CONFLICT_RETRY",
+            retry,
+        )
 
         with freezegun.freeze_time(
             "2025-01-01 00:00:00",
             # 10x the retry deadline to guarantee a timeout.
-            auto_tick_seconds=10,
-        ), job_begin_patcher, job_id_patcher:
+            auto_tick_seconds=100,
+        ), job_begin_patcher, job_id_patcher, retry_patcher:
             # If get job request fails there does exist a job
             # with this ID already, retry 404 until we get it (or fails for a
             # non-retriable reason, see other tests).
-            result = client.query("SELECT 1;", job_id=None, retry=retry)
+            result = client.query("SELECT 1;", job_id=None)
 
         jobs_get_path_1 = mock.call(
             method="GET",

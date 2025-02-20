@@ -98,8 +98,12 @@ def _should_retry_get_job_conflict(exc):
     return isinstance(exc, exceptions.NotFound) or _should_retry(exc)
 
 
+# Pick a deadline smaller than our other deadlines since we want to timeout
+# before those expire.
+_DEFAULT_GET_JOB_CONFLICT_DEADLINE = _DEFAULT_RETRY_DEADLINE / 3.0
 _DEFAULT_GET_JOB_CONFLICT_RETRY = retry.Retry(
-    predicate=_should_retry_get_job_conflict, deadline=_DEFAULT_RETRY_DEADLINE
+    predicate=_should_retry_get_job_conflict,
+    deadline=_DEFAULT_GET_JOB_CONFLICT_DEADLINE,
 )
 """Private, may be removed in future."""
 

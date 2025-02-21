@@ -10,8 +10,8 @@ branchProtectionRules:
   requiresStrictStatusChecks: true
   requiredStatusCheckContexts:
     - 'Kokoro'
-    - 'Kokoro snippets-3.12'
     - 'Kokoro system-3.12'
+    - 'Kokoro snippets-3.12'
     - 'cla/google'
     - 'Samples - Lint'
     - 'Samples - Python 3.9'

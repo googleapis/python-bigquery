@@ -1008,11 +1008,10 @@ class TestTable(unittest.TestCase, _SchemaBase):
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)
 
-
         table_constraints = TableConstraints(primary_key=None, foreign_keys=None)
         table.table_constraints = table_constraints
 
-        assert table._properties["tableConstraints"] == {}    
+        assert table._properties["tableConstraints"] == {}
 
     def test_description_setter_bad_value(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)

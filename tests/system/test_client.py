@@ -917,40 +917,36 @@ class TestBigQuery(unittest.TestCase):
         self.assertTrue(_table_exists(table))
 
         table.table_constraints = {
-            "primaryKey": {
-                "columns": ["id"]
-            },
+            "primaryKey": {"columns": ["id"]},
             "foreignKeys": [
                 {
                     "name": "fk_product_id",
                     "referencedTable": "products",
                     "columnReferences": [
-                        {
-                            "referencingColumn": "product_id",
-                            "referencedColumn": "id"
-                        }
-                    ]
+                        {"referencingColumn": "product_id", "referencedColumn": "id"}
+                    ],
                 }
-            ]
+            ],
         }
         table2 = Config.CLIENT.update_table(table, ["table_constraints"])
-        self.assertEqual(table2.table_constraints, {
-            "primaryKey": {
-                "columns": ["id"]
+        self.assertEqual(
+            table2.table_constraints,
+            {
+                "primaryKey": {"columns": ["id"]},
+                "foreignKeys": [
+                    {
+                        "name": "fk_product_id",
+                        "referencedTable": "products",
+                        "columnReferences": [
+                            {
+                                "referencingColumn": "product_id",
+                                "referencedColumn": "id",
+                            }
+                        ],
+                    }
+                ],
             },
-            "foreignKeys": [
-                {
-                    "name": "fk_product_id",
-                    "referencedTable": "products",
-                    "columnReferences": [
-                        {
-                            "referencingColumn": "product_id",
-                            "referencedColumn": "id"
-                        }
-                    ]
-                }
-            ]
-        })
+        )
 
         table2.table_constraints = None
         table3 = Config.CLIENT.update_table(table2, ["table_constraints"])

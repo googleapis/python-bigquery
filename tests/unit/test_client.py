@@ -5414,9 +5414,14 @@ class TestClient(unittest.TestCase):
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        # We're mocking QueryJob._begin, so that the connection should only get
+        # jobs.get requests.
+        job_create_error = google.api_core.exceptions.Conflict("Job already exists.")
+        job_begin_patcher = mock.patch.object(
+            bqjob.QueryJob, "_begin", side_effect=job_create_error
+        )
         conn = client._connection = make_connection(
-            # We're mocking QueryJob._begin, so this is only going to be
-            # jobs.get requests and responses.
             google.api_core.exceptions.NotFound("we lost your job again, sorry"),
             {
                 "jobReference": {
@@ -5428,10 +5433,8 @@ class TestClient(unittest.TestCase):
         )
 
         # Choose a small deadline so the 404 retries give up.
-        retry = google.cloud.bigquery.retry.DEFAULT_RETRY.with_deadline(1)
-        job_create_error = google.api_core.exceptions.Conflict("Job already exists.")
-        job_begin_patcher = mock.patch.object(
-            bqjob.QueryJob, "_begin", side_effect=job_create_error
+        retry = (
+            google.cloud.bigquery.retry._DEFAULT_GET_JOB_CONFLICT_RETRY.with_deadline(1)
         )
         job_id_patcher = mock.patch.object(
             google.cloud.bigquery._job_helpers,
@@ -5447,7 +5450,7 @@ class TestClient(unittest.TestCase):
         with freezegun.freeze_time(
             "2025-01-01 00:00:00",
             # 10x the retry deadline to guarantee a timeout.
-            auto_tick_seconds=100,
+            auto_tick_seconds=10,
         ), job_begin_patcher, job_id_patcher, retry_patcher:
             # If get job request fails there does exist a job
             # with this ID already, retry 404 until we get it (or fails for a

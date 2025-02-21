@@ -175,7 +175,6 @@ def _query_job_insert_should_retry(exc):
     # doesn't actually exist and try again. We can't add 404 to the default
     # job_retry because that happens for errors like "this table does not
     # exist", which probably won't resolve with a retry.
-
     if isinstance(exc, exceptions.RetryError):
         exc = exc.cause
 

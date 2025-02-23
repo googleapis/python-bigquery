@@ -16,21 +16,26 @@ import copy
 import datetime
 import logging
 import re
+from sys import version_info
 import time
 import types
 import unittest
-import warnings
-from sys import version_info
 from unittest import mock
+import warnings
 
 import pytest
-from test_utils.imports import maybe_fail_import
 
 import google.api_core.exceptions
 from google.cloud.bigquery import _versions_helpers, exceptions, external_config
 from google.cloud.bigquery import schema
 from google.cloud.bigquery.dataset import DatasetReference
+from test_utils.imports import maybe_fail_import
+
+from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import exceptions
+from google.cloud.bigquery import external_config
 from google.cloud.bigquery.table import TableReference
+from google.cloud.bigquery.dataset import DatasetReference
 
 
 def _mock_client():
@@ -356,7 +361,9 @@ class TestTableReference(unittest.TestCase):
     def test___repr__(self):
         dataset = DatasetReference("project1", "dataset1")
         table1 = self._make_one(dataset, "table1")
-        expected = "TableReference(DatasetReference('project1', 'dataset1'), 'table1')"
+        expected = (
+            "TableReference(DatasetReference('project1', 'dataset1'), " "'table1')"
+        )
         self.assertEqual(repr(table1), expected)
 
     def test___str__(self):
@@ -387,7 +394,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
     def _setUpConstants(self):
         import datetime
-
         from google.cloud._helpers import UTC
 
         self.WHEN_TS = 1437767599.006
@@ -575,10 +581,10 @@ class TestTable(unittest.TestCase, _SchemaBase):
         self.assertEqual(table.table_id, "some_tbl")
 
     def test_ctor_tablelistitem(self):
-        import datetime
-
-        from google.cloud._helpers import UTC, _millis
         from google.cloud.bigquery.table import Table, TableListItem
+
+        import datetime
+        from google.cloud._helpers import _millis, UTC
 
         self.WHEN_TS = 1437767599.125
         self.EXP_TIME = datetime.datetime(2015, 8, 1, 23, 59, 59, tzinfo=UTC)
@@ -775,8 +781,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
     def test_props_set_by_server(self):
         import datetime
-
-        from google.cloud._helpers import UTC, _millis
+        from google.cloud._helpers import UTC
+        from google.cloud._helpers import _millis
 
         CREATED = datetime.datetime(2015, 7, 29, 12, 13, 22, tzinfo=UTC)
         MODIFIED = datetime.datetime(2015, 7, 29, 14, 47, 15, tzinfo=UTC)
@@ -1056,7 +1062,6 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
     def test_expires_setter(self):
         import datetime
-
         from google.cloud._helpers import UTC
 
         WHEN = datetime.datetime(2015, 7, 28, 16, 39, tzinfo=UTC)
@@ -1269,8 +1274,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
     def test_from_api_repr_w_properties(self):
         import datetime
-
-        from google.cloud._helpers import UTC, _millis
+        from google.cloud._helpers import UTC
+        from google.cloud._helpers import _millis
 
         RESOURCE = self._make_resource()
         RESOURCE["view"] = {"query": "select fullname, age from person_ages"}
@@ -1284,8 +1289,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
     def test_from_api_repr_w_partial_streamingbuffer(self):
         import datetime
-
-        from google.cloud._helpers import UTC, _millis
+        from google.cloud._helpers import UTC
+        from google.cloud._helpers import _millis
 
         RESOURCE = self._make_resource()
         self.OLDEST_TIME = datetime.datetime(2015, 8, 1, 23, 59, 59, tzinfo=UTC)
@@ -1449,7 +1454,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
             table._build_resource(["bad"])
 
     def test_range_partitioning(self):
-        from google.cloud.bigquery.table import PartitionRange, RangePartitioning
+        from google.cloud.bigquery.table import RangePartitioning
+        from google.cloud.bigquery.table import PartitionRange
 
         table = self._make_one("proj.dset.tbl")
         assert table.range_partitioning is None
@@ -1482,7 +1488,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
         assert table.require_partition_filter is None
 
     def test_time_partitioning_getter(self):
-        from google.cloud.bigquery.table import TimePartitioning, TimePartitioningType
+        from google.cloud.bigquery.table import TimePartitioning
+        from google.cloud.bigquery.table import TimePartitioningType
 
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
@@ -1539,7 +1546,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
             self.assertIs(warning.category, PendingDeprecationWarning)
 
     def test_time_partitioning_setter(self):
-        from google.cloud.bigquery.table import TimePartitioning, TimePartitioningType
+        from google.cloud.bigquery.table import TimePartitioning
+        from google.cloud.bigquery.table import TimePartitioningType
 
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
@@ -1729,7 +1737,9 @@ class TestTable(unittest.TestCase, _SchemaBase):
         dataset = DatasetReference("project1", "dataset1")
         table1 = self._make_one(TableReference(dataset, "table1"))
         expected = (
-            "Table(TableReference(DatasetReference('project1', 'dataset1'), 'table1'))"
+            "Table(TableReference("
+            "DatasetReference('project1', 'dataset1'), "
+            "'table1'))"
         )
         self.assertEqual(repr(table1), expected)
 
@@ -1793,7 +1803,7 @@ class Test_row_from_mapping(unittest.TestCase, _SchemaBase):
         return _row_from_mapping(mapping, schema)
 
     def test__row_from_mapping_wo_schema(self):
-        from google.cloud.bigquery.table import _TABLE_HAS_NO_SCHEMA, Table
+        from google.cloud.bigquery.table import Table, _TABLE_HAS_NO_SCHEMA
 
         MAPPING = {"full_name": "Phred Phlyntstone", "age": 32}
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
@@ -2361,7 +2371,8 @@ class TestRowIterator(unittest.TestCase):
         return self._make_one(_mock_client(), api_request, path, schema)
 
     def test_constructor(self):
-        from google.cloud.bigquery.table import _item_to_row, _rows_page_start
+        from google.cloud.bigquery.table import _item_to_row
+        from google.cloud.bigquery.table import _rows_page_start
 
         client = _mock_client()
         path = "/some/path"
@@ -2659,8 +2670,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test__should_use_bqstorage_returns_false_if_page_token_set(self):
         iterator = self._make_one(
-            page_token="abc",
-            first_page_response=None,  # not cached
+            page_token="abc", first_page_response=None  # not cached
         )
         result = iterator._should_use_bqstorage(
             bqstorage_client=None, create_bqstorage_client=True
@@ -2669,8 +2679,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test__should_use_bqstorage_returns_false_if_max_results_set(self):
         iterator = self._make_one(
-            max_results=10,
-            first_page_response=None,  # not cached
+            max_results=10, first_page_response=None  # not cached
         )
         result = iterator._should_use_bqstorage(
             bqstorage_client=None, create_bqstorage_client=True
@@ -2829,12 +2838,12 @@ class TestRowIterator(unittest.TestCase):
         pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud import bigquery_storage
-        from google.cloud.bigquery import schema
-        from google.cloud.bigquery import table as mut
         from google.cloud.bigquery_storage_v1 import reader
         from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
             grpc as big_query_read_grpc_transport,
         )
+        from google.cloud.bigquery import schema
+        from google.cloud.bigquery import table as mut
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         bqstorage_client._transport = mock.create_autospec(
@@ -2995,7 +3004,6 @@ class TestRowIterator(unittest.TestCase):
             "pyarrow", minversion=self.PYARROW_MINIMUM_VERSION
         )
         import pyarrow.types
-
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [SchemaField("name", "STRING"), SchemaField("age", "INTEGER")]
@@ -3196,9 +3204,9 @@ class TestRowIterator(unittest.TestCase):
     def test_to_arrow_w_bqstorage(self):
         pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery_storage_v1 import reader
         from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
             grpc as big_query_read_grpc_transport,
@@ -3279,9 +3287,9 @@ class TestRowIterator(unittest.TestCase):
     def test_to_arrow_w_bqstorage_creates_client(self):
         pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
             grpc as big_query_read_grpc_transport,
         )
@@ -3345,9 +3353,9 @@ class TestRowIterator(unittest.TestCase):
     def test_to_arrow_w_bqstorage_no_streams(self):
         pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         session = bigquery_storage.types.ReadSession()
@@ -3518,9 +3526,9 @@ class TestRowIterator(unittest.TestCase):
         pandas = pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery_storage_v1 import reader
         from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
             grpc as big_query_read_grpc_transport,
@@ -3591,9 +3599,9 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_iterable_w_bqstorage_max_results_warning(self):
         pandas = pytest.importorskip("pandas")
         pytest.importorskip("google.cloud.bigquery_storage")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
 
@@ -3940,7 +3948,6 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_various_types_nullable(self):
         pandas = pytest.importorskip("pandas")
         import datetime
-
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -4339,7 +4346,6 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_unsupported_dtypes_mapper(self):
         pytest.importorskip("pandas")
         import numpy
-
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -4625,9 +4631,9 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_bqstorage_creates_client(self):
         pytest.importorskip("pandas")
         pytest.importorskip("google.cloud.bigquery_storage")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
             grpc as big_query_read_grpc_transport,
         )
@@ -4658,9 +4664,9 @@ class TestRowIterator(unittest.TestCase):
     def test_to_dataframe_w_bqstorage_no_streams(self):
         pytest.importorskip("pandas")
         pytest.importorskip("google.cloud.bigquery_storage")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         session = bigquery_storage.types.ReadSession()
@@ -4687,8 +4693,8 @@ class TestRowIterator(unittest.TestCase):
         pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pandas")
         pytest.importorskip("pyarrow")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery.table import Table
+        from google.cloud import bigquery_storage
 
         bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
         session = bigquery_storage.types.ReadSession()
@@ -4765,9 +4771,9 @@ class TestRowIterator(unittest.TestCase):
         pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
-        from google.cloud import bigquery_storage
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
+        from google.cloud import bigquery_storage
         from google.cloud.bigquery_storage_v1 import reader
         from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
             grpc as big_query_read_grpc_transport,
@@ -5367,7 +5373,8 @@ class TestRowIterator(unittest.TestCase):
         with self.assertRaisesRegex(
             TypeError,
             re.escape(
-                "There must be at least one GEOGRAPHY column to create a GeoDataFrame"
+                "There must be at least one GEOGRAPHY column"
+                " to create a GeoDataFrame"
             ),
         ):
             row_iterator.to_geodataframe(create_bqstorage_client=False)
@@ -6477,9 +6484,9 @@ def test_table_reference_to_bqstorage_v1_stable(table_path):
 def test_to_arrow_iterable_w_bqstorage_max_stream_count(preserve_order):
     pytest.importorskip("pandas")
     pytest.importorskip("google.cloud.bigquery_storage")
-    from google.cloud import bigquery_storage
     from google.cloud.bigquery import schema
     from google.cloud.bigquery import table as mut
+    from google.cloud import bigquery_storage
 
     bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
     session = bigquery_storage.types.ReadSession()
@@ -6512,9 +6519,9 @@ def test_to_arrow_iterable_w_bqstorage_max_stream_count(preserve_order):
 def test_to_dataframe_iterable_w_bqstorage_max_stream_count(preserve_order):
     pytest.importorskip("pandas")
     pytest.importorskip("google.cloud.bigquery_storage")
-    from google.cloud import bigquery_storage
     from google.cloud.bigquery import schema
     from google.cloud.bigquery import table as mut
+    from google.cloud import bigquery_storage
 
     bqstorage_client = mock.create_autospec(bigquery_storage.BigQueryReadClient)
     session = bigquery_storage.types.ReadSession()

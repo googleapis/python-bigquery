@@ -56,14 +56,12 @@ else:
     _read_wkt = wkt.loads
 
 import google.api_core.exceptions
-import google.cloud._helpers  # type: ignore
 from google.api_core.page_iterator import HTTPIterator
-from google.cloud.bigquery import (
-    _helpers,
-    _pandas_helpers,
-    _versions_helpers,
-    external_config,
-)
+
+import google.cloud._helpers  # type: ignore
+from google.cloud.bigquery import _helpers
+from google.cloud.bigquery import _pandas_helpers
+from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions as bq_exceptions
 from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
@@ -77,10 +75,9 @@ from google.cloud.bigquery import external_config
 if typing.TYPE_CHECKING:  # pragma: NO COVER
     # Unconditionally import optional dependencies again to tell pytype that
     # they are not None, avoiding false "no attribute" errors.
-    import geopandas  # type: ignore
     import pandas
     import pyarrow
-
+    import geopandas  # type: ignore
     from google.cloud import bigquery_storage  # type: ignore
     from google.cloud.bigquery.dataset import DatasetReference
 
@@ -680,7 +677,7 @@ class Table(_TableBase):
             api_repr = value.to_api_repr()
         elif value is not None:
             raise ValueError(
-                "value must be google.cloud.bigquery.table.TimePartitioning or None"
+                "value must be google.cloud.bigquery.table.TimePartitioning " "or None"
             )
         self._properties[self._PROPERTY_TO_API_FIELD["time_partitioning"]] = api_repr
 
@@ -2711,7 +2708,8 @@ class RowIterator(HTTPIterator):
         )
         if not geography_columns:
             raise TypeError(
-                "There must be at least one GEOGRAPHY column to create a GeoDataFrame"
+                "There must be at least one GEOGRAPHY column"
+                " to create a GeoDataFrame"
             )
 
         if geography_column:

@@ -939,7 +939,27 @@ class TestTable(unittest.TestCase, _SchemaBase):
             ],
         }
 
-    def test_table_constraints_property_setter_only_primary_key(self):
+    def test_table_constraints_property_setter_invalid_value(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        with pytest.raises(
+            ValueError,
+            match="value must be google.cloud.bigquery.table.TableConstraints or None",
+        ):
+            table.table_constraints = "invalid_value"
+
+    def test_table_constraints_property_setter_none(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        table.table_constraints = None
+
+        assert table._properties["tableConstraints"] is None
+
+    def test_table_constraints_property_setter_only_primary_key_set(self):
         from google.cloud.bigquery.table import PrimaryKey, TableConstraints
 
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
@@ -1001,7 +1021,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
             ]
         }
 
-    def test_table_constraints_property_setter_no_constraints(self):
+    def test_table_constraints_property_setter_empty_constraints(self):
         from google.cloud.bigquery.table import TableConstraints
 
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
@@ -6194,6 +6214,19 @@ class TestTableConstraint(unittest.TestCase):
         }
         self.assertEqual(instance.to_api_repr(), expected)
 
+    def test_to_api_repr_empty_primary_key(self):
+        from google.cloud.bigquery.table import PrimaryKey
+
+        primary_key = PrimaryKey(columns=[])
+        instance = self._make_one(primary_key=primary_key, foreign_keys=None)
+
+        expected = {
+            "primaryKey": {
+                "columns": [],
+            },
+        }
+        self.assertEqual(instance.to_api_repr(), expected)
+
     def test_to_api_repr_only_foreign_keys(self):
         from google.cloud.bigquery.table import ColumnReference, ForeignKey
 
@@ -6228,7 +6261,14 @@ class TestTableConstraint(unittest.TestCase):
         }
         self.assertEqual(instance.to_api_repr(), expected)
 
-    def test_to_api_repr_no_constraints(self):
+    def test_to_api_repr_empty_foreign_keys(self):
+        foreign_keys = []
+        instance = self._make_one(primary_key=None, foreign_keys=foreign_keys)
+
+        expected = {}
+        self.assertEqual(instance.to_api_repr(), expected)
+
+    def test_to_api_repr_empty_constraints(self):
         instance = self._make_one(primary_key=None, foreign_keys=None)
         expected = {}
         self.assertEqual(instance.to_api_repr(), expected)

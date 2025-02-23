@@ -67,6 +67,7 @@ from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import DefaultPandasDTypes
 from google.cloud.bigquery.external_config import ExternalConfig
+from google.cloud.bigquery import schema as _schema
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
@@ -1099,6 +1100,41 @@ class Table(_TableBase):
             self._properties[
                 self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
             ] = value
+
+    @property
+    def foreign_type_info(self) -> Optional[_schema.ForeignTypeInfo]:
+        """Optional. Specifies metadata of the foreign data type definition in
+        field schema (TableFieldSchema.foreign_type_definition).
+        Returns:
+            Optional[schema.ForeignTypeInfo]:
+                Foreign type information, or :data:`None` if not set.
+        .. Note::
+            foreign_type_info is only required if you are referencing an
+            external catalog such as a Hive table.
+            For details, see:
+            https://cloud.google.com/bigquery/docs/external-tables
+            https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
+        """
+
+        prop = _helpers._get_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["foreign_type_info"]
+        )
+        if prop is not None:
+            return _schema.ForeignTypeInfo.from_api_repr(prop)
+        return None
+
+    @foreign_type_info.setter
+    def foreign_type_info(self, value: Union[_schema.ForeignTypeInfo, dict, None]):
+        value = _helpers._isinstance_or_raise(
+            value,
+            (_schema.ForeignTypeInfo, dict),
+            none_allowed=True,
+        )
+        if isinstance(value, _schema.ForeignTypeInfo):
+            value = value.to_api_repr()
+        _helpers._set_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["foreign_type_info"], value
+        )
 
     @table_constraints.setter
     def table_constraints(self, value):

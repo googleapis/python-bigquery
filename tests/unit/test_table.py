@@ -26,15 +26,13 @@ import warnings
 import pytest
 
 import google.api_core.exceptions
-from google.cloud.bigquery import _versions_helpers, exceptions, external_config
-from google.cloud.bigquery import schema
-from google.cloud.bigquery.dataset import DatasetReference
 from test_utils.imports import maybe_fail_import
 
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import external_config
-from google.cloud.bigquery.table import TableConstraints, TableReference
+from google.cloud.bigquery import schema
+from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
 
@@ -946,6 +944,8 @@ class TestTable(unittest.TestCase, _SchemaBase):
         }
 
     def test_table_constraints_property_setter_empty_value(self):
+        from google.cloud.bigquery.table import TableConstraints
+
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)

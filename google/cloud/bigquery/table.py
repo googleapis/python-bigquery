@@ -1100,6 +1100,17 @@ class Table(_TableBase):
                 self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
             ] = value
 
+    @table_constraints.setter
+    def table_constraints(self, value):
+        """Tables Primary Key and Foreign Key information."""
+        api_repr = value
+        if not isinstance(value, TableConstraints) and value is not None:
+            raise ValueError(
+                "value must be google.cloud.bigquery.table.TableConstraints or None"
+            )
+        api_repr = value.to_api_repr() if value else None
+        self._properties[self._PROPERTY_TO_API_FIELD["table_constraints"]] = api_repr
+
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":
         """Construct a table from fully-qualified table ID.
@@ -3394,6 +3405,17 @@ class TableConstraints:
     ):
         self.primary_key = primary_key
         self.foreign_keys = foreign_keys
+
+    def __eq__(self, other):
+        if not isinstance(other, TableConstraints) and other is not None:
+            raise TypeError("The value provided is not a BigQuery TableConstraints.")
+        return (
+            self.primary_key == other.primary_key
+            if other.primary_key
+            else None and self.foreign_keys == other.foreign_keys
+            if other.foreign_keys
+            else None
+        )
 
     @classmethod
     def from_api_repr(cls, resource: Dict[str, Any]) -> "TableConstraints":

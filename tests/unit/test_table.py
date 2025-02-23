@@ -34,7 +34,7 @@ from test_utils.imports import maybe_fail_import
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import external_config
-from google.cloud.bigquery.table import TableReference
+from google.cloud.bigquery.table import TableConstraints, TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
 
@@ -945,6 +945,14 @@ class TestTable(unittest.TestCase, _SchemaBase):
             ],
         }
 
+    def test_table_constraints_property_setter_empty_value(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        table.table_constraints = TableConstraints(primary_key=None, foreign_keys=None)
+        assert table._properties["tableConstraints"] == {}
+
     def test_table_constraints_property_setter_invalid_value(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
@@ -956,13 +964,12 @@ class TestTable(unittest.TestCase, _SchemaBase):
         ):
             table.table_constraints = "invalid_value"
 
-    def test_table_constraints_property_setter_none(self):
+    def test_table_constraints_property_setter_none_value(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
         table_ref = dataset.table(self.TABLE_NAME)
         table = self._make_one(table_ref)
 
         table.table_constraints = None
-
         assert table._properties["tableConstraints"] is None
 
     def test_table_constraints_property_setter_only_primary_key_set(self):
@@ -2842,7 +2849,7 @@ class TestRowIterator(unittest.TestCase):
         from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
             grpc as big_query_read_grpc_transport,
         )
-        
+
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
 

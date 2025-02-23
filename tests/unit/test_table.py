@@ -2842,6 +2842,7 @@ class TestRowIterator(unittest.TestCase):
         from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
             grpc as big_query_read_grpc_transport,
         )
+        
         from google.cloud.bigquery import schema
         from google.cloud.bigquery import table as mut
 

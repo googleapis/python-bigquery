@@ -103,7 +103,17 @@ def default(session, install_extras=True):
         constraints_path,
     )
 
-    if install_extras and session.python in ["3.11", "3.12"]:
+    # Until we drop support for pandas 1.x.0, we have some conditionals
+    # that check for the Float64DType that was added in version 1.2.0.
+    # In order to ensure that the code has full coverage, we install at least
+    # one version of pandas to ensure that the conditional gets exercised.
+    # # before 1.2.0. See test_table.py > test_to_dataframe_w_dtypes_mapper
+    if install_extras and session.python == "3.9":
+        session.install("pandas<1.2.0")
+        session.install("numpy<=1.29.0")
+        session.install("db-dtypes")
+        install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
+    elif install_extras and session.python in ["3.12"]:
         install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     elif install_extras:
         install_target = ".[all]"
@@ -157,7 +167,7 @@ def unit_noextras(session):
     # so that it continues to be an optional dependency.
     # https://github.com/googleapis/python-bigquery/issues/1877
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        session.install("pyarrow==5.0.0")
+        session.install("pyarrow==4.0.0")
 
     default(session, install_extras=False)
 
@@ -178,6 +188,7 @@ def mypy(session):
         "types-requests",
         "types-setuptools",
     )
+    session.run("python", "-m", "pip", "freeze")
     session.run("mypy", "-p", "google", "--show-traceback")
 
 
@@ -192,6 +203,7 @@ def pytype(session):
     session.install("attrs==20.3.0")
     session.install("-e", ".[all]")
     session.install(PYTYPE_VERSION)
+    session.run("python", "-m", "pip", "freeze")
     # See https://github.com/google/pytype/issues/464
     session.run("pytype", "-P", ".", "google/cloud/bigquery")
 
@@ -311,6 +323,7 @@ def snippets(session):
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)
+    session.run("python", "-m", "pip", "freeze")
 
     # Run py.test against the snippets tests.
     # Skip tests in samples/snippets, as those are run in a different session
@@ -339,6 +352,7 @@ def cover(session):
     """
 
     session.install("coverage", "pytest-cov")
+    session.run("python", "-m", "pip", "freeze")
     session.run("coverage", "report", "--show-missing", "--fail-under=100")
     session.run("coverage", "erase")
 
@@ -453,6 +467,7 @@ def lint(session):
 
     session.install("flake8", BLACK_VERSION)
     session.install("-e", ".")
+    session.run("python", "-m", "pip", "freeze")
     session.run("flake8", os.path.join("google", "cloud", "bigquery"))
     session.run("flake8", "tests")
     session.run("flake8", os.path.join("docs", "samples"))
@@ -467,6 +482,7 @@ def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
 
     session.install("docutils", "Pygments")
+    session.run("python", "-m", "pip", "freeze")
     session.run("python", "setup.py", "check", "--restructuredtext", "--strict")
 
 
@@ -478,6 +494,7 @@ def blacken(session):
     """
 
     session.install(BLACK_VERSION)
+    session.run("python", "-m", "pip", "freeze")
     session.run("black", *BLACK_PATHS)
 
 
@@ -504,6 +521,7 @@ def docs(session):
     session.install("-e", ".[all]")
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
+    session.run("python", "-m", "pip", "freeze")
     session.run(
         "sphinx-build",
         "-W",  # warnings as errors
@@ -540,6 +558,7 @@ def docfx(session):
     )
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
+    session.run("python", "-m", "pip", "freeze")
     session.run(
         "sphinx-build",
         "-T",  # show full traceback on exception

@@ -652,7 +652,7 @@ def test_to_dataframe_bqstorage_no_pyarrow_compression():
     reason="pandas 2.0 changes some default dtypes and we haven't update the test to account for those",
 )
 @pytest.mark.skipif(pyarrow is None, reason="Requires `pyarrow`")
-def test_to_dataframe_column_dtypes():  # pragma: NO COVER
+def test_to_dataframe_column_dtypes():
     from google.cloud.bigquery.job import QueryJob as target_class
 
     begun_resource = _make_job_resource(job_type="query")

@@ -5,4 +5,4 @@
 # NOTE: Not comprehensive yet, will eventually be maintained semi-automatically by
 # the renovate bot.
 grpcio==1.47.0
-pyarrow>=4.0.0
+pyarrow>=3.0.0

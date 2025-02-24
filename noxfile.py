@@ -109,10 +109,10 @@ def default(session, install_extras=True):
     # one version of pandas to ensure that the conditional gets exercised.
     # # before 1.2.0. See test_table.py > test_to_dataframe_w_dtypes_mapper
     if install_extras and session.python == "3.9":
-        session.install("pandas<1.2.0")
+        session.install("pandas<=1.1.3")
         session.install("numpy<=1.29.0")
         session.install("db-dtypes")
-        install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
+        install_target = ".[bqstorage,ipywidgets,tqdm,opentelemetry]"
     elif install_extras and session.python in ["3.12"]:
         install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     elif install_extras:

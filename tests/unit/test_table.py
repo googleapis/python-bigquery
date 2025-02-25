@@ -6099,6 +6099,144 @@ class TestTableConstraint(unittest.TestCase):
         self.assertIsNone(instance.primary_key)
         self.assertIsNone(instance.foreign_keys)
 
+    def test_constructor_explicit(self):
+        from google.cloud.bigquery.table import (
+            PrimaryKey,
+            ForeignKey,
+            TableReference,
+            ColumnReference,
+        )
+
+        primary_key = PrimaryKey(columns=["my_pk_id"])
+        foriegn_keys = [
+            ForeignKey(
+                name="my_fk_id",
+                referenced_table=TableReference.from_string(
+                    "my-project.my-dataset.my-table"
+                ),
+                column_references=[
+                    ColumnReference(referencing_column="id", referenced_column="id"),
+                ],
+            ),
+        ]
+
+        table_constraint = self._make_one(
+            primary_key=primary_key,
+            foreign_keys=foriegn_keys,
+        )
+
+        self.assertEqual(table_constraint.primary_key, primary_key)
+        self.assertEqual(table_constraint.foreign_keys, foriegn_keys)
+
+    def test_constructor_explicit_with_none(self):
+        table_constraint = self._make_one(primary_key=None, foreign_keys=None)
+
+        self.assertIsNone(table_constraint.primary_key)
+        self.assertIsNone(table_constraint.foreign_keys)
+
+    def test__eq__primary_key_mismatch(self):
+        from google.cloud.bigquery.table import (
+            PrimaryKey,
+            ForeignKey,
+            TableReference,
+            ColumnReference,
+        )
+
+        foriegn_keys = [
+            ForeignKey(
+                name="my_fk_id",
+                referenced_table=TableReference.from_string(
+                    "my-project.my-dataset.my-table"
+                ),
+                column_references=[
+                    ColumnReference(referencing_column="id", referenced_column="id"),
+                ],
+            ),
+        ]
+
+        table_constraint = self._make_one(
+            primary_key=PrimaryKey(columns=["my_pk_id"]),
+            foreign_keys=foriegn_keys,
+        )
+        other_table_constraint = self._make_one(
+            primary_key=PrimaryKey(columns=["my_other_pk_id"]),
+            foreign_keys=foriegn_keys,
+        )
+
+        self.assertNotEqual(table_constraint, other_table_constraint)
+
+    def test__eq__foreign_keys_mismatch(self):
+        from google.cloud.bigquery.table import (
+            PrimaryKey,
+            ForeignKey,
+            TableReference,
+            ColumnReference,
+        )
+
+        primary_key = PrimaryKey(columns=["my_pk_id"])
+
+        table_constraint = self._make_one(
+            primary_key=primary_key,
+            foreign_keys=[
+                ForeignKey(
+                    name="my_fk_id",
+                    referenced_table=TableReference.from_string(
+                        "my-project.my-dataset.my-table"
+                    ),
+                    column_references=[
+                        ColumnReference(
+                            referencing_column="id", referenced_column="id"
+                        ),
+                    ],
+                ),
+            ],
+        )
+        other_table_constraint = self._make_one(
+            primary_key=primary_key,
+            foreign_keys=[
+                ForeignKey(
+                    name="my_other_fk_id",
+                    referenced_table=TableReference.from_string(
+                        "my-project.my-dataset.my-other-table"
+                    ),
+                    column_references=[
+                        ColumnReference(
+                            referencing_column="other_id", referenced_column="other_id"
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+        self.assertNotEqual(table_constraint, other_table_constraint)
+
+    def test__eq__other_type(self):
+        from google.cloud.bigquery.table import (
+            PrimaryKey,
+            ForeignKey,
+            TableReference,
+            ColumnReference,
+        )
+
+        table_constraint = self._make_one(
+            primary_key=PrimaryKey(columns=["my_pk_id"]),
+            foreign_keys=[
+                ForeignKey(
+                    name="my_fk_id",
+                    referenced_table=TableReference.from_string(
+                        "my-project.my-dataset.my-table"
+                    ),
+                    column_references=[
+                        ColumnReference(
+                            referencing_column="id", referenced_column="id"
+                        ),
+                    ],
+                ),
+            ],
+        )
+        with self.assertRaises(TypeError):
+            table_constraint == "This is not a Table Constraint"
+
     def test_from_api_repr_full_resource(self):
         from google.cloud.bigquery.table import (
             ColumnReference,

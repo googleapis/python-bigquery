@@ -14,7 +14,6 @@
 
 """This script is used to synthesize generated parts of this library."""
 from pathlib import Path
-import textwrap
 
 import synthtool as s
 from synthtool import gcp
@@ -72,7 +71,7 @@ s.move(
         ".kokoro/presubmit/presubmit.cfg",
         ".kokoro/continuous/prerelease-deps.cfg",
         ".github/workflows",  # exclude gh actions as credentials are needed for tests
-	"README.rst",
+        "README.rst",
     ],
 )
 

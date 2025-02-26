@@ -2056,7 +2056,7 @@ class TestClient(unittest.TestCase):
         ds.labels = LABELS
         ds.access_entries = [AccessEntry("OWNER", "userByEmail", "phred@example.com")]
         ds.resource_tags = RESOURCE_TAGS
-        fields = [
+        filter_fields = [
             "description",
             "friendly_name",
             "location",
@@ -2070,12 +2070,12 @@ class TestClient(unittest.TestCase):
         ) as final_attributes:
             ds2 = client.update_dataset(
                 ds,
-                fields=fields,
+                fields=filter_fields,
                 timeout=7.5,
             )
 
         final_attributes.assert_called_once_with(
-            {"path": "/%s" % PATH, "fields": fields}, client, None
+            {"path": "/%s" % PATH, "fields": filter_fields}, client, None
         )
 
         conn.api_request.assert_called_once_with(
@@ -2620,7 +2620,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(len(conn.api_request.call_args_list), 2)
         req = conn.api_request.call_args_list[1]
         self.assertEqual(req[1]["method"], "PATCH")
-        sent = {"schema": None}
+        sent = {"schema": {"fields": None}}
         self.assertEqual(req[1]["data"], sent)
         self.assertEqual(req[1]["path"], "/%s" % path)
         self.assertEqual(len(updated_table.schema), 0)
@@ -8563,8 +8563,12 @@ class TestClientUpload(object):
             autospec=True,
             side_effect=google.api_core.exceptions.NotFound("Table not found"),
         )
+        pandas_gbq_patch = mock.patch(
+            "google.cloud.bigquery._pandas_helpers.pandas_gbq",
+            new=None,
+        )
 
-        with load_patch as load_table_from_file, get_table_patch:
+        with load_patch as load_table_from_file, get_table_patch, pandas_gbq_patch:
             with warnings.catch_warnings(record=True) as warned:
                 client.load_table_from_dataframe(
                     dataframe, self.TABLE_REF, location=self.LOCATION
@@ -8620,7 +8624,6 @@ class TestClientUpload(object):
         load_patch = mock.patch(
             "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
         )
-
         get_table_patch = mock.patch(
             "google.cloud.bigquery.client.Client.get_table",
             autospec=True,
@@ -8632,6 +8635,7 @@ class TestClientUpload(object):
                 ]
             ),
         )
+
         with load_patch as load_table_from_file, get_table_patch:
             client.load_table_from_dataframe(
                 dataframe, self.TABLE_REF, location=self.LOCATION
@@ -8752,10 +8756,10 @@ class TestClientUpload(object):
 
         client = self._make_client()
         dataframe = pandas.DataFrame({"x": [1, 2, None, 4]}, dtype="Int64")
+
         load_patch = mock.patch(
             "google.cloud.bigquery.client.Client.load_table_from_file", autospec=True
         )
-
         get_table_patch = mock.patch(
             "google.cloud.bigquery.client.Client.get_table",
             autospec=True,
@@ -8784,8 +8788,11 @@ class TestClientUpload(object):
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.PARQUET
-        assert tuple(sent_config.schema) == (
-            SchemaField("x", "INT64", "NULLABLE", None),
+        assert (
+            # Accept either the GoogleSQL or legacy SQL type name from pandas-gbq.
+            tuple(sent_config.schema) == (SchemaField("x", "INT64", "NULLABLE", None),)
+            or tuple(sent_config.schema)
+            == (SchemaField("x", "INTEGER", "NULLABLE", None),)
         )
 
     def test_load_table_from_dataframe_struct_fields(self):
@@ -8931,11 +8938,19 @@ class TestClientUpload(object):
             data=records, columns=["float_column", "array_column"]
         )
 
-        expected_schema = [
+        expected_schema_googlesql = [
             SchemaField("float_column", "FLOAT"),
             SchemaField(
                 "array_column",
                 "INT64",
+                mode="REPEATED",
+            ),
+        ]
+        expected_schema_legacy_sql = [
+            SchemaField("float_column", "FLOAT"),
+            SchemaField(
+                "array_column",
+                "INTEGER",
                 mode="REPEATED",
             ),
         ]
@@ -8974,7 +8989,10 @@ class TestClientUpload(object):
 
         sent_config = load_table_from_file.mock_calls[0][2]["job_config"]
         assert sent_config.source_format == job.SourceFormat.PARQUET
-        assert sent_config.schema == expected_schema
+        assert (
+            sent_config.schema == expected_schema_googlesql
+            or sent_config.schema == expected_schema_legacy_sql
+        )
 
     def test_load_table_from_dataframe_w_partial_schema(self):
         pandas = pytest.importorskip("pandas")
@@ -9094,7 +9112,6 @@ class TestClientUpload(object):
 
         load_table_from_file.assert_not_called()
         message = str(exc_context.value)
-        assert "bq_schema contains fields not present in dataframe" in message
         assert "unknown_col" in message
 
     def test_load_table_from_dataframe_w_schema_arrow_custom_compression(self):

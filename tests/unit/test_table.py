@@ -2170,7 +2170,11 @@ class Test_EmptyRowIterator(unittest.TestCase):
         df = row_iterator.to_geodataframe(create_bqstorage_client=False)
         self.assertIsInstance(df, geopandas.GeoDataFrame)
         self.assertEqual(len(df), 0)  # verify the number of rows
-        assert not hasattr(df, "crs")  # used with Python >= 3.9
+
+        if geopandas.__version__ == "0.9.0":
+            assert hasattr(df, "crs")
+        else:
+            assert not hasattr(df, "crs")
 
 
 class TestRowIterator(unittest.TestCase):

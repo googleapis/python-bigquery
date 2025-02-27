@@ -71,16 +71,16 @@ bqstorage = [
   "pyarrow >= 4.0.0",
 ]
 pandas = [
-  "pandas >= 1.1.0",
+  "pandas >= 1.1.4",
   "pandas-gbq >= 0.26.1; python_version >= '3.8'",
   "grpcio >= 1.47.0, < 2.0dev",
   "grpcio >= 1.49.1, < 2.0dev; python_version >= '3.11'",
   "pyarrow >= 3.0.0",
-  "db-dtypes >= 0.3.0, < 2.0.0dev",
+  "db-dtypes >= 1.0.4, < 2.0.0dev",
 ]
-ipywidgets = ["ipywidgets >= 7.7.0", "ipykernel >= 6.2.0"]
+ipywidgets = ["ipywidgets >= 7.7.1", "ipykernel >= 6.2.0"]
 geopandas = ["geopandas >= 0.9.0, < 2.0dev", "Shapely >= 1.8.4, < 3.0.0dev"]
-ipython = ["bigquery-magics >= 0.1.0"]
+ipython = ["ipython >= 7.23.1", "bigquery-magics >= 0.6.0"]
 tqdm = ["tqdm >= 4.7.4, < 5.0.0dev"]
 opentelemetry = [
   "opentelemetry-api >= 1.1.0",

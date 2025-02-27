@@ -102,20 +102,16 @@ def default(session, install_extras=True):
         "-c",
         constraints_path,
     )
-
-    # Until we drop support for pandas 1.x.0, we have some conditionals
-    # that check for the Float64DType that was added in version 1.2.0.
-    # In order to ensure that the code has full coverage, we install at least
-    # one version of pandas to ensure that the conditional gets exercised.
-    # # before 1.2.0. See test_table.py > test_to_dataframe_w_dtypes_mapper
-    if install_extras and session.python == "3.9":
-        session.install("pandas<=1.1.3")
-        session.install("numpy<=1.29.0")
-        session.install("db-dtypes")
-        install_target = ".[bqstorage,ipywidgets,tqdm,opentelemetry]"
-    elif install_extras and session.python in ["3.12"]:
-        install_target = ".[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
-    elif install_extras:
+    # We have logic in the magics.py file that checks for whether 'bigquery_magics'
+    # is imported OR not. If yes, we use a context object from that library.
+    # If no, we use our own context object from magics.py. In order to exercise
+    # that logic (and the associated tests) we avoid installing the [ipython] extra
+    # which has a downstream effect of then avoiding installing bigquery_magics.
+    if install_extras and session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
+        install_target = (
+            ".[bqstorage,pandas,ipywidgets,geopandas,tqdm,opentelemetry,bigquery_v2]"
+        )
+    elif install_extras:  # run against all other UNIT_TEST_PYTHON_VERSIONS
         install_target = ".[all]"
     else:
         install_target = "."
@@ -319,7 +315,9 @@ def snippets(session):
     session.install("grpcio", "-c", constraints_path)
 
     if session.python in ["3.11", "3.12"]:
-        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
+        extras = (
+            "[bqstorage,pandas,ipywidgets,geopandas,tqdm,opentelemetry,bigquery_v2]"
+        )
     else:
         extras = "[all]"
     session.install("-e", f".{extras}", "-c", constraints_path)
@@ -432,9 +430,6 @@ def prerelease_deps(session):
     session.install("--no-deps", "-e", ".[all]")
 
     # Print out prerelease package versions.
-    session.run("python", "-c", "import grpc; print(grpc.__version__)")
-    session.run("python", "-c", "import pandas; print(pandas.__version__)")
-    session.run("python", "-c", "import pyarrow; print(pyarrow.__version__)")
     session.run("python", "-m", "pip", "freeze")
 
     # Run all tests, except a few samples tests which require extra dependencies.

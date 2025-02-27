@@ -13,14 +13,14 @@ google-cloud-bigquery-storage==2.18.0
 google-cloud-core==2.4.1
 google-resumable-media==2.0.0
 grpcio==1.47.0
-grpcio >= 1.49.1; python_version >= '3.11'
+grpcio==1.49.1; python_version >= '3.11'
 ipywidgets==7.7.1
 ipython==7.23.1
 ipykernel==6.2.0
 opentelemetry-api==1.1.0
 opentelemetry-instrumentation==0.20b0
 opentelemetry-sdk==1.1.0
-packaging==24.2
+packaging==24.2.0
 pandas==1.1.4
 pandas-gbq==0.26.1
 proto-plus==1.22.3

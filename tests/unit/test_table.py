@@ -3735,7 +3735,7 @@ class TestRowIterator(unittest.TestCase):
             warning for warning in warned if warning.category is UserWarning
         ]
         # With pandas < 1.5, pandas.ArrowDtype is not supported
-        # and len(user_warnings) = 3.
+        # and len(user_warnings) = 4.
         # We raise warnings because range columns have to be converted to object.
         # With higher pandas versions and noextra tests, len(user_warnings) = 1
         self.assertIn(len(user_warnings), [1, 4])

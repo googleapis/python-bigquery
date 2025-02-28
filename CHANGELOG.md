@@ -5,6 +5,13 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.30.1](https://github.com/googleapis/python-bigquery/compare/v3.30.0...v3.30.1) (2025-02-28)
+
+
+### Dependencies
+
+* Remove Python 3.7 and 3.8 as supported runtimes ([#2133](https://github.com/googleapis/python-bigquery/issues/2133)) ([fb7de39](https://github.com/googleapis/python-bigquery/commit/fb7de398cb2ad000b80a8a702d1f6539dc03d8e0))
+
 ## [3.30.0](https://github.com/googleapis/python-bigquery/compare/v3.29.0...v3.30.0) (2025-02-26)
 
 

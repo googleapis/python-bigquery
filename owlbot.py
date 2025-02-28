@@ -92,6 +92,18 @@ s.replace(
     r"exclude_patterns = \[",
     '\\g<0>\n    "google/cloud/bigquery_v2/**",  # Legacy proto-based types.',
 )
+s.replace(
+    ".kokoro/test-samples-impl.sh",
+    """# `virtualenv==20.26.6` is added for Python 3.7 compatibility
++python3.9 -m pip install --upgrade --quiet nox virtualenv==20.26.6""",
+    "-python3.9 -m pip install --upgrade --quiet nox virtualenv",
+)
+# s.replace(
+#     "samples/desktopapp/noxfile.py",
+#     r"exclude_patterns = \[",
+#     '\\g<0>\n    "google/cloud/bigquery_v2/**",  # Legacy proto-based types.',
+# )
+
 
 # ----------------------------------------------------------------------------
 # pytype-related changes

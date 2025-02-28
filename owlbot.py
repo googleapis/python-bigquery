@@ -69,7 +69,10 @@ s.move(
         # Include custom SNIPPETS_TESTS job for performance.
         # https://github.com/googleapis/python-bigquery/issues/191
         ".kokoro/presubmit/presubmit.cfg",
+        ".kokoro/presubmit/system-3.8.cfg",
         ".kokoro/continuous/prerelease-deps.cfg",
+        ".kokoro/samples/python3.7/**",
+        ".kokoro/samples/python3.8/**",
         ".github/workflows",  # exclude gh actions as credentials are needed for tests
         "README.rst",
     ],

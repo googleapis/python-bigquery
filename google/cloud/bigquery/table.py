@@ -3466,7 +3466,7 @@ class TableConstraints:
 
     def to_api_repr(self) -> Dict[str, Any]:
         """Return a dictionary representing this object."""
-        resource = {}
+        resource: Dict[str, Any] = {}
         if self.primary_key:
             resource["primaryKey"] = {"columns": self.primary_key.columns}
         if self.foreign_keys:

@@ -5,6 +5,23 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.31.0](https://github.com/googleapis/python-bigquery/compare/v3.30.0...v3.31.0) (2025-03-07)
+
+
+### Features
+
+* Add query text and total bytes processed to RowIterator ([#2140](https://github.com/googleapis/python-bigquery/issues/2140)) ([2d5f932](https://github.com/googleapis/python-bigquery/commit/2d5f9320d7103bc64c7ba496ba54bb0ef52b5605))
+
+
+### Bug Fixes
+
+* Adding property setter for table constraints, [#1990](https://github.com/googleapis/python-bigquery/issues/1990) ([#2092](https://github.com/googleapis/python-bigquery/issues/2092)) ([f8572dd](https://github.com/googleapis/python-bigquery/commit/f8572dd86595361bae82c3232b2c0d159690a7b7))
+
+
+### Dependencies
+
+* Remove Python 3.7 and 3.8 as supported runtimes ([#2133](https://github.com/googleapis/python-bigquery/issues/2133)) ([fb7de39](https://github.com/googleapis/python-bigquery/commit/fb7de398cb2ad000b80a8a702d1f6539dc03d8e0))
+
 ## [3.30.0](https://github.com/googleapis/python-bigquery/compare/v3.29.0...v3.30.0) (2025-02-26)
 
 

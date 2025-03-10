@@ -21,7 +21,8 @@ import datetime
 import functools
 import operator
 import typing
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union, Sequence
+
 import warnings
 
 try:
@@ -66,6 +67,7 @@ from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import DefaultPandasDTypes
 from google.cloud.bigquery.external_config import ExternalConfig
+from google.cloud.bigquery import schema as _schema
 from google.cloud.bigquery.schema import _build_schema_resource
 from google.cloud.bigquery.schema import _parse_schema_resource
 from google.cloud.bigquery.schema import _to_schema_fields
@@ -135,6 +137,8 @@ def _reference_getter(table):
     return TableReference(dataset_ref, table.table_id)
 
 
+# TODO: The typehinting for this needs work. Setting this pragma to temporarily
+# manage a pytype issue that came up in another PR. See Issue: #2132
 def _view_use_legacy_sql_getter(table):
     """bool: Specifies whether to execute the view with Legacy or Standard SQL.
 
@@ -146,10 +150,11 @@ def _view_use_legacy_sql_getter(table):
     Raises:
         ValueError: For invalid value types.
     """
-    view = table._properties.get("view")
+
+    view = table._properties.get("view")  # type: ignore
     if view is not None:
         # The server-side default for useLegacySql is True.
-        return view.get("useLegacySql", True)
+        return view.get("useLegacySql", True)  # type: ignore
     # In some cases, such as in a table list no view object is present, but the
     # resource still represents a view. Use the type as a fallback.
     if table.table_type == "VIEW":
@@ -373,7 +378,7 @@ class Table(_TableBase):
             :meth:`~google.cloud.bigquery.schema.SchemaField.from_api_repr`.
     """
 
-    _PROPERTY_TO_API_FIELD = {
+    _PROPERTY_TO_API_FIELD: Dict[str, Any] = {
         **_TableBase._PROPERTY_TO_API_FIELD,
         "clustering_fields": "clustering",
         "created": "creationTime",
@@ -398,7 +403,7 @@ class Table(_TableBase):
         "partitioning_type": "timePartitioning",
         "range_partitioning": "rangePartitioning",
         "time_partitioning": "timePartitioning",
-        "schema": "schema",
+        "schema": ["schema", "fields"],
         "snapshot_definition": "snapshotDefinition",
         "clone_definition": "cloneDefinition",
         "streaming_buffer": "streamingBuffer",
@@ -411,11 +416,15 @@ class Table(_TableBase):
         "max_staleness": "maxStaleness",
         "resource_tags": "resourceTags",
         "external_catalog_table_options": "externalCatalogTableOptions",
+        "foreign_type_info": ["schema", "foreignTypeInfo"],
     }
 
     def __init__(self, table_ref, schema=None) -> None:
         table_ref = _table_arg_to_table_ref(table_ref)
-        self._properties = {"tableReference": table_ref.to_api_repr(), "labels": {}}
+        self._properties: Dict[str, Any] = {
+            "tableReference": table_ref.to_api_repr(),
+            "labels": {},
+        }
         # Let the @property do validation.
         if schema is not None:
             self.schema = schema
@@ -451,8 +460,20 @@ class Table(_TableBase):
                 If ``schema`` is not a sequence, or if any item in the sequence
                 is not a :class:`~google.cloud.bigquery.schema.SchemaField`
                 instance or a compatible mapping representation of the field.
+
+        .. Note::
+            If you are referencing a schema for an external catalog table such
+            as a Hive table, it will also be necessary to populate the foreign_type_info
+            attribute. This is not necessary if defining the schema for a BigQuery table.
+
+            For details, see:
+            https://cloud.google.com/bigquery/docs/external-tables
+            https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
+
         """
-        prop = self._properties.get(self._PROPERTY_TO_API_FIELD["schema"])
+        prop = _helpers._get_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["schema"]
+        )
         if not prop:
             return []
         else:
@@ -463,10 +484,21 @@ class Table(_TableBase):
         api_field = self._PROPERTY_TO_API_FIELD["schema"]
 
         if value is None:
-            self._properties[api_field] = None
-        else:
+            _helpers._set_sub_prop(
+                self._properties,
+                api_field,
+                None,
+            )
+        elif isinstance(value, Sequence):
             value = _to_schema_fields(value)
-            self._properties[api_field] = {"fields": _build_schema_resource(value)}
+            value = _build_schema_resource(value)
+            _helpers._set_sub_prop(
+                self._properties,
+                api_field,
+                value,
+            )
+        else:
+            raise TypeError("Schema must be a Sequence (e.g. a list) or None.")
 
     @property
     def labels(self):
@@ -1026,6 +1058,17 @@ class Table(_TableBase):
             table_constraints = TableConstraints.from_api_repr(table_constraints)
         return table_constraints
 
+    @table_constraints.setter
+    def table_constraints(self, value):
+        """Tables Primary Key and Foreign Key information."""
+        api_repr = value
+        if not isinstance(value, TableConstraints) and value is not None:
+            raise ValueError(
+                "value must be google.cloud.bigquery.table.TableConstraints or None"
+            )
+        api_repr = value.to_api_repr() if value else None
+        self._properties[self._PROPERTY_TO_API_FIELD["table_constraints"]] = api_repr
+
     @property
     def resource_tags(self):
         """Dict[str, str]: Resource tags for the table.
@@ -1074,6 +1117,41 @@ class Table(_TableBase):
             self._properties[
                 self._PROPERTY_TO_API_FIELD["external_catalog_table_options"]
             ] = value
+
+    @property
+    def foreign_type_info(self) -> Optional[_schema.ForeignTypeInfo]:
+        """Optional. Specifies metadata of the foreign data type definition in
+        field schema (TableFieldSchema.foreign_type_definition).
+        Returns:
+            Optional[schema.ForeignTypeInfo]:
+                Foreign type information, or :data:`None` if not set.
+        .. Note::
+            foreign_type_info is only required if you are referencing an
+            external catalog such as a Hive table.
+            For details, see:
+            https://cloud.google.com/bigquery/docs/external-tables
+            https://cloud.google.com/bigquery/docs/datasets-intro#external_datasets
+        """
+
+        prop = _helpers._get_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["foreign_type_info"]
+        )
+        if prop is not None:
+            return _schema.ForeignTypeInfo.from_api_repr(prop)
+        return None
+
+    @foreign_type_info.setter
+    def foreign_type_info(self, value: Union[_schema.ForeignTypeInfo, dict, None]):
+        value = _helpers._isinstance_or_raise(
+            value,
+            (_schema.ForeignTypeInfo, dict),
+            none_allowed=True,
+        )
+        if isinstance(value, _schema.ForeignTypeInfo):
+            value = value.to_api_repr()
+        _helpers._set_sub_prop(
+            self._properties, self._PROPERTY_TO_API_FIELD["foreign_type_info"], value
+        )
 
     @classmethod
     def from_string(cls, full_table_id: str) -> "Table":
@@ -1682,6 +1760,10 @@ class RowIterator(HTTPIterator):
         first_page_response (Optional[dict]):
             API response for the first page of results. These are returned when
             the first page is requested.
+        query (Optional[str]):
+            The query text used.
+        total_bytes_processed (Optinal[int]):
+            total bytes processed from job statistics, if present.
     """
 
     def __init__(
@@ -1703,6 +1785,8 @@ class RowIterator(HTTPIterator):
         query_id: Optional[str] = None,
         project: Optional[str] = None,
         num_dml_affected_rows: Optional[int] = None,
+        query: Optional[str] = None,
+        total_bytes_processed: Optional[int] = None,
     ):
         super(RowIterator, self).__init__(
             client,
@@ -1730,6 +1814,8 @@ class RowIterator(HTTPIterator):
         self._query_id = query_id
         self._project = project
         self._num_dml_affected_rows = num_dml_affected_rows
+        self._query = query
+        self._total_bytes_processed = total_bytes_processed
 
     @property
     def _billing_project(self) -> Optional[str]:
@@ -1776,6 +1862,16 @@ class RowIterator(HTTPIterator):
         This ID is auto-generated and not guaranteed to be populated.
         """
         return self._query_id
+
+    @property
+    def query(self) -> Optional[str]:
+        """The query text used."""
+        return self._query
+
+    @property
+    def total_bytes_processed(self) -> Optional[int]:
+        """total bytes processed from job statistics, if present."""
+        return self._total_bytes_processed
 
     def _is_almost_completely_cached(self):
         """Check if all results are completely cached.
@@ -3335,6 +3431,20 @@ class ForeignKey:
             ],
         )
 
+    def to_api_repr(self) -> Dict[str, Any]:
+        """Return a dictionary representing this object."""
+        return {
+            "name": self.name,
+            "referencedTable": self.referenced_table.to_api_repr(),
+            "columnReferences": [
+                {
+                    "referencingColumn": column_reference.referencing_column,
+                    "referencedColumn": column_reference.referenced_column,
+                }
+                for column_reference in self.column_references
+            ],
+        }
+
 
 class TableConstraints:
     """The TableConstraints defines the primary key and foreign key.
@@ -3356,6 +3466,13 @@ class TableConstraints:
         self.primary_key = primary_key
         self.foreign_keys = foreign_keys
 
+    def __eq__(self, other):
+        if not isinstance(other, TableConstraints) and other is not None:
+            raise TypeError("The value provided is not a BigQuery TableConstraints.")
+        return (
+            self.primary_key == other.primary_key if other.primary_key else None
+        ) and (self.foreign_keys == other.foreign_keys if other.foreign_keys else None)
+
     @classmethod
     def from_api_repr(cls, resource: Dict[str, Any]) -> "TableConstraints":
         """Create an instance from API representation."""
@@ -3370,6 +3487,17 @@ class TableConstraints:
                 for foreign_key_resource in resource["foreignKeys"]
             ]
         return cls(primary_key, foreign_keys)
+
+    def to_api_repr(self) -> Dict[str, Any]:
+        """Return a dictionary representing this object."""
+        resource: Dict[str, Any] = {}
+        if self.primary_key:
+            resource["primaryKey"] = {"columns": self.primary_key.columns}
+        if self.foreign_keys:
+            resource["foreignKeys"] = [
+                foreign_key.to_api_repr() for foreign_key in self.foreign_keys
+            ]
+        return resource
 
 
 def _item_to_row(iterator, resource):

@@ -19,6 +19,7 @@ from unittest import mock
 import pytest
 
 from google.cloud import bigquery
+from google.cloud.bigquery import enums
 from google.cloud.bigquery.standard_sql import StandardSqlStructType
 from google.cloud.bigquery import schema
 from google.cloud.bigquery.schema import PolicyTagList
@@ -49,6 +50,8 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields, ())
         self.assertIsNone(field.policy_tags)
         self.assertIsNone(field.default_value_expression)
+        self.assertEqual(field.rounding_mode, None)
+        self.assertEqual(field.foreign_type_definition, None)
 
     def test_constructor_explicit(self):
         FIELD_DEFAULT_VALUE_EXPRESSION = "This is the default value for this field"
@@ -64,6 +67,8 @@ class TestSchemaField(unittest.TestCase):
                 )
             ),
             default_value_expression=FIELD_DEFAULT_VALUE_EXPRESSION,
+            rounding_mode=enums.RoundingMode.ROUNDING_MODE_UNSPECIFIED,
+            foreign_type_definition="INTEGER",
         )
         self.assertEqual(field.name, "test")
         self.assertEqual(field.field_type, "STRING")
@@ -80,6 +85,8 @@ class TestSchemaField(unittest.TestCase):
                 )
             ),
         )
+        self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
+        self.assertEqual(field.foreign_type_definition, "INTEGER")
 
     def test_constructor_explicit_none(self):
         field = self._make_one("test", "STRING", description=None, policy_tags=None)
@@ -137,8 +144,16 @@ class TestSchemaField(unittest.TestCase):
             {"names": ["foo", "bar"]},
         )
 
+        ROUNDINGMODE = enums.RoundingMode.ROUNDING_MODE_UNSPECIFIED
+
         field = self._make_one(
-            "foo", "INTEGER", "NULLABLE", description="hello world", policy_tags=policy
+            "foo",
+            "INTEGER",
+            "NULLABLE",
+            description="hello world",
+            policy_tags=policy,
+            rounding_mode=ROUNDINGMODE,
+            foreign_type_definition=None,
         )
         self.assertEqual(
             field.to_api_repr(),
@@ -148,6 +163,7 @@ class TestSchemaField(unittest.TestCase):
                 "type": "INTEGER",
                 "description": "hello world",
                 "policyTags": {"names": ["foo", "bar"]},
+                "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
             },
         )
 
@@ -181,6 +197,7 @@ class TestSchemaField(unittest.TestCase):
                 "description": "test_description",
                 "name": "foo",
                 "type": "record",
+                "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
             }
         )
         self.assertEqual(field.name, "foo")
@@ -192,6 +209,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].field_type, "INTEGER")
         self.assertEqual(field.fields[0].mode, "NULLABLE")
         self.assertEqual(field.range_element_type, None)
+        self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
 
     def test_from_api_repr_policy(self):
         field = self._get_target_class().from_api_repr(
@@ -282,6 +300,28 @@ class TestSchemaField(unittest.TestCase):
         fields = (sub_field1, sub_field2)
         schema_field = self._make_one("boat", "RECORD", fields=fields)
         self.assertEqual(schema_field.fields, fields)
+
+    def test_roundingmode_property_str(self):
+        ROUNDINGMODE = "ROUND_HALF_AWAY_FROM_ZERO"
+        schema_field = self._make_one("test", "STRING", rounding_mode=ROUNDINGMODE)
+        self.assertEqual(schema_field.rounding_mode, ROUNDINGMODE)
+
+        del schema_field
+        schema_field = self._make_one("test", "STRING")
+        schema_field._properties["roundingMode"] = ROUNDINGMODE
+        self.assertEqual(schema_field.rounding_mode, ROUNDINGMODE)
+
+    def test_foreign_type_definition_property_str(self):
+        FOREIGN_TYPE_DEFINITION = "INTEGER"
+        schema_field = self._make_one(
+            "test", "STRING", foreign_type_definition=FOREIGN_TYPE_DEFINITION
+        )
+        self.assertEqual(schema_field.foreign_type_definition, FOREIGN_TYPE_DEFINITION)
+
+        del schema_field
+        schema_field = self._make_one("test", "STRING")
+        schema_field._properties["foreignTypeDefinition"] = FOREIGN_TYPE_DEFINITION
+        self.assertEqual(schema_field.foreign_type_definition, FOREIGN_TYPE_DEFINITION)
 
     def test_to_standard_sql_simple_type(self):
         examples = (
@@ -456,6 +496,20 @@ class TestSchemaField(unittest.TestCase):
             standard_field.type.type_kind,
             bigquery.StandardSqlTypeNames.TYPE_KIND_UNSPECIFIED,
         )
+
+    def test_to_standard_sql_foreign_type_valid(self):
+        legacy_type = "FOREIGN"
+        standard_type = bigquery.StandardSqlTypeNames.FOREIGN
+        foreign_type_definition = "INTEGER"
+
+        field = self._make_one(
+            "some_field",
+            field_type=legacy_type,
+            foreign_type_definition=foreign_type_definition,
+        )
+        standard_field = field.to_standard_sql()
+        self.assertEqual(standard_field.name, "some_field")
+        self.assertEqual(standard_field.type.type_kind, standard_type)
 
     def test___eq___wrong_type(self):
         field = self._make_one("test", "STRING")
@@ -711,27 +765,62 @@ class Test_parse_schema_resource(unittest.TestCase, _SchemaBase):
         self._verifySchema(schema, RESOURCE)
 
 
-class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
-    def _call_fut(self, resource):
-        from google.cloud.bigquery.schema import _build_schema_resource
+class Test_build_schema_resource:
+    """Tests for the _build_schema_resource function."""
 
-        return _build_schema_resource(resource)
+    def _call_fut(self, resource):
+        return schema._build_schema_resource(resource)
+
+    FULL_NAME = schema.SchemaField(
+        name="full_name", field_type="STRING", mode="REQUIRED"
+    )
+    AGE = schema.SchemaField(name="age", field_type="INTEGER", mode="REQUIRED")
+    LIST_RESOURCE = [
+        {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
+    ]
+    FOREIGN_TYPE_INFO = schema.ForeignTypeInfo(type_system="TYPE_SYSTEM_UNSPECIFIED")
+    FOREIGN_TYPE_INFO_RESOURCE = {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}
+
+    @pytest.mark.parametrize(
+        "schema,expected",
+        [
+            pytest.param([], [], id="empty list"),
+            pytest.param([FULL_NAME, AGE], LIST_RESOURCE, id="list"),
+        ],
+    )
+    def test_ctor_valid_input(self, schema, expected):
+        result = self._call_fut(schema)
+
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "schema,expected",
+        [
+            pytest.param(123, TypeError, id="invalid type"),
+        ],
+    )
+    def test_ctor_invalid_input(self, schema, expected):
+        with pytest.raises(TypeError) as e:
+            self._call_fut(schema)
+
+        # Looking for the first phrase from the string "Schema must be a ..."
+        assert "Schema must be a " in str(e.value)
 
     def test_defaults(self):
         from google.cloud.bigquery.schema import SchemaField
 
         full_name = SchemaField("full_name", "STRING", mode="REQUIRED")
         age = SchemaField("age", "INTEGER", mode="REQUIRED")
+        # test with simple list
         resource = self._call_fut([full_name, age])
-        self.assertEqual(len(resource), 2)
-        self.assertEqual(
-            resource[0],
-            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-        )
-        self.assertEqual(
-            resource[1],
-            {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
-        )
+        assert len(resource) == 2
+        assert resource[0] == {
+            "name": "full_name",
+            "type": "STRING",
+            "mode": "REQUIRED",
+        }
+        assert resource[1] == {"name": "age", "type": "INTEGER", "mode": "REQUIRED"}
 
     def test_w_description(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -748,25 +837,20 @@ class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
             description=None,
         )
         resource = self._call_fut([full_name, age])
-        self.assertEqual(len(resource), 2)
-        self.assertEqual(
-            resource[0],
-            {
-                "name": "full_name",
-                "type": "STRING",
-                "mode": "REQUIRED",
-                "description": DESCRIPTION,
-            },
-        )
-        self.assertEqual(
-            resource[1],
-            {
-                "name": "age",
-                "type": "INTEGER",
-                "mode": "REQUIRED",
-                "description": None,
-            },
-        )
+        assert len(resource) == 2
+        assert resource[0] == {
+            "name": "full_name",
+            "type": "STRING",
+            "mode": "REQUIRED",
+            "description": DESCRIPTION,
+        }
+
+        assert resource[1] == {
+            "name": "age",
+            "type": "INTEGER",
+            "mode": "REQUIRED",
+            "description": None,
+        }
 
     def test_w_subfields(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -778,49 +862,72 @@ class Test_build_schema_resource(unittest.TestCase, _SchemaBase):
             "phone", "RECORD", mode="REPEATED", fields=[ph_type, ph_num]
         )
         resource = self._call_fut([full_name, phone])
-        self.assertEqual(len(resource), 2)
-        self.assertEqual(
-            resource[0],
-            {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
-        )
-        self.assertEqual(
-            resource[1],
-            {
-                "name": "phone",
-                "type": "RECORD",
-                "mode": "REPEATED",
-                "fields": [
-                    {"name": "type", "type": "STRING", "mode": "REQUIRED"},
-                    {"name": "number", "type": "STRING", "mode": "REQUIRED"},
-                ],
-            },
-        )
+        assert len(resource) == 2
+        assert resource[0] == {
+            "name": "full_name",
+            "type": "STRING",
+            "mode": "REQUIRED",
+        }
+        assert resource[1] == {
+            "name": "phone",
+            "type": "RECORD",
+            "mode": "REPEATED",
+            "fields": [
+                {"name": "type", "type": "STRING", "mode": "REQUIRED"},
+                {"name": "number", "type": "STRING", "mode": "REQUIRED"},
+            ],
+        }
 
 
-class Test_to_schema_fields(unittest.TestCase):
+class Test_to_schema_fields:
+    """Tests for the _to_schema_fields function."""
+
     @staticmethod
     def _call_fut(schema):
         from google.cloud.bigquery.schema import _to_schema_fields
 
         return _to_schema_fields(schema)
 
-    def test_invalid_type(self):
-        schema = [
-            ("full_name", "STRING", "REQUIRED"),
-            ("address", "STRING", "REQUIRED"),
-        ]
-        with self.assertRaises(ValueError):
-            self._call_fut(schema)
+    FULL_NAME = schema.SchemaField(
+        name="full_name", field_type="STRING", mode="REQUIRED"
+    )
+    AGE = schema.SchemaField(name="age", field_type="INTEGER", mode="REQUIRED")
+    LIST_RESOURCE = [
+        {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "age", "type": "INTEGER", "mode": "REQUIRED"},
+    ]
+    FOREIGN_TYPE_INFO = schema.ForeignTypeInfo(type_system="TYPE_SYSTEM_UNSPECIFIED")
+    FOREIGN_TYPE_INFO_RESOURCE = {"typeSystem": "TYPE_SYSTEM_UNSPECIFIED"}
 
-    def test_schema_fields_sequence(self):
-        from google.cloud.bigquery.schema import SchemaField
-
-        schema = [
-            SchemaField("full_name", "STRING", mode="REQUIRED"),
-            SchemaField("age", "INT64", mode="NULLABLE"),
-        ]
+    @pytest.mark.parametrize(
+        "schema,expected",
+        [
+            pytest.param([], [], id="empty list"),
+            pytest.param((), [], id="empty tuple"),
+            pytest.param(LIST_RESOURCE, [FULL_NAME, AGE], id="list"),
+        ],
+    )
+    def test_ctor_valid_input(self, schema, expected):
         result = self._call_fut(schema)
-        self.assertEqual(result, schema)
+
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "schema,expected",
+        [
+            pytest.param(123, TypeError, id="invalid schema type"),
+            pytest.param([123, 123], TypeError, id="invalid SchemaField type"),
+            pytest.param({"fields": 123}, TypeError, id="invalid type, dict"),
+            pytest.param(
+                {"fields": 123, "foreignTypeInfo": 123},
+                TypeError,
+                id="invalid type, dict",
+            ),
+        ],
+    )
+    def test_ctor_invalid_input(self, schema, expected):
+        with pytest.raises(expected):
+            self._call_fut(schema)
 
     def test_unknown_properties(self):
         schema = [
@@ -879,7 +986,7 @@ class Test_to_schema_fields(unittest.TestCase):
         ]
 
         result = self._call_fut(schema)
-        self.assertEqual(result, expected_schema)
+        assert result == expected_schema
 
 
 class TestPolicyTags(unittest.TestCase):

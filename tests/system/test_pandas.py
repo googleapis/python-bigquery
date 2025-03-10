@@ -1222,7 +1222,12 @@ def test_list_rows_nullable_scalars_extreme_dtypes_w_custom_dtype(
 
     # These pandas dtypes are handled by the custom dtypes.
     assert df.dtypes["bool_col"].name == "boolean"
-    assert df.dtypes["float64_col"].name == "Float64"
+    # Result is dependent upon which version of pandas is being used.
+    # Float64 was not introduced until pandas version 1.4.
+    if PANDAS_INSTALLED_VERSION >= "1.4":
+        assert df.dtypes["float64_col"].name == "Float64"
+    else:
+        assert df.dtypes["float64_col"].name == "string"
     assert df.dtypes["int64_col"].name == "Int64"
     assert df.dtypes["string_col"].name == "string"
 
@@ -1259,7 +1264,7 @@ def test_upload_time_and_datetime_56(bigquery_client, dataset_id):
     df = pandas.DataFrame(
         dict(
             dt=[
-                datetime.datetime(2020, 1, 8, 8, 0, 0),
+                datetime.datetime(2020, 1, 8, 8, 0, 0, tzinfo=datetime.timezone.utc),
                 datetime.datetime(
                     2020,
                     1,

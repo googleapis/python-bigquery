@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared helper functions for connecting BigQuery and pandas."""
+"""Shared helper functions for connecting BigQuery and pandas.
+
+NOTE: This module is DEPRECATED. Please make updates in the pandas-gbq package,
+instead. See: go/pandas-gbq-and-bigframes-redundancy and
+https://github.com/googleapis/python-bigquery-pandas/blob/main/pandas_gbq/schema/pandas_to_bigquery.py
+"""
 
 import concurrent.futures
 from datetime import datetime
@@ -20,6 +25,7 @@ import functools
 from itertools import islice
 import logging
 import queue
+import threading
 import warnings
 from typing import Any, Union, Optional, Callable, Generator, List
 
@@ -38,6 +44,16 @@ except ImportError as exc:
     pandas_import_exception = exc
 else:
     import numpy
+
+
+try:
+    import pandas_gbq.schema.pandas_to_bigquery  # type: ignore
+
+    pandas_gbq_import_exception = None
+except ImportError as exc:
+    pandas_gbq = None
+    pandas_gbq_import_exception = exc
+
 
 try:
     import db_dtypes  # type: ignore
@@ -119,6 +135,21 @@ class _DownloadState(object):
         # be an atomic operation in the Python language definition (enforced by
         # the global interpreter lock).
         self.done = False
+        # To assist with testing and understanding the behavior of the
+        # download, use this object as shared state to track how many worker
+        # threads have started and have gracefully shutdown.
+        self._started_workers_lock = threading.Lock()
+        self.started_workers = 0
+        self._finished_workers_lock = threading.Lock()
+        self.finished_workers = 0
+
+    def start(self):
+        with self._started_workers_lock:
+            self.started_workers += 1
+
+    def finish(self):
+        with self._finished_workers_lock:
+            self.finished_workers += 1
 
 
 BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {
@@ -305,8 +336,13 @@ def default_types_mapper(
             ):
                 return range_date_dtype
 
-            elif range_timestamp_dtype is not None and arrow_data_type.equals(
-                range_timestamp_dtype.pyarrow_dtype
+            # TODO: this section does not have a test yet OR at least not one that is
+            # recognized by coverage, hence the pragma. See Issue: #2132
+            elif (
+                range_timestamp_dtype is not None
+                and arrow_data_type.equals(  # pragma: NO COVER
+                    range_timestamp_dtype.pyarrow_dtype
+                )
             ):
                 return range_timestamp_dtype
 
@@ -429,6 +465,10 @@ def _first_array_valid(series):
 def dataframe_to_bq_schema(dataframe, bq_schema):
     """Convert a pandas DataFrame schema to a BigQuery schema.
 
+    DEPRECATED: Use
+    pandas_gbq.schema.pandas_to_bigquery.dataframe_to_bigquery_fields(),
+    instead. See: go/pandas-gbq-and-bigframes-redundancy.
+
     Args:
         dataframe (pandas.DataFrame):
             DataFrame for which the client determines the BigQuery schema.
@@ -444,6 +484,20 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
             The automatically determined schema. Returns None if the type of
             any column cannot be determined.
     """
+    if pandas_gbq is None:
+        warnings.warn(
+            "Loading pandas DataFrame into BigQuery will require pandas-gbq "
+            "package version 0.26.1 or greater in the future. "
+            f"Tried to import pandas-gbq and got: {pandas_gbq_import_exception}",
+            category=FutureWarning,
+        )
+    else:
+        return pandas_gbq.schema.pandas_to_bigquery.dataframe_to_bigquery_fields(
+            dataframe,
+            override_bigquery_fields=bq_schema,
+            index=True,
+        )
+
     if bq_schema:
         bq_schema = schema._to_schema_fields(bq_schema)
         bq_schema_index = {field.name: field for field in bq_schema}
@@ -786,20 +840,35 @@ def _bqstorage_page_to_dataframe(column_names, dtypes, page):
 def _download_table_bqstorage_stream(
     download_state, bqstorage_client, session, stream, worker_queue, page_to_item
 ):
-    reader = bqstorage_client.read_rows(stream.name)
+    download_state.start()
+    try:
+        reader = bqstorage_client.read_rows(stream.name)
 
-    # Avoid deprecation warnings for passing in unnecessary read session.
-    # https://github.com/googleapis/python-bigquery-storage/issues/229
-    if _versions_helpers.BQ_STORAGE_VERSIONS.is_read_session_optional:
-        rowstream = reader.rows()
-    else:
-        rowstream = reader.rows(session)
+        # Avoid deprecation warnings for passing in unnecessary read session.
+        # https://github.com/googleapis/python-bigquery-storage/issues/229
+        if _versions_helpers.BQ_STORAGE_VERSIONS.is_read_session_optional:
+            rowstream = reader.rows()
+        else:
+            rowstream = reader.rows(session)
 
-    for page in rowstream.pages:
-        if download_state.done:
-            return
-        item = page_to_item(page)
-        worker_queue.put(item)
+        for page in rowstream.pages:
+            item = page_to_item(page)
+
+            # Make sure we set a timeout on put() so that we give the worker
+            # thread opportunities to shutdown gracefully, for example if the
+            # parent thread shuts down or the parent generator object which
+            # collects rows from all workers goes out of scope. See:
+            # https://github.com/googleapis/python-bigquery/issues/2032
+            while True:
+                if download_state.done:
+                    return
+                try:
+                    worker_queue.put(item, timeout=_PROGRESS_INTERVAL)
+                    break
+                except queue.Full:
+                    continue
+    finally:
+        download_state.finish()
 
 
 def _nowait(futures):
@@ -825,6 +894,7 @@ def _download_table_bqstorage(
     page_to_item: Optional[Callable] = None,
     max_queue_size: Any = _MAX_QUEUE_SIZE_DEFAULT,
     max_stream_count: Optional[int] = None,
+    download_state: Optional[_DownloadState] = None,
 ) -> Generator[Any, None, None]:
     """Downloads a BigQuery table using the BigQuery Storage API.
 
@@ -852,6 +922,9 @@ def _download_table_bqstorage(
             is True, the requested streams are limited to 1 regardless of the
             `max_stream_count` value. If 0 or None, then the number of
             requested streams will be unbounded. Defaults to None.
+        download_state (Optional[_DownloadState]):
+            A threadsafe state object which can be used to observe the
+            behavior of the worker threads created by this method.
 
     Yields:
         pandas.DataFrame: Pandas DataFrames, one for each chunk of data
@@ -910,7 +983,8 @@ def _download_table_bqstorage(
 
     # Use _DownloadState to notify worker threads when to quit.
     # See: https://stackoverflow.com/a/29237343/101923
-    download_state = _DownloadState()
+    if download_state is None:
+        download_state = _DownloadState()
 
     # Create a queue to collect frames as they are created in each thread.
     #

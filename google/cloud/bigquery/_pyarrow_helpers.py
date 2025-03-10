@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared helper functions for connecting BigQuery and pyarrow."""
+"""Shared helper functions for connecting BigQuery and pyarrow.
+
+NOTE: This module is DEPRECATED. Please make updates in the pandas-gbq package,
+instead. See: go/pandas-gbq-and-bigframes-redundancy and
+https://github.com/googleapis/python-bigquery-pandas/blob/main/pandas_gbq/schema/pyarrow_to_bigquery.py
+"""
 
 from typing import Any
-
-from packaging import version
 
 try:
     import pyarrow  # type: ignore
@@ -96,14 +99,10 @@ if pyarrow:
         pyarrow.decimal128(38, scale=9).id: "NUMERIC",
     }
 
-    # Adds bignumeric support only if pyarrow version >= 3.0.0
-    # Decimal256 support was added to arrow 3.0.0
-    # https://arrow.apache.org/blog/2021/01/25/3.0.0-release/
-    if version.parse(pyarrow.__version__) >= version.parse("3.0.0"):
-        _BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
-        # The exact decimal's scale and precision are not important, as only
-        # the type ID matters, and it's the same for all decimal256 instances.
-        _ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
+    _BQ_TO_ARROW_SCALARS["BIGNUMERIC"] = pyarrow_bignumeric
+    # The exact decimal's scale and precision are not important, as only
+    # the type ID matters, and it's the same for all decimal256 instances.
+    _ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
 
 
 def bq_to_arrow_scalars(bq_scalar: str):

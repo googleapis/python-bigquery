@@ -15,21 +15,21 @@
 """Schemas for BigQuery tables / queries."""
 
 from __future__ import annotations
-import collections
 import enum
 import typing
-from typing import Any, cast, Dict, Iterable, Optional, Union
+from typing import Any, cast, Dict, Iterable, Optional, Union, Sequence
 
 from google.cloud.bigquery import _helpers
 from google.cloud.bigquery import standard_sql
+from google.cloud.bigquery import enums
 from google.cloud.bigquery.enums import StandardSqlTypeNames
 
 
 _STRUCT_TYPES = ("RECORD", "STRUCT")
 
 # SQL types reference:
-# https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
-# https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+# LEGACY SQL: https://cloud.google.com/bigquery/data-types#legacy_sql_data_types
+# GoogleSQL: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
 LEGACY_TO_STANDARD_TYPES = {
     "STRING": StandardSqlTypeNames.STRING,
     "BYTES": StandardSqlTypeNames.BYTES,
@@ -48,6 +48,7 @@ LEGACY_TO_STANDARD_TYPES = {
     "DATE": StandardSqlTypeNames.DATE,
     "TIME": StandardSqlTypeNames.TIME,
     "DATETIME": StandardSqlTypeNames.DATETIME,
+    "FOREIGN": StandardSqlTypeNames.FOREIGN,
     # no direct conversion from ARRAY, the latter is represented by mode="REPEATED"
 }
 """String names of the legacy SQL types to integer codes of Standard SQL standard_sql."""
@@ -166,6 +167,35 @@ class SchemaField(object):
             the type is RANGE, this field is required. Possible values for the
             field element type of a RANGE include `DATE`, `DATETIME` and
             `TIMESTAMP`.
+
+        rounding_mode: Union[enums.RoundingMode, str, None]
+            Specifies the rounding mode to be used when storing values of
+            NUMERIC and BIGNUMERIC type.
+
+            Unspecified will default to using ROUND_HALF_AWAY_FROM_ZERO.
+            ROUND_HALF_AWAY_FROM_ZERO rounds half values away from zero
+            when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
+            values.
+
+            For Scale: 0
+            1.1, 1.2, 1.3, 1.4 => 1
+            1.5, 1.6, 1.7, 1.8, 1.9 => 2
+
+            ROUND_HALF_EVEN rounds half values to the nearest even value
+            when applying precision and scale upon writing of NUMERIC and BIGNUMERIC
+            values.
+
+            For Scale: 0
+            1.1, 1.2, 1.3, 1.4 => 1
+            1.5 => 2
+            1.6, 1.7, 1.8, 1.9 => 2
+            2.5 => 2
+
+        foreign_type_definition: Optional[str]
+            Definition of the foreign data type.
+
+            Only valid for top-level schema fields (not nested fields).
+            If the type is FOREIGN, this field is required.
     """
 
     def __init__(
@@ -181,11 +211,14 @@ class SchemaField(object):
         scale: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         max_length: Union[int, _DefaultSentinel] = _DEFAULT_VALUE,
         range_element_type: Union[FieldElementType, str, None] = None,
+        rounding_mode: Union[enums.RoundingMode, str, None] = None,
+        foreign_type_definition: Optional[str] = None,
     ):
         self._properties: Dict[str, Any] = {
             "name": name,
             "type": field_type,
         }
+        self._properties["name"] = name
         if mode is not None:
             self._properties["mode"] = mode.upper()
         if description is not _DEFAULT_VALUE:
@@ -199,13 +232,22 @@ class SchemaField(object):
         if max_length is not _DEFAULT_VALUE:
             self._properties["maxLength"] = max_length
         if policy_tags is not _DEFAULT_VALUE:
+            # TODO: The typehinting for this needs work. Setting this pragma to temporarily
+            # manage a pytype issue that came up in another PR. See Issue: #2132
             self._properties["policyTags"] = (
-                policy_tags.to_api_repr() if policy_tags is not None else None
+                policy_tags.to_api_repr()  # pytype: disable=attribute-error
+                if policy_tags is not None
+                else None
             )
         if isinstance(range_element_type, str):
             self._properties["rangeElementType"] = {"type": range_element_type}
         if isinstance(range_element_type, FieldElementType):
             self._properties["rangeElementType"] = range_element_type.to_api_repr()
+        if rounding_mode is not None:
+            self._properties["roundingMode"] = rounding_mode
+        if foreign_type_definition is not None:
+            self._properties["foreignTypeDefinition"] = foreign_type_definition
+
         if fields:  # Don't set the property if it's not set.
             self._properties["fields"] = [field.to_api_repr() for field in fields]
 
@@ -303,6 +345,22 @@ class SchemaField(object):
         if self._properties.get("rangeElementType"):
             ret = self._properties.get("rangeElementType")
             return FieldElementType.from_api_repr(ret)
+
+    @property
+    def rounding_mode(self):
+        """Enum that specifies the rounding mode to be used when storing values of
+        NUMERIC and BIGNUMERIC type.
+        """
+        return self._properties.get("roundingMode")
+
+    @property
+    def foreign_type_definition(self):
+        """Definition of the foreign data type.
+
+        Only valid for top-level schema fields (not nested fields).
+        If the type is FOREIGN, this field is required.
+        """
+        return self._properties.get("foreignTypeDefinition")
 
     @property
     def fields(self):
@@ -434,6 +492,8 @@ def _parse_schema_resource(info):
         Optional[Sequence[google.cloud.bigquery.schema.SchemaField`]:
             A list of parsed fields, or ``None`` if no "fields" key found.
     """
+    if isinstance(info, list):
+        return [SchemaField.from_api_repr(f) for f in info]
     return [SchemaField.from_api_repr(f) for f in info.get("fields", ())]
 
 
@@ -446,40 +506,46 @@ def _build_schema_resource(fields):
     Returns:
         Sequence[Dict]: Mappings describing the schema of the supplied fields.
     """
-    return [field.to_api_repr() for field in fields]
+    if isinstance(fields, Sequence):
+        # Input is a Sequence (e.g. a list): Process and return a list of SchemaFields
+        return [field.to_api_repr() for field in fields]
+
+    else:
+        raise TypeError("Schema must be a Sequence (e.g. a list) or None.")
 
 
 def _to_schema_fields(schema):
-    """Coerce `schema` to a list of schema field instances.
+    """Coerces schema to a list of SchemaField instances while
+    preserving the original structure as much as possible.
 
     Args:
-        schema(Sequence[Union[ \
-            :class:`~google.cloud.bigquery.schema.SchemaField`, \
-            Mapping[str, Any] \
-        ]]):
-            Table schema to convert. If some items are passed as mappings,
-            their content must be compatible with
-            :meth:`~google.cloud.bigquery.schema.SchemaField.from_api_repr`.
+        schema (Sequence[Union[ \
+                   :class:`~google.cloud.bigquery.schema.SchemaField`, \
+                   Mapping[str, Any] \
+                       ]
+                   ]
+               )::
+            Table schema to convert. Can be a list of SchemaField
+            objects or mappings.
 
     Returns:
-        Sequence[:class:`~google.cloud.bigquery.schema.SchemaField`]
+        A list of SchemaField objects.
 
     Raises:
-        Exception: If ``schema`` is not a sequence, or if any item in the
-        sequence is not a :class:`~google.cloud.bigquery.schema.SchemaField`
-        instance or a compatible mapping representation of the field.
+        TypeError: If schema is not a Sequence.
     """
-    for field in schema:
-        if not isinstance(field, (SchemaField, collections.abc.Mapping)):
-            raise ValueError(
-                "Schema items must either be fields or compatible "
-                "mapping representations."
-            )
 
-    return [
-        field if isinstance(field, SchemaField) else SchemaField.from_api_repr(field)
-        for field in schema
-    ]
+    if isinstance(schema, Sequence):
+        # Input is a Sequence (e.g. a list): Process and return a list of SchemaFields
+        return [
+            field
+            if isinstance(field, SchemaField)
+            else SchemaField.from_api_repr(field)
+            for field in schema
+        ]
+
+    else:
+        raise TypeError("Schema must be a Sequence (e.g. a list) or None.")
 
 
 class PolicyTagList(object):

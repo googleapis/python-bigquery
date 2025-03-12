@@ -31,8 +31,12 @@ def test_bq_to_arrow_scalars(module_under_test):
         == module_under_test.pyarrow_bignumeric()
     )
     assert (
+        # Normally, we'd prefer JSON type built-in to pyarrow (added in 19.0.0),
+        # but we'd like this to map as closely to the BQ Storage API as
+        # possible, which uses the string() dtype, as JSON support in Arrow
+        # predates JSON support in BigQuery by several years.
         module_under_test.bq_to_arrow_scalars("JSON")()
-        == module_under_test.json_arrow_type
+        == pyarrow.string()
     )
     assert module_under_test.bq_to_arrow_scalars("UNKNOWN_TYPE") is None
 

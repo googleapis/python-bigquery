@@ -63,16 +63,6 @@ _BQ_TO_ARROW_SCALARS = {}
 _ARROW_SCALAR_IDS_TO_BQ = {}
 
 if pyarrow:
-    # Prefer JSON type built-in to pyarrow (adding in 19.0.0), if available.
-    # Otherwise, fallback to db-dtypes, where the JSONArrowType was added in 1.4.0,
-    # but since they might have an older db-dtypes, have string as a fallback for that.
-    # TODO(https://github.com/pandas-dev/pandas/issues/60958): switch to
-    # pyarrow.json_(pyarrow.string()) if available and supported by pandas.
-    if hasattr(db_dtypes, "JSONArrowType"):
-        json_arrow_type = db_dtypes.JSONArrowType()
-    else:
-        json_arrow_type = pyarrow.string()
-
     # This dictionary is duplicated in bigquery_storage/test/unite/test_reader.py
     # When modifying it be sure to update it there as well.
     # Note(todo!!): type "BIGNUMERIC"'s matching pyarrow type is added in _pandas_helpers.py
@@ -87,7 +77,11 @@ if pyarrow:
         "GEOGRAPHY": pyarrow.string,
         "INT64": pyarrow.int64,
         "INTEGER": pyarrow.int64,
-        "JSON": lambda: json_arrow_type,
+        # Normally, we'd prefer JSON type built-in to pyarrow (added in 19.0.0),
+        # but we'd like this to map as closely to the BQ Storage API as
+        # possible, which uses the string() dtype, as JSON support in Arrow
+        # predates JSON support in BigQuery by several years.
+        "JSON": pyarrow.string,
         "NUMERIC": pyarrow_numeric,
         "STRING": pyarrow.string,
         "TIME": pyarrow_time,

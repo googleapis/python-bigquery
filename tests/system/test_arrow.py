@@ -220,4 +220,6 @@ def test_to_arrow_query_with_empty_results(bigquery_client):
         "json_array_col",
     ]
     assert table.shape == (0, 5)
-    assert list(table.field("struct_col").type.names) == ["json_field", "int_field"]
+    struct_type = table.field("struct_col").type
+    assert struct_type.get_field_index("json_field") == 0
+    assert struct_type.get_field_index("int_field") == 1

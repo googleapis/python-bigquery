@@ -430,6 +430,9 @@ def prerelease_deps(session):
         "protobuf",
     )
 
+    # Ensure that this library is installed from source
+    session.install("-e", ".", "--no-deps")
+
     # Print out prerelease package versions.
     session.run("python", "-m", "pip", "freeze")
 

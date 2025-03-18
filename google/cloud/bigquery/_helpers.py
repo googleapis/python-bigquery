@@ -21,6 +21,7 @@ import json
 import math
 import re
 import os
+import textwrap
 import warnings
 from typing import Any, Optional, Tuple, Type, Union
 
@@ -187,7 +188,17 @@ class CellDataParser:
 
         parsed = _INTERVAL_PATTERN.match(value)
         if parsed is None:
-            raise ValueError(f"got interval: '{value}' with unexpected format")
+            raise ValueError(
+                textwrap.dedent(
+                    f"""
+                    Got interval: '{value}' with unexpected format.
+                    Expected interval in canonical format of "[sign]Y-M [sign]D [sign]H:M:S[.F]".
+                    See:
+                    https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#interval_type
+                    for more information.
+                    """
+                ),
+            )
 
         calendar_sign = -1 if parsed.group("calendar_sign") == "-" else 1
         years = calendar_sign * int(parsed.group("years"))
@@ -285,7 +296,16 @@ class CellDataParser:
             elif len(value) == 15:  # HH:MM:SS.micros
                 fmt = _TIMEONLY_W_MICROS
             else:
-                raise ValueError("Unknown time format: {}".format(value))
+                raise ValueError(
+                    textwrap.dedent(
+                        f"""
+                        Got {repr(value)} with unknown time format.
+                        Expected HH:MM:SS or HH:MM:SS.micros. See
+                        https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#time_type
+                        for more information.
+                        """
+                    ),
+                )
             return datetime.datetime.strptime(value, fmt).time()
 
     def record_to_py(self, value, field):
@@ -322,7 +342,14 @@ class CellDataParser:
             )
         else:
             raise ValueError(
-                f"Unsupported range element type: {field_element_type.element_type}"
+                textwrap.dedent(
+                    f"""
+                    Got unsupported range element type: {field_element_type.element_type}.
+                    Exptected one of {repr(_SUPPORTED_RANGE_ELEMENTS)}. See:
+                    https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#declare_a_range_type
+                    for more information.
+                    """
+                ),
             )
 
     def range_to_py(self, value, field):
@@ -345,8 +372,16 @@ class CellDataParser:
                 end = self._range_element_to_py(end, field.range_element_type)
                 return {"start": start, "end": end}
             else:
-                raise ValueError(f"Unknown format for range value: {value}")
-        else:
+                raise ValueError(
+                    textwrap.dedent(
+                        f"""
+                        Got unknown format for range value: {value}.
+                        Expected format '[lower_bound, upper_bound)'. See:
+                        https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#range_with_literal
+                        for more information.
+                        """
+                    ),
+                )
             return None
 
 

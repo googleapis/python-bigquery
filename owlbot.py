@@ -91,6 +91,12 @@ python3.9 -m pip install --upgrade --quiet nox virtualenv==20.26.6""",
 )
 
 s.replace(
+    "CONTRIBUTING.rst",
+    r"\$ nox -s py-3.8",
+    r"$ nox -s py-3.9",
+)
+
+s.replace(
     "scripts/readme-gen/templates/install_deps.tmpl.rst",
     r"Samples are compatible with Python 3.7",
     r"Samples are compatible with Python 3.9",

@@ -195,11 +195,11 @@ configure them just like the System Tests.
 
    # Run all tests in a folder
    $ cd samples/snippets
-   $ nox -s py-3.8
+   $ nox -s py-3.9
 
    # Run a single sample test
    $ cd samples/snippets
-   $ nox -s py-3.8 -- -k <name of test>
+   $ nox -s py-3.9 -- -k <name of test>
 
 ********************************************
 Note About ``README`` as it pertains to PyPI

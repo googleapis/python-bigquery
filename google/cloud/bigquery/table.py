@@ -2019,6 +2019,7 @@ class RowIterator(HTTPIterator):
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         max_queue_size: int = _pandas_helpers._MAX_QUEUE_SIZE_DEFAULT,  # type: ignore
         max_stream_count: Optional[int] = None,
+        json_arrow_type: Optional["pyarrow.DataType"] = None,
     ) -> Iterator["pyarrow.RecordBatch"]:
         """[Beta] Create an iterable of class:`pyarrow.RecordBatch`, to process the table as a stream.
 
@@ -2058,6 +2059,9 @@ class RowIterator(HTTPIterator):
                 especially with very large queries. In that case,
                 setting this parameter value to a value > 0 can help
                 reduce system resource consumption.
+            json_arrow_type (Optional[pyarrow.DataType]):
+                Arrow type to use for JSON columns. This defaults to
+                ``pyarrow.string()``.
 
         Returns:
             pyarrow.RecordBatch:
@@ -2078,13 +2082,17 @@ class RowIterator(HTTPIterator):
             max_stream_count=max_stream_count,
         )
         tabledata_list_download = functools.partial(
-            _pandas_helpers.download_arrow_row_iterator, iter(self.pages), self.schema
+            _pandas_helpers.download_arrow_row_iterator,
+            iter(self.pages),
+            self.schema,
         )
-        return self._to_page_iterable(
+        for table in self._to_page_iterable(
             bqstorage_download,
             tabledata_list_download,
             bqstorage_client=bqstorage_client,
-        )
+        ):
+            # TODO: convert json_arrow_type if set.
+            yield table
 
     # If changing the signature of this method, make sure to apply the same
     # changes to job.QueryJob.to_arrow()
@@ -2093,6 +2101,7 @@ class RowIterator(HTTPIterator):
         progress_bar_type: Optional[str] = None,
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         create_bqstorage_client: bool = True,
+        json_arrow_type: Optional["pyarrow.DataType"] = None,
     ) -> "pyarrow.Table":
         """[Beta] Create a class:`pyarrow.Table` by loading all pages of a
         table or query.
@@ -2134,6 +2143,9 @@ class RowIterator(HTTPIterator):
                 This argument does nothing if ``bqstorage_client`` is supplied.
 
                 .. versionadded:: 1.24.0
+            json_arrow_type (Optional[pyarrow.DataType]):
+                Arrow type to use for JSON columns. This defaults to
+                ``pyarrow.string()``.
 
         Returns:
             pyarrow.Table
@@ -2196,6 +2208,7 @@ class RowIterator(HTTPIterator):
             # `bq_to_arrow_schema` do it.
             arrow_schema = _pandas_helpers.bq_to_arrow_schema(self._schema)
             return pyarrow.Table.from_batches(record_batches, schema=arrow_schema)
+            # TODO: convert json columns if json_arrow_type is set.
 
     def to_dataframe_iterable(
         self,

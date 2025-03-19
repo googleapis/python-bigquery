@@ -382,7 +382,6 @@ class CellDataParser:
                         """
                     ),
                 )
-            return None
 
 
 CELL_DATA_PARSER = CellDataParser()

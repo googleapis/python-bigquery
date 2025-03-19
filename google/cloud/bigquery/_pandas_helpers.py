@@ -27,7 +27,7 @@ import logging
 import queue
 import threading
 import warnings
-from typing import Any, Union, Optional, Callable, Generator, List
+from typing import Any, Callable, Generator, Iterable, List, Optional, Union
 
 
 from google.cloud.bigquery import _pyarrow_helpers
@@ -162,10 +162,14 @@ BQ_FIELD_TYPE_TO_ARROW_FIELD_METADATA = {
 }
 
 
-def bq_to_arrow_struct_data_type(field):
+def bq_to_arrow_struct_data_type(
+    field: schema.SchemaField,
+    *,
+    json_arrow_type: "pyarrow.DataType",
+) -> "pyarrow.DataType":
     arrow_fields = []
     for subfield in field.fields:
-        arrow_subfield = bq_to_arrow_field(subfield)
+        arrow_subfield = bq_to_arrow_field(subfield, json_arrow_type=json_arrow_type)
         if arrow_subfield:
             arrow_fields.append(arrow_subfield)
         else:
@@ -186,15 +190,29 @@ def bq_to_arrow_range_data_type(field):
     return pyarrow.struct([("start", arrow_element_type), ("end", arrow_element_type)])
 
 
-def bq_to_arrow_data_type(field):
+def bq_to_arrow_data_type(
+    field: schema.SchemaField,
+    *,
+    json_arrow_type: "pyarrow.DataType",
+) -> "pyarrow.DataType":
     """Return the Arrow data type, corresponding to a given BigQuery column.
+
+    Args:
+        field (SchemaField):
+            BigQuery field to convert to Arrow.
+        json_arrow_type (pyarrow.DataType):
+            Arrow type to use for JSON columns. This defaults to
+            ``pyarrow.string()``.
 
     Returns:
         None: if default Arrow type inspection should be used.
     """
+    # TODO(https://github.com/googleapis/python-bigquery-pandas/pull/893):
+    # move to pandas_gbq.schema.bigquery_to_pyarrow module.
     if field.mode is not None and field.mode.upper() == "REPEATED":
         inner_type = bq_to_arrow_data_type(
-            schema.SchemaField(field.name, field.field_type, fields=field.fields)
+            schema.SchemaField(field.name, field.field_type, fields=field.fields),
+            json_arrow_type=json_arrow_type,
         )
         if inner_type:
             return pyarrow.list_(inner_type)
@@ -202,24 +220,43 @@ def bq_to_arrow_data_type(field):
 
     field_type_upper = field.field_type.upper() if field.field_type else ""
     if field_type_upper in schema._STRUCT_TYPES:
-        return bq_to_arrow_struct_data_type(field)
+        return bq_to_arrow_struct_data_type(field, json_arrow_type=json_arrow_type)
 
     if field_type_upper == "RANGE":
         return bq_to_arrow_range_data_type(field.range_element_type)
 
-    data_type_constructor = _pyarrow_helpers.bq_to_arrow_scalars(field_type_upper)
+    data_type_constructor = _pyarrow_helpers.bq_to_arrow_scalars(
+        field_type_upper, json_arrow_type=json_arrow_type
+    )
     if data_type_constructor is None:
         return None
     return data_type_constructor()
 
 
-def bq_to_arrow_field(bq_field, array_type=None):
+def bq_to_arrow_field(
+    bq_field: schema.SchemaField,
+    array_type: Optional["pyarrow.DataType"] = None,
+    *,
+    json_arrow_type: "pyarrow.DataType",
+) -> "pyarrow.Field":
     """Return the Arrow field, corresponding to a given BigQuery column.
+
+    Args:
+        bq_field (SchemaField):
+            BigQuery field to convert to Arrow.
+        array_type (Optional[pyarrow.DataType]):
+            The type that the pyarrow.array constructor determined, such as
+            when converting from a local pandas DataFrame to a BigQuery schema.
+        json_arrow_type (pyarrow.DataType):
+            Arrow type to use for JSON columns. This defaults to
+            ``pyarrow.string()``.
 
     Returns:
         None: if the Arrow type cannot be determined.
     """
-    arrow_type = bq_to_arrow_data_type(bq_field)
+    # TODO(https://github.com/googleapis/python-bigquery-pandas/pull/893):
+    # move to pandas_gbq.schema.bigquery_to_pyarrow module.
+    arrow_type = bq_to_arrow_data_type(bq_field, json_arrow_type=json_arrow_type)
     if arrow_type is not None:
         if array_type is not None:
             arrow_type = array_type  # For GEOGRAPHY, at least initially
@@ -243,15 +280,29 @@ def bq_to_arrow_field(bq_field, array_type=None):
     return None
 
 
-def bq_to_arrow_schema(bq_schema):
+def bq_to_arrow_schema(
+    bq_schema: Iterable[schema.SchemaField],
+    *,
+    json_arrow_type: "pyarrow.DataType",
+) -> "pyarrow.Schema":
     """Return the Arrow schema, corresponding to a given BigQuery schema.
 
+    Args:
+        bq_schema (Iterable[SchemaField]):
+            BigQuery schema to convert to Arrow.
+        json_arrow_type (Optional[pyarrow.DataType]):
+            Arrow type to use for JSON columns. This defaults to
+            ``pyarrow.string()``.
+
     Returns:
+        pyarrow.Schema: if all BigQuery types can be converted to Arrow.
         None: if any Arrow type cannot be determined.
     """
+    # TODO(https://github.com/googleapis/python-bigquery-pandas/pull/893):
+    # move to pandas_gbq.schema.bigquery_to_pyarrow module.
     arrow_fields = []
     for bq_field in bq_schema:
-        arrow_field = bq_to_arrow_field(bq_field)
+        arrow_field = bq_to_arrow_field(bq_field, json_arrow_type=json_arrow_type)
         if arrow_field is None:
             # Auto-detect the schema if there is an unknown field type.
             return None
@@ -766,7 +817,7 @@ def _row_iterator_page_to_arrow(page, column_names, arrow_types):
     return pyarrow.RecordBatch.from_arrays(arrays, names=column_names)
 
 
-def download_arrow_row_iterator(pages, bq_schema):
+def download_arrow_row_iterator(pages, bq_schema, json_arrow_type=None):
     """Use HTTP JSON RowIterator to construct an iterable of RecordBatches.
 
     Args:
@@ -777,13 +828,22 @@ def download_arrow_row_iterator(pages, bq_schema):
             Mapping[str, Any] \
         ]]):
             A decription of the fields in result pages.
+        json_arrow_type (Optional[pyarrow.DataType]):
+            Arrow type to use for JSON columns. This defaults to
+            ``pyarrow.string()``.
+
     Yields:
         :class:`pyarrow.RecordBatch`
         The next page of records as a ``pyarrow`` record batch.
     """
     bq_schema = schema._to_schema_fields(bq_schema)
-    column_names = bq_to_arrow_schema(bq_schema) or [field.name for field in bq_schema]
-    arrow_types = [bq_to_arrow_data_type(field) for field in bq_schema]
+    column_names = bq_to_arrow_schema(bq_schema, json_arrow_type=json_arrow_type) or [
+        field.name for field in bq_schema
+    ]
+    arrow_types = [
+        bq_to_arrow_data_type(field, json_arrow_type=json_arrow_type)
+        for field in bq_schema
+    ]
 
     for page in pages:
         yield _row_iterator_page_to_arrow(page, column_names, arrow_types)

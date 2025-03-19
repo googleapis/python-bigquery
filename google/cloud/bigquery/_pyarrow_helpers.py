@@ -77,11 +77,6 @@ if pyarrow:
         "GEOGRAPHY": pyarrow.string,
         "INT64": pyarrow.int64,
         "INTEGER": pyarrow.int64,
-        # Normally, we'd prefer JSON type built-in to pyarrow (added in 19.0.0),
-        # but we'd like this to map as closely to the BQ Storage API as
-        # possible, which uses the string() dtype, as JSON support in Arrow
-        # predates JSON support in BigQuery by several years.
-        "JSON": pyarrow.string,
         "NUMERIC": pyarrow_numeric,
         "STRING": pyarrow.string,
         "TIME": pyarrow_time,
@@ -124,15 +119,22 @@ if pyarrow:
     _ARROW_SCALAR_IDS_TO_BQ[pyarrow.decimal256(76, scale=38).id] = "BIGNUMERIC"
 
 
-def bq_to_arrow_scalars(bq_scalar: str):
+def bq_to_arrow_scalars(bq_scalar: str, *, json_arrow_type: "pyarrow.DataType"):
     """
     DEPRECATED: update pandas_gbq.schema.bigquery_to_pyarrow, instead, which is
     to be added in https://github.com/googleapis/python-bigquery-pandas/pull/893.
 
     Returns:
-        The Arrow scalar type that the input BigQuery scalar type maps to.
-        If it cannot find the BigQuery scalar, return None.
+        A function that returns an Arrow scalar type that the input BigQuery
+        scalar type maps to. If it cannot find the BigQuery scalar, return
+        None.
     """
+    # TODO(tswast): Why is this returning a callable instead of the actual data
+    # type? Seems like we should be able to remove that level of indirection,
+    # especially for these scalar types.
+    if bq_scalar == "JSON":
+        return lambda: json_arrow_type
+
     return _BQ_TO_ARROW_SCALARS.get(bq_scalar)
 
 

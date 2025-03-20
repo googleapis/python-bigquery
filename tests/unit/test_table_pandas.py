@@ -55,6 +55,7 @@ def test_to_dataframe_nullable_scalars(monkeypatch, class_under_test):
             pyarrow.field(
                 "timestamp_col", pyarrow.timestamp("us", tz=datetime.timezone.utc)
             ),
+            pyarrow.field("json_col", pyarrow.string()),
         ]
     )
     arrow_table = pyarrow.Table.from_pydict(
@@ -74,6 +75,7 @@ def test_to_dataframe_nullable_scalars(monkeypatch, class_under_test):
                     2021, 8, 9, 13, 30, 44, 123456, tzinfo=datetime.timezone.utc
                 )
             ],
+            "json_col": ["{}"],
         },
         schema=arrow_schema,
     )
@@ -90,6 +92,7 @@ def test_to_dataframe_nullable_scalars(monkeypatch, class_under_test):
         bigquery.SchemaField("string_col", "STRING"),
         bigquery.SchemaField("time_col", "TIME"),
         bigquery.SchemaField("timestamp_col", "TIMESTAMP"),
+        bigquery.SchemaField("json_col", "JSON"),
     ]
     mock_client = mock.create_autospec(bigquery.Client)
     mock_client.project = "test-proj"
@@ -113,6 +116,7 @@ def test_to_dataframe_nullable_scalars(monkeypatch, class_under_test):
     assert df.dtypes["string_col"].name == "object"
     assert df.dtypes["time_col"].name == "dbtime"
     assert df.dtypes["timestamp_col"].name == "datetime64[ns, UTC]"
+    assert df.dtypes["json_col"].name == "object"
 
     # Check for expected values.
     assert df["bignumeric_col"][0] == decimal.Decimal("123.456789101112131415")

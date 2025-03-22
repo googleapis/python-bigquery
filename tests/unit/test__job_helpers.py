@@ -194,6 +194,13 @@ def make_query_response(
             make_query_request({"maximumBytesBilled": "987654"}),
             id="job_config-with-maximum_bytes_billed",
         ),
+        pytest.param(
+            job_query.QueryJobConfig(
+                write_incremental_results = True,
+            ),
+            make_query_request({"writeIncrementalResults": True}),
+            id="job_config-with-incremental-results"
+        )
     ),
 )
 def test__to_query_request(job_config, expected):

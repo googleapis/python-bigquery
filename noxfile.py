@@ -98,6 +98,7 @@ def default(session, install_extras=True):
         "pytest",
         "google-cloud-testutils",
         "pytest-cov",
+        "pytest-xdist",
         "freezegun",
         "-c",
         constraints_path,
@@ -129,6 +130,7 @@ def default(session, install_extras=True):
     # Run py.test against the unit tests.
     session.run(
         "py.test",
+        "-n=auto",
         "--quiet",
         "-W default::PendingDeprecationWarning",
         "--cov=google/cloud/bigquery",

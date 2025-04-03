@@ -5,6 +5,14 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.31.1](https://github.com/googleapis/python-bigquery/compare/v3.31.0...v3.31.1) (2025-04-03)
+
+
+### Bug Fixes
+
+* Empty record dtypes ([#2147](https://github.com/googleapis/python-bigquery/issues/2147)) ([77d7173](https://github.com/googleapis/python-bigquery/commit/77d71736fcc006d3ab8f8ba17955ad5f06e21876))
+* Table iterator should not use bqstorage when page_size is not None ([#2154](https://github.com/googleapis/python-bigquery/issues/2154)) ([e89a707](https://github.com/googleapis/python-bigquery/commit/e89a707b162182ededbf94cc9a0f7594bc2be475))
+
 ## [3.31.0](https://github.com/googleapis/python-bigquery/compare/v3.30.0...v3.31.0) (2025-03-20)
 
 

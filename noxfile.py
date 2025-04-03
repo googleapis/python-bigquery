@@ -226,7 +226,12 @@ def system(session):
 
     # Install all test dependencies, then install local packages in place.
     session.install(
-        "pytest", "psutil", "google-cloud-testutils", "-c", constraints_path
+        "pytest",
+        "psutil",
+        "pytest-xdist",
+        "google-cloud-testutils",
+        "-c",
+        constraints_path,
     )
     if os.environ.get("GOOGLE_API_USE_CLIENT_CERTIFICATE", "") == "true":
         # mTLS test requires pyopenssl and latest google-cloud-storage
@@ -259,6 +264,7 @@ def system(session):
     # Run py.test against the system tests.
     session.run(
         "py.test",
+        "-n=auto",
         "--quiet",
         "-W default::PendingDeprecationWarning",
         os.path.join("tests", "system"),

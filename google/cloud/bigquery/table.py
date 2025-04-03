@@ -1873,6 +1873,11 @@ class RowIterator(HTTPIterator):
         """total bytes processed from job statistics, if present."""
         return self._total_bytes_processed
 
+    @property
+    def page_size(self) -> Optional[int]:
+        """The maximum number of rows in each page of results from this request, if present."""
+        return self._page_size
+
     def _is_almost_completely_cached(self):
         """Check if all results are completely cached.
 
@@ -1924,7 +1929,7 @@ class RowIterator(HTTPIterator):
         if self._is_almost_completely_cached():
             return False
 
-        if self.max_results is not None:
+        if self.max_results is not None or self.page_size is not None:
             return False
 
         try:
@@ -1994,7 +1999,9 @@ class RowIterator(HTTPIterator):
             bqstorage_client:
                 The BigQuery Storage client intended to use for downloading result rows.
         """
-        if bqstorage_client is not None and self.max_results is not None:
+        if bqstorage_client is not None and (
+            self.max_results is not None or self.page_size is not None
+        ):
             warnings.warn(
                 "Cannot use bqstorage_client if max_results is set, "
                 "reverting to fetching data with the REST endpoint.",
@@ -2648,31 +2655,25 @@ class RowIterator(HTTPIterator):
                 if pyarrow.types.is_timestamp(col.type)
             )
 
-        if len(record_batch) > 0:
-            df = record_batch.to_pandas(
+        df = record_batch.to_pandas(
+            date_as_object=date_as_object,
+            timestamp_as_object=timestamp_as_object,
+            integer_object_nulls=True,
+            types_mapper=_pandas_helpers.default_types_mapper(
                 date_as_object=date_as_object,
-                timestamp_as_object=timestamp_as_object,
-                integer_object_nulls=True,
-                types_mapper=_pandas_helpers.default_types_mapper(
-                    date_as_object=date_as_object,
-                    bool_dtype=bool_dtype,
-                    int_dtype=int_dtype,
-                    float_dtype=float_dtype,
-                    string_dtype=string_dtype,
-                    date_dtype=date_dtype,
-                    datetime_dtype=datetime_dtype,
-                    time_dtype=time_dtype,
-                    timestamp_dtype=timestamp_dtype,
-                    range_date_dtype=range_date_dtype,
-                    range_datetime_dtype=range_datetime_dtype,
-                    range_timestamp_dtype=range_timestamp_dtype,
-                ),
-            )
-        else:
-            # Avoid "ValueError: need at least one array to concatenate" on
-            # older versions of pandas when converting empty RecordBatch to
-            # DataFrame. See: https://github.com/pandas-dev/pandas/issues/41241
-            df = pandas.DataFrame([], columns=record_batch.schema.names)
+                bool_dtype=bool_dtype,
+                int_dtype=int_dtype,
+                float_dtype=float_dtype,
+                string_dtype=string_dtype,
+                date_dtype=date_dtype,
+                datetime_dtype=datetime_dtype,
+                time_dtype=time_dtype,
+                timestamp_dtype=timestamp_dtype,
+                range_date_dtype=range_date_dtype,
+                range_datetime_dtype=range_datetime_dtype,
+                range_timestamp_dtype=range_timestamp_dtype,
+            ),
+        )
 
         for column in dtypes:
             df[column] = pandas.Series(df[column], dtype=dtypes[column], copy=False)

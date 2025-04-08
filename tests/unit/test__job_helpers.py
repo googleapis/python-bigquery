@@ -196,7 +196,7 @@ def make_query_response(
         ),
         pytest.param(
             job_query.QueryJobConfig(
-                write_incremental_results = True,
+                write_incremental_results=True,
             ),
             make_query_request({"writeIncrementalResults": True}),
             id="job_config-with-incremental-results"

@@ -318,7 +318,9 @@ def snippets(session):
     )
 
     # Install all test dependencies, then install local packages in place.
-    session.install("pytest", "google-cloud-testutils", "-c", constraints_path)
+    session.install(
+        "pytest", "pytest-xdist", "google-cloud-testutils", "-c", constraints_path
+    )
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
@@ -334,9 +336,12 @@ def snippets(session):
     # Run py.test against the snippets tests.
     # Skip tests in samples/snippets, as those are run in a different session
     # using the nox config from that directory.
-    session.run("py.test", os.path.join("docs", "snippets.py"), *session.posargs)
+    session.run(
+        "py.test", "-n=auto", os.path.join("docs", "snippets.py"), *session.posargs
+    )
     session.run(
         "py.test",
+        "-n=auto",
         "samples",
         "-W default::PendingDeprecationWarning",
         "--ignore=samples/desktopapp",
@@ -401,6 +406,7 @@ def prerelease_deps(session):
         "google-cloud-testutils",
         "psutil",
         "pytest",
+        "pytest-xdist",
         "pytest-cov",
     )
 
@@ -447,18 +453,21 @@ def prerelease_deps(session):
     # Run all tests, except a few samples tests which require extra dependencies.
     session.run(
         "py.test",
+        "-n=auto",
         "tests/unit",
         "-W default::PendingDeprecationWarning",
     )
 
     session.run(
         "py.test",
+        "-n=auto",
         "tests/system",
         "-W default::PendingDeprecationWarning",
     )
 
     session.run(
         "py.test",
+        "-n=auto",
         "samples/tests",
         "-W default::PendingDeprecationWarning",
     )

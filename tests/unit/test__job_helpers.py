@@ -1148,6 +1148,11 @@ def test_make_job_id_w_job_id_overrides_prefix():
             False,
             id="priority=BATCH",
         ),
+        pytest.param(
+            job_query.QueryJobConfig(write_incremental_results=True),
+            True,
+            id="write_incremental_results"
+        ),
     ),
 )
 def test_supported_by_jobs_query_from_queryjobconfig(

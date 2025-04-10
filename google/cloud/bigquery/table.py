@@ -3526,19 +3526,20 @@ class TableConstraints:
             ]
         return resource
 
+
 class BigLakeConfiguration(object):
-    """Configuration for Managed Tables for Apache Iceberg, formerly
+    """Configuration for managed tables for Apache Iceberg, formerly
        known as BigLake.
-    
+
     Args:
         connection_id (Optional[str]):
             The connection specifying the credentials to be used to read and write to external
-            storage, such as Cloud Storage. The connection_id can have the form 
-            ``{project}.{location}.{connection_id}`` or 
+            storage, such as Cloud Storage. The connection_id can have the form
+            ``{project}.{location}.{connection_id}`` or
             ``projects/{project}/locations/{location}/connections/{connection_id}``.
         storage_uri (Optional[str]):
-            The fully qualified location prefix of the external folder where table data is 
-            stored. The '*' wildcard character is not allowed. The URI should be in the 
+            The fully qualified location prefix of the external folder where table data is
+            stored. The '*' wildcard character is not allowed. The URI should be in the
             format ``gs://bucket/path_to_table/``.
         file_format (Optional[str]):
             The file format the table data is stored in. See BigLakeFileFormat for available
@@ -3564,10 +3565,11 @@ class BigLakeConfiguration(object):
             self.file_format = file_format
         if table_format is not None:
             self.table_format = table_format
-    
+
     @property
     def connection_id(self) -> str:
-        """str: Field in the table to use for partitioning"""
+        """str: The connection specifying the credentials to be used to read and write to external
+        storage, such as Cloud Storage."""
         return self._properties.get("connectionId")
 
     @connection_id.setter
@@ -3576,7 +3578,8 @@ class BigLakeConfiguration(object):
 
     @property
     def storage_uri(self) -> str:
-        """str: Field in the table to use for partitioning"""
+        """str: The fully qualified location prefix of the external folder where table data is
+        stored."""
         return self._properties.get("storageUri")
 
     @storage_uri.setter
@@ -3585,8 +3588,11 @@ class BigLakeConfiguration(object):
 
     @property
     def file_format(self) -> str:
-        """str: Field in the table to use for partitioning"""
-        return self._properties.get("fileFormat", BigLakeFileFormat.FILE_FORMAT_UNSPECIFIED)
+        """str: The file format the table data is stored in. See BigLakeFileFormat for available
+        values."""
+        return self._properties.get(
+            "fileFormat", BigLakeFileFormat.FILE_FORMAT_UNSPECIFIED
+        )
 
     @file_format.setter
     def field(self, value: str):
@@ -3594,8 +3600,11 @@ class BigLakeConfiguration(object):
 
     @property
     def table_format(self) -> str:
-        """str: Field in the table to use for partitioning"""
-        return self._properties.get("tableFormat", BigLakeTableFormat.TABLE_FORMAT_UNSPECIFIED)
+        """str: The table format the metadata only snapshots are stored in. See BigLakeTableFormat
+        for available values."""
+        return self._properties.get(
+            "tableFormat", BigLakeTableFormat.TABLE_FORMAT_UNSPECIFIED
+        )
 
     @table_format.setter
     def field(self, value: str):
@@ -3613,9 +3622,9 @@ class BigLakeConfiguration(object):
     def __repr__(self):
         key_vals = ["{}={}".format(key, val) for key, val in self._key()]
         return "BigLakeConfiguration({})".format(",".join(key_vals))
-    
+
     @classmethod
-    def from_api_repr(cls, resource: Dict[str, Any]) -> "ModelReference":
+    def from_api_repr(cls, resource: Dict[str, Any]) -> "BigLakeConfiguration":
         """Factory: construct a BigLakeConfiguration given its API representation.
 
         Args:
@@ -3628,7 +3637,7 @@ class BigLakeConfiguration(object):
         ref = cls()
         ref._properties = resource
         return ref
-    
+
     def to_api_repr(self) -> Dict[str, Any]:
         """Construct the API resource representation of this BigLakeConfiguration.
 

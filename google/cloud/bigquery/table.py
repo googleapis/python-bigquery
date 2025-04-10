@@ -66,6 +66,8 @@ from google.cloud.bigquery import exceptions as bq_exceptions
 from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import DefaultPandasDTypes
+from google.cloud.bigquery.enums import BigLakeFileFormat
+from google.cloud.bigquery.enums import BigLakeTableFormat
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery import schema as _schema
 from google.cloud.bigquery.schema import _build_schema_resource
@@ -380,6 +382,7 @@ class Table(_TableBase):
 
     _PROPERTY_TO_API_FIELD: Dict[str, Any] = {
         **_TableBase._PROPERTY_TO_API_FIELD,
+        "biglake_configuration": "biglakeConfiguration",
         "clustering_fields": "clustering",
         "created": "creationTime",
         "description": "description",
@@ -430,6 +433,29 @@ class Table(_TableBase):
             self.schema = schema
 
     reference = property(_reference_getter)
+
+    @property
+    def biglake_configuration(self):
+        """google.cloud.bigquery.table.BigLakeConfiguration: Configuration
+        for managed tables for Apache Iceberg.
+
+        See https://cloud.google.com/bigquery/docs/iceberg-tables for more information.
+        """
+        prop = self._properties.get(
+            self._PROPERTY_TO_API_FIELD["biglake_configuration"]
+        )
+        if prop is not None:
+            prop = BigLakeConfiguration.from_api_repr(prop)
+        return prop
+
+    @biglake_configuration.setter
+    def encryption_configuration(self, value):
+        api_repr = value
+        if value is not None:
+            api_repr = value.to_api_repr()
+        self._properties[
+            self._PROPERTY_TO_API_FIELD["biglake_configuration"]
+        ] = api_repr
 
     @property
     def require_partition_filter(self):
@@ -3499,6 +3525,117 @@ class TableConstraints:
                 foreign_key.to_api_repr() for foreign_key in self.foreign_keys
             ]
         return resource
+
+class BigLakeConfiguration(object):
+    """Configuration for Managed Tables for Apache Iceberg, formerly
+       known as BigLake.
+    
+    Args:
+        connection_id (Optional[str]):
+            The connection specifying the credentials to be used to read and write to external
+            storage, such as Cloud Storage. The connection_id can have the form 
+            ``{project}.{location}.{connection_id}`` or 
+            ``projects/{project}/locations/{location}/connections/{connection_id}``.
+        storage_uri (Optional[str]):
+            The fully qualified location prefix of the external folder where table data is 
+            stored. The '*' wildcard character is not allowed. The URI should be in the 
+            format ``gs://bucket/path_to_table/``.
+        file_format (Optional[str]):
+            The file format the table data is stored in. See BigLakeFileFormat for available
+            values.
+        table_format (Optional[str]):
+            The table format the metadata only snapshots are stored in. See BigLakeTableFormat
+            for available values.
+    """
+
+    def __init__(
+        self,
+        connection_id: Optional[str],
+        storage_uri: Optional[str],
+        file_format: Optional[BigLakeFileFormat],
+        table_format: Optional[BigLakeTableFormat],
+    ) -> None:
+        self._properties: Dict[str, Any] = {}
+        if connection_id is not None:
+            self.connection_id = connection_id
+        if storage_uri is not None:
+            self.storage_uri = storage_uri
+        if file_format is not None:
+            self.file_format = file_format
+        if table_format is not None:
+            self.table_format = table_format
+    
+    @property
+    def connection_id(self) -> str:
+        """str: Field in the table to use for partitioning"""
+        return self._properties.get("connectionId")
+
+    @connection_id.setter
+    def field(self, value: str):
+        self._properties["connectionId"] = value
+
+    @property
+    def storage_uri(self) -> str:
+        """str: Field in the table to use for partitioning"""
+        return self._properties.get("storageUri")
+
+    @storage_uri.setter
+    def field(self, value: str):
+        self._properties["storageUri"] = value
+
+    @property
+    def file_format(self) -> str:
+        """str: Field in the table to use for partitioning"""
+        return self._properties.get("fileFormat", BigLakeFileFormat.FILE_FORMAT_UNSPECIFIED)
+
+    @file_format.setter
+    def field(self, value: str):
+        self._properties["fileFormat"] = value
+
+    @property
+    def table_format(self) -> str:
+        """str: Field in the table to use for partitioning"""
+        return self._properties.get("tableFormat", BigLakeTableFormat.TABLE_FORMAT_UNSPECIFIED)
+
+    @table_format.setter
+    def field(self, value: str):
+        self._properties["tableFormat"] = value
+
+    def _key(self):
+        return tuple(sorted(self._properties.items()))
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self._key())
+
+    def __repr__(self):
+        key_vals = ["{}={}".format(key, val) for key, val in self._key()]
+        return "BigLakeConfiguration({})".format(",".join(key_vals))
+    
+    @classmethod
+    def from_api_repr(cls, resource: Dict[str, Any]) -> "ModelReference":
+        """Factory: construct a BigLakeConfiguration given its API representation.
+
+        Args:
+            resource:
+                BigLakeConfiguration representation returned from the API
+
+        Returns:
+           BigLakeConfiguration parsed from ``resource``.
+        """
+        ref = cls()
+        ref._properties = resource
+        return ref
+    
+    def to_api_repr(self) -> Dict[str, Any]:
+        """Construct the API resource representation of this BigLakeConfiguration.
+
+        Returns:
+            BigLakeConfiguration represented as an API resource.
+        """
+        return copy.deepcopy(self._properties)
 
 
 def _item_to_row(iterator, resource):

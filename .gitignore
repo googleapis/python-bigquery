@@ -30,8 +30,6 @@ pip-log.txt
 .cache
 .pytest_cache
 .pytype
-.pytype
-.pytype
 
 
 # Mac

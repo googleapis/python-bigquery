@@ -960,7 +960,7 @@ class TestTable(unittest.TestCase, _SchemaBase):
         }
 
         table.biglake_configuration = None
-        assert table.biglake_configuration == None
+        assert table.biglake_configuration is None
 
     def test_table_constraints_property_setter(self):
         from google.cloud.bigquery.table import (

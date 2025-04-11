@@ -2288,8 +2288,6 @@ class TestBigLakeConfiguration(unittest.TestCase):
         self.assertEqual(instance.to_api_repr(), resource)
 
     def test_from_api_repr_partial(self):
-        from google.cloud.bigquery.enums import BigLakeTableFormat
-
         klass = self._get_target_class()
         api_repr = {"fileFormat": "FILE"}
         instance = klass.from_api_repr(api_repr)

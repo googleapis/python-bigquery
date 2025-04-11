@@ -3555,8 +3555,8 @@ class BigLakeConfiguration(object):
         self,
         connection_id: Optional[str] = None,
         storage_uri: Optional[str] = None,
-        file_format: Optional[BigLakeFileFormat] = None,
-        table_format: Optional[BigLakeTableFormat] = None,
+        file_format: Optional[str] = None,
+        table_format: Optional[str] = None,
         _properties: Optional[dict] = None,
     ) -> None:
         if _properties is None:
@@ -3578,7 +3578,7 @@ class BigLakeConfiguration(object):
         return self._properties.get("connectionId")
 
     @connection_id.setter
-    def connection_id(self, value: str):
+    def connection_id(self, value: Optional[str]):
         self._properties["connectionId"] = value
 
     @property
@@ -3588,27 +3588,27 @@ class BigLakeConfiguration(object):
         return self._properties.get("storageUri")
 
     @storage_uri.setter
-    def storage_uri(self, value: str):
+    def storage_uri(self, value: Optional[str]):
         self._properties["storageUri"] = value
 
     @property
-    def file_format(self) -> str:
+    def file_format(self) -> Optional[str]:
         """str: The file format the table data is stored in. See BigLakeFileFormat for available
         values."""
         return self._properties.get("fileFormat")
 
     @file_format.setter
-    def file_format(self, value: str):
+    def file_format(self, value: Optional[str]):
         self._properties["fileFormat"] = value
 
     @property
-    def table_format(self) -> str:
+    def table_format(self) -> Optional[str]:
         """str: The table format the metadata only snapshots are stored in. See BigLakeTableFormat
         for available values."""
         return self._properties.get("tableFormat")
 
     @table_format.setter
-    def table_format(self, value: str):
+    def table_format(self, value: Optional[str]):
         self._properties["tableFormat"] = value
 
     def _key(self):

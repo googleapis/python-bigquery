@@ -66,8 +66,6 @@ from google.cloud.bigquery import exceptions as bq_exceptions
 from google.cloud.bigquery._tqdm_helpers import get_progress_bar
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import DefaultPandasDTypes
-from google.cloud.bigquery.enums import BigLakeFileFormat
-from google.cloud.bigquery.enums import BigLakeTableFormat
 from google.cloud.bigquery.external_config import ExternalConfig
 from google.cloud.bigquery import schema as _schema
 from google.cloud.bigquery.schema import _build_schema_resource

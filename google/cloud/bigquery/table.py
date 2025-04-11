@@ -3612,9 +3612,6 @@ class BigLakeConfiguration(object):
     def _key(self):
         return tuple(sorted(self._properties.items()))
 
-    def __ne__(self, other):
-        return not self == other
-
     def __hash__(self):
         return hash(self._key())
 

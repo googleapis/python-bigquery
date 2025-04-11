@@ -959,6 +959,9 @@ class TestTable(unittest.TestCase, _SchemaBase):
             "tableFormat": "ICEBERG",
         }
 
+        table.biglake_configuration = None
+        assert table.biglake_configuration == None
+
     def test_table_constraints_property_setter(self):
         from google.cloud.bigquery.table import (
             ColumnReference,
@@ -2278,11 +2281,10 @@ class TestBigLakeConfiguration(unittest.TestCase):
 
     def test_to_api_repr(self):
         resource = {
-            "tableReference": {
-                "projectId": "testproject",
-                "datasetId": "testdataset",
-                "tableId": "testtable",
-            }
+            "connectionId": "conn",
+            "storageUri": "uri",
+            "fileFormat": "FILE",
+            "tableFormat": "TABLE",
         }
         instance = self._make_one(_properties=resource)
         self.assertEqual(instance.to_api_repr(), resource)
@@ -2296,6 +2298,24 @@ class TestBigLakeConfiguration(unittest.TestCase):
         self.assertIsNone(instance.storage_uri)
         self.assertEqual(instance.file_format, "FILE")
         self.assertIsNone(instance.table_format)
+
+    def test_comparisons(self):
+        resource = {
+            "connectionId": "conn",
+            "storageUri": "uri",
+            "fileFormat": "FILE",
+            "tableFormat": "TABLE",
+        }
+
+        first = self._make_one(_properties=resource)
+        second = self._make_one(_properties=resource)
+        self.assertEqual(first, second)
+        self.assertNotEqual(first, resource)
+
+        second.connection_id = "foo"
+        self.assertNotEqual(first, second)
+        first.connection_id = "foo"
+        self.assertEqual(first, second)
 
 
 class TestCloneDefinition:

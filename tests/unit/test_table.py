@@ -435,6 +435,12 @@ class TestTable(unittest.TestCase, _SchemaBase):
                 "sourceFormat": "CSV",
                 "csvOptions": {"allowJaggedRows": True, "encoding": "encoding"},
             },
+            "biglakeConfiguration": {
+                "connectionId": "connection",
+                "storageUri": "uri",
+                "fileFormat": "PARQUET",
+                "tableFormat": "ICEBERG",
+            },
             "labels": {"x": "y"},
         }
 
@@ -520,6 +526,15 @@ class TestTable(unittest.TestCase, _SchemaBase):
             )
         else:
             self.assertIsNone(table.encryption_configuration)
+
+        if "biglakeConfiguration" in resource:
+            self.assertIsNotNone(table.biglake_configuration)
+            self.assertEqual(table.biglake_configuration.connection_id, "connection")
+            self.assertEqual(table.biglake_configuration.storage_uri, "uri")
+            self.assertEqual(table.biglake_configuration.file_format, "PARQUET")
+            self.assertEqual(table.biglake_configuration.table_format, "ICEBERG")
+        else:
+            self.assertIsNone(table.biglake_configuration)
 
     def test_ctor(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
@@ -892,6 +907,57 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
         assert isinstance(table_constraints, TableConstraints)
         assert table_constraints.primary_key == PrimaryKey(columns=["id"])
+
+    def test_biglake_configuration_not_set(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        assert table.biglake_configuration is None
+
+    def test_biglake_configuration_set(self):
+        from google.cloud.bigquery.table import BigLakeConfiguration
+
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        table._properties["biglakeConfiguration"] = {
+            "connectionId": "connection",
+            "storageUri": "uri",
+            "fileFormat": "PARQUET",
+            "tableFormat": "ICEBERG",
+        }
+
+        config = table.biglake_configuration
+
+        assert isinstance(config, BigLakeConfiguration)
+        assert config.connection_id == "connection"
+        assert config.storage_uri == "uri"
+        assert config.file_format == "PARQUET"
+        assert config.table_format == "ICEBERG"
+
+    def test_biglake_configuration_property_setter(self):
+        from google.cloud.bigquery.table import BigLakeConfiguration
+
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        config = BigLakeConfiguration(
+            connection_id="connection",
+            storage_uri="uri",
+            file_format="PARQUET",
+            table_format="ICEBERG",
+        )
+        table.biglake_configuration = config
+
+        assert table._properties["biglakeConfiguration"] == {
+            "connectionId": "connection",
+            "storageUri": "uri",
+            "fileFormat": "PARQUET",
+            "tableFormat": "ICEBERG",
+        }
 
     def test_table_constraints_property_setter(self):
         from google.cloud.bigquery.table import (
@@ -2166,7 +2232,7 @@ class TestSnapshotDefinition:
         assert instance.snapshot_time == expected_time
 
 
-class TestBigLakeConfiguration:
+class TestBigLakeConfiguration(unittest.TestCase):
     @staticmethod
     def _get_target_class():
         from google.cloud.bigquery.table import BigLakeConfiguration
@@ -2179,14 +2245,23 @@ class TestBigLakeConfiguration:
         return klass(*args, **kwargs)
 
     def test_ctor_empty_resource(self):
-        from google.cloud.bigquery.enums import BigLakeFileFormat
-        from google.cloud.bigquery.enums import BigLakeTableFormat
+        instance = self._make_one()
+        self.assertIsNone(instance.connection_id)
+        self.assertIsNone(instance.storage_uri)
+        self.assertIsNone(instance.file_format)
+        self.assertIsNone(instance.table_format)
 
-        instance = self._make_one(resource={})
-        assert instance.connection_id is None
-        assert instance.storage_uri is None
-        assert instance.file_format == BigLakeFileFormat.FILE_FORMAT_UNSPECIFIED
-        assert instance.table_format == BigLakeFileFormat.TABLE_FORMAT_UNSPECIFIED
+    def test_ctor_kwargs(self):
+        instance = self._make_one(
+            connection_id="conn",
+            storage_uri="uri",
+            file_format="FILE",
+            table_format="TABLE",
+        )
+        self.assertEqual(instance.connection_id, "conn")
+        self.assertEqual(instance.storage_uri, "uri")
+        self.assertEqual(instance.file_format, "FILE")
+        self.assertEqual(instance.table_format, "TABLE")
 
     def test_ctor_full_resource(self):
         resource = {
@@ -2195,12 +2270,11 @@ class TestBigLakeConfiguration:
             "fileFormat": "FILE",
             "tableFormat": "TABLE",
         }
-        instance = self._make_one(resource)
-
-        assert instance.connection_id == "conn"
-        assert instance.storage_uri == "uri"
-        assert instance.file_format == "FILE"
-        assert instance.table_format == "TABLE"
+        instance = self._make_one(_properties=resource)
+        self.assertEqual(instance.connection_id, "conn")
+        self.assertEqual(instance.storage_uri, "uri")
+        self.assertEqual(instance.file_format, "FILE")
+        self.assertEqual(instance.table_format, "TABLE")
 
     def test_to_api_repr(self):
         resource = {
@@ -2210,22 +2284,20 @@ class TestBigLakeConfiguration:
                 "tableId": "testtable",
             }
         }
-        instance = self._make_one(resource)
+        instance = self._make_one(_properties=resource)
         self.assertEqual(instance.to_api_repr(), resource)
 
     def test_from_api_repr_partial(self):
         from google.cloud.bigquery.enums import BigLakeTableFormat
 
         klass = self._get_target_class()
-        api_repr = ({"fileFormat": "FILE"},)
+        api_repr = {"fileFormat": "FILE"}
         instance = klass.from_api_repr(api_repr)
 
         self.assertIsNone(instance.connection_id)
         self.assertIsNone(instance.storage_uri)
         self.assertEqual(instance.file_format, "FILE")
-        self.assertEqual(
-            instance.table_format, BigLakeTableFormat.TABLE_FORMAT_UNSPECIFIED
-        )
+        self.assertIsNone(instance.table_format)
 
 
 class TestCloneDefinition:

@@ -449,7 +449,7 @@ class Table(_TableBase):
         return prop
 
     @biglake_configuration.setter
-    def encryption_configuration(self, value):
+    def biglake_configuration(self, value):
         api_repr = value
         if value is not None:
             api_repr = value.to_api_repr()
@@ -3547,6 +3547,8 @@ class BigLakeConfiguration(object):
         table_format (Optional[str]):
             The table format the metadata only snapshots are stored in. See BigLakeTableFormat
             for available values.
+        _properties (Optional[dict]):
+            Private. Used to construct object from API resource.
     """
 
     def __init__(
@@ -3555,8 +3557,11 @@ class BigLakeConfiguration(object):
         storage_uri: Optional[str] = None,
         file_format: Optional[BigLakeFileFormat] = None,
         table_format: Optional[BigLakeTableFormat] = None,
+        _properties: Optional[dict] = None,
     ) -> None:
-        self._properties: Dict[str, Any] = {}
+        if _properties is None:
+            _properties = {}
+        self._properties = _properties
         if connection_id is not None:
             self.connection_id = connection_id
         if storage_uri is not None:
@@ -3573,7 +3578,7 @@ class BigLakeConfiguration(object):
         return self._properties.get("connectionId")
 
     @connection_id.setter
-    def field(self, value: str):
+    def connection_id(self, value: str):
         self._properties["connectionId"] = value
 
     @property
@@ -3583,31 +3588,27 @@ class BigLakeConfiguration(object):
         return self._properties.get("storageUri")
 
     @storage_uri.setter
-    def field(self, value: str):
+    def storage_uri(self, value: str):
         self._properties["storageUri"] = value
 
     @property
     def file_format(self) -> str:
         """str: The file format the table data is stored in. See BigLakeFileFormat for available
         values."""
-        return self._properties.get(
-            "fileFormat", BigLakeFileFormat.FILE_FORMAT_UNSPECIFIED
-        )
+        return self._properties.get("fileFormat")
 
     @file_format.setter
-    def field(self, value: str):
+    def file_format(self, value: str):
         self._properties["fileFormat"] = value
 
     @property
     def table_format(self) -> str:
         """str: The table format the metadata only snapshots are stored in. See BigLakeTableFormat
         for available values."""
-        return self._properties.get(
-            "tableFormat", BigLakeTableFormat.TABLE_FORMAT_UNSPECIFIED
-        )
+        return self._properties.get("tableFormat")
 
     @table_format.setter
-    def field(self, value: str):
+    def table_format(self, value: str):
         self._properties["tableFormat"] = value
 
     def _key(self):

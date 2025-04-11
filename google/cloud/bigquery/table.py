@@ -3551,10 +3551,10 @@ class BigLakeConfiguration(object):
 
     def __init__(
         self,
-        connection_id: Optional[str],
-        storage_uri: Optional[str],
-        file_format: Optional[BigLakeFileFormat],
-        table_format: Optional[BigLakeTableFormat],
+        connection_id: Optional[str] = None,
+        storage_uri: Optional[str] = None,
+        file_format: Optional[BigLakeFileFormat] = None,
+        table_format: Optional[BigLakeTableFormat] = None,
     ) -> None:
         self._properties: Dict[str, Any] = {}
         if connection_id is not None:
@@ -3567,7 +3567,7 @@ class BigLakeConfiguration(object):
             self.table_format = table_format
 
     @property
-    def connection_id(self) -> str:
+    def connection_id(self) -> Optional[str]:
         """str: The connection specifying the credentials to be used to read and write to external
         storage, such as Cloud Storage."""
         return self._properties.get("connectionId")
@@ -3577,7 +3577,7 @@ class BigLakeConfiguration(object):
         self._properties["connectionId"] = value
 
     @property
-    def storage_uri(self) -> str:
+    def storage_uri(self) -> Optional[str]:
         """str: The fully qualified location prefix of the external folder where table data is
         stored."""
         return self._properties.get("storageUri")

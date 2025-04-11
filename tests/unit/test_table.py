@@ -2166,6 +2166,68 @@ class TestSnapshotDefinition:
         assert instance.snapshot_time == expected_time
 
 
+class TestBigLakeConfiguration:
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import BigLakeConfiguration
+
+        return BigLakeConfiguration
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        klass = cls._get_target_class()
+        return klass(*args, **kwargs)
+
+    def test_ctor_empty_resource(self):
+        from google.cloud.bigquery.enums import BigLakeFileFormat
+        from google.cloud.bigquery.enums import BigLakeTableFormat
+
+        instance = self._make_one(resource={})
+        assert instance.connection_id is None
+        assert instance.storage_uri is None
+        assert instance.file_format == BigLakeFileFormat.FILE_FORMAT_UNSPECIFIED
+        assert instance.table_format == BigLakeFileFormat.TABLE_FORMAT_UNSPECIFIED
+
+    def test_ctor_full_resource(self):
+        resource = {
+            "connectionId": "conn",
+            "storageUri": "uri",
+            "fileFormat": "FILE",
+            "tableFormat": "TABLE",
+        }
+        instance = self._make_one(resource)
+
+        assert instance.connection_id == "conn"
+        assert instance.storage_uri == "uri"
+        assert instance.file_format == "FILE"
+        assert instance.table_format == "TABLE"
+
+    def test_to_api_repr(self):
+        resource = {
+            "tableReference": {
+                "projectId": "testproject",
+                "datasetId": "testdataset",
+                "tableId": "testtable",
+            }
+        }
+        instance = self._make_one(resource)
+        self.assertEqual(instance.to_api_repr(), resource)
+
+    def test_from_api_repr_partial(self):
+        from google.cloud.bigquery.enums import BigLakeTableFormat
+
+        klass = self._get_target_class()
+        api_repr = ({"fileFormat": "FILE"},)
+        instance = klass.from_api_repr(api_repr)
+
+        self.assertIsNone(instance.connection_id)
+        self.assertIsNone(instance.storage_uri)
+        self.assertEqual(instance.file_format, "FILE")
+        self.assertEqual(
+            instance.table_format, BigLakeTableFormat.TABLE_FORMAT_UNSPECIFIED
+        )
+
+
 class TestCloneDefinition:
     @staticmethod
     def _get_target_class():

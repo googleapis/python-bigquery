@@ -298,12 +298,15 @@ class AccessEntry(object):
         role: Optional[str] = None,
         entity_type: Optional[str] = None,
         entity_id: Optional[Union[Dict[str, Any], str]] = None,
+        **kwargs,
     ):
         self._properties = {}
         if entity_type is not None:
             self._properties[entity_type] = entity_id
         self._properties["role"] = role
         self._entity_type = entity_type
+        for prop, val in kwargs.items():
+            setattr(self, prop, val)
 
     @property
     def role(self) -> Optional[str]:
@@ -438,6 +441,25 @@ class AccessEntry(object):
         self._properties["specialGroup"] = value
 
     @property
+    def condition(self) -> Optional["Condition"]:
+        """Optional[Condition]: The IAM condition associated with this entry."""
+        value = self._properties.get("condition")
+        if value:
+            return Condition.from_api_repr(value)
+
+    @condition.setter
+    def condition(self, value: Union["Condition", dict, None]):
+        """Set the IAM condition for this entry."""
+        if value is None:
+            self._properties["condition"] = None
+        elif isinstance(value, Condition):
+            self._properties["condition"] = value.to_api_repr()
+        elif isinstance(value, dict):
+            self._properties["condition"] = value
+        else:
+            raise TypeError("condition must be a Condition object, dict, or None")
+
+    @property
     def entity_type(self) -> Optional[str]:
         """The entity_type of the entry."""
         return self._entity_type
@@ -469,6 +491,9 @@ class AccessEntry(object):
         return (self.role, self._entity_type, self.entity_id, prop_tup)
 
     def __hash__(self):
+        # TODO: if a dict is a sub property, hash fails.
+        print(f"DINOSAUR: {self._key()}")
+
         return hash(self._key())
 
     def to_api_repr(self):
@@ -1163,3 +1188,30 @@ class Condition(object):
             title=resource.get("title"),
             description=resource.get("description"),
         )
+
+    def __eq__(self, other: object) -> bool:
+        """Check for equality based on expression, title, and description."""
+        if not isinstance(other, Condition):
+            return NotImplemented
+        return (
+            self.expression == other.expression
+            and self.title == other.title
+            and self.description == other.description
+        )
+
+    def __ne__(self, other: object) -> bool:
+        """Check for inequality."""
+        return not self == other
+
+    def __hash__(self) -> int:
+        """Generate a hash based on expression, title, and description."""
+        return hash((self.expression, self.title, self.description))
+
+    def __repr__(self) -> str:
+        """Return a string representation of the Condition object."""
+        parts = [f"expression={self.expression!r}"]
+        if self.title is not None:
+            parts.append(f"title={self.title!r}")
+        if self.description is not None:
+            parts.append(f"description={self.description!r}")
+        return f"Condition({', '.join(parts)})"

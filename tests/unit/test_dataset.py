@@ -1527,6 +1527,13 @@ class TestCondition:
         condition_instance.expression = new_expr
         assert condition_instance.expression == new_expr
 
+        # Test setting title and description to empty strings
+        condition_instance.title = ""
+        assert condition_instance.title == ""
+
+        condition_instance.description = ""
+        assert condition_instance.description == ""
+
         # Test setting optional fields back to None
         condition_instance.title = None
         assert condition_instance.title is None

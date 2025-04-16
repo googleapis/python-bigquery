@@ -443,9 +443,8 @@ class AccessEntry(object):
     @property
     def condition(self) -> Optional["Condition"]:
         """Optional[Condition]: The IAM condition associated with this entry."""
-        value = self._properties.get("condition")
-        if value:
-            return Condition.from_api_repr(value)
+        value = typing.cast(Dict[str, Any], self._properties.get("condition"))
+        return Condition.from_api_repr(value) if value else None
 
     @condition.setter
     def condition(self, value: Union["Condition", dict, None]):
@@ -467,7 +466,10 @@ class AccessEntry(object):
     @property
     def entity_id(self) -> Optional[Union[Dict[str, Any], str]]:
         """The entity_id of the entry."""
-        return self._properties.get(self._entity_type) if self._entity_type else None
+        return typing.cast(
+            Optional[Union[Dict[str, Any], str]],
+            self._properties.get(self._entity_type) if self._entity_type else None,
+        )
 
     def __eq__(self, other):
         if not isinstance(other, AccessEntry):
@@ -486,14 +488,20 @@ class AccessEntry(object):
         Returns:
             Tuple: The contents of this :class:`~google.cloud.bigquery.dataset.AccessEntry`.
         """
+
         properties = self._properties.copy()
+
+        # Dicts are not hashable.
+        # Convert condition to a hashable datatype(s)
+        condition = properties.get("condition")
+        if isinstance(condition, dict):
+            condition_key = tuple(sorted(condition.items()))
+            properties["condition"] = condition_key
+
         prop_tup = tuple(sorted(properties.items()))
         return (self.role, self._entity_type, self.entity_id, prop_tup)
 
     def __hash__(self):
-        # TODO: if a dict is a sub property, hash fails.
-        print(f"DINOSAUR: {self._key()}")
-
         return hash(self._key())
 
     def to_api_repr(self):
@@ -522,13 +530,31 @@ class AccessEntry(object):
                 If the resource has more keys than ``role`` and one additional
                 key.
         """
+
+        # The api_repr for an AccessEntry object is expected to be a dict with
+        # only a few keys. Two keys that may be present are role and condition.
+        # Any additional key is going to have one of ~eight different names:
+        #   userByEmail, groupByEmail, domain, dataset, specialGroup, view,
+        #   routine, iamMember
+        #
+        # First we pop role and condition out of the dict, if present.
+        # This should leave only one item in the dict which will be a key: value
+        # pair that will be assigned to entity_type and entity_id respectively.
+
         entry = resource.copy()
         role = entry.pop("role", None)
-        entity_type, entity_id = entry.popitem()
-        if len(entry) != 0:
-            raise ValueError("Entry has unexpected keys remaining.", entry)
+        condition = entry.pop("condition", None)
+        try:
+            entity_type, entity_id = entry.popitem()
+        except KeyError:
+            entity_type = None
+            entity_id = None
 
-        return cls(role, entity_type, entity_id)
+        if condition:
+            access_entry = cls(role, entity_type, entity_id, condition=condition)
+        else:
+            access_entry = cls(role, entity_type, entity_id)
+        return access_entry
 
 
 class Dataset(object):
@@ -1185,8 +1211,8 @@ class Condition(object):
 
         return cls(
             expression=resource["expression"],
-            title=resource.get("title"),
-            description=resource.get("description"),
+            title=resource.get("title", None),
+            description=resource.get("description", None),
         )
 
     def __eq__(self, other: object) -> bool:

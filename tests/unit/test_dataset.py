@@ -179,15 +179,6 @@ class TestAccessEntry(unittest.TestCase):
         exp_resource = entry.to_api_repr()
         self.assertEqual(resource, exp_resource)
 
-    def test_from_api_repr_entries_w_extra_keys(self):
-        resource = {
-            "role": "READER",
-            "specialGroup": "projectReaders",
-            "userByEmail": "salmon@example.com",
-        }
-        with self.assertRaises(ValueError):
-            self._get_target_class().from_api_repr(resource)
-
     def test_view_getter_setter(self):
         view = {
             "projectId": "my_project",
@@ -492,6 +483,258 @@ class TestAccessEntry(unittest.TestCase):
         entry.dataset = dataset
         entry.dataset_target_types = target_types
         self.assertEqual(entry.dataset_target_types, target_types)
+
+
+# --- Tests for AccessEntry when using Condition ---
+
+EXPRESSION = "request.time < timestamp('2026-01-01T00:00:00Z')"
+TITLE = "Expires end 2025"
+DESCRIPTION = "Access expires at the start of 2026."
+
+
+@pytest.fixture
+def condition_1():
+    """Provides a sample Condition object."""
+    return Condition(
+        expression=EXPRESSION,
+        title=TITLE,
+        description=DESCRIPTION,
+    )
+
+
+@pytest.fixture
+def condition_1_api_repr():
+    """Provides the API representation for condition_1."""
+    # Use the actual to_api_repr method
+    return Condition(
+        expression=EXPRESSION,
+        title=TITLE,
+        description=DESCRIPTION,
+    ).to_api_repr()
+
+
+@pytest.fixture
+def condition_2():
+    """Provides a second, different Condition object."""
+    return Condition(
+        expression="resource.name.startsWith('projects/_/buckets/restricted/')",
+        title="Restricted Buckets",
+    )
+
+
+@pytest.fixture
+def condition_2_api_repr():
+    """Provides the API representation for condition2."""
+    # Use the actual to_api_repr method
+    return Condition(
+        expression="resource.name.startsWith('projects/_/buckets/restricted/')",
+        title="Restricted Buckets",
+    ).to_api_repr()
+
+
+class TestAccessEntryAndCondition:
+    @staticmethod
+    def _get_target_class():
+        return AccessEntry
+
+    def _make_one(self, *args, **kw):
+        return self._get_target_class()(*args, **kw)
+
+    # Test __init__ without condition
+    def test_init_without_condition(self):
+        entry = AccessEntry("READER", "userByEmail", "test@example.com")
+        assert entry.role == "READER"
+        assert entry.entity_type == "userByEmail"
+        assert entry.entity_id == "test@example.com"
+        assert entry.condition is None
+        # Accessing _properties is for internal verification in tests
+        assert "condition" not in entry._properties
+
+    # Test __init__ with condition object
+    def test_init_with_condition_object(self, condition_1, condition_1_api_repr):
+        entry = AccessEntry(
+            "READER", "userByEmail", "test@example.com", condition=condition_1
+        )
+        assert entry.condition == condition_1
+        assert entry._properties.get("condition") == condition_1_api_repr
+
+    # Test __init__ with condition=None
+    def test_init_with_condition_none(self):
+        entry = AccessEntry("READER", "userByEmail", "test@example.com", condition=None)
+        assert entry.condition is None
+
+    # Test condition getter/setter
+    def test_condition_getter_setter(
+        self, condition_1, condition_1_api_repr, condition_2, condition_2_api_repr
+    ):
+        entry = AccessEntry("WRITER", "group", "admins@example.com")
+        assert entry.condition is None
+
+        # Set condition 1
+        entry.condition = condition_1
+        assert entry.condition.to_api_repr() == condition_1_api_repr
+        assert entry._properties.get("condition") == condition_1_api_repr
+
+        # Set condition 2
+        entry.condition = condition_2
+        assert entry.condition.to_api_repr() == condition_2_api_repr
+        assert entry._properties.get("condition") != condition_1_api_repr
+        assert entry._properties.get("condition") == condition_2.to_api_repr()
+
+        # Set back to None
+        entry.condition = None
+        assert entry.condition is None
+
+    # Test setter validation
+    def test_condition_setter_invalid_type(self):
+        entry = AccessEntry("READER", "domain", "example.com")
+        with pytest.raises(
+            TypeError, match="condition must be a Condition object, dict, or None"
+        ):
+            entry.condition = 123  # type: ignore
+
+    # Test equality/hash without condition
+    def test_equality_and_hash_without_condition(self):
+        entry1 = AccessEntry("OWNER", "specialGroup", "projectOwners")
+        entry2 = AccessEntry("OWNER", "specialGroup", "projectOwners")
+        entry3 = AccessEntry("WRITER", "specialGroup", "projectOwners")
+        assert entry1 == entry2
+        assert entry1 != entry3
+        assert hash(entry1) == hash(entry2)
+        assert hash(entry1) != hash(entry3)  # Usually true
+
+    def test_equality_and_hash_with_condition(self, condition_1, condition_2):
+        cond1a = Condition(
+            condition_1.expression, condition_1.title, condition_1.description
+        )
+        cond1b = Condition(
+            condition_1.expression, condition_1.title, condition_1.description
+        )  # Same values, different object
+
+        entry1a = AccessEntry(
+            "READER", "userByEmail", "a@example.com", condition=cond1a
+        )
+        entry1b = AccessEntry(
+            "READER", "userByEmail", "a@example.com", condition=cond1b
+        )  # Different Condition instance
+        entry2 = AccessEntry(
+            "READER", "userByEmail", "a@example.com", condition=condition_2
+        )
+        entry3 = AccessEntry("READER", "userByEmail", "a@example.com")  # No condition
+        entry4 = AccessEntry(
+            "WRITER", "userByEmail", "a@example.com", condition=cond1a
+        )  # Different role
+
+        assert entry1a == entry1b
+        assert entry1a != entry2
+        assert entry1a != entry3
+        assert entry1a != entry4
+        assert entry2 != entry3
+
+        assert hash(entry1a) == hash(entry1b)
+        assert hash(entry1a) != hash(entry2)  # Usually true
+        assert hash(entry1a) != hash(entry3)  # Usually true
+        assert hash(entry1a) != hash(entry4)  # Usually true
+
+    # Test to_api_repr with condition
+    def test_to_api_repr_with_condition(self, condition_1, condition_1_api_repr):
+        entry = AccessEntry(
+            "WRITER", "groupByEmail", "editors@example.com", condition=condition_1
+        )
+        expected_repr = {
+            "role": "WRITER",
+            "groupByEmail": "editors@example.com",
+            "condition": condition_1_api_repr,
+        }
+        assert entry.to_api_repr() == expected_repr
+
+    def test_view_property_with_condition(self, condition_1):
+        """Test setting/getting view property when condition is present."""
+        entry = AccessEntry(role=None, entity_type="view", condition=condition_1)
+        view_ref = TableReference(DatasetReference("proj", "dset"), "view_tbl")
+        entry.view = view_ref  # Use the setter
+        assert entry.view == view_ref
+        assert entry.condition == condition_1  # Condition should persist
+        assert entry.role is None
+        assert entry.entity_type == "view"
+
+        # Check internal representation
+        assert "view" in entry._properties
+        assert "condition" in entry._properties
+
+    def test_user_by_email_property_with_condition(self, condition_1):
+        """Test setting/getting user_by_email property when condition is present."""
+        entry = AccessEntry(
+            role="READER", entity_type="userByEmail", condition=condition_1
+        )
+        email = "test@example.com"
+        entry.user_by_email = email  # Use the setter
+        assert entry.user_by_email == email
+        assert entry.condition == condition_1  # Condition should persist
+        assert entry.role == "READER"
+        assert entry.entity_type == "userByEmail"
+
+        # Check internal representation
+        assert "userByEmail" in entry._properties
+        assert "condition" in entry._properties
+
+    # Test from_api_repr without condition
+    def test_from_api_repr_without_condition(self):
+        api_repr = {"role": "OWNER", "userByEmail": "owner@example.com"}
+        entry = AccessEntry.from_api_repr(api_repr)
+        assert entry.role == "OWNER"
+        assert entry.entity_type == "userByEmail"
+        assert entry.entity_id == "owner@example.com"
+        assert entry.condition is None
+
+    # Test from_api_repr with condition
+    def test_from_api_repr_with_condition(self, condition_1, condition_1_api_repr):
+        api_repr = {
+            "role": "READER",
+            "view": {"projectId": "p", "datasetId": "d", "tableId": "v"},
+            "condition": condition_1_api_repr,
+        }
+        entry = AccessEntry.from_api_repr(api_repr)
+        assert entry.role == "READER"
+        assert entry.entity_type == "view"
+        # The entity_id for view/routine/dataset is the dict itself
+        assert entry.entity_id == {"projectId": "p", "datasetId": "d", "tableId": "v"}
+        assert entry.condition == condition_1
+
+    # Test from_api_repr edge case
+    def test_from_api_repr_no_entity(self, condition_1, condition_1_api_repr):
+        api_repr = {"role": "READER", "condition": condition_1_api_repr}
+        entry = AccessEntry.from_api_repr(api_repr)
+        assert entry.role == "READER"
+        assert entry.entity_type is None
+        assert entry.entity_id is None
+        assert entry.condition == condition_1
+
+    def test_dataset_property_with_condition(self, condition_1):
+        project = "my-project"
+        dataset_id = "my_dataset"
+        dataset_ref = DatasetReference(project, dataset_id)
+        entry = self._make_one(None)
+        entry.dataset = dataset_ref
+        entry.condition = condition_1
+
+        resource = entry.to_api_repr()
+        exp_resource = {
+            "role": None,
+            "dataset": {
+                "dataset": DatasetReference("my-project", "my_dataset"),
+                "targetTypes": None,
+            },
+            "condition": {
+                "expression": "request.time < timestamp('2026-01-01T00:00:00Z')",
+                "title": "Expires end 2025",
+                "description": "Access expires at the start of 2026.",
+            },
+        }
+        assert resource == exp_resource
+        # Check internal representation
+        assert "dataset" in entry._properties
+        assert "condition" in entry._properties
 
 
 class TestDatasetReference(unittest.TestCase):

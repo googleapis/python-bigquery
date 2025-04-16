@@ -161,4 +161,8 @@ def _set_job_attributes(job_ref):
     if total_bytes_processed is not None:
         job_attributes["total_bytes_processed"] = total_bytes_processed
 
+    query = getattr(job_ref, "query", None)
+    if query is not None:
+        job_attributes["db.query.text"] = query
+
     return job_attributes

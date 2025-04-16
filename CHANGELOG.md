@@ -5,6 +5,20 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.32.0](https://github.com/googleapis/python-bigquery/compare/v3.31.0...v3.32.0) (2025-04-16)
+
+
+### Features
+
+* Add preview support for incremental results ([#2145](https://github.com/googleapis/python-bigquery/issues/2145)) ([22b80bb](https://github.com/googleapis/python-bigquery/commit/22b80bba9d0bed319fd3102e567906c9b458dd02))
+* Adds condition class and assoc. unit tests ([#2159](https://github.com/googleapis/python-bigquery/issues/2159)) ([a69d6b7](https://github.com/googleapis/python-bigquery/commit/a69d6b796d2edb6ba453980c9553bc9b206c5a6e))
+
+
+### Bug Fixes
+
+* Empty record dtypes ([#2147](https://github.com/googleapis/python-bigquery/issues/2147)) ([77d7173](https://github.com/googleapis/python-bigquery/commit/77d71736fcc006d3ab8f8ba17955ad5f06e21876))
+* Table iterator should not use bqstorage when page_size is not None ([#2154](https://github.com/googleapis/python-bigquery/issues/2154)) ([e89a707](https://github.com/googleapis/python-bigquery/commit/e89a707b162182ededbf94cc9a0f7594bc2be475))
+
 ## [3.31.0](https://github.com/googleapis/python-bigquery/compare/v3.30.0...v3.31.0) (2025-03-20)
 
 

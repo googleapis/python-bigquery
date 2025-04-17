@@ -1626,3 +1626,40 @@ class TestCondition:
             ValueError, match="API representation missing required 'expression' field."
         ):
             Condition.from_api_repr(api_repr)
+
+    def test___eq___equality(self, condition_1):
+        result = condition_1
+        expected = condition_1
+        assert result == expected
+
+    def test___eq___equality_not_condition(self, condition_1):
+        result = condition_1
+        other = "not a condition"
+        expected = result.__eq__(other)
+        assert expected is NotImplemented
+
+    def test__ne__not_equality(self):
+        result = condition_1
+        expected = condition_2
+        assert result != expected
+
+    def test__hash__function(self, condition_2):
+        cond1 = Condition(
+            expression=self.EXPRESSION, title=self.TITLE, description=self.DESCRIPTION
+        )
+        cond2 = cond1
+        cond_not_equal = condition_2
+        assert cond1 == cond2
+        assert cond1 is cond2
+        assert hash(cond1) == hash(cond2)
+        assert hash(cond1) is not None
+        assert cond_not_equal != cond1
+        assert hash(cond_not_equal) != hash(cond1)
+
+    def test__hash__with_minimal_inputs(self):
+        cond1 = Condition(
+            expression="example",
+            title=None,
+            description=None,
+        )
+        assert hash(cond1) is not None

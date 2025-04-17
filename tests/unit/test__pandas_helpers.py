@@ -1386,6 +1386,40 @@ def test_dataframe_to_bq_schema_w_bq_schema(module_under_test, monkeypatch):
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+def test_dataframe_to_bq_schema_allows_extra_fields(module_under_test, monkeypatch):
+    monkeypatch.setattr(module_under_test, "pandas_gbq", None)
+
+    df_data = collections.OrderedDict(
+        [
+            ("str_column", ["hello", "world"]),
+            ("int_column", [42, 8]),
+            ("bool_column", [True, False]),
+        ]
+    )
+    dataframe = pandas.DataFrame(df_data)
+
+    dict_schema = [
+        {"name": "str_column", "type": "STRING", "mode": "NULLABLE"},
+        {"name": "int_column", "type": "INTEGER", "mode": "NULLABLE"},
+        {"name": "bool_column", "type": "BOOL", "mode": "REQUIRED"},
+        {"name": "extra_column", "type": "STRING", "mode": "NULLABLE"},
+    ]
+
+    with pytest.warns(UserWarning, match="bq_schema contains fields not present"):
+        returned_schema = module_under_test.dataframe_to_bq_schema(
+            dataframe, dict_schema
+        )
+
+    expected_schema = (
+        schema.SchemaField("str_column", "STRING", "NULLABLE"),
+        schema.SchemaField("int_column", "INTEGER", "NULLABLE"),
+        schema.SchemaField("bool_column", "BOOL", "REQUIRED"),
+        schema.SchemaField("extra_column", "STRING", "NULLABLE"),
+    )
+    assert returned_schema == expected_schema
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 def test_dataframe_to_bq_schema_fallback_needed_wo_pyarrow(
     module_under_test, monkeypatch
 ):

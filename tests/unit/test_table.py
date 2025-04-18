@@ -2308,7 +2308,7 @@ class TestBigLakeConfiguration(unittest.TestCase):
         }
 
         first = self._make_one(_properties=resource)
-        second = self._make_one(_properties=resource)
+        second = self._make_one(_properties=copy.deepcopy(resource))
         self.assertEqual(first, second)
         self.assertNotEqual(first, resource)
 

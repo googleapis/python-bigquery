@@ -2311,12 +2311,15 @@ class TestBigLakeConfiguration(unittest.TestCase):
         second = self._make_one(_properties=copy.deepcopy(resource))
         self.assertNotEqual(first, resource)
         self.assertEqual(first, second)
+        self.assertEqual(hash(first), hash(second))
         self.assertNotEqual(first, resource)
 
         second.connection_id = "foo"
         self.assertNotEqual(first, second)
+        self.assertNotEqual(hash(first), hash(second))
         first.connection_id = "foo"
         self.assertEqual(first, second)
+        self.assertEqual(hash(first), hash(second))
 
 
 class TestCloneDefinition:

@@ -3612,6 +3612,14 @@ class BigLakeConfiguration(object):
     def _key(self):
         return tuple(sorted(self._properties.items()))
 
+    def __eq__(self, other):
+        if not isinstance(other, BigLakeConfiguration):
+            return NotImplemented
+        return self._key() == other._key()
+
+    def __ne__(self, other):
+        return not self == other
+
     def __hash__(self):
         return hash(self._key())
 

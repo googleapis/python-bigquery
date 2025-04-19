@@ -10,18 +10,18 @@ Fiona==1.10.1
 geojson==3.2.0
 geopandas==1.0.1
 google-api-core==2.24.2
-google-auth==2.38.0
+google-auth==2.39.0
 google-cloud-bigquery==3.31.0
 google-cloud-bigquery-storage==2.30.0
 google-cloud-core==2.4.3
 google-crc32c==1.7.1
 google-resumable-media==2.7.2
-googleapis-common-protos==1.69.2
+googleapis-common-protos==1.70.0
 grpcio==1.71.0
 idna==3.10
 munch==4.0.0
 mypy-extensions==1.0.0
-packaging==24.2
+packaging==25.0
 pandas==2.2.3
 proto-plus==1.26.1
 pyarrow==19.0.1
@@ -33,10 +33,10 @@ python-dateutil==2.9.0.post0
 pytz==2025.2
 PyYAML==6.0.2
 requests==2.32.3
-rsa==4.9
+rsa==4.9.1
 Shapely===2.0.7; python_version == '3.9'
 Shapely==2.1.0; python_version >= '3.10'
 six==1.17.0
-typing-extensions==4.13.1
+typing-extensions==4.13.2
 typing-inspect==0.9.0
-urllib3==2.3.0
+urllib3==2.4.0

@@ -346,9 +346,9 @@ def query_jobs_query(
     job_config: Optional[job.QueryJobConfig],
     location: Optional[str],
     project: str,
-    retry: Optional[retries.Retry],
+    retry: retries.Retry,
     timeout: Optional[float],
-    job_retry: retries.Retry,
+    job_retry: Optional[retries.Retry],
 ) -> job.QueryJob:
     """Initiate a query using jobs.query with jobCreationMode=JOB_CREATION_REQUIRED.
 

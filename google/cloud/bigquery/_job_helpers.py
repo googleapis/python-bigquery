@@ -346,7 +346,7 @@ def query_jobs_query(
     job_config: Optional[job.QueryJobConfig],
     location: Optional[str],
     project: str,
-    retry: retries.Retry,
+    retry: Optional[retries.Retry],
     timeout: Optional[float],
     job_retry: retries.Retry,
 ) -> job.QueryJob:

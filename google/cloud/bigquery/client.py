@@ -3515,7 +3515,7 @@ class Client(ClientWithProject):
         api_timeout: TimeoutType = DEFAULT_TIMEOUT,
         wait_timeout: Union[Optional[float], object] = POLLING_DEFAULT_VALUE,
         retry: retries.Retry = DEFAULT_RETRY,
-        job_retry: Optional[retries.Retry] = DEFAULT_JOB_RETRY,
+        job_retry: retries.Retry = DEFAULT_JOB_RETRY,
         page_size: Optional[int] = None,
         max_results: Optional[int] = None,
     ) -> RowIterator:

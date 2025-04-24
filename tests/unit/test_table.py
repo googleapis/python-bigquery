@@ -2309,14 +2309,18 @@ class TestBigLakeConfiguration(unittest.TestCase):
 
         first = self._make_one(_properties=resource)
         second = self._make_one(_properties=copy.deepcopy(resource))
+        # Exercise comparator overloads.
+        # first and second should be equivalent.
         self.assertNotEqual(first, resource)
         self.assertEqual(first, second)
         self.assertEqual(hash(first), hash(second))
-        self.assertNotEqual(first, resource)
 
+        # Update second to ensure that first and second are no longer equivalent.
         second.connection_id = "foo"
         self.assertNotEqual(first, second)
         self.assertNotEqual(hash(first), hash(second))
+
+        # Update first with the same change, restoring equivalence.
         first.connection_id = "foo"
         self.assertEqual(first, second)
         self.assertEqual(hash(first), hash(second))

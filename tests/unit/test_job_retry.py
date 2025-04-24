@@ -538,7 +538,7 @@ def test_raises_on_job_retry_on_result_with_non_retryable_jobs(client):
             " provided to the query that created this job."
         ).replace(" ", r"\s"),
     ):
-        # Expliclty providing a job_retry is an error.
+        # Explicitly providing a job_retry is an error.
         job.result(job_retry=google.api_core.retry.Retry())
 
 

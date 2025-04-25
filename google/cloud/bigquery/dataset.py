@@ -461,6 +461,31 @@ class AccessEntry(object):
     @property
     def entity_type(self) -> Optional[str]:
         """The entity_type of the entry."""
+
+        # The api_repr for an AccessEntry object is expected to be a dict with
+        # only a few keys. Two keys that may be present are role and condition.
+        # Any additional key is going to have one of ~eight different names:
+        #   userByEmail, groupByEmail, domain, dataset, specialGroup, view,
+        #   routine, iamMember
+
+        # if self._entity_type is None, see if it needs setting
+        # i.e. is there a key: value pair that should be associated with
+        # entity_type and entity_id?
+        if self._entity_type is None:
+            resource = self._properties.copy()
+            # we are empyting the dict to get to the last `key: value`` pair
+            # so we don't keep these first entries
+            _ = resource.pop("role", None)
+            _ = resource.pop("condition", None)
+
+            try:
+                # we only need entity_type, because entity_id gets set elsewhere.
+                entity_type, _ = resource.popitem()
+            except KeyError:
+                entity_type = None
+
+        self._entity_type = entity_type
+
         return self._entity_type
 
     @property
@@ -524,36 +549,10 @@ class AccessEntry(object):
         Returns:
             google.cloud.bigquery.dataset.AccessEntry:
                 Access entry parsed from ``resource``.
-
-        Raises:
-            ValueError:
-                If the resource has more keys than ``role`` and one additional
-                key.
         """
 
-        # The api_repr for an AccessEntry object is expected to be a dict with
-        # only a few keys. Two keys that may be present are role and condition.
-        # Any additional key is going to have one of ~eight different names:
-        #   userByEmail, groupByEmail, domain, dataset, specialGroup, view,
-        #   routine, iamMember
-        #
-        # First we pop role and condition out of the dict, if present.
-        # This should leave only one item in the dict which will be a key: value
-        # pair that will be assigned to entity_type and entity_id respectively.
-
-        entry = resource.copy()
-        role = entry.pop("role", None)
-        condition = entry.pop("condition", None)
-        try:
-            entity_type, entity_id = entry.popitem()
-        except KeyError:
-            entity_type = None
-            entity_id = None
-
-        if condition:
-            access_entry = cls(role, entity_type, entity_id, condition=condition)
-        else:
-            access_entry = cls(role, entity_type, entity_id)
+        access_entry = cls()
+        access_entry._properties = resource.copy()
         return access_entry
 
 

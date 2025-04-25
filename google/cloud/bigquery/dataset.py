@@ -484,7 +484,7 @@ class AccessEntry(object):
             except KeyError:
                 entity_type = None
 
-        self._entity_type = entity_type
+            self._entity_type = entity_type
 
         return self._entity_type
 

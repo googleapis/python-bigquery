@@ -167,7 +167,10 @@ class TestAccessEntry(unittest.TestCase):
             entity_type="view",
             entity_id=resource["view"],
         )
-        self.assertEqual(entry, exp_entry)
+
+        assert entry.entity_type == exp_entry.entity_type
+        assert entry.entity_id == exp_entry.entity_id
+        assert entry.role is None
 
     def test_to_api_repr_w_extra_properties(self):
         resource = {
@@ -1064,7 +1067,15 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(
             dataset.path, "/projects/%s/datasets/%s" % (OTHER_PROJECT, self.DS_ID)
         )
-        self.assertEqual(dataset.access_entries, entries)
+        # creating a list of entries relies on AccessEntry.from_api_repr
+        # which does no create an object in exactly the same way as calling the
+        # class directly. We rely on calls to .entity_type and .entity_id to
+        # finalize the settings on each class.
+        entry_pairs = zip(dataset.access_entries, entries)
+        for pair in entry_pairs:
+            assert pair[0].role == pair[1].role
+            assert pair[0].entity_type == pair[1].entity_type
+            assert pair[0].entity_id == pair[1].entity_id
 
         self.assertIsNone(dataset.created)
         self.assertIsNone(dataset.full_dataset_id)
@@ -1097,8 +1108,18 @@ class TestDataset(unittest.TestCase):
         dataset = self._make_one(self.DS_REF)
         phred = AccessEntry("OWNER", "userByEmail", "phred@example.com")
         bharney = AccessEntry("OWNER", "userByEmail", "bharney@example.com")
-        dataset.access_entries = [phred, bharney]
-        self.assertEqual(dataset.access_entries, [phred, bharney])
+        entries = [phred, bharney]
+        dataset.access_entries = entries
+
+        # creating a list of entries relies on AccessEntry.from_api_repr
+        # which does no create an object in exactly the same way as calling the
+        # class directly. We rely on calls to .entity_type and .entity_id to
+        # finalize the settings on each class.
+        entry_pairs = zip(dataset.access_entries, entries)
+        for pair in entry_pairs:
+            assert pair[0].role == pair[1].role
+            assert pair[0].entity_type == pair[1].entity_type
+            assert pair[0].entity_id == pair[1].entity_id
 
     def test_default_partition_expiration_ms(self):
         dataset = self._make_one("proj.dset")

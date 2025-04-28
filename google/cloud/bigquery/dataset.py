@@ -300,11 +300,11 @@ class AccessEntry(object):
         entity_id: Optional[Union[Dict[str, Any], str]] = None,
         **kwargs,
     ):
-        self._properties = {}
+        self._properties: Dict[str, Any] = {}
         if entity_type is not None:
             self._properties[entity_type] = entity_id
         self._properties["role"] = role
-        self._entity_type = entity_type
+        self._entity_type: Optional[str] = entity_type
         for prop, val in kwargs.items():
             setattr(self, prop, val)
 
@@ -491,9 +491,13 @@ class AccessEntry(object):
     @property
     def entity_id(self) -> Optional[Union[Dict[str, Any], str]]:
         """The entity_id of the entry."""
+        if self.entity_type:
+            entity_type = self.entity_type
+        else:
+            return None
         return typing.cast(
             Optional[Union[Dict[str, Any], str]],
-            self._properties.get(self.entity_type, None),
+            self._properties.get(entity_type, None),
         )
 
     def __eq__(self, other):

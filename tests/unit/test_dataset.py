@@ -1072,7 +1072,7 @@ class TestDataset(unittest.TestCase):
             dataset.path, "/projects/%s/datasets/%s" % (OTHER_PROJECT, self.DS_ID)
         )
         # creating a list of entries relies on AccessEntry.from_api_repr
-        # which does no create an object in exactly the same way as calling the
+        # which does not create an object in exactly the same way as calling the
         # class directly. We rely on calls to .entity_type and .entity_id to
         # finalize the settings on each class.
         entry_pairs = zip(dataset.access_entries, entries)

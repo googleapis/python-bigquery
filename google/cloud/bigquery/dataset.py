@@ -493,7 +493,7 @@ class AccessEntry(object):
         """The entity_id of the entry."""
         return typing.cast(
             Optional[Union[Dict[str, Any], str]],
-            self._properties.get(self._entity_type) if self._entity_type else None,
+            self._properties.get(self._entity_type, None),
         )
 
     def __eq__(self, other):

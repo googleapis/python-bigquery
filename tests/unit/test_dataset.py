@@ -588,6 +588,10 @@ class TestAccessEntryAndCondition:
         entry.condition = None
         assert entry.condition is None
 
+        # Set condition using a dict
+        entry.condition = condition_1_api_repr
+        assert entry._properties.get("condition") == condition_1_api_repr
+
     # Test setter validation
     def test_condition_setter_invalid_type(self):
         entry = AccessEntry("READER", "domain", "example.com")

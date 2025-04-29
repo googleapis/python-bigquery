@@ -301,7 +301,10 @@ class TestAccessEntry(unittest.TestCase):
         entry.dataset = dataset_ref
         resource = entry.to_api_repr()
         exp_resource = {
-            "dataset": {"dataset": dataset_ref, "targetTypes": None},
+            "dataset": {
+                "dataset": {"datasetId": "my_dataset", "projectId": "my-project"},
+                "targetTypes": None,
+            },
             "role": None,
         }
         self.assertEqual(resource, exp_resource)
@@ -726,10 +729,16 @@ class TestAccessEntryAndCondition:
         entry.condition = condition_1
 
         resource = entry.to_api_repr()
+        print(
+            f"""
+        DINOSAUR:
+        {resource}
+        """
+        )
         exp_resource = {
             "role": None,
             "dataset": {
-                "dataset": DatasetReference("my-project", "my_dataset"),
+                "dataset": {"datasetId": "my_dataset", "projectId": "my-project"},
                 "targetTypes": None,
             },
             "condition": {

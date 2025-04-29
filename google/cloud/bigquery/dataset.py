@@ -333,6 +333,9 @@ class AccessEntry(object):
         if isinstance(value, str):
             value = DatasetReference.from_string(value).to_api_repr()
 
+        if isinstance(value, DatasetReference):
+            value = value.to_api_repr()
+
         if isinstance(value, (Dataset, DatasetListItem)):
             value = value.reference.to_api_repr()
 
@@ -1222,11 +1225,21 @@ class Condition(object):
         """Check for equality based on expression, title, and description."""
         if not isinstance(other, Condition):
             return NotImplemented
-        return (
-            self.expression == other.expression
-            and self.title == other.title
-            and self.description == other.description
-        )
+        return self._key() == other._key()
+
+    def _key(self):
+        """A tuple key that uniquely describes this field.
+        Used to compute this instance's hashcode and evaluate equality.
+        Returns:
+            Tuple: The contents of this :class:`~google.cloud.bigquery.dataset.AccessEntry`.
+        """
+
+        properties = self._properties.copy()
+
+        # Dicts are not hashable.
+        # Convert object to a hashable datatype(s)
+        prop_tup = tuple(sorted(properties.items()))
+        return prop_tup
 
     def __ne__(self, other: object) -> bool:
         """Check for inequality."""
@@ -1234,7 +1247,7 @@ class Condition(object):
 
     def __hash__(self) -> int:
         """Generate a hash based on expression, title, and description."""
-        return hash((self.expression, self.title, self.description))
+        return hash(self._key())
 
     def __repr__(self) -> str:
         """Return a string representation of the Condition object."""

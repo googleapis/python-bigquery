@@ -729,12 +729,6 @@ class TestAccessEntryAndCondition:
         entry.condition = condition_1
 
         resource = entry.to_api_repr()
-        print(
-            f"""
-        DINOSAUR:
-        {resource}
-        """
-        )
         exp_resource = {
             "role": None,
             "dataset": {

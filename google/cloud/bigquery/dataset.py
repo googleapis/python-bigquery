@@ -988,7 +988,7 @@ class Dataset(object):
     def access_policy_version(self, value):
         if not isinstance(value, int) and value is not None:
             raise ValueError("Pass an integer, or None")
-        self._properties[self._PROPERTY_TO_API_FIELD["access_policy_version"]] = value
+        self._properties["accessPolicyVersion"] = value
 
     @classmethod
     def from_string(cls, full_dataset_id: str) -> "Dataset":

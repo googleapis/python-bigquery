@@ -1428,6 +1428,8 @@ class TestDataset(unittest.TestCase):
         dataset = self._make_one(self.DS_REF)
         # Valid inputs for access_policy_version are currently
         # ints 1, 2, 3, and None
+        # We rely upon the BQ backend to validate acceptable integer
+        # values, rather than perform that validation in the client.
         for expected in [1, 2, 3, None]:
             # set property using setter and integer
             dataset.access_policy_version = expected

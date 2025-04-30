@@ -532,6 +532,7 @@ class Dataset(object):
         "default_rounding_mode": "defaultRoundingMode",
         "resource_tags": "resourceTags",
         "external_catalog_dataset_options": "externalCatalogDatasetOptions",
+        "access_policy_version": "accessPolicyVersion",
     }
 
     def __init__(self, dataset_ref) -> None:
@@ -921,6 +922,16 @@ class Dataset(object):
         self._properties[
             self._PROPERTY_TO_API_FIELD["external_catalog_dataset_options"]
         ] = (value.to_api_repr() if value is not None else None)
+
+    @property
+    def access_policy_version(self):
+        return self._properties.get("accessPolicyVersion")
+
+    @access_policy_version.setter
+    def access_policy_version(self, value):
+        if not isinstance(value, int) and value is not None:
+            raise ValueError("Pass an integer, or None")
+        self._properties[self._PROPERTY_TO_API_FIELD["access_policy_version"]] = value
 
     @classmethod
     def from_string(cls, full_dataset_id: str) -> "Dataset":

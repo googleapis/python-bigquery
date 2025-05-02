@@ -985,6 +985,8 @@ class TestBigQuery(unittest.TestCase):
         TABLE_NAME = "test_table"
         set_schema = [bigquery.SchemaField("username", "STRING", mode="NULLABLE")]
         table_arg = Table(dataset.table(TABLE_NAME))
+
+        # Create an external_config and include it in the table arguments
         external_config = bigquery.ExternalConfig(bigquery.ExternalSourceFormat.AVRO)
         external_config.source_uris = SOURCE_URIS_AVRO
         external_config.reference_file_schema_uri = REFERENCE_FILE_SCHEMA_URI_AVRO
@@ -1001,13 +1003,9 @@ class TestBigQuery(unittest.TestCase):
 
         # Update table with schema autodetection
         updated_table_arg = Table(dataset.table(TABLE_NAME))
-        updated_external_config = bigquery.ExternalConfig(
-            bigquery.ExternalSourceFormat.AVRO
-        )
-        updated_external_config.source_uris = SOURCE_URIS_AVRO
-        updated_external_config.reference_file_schema_uri = (
-            REFERENCE_FILE_SCHEMA_URI_AVRO
-        )
+
+        # Update the external_config and include it in the updated table arguments
+        updated_external_config = copy.deepcopy(external_config)
         updated_external_config.autodetect = True
         updated_external_config.schema = None
         updated_table_arg.external_data_configuration = updated_external_config
@@ -1016,7 +1014,7 @@ class TestBigQuery(unittest.TestCase):
             updated_table_arg, ["external_data_configuration"], autodetect_schema=True
         )
 
-        # The updated table shlould have a schema inferred from the reference
+        # The updated table should have a schema inferred from the reference
         # file, which has all four fields.
         expected_schema = [
             bigquery.SchemaField("username", "STRING", mode="NULLABLE"),

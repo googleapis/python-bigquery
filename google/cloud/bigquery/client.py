@@ -1443,10 +1443,9 @@ class Client(ClientWithProject):
         path = table.path
         span_attributes = {"path": path, "fields": fields}
 
+        query_params = {}
         if autodetect_schema:
-            query_params = {"autodetect_schema": True}
-        else:
-            query_params = None
+            query_params["autodetect_schema"] = True
 
         api_response = self._call_api(
             retry,

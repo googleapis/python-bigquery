@@ -1446,7 +1446,7 @@ class Client(ClientWithProject):
         if autodetect_schema:
             query_params = {"autodetect_schema": True}
         else:
-            query_params = None
+            query_params = {}
 
         api_response = self._call_api(
             retry,

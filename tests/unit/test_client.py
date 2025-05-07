@@ -2385,7 +2385,7 @@ class TestClient(unittest.TestCase):
             "resourceTags": {"123456789012/key": "value"},
         }
         conn.api_request.assert_called_once_with(
-            method="PATCH", data=sent, path="/" + path, timeout=7.5
+            method="PATCH", data=sent, path="/" + path, timeout=7.5, query_params={}
         )
         self.assertEqual(updated_table.description, table.description)
         self.assertEqual(updated_table.friendly_name, table.friendly_name)
@@ -2439,6 +2439,7 @@ class TestClient(unittest.TestCase):
             path="/%s" % path,
             data={"newAlphaProperty": "unreleased property"},
             timeout=DEFAULT_TIMEOUT,
+            query_params={},
         )
         self.assertEqual(
             updated_table._properties["newAlphaProperty"], "unreleased property"
@@ -2475,6 +2476,7 @@ class TestClient(unittest.TestCase):
             path="/%s" % path,
             data={"view": {"useLegacySql": True}},
             timeout=DEFAULT_TIMEOUT,
+            query_params={},
         )
         self.assertEqual(updated_table.view_use_legacy_sql, table.view_use_legacy_sql)
 
@@ -2567,6 +2569,7 @@ class TestClient(unittest.TestCase):
                 "schema": schema_resource,
             },
             timeout=DEFAULT_TIMEOUT,
+            query_params={},
         )
 
     def test_update_table_w_schema_None(self):

@@ -2,7 +2,8 @@ attrs==25.3.0
 certifi==2025.4.26
 cffi==1.17.1
 charset-normalizer==3.4.2
-click==8.2.0
+click===8.1.8; python_version == '3.9'
+click==8.2.0; python_version >= '3.10'
 click-plugins==1.1.1
 cligj==0.7.2
 db-dtypes==1.4.2

@@ -3495,8 +3495,8 @@ class TableConstraints:
         if not isinstance(other, TableConstraints) and other is not None:
             raise TypeError("The value provided is not a BigQuery TableConstraints.")
         return (
-            self.primary_key == other.primary_key if other.primary_key else None
-        ) and (self.foreign_keys == other.foreign_keys if other.foreign_keys else None)
+            self.primary_key == other.primary_key if other and other.primary_key else None
+        ) and (self.foreign_keys == other.foreign_keys if other and other.foreign_keys else None)
 
     @classmethod
     def from_api_repr(cls, resource: Dict[str, Any]) -> "TableConstraints":
@@ -3574,60 +3574,60 @@ class BigLakeConfiguration(object):
         """str: The connection specifying the credentials to be used to read and write to external
         storage, such as Cloud Storage."""
         return self._properties.get("connectionId")
+    def connection_id(self) -> Optional[str]:
+        """str: The connection specifying the credentials to be used to read and write to external    @connection_id.setter
+        storage, such as Cloud Storage."""f, value: Optional[str]):
+        return self._properties.get("connectionId")
 
-    @connection_id.setter
-    def connection_id(self, value: Optional[str]):
-        self._properties["connectionId"] = value
+    @connection_id.setter    @property
+    def connection_id(self, value: Optional[str]):ge_uri(self) -> Optional[str]:
+        self._properties["connectionId"] = valuen prefix of the external folder where table data is
 
-    @property
+    @propertyf._properties.get("storageUri")
     def storage_uri(self) -> Optional[str]:
-        """str: The fully qualified location prefix of the external folder where table data is
-        stored."""
+        """str: The fully qualified location prefix of the external folder where table data is    @storage_uri.setter
+        stored."""f, value: Optional[str]):
         return self._properties.get("storageUri")
 
-    @storage_uri.setter
-    def storage_uri(self, value: Optional[str]):
-        self._properties["storageUri"] = value
+    @storage_uri.setter    @property
+    def storage_uri(self, value: Optional[str]):format(self) -> Optional[str]:
+        self._properties["storageUri"] = valueata is stored in. See BigLakeFileFormat for available
 
-    @property
+    @propertyf._properties.get("fileFormat")
     def file_format(self) -> Optional[str]:
-        """str: The file format the table data is stored in. See BigLakeFileFormat for available
-        values."""
+        """str: The file format the table data is stored in. See BigLakeFileFormat for available    @file_format.setter
+        values."""f, value: Optional[str]):
         return self._properties.get("fileFormat")
 
-    @file_format.setter
-    def file_format(self, value: Optional[str]):
-        self._properties["fileFormat"] = value
+    @file_format.setter    @property
+    def file_format(self, value: Optional[str]):_format(self) -> Optional[str]:
+        self._properties["fileFormat"] = valuea only snapshots are stored in. See BigLakeTableFormat
 
-    @property
+    @propertyget("tableFormat")
     def table_format(self) -> Optional[str]:
-        """str: The table format the metadata only snapshots are stored in. See BigLakeTableFormat
-        for available values."""
+        """str: The table format the metadata only snapshots are stored in. See BigLakeTableFormat    @table_format.setter
+        for available values."""f, value: Optional[str]):
         return self._properties.get("tableFormat")
 
-    @table_format.setter
-    def table_format(self, value: Optional[str]):
+    @table_format.setter    def _key(self):
+    def table_format(self, value: Optional[str]):e(sorted(self._properties.items()))
         self._properties["tableFormat"] = value
-
-    def _key(self):
-        return tuple(sorted(self._properties.items()))
-
     def __eq__(self, other):
-        if not isinstance(other, BigLakeConfiguration):
-            return NotImplemented
+    def _key(self):her, BigLakeConfiguration):
+        return tuple(sorted(self._properties.items()))
+er._key()
+    def __eq__(self, other):
+        if not isinstance(other, BigLakeConfiguration):    def __ne__(self, other):
+            return NotImplementedther
         return self._key() == other._key()
-
-    def __ne__(self, other):
-        return not self == other
-
     def __hash__(self):
+    def __ne__(self, other):f._key())
+        return not self == other
+    def __repr__(self):
+    def __hash__(self):={}".format(key, val) for key, val in self._key()]
         return hash(self._key())
 
-    def __repr__(self):
-        key_vals = ["{}={}".format(key, val) for key, val in self._key()]
-        return "BigLakeConfiguration({})".format(",".join(key_vals))
-
-    @classmethod
+    def __repr__(self):    @classmethod
     def from_api_repr(cls, resource: Dict[str, Any]) -> "BigLakeConfiguration":
         """Factory: construct a BigLakeConfiguration given its API representation.
 
@@ -3689,57 +3689,60 @@ def _row_iterator_page_columns(schema, response):
             )
 
     for field_index, field in enumerate(schema):
-        columns.append(get_column_data(field_index, field))
-
+                row["f"][field_index]["v"], fieldex, field))
+            )
     return columns
-
-
+    for field_index, field in enumerate(schema):
+        columns.append(get_column_data(field_index, field))
 # pylint: disable=unused-argument
-def _rows_page_start(iterator, page, response):
+    return columnsge, response):
+ud.iterator.Page` starts.
+
+# pylint: disable=unused-argument    Args:
+def _rows_page_start(iterator, page, response):terator (google.api_core.page_iterator.Iterator): The iterator that is currently in use.
     """Grab total rows when :class:`~google.cloud.iterator.Page` starts.
 
     Args:
-        iterator (google.api_core.page_iterator.Iterator): The iterator that is currently in use.
+        iterator (google.api_core.page_iterator.Iterator): The iterator that is currently in use.ake a (lazy) copy of the page in column-oriented format for use in data
         page (google.api_core.page_iterator.Page): The page that was just created.
-        response (Dict): The JSON API response for a page of rows in a table.
+        response (Dict): The JSON API response for a page of rows in a table.w_iterator_page_columns(iterator._schema, response)
     """
-    # Make a (lazy) copy of the page in column-oriented format for use in data
-    # science packages.
+    # Make a (lazy) copy of the page in column-oriented format for use in data    total_rows = response.get("totalRows")
+    # science packages.resent in the next API response.
     page._columns = _row_iterator_page_columns(iterator._schema, response)
-
+ int(total_rows)
     total_rows = response.get("totalRows")
     # Don't reset total_rows if it's not present in the next API response.
-    if total_rows is not None:
+    if total_rows is not None:# pylint: enable=unused-argument
         iterator._total_rows = int(total_rows)
 
-
+def _table_arg_to_table_ref(value, default_project=None) -> TableReference:
 # pylint: enable=unused-argument
 
-
+    This function keeps TableReference and other kinds of objects unchanged.
 def _table_arg_to_table_ref(value, default_project=None) -> TableReference:
-    """Helper to convert a string or Table to TableReference.
-
+    """Helper to convert a string or Table to TableReference.isinstance(value, str):
+.from_string(value, default_project=default_project)
     This function keeps TableReference and other kinds of objects unchanged.
     """
     if isinstance(value, str):
         value = TableReference.from_string(value, default_project=default_project)
     if isinstance(value, (Table, TableListItem)):
-        value = value.reference
-    return value
-
-
-def _table_arg_to_table(value, default_project=None) -> Table:
-    """Helper to convert a string or TableReference to a Table.
+        value = value.referencedef _table_arg_to_table(value, default_project=None) -> Table:
+    return value.
 
     This function keeps Table and other kinds of objects unchanged.
+def _table_arg_to_table(value, default_project=None) -> Table:
+    """Helper to convert a string or TableReference to a Table.isinstance(value, str):
+.from_string(value, default_project=default_project)
+    This function keeps Table and other kinds of objects unchanged.
     """
-    if isinstance(value, str):
-        value = TableReference.from_string(value, default_project=default_project)
-    if isinstance(value, TableReference):
+    if isinstance(value, str):leListItem):
+        value = TableReference.from_string(value, default_project=default_project))
+    if isinstance(value, TableReference):perties
         value = Table(value)
     if isinstance(value, TableListItem):
-        newvalue = Table(value.reference)
-        newvalue._properties = value._properties
-        value = newvalue
+        newvalue = Table(value.reference)    return value
+        newvalue._properties = value._properties        value = newvalue
 
     return value

@@ -1113,6 +1113,34 @@ class TestDataset(unittest.TestCase):
         self.assertIsNone(dataset.location)
         self.assertEqual(dataset.is_case_insensitive, False)
 
+    def test_access_entries_getter_from_api_repr(self):
+        """Check that `in` works correctly when Dataset is made via from_api_repr()."""
+        from google.cloud.bigquery.dataset import AccessEntry
+
+        dataset = self._get_target_class().from_api_repr(
+            {
+                "datasetReference": {"projectId": "my-proj", "datasetId": "my_dset"},
+                "access": [
+                    {
+                        "role": "OWNER",
+                        "userByEmail": "uilma@example.com",
+                    },
+                    {
+                        "role": "READER",
+                        "groupByEmail": "rhubbles@example.com",
+                    },
+                ],
+            }
+        )
+        assert (
+            AccessEntry("OWNER", "userByEmail", "uilma@example.com")
+            in dataset.access_entries
+        )
+        assert (
+            AccessEntry("READER", "groupByEmail", "rhubbles@example.com")
+            in dataset.access_entries
+        )
+
     def test_access_entries_setter_non_list(self):
         dataset = self._make_one(self.DS_REF)
         with self.assertRaises(TypeError):

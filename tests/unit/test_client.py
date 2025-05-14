@@ -4719,7 +4719,7 @@ class TestClient(unittest.TestCase):
         client._connection = make_connection({})
 
         with self.assertRaises(TypeError) as exc:
-            client.query(query, job_id="abcd", api_method="QUERY")
+            client.query(query, job_id="abcd", api_method="QUERY", job_retry=None)
         self.assertIn(
             "`job_id` was provided, but the 'QUERY' `api_method` was requested",
             exc.exception.args[0],
@@ -4774,7 +4774,7 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
 
         client.query(
-            query, job_id=job_id, project="other-project", location=self.LOCATION
+            query, job_id=job_id, project="other-project", location=self.LOCATION, job_retry=None
         )
 
         # Check that query actually starts the job.
@@ -4833,7 +4833,7 @@ class TestClient(unittest.TestCase):
         original_config_copy = copy.deepcopy(job_config)
 
         client.query(
-            query, job_id=job_id, location=self.LOCATION, job_config=job_config
+            query, job_id=job_id, location=self.LOCATION, job_config=job_config, job_retry=None
         )
 
         # Check that query actually starts the job.
@@ -5178,7 +5178,7 @@ class TestClient(unittest.TestCase):
         config.udf_resources = udf_resources
         config.use_legacy_sql = True
 
-        job = client.query(QUERY, job_config=config, job_id=JOB)
+        job = client.query(QUERY, job_config=config, job_id=JOB, job_retry=None)
 
         self.assertIsInstance(job, QueryJob)
         self.assertIs(job._client, client)
@@ -5234,7 +5234,7 @@ class TestClient(unittest.TestCase):
         config = QueryJobConfig()
         config.query_parameters = query_parameters
 
-        job = client.query(QUERY, job_config=config, job_id=JOB)
+        job = client.query(QUERY, job_config=config, job_id=JOB, job_retry=None)
 
         self.assertIsInstance(job, QueryJob)
         self.assertIs(job._client, client)
@@ -5277,7 +5277,7 @@ class TestClient(unittest.TestCase):
         )
         with job_begin_patcher:
             with pytest.raises(Unknown, match="Not sure what went wrong."):
-                client.query("SELECT 1;", job_id="123")
+                client.query("SELECT 1;", job_id="123", job_retry=None)
 
     def test_query_job_rpc_fail_w_conflict_job_id_given(self):
         from google.api_core.exceptions import Conflict
@@ -5293,7 +5293,7 @@ class TestClient(unittest.TestCase):
         )
         with job_begin_patcher:
             with pytest.raises(Conflict, match="Job already exists."):
-                client.query("SELECT 1;", job_id="123")
+                client.query("SELECT 1;", job_id="123", job_retry=None)
 
     def test_query_job_rpc_fail_w_conflict_random_id_job_fetch_fails(self):
         from google.api_core.exceptions import Conflict

@@ -332,7 +332,7 @@ class Test_AsyncJob(unittest.TestCase):
         from google.cloud._helpers import _millis
 
         now = datetime.datetime.now(datetime.UTC).replace(
-            microsecond=123000.
+            microsecond=123000,
             tzinfo=datetime.timezone.utc,  # stats timestamps have ms precision
         )
         return now, _millis(now)

@@ -4892,7 +4892,11 @@ class TestClient(unittest.TestCase):
         original_config_copy = copy.deepcopy(job_config)
 
         client.query(
-            query, job_id=job_id, location=self.LOCATION, job_config=job_config
+            query,
+            job_id=job_id,
+            location=self.LOCATION,
+            job_config=job_config,
+            job_retry=None,
         )
 
         # Check that query actually starts the job.
@@ -4948,7 +4952,13 @@ class TestClient(unittest.TestCase):
         )
         conn = client._connection = make_connection(resource)
 
-        client.query(query, job_id=job_id, location=self.LOCATION, job_config=None)
+        client.query(
+            query,
+            job_id=job_id,
+            location=self.LOCATION,
+            job_config=None,
+            job_retry=None,
+        )
 
         # Check that query actually starts the job.
         conn.api_request.assert_called_once_with(
@@ -4986,7 +4996,11 @@ class TestClient(unittest.TestCase):
 
         with self.assertRaises(TypeError) as exc:
             client.query(
-                query, job_id=job_id, location=self.LOCATION, job_config=job_config
+                query,
+                job_id=job_id,
+                location=self.LOCATION,
+                job_config=job_config,
+                job_retry=None,
             )
         self.assertIn("Expected an instance of QueryJobConfig", exc.exception.args[0])
 
@@ -5035,7 +5049,11 @@ class TestClient(unittest.TestCase):
         job_config.default_dataset = None
 
         client.query(
-            query, job_id=job_id, location=self.LOCATION, job_config=job_config
+            query,
+            job_id=job_id,
+            location=self.LOCATION,
+            job_config=job_config,
+            job_retry=None,
         )
 
         # Check that query actually starts the job.
@@ -5080,7 +5098,7 @@ class TestClient(unittest.TestCase):
         )
         conn = client._connection = make_connection(resource)
 
-        client.query(query, job_id=job_id, location=self.LOCATION)
+        client.query(query, job_id=job_id, location=self.LOCATION, job_retry=None)
 
         # Check that query actually starts the job.
         conn.api_request.assert_called_once_with(
@@ -5122,7 +5140,7 @@ class TestClient(unittest.TestCase):
         )
         conn = client._connection = make_connection(resource)
 
-        client.query(query, job_id=job_id, project="other-project")
+        client.query(query, job_id=job_id, project="other-project", job_retry=None)
 
         # Check that query actually starts the job.
         conn.api_request.assert_called_once_with(

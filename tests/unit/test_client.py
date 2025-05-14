@@ -4774,7 +4774,11 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
 
         client.query(
-            query, job_id=job_id, project="other-project", location=self.LOCATION, job_retry=None
+            query,
+            job_id=job_id,
+            project="other-project",
+            location=self.LOCATION,
+            job_retry=None,
         )
 
         # Check that query actually starts the job.
@@ -4833,7 +4837,11 @@ class TestClient(unittest.TestCase):
         original_config_copy = copy.deepcopy(job_config)
 
         client.query(
-            query, job_id=job_id, location=self.LOCATION, job_config=job_config, job_retry=None
+            query,
+            job_id=job_id,
+            location=self.LOCATION,
+            job_config=job_config,
+            job_retry=None,
         )
 
         # Check that query actually starts the job.

@@ -4721,7 +4721,7 @@ class TestClient(unittest.TestCase):
         with self.assertRaises(TypeError) as exc:
             client.query(query, job_id="abcd", api_method="QUERY", job_retry=None)
         self.assertIn(
-            "`job_id` was provided, but the 'QUERY' `api_method` was requested.",
+            "`job_id` was provided, but the 'QUERY' `api_method` was requested",
             exc.exception.args[0],
         )
 

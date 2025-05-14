@@ -31,6 +31,7 @@ from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import external_config
 from google.cloud.bigquery import schema
+from google.cloud.bigquery.enums import DefaultPandasDTypes
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
@@ -5632,8 +5633,6 @@ class TestRowIterator(unittest.TestCase):
             create_bqstorage_client=create_bqstorage_client,
             geography_column=geography_column,
         )
-
-        from google.cloud.bigquery.enums import DefaultPandasDTypes
 
         to_dataframe.assert_called_once_with(
             bqstorage_client,

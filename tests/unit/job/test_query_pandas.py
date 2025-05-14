@@ -1000,6 +1000,8 @@ def test_query_job_to_geodataframe_delegation(wait_for_query):
     max_results = 42
     geography_column = "g"
 
+    from google.cloud.bigquery.enums import DefaultPandasDTypes
+
     df = job.to_geodataframe(
         bqstorage_client=bqstorage_client,
         dtypes=dtypes,
@@ -1019,5 +1021,9 @@ def test_query_job_to_geodataframe_delegation(wait_for_query):
         progress_bar_type=progress_bar_type,
         create_bqstorage_client=create_bqstorage_client,
         geography_column=geography_column,
+        bool_dtype=DefaultPandasDTypes.BOOL_DTYPE,
+        int_dtype=DefaultPandasDTypes.INT_DTYPE,
+        float_dtype=None,
+        string_dtype=None,
     )
     assert df is row_iterator.to_geodataframe.return_value

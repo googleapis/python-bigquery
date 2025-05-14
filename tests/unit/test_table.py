@@ -4065,7 +4065,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_dataframe_tqdm_error(self):
         pytest.importorskip("pandas")
-        pytest.importorskip("tqdm")
+        tqdm = pytest.importorskip("tqdm")
         mock.patch("tqdm.tqdm_gui", new=None)
         mock.patch("tqdm.notebook.tqdm", new=None)
         mock.patch("tqdm.tqdm", new=None)
@@ -4100,7 +4100,7 @@ class TestRowIterator(unittest.TestCase):
             for warning in warned:  # pragma: NO COVER
                 self.assertIn(
                     warning.category,
-                    [UserWarning, DeprecationWarning],
+                    [UserWarning, DeprecationWarning, tqdm.TqdmExperimentalWarning],
                 )
 
     def test_to_dataframe_w_empty_results(self):
@@ -5633,12 +5633,18 @@ class TestRowIterator(unittest.TestCase):
             geography_column=geography_column,
         )
 
+        from google.cloud.bigquery.enums import DefaultPandasDTypes
+
         to_dataframe.assert_called_once_with(
             bqstorage_client,
             dtypes,
             progress_bar_type,
             create_bqstorage_client,
             geography_as_object=True,
+            bool_dtype=DefaultPandasDTypes.BOOL_DTYPE,
+            int_dtype=DefaultPandasDTypes.INT_DTYPE,
+            float_dtype=None,
+            string_dtype=None,
         )
 
         self.assertIsInstance(df, geopandas.GeoDataFrame)

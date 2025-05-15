@@ -18,6 +18,7 @@ from google.cloud import bigquery
 import google.cloud.bigquery.table
 
 
+import numpy
 pyarrow = pytest.importorskip("pyarrow", minversion="3.0.0")
 
 

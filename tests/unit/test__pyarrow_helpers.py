@@ -14,7 +14,7 @@
 
 import pytest
 
-
+import numpy
 pyarrow = pytest.importorskip("pyarrow", minversion="3.0.0")
 
 

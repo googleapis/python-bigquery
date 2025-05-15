@@ -1986,6 +1986,7 @@ class Client(ClientWithProject):
         location: Optional[str] = None,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: int = 0,
+        start_index: Optional[int] = None,
     ) -> _QueryResults:
         """Get the query results object for a query job.
 
@@ -2013,7 +2014,7 @@ class Client(ClientWithProject):
                 A new ``_QueryResults`` instance.
         """
 
-        extra_params: Dict[str, Any] = {"maxResults": page_size}
+        extra_params: Dict[str, Any] = {"maxResults": page_size, "startIndex": start_index}
 
         if timeout is not None:
             if not isinstance(timeout, (int, float)):
@@ -2051,6 +2052,7 @@ class Client(ClientWithProject):
             query_params=extra_params,
             timeout=timeout,
         )
+        breakpoint()
         return _QueryResults.from_api_repr(resource)
 
     def job_from_resource(
@@ -4157,6 +4159,7 @@ class Client(ClientWithProject):
             params["startIndex"] = start_index
 
         params["formatOptions.useInt64Timestamp"] = True
+        # breakpoint()
         row_iterator = RowIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),

@@ -1991,12 +1991,14 @@ class RowIterator(HTTPIterator):
             return response
 
         params = self._get_query_params()
+        import copy
+        params_copy = copy.deepcopy(params)
         if self._page_size is not None:
             if self.page_number and "startIndex" in params:
-                del params["startIndex"]
+                del params_copy["startIndex"]
 
         return self.api_request(
-            method=self._HTTP_METHOD, path=self.path, query_params=params
+            method=self._HTTP_METHOD, path=self.path, query_params=params_copy
         )
 
     @property

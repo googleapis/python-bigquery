@@ -484,6 +484,10 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
         Optional[Sequence[google.cloud.bigquery.schema.SchemaField]]:
             The automatically determined schema. Returns None if the type of
             any column cannot be determined.
+
+    Note:
+        - If `bq_schema` contains fields not found in the DataFrame, they will
+          still be included in the resulting schema, and a warning will be issued.
     """
     if pandas_gbq is None:
         warnings.warn(
@@ -537,11 +541,14 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
     # Catch any schema mismatch. The developer explicitly asked to serialize a
     # column, but it was not found.
     if bq_schema_unused:
-        raise ValueError(
+        warnings.warn(
             "bq_schema contains fields not present in dataframe: {}".format(
                 bq_schema_unused
-            )
+            ),
+            category=UserWarning,
         )
+        for unused_field_name in bq_schema_unused:
+            bq_schema_out.append(bq_schema_index.get(unused_field_name))
 
     # If schema detection was not successful for all columns, also try with
     # pyarrow, if available.

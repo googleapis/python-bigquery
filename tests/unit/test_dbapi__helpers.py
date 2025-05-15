@@ -210,7 +210,7 @@ class TestToBqTableRows(unittest.TestCase):
         self.assertEqual(list(result), [])
 
     def test_non_empty_iterable(self):
-        import numpy
+        pytest.importorskip("numpy")
         pytest.importorskip("pyarrow")
         from tests.unit.helpers import _to_pyarrow
 

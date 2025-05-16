@@ -284,15 +284,13 @@ class SchemaField(object):
         return self._properties.get("name", "")
 
     @property
-    def field_type(self):
+    def field_type(self) -> str:
         """str: The type of the field.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema.FIELDS.type
         """
         type_ = self._properties.get("type")
-        if type_ is None:  # Shouldn't happen, but some unit tests do this.
-            return None
         return cast(str, type_).upper()
 
     @property

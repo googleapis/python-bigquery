@@ -395,20 +395,16 @@ class SchemaField(object):
         Returns:
             Tuple: The contents of this :class:`~google.cloud.bigquery.schema.SchemaField`.
         """
-        field_type = self.field_type.upper() if self.field_type is not None else None
-
-        # Type can temporarily be set to None if the code needs a SchemaField instance,
-        # but has not determined the exact type of the field yet.
-        if field_type is not None:
-            if field_type == "STRING" or field_type == "BYTES":
-                if self.max_length is not None:
-                    field_type = f"{field_type}({self.max_length})"
-            elif field_type.endswith("NUMERIC"):
-                if self.precision is not None:
-                    if self.scale is not None:
-                        field_type = f"{field_type}({self.precision}, {self.scale})"
-                    else:
-                        field_type = f"{field_type}({self.precision})"
+        field_type = self.field_type
+        if field_type == "STRING" or field_type == "BYTES":
+            if self.max_length is not None:
+                field_type = f"{field_type}({self.max_length})"
+        elif field_type.endswith("NUMERIC"):
+            if self.precision is not None:
+                if self.scale is not None:
+                    field_type = f"{field_type}({self.precision}, {self.scale})"
+                else:
+                    field_type = f"{field_type}({self.precision})"
 
         policy_tags = (
             None if self.policy_tags is None else tuple(sorted(self.policy_tags.names))

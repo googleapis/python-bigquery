@@ -1762,6 +1762,8 @@ def test_bigquery_magic_with_dict_params_array_value(ipython_ns_cleanup, monkeyp
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
+    magics.context.project = "unit-test-project"
+
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
     )
@@ -1803,6 +1805,8 @@ def test_bigquery_magic_with_dict_params_tuple_value(ipython_ns_cleanup, monkeyp
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
+    magics.context.project = "unit-test-project"
+
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
     )
@@ -1854,6 +1858,7 @@ def test_bigquery_magic_valid_query_in_existing_variable(
     magics.context.credentials = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
+    magics.context.project = "unit-test-project"
 
     ipython_ns_cleanup.append((ip, "custom_query"))
     ipython_ns_cleanup.append((ip, "query_results_df"))
@@ -1894,6 +1899,7 @@ def test_bigquery_magic_nonexisting_query_variable(monkeypatch):
     magics.context.credentials = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
+    magics.context.project = "unit-test-project"
 
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
@@ -1919,7 +1925,7 @@ def test_bigquery_magic_empty_query_variable_name(monkeypatch):
     magics.context.credentials = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
-
+    magics.context.project = "unit-test-project"
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
@@ -1942,6 +1948,7 @@ def test_bigquery_magic_query_variable_non_string(ipython_ns_cleanup, monkeypatc
     magics.context.credentials = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
+    magics.context.project = "unit-test-project"
 
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True

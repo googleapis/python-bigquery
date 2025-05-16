@@ -1970,6 +1970,7 @@ def test_bigquery_magic_query_variable_not_identifier(monkeypatch):
         google.auth.credentials.Credentials, instance=True
     )
 
+    magics.context.project = "unit-test-project"
     cell_body = "$123foo"  # 123foo is not valid Python identifier
 
     run_query_patch = mock.patch(

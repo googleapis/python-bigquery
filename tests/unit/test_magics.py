@@ -1356,6 +1356,8 @@ def test_bigquery_magic_w_progress_bar_type_w_context_setter(monkeypatch):
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
+    magics.context.project = "unit-test-project"
+
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
     )
@@ -1385,6 +1387,8 @@ def test_bigquery_magic_with_progress_bar_type(monkeypatch):
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
+    magics.context.project = "unit-test-project"
+
     with run_query_patch as run_query_mock:
         ip.run_cell_magic(
             "bigquery", "--progress_bar_type=tqdm_gui", "SELECT 17 as num"
@@ -1567,6 +1571,8 @@ def test_bigquery_magic_with_string_params(ipython_ns_cleanup, monkeypatch):
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
+    magics.context.project = "unit-test-project"
+
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
     )
@@ -1607,6 +1613,8 @@ def test_bigquery_magic_with_dict_params(ipython_ns_cleanup, monkeypatch):
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
+    magics.context.project = "unit-test-project"
+
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
     )
@@ -1691,6 +1699,7 @@ def test_bigquery_magic_with_option_value_incorrect(monkeypatch):
     magics.context.credentials = mock.create_autospec(
         google.auth.credentials.Credentials, instance=True
     )
+    magics.context.project = "unit-test-project"
 
     sql = "SELECT @foo AS foo"
 
@@ -1721,6 +1730,8 @@ def test_bigquery_magic_with_dict_params_negative_value(
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
+    magics.context.project = "unit-test-project"
+
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
     )

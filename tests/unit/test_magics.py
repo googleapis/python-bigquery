@@ -1972,7 +1972,11 @@ def test_bigquery_magic_query_variable_not_identifier(monkeypatch):
 
     cell_body = "$123foo"  # 123foo is not valid Python identifier
 
-    with io.capture_output() as captured_io:
+    run_query_patch = mock.patch(
+        "google.cloud.bigquery.magics.magics._run_query", autospec=True
+    )
+
+    with run_query_patch, io.capture_output() as captured_io:
         ip.run_cell_magic("bigquery", "", cell_body)
 
     # If "$" prefixes a string that is not a Python identifier, we do not treat such

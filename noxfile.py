@@ -128,8 +128,9 @@ def default(session, install_extras=True):
     # Run py.test against the unit tests.
     session.run(
         "py.test",
-        "-n=auto",
-        "--quiet",
+        # "-n=8",
+        # "--quiet",
+        "-vv",
         "-W default::PendingDeprecationWarning",
         "--cov=google/cloud/bigquery",
         "--cov=tests/unit",

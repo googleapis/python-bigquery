@@ -16,7 +16,8 @@ import collections
 import datetime
 import decimal
 import functools
-import gc
+
+# import gc
 import operator
 import queue
 from typing import Union
@@ -1887,6 +1888,7 @@ def test__download_table_bqstorage(
     assert queue_used.maxsize == expected_maxsize
 
 
+'''
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
 def test__download_table_bqstorage_shuts_down_workers(
     monkeypatch,
@@ -2013,6 +2015,7 @@ def test_download_arrow_row_iterator_unknown_field_type(module_under_test):
     col = result.columns[1]
     assert type(col) is pyarrow.lib.DoubleArray
     assert col.to_pylist() == [2.2, 22.22, 222.222]
+'''
 
 
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")

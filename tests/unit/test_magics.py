@@ -831,6 +831,7 @@ def test_bigquery_magic_w_max_results_query_job_results_fails(monkeypatch):
     assert close_transports.called
 
 
+@pytest.mark.usefixtures("ipython_interactive")
 def test_bigquery_magic_w_table_id_invalid(monkeypatch):
     ip = IPython.get_ipython()
     monkeypatch.setattr(bigquery, "bigquery_magics", None)
@@ -861,6 +862,7 @@ def test_bigquery_magic_w_table_id_invalid(monkeypatch):
     assert "Traceback (most recent call last)" not in output
 
 
+@pytest.mark.usefixtures("ipython_interactive")
 def test_bigquery_magic_w_missing_query(monkeypatch):
     ip = IPython.get_ipython()
     monkeypatch.setattr(bigquery, "bigquery_magics", None)

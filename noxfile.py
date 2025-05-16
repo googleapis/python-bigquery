@@ -129,7 +129,8 @@ def default(session, install_extras=True):
     session.run(
         "py.test",
         # "-n=8",
-        "--quiet",
+        # "--quiet",
+        "-vv",
         "-W default::PendingDeprecationWarning",
         "--cov=google/cloud/bigquery",
         "--cov=tests/unit",

@@ -513,7 +513,7 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         """str: Name of the primary reservation assigned to this job.
 
         Note that this could be different than reservations reported in
-        thereservation usage field if parent reservations were used to execute
+        the reservation field if parent reservations were used to execute
         this job.
         """
         return _helpers._get_sub_prop(

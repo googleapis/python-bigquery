@@ -178,7 +178,7 @@ class _JobConfig(object):
 
     def __init__(self, job_type, **kwargs):
         self._job_type = job_type
-        self._properties: dict[str, None | str | dict] = {job_type: {}}
+        self._properties = {job_type: {}}
         for prop, val in kwargs.items():
             setattr(self, prop, val)
 

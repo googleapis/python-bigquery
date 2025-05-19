@@ -52,14 +52,14 @@ jobs:
         python -m pip install nox
     - name: Run unit_noextras tests
       env:
-        COVERAGE_FILE: .coverage-${{ matrix.python }}
+        COVERAGE_FILE: .coverage-unit-noextras-${{ matrix.python }}
       run: |
         nox -s unit_noextras-${{ matrix.python }}
     - name: Upload coverage results
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-artifact-${{ matrix.python }}
-        path: .coverage-${{ matrix.python }}
+        name: coverage-artifact-unit-noextras-${{ matrix.python }}
+        path: .coverage-unit-noextras-${{ matrix.python }}
         include-hidden-files: true
 
   cover:

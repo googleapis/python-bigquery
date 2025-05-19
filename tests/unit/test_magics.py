@@ -480,6 +480,7 @@ def test_bigquery_magic_without_optional_arguments(monkeypatch):
     run_query_patch = mock.patch(
         "google.cloud.bigquery.magics.magics._run_query", autospec=True
     )
+    magics.context.project = "unit-test-project"
     query_job_mock = mock.create_autospec(
         google.cloud.bigquery.job.QueryJob, instance=True
     )

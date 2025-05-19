@@ -282,7 +282,7 @@ class Client(ClientWithProject):
         self._connection = Connection(self, **kw_args)
         self._location = location
         self._default_load_job_config = copy.deepcopy(default_load_job_config)
-        self._default_job_creation_mode = default_job_creation_mode
+        self.default_job_creation_mode = default_job_creation_mode
 
         # Use property setter so validation can run.
         self.default_query_job_config = default_query_job_config

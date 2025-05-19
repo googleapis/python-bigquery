@@ -37,7 +37,6 @@ predicates where it is safe to generate a new query ID.
 
 import copy
 import functools
-import os
 import uuid
 import textwrap
 from typing import Any, Dict, Optional, TYPE_CHECKING, Union

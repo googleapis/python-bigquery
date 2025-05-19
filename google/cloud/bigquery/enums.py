@@ -419,8 +419,8 @@ class JobCreationMode(object):
     """Job creation is always required."""
 
     JOB_CREATION_OPTIONAL = "JOB_CREATION_OPTIONAL"
-    """Job creation is optional. 
-    
+    """Job creation is optional.
+
     Returning immediate results is prioritized.
     BigQuery will automatically determine if a Job needs to be created.
     The conditions under which BigQuery can decide to not create a Job are

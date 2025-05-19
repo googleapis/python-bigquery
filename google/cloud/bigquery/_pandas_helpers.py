@@ -540,6 +540,15 @@ def dataframe_to_bq_schema(dataframe, bq_schema):
 
         unknown_type_columns.append(column)
 
+    # Catch any schema mismatch. The developer explicitly asked to serialize a
+    # column, but it was not found.
+    if bq_schema_unused:
+        raise ValueError(
+            "bq_schema contains fields not present in dataframe: {}".format(
+                bq_schema_unused
+            )
+        )
+
     if unknown_type_columns != []:
         msg = "Could not determine the type of columns: {}".format(
             ", ".join(unknown_type_columns)

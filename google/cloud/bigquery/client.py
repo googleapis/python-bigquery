@@ -2041,7 +2041,6 @@ class Client(ClientWithProject):
             query_params=extra_params,
             timeout=timeout,
         )
-        breakpoint()
         return _QueryResults.from_api_repr(resource)
 
     def job_from_resource(
@@ -4148,7 +4147,6 @@ class Client(ClientWithProject):
             params["startIndex"] = start_index
 
         params["formatOptions.useInt64Timestamp"] = True
-        # breakpoint()
         row_iterator = RowIterator(
             client=self,
             api_request=functools.partial(self._call_api, retry, timeout=timeout),

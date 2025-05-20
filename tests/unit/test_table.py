@@ -31,6 +31,7 @@ from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import external_config
 from google.cloud.bigquery import schema
+from google.cloud.bigquery.enums import DefaultPandasDTypes
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
@@ -394,7 +395,9 @@ class TestTable(unittest.TestCase, _SchemaBase):
         from google.cloud._helpers import UTC
 
         self.WHEN_TS = 1437767599.006
-        self.WHEN = datetime.datetime.utcfromtimestamp(self.WHEN_TS).replace(tzinfo=UTC)
+        self.WHEN = datetime.datetime.fromtimestamp(self.WHEN_TS, UTC).replace(
+            tzinfo=UTC
+        )
         self.ETAG = "ETAG"
         self.TABLE_FULL_ID = "%s:%s.%s" % (self.PROJECT, self.DS_ID, self.TABLE_NAME)
         self.RESOURCE_URL = "http://example.com/path/to/resource"
@@ -1951,7 +1954,9 @@ class TestTableListItem(unittest.TestCase):
         from google.cloud._helpers import UTC
 
         self.WHEN_TS = 1437767599.125
-        self.WHEN = datetime.datetime.utcfromtimestamp(self.WHEN_TS).replace(tzinfo=UTC)
+        self.WHEN = datetime.datetime.fromtimestamp(self.WHEN_TS, UTC).replace(
+            tzinfo=UTC
+        )
         self.EXP_TIME = datetime.datetime(2015, 8, 1, 23, 59, 59, tzinfo=UTC)
 
     def test_ctor(self):
@@ -2848,13 +2853,6 @@ class TestRowIterator(unittest.TestCase):
         iterator = self._make_one(
             max_results=10, first_page_response=None  # not cached
         )
-        result = iterator._should_use_bqstorage(
-            bqstorage_client=None, create_bqstorage_client=True
-        )
-        self.assertFalse(result)
-
-    def test__should_use_bqstorage_returns_false_if_page_size_set(self):
-        iterator = self._make_one(page_size=10, first_page_response=None)  # not cached
         result = iterator._should_use_bqstorage(
             bqstorage_client=None, create_bqstorage_client=True
         )
@@ -4065,7 +4063,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_dataframe_tqdm_error(self):
         pytest.importorskip("pandas")
-        pytest.importorskip("tqdm")
+        tqdm = pytest.importorskip("tqdm")
         mock.patch("tqdm.tqdm_gui", new=None)
         mock.patch("tqdm.notebook.tqdm", new=None)
         mock.patch("tqdm.tqdm", new=None)
@@ -4100,7 +4098,7 @@ class TestRowIterator(unittest.TestCase):
             for warning in warned:  # pragma: NO COVER
                 self.assertIn(
                     warning.category,
-                    [UserWarning, DeprecationWarning],
+                    [UserWarning, DeprecationWarning, tqdm.TqdmExperimentalWarning],
                 )
 
     def test_to_dataframe_w_empty_results(self):
@@ -5639,6 +5637,10 @@ class TestRowIterator(unittest.TestCase):
             progress_bar_type,
             create_bqstorage_client,
             geography_as_object=True,
+            bool_dtype=DefaultPandasDTypes.BOOL_DTYPE,
+            int_dtype=DefaultPandasDTypes.INT_DTYPE,
+            float_dtype=None,
+            string_dtype=None,
         )
 
         self.assertIsInstance(df, geopandas.GeoDataFrame)

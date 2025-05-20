@@ -338,6 +338,10 @@ class WriteDisposition(object):
     WRITE_TRUNCATE = "WRITE_TRUNCATE"
     """If the table already exists, BigQuery overwrites the table data."""
 
+    WRITE_TRUNCATE_DATA = "WRITE_TRUNCATE_DATA"
+    """For existing tables, truncate data but preserve existing schema
+    and constraints."""
+
     WRITE_EMPTY = "WRITE_EMPTY"
     """If the table already exists and contains data, a 'duplicate' error is
     returned in the job result."""
@@ -387,3 +391,19 @@ class RoundingMode(str, enum.Enum):
     ROUNDING_MODE_UNSPECIFIED = enum.auto()
     ROUND_HALF_AWAY_FROM_ZERO = enum.auto()
     ROUND_HALF_EVEN = enum.auto()
+
+
+class BigLakeFileFormat(object):
+    FILE_FORMAT_UNSPECIFIED = "FILE_FORMAT_UNSPECIFIED"
+    """The default unspecified value."""
+
+    PARQUET = "PARQUET"
+    """Apache Parquet format."""
+
+
+class BigLakeTableFormat(object):
+    TABLE_FORMAT_UNSPECIFIED = "TABLE_FORMAT_UNSPECIFIED"
+    """The default unspecified value."""
+
+    ICEBERG = "ICEBERG"
+    """Apache Iceberg format."""

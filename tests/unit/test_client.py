@@ -2385,7 +2385,7 @@ class TestClient(unittest.TestCase):
             "resourceTags": {"123456789012/key": "value"},
         }
         conn.api_request.assert_called_once_with(
-            method="PATCH", data=sent, path="/" + path, timeout=7.5
+            method="PATCH", data=sent, path="/" + path, timeout=7.5, query_params={}
         )
         self.assertEqual(updated_table.description, table.description)
         self.assertEqual(updated_table.friendly_name, table.friendly_name)
@@ -2439,6 +2439,7 @@ class TestClient(unittest.TestCase):
             path="/%s" % path,
             data={"newAlphaProperty": "unreleased property"},
             timeout=DEFAULT_TIMEOUT,
+            query_params={},
         )
         self.assertEqual(
             updated_table._properties["newAlphaProperty"], "unreleased property"
@@ -2475,6 +2476,7 @@ class TestClient(unittest.TestCase):
             path="/%s" % path,
             data={"view": {"useLegacySql": True}},
             timeout=DEFAULT_TIMEOUT,
+            query_params={},
         )
         self.assertEqual(updated_table.view_use_legacy_sql, table.view_use_legacy_sql)
 
@@ -2567,9 +2569,10 @@ class TestClient(unittest.TestCase):
                 "schema": schema_resource,
             },
             timeout=DEFAULT_TIMEOUT,
+            query_params={},
         )
 
-    def test_update_table_w_schema_None(self):
+    def test_update_table_w_schema_None_autodetect_schema(self):
         # Simulate deleting schema:  not sure if back-end will actually
         # allow this operation, but the spec says it is optional.
         path = "projects/%s/datasets/%s/tables/%s" % (
@@ -2611,7 +2614,9 @@ class TestClient(unittest.TestCase):
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:
-            updated_table = client.update_table(table, ["schema"])
+            updated_table = client.update_table(
+                table, ["schema"], autodetect_schema=True
+            )
 
         final_attributes.assert_called_once_with(
             {"path": "/%s" % path, "fields": ["schema"]}, client, None
@@ -2623,6 +2628,7 @@ class TestClient(unittest.TestCase):
         sent = {"schema": {"fields": None}}
         self.assertEqual(req[1]["data"], sent)
         self.assertEqual(req[1]["path"], "/%s" % path)
+        self.assertEqual(req[1]["query_params"], {"autodetect_schema": True})
         self.assertEqual(len(updated_table.schema), 0)
 
     def test_update_table_delete_property(self):
@@ -4713,7 +4719,7 @@ class TestClient(unittest.TestCase):
         client._connection = make_connection({})
 
         with self.assertRaises(TypeError) as exc:
-            client.query(query, job_id="abcd", api_method="QUERY")
+            client.query(query, job_id="abcd", api_method="QUERY", job_retry=None)
         self.assertIn(
             "`job_id` was provided, but the 'QUERY' `api_method` was requested",
             exc.exception.args[0],
@@ -4768,7 +4774,11 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
 
         client.query(
-            query, job_id=job_id, project="other-project", location=self.LOCATION
+            query,
+            job_id=job_id,
+            project="other-project",
+            location=self.LOCATION,
+            job_retry=None,
         )
 
         # Check that query actually starts the job.
@@ -4827,7 +4837,11 @@ class TestClient(unittest.TestCase):
         original_config_copy = copy.deepcopy(job_config)
 
         client.query(
-            query, job_id=job_id, location=self.LOCATION, job_config=job_config
+            query,
+            job_id=job_id,
+            location=self.LOCATION,
+            job_config=job_config,
+            job_retry=None,
         )
 
         # Check that query actually starts the job.
@@ -4878,7 +4892,11 @@ class TestClient(unittest.TestCase):
         original_config_copy = copy.deepcopy(job_config)
 
         client.query(
-            query, job_id=job_id, location=self.LOCATION, job_config=job_config
+            query,
+            job_id=job_id,
+            location=self.LOCATION,
+            job_config=job_config,
+            job_retry=None,
         )
 
         # Check that query actually starts the job.
@@ -4934,7 +4952,13 @@ class TestClient(unittest.TestCase):
         )
         conn = client._connection = make_connection(resource)
 
-        client.query(query, job_id=job_id, location=self.LOCATION, job_config=None)
+        client.query(
+            query,
+            job_id=job_id,
+            location=self.LOCATION,
+            job_config=None,
+            job_retry=None,
+        )
 
         # Check that query actually starts the job.
         conn.api_request.assert_called_once_with(
@@ -4972,7 +4996,11 @@ class TestClient(unittest.TestCase):
 
         with self.assertRaises(TypeError) as exc:
             client.query(
-                query, job_id=job_id, location=self.LOCATION, job_config=job_config
+                query,
+                job_id=job_id,
+                location=self.LOCATION,
+                job_config=job_config,
+                job_retry=None,
             )
         self.assertIn("Expected an instance of QueryJobConfig", exc.exception.args[0])
 
@@ -5021,7 +5049,11 @@ class TestClient(unittest.TestCase):
         job_config.default_dataset = None
 
         client.query(
-            query, job_id=job_id, location=self.LOCATION, job_config=job_config
+            query,
+            job_id=job_id,
+            location=self.LOCATION,
+            job_config=job_config,
+            job_retry=None,
         )
 
         # Check that query actually starts the job.
@@ -5066,7 +5098,7 @@ class TestClient(unittest.TestCase):
         )
         conn = client._connection = make_connection(resource)
 
-        client.query(query, job_id=job_id, location=self.LOCATION)
+        client.query(query, job_id=job_id, location=self.LOCATION, job_retry=None)
 
         # Check that query actually starts the job.
         conn.api_request.assert_called_once_with(
@@ -5108,7 +5140,7 @@ class TestClient(unittest.TestCase):
         )
         conn = client._connection = make_connection(resource)
 
-        client.query(query, job_id=job_id, project="other-project")
+        client.query(query, job_id=job_id, project="other-project", job_retry=None)
 
         # Check that query actually starts the job.
         conn.api_request.assert_called_once_with(
@@ -5172,7 +5204,7 @@ class TestClient(unittest.TestCase):
         config.udf_resources = udf_resources
         config.use_legacy_sql = True
 
-        job = client.query(QUERY, job_config=config, job_id=JOB)
+        job = client.query(QUERY, job_config=config, job_id=JOB, job_retry=None)
 
         self.assertIsInstance(job, QueryJob)
         self.assertIs(job._client, client)
@@ -5228,7 +5260,7 @@ class TestClient(unittest.TestCase):
         config = QueryJobConfig()
         config.query_parameters = query_parameters
 
-        job = client.query(QUERY, job_config=config, job_id=JOB)
+        job = client.query(QUERY, job_config=config, job_id=JOB, job_retry=None)
 
         self.assertIsInstance(job, QueryJob)
         self.assertIs(job._client, client)
@@ -5271,7 +5303,7 @@ class TestClient(unittest.TestCase):
         )
         with job_begin_patcher:
             with pytest.raises(Unknown, match="Not sure what went wrong."):
-                client.query("SELECT 1;", job_id="123")
+                client.query("SELECT 1;", job_id="123", job_retry=None)
 
     def test_query_job_rpc_fail_w_conflict_job_id_given(self):
         from google.api_core.exceptions import Conflict
@@ -5287,7 +5319,7 @@ class TestClient(unittest.TestCase):
         )
         with job_begin_patcher:
             with pytest.raises(Conflict, match="Job already exists."):
-                client.query("SELECT 1;", job_id="123")
+                client.query("SELECT 1;", job_id="123", job_retry=None)
 
     def test_query_job_rpc_fail_w_conflict_random_id_job_fetch_fails(self):
         from google.api_core.exceptions import Conflict
@@ -5821,7 +5853,7 @@ class TestClient(unittest.TestCase):
         from google.cloud.bigquery.schema import SchemaField
 
         WHEN_TS = 1437767599.006
-        WHEN = datetime.datetime.utcfromtimestamp(WHEN_TS).replace(tzinfo=UTC)
+        WHEN = datetime.datetime.fromtimestamp(WHEN_TS, UTC).replace(tzinfo=UTC)
         PATH = "projects/%s/datasets/%s/tables/%s/insertAll" % (
             self.PROJECT,
             self.DS_ID,
@@ -5882,7 +5914,7 @@ class TestClient(unittest.TestCase):
         from google.cloud.bigquery.table import Table
 
         WHEN_TS = 1437767599.006
-        WHEN = datetime.datetime.utcfromtimestamp(WHEN_TS).replace(tzinfo=UTC)
+        WHEN = datetime.datetime.fromtimestamp(WHEN_TS, UTC).replace(tzinfo=UTC)
         PATH = "projects/%s/datasets/%s/tables/%s/insertAll" % (
             self.PROJECT,
             self.DS_ID,
@@ -6065,6 +6097,7 @@ class TestClient(unittest.TestCase):
         )
 
     def test_insert_rows_w_repeated_fields(self):
+        from google.cloud._helpers import UTC
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import Table
 
@@ -6094,12 +6127,8 @@ class TestClient(unittest.TestCase):
                     (
                         12,
                         [
-                            datetime.datetime(
-                                2018, 12, 1, 12, 0, 0, tzinfo=datetime.timezone.utc
-                            ),
-                            datetime.datetime(
-                                2018, 12, 1, 13, 0, 0, tzinfo=datetime.timezone.utc
-                            ),
+                            datetime.datetime(2018, 12, 1, 12, 0, 0, tzinfo=UTC),
+                            datetime.datetime(2018, 12, 1, 13, 0, 0, tzinfo=UTC),
                         ],
                         [1.25, 2.5],
                     ),
@@ -6934,7 +6963,9 @@ class TestClient(unittest.TestCase):
         )
         WHEN_TS = 1437767599006000
 
-        WHEN = datetime.datetime.utcfromtimestamp(WHEN_TS / 1e6).replace(tzinfo=UTC)
+        WHEN = datetime.datetime.fromtimestamp(
+            WHEN_TS / 1e6, datetime.timezone.utc
+        ).replace(tzinfo=UTC)
         WHEN_1 = WHEN + datetime.timedelta(microseconds=1)
         WHEN_2 = WHEN + datetime.timedelta(microseconds=2)
         ROWS = 1234

@@ -31,6 +31,7 @@ from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import external_config
 from google.cloud.bigquery import schema
+from google.cloud.bigquery.enums import DefaultPandasDTypes
 from google.cloud.bigquery.table import TableReference
 from google.cloud.bigquery.dataset import DatasetReference
 
@@ -394,7 +395,9 @@ class TestTable(unittest.TestCase, _SchemaBase):
         from google.cloud._helpers import UTC
 
         self.WHEN_TS = 1437767599.006
-        self.WHEN = datetime.datetime.utcfromtimestamp(self.WHEN_TS).replace(tzinfo=UTC)
+        self.WHEN = datetime.datetime.fromtimestamp(self.WHEN_TS, UTC).replace(
+            tzinfo=UTC
+        )
         self.ETAG = "ETAG"
         self.TABLE_FULL_ID = "%s:%s.%s" % (self.PROJECT, self.DS_ID, self.TABLE_NAME)
         self.RESOURCE_URL = "http://example.com/path/to/resource"
@@ -434,6 +437,12 @@ class TestTable(unittest.TestCase, _SchemaBase):
             "externalDataConfiguration": {
                 "sourceFormat": "CSV",
                 "csvOptions": {"allowJaggedRows": True, "encoding": "encoding"},
+            },
+            "biglakeConfiguration": {
+                "connectionId": "connection",
+                "storageUri": "uri",
+                "fileFormat": "PARQUET",
+                "tableFormat": "ICEBERG",
             },
             "labels": {"x": "y"},
         }
@@ -520,6 +529,15 @@ class TestTable(unittest.TestCase, _SchemaBase):
             )
         else:
             self.assertIsNone(table.encryption_configuration)
+
+        if "biglakeConfiguration" in resource:
+            self.assertIsNotNone(table.biglake_configuration)
+            self.assertEqual(table.biglake_configuration.connection_id, "connection")
+            self.assertEqual(table.biglake_configuration.storage_uri, "uri")
+            self.assertEqual(table.biglake_configuration.file_format, "PARQUET")
+            self.assertEqual(table.biglake_configuration.table_format, "ICEBERG")
+        else:
+            self.assertIsNone(table.biglake_configuration)
 
     def test_ctor(self):
         dataset = DatasetReference(self.PROJECT, self.DS_ID)
@@ -892,6 +910,60 @@ class TestTable(unittest.TestCase, _SchemaBase):
 
         assert isinstance(table_constraints, TableConstraints)
         assert table_constraints.primary_key == PrimaryKey(columns=["id"])
+
+    def test_biglake_configuration_not_set(self):
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        assert table.biglake_configuration is None
+
+    def test_biglake_configuration_set(self):
+        from google.cloud.bigquery.table import BigLakeConfiguration
+
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        table._properties["biglakeConfiguration"] = {
+            "connectionId": "connection",
+            "storageUri": "uri",
+            "fileFormat": "PARQUET",
+            "tableFormat": "ICEBERG",
+        }
+
+        config = table.biglake_configuration
+
+        assert isinstance(config, BigLakeConfiguration)
+        assert config.connection_id == "connection"
+        assert config.storage_uri == "uri"
+        assert config.file_format == "PARQUET"
+        assert config.table_format == "ICEBERG"
+
+    def test_biglake_configuration_property_setter(self):
+        from google.cloud.bigquery.table import BigLakeConfiguration
+
+        dataset = DatasetReference(self.PROJECT, self.DS_ID)
+        table_ref = dataset.table(self.TABLE_NAME)
+        table = self._make_one(table_ref)
+
+        config = BigLakeConfiguration(
+            connection_id="connection",
+            storage_uri="uri",
+            file_format="PARQUET",
+            table_format="ICEBERG",
+        )
+        table.biglake_configuration = config
+
+        assert table._properties["biglakeConfiguration"] == {
+            "connectionId": "connection",
+            "storageUri": "uri",
+            "fileFormat": "PARQUET",
+            "tableFormat": "ICEBERG",
+        }
+
+        table.biglake_configuration = None
+        assert table.biglake_configuration is None
 
     def test_table_constraints_property_setter(self):
         from google.cloud.bigquery.table import (
@@ -1882,7 +1954,9 @@ class TestTableListItem(unittest.TestCase):
         from google.cloud._helpers import UTC
 
         self.WHEN_TS = 1437767599.125
-        self.WHEN = datetime.datetime.utcfromtimestamp(self.WHEN_TS).replace(tzinfo=UTC)
+        self.WHEN = datetime.datetime.fromtimestamp(self.WHEN_TS, UTC).replace(
+            tzinfo=UTC
+        )
         self.EXP_TIME = datetime.datetime(2015, 8, 1, 23, 59, 59, tzinfo=UTC)
 
     def test_ctor(self):
@@ -2166,6 +2240,97 @@ class TestSnapshotDefinition:
         assert instance.snapshot_time == expected_time
 
 
+class TestBigLakeConfiguration(unittest.TestCase):
+    @staticmethod
+    def _get_target_class():
+        from google.cloud.bigquery.table import BigLakeConfiguration
+
+        return BigLakeConfiguration
+
+    @classmethod
+    def _make_one(cls, *args, **kwargs):
+        klass = cls._get_target_class()
+        return klass(*args, **kwargs)
+
+    def test_ctor_empty_resource(self):
+        instance = self._make_one()
+        self.assertIsNone(instance.connection_id)
+        self.assertIsNone(instance.storage_uri)
+        self.assertIsNone(instance.file_format)
+        self.assertIsNone(instance.table_format)
+
+    def test_ctor_kwargs(self):
+        instance = self._make_one(
+            connection_id="conn",
+            storage_uri="uri",
+            file_format="FILE",
+            table_format="TABLE",
+        )
+        self.assertEqual(instance.connection_id, "conn")
+        self.assertEqual(instance.storage_uri, "uri")
+        self.assertEqual(instance.file_format, "FILE")
+        self.assertEqual(instance.table_format, "TABLE")
+
+    def test_ctor_full_resource(self):
+        resource = {
+            "connectionId": "conn",
+            "storageUri": "uri",
+            "fileFormat": "FILE",
+            "tableFormat": "TABLE",
+        }
+        instance = self._make_one(_properties=resource)
+        self.assertEqual(instance.connection_id, "conn")
+        self.assertEqual(instance.storage_uri, "uri")
+        self.assertEqual(instance.file_format, "FILE")
+        self.assertEqual(instance.table_format, "TABLE")
+
+    def test_to_api_repr(self):
+        resource = {
+            "connectionId": "conn",
+            "storageUri": "uri",
+            "fileFormat": "FILE",
+            "tableFormat": "TABLE",
+        }
+        instance = self._make_one(_properties=resource)
+        self.assertEqual(instance.to_api_repr(), resource)
+
+    def test_from_api_repr_partial(self):
+        klass = self._get_target_class()
+        api_repr = {"fileFormat": "FILE"}
+        instance = klass.from_api_repr(api_repr)
+
+        self.assertIsNone(instance.connection_id)
+        self.assertIsNone(instance.storage_uri)
+        self.assertEqual(instance.file_format, "FILE")
+        self.assertIsNone(instance.table_format)
+
+    def test_comparisons(self):
+        resource = {
+            "connectionId": "conn",
+            "storageUri": "uri",
+            "fileFormat": "FILE",
+            "tableFormat": "TABLE",
+        }
+
+        first = self._make_one(_properties=resource)
+        second = self._make_one(_properties=copy.deepcopy(resource))
+        # Exercise comparator overloads.
+        # first and second should be equivalent.
+        self.assertNotEqual(first, resource)
+        self.assertEqual(first, second)
+        self.assertEqual(hash(first), hash(second))
+
+        # Update second to ensure that first and second are no longer equivalent.
+        second.connection_id = "foo"
+        self.assertNotEqual(first, second)
+        self.assertNotEqual(hash(first), hash(second))
+
+        # Update first with the same change, restoring equivalence.
+        first.connection_id = "foo"
+        self.assertEqual(first, second)
+        self.assertEqual(hash(first), hash(second))
+
+
 class TestCloneDefinition:
     @staticmethod
     def _get_target_class():
@@ -2251,6 +2416,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
             row_iterator.to_arrow()
 
     def test_to_arrow(self):
+        pytest.importorskip("numpy")
         pyarrow = pytest.importorskip("pyarrow")
         row_iterator = self._make_one()
         tbl = row_iterator.to_arrow()
@@ -2258,6 +2424,7 @@ class Test_EmptyRowIterator(unittest.TestCase):
         self.assertEqual(tbl.num_rows, 0)
 
     def test_to_arrow_iterable(self):
+        pytest.importorskip("numpy")
         pyarrow = pytest.importorskip(
             "pyarrow", minversion=self.PYARROW_MINIMUM_VERSION
         )
@@ -2693,13 +2860,6 @@ class TestRowIterator(unittest.TestCase):
         )
         self.assertFalse(result)
 
-    def test__should_use_bqstorage_returns_false_if_page_size_set(self):
-        iterator = self._make_one(page_size=10, first_page_response=None)  # not cached
-        result = iterator._should_use_bqstorage(
-            bqstorage_client=None, create_bqstorage_client=True
-        )
-        self.assertFalse(result)
-
     def test__should_use_bqstorage_returns_false_w_warning_if_missing_dependency(self):
         iterator = self._make_one(first_page_response=None)  # not cached
 
@@ -2931,6 +3091,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     def test_to_arrow(self):
+        pytest.importorskip("numpy")
         pyarrow = pytest.importorskip(
             "pyarrow", minversion=self.PYARROW_MINIMUM_VERSION
         )
@@ -3015,6 +3176,7 @@ class TestRowIterator(unittest.TestCase):
         )
 
     def test_to_arrow_w_nulls(self):
+        pytest.importorskip("numpy")
         pyarrow = pytest.importorskip(
             "pyarrow", minversion=self.PYARROW_MINIMUM_VERSION
         )
@@ -3051,6 +3213,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(ages, [32, 29, None, 111])
 
     def test_to_arrow_w_unknown_type(self):
+        pytest.importorskip("numpy")
         pyarrow = pytest.importorskip(
             "pyarrow", minversion=self.PYARROW_MINIMUM_VERSION
         )
@@ -3096,6 +3259,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertTrue(all("sport" in str(warning) for warning in warned))
 
     def test_to_arrow_w_empty_table(self):
+        pytest.importorskip("numpy")
         pyarrow = pytest.importorskip(
             "pyarrow", minversion=self.PYARROW_MINIMUM_VERSION
         )
@@ -3137,6 +3301,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(child_field.type.value_type[1].name, "age")
 
     def test_to_arrow_max_results_w_explicit_bqstorage_client_warning(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud.bigquery.schema import SchemaField
@@ -3179,6 +3344,7 @@ class TestRowIterator(unittest.TestCase):
         mock_client._ensure_bqstorage_client.assert_not_called()
 
     def test_to_arrow_max_results_w_create_bqstorage_client_no_warning(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud.bigquery.schema import SchemaField
@@ -3217,6 +3383,7 @@ class TestRowIterator(unittest.TestCase):
         mock_client._ensure_bqstorage_client.assert_not_called()
 
     def test_to_arrow_w_bqstorage(self):
+        pytest.importorskip("numpy")
         pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud.bigquery import schema
@@ -3300,6 +3467,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     def test_to_arrow_w_bqstorage_creates_client(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud.bigquery import schema
@@ -3333,6 +3501,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_called_once()
 
     def test_to_arrow_ensure_bqstorage_client_wo_bqstorage(self):
+        pytest.importorskip("numpy")
         pyarrow = pytest.importorskip(
             "pyarrow", minversion=self.PYARROW_MINIMUM_VERSION
         )
@@ -3366,6 +3535,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(tbl.num_rows, 2)
 
     def test_to_arrow_w_bqstorage_no_streams(self):
+        pytest.importorskip("numpy")
         pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud.bigquery import schema
@@ -3405,6 +3575,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(actual_table.schema[2].name, "colB")
 
     def test_to_arrow_progress_bar(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("pyarrow")
         pytest.importorskip("tqdm")
         pytest.importorskip("tqdm.notebook")
@@ -3538,6 +3709,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertEqual(df_2["age"][0], 33)
 
     def test_to_dataframe_iterable_w_bqstorage(self):
+        pytest.importorskip("numpy")
         pandas = pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
         pytest.importorskip("google.cloud.bigquery_storage")
@@ -3612,6 +3784,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     def test_to_dataframe_iterable_w_bqstorage_max_results_warning(self):
+        pytest.importorskip("numpy")
         pandas = pytest.importorskip("pandas")
         pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud.bigquery import schema
@@ -3905,7 +4078,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_dataframe_tqdm_error(self):
         pytest.importorskip("pandas")
-        pytest.importorskip("tqdm")
+        tqdm = pytest.importorskip("tqdm")
         mock.patch("tqdm.tqdm_gui", new=None)
         mock.patch("tqdm.notebook.tqdm", new=None)
         mock.patch("tqdm.tqdm", new=None)
@@ -3940,7 +4113,7 @@ class TestRowIterator(unittest.TestCase):
             for warning in warned:  # pragma: NO COVER
                 self.assertIn(
                     warning.category,
-                    [UserWarning, DeprecationWarning],
+                    [UserWarning, DeprecationWarning, tqdm.TqdmExperimentalWarning],
                 )
 
     def test_to_dataframe_w_empty_results(self):
@@ -4355,7 +4528,7 @@ class TestRowIterator(unittest.TestCase):
 
     def test_to_dataframe_w_unsupported_dtypes_mapper(self):
         pytest.importorskip("pandas")
-        import numpy
+        numpy = pytest.importorskip("numpy")
         from google.cloud.bigquery.schema import SchemaField
 
         schema = [
@@ -4639,6 +4812,7 @@ class TestRowIterator(unittest.TestCase):
         mock_client._ensure_bqstorage_client.assert_not_called()
 
     def test_to_dataframe_w_bqstorage_creates_client(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("pandas")
         pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud.bigquery import schema
@@ -4672,6 +4846,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_called_once()
 
     def test_to_dataframe_w_bqstorage_no_streams(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("pandas")
         pytest.importorskip("google.cloud.bigquery_storage")
         from google.cloud.bigquery import schema
@@ -4700,6 +4875,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertTrue(got.empty)
 
     def test_to_dataframe_w_bqstorage_logs_session(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pandas")
         pytest.importorskip("pyarrow")
@@ -4724,6 +4900,7 @@ class TestRowIterator(unittest.TestCase):
         )
 
     def test_to_dataframe_w_bqstorage_empty_streams(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
@@ -4778,6 +4955,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertTrue(got.empty)
 
     def test_to_dataframe_w_bqstorage_nonempty(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
@@ -4860,6 +5038,7 @@ class TestRowIterator(unittest.TestCase):
         bqstorage_client._transport.grpc_channel.close.assert_not_called()
 
     def test_to_dataframe_w_bqstorage_multiple_streams_return_unique_index(self):
+        pytest.importorskip("numpy")
         bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
@@ -4912,6 +5091,7 @@ class TestRowIterator(unittest.TestCase):
         self.assertTrue(got.index.is_unique)
 
     def test_to_dataframe_w_bqstorage_updates_progress_bar(self):
+        pytest.importorskip("numpy")
         bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
@@ -4989,6 +5169,7 @@ class TestRowIterator(unittest.TestCase):
             tqdm_mock().close.assert_called_once()
 
     def test_to_dataframe_w_bqstorage_exits_on_keyboardinterrupt(self):
+        pytest.importorskip("numpy")
         bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
         pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
@@ -5164,6 +5345,7 @@ class TestRowIterator(unittest.TestCase):
             row_iterator.to_dataframe(bqstorage_client)
 
     def test_to_dataframe_concat_categorical_dtype_w_pyarrow(self):
+        pytest.importorskip("numpy")
         pytest.importorskip("google.cloud.bigquery_storage")
         pandas = pytest.importorskip("pandas")
         pyarrow = pytest.importorskip("pyarrow")
@@ -5446,7 +5628,7 @@ class TestRowIterator(unittest.TestCase):
         """
         pandas = pytest.importorskip("pandas")
         geopandas = pytest.importorskip("geopandas")
-        import numpy
+        numpy = pytest.importorskip("numpy")
         from shapely import wkt
 
         row_iterator = self._make_one_from_data(
@@ -5479,6 +5661,10 @@ class TestRowIterator(unittest.TestCase):
             progress_bar_type,
             create_bqstorage_client,
             geography_as_object=True,
+            bool_dtype=DefaultPandasDTypes.BOOL_DTYPE,
+            int_dtype=DefaultPandasDTypes.INT_DTYPE,
+            float_dtype=None,
+            string_dtype=None,
         )
 
         self.assertIsInstance(df, geopandas.GeoDataFrame)

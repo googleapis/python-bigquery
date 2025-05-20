@@ -1389,6 +1389,7 @@ class Client(ClientWithProject):
         self,
         table: Table,
         fields: Sequence[str],
+        autodetect_schema: bool = False,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
     ) -> Table:
@@ -1419,6 +1420,10 @@ class Client(ClientWithProject):
             fields (Sequence[str]):
                 The fields of ``table`` to change, spelled as the
                 :class:`~google.cloud.bigquery.table.Table` properties.
+            autodetect_schema (bool):
+                Specifies if the schema of the table should be autodetected when
+                updating the table from the underlying source. Only applicable
+                for external tables.
             retry (Optional[google.api_core.retry.Retry]):
                 A description of how to retry the API call.
             timeout (Optional[float]):
@@ -1438,12 +1443,18 @@ class Client(ClientWithProject):
         path = table.path
         span_attributes = {"path": path, "fields": fields}
 
+        if autodetect_schema:
+            query_params = {"autodetect_schema": True}
+        else:
+            query_params = {}
+
         api_response = self._call_api(
             retry,
             span_name="BigQuery.updateTable",
             span_attributes=span_attributes,
             method="PATCH",
             path=path,
+            query_params=query_params,
             data=partial,
             headers=headers,
             timeout=timeout,
@@ -3388,7 +3399,7 @@ class Client(ClientWithProject):
         project: Optional[str] = None,
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
-        job_retry: retries.Retry = DEFAULT_JOB_RETRY,
+        job_retry: Optional[retries.Retry] = DEFAULT_JOB_RETRY,
         api_method: Union[str, enums.QueryApiMethod] = enums.QueryApiMethod.INSERT,
     ) -> job.QueryJob:
         """Run a SQL query.
@@ -3455,18 +3466,9 @@ class Client(ClientWithProject):
                 class, or if both ``job_id`` and non-``None`` non-default
                 ``job_retry`` are provided.
         """
-        job_id_given = job_id is not None
-        if (
-            job_id_given
-            and job_retry is not None
-            and job_retry is not DEFAULT_JOB_RETRY
-        ):
-            raise TypeError(
-                "`job_retry` was provided, but the returned job is"
-                " not retryable, because a custom `job_id` was"
-                " provided."
-            )
+        _job_helpers.validate_job_retry(job_id, job_retry)
 
+        job_id_given = job_id is not None
         if job_id_given and api_method == enums.QueryApiMethod.QUERY:
             raise TypeError(
                 "`job_id` was provided, but the 'QUERY' `api_method` was requested."

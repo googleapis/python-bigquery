@@ -380,6 +380,7 @@ class Table(_TableBase):
 
     _PROPERTY_TO_API_FIELD: Dict[str, Any] = {
         **_TableBase._PROPERTY_TO_API_FIELD,
+        "biglake_configuration": "biglakeConfiguration",
         "clustering_fields": "clustering",
         "created": "creationTime",
         "description": "description",
@@ -430,6 +431,29 @@ class Table(_TableBase):
             self.schema = schema
 
     reference = property(_reference_getter)
+
+    @property
+    def biglake_configuration(self):
+        """google.cloud.bigquery.table.BigLakeConfiguration: Configuration
+        for managed tables for Apache Iceberg.
+
+        See https://cloud.google.com/bigquery/docs/iceberg-tables for more information.
+        """
+        prop = self._properties.get(
+            self._PROPERTY_TO_API_FIELD["biglake_configuration"]
+        )
+        if prop is not None:
+            prop = BigLakeConfiguration.from_api_repr(prop)
+        return prop
+
+    @biglake_configuration.setter
+    def biglake_configuration(self, value):
+        api_repr = value
+        if value is not None:
+            api_repr = value.to_api_repr()
+        self._properties[
+            self._PROPERTY_TO_API_FIELD["biglake_configuration"]
+        ] = api_repr
 
     @property
     def require_partition_filter(self):
@@ -1873,11 +1897,6 @@ class RowIterator(HTTPIterator):
         """total bytes processed from job statistics, if present."""
         return self._total_bytes_processed
 
-    @property
-    def page_size(self) -> Optional[int]:
-        """The maximum number of rows in each page of results from this request, if present."""
-        return self._page_size
-
     def _is_almost_completely_cached(self):
         """Check if all results are completely cached.
 
@@ -1929,7 +1948,7 @@ class RowIterator(HTTPIterator):
         if self._is_almost_completely_cached():
             return False
 
-        if self.max_results is not None or self.page_size is not None:
+        if self.max_results is not None:
             return False
 
         try:
@@ -1999,9 +2018,7 @@ class RowIterator(HTTPIterator):
             bqstorage_client:
                 The BigQuery Storage client intended to use for downloading result rows.
         """
-        if bqstorage_client is not None and (
-            self.max_results is not None or self.page_size is not None
-        ):
+        if bqstorage_client is not None and self.max_results is not None:
             warnings.warn(
                 "Cannot use bqstorage_client if max_results is set, "
                 "reverting to fetching data with the REST endpoint.",
@@ -2703,6 +2720,10 @@ class RowIterator(HTTPIterator):
         progress_bar_type: Optional[str] = None,
         create_bqstorage_client: bool = True,
         geography_column: Optional[str] = None,
+        bool_dtype: Union[Any, None] = DefaultPandasDTypes.BOOL_DTYPE,
+        int_dtype: Union[Any, None] = DefaultPandasDTypes.INT_DTYPE,
+        float_dtype: Union[Any, None] = None,
+        string_dtype: Union[Any, None] = None,
     ) -> "geopandas.GeoDataFrame":
         """Create a GeoPandas GeoDataFrame by loading all pages of a query.
 
@@ -2754,6 +2775,34 @@ class RowIterator(HTTPIterator):
                 identifies which one to use to construct a geopandas
                 GeoDataFrame.  This option can be ommitted if there's
                 only one GEOGRAPHY column.
+            bool_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g. ``pandas.BooleanDtype()``)
+                to convert BigQuery Boolean type, instead of relying on the default
+                ``pandas.BooleanDtype()``. If you explicitly set the value to ``None``,
+                then the data type will be ``numpy.dtype("bool")``. BigQuery Boolean
+                type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#boolean_type
+            int_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g. ``pandas.Int64Dtype()``)
+                to convert BigQuery Integer types, instead of relying on the default
+                ``pandas.Int64Dtype()``. If you explicitly set the value to ``None``,
+                then the data type will be ``numpy.dtype("int64")``. A list of BigQuery
+                Integer types can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#integer_types
+            float_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g. ``pandas.Float32Dtype()``)
+                to convert BigQuery Float type, instead of relying on the default
+                ``numpy.dtype("float64")``. If you explicitly set the value to ``None``,
+                then the data type will be ``numpy.dtype("float64")``. BigQuery Float
+                type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#floating_point_types
+            string_dtype (Optional[pandas.Series.dtype, None]):
+                If set, indicate a pandas ExtensionDtype (e.g. ``pandas.StringDtype()``) to
+                convert BigQuery String type, instead of relying on the default
+                ``numpy.dtype("object")``. If you explicitly set the value to ``None``,
+                then the data type will be ``numpy.dtype("object")``. BigQuery String
+                type can be found at:
+                https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#string_type
 
         Returns:
             geopandas.GeoDataFrame:
@@ -2805,6 +2854,10 @@ class RowIterator(HTTPIterator):
             progress_bar_type,
             create_bqstorage_client,
             geography_as_object=True,
+            bool_dtype=bool_dtype,
+            int_dtype=int_dtype,
+            float_dtype=float_dtype,
+            string_dtype=string_dtype,
         )
 
         return geopandas.GeoDataFrame(
@@ -2908,6 +2961,10 @@ class _EmptyRowIterator(RowIterator):
         progress_bar_type=None,
         create_bqstorage_client=True,
         geography_column: Optional[str] = None,
+        bool_dtype: Union[Any, None] = DefaultPandasDTypes.BOOL_DTYPE,
+        int_dtype: Union[Any, None] = DefaultPandasDTypes.INT_DTYPE,
+        float_dtype: Union[Any, None] = None,
+        string_dtype: Union[Any, None] = None,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
 
@@ -2917,6 +2974,10 @@ class _EmptyRowIterator(RowIterator):
             progress_bar_type (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
             geography_column (str): Ignored. Added for compatibility with RowIterator.
+            bool_dtype (Any): Ignored. Added for compatibility with RowIterator.
+            int_dtype (Any): Ignored. Added for compatibility with RowIterator.
+            float_dtype (Any): Ignored. Added for compatibility with RowIterator.
+            string_dtype (Any): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -3499,6 +3560,132 @@ class TableConstraints:
                 foreign_key.to_api_repr() for foreign_key in self.foreign_keys
             ]
         return resource
+
+
+class BigLakeConfiguration(object):
+    """Configuration for managed tables for Apache Iceberg, formerly
+       known as BigLake.
+
+    Args:
+        connection_id (Optional[str]):
+            The connection specifying the credentials to be used to read and write to external
+            storage, such as Cloud Storage. The connection_id can have the form
+            ``{project}.{location}.{connection_id}`` or
+            ``projects/{project}/locations/{location}/connections/{connection_id}``.
+        storage_uri (Optional[str]):
+            The fully qualified location prefix of the external folder where table data is
+            stored. The '*' wildcard character is not allowed. The URI should be in the
+            format ``gs://bucket/path_to_table/``.
+        file_format (Optional[str]):
+            The file format the table data is stored in. See BigLakeFileFormat for available
+            values.
+        table_format (Optional[str]):
+            The table format the metadata only snapshots are stored in. See BigLakeTableFormat
+            for available values.
+        _properties (Optional[dict]):
+            Private. Used to construct object from API resource.
+    """
+
+    def __init__(
+        self,
+        connection_id: Optional[str] = None,
+        storage_uri: Optional[str] = None,
+        file_format: Optional[str] = None,
+        table_format: Optional[str] = None,
+        _properties: Optional[dict] = None,
+    ) -> None:
+        if _properties is None:
+            _properties = {}
+        self._properties = _properties
+        if connection_id is not None:
+            self.connection_id = connection_id
+        if storage_uri is not None:
+            self.storage_uri = storage_uri
+        if file_format is not None:
+            self.file_format = file_format
+        if table_format is not None:
+            self.table_format = table_format
+
+    @property
+    def connection_id(self) -> Optional[str]:
+        """str: The connection specifying the credentials to be used to read and write to external
+        storage, such as Cloud Storage."""
+        return self._properties.get("connectionId")
+
+    @connection_id.setter
+    def connection_id(self, value: Optional[str]):
+        self._properties["connectionId"] = value
+
+    @property
+    def storage_uri(self) -> Optional[str]:
+        """str: The fully qualified location prefix of the external folder where table data is
+        stored."""
+        return self._properties.get("storageUri")
+
+    @storage_uri.setter
+    def storage_uri(self, value: Optional[str]):
+        self._properties["storageUri"] = value
+
+    @property
+    def file_format(self) -> Optional[str]:
+        """str: The file format the table data is stored in. See BigLakeFileFormat for available
+        values."""
+        return self._properties.get("fileFormat")
+
+    @file_format.setter
+    def file_format(self, value: Optional[str]):
+        self._properties["fileFormat"] = value
+
+    @property
+    def table_format(self) -> Optional[str]:
+        """str: The table format the metadata only snapshots are stored in. See BigLakeTableFormat
+        for available values."""
+        return self._properties.get("tableFormat")
+
+    @table_format.setter
+    def table_format(self, value: Optional[str]):
+        self._properties["tableFormat"] = value
+
+    def _key(self):
+        return tuple(sorted(self._properties.items()))
+
+    def __eq__(self, other):
+        if not isinstance(other, BigLakeConfiguration):
+            return NotImplemented
+        return self._key() == other._key()
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self._key())
+
+    def __repr__(self):
+        key_vals = ["{}={}".format(key, val) for key, val in self._key()]
+        return "BigLakeConfiguration({})".format(",".join(key_vals))
+
+    @classmethod
+    def from_api_repr(cls, resource: Dict[str, Any]) -> "BigLakeConfiguration":
+        """Factory: construct a BigLakeConfiguration given its API representation.
+
+        Args:
+            resource:
+                BigLakeConfiguration representation returned from the API
+
+        Returns:
+           BigLakeConfiguration parsed from ``resource``.
+        """
+        ref = cls()
+        ref._properties = resource
+        return ref
+
+    def to_api_repr(self) -> Dict[str, Any]:
+        """Construct the API resource representation of this BigLakeConfiguration.
+
+        Returns:
+            BigLakeConfiguration represented as an API resource.
+        """
+        return copy.deepcopy(self._properties)
 
 
 def _item_to_row(iterator, resource):

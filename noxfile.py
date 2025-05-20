@@ -109,9 +109,7 @@ def default(session, install_extras=True):
     # that logic (and the associated tests) we avoid installing the [ipython] extra
     # which has a downstream effect of then avoiding installing bigquery_magics.
     if install_extras and session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        install_target = (
-            ".[bqstorage,pandas,ipywidgets,geopandas,tqdm,opentelemetry,bigquery_v2]"
-        )
+        install_target = ".[bqstorage,pandas,ipywidgets,geopandas,matplotlib,tqdm,opentelemetry,bigquery_v2]"
     elif install_extras:  # run against all other UNIT_TEST_PYTHON_VERSIONS
         install_target = ".[all]"
     else:
@@ -130,7 +128,7 @@ def default(session, install_extras=True):
     # Run py.test against the unit tests.
     session.run(
         "py.test",
-        "-n=auto",
+        "-n=8",
         "--quiet",
         "-W default::PendingDeprecationWarning",
         "--cov=google/cloud/bigquery",
@@ -165,8 +163,7 @@ def unit_noextras(session):
     # so that it continues to be an optional dependency.
     # https://github.com/googleapis/python-bigquery/issues/1877
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        session.install("pyarrow==4.0.0")
-
+        session.install("pyarrow==4.0.0", "numpy==1.20.2")
     default(session, install_extras=False)
 
 

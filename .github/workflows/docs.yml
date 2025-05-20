@@ -21,7 +21,7 @@ jobs:
       run: |
         nox -s docs-3.10
 
-  docsfx:
+  docfx:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout

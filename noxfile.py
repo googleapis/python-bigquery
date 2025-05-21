@@ -128,7 +128,7 @@ def default(session, install_extras=True):
     # Run py.test against the unit tests.
     session.run(
         "py.test",
-        "-n=auto",
+        "-n=8",
         "--quiet",
         "-W default::PendingDeprecationWarning",
         "--cov=google/cloud/bigquery",
@@ -163,8 +163,7 @@ def unit_noextras(session):
     # so that it continues to be an optional dependency.
     # https://github.com/googleapis/python-bigquery/issues/1877
     if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        session.install("pyarrow==4.0.0")
-
+        session.install("pyarrow==4.0.0", "numpy==1.20.2")
     default(session, install_extras=False)
 
 

@@ -807,6 +807,62 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
+    @pytest.mark.parametrize(
+        "dataset_view, expected_view_param",
+        [
+            (None, None),
+            (bigquery.enums.DatasetView.METADATA, "METADATA"),
+            (bigquery.enums.DatasetView.ACL, "ACL"),
+            (bigquery.enums.DatasetView.FULL, "FULL"),
+            (
+                bigquery.enums.DatasetView.DATASET_VIEW_UNSPECIFIED,
+                "DATASET_VIEW_UNSPECIFIED",
+            ),
+        ],
+    )
+    def test_get_dataset_with_view_parameter(
+        self, dataset_view, expected_view_param
+    ):
+        path = "projects/%s/datasets/%s" % (self.PROJECT, self.DS_ID)
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        resource = {
+            "id": "%s:%s" % (self.PROJECT, self.DS_ID),
+            "datasetReference": {"projectId": self.PROJECT, "datasetId": self.DS_ID},
+        }
+
+        # Mock _call_api directly to inspect its arguments
+        mock_call_api = mock.patch.object(client, "_call_api").start()
+        mock_call_api.return_value = resource  # Simulate a successful API response
+
+        dataset_ref = DatasetReference(self.PROJECT, self.DS_ID)
+        client.get_dataset(dataset_ref, dataset_view=dataset_view)
+
+        expected_query_params = {}
+        if expected_view_param is not None:
+            expected_query_params["view"] = expected_view_param
+
+        mock_call_api.assert_called_once_with(
+            mock.ANY,  # retry argument
+            span_name="BigQuery.getDataset",
+            span_attributes={"path": "/" + path},
+            method="GET",
+            path="/" + path,
+            query_params=expected_query_params,
+            timeout=DEFAULT_TIMEOUT,
+        )
+        mock.patch.stopall()  # Stop the mock
+
+    def test_get_dataset_with_invalid_view_parameter_string(self):
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        dataset_ref = DatasetReference(self.PROJECT, self.DS_ID)
+
+        with pytest.raises(AttributeError):
+            client.get_dataset(dataset_ref, dataset_view="INVALID_STRING_VALUE")
+
     def test_ensure_bqstorage_client_creating_new_instance(self):
         bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")
 

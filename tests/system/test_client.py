@@ -252,6 +252,30 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(dataset.project, Config.CLIENT.project)
         self.assertIs(dataset.is_case_insensitive, False)
 
+    def test_get_dataset_with_dataset_view(self):
+        dataset_id = _make_dataset_id("get_dataset_view")
+        dataset_ref = self.temp_dataset(dataset_id)
+        client = Config.CLIENT
+
+        views_to_test = [
+            None,
+            bigquery.enums.DatasetView.METADATA,
+            bigquery.enums.DatasetView.ACL,
+            bigquery.enums.DatasetView.FULL,
+            bigquery.enums.DatasetView.DATASET_VIEW_UNSPECIFIED,
+        ]
+
+        for view in views_to_test:
+            try:
+                dataset = client.get_dataset(dataset_ref.reference, dataset_view=view)
+                self.assertEqual(dataset.dataset_id, dataset_id)
+                # Further assertions could be made here if the expected content
+                # for each view was known and testable (e.g., presence/absence of ACLs)
+            except GoogleAPICallError as e:
+                self.fail(
+                    f"client.get_dataset with dataset_view={view} failed with API error: {e}"
+                )
+
     def test_create_dataset_case_sensitive(self):
         DATASET_ID = _make_dataset_id("create_cs_dataset")
         dataset = self.temp_dataset(DATASET_ID, is_case_insensitive=False)

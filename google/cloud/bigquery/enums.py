@@ -46,6 +46,27 @@ class Compression(str, enum.Enum):
     """Specifies no compression."""
 
 
+class DatasetView(str, enum.Enum):
+    """Specifies the level of detail to include for a dataset resource.
+
+    https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets/get#DatasetView
+    """
+
+    DATASET_VIEW_UNSPECIFIED = "DATASET_VIEW_UNSPECIFIED"
+    """The server will decide which view to use."""
+
+    METADATA = "METADATA"
+    """Includes basic dataset metadata, but not the ACL."""
+
+    ACL = "ACL"
+    """Includes dataset metadata and the ACL."""
+
+    FULL = "FULL"
+    """Includes all dataset metadata, including the ACL and table metadata.
+    This view is not supported by the `datasets.list` API method.
+    """
+
+
 class DecimalTargetType:
     """The data types that could be used as a target type when converting decimal values.
 

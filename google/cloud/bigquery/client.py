@@ -866,10 +866,22 @@ class Client(ClientWithProject):
                 How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
-                before using ``retry``.
+                before using ``retry`
             dataset_view (Optional[google.cloud.bigquery.enums.DatasetView]):
-                Specifies the level of detail to return. Defaults to None, which
-                returns the default representation of the dataset.
+                # TODO clean up this docstring.
+                Specifies the level of detail to include for the dataset resource.
+                If provided and not None, this parameter controls which parts of the
+                dataset resource are returned.
+                Possible enum values:
+                - :attr:`~google.cloud.bigquery.enums.DatasetView.ACL`:
+                  Includes dataset metadata and the ACL.
+                - :attr:`~google.cloud.bigquery.enums.DatasetView.FULL`:
+                  Includes all dataset metadata, including the ACL and table metadata.
+                  This view is not supported by the `datasets.list` API method.
+                - :attr:`~google.cloud.bigquery.enums.DatasetView.METADATA`:
+                  Includes basic dataset metadata, but not the ACL.
+                - :attr:`~google.cloud.bigquery.enums.DatasetView.DATASET_VIEW_UNSPECIFIED`:
+                  The server will decide which view to use.
 
         Returns:
             google.cloud.bigquery.dataset.Dataset:
@@ -880,9 +892,12 @@ class Client(ClientWithProject):
                 dataset_ref, default_project=self.project
             )
         path = dataset_ref.path
-        params: Dict[str, Any] = {}
-        if dataset_view is not None:
-            params["view"] = dataset_view.value
+
+        if dataset_view:
+            query_params = {"view": dataset_view.value}
+        else:
+            query_params = {}
+
         span_attributes = {"path": path}
         api_response = self._call_api(
             retry,
@@ -891,7 +906,7 @@ class Client(ClientWithProject):
             method="GET",
             path=path,
             timeout=timeout,
-            query_params=params if params else None,
+            query_params=query_params,
         )
         return Dataset.from_api_repr(api_response)
 

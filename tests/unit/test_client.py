@@ -742,7 +742,7 @@ class TestClient(unittest.TestCase):
         final_attributes.assert_called_once_with({"path": "/%s" % path}, client, None)
 
         conn.api_request.assert_called_once_with(
-            method="GET", path="/%s" % path, timeout=7.5
+            method="GET", path="/%s" % path, timeout=7.5, query_params={}
         )
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
@@ -808,55 +808,56 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(dataset.dataset_id, self.DS_ID)
 
-    @pytest.mark.parametrize(
-        "dataset_view_arg,expected_param_value",
-        [
+    def test_get_dataset_with_dataset_view(self):
+        path = "projects/%s/datasets/%s" % (self.PROJECT, self.DS_ID)
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        resource = {
+            "id": "%s:%s" % (self.PROJECT, self.DS_ID),
+            "datasetReference": {"projectId": self.PROJECT, "datasetId": self.DS_ID},
+        }
+        dataset_ref = DatasetReference(self.PROJECT, self.DS_ID)
+
+        test_cases = [
             (None, None),
             (DatasetView.DATASET_VIEW_UNSPECIFIED, "DATASET_VIEW_UNSPECIFIED"),
             (DatasetView.METADATA, "METADATA"),
             (DatasetView.ACL, "ACL"),
             (DatasetView.FULL, "FULL"),
-        ],
-    )
-    def test_get_dataset_with_dataset_view(
-        self, dataset_view_arg, expected_param_value
-    ):
-        path = "projects/%s/datasets/%s" % (self.PROJECT, self.DS_ID)
-        creds = _make_credentials()
-        http = object()
-        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
-        resource = {
-            "id": "%s:%s" % (self.PROJECT, self.DS_ID),
-            "datasetReference": {"projectId": self.PROJECT, "datasetId": self.DS_ID},
-        }
-        conn = client._connection = make_connection(resource)
-        dataset_ref = DatasetReference(self.PROJECT, self.DS_ID)
+        ]
 
-        dataset = client.get_dataset(dataset_ref, dataset_view=dataset_view_arg)
+        for dataset_view_arg, expected_param_value in test_cases:
+            with self.subTest(
+                dataset_view_arg=dataset_view_arg,
+                expected_param_value=expected_param_value,
+            ):
+                # Re-initialize the connection mock for each sub-test to reset side_effect
+                conn = client._connection = make_connection(resource)
 
-        self.assertEqual(dataset.dataset_id, self.DS_ID)
-        expected_query_params = {}
-        if expected_param_value is not None:
-            expected_query_params["view"] = expected_param_value
+                dataset = client.get_dataset(dataset_ref, dataset_view=dataset_view_arg)
 
-        conn.api_request.assert_called_once_with(
-            method="GET",
-            path="/%s" % path,
-            timeout=DEFAULT_TIMEOUT,
-            query_params=expected_query_params if expected_query_params else None,
-        )
+                self.assertEqual(dataset.dataset_id, self.DS_ID)
 
-    @pytest.mark.parametrize(
-        "invalid_view_value",
-        [
+                if expected_param_value:
+                    expected_query_params = {"view": expected_param_value}
+                else:
+                    expected_query_params = {}
+
+                conn.api_request.assert_called_once_with(
+                    method="GET",
+                    path="/%s" % path,
+                    timeout=DEFAULT_TIMEOUT,
+                    query_params=expected_query_params if expected_query_params else {},
+                )
+
+    def test_get_dataset_with_invalid_dataset_view(self):
+        invalid_view_values = [
             "INVALID_STRING",
             123,
             123.45,
             object(),
-        ],
-    )
-    def test_get_dataset_with_invalid_dataset_view(self, invalid_view_value):
-        path = "projects/%s/datasets/%s" % (self.PROJECT, self.DS_ID)
+        ]
         creds = _make_credentials()
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
@@ -867,8 +868,11 @@ class TestClient(unittest.TestCase):
         conn = client._connection = make_connection(resource)
         dataset_ref = DatasetReference(self.PROJECT, self.DS_ID)
 
-        with pytest.raises(AttributeError):
-            client.get_dataset(dataset_ref, dataset_view=invalid_view_value)
+        for invalid_view_value in invalid_view_values:
+            with self.subTest(invalid_view_value=invalid_view_value):
+                conn.api_request.reset_mock()  # Reset mock for each sub-test
+                with self.assertRaises(AttributeError):
+                    client.get_dataset(dataset_ref, dataset_view=invalid_view_value)
 
     def test_ensure_bqstorage_client_creating_new_instance(self):
         bigquery_storage = pytest.importorskip("google.cloud.bigquery_storage")

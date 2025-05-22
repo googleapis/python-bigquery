@@ -81,6 +81,7 @@ class CreateDisposition(object):
 
 
 class DatasetView(enum.Enum):
+    # TODO add descriptions
     DATASET_VIEW_UNSPECIFIED = "DATASET_VIEW_UNSPECIFIED"
     METADATA = "METADATA"
     ACL = "ACL"

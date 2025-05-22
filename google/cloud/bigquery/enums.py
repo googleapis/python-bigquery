@@ -80,6 +80,13 @@ class CreateDisposition(object):
     returned in the job result."""
 
 
+class DatasetView(enum.Enum):
+    DATASET_VIEW_UNSPECIFIED = "DATASET_VIEW_UNSPECIFIED"
+    METADATA = "METADATA"
+    ACL = "ACL"
+    FULL = "FULL"
+
+
 class DefaultPandasDTypes(enum.Enum):
     """Default Pandas DataFrem DTypes to convert BigQuery data. These
     Sentinel values are used instead of None to maintain backward compatibility,

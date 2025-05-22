@@ -90,7 +90,7 @@ from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery.enums import AutoRowIDs
+from google.cloud.bigquery.enums import AutoRowIDs, DatasetView
 from google.cloud.bigquery.format_options import ParquetOptions
 from google.cloud.bigquery.job import (
     CopyJob,
@@ -849,6 +849,7 @@ class Client(ClientWithProject):
         dataset_ref: Union[DatasetReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
+        dataset_view: Optional[DatasetView] = None,
     ) -> Dataset:
         """Fetch the dataset referenced by ``dataset_ref``
 
@@ -866,6 +867,9 @@ class Client(ClientWithProject):
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
+            dataset_view (Optional[google.cloud.bigquery.enums.DatasetView]):
+                Specifies the level of detail to return. Defaults to None, which
+                returns the default representation of the dataset.
 
         Returns:
             google.cloud.bigquery.dataset.Dataset:
@@ -876,6 +880,9 @@ class Client(ClientWithProject):
                 dataset_ref, default_project=self.project
             )
         path = dataset_ref.path
+        params: Dict[str, Any] = {}
+        if dataset_view is not None:
+            params["view"] = dataset_view.value
         span_attributes = {"path": path}
         api_response = self._call_api(
             retry,
@@ -884,6 +891,7 @@ class Client(ClientWithProject):
             method="GET",
             path=path,
             timeout=timeout,
+            query_params=params if params else None,
         )
         return Dataset.from_api_repr(api_response)
 

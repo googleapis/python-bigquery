@@ -8,12 +8,5 @@
   "ignorePaths": [".pre-commit-config.yaml", ".kokoro/requirements.txt", "setup.py", ".github/workflows/unittest.yml"],
   "pip_requirements": {
     "fileMatch": ["requirements-test.txt", "samples/[\\S/]*constraints.txt", "samples/[\\S/]*constraints-test.txt"]
-  },
-  "packageRules": [
-    {
-      "matchFileNames": [".github/workflows/docs.yml"],
-      "matchStrings": ["uses: actions/setup-python@.*\\n          with:\\n            python-version: '(.*)'"],
-      "allowedVersions": "<3.11"
-    }
-  ]
+  }
 }

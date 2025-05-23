@@ -866,7 +866,7 @@ class Client(ClientWithProject):
                 How to retry the RPC.
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
-                before using ``retry`
+                before using ``retry``.
             dataset_view (Optional[google.cloud.bigquery.enums.DatasetView]):
                 # TODO clean up this docstring.
                 Specifies the level of detail to include for the dataset resource.

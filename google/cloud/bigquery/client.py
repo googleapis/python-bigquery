@@ -1986,6 +1986,7 @@ class Client(ClientWithProject):
         location: Optional[str] = None,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: int = 0,
+        start_index: Optional[int] = None,
     ) -> _QueryResults:
         """Get the query results object for a query job.
 
@@ -2013,7 +2014,7 @@ class Client(ClientWithProject):
                 A new ``_QueryResults`` instance.
         """
 
-        extra_params: Dict[str, Any] = {"maxResults": page_size}
+        extra_params: Dict[str, Any] = {"maxResults": page_size, "startIndex": start_index}
 
         if timeout is not None:
             if not isinstance(timeout, (int, float)):

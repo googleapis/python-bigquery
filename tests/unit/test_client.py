@@ -840,7 +840,7 @@ class TestClient(unittest.TestCase):
                 self.assertEqual(dataset.dataset_id, self.DS_ID)
 
                 if expected_param_value:
-                    expected_query_params = {"view": expected_param_value}
+                    expected_query_params = {"datasetView": expected_param_value}
                 else:
                     expected_query_params = {}
 

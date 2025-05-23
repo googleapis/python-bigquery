@@ -893,7 +893,7 @@ class Client(ClientWithProject):
         path = dataset_ref.path
 
         if dataset_view:
-            query_params = {"view": dataset_view.value}
+            query_params = {"datasetView": dataset_view.value}
         else:
             query_params = {}
 

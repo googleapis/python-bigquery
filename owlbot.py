@@ -65,6 +65,7 @@ s.move(
     templated_files,
     excludes=[
         "noxfile.py",
+        "renovate.json",
         "docs/multiprocessing.rst",
         "docs/index.rst",
         ".coveragerc",

@@ -868,21 +868,20 @@ class Client(ClientWithProject):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
             dataset_view (Optional[google.cloud.bigquery.enums.DatasetView]):
-                # TODO clean up this docstring.
-                Specifies the level of detail to include for the dataset resource.
-                If provided and not None, this parameter controls which parts of the
-                dataset resource are returned.
-                Possible enum values:
-                - :attr:`~google.cloud.bigquery.enums.DatasetView.ACL`:
-                  Includes dataset metadata and the ACL.
-                - :attr:`~google.cloud.bigquery.enums.DatasetView.FULL`:
-                  Includes all dataset metadata, including the ACL and table metadata.
-                  This view is not supported by the `datasets.list` API method.
-                - :attr:`~google.cloud.bigquery.enums.DatasetView.METADATA`:
-                  Includes basic dataset metadata, but not the ACL.
-                - :attr:`~google.cloud.bigquery.enums.DatasetView.DATASET_VIEW_UNSPECIFIED`:
-                  The server will decide which view to use.
+                Specifies the view that determines which dataset information is
+                returned. By default, datase metadata (e.g. friendlyName, description,
+                labels, etc) and ACL information are returned. This argument can
+                take on the following possible enum values.
 
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.ACL`:
+                    Includes dataset metadata and the ACL.
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.FULL`:
+                    Includes all dataset metadata, including the ACL and table metadata.
+                    This view is not supported by the `datasets.list` API method.
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.METADATA`:
+                    Includes basic dataset metadata, but not the ACL.
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.DATASET_VIEW_UNSPECIFIED`:
+                    The server will decide which view to use. Currently defaults to FULL.
         Returns:
             google.cloud.bigquery.dataset.Dataset:
                 A ``Dataset`` instance.

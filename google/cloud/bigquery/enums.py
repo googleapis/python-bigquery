@@ -81,11 +81,21 @@ class CreateDisposition(object):
 
 
 class DatasetView(enum.Enum):
-    # TODO add descriptions
+    """DatasetView specifies which dataset information is returned."""
+
     DATASET_VIEW_UNSPECIFIED = "DATASET_VIEW_UNSPECIFIED"
+    """The default value. Currently maps to the FULL view."""
+
     METADATA = "METADATA"
+    """View metadata information for the dataset, such as friendlyName,
+    description, labels, etc."""
+
     ACL = "ACL"
+    """View ACL information for the dataset, which defines dataset access
+    for one or more entities."""
+
     FULL = "FULL"
+    """View both dataset metadata and ACL information."""
 
 
 class DefaultPandasDTypes(enum.Enum):

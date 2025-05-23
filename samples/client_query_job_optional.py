@@ -47,7 +47,7 @@ def client_query_job_optional() -> None:
         print("Query was run with job state.  Job ID: {}".format(rows.job_id))
     else:
         print(
-            "Query was run without creating a job..  Query ID: {}".format(rows.query_id)
+            "Query was run without creating a job.  Query ID: {}".format(rows.query_id)
         )
 
     print("The query data:")

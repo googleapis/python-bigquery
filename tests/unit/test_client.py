@@ -2114,6 +2114,56 @@ class TestClient(unittest.TestCase):
         client.update_dataset(ds, [])
         req = conn.api_request.call_args
         self.assertEqual(req[1]["headers"]["If-Match"], "etag")
+        self.assertIsNone(req[1].get("query_params"))
+
+    def test_update_dataset_w_update_mode(self):
+        from google.cloud.bigquery.dataset import Dataset
+        from google.cloud.bigquery import enums
+
+        PATH = "projects/%s/datasets/%s" % (self.PROJECT, self.DS_ID)
+        DESCRIPTION = "DESCRIPTION"
+        RESOURCE = {
+            "datasetReference": {"projectId": self.PROJECT, "datasetId": self.DS_ID},
+            "etag": "etag",
+            "description": DESCRIPTION,
+        }
+        creds = _make_credentials()
+        client = self._make_one(project=self.PROJECT, credentials=creds)
+        ds = Dataset(DatasetReference(self.PROJECT, self.DS_ID))
+        ds.description = DESCRIPTION
+        filter_fields = ["description"]
+
+        # Test each UpdateMode enum value
+        for update_mode_enum in enums.UpdateMode:
+            conn = client._connection = make_connection(RESOURCE)
+            ds2 = client.update_dataset(
+                ds,
+                fields=filter_fields,
+                update_mode=update_mode_enum,
+            )
+            self.assertEqual(ds2.description, ds.description)
+            conn.api_request.assert_called_once_with(
+                method="PATCH",
+                data={"description": DESCRIPTION},
+                path="/" + PATH,
+                timeout=DEFAULT_TIMEOUT,
+                query_params={"updateMode": str(update_mode_enum.value)},
+            )
+
+        # Test when update_mode is not provided
+        conn = client._connection = make_connection(RESOURCE)
+        ds2 = client.update_dataset(
+            ds,
+            fields=filter_fields,
+        )
+        self.assertEqual(ds2.description, ds.description)
+        conn.api_request.assert_called_once_with(
+            method="PATCH",
+            data={"description": DESCRIPTION},
+            path="/" + PATH,
+            timeout=DEFAULT_TIMEOUT,
+            query_params=None,  # Expect None or empty dict when not provided
+        )
 
     def test_update_dataset_w_custom_property(self):
         # The library should handle sending properties to the API that are not

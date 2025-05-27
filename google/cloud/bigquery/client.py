@@ -1198,6 +1198,7 @@ class Client(ClientWithProject):
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
+        update_mode: Optional[enums.UpdateMode] = None,
     ) -> Dataset:
         """Change some fields of a dataset.
 
@@ -1249,6 +1250,9 @@ class Client(ClientWithProject):
             headers = None
         path = dataset.path
         span_attributes = {"path": path, "fields": fields}
+        query_params: Dict[str, Any] = {}
+        if update_mode is not None:
+            query_params["updateMode"] = str(update_mode.value)
 
         api_response = self._call_api(
             retry,
@@ -1259,6 +1263,7 @@ class Client(ClientWithProject):
             data=partial,
             headers=headers,
             timeout=timeout,
+            query_params=query_params if query_params else None,
         )
         return Dataset.from_api_repr(api_response)
 

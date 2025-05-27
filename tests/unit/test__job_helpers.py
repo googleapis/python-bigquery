@@ -601,7 +601,6 @@ def test_query_and_wait_sets_job_creation_mode():
 
 def test_query_and_wait_sets_location():
     client = mock.create_autospec(Client)
-    client.default_job_creation_mode = None
     client._call_api.return_value = {
         "jobReference": {
             "projectId": "response-project",
@@ -639,6 +638,7 @@ def test_query_and_wait_sets_location():
                 "useInt64Timestamp": True,
             },
             "requestId": mock.ANY,
+            "jobCreationMode": mock.ANY,
         },
         timeout=None,
     )

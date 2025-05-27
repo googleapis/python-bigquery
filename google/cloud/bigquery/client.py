@@ -2005,16 +2005,19 @@ class Client(ClientWithProject):
                 before using ``retry``. If set, this connection timeout may be
                 increased to a minimum value. This prevents retries on what
                 would otherwise be a successful response.
-            page_size (int):
+            page_size (Optional[int]):
                 Maximum number of rows in a single response. See maxResults in
                 the jobs.getQueryResults REST API.
+            start_index (Optional[int]):
+                Zero-based index of the starting row. See startIndex in the
+                jobs.getQueryResults REST API.
 
         Returns:
             google.cloud.bigquery.query._QueryResults:
                 A new ``_QueryResults`` instance.
         """
 
-        extra_params: Dict[str, Any] = {"maxResults": page_size, "startIndex": start_index}
+        extra_params: Dict[str, Any] = {"maxResults": page_size}
 
         if timeout is not None:
             if not isinstance(timeout, (int, float)):
@@ -2036,6 +2039,9 @@ class Client(ClientWithProject):
 
         if location is not None:
             extra_params["location"] = location
+
+        if start_index is not None:
+            extra_params["startIndex"] = start_index
 
         path = "/projects/{}/queries/{}".format(project, job_id)
 

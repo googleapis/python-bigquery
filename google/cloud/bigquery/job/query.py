@@ -1422,6 +1422,9 @@ class QueryJob(_AsyncJob):
             page_size (int):
                 Maximum number of rows in a single response. See maxResults in
                 the jobs.getQueryResults REST API.
+            start_index (Optional[int]):
+                Zero-based index of the starting row. See startIndex in the
+                jobs.getQueryResults REST API.
         """
         # Optimization: avoid a call to jobs.getQueryResults if it's already
         # been fetched, e.g. from jobs.query first page of results.

@@ -409,11 +409,11 @@ class BigLakeTableFormat(object):
     """Apache Iceberg format."""
 
 
-class UpdateMode(str, enum.Enum):
+class UpdateMode(enum.Enum):
     """Specifies the kind of information to update in a dataset."""
 
     UPDATE_MODE_UNSPECIFIED = "UPDATE_MODE_UNSPECIFIED"
-    """The default value. Default to the UPDATE_FULL."""
+    """The default value. Behavior defaults to UPDATE_FULL."""
 
     UPDATE_METADATA = "UPDATE_METADATA"
     """Includes metadata information for the dataset, such as friendlyName,

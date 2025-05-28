@@ -1715,7 +1715,9 @@ class TestQueryJob(_Base):
             ],
         }
 
-        connection = make_connection(query_resource, tabledata_resource_1, tabledata_resource_2)
+        connection = make_connection(
+            query_resource, tabledata_resource_1, tabledata_resource_2
+        )
         client = _make_client(self.PROJECT, connection=connection)
         resource = self._make_resource(ended=True)
         job = self._get_target_class().from_api_repr(resource, client)

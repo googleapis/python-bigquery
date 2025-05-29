@@ -234,11 +234,7 @@ class SchemaField(object):
         if policy_tags is not _DEFAULT_VALUE:
             # TODO: The typehinting for this needs work. Setting this pragma to temporarily
             # manage a pytype issue that came up in another PR. See Issue: #2132
-            self._properties["policyTags"] = (
-                policy_tags.to_api_repr()  # pytype: disable=attribute-error
-                if policy_tags is not None
-                else None
-            )
+            self._properties["policyTags"] = policy_tags.to_api_repr() if policy_tags is not None else None
         if isinstance(range_element_type, str):
             self._properties["rangeElementType"] = {"type": range_element_type}
         if isinstance(range_element_type, FieldElementType):

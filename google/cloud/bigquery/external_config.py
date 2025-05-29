@@ -837,8 +837,8 @@ class ExternalConfig(object):
         """
         # TODO: The typehinting for this needs work. Setting this pragma to temporarily
         # manage a pytype issue that came up in another PR. See Issue: #2132
-        prop = self._properties.get("schema", {})  # type: ignore
-        return [SchemaField.from_api_repr(field) for field in prop.get("fields", [])]  # type: ignore
+        prop: Dict[str, Any] = self._properties.get("schema", {})
+        return [SchemaField.from_api_repr(field) for field in prop.get("fields", [])]
 
     @schema.setter
     def schema(self, value):

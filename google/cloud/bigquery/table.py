@@ -137,9 +137,9 @@ def _reference_getter(table):
     return TableReference(dataset_ref, table.table_id)
 
 
-# TODO: The typehinting for this needs work. Setting this pragma to temporarily
-# manage a pytype issue that came up in another PR. See Issue: #2132
-def _view_use_legacy_sql_getter(table: "Table") -> bool:
+def _view_use_legacy_sql_getter(
+    table: Union["Table", "TableListItem"]
+) -> Optional[bool]:
     """bool: Specifies whether to execute the view with Legacy or Standard SQL.
 
     This boolean specifies whether to execute the view with Legacy SQL
@@ -160,6 +160,7 @@ def _view_use_legacy_sql_getter(table: "Table") -> bool:
     if table.table_type == "VIEW":
         # The server-side default for useLegacySql is True.
         return True
+    return None  # explicit return statement to appease mypy
 
 
 class _TableBase:

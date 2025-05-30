@@ -22,6 +22,7 @@ from __future__ import absolute_import, annotations
 
 import base64
 import copy
+import typing
 from typing import Any, Dict, FrozenSet, Iterable, Optional, Union
 
 from google.cloud.bigquery._helpers import _to_bytes
@@ -835,9 +836,9 @@ class ExternalConfig(object):
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.schema
         """
-        # TODO: The typehinting for this needs work. Setting this pragma to temporarily
-        # manage a pytype issue that came up in another PR. See Issue: #2132
-        prop: Dict[str, Any] = self._properties.get("schema", {})
+        prop: Dict[str, Any] = typing.cast(
+            Dict[str, Any], self._properties.get("schema", {})
+        )
         return [SchemaField.from_api_repr(field) for field in prop.get("fields", [])]
 
     @schema.setter

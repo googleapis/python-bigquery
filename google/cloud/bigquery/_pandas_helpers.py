@@ -341,7 +341,7 @@ def default_types_mapper(
             # recognized by coverage, hence the pragma. See Issue: #2132
             elif (
                 range_timestamp_dtype is not None
-                and arrow_data_type.equals(  # pragma: NO COVER
+                and arrow_data_type.equals(
                     range_timestamp_dtype.pyarrow_dtype
                 )
             ):

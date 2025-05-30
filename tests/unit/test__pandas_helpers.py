@@ -51,6 +51,7 @@ from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
 from google.cloud.bigquery import schema
 from google.cloud.bigquery._pandas_helpers import determine_requested_streams
+# from google.cloud.bigquery.dtypes import RangeTIMESTAMPDtype # Commented out as it causes ImportError and test uses a mock
 
 pyarrow = _versions_helpers.PYARROW_VERSIONS.try_import()
 
@@ -1292,6 +1293,51 @@ def test_dataframe_to_bq_schema_returns_schema_with_pandas_gbq(
     got = module_under_test.dataframe_to_bq_schema(dataframe, [])
     # Don't assert beyond this, since pandas-gbq is now source of truth.
     assert got is not None
+
+
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`") # default_types_mapper is pandas-specific
+def test_default_types_mapper_range_timestamp(module_under_test):
+    """Test default_types_mapper with a mock RangeTIMESTAMPDtype."""
+
+    # Define a duck-typed class that mimics RangeTIMESTAMPDtype's structure
+    # for the purpose of this test, as the actual class import is problematic.
+    class MockRangeTSDtype:
+        def __init__(self):
+            self.pyarrow_dtype = pyarrow.struct(
+                [
+                    ("start", pyarrow.timestamp("us", tz="UTC")),
+                    ("end", pyarrow.timestamp("us", tz="UTC")),
+                ]
+            )
+
+        def __eq__(self, other):
+            if not isinstance(other, MockRangeTSDtype):
+                return NotImplemented
+            return self.pyarrow_dtype == other.pyarrow_dtype
+
+    # PyArrow dtype that the mapper will receive
+    range_timestamp_pyarrow_dtype = pyarrow.struct(
+        [
+            ("start", pyarrow.timestamp("us", tz="UTC")),
+            ("end", pyarrow.timestamp("us", tz="UTC")),
+        ]
+    )
+
+    # Instantiate the mock RangeTIMESTAMPDtype
+    mock_range_ts_dtype = MockRangeTSDtype()
+
+    # Get the mapper function from the module_under_test fixture
+    mapper = module_under_test.default_types_mapper(
+        range_timestamp_dtype=mock_range_ts_dtype
+    )
+
+    # Call the mapper with the created PyArrow struct
+    result_dtype = mapper(range_timestamp_pyarrow_dtype)
+
+    # Assert the result
+    assert isinstance(result_dtype, MockRangeTSDtype)
+    assert result_dtype == mock_range_ts_dtype
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")

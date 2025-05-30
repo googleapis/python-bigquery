@@ -1696,6 +1696,9 @@ class TestQueryJob(_Base):
             "schema": {"fields": [{"name": "col1", "type": "STRING"}]},
             "totalRows": "7",
         }
+
+        # Although the result has 7 rows, the response only returns 6, because
+        # start_index is 1.
         tabledata_resource_1 = {
             "totalRows": "7",
             "pageToken": "page_token_1",

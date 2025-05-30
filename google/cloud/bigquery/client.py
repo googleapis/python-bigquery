@@ -884,7 +884,7 @@ class Client(ClientWithProject):
                 before using ``retry``.
             dataset_view (Optional[google.cloud.bigquery.enums.DatasetView]):
                 Specifies the view that determines which dataset information is
-                returned. By default, datase metadata (e.g. friendlyName, description,
+                returned. By default, dataset metadata (e.g. friendlyName, description,
                 labels, etc) and ACL information are returned. This argument can
                 take on the following possible enum values.
 

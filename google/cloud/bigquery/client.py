@@ -90,7 +90,8 @@ from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery.enums import AutoRowIDs
+
+from google.cloud.bigquery.enums import AutoRowIDs, DatasetView, UpdateMode
 from google.cloud.bigquery.format_options import ParquetOptions
 from google.cloud.bigquery.job import (
     CopyJob,
@@ -864,6 +865,7 @@ class Client(ClientWithProject):
         dataset_ref: Union[DatasetReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
+        dataset_view: Optional[DatasetView] = None,
     ) -> Dataset:
         """Fetch the dataset referenced by ``dataset_ref``
 
@@ -881,7 +883,21 @@ class Client(ClientWithProject):
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
+            dataset_view (Optional[google.cloud.bigquery.enums.DatasetView]):
+                Specifies the view that determines which dataset information is
+                returned. By default, dataset metadata (e.g. friendlyName, description,
+                labels, etc) and ACL information are returned. This argument can
+                take on the following possible enum values.
 
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.ACL`:
+                    Includes dataset metadata and the ACL.
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.FULL`:
+                    Includes all dataset metadata, including the ACL and table metadata.
+                    This view is not supported by the `datasets.list` API method.
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.METADATA`:
+                    Includes basic dataset metadata, but not the ACL.
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.DATASET_VIEW_UNSPECIFIED`:
+                    The server will decide which view to use. Currently defaults to FULL.
         Returns:
             google.cloud.bigquery.dataset.Dataset:
                 A ``Dataset`` instance.
@@ -891,6 +907,12 @@ class Client(ClientWithProject):
                 dataset_ref, default_project=self.project
             )
         path = dataset_ref.path
+
+        if dataset_view:
+            query_params = {"datasetView": dataset_view.value}
+        else:
+            query_params = {}
+
         span_attributes = {"path": path}
         api_response = self._call_api(
             retry,
@@ -899,6 +921,7 @@ class Client(ClientWithProject):
             method="GET",
             path=path,
             timeout=timeout,
+            query_params=query_params,
         )
         return Dataset.from_api_repr(api_response)
 
@@ -1198,6 +1221,7 @@ class Client(ClientWithProject):
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
+        update_mode: Optional[UpdateMode] = None,
     ) -> Dataset:
         """Change some fields of a dataset.
 
@@ -1237,6 +1261,20 @@ class Client(ClientWithProject):
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
+            update_mode (Optional[google.cloud.bigquery.enums.UpdateMode]):
+                Specifies the kind of information to update in a dataset.
+                By default, dataset metadata (e.g. friendlyName, description,
+                labels, etc) and ACL information are updated. This argument can
+                take on the following possible enum values.
+
+                * :attr:`~google.cloud.bigquery.enums.UPDATE_MODE_UNSPECIFIED`:
+                    The default value. Behavior defaults to UPDATE_FULL.
+                * :attr:`~google.cloud.bigquery.enums.UpdateMode.UPDATE_METADATA`:
+                    Includes metadata information for the dataset, such as friendlyName, description, labels, etc.
+                * :attr:`~google.cloud.bigquery.enums.UpdateMode.UPDATE_ACL`:
+                    Includes ACL information for the dataset, which defines dataset access for one or more entities.
+                * :attr:`~google.cloud.bigquery.enums.UpdateMode.UPDATE_FULL`:
+                    Includes both dataset metadata and ACL information.
 
         Returns:
             google.cloud.bigquery.dataset.Dataset:
@@ -1250,6 +1288,11 @@ class Client(ClientWithProject):
         path = dataset.path
         span_attributes = {"path": path, "fields": fields}
 
+        if update_mode:
+            query_params = {"updateMode": update_mode.value}
+        else:
+            query_params = {}
+
         api_response = self._call_api(
             retry,
             span_name="BigQuery.updateDataset",
@@ -1259,6 +1302,7 @@ class Client(ClientWithProject):
             data=partial,
             headers=headers,
             timeout=timeout,
+            query_params=query_params,
         )
         return Dataset.from_api_repr(api_response)
 

@@ -90,7 +90,8 @@ from google.cloud.bigquery._job_helpers import make_job_id as _make_job_id
 from google.cloud.bigquery.dataset import Dataset
 from google.cloud.bigquery.dataset import DatasetListItem
 from google.cloud.bigquery.dataset import DatasetReference
-from google.cloud.bigquery.enums import AutoRowIDs
+
+from google.cloud.bigquery.enums import AutoRowIDs, DatasetView, UpdateMode
 from google.cloud.bigquery.format_options import ParquetOptions
 from google.cloud.bigquery.job import (
     CopyJob,
@@ -221,6 +222,10 @@ class Client(ClientWithProject):
         client_options (Optional[Union[google.api_core.client_options.ClientOptions, Dict]]):
             Client options used to set user options on the client. API Endpoint
             should be set through client_options.
+        default_job_creation_mode (Optional[str]):
+            Sets the default job creation mode used by query methods such as
+            query_and_wait().  For lightweight queries, JOB_CREATION_OPTIONAL is
+            generally recommended.
 
     Raises:
         google.auth.exceptions.DefaultCredentialsError:
@@ -243,6 +248,7 @@ class Client(ClientWithProject):
         client_options: Optional[
             Union[google.api_core.client_options.ClientOptions, Dict[str, Any]]
         ] = None,
+        default_job_creation_mode: Optional[str] = None,
     ) -> None:
         if client_options is None:
             client_options = {}
@@ -277,6 +283,7 @@ class Client(ClientWithProject):
         self._connection = Connection(self, **kw_args)
         self._location = location
         self._default_load_job_config = copy.deepcopy(default_load_job_config)
+        self.default_job_creation_mode = default_job_creation_mode
 
         # Use property setter so validation can run.
         self.default_query_job_config = default_query_job_config
@@ -285,6 +292,15 @@ class Client(ClientWithProject):
     def location(self):
         """Default location for jobs / datasets / tables."""
         return self._location
+
+    @property
+    def default_job_creation_mode(self):
+        """Default job creation mode used for query execution."""
+        return self._default_job_creation_mode
+
+    @default_job_creation_mode.setter
+    def default_job_creation_mode(self, value: Optional[str]):
+        self._default_job_creation_mode = value
 
     @property
     def default_query_job_config(self) -> Optional[QueryJobConfig]:
@@ -849,6 +865,7 @@ class Client(ClientWithProject):
         dataset_ref: Union[DatasetReference, str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
+        dataset_view: Optional[DatasetView] = None,
     ) -> Dataset:
         """Fetch the dataset referenced by ``dataset_ref``
 
@@ -866,7 +883,21 @@ class Client(ClientWithProject):
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
+            dataset_view (Optional[google.cloud.bigquery.enums.DatasetView]):
+                Specifies the view that determines which dataset information is
+                returned. By default, dataset metadata (e.g. friendlyName, description,
+                labels, etc) and ACL information are returned. This argument can
+                take on the following possible enum values.
 
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.ACL`:
+                    Includes dataset metadata and the ACL.
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.FULL`:
+                    Includes all dataset metadata, including the ACL and table metadata.
+                    This view is not supported by the `datasets.list` API method.
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.METADATA`:
+                    Includes basic dataset metadata, but not the ACL.
+                * :attr:`~google.cloud.bigquery.enums.DatasetView.DATASET_VIEW_UNSPECIFIED`:
+                    The server will decide which view to use. Currently defaults to FULL.
         Returns:
             google.cloud.bigquery.dataset.Dataset:
                 A ``Dataset`` instance.
@@ -876,6 +907,12 @@ class Client(ClientWithProject):
                 dataset_ref, default_project=self.project
             )
         path = dataset_ref.path
+
+        if dataset_view:
+            query_params = {"datasetView": dataset_view.value}
+        else:
+            query_params = {}
+
         span_attributes = {"path": path}
         api_response = self._call_api(
             retry,
@@ -884,6 +921,7 @@ class Client(ClientWithProject):
             method="GET",
             path=path,
             timeout=timeout,
+            query_params=query_params,
         )
         return Dataset.from_api_repr(api_response)
 
@@ -1183,6 +1221,7 @@ class Client(ClientWithProject):
         fields: Sequence[str],
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
+        update_mode: Optional[UpdateMode] = None,
     ) -> Dataset:
         """Change some fields of a dataset.
 
@@ -1222,6 +1261,20 @@ class Client(ClientWithProject):
             timeout (Optional[float]):
                 The number of seconds to wait for the underlying HTTP transport
                 before using ``retry``.
+            update_mode (Optional[google.cloud.bigquery.enums.UpdateMode]):
+                Specifies the kind of information to update in a dataset.
+                By default, dataset metadata (e.g. friendlyName, description,
+                labels, etc) and ACL information are updated. This argument can
+                take on the following possible enum values.
+
+                * :attr:`~google.cloud.bigquery.enums.UPDATE_MODE_UNSPECIFIED`:
+                    The default value. Behavior defaults to UPDATE_FULL.
+                * :attr:`~google.cloud.bigquery.enums.UpdateMode.UPDATE_METADATA`:
+                    Includes metadata information for the dataset, such as friendlyName, description, labels, etc.
+                * :attr:`~google.cloud.bigquery.enums.UpdateMode.UPDATE_ACL`:
+                    Includes ACL information for the dataset, which defines dataset access for one or more entities.
+                * :attr:`~google.cloud.bigquery.enums.UpdateMode.UPDATE_FULL`:
+                    Includes both dataset metadata and ACL information.
 
         Returns:
             google.cloud.bigquery.dataset.Dataset:
@@ -1235,6 +1288,11 @@ class Client(ClientWithProject):
         path = dataset.path
         span_attributes = {"path": path, "fields": fields}
 
+        if update_mode:
+            query_params = {"updateMode": update_mode.value}
+        else:
+            query_params = {}
+
         api_response = self._call_api(
             retry,
             span_name="BigQuery.updateDataset",
@@ -1244,6 +1302,7 @@ class Client(ClientWithProject):
             data=partial,
             headers=headers,
             timeout=timeout,
+            query_params=query_params,
         )
         return Dataset.from_api_repr(api_response)
 
@@ -1986,6 +2045,7 @@ class Client(ClientWithProject):
         location: Optional[str] = None,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         page_size: int = 0,
+        start_index: Optional[int] = None,
     ) -> _QueryResults:
         """Get the query results object for a query job.
 
@@ -2004,9 +2064,12 @@ class Client(ClientWithProject):
                 before using ``retry``. If set, this connection timeout may be
                 increased to a minimum value. This prevents retries on what
                 would otherwise be a successful response.
-            page_size (int):
+            page_size (Optional[int]):
                 Maximum number of rows in a single response. See maxResults in
                 the jobs.getQueryResults REST API.
+            start_index (Optional[int]):
+                Zero-based index of the starting row. See startIndex in the
+                jobs.getQueryResults REST API.
 
         Returns:
             google.cloud.bigquery.query._QueryResults:
@@ -2035,6 +2098,9 @@ class Client(ClientWithProject):
 
         if location is not None:
             extra_params["location"] = location
+
+        if start_index is not None:
+            extra_params["startIndex"] = start_index
 
         path = "/projects/{}/queries/{}".format(project, job_id)
 
@@ -3531,13 +3597,6 @@ class Client(ClientWithProject):
         max_results: Optional[int] = None,
     ) -> RowIterator:
         """Run the query, wait for it to finish, and return the results.
-
-        While ``jobCreationMode=JOB_CREATION_OPTIONAL`` is in preview in the
-        ``jobs.query`` REST API, use the default ``jobCreationMode`` unless
-        the environment variable ``QUERY_PREVIEW_ENABLED=true``. After
-        ``jobCreationMode`` is GA, this method will always use
-        ``jobCreationMode=JOB_CREATION_OPTIONAL``. See:
-        https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
 
         Args:
             query (str):

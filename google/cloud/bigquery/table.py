@@ -137,9 +137,9 @@ def _reference_getter(table):
     return TableReference(dataset_ref, table.table_id)
 
 
-# TODO: The typehinting for this needs work. Setting this pragma to temporarily
-# manage a pytype issue that came up in another PR. See Issue: #2132
-def _view_use_legacy_sql_getter(table):
+def _view_use_legacy_sql_getter(
+    table: Union["Table", "TableListItem"]
+) -> Optional[bool]:
     """bool: Specifies whether to execute the view with Legacy or Standard SQL.
 
     This boolean specifies whether to execute the view with Legacy SQL
@@ -151,15 +151,16 @@ def _view_use_legacy_sql_getter(table):
         ValueError: For invalid value types.
     """
 
-    view = table._properties.get("view")  # type: ignore
+    view: Optional[Dict[str, Any]] = table._properties.get("view")
     if view is not None:
         # The server-side default for useLegacySql is True.
-        return view.get("useLegacySql", True)  # type: ignore
+        return view.get("useLegacySql", True) if view is not None else True
     # In some cases, such as in a table list no view object is present, but the
     # resource still represents a view. Use the type as a fallback.
     if table.table_type == "VIEW":
         # The server-side default for useLegacySql is True.
         return True
+    return None  # explicit return statement to appease mypy
 
 
 class _TableBase:
@@ -1986,12 +1987,19 @@ class RowIterator(HTTPIterator):
             return response
 
         params = self._get_query_params()
+
+        # If the user has provided page_size and start_index, we need to pass
+        # start_index for the first page, but for all subsequent pages, we
+        # should not pass start_index. We make a shallow copy of params and do
+        # not alter the original, so if the user iterates the results again,
+        # start_index is preserved.
+        params_copy = copy.copy(params)
         if self._page_size is not None:
             if self.page_number and "startIndex" in params:
-                del params["startIndex"]
+                del params_copy["startIndex"]
 
         return self.api_request(
-            method=self._HTTP_METHOD, path=self.path, query_params=params
+            method=self._HTTP_METHOD, path=self.path, query_params=params_copy
         )
 
     @property

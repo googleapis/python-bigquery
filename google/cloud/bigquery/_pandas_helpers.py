@@ -337,8 +337,6 @@ def default_types_mapper(
             ):
                 return range_date_dtype
 
-            # TODO: this section does not have a test yet OR at least not one that is
-            # recognized by coverage, hence the pragma. See Issue: #2132
             elif range_timestamp_dtype is not None and arrow_data_type.equals(
                 range_timestamp_dtype.pyarrow_dtype
             ):

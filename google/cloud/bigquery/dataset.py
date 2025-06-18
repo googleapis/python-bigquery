@@ -588,7 +588,6 @@ class AccessEntry(object):
         role = resource.get("role")
         condition = None
         if "condition" in resource:
-            from google.cloud.bigquery.dataset import Condition
             condition = Condition.from_api_repr(resource["condition"])
 
         entity_type = None

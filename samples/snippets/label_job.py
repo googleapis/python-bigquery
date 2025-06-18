@@ -32,7 +32,5 @@ def label_job() -> None:
     job = client.query(sql, location=location, job_config=config)
     job_id = job.job_id
 
-    job = client.get_job(job_id)  # API request
-
     print(f"Added {job.labels} to {job_id}.")
     # [END bigquery_label_job]

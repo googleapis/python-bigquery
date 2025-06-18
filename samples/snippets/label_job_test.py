@@ -24,7 +24,6 @@ if typing.TYPE_CHECKING:
 def test_label_job(
     capsys: "pytest.CaptureFixture[str]",
 ) -> None:
-
     label_job.label_job()
 
     out, _ = capsys.readouterr()

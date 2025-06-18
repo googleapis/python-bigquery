@@ -1767,3 +1767,26 @@ class TestCondition:
             description=None,
         )
         assert hash(cond1) is not None
+        
+    def test_access_entry_view_equality(self):
+        
+        from google.cloud import bigquery
+        
+        entry1 = bigquery.dataset.AccessEntry(
+            entity_type="view",
+            entity_id={
+                "projectId": "my_project",
+                "datasetId": "my_dataset",
+                "tableId": "my_table",
+            },
+        )
+        entry2 = bigquery.dataset.AccessEntry.from_api_repr({
+            "view": {
+                "projectId": "my_project",
+                "datasetId": "my_dataset",
+                "tableId": "my_table",
+            }
+        })
+
+        assert entry1 == entry2
+

@@ -506,7 +506,20 @@ class AccessEntry(object):
     def __eq__(self, other):
         if not isinstance(other, AccessEntry):
             return NotImplemented
-        return self._key() == other._key()
+
+        return (
+            self.role == other.role
+            and self.entity_type == other.entity_type
+            and self._normalize_entity_id(self.entity_id) == self._normalize_entity_id(other.entity_id)
+            and self.condition == other.condition
+        )
+
+    @staticmethod
+    def _normalize_entity_id(value):
+        """Ensure consistent equality for dicts like 'view'."""
+        if isinstance(value, dict):
+            return dict(sorted(value.items()))
+        return value
 
     def __ne__(self, other):
         return not self == other
@@ -542,8 +555,22 @@ class AccessEntry(object):
         Returns:
             Dict[str, object]: Access entry represented as an API resource
         """
-        resource = copy.deepcopy(self._properties)
+        resource = {}
+
+        if self.role is not None:
+            resource["role"] = self.role
+        if self.entity_type is not None:
+            resource[self.entity_type] = self.entity_id
+        if self.condition is not None:
+            resource["condition"] = self.condition.to_api_repr()
+
+        # Include any extra items preserved in _properties
+        for k, v in self._properties.items():
+            if k not in resource:
+                resource[k] = v
+
         return resource
+        
 
     @classmethod
     def from_api_repr(cls, resource: dict) -> "AccessEntry":
@@ -557,10 +584,33 @@ class AccessEntry(object):
             google.cloud.bigquery.dataset.AccessEntry:
                 Access entry parsed from ``resource``.
         """
+        
+        role = resource.get("role")
+        condition = None
+        if "condition" in resource:
+            from google.cloud.bigquery.dataset import Condition
+            condition = Condition.from_api_repr(resource["condition"])
 
-        access_entry = cls()
-        access_entry._properties = resource.copy()
-        return access_entry
+        entity_type = None
+        entity_id = None
+
+        for key, value in resource.items():
+            if key in ("role", "condition"):
+                continue
+            entity_type = key
+            entity_id = value
+            break
+
+        entry = cls(
+            role=role,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            condition=condition,
+        )
+
+        # Preserve additional _properties for roundtrip consistency:
+        entry._properties = dict(resource)
+        return entry
 
 
 class Dataset(object):

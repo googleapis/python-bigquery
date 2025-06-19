@@ -17,6 +17,7 @@
 from __future__ import absolute_import
 
 import copy
+import json
 
 import typing
 from typing import Optional, List, Dict, Any, Union
@@ -518,7 +519,7 @@ class AccessEntry(object):
     def _normalize_entity_id(value):
         """Ensure consistent equality for dicts like 'view'."""
         if isinstance(value, dict):
-            return dict(sorted(value.items()))
+            return json.dumps(value, sort_keys=True)
         return value
 
     def __ne__(self, other):

@@ -507,7 +507,6 @@ class AccessEntry(object):
     def __eq__(self, other):
         if not isinstance(other, AccessEntry):
             return NotImplemented
-
         return (
             self.role == other.role
             and self.entity_type == other.entity_type
@@ -571,7 +570,6 @@ class AccessEntry(object):
                 resource[k] = v
 
         return resource
-        
 
     @classmethod
     def from_api_repr(cls, resource: dict) -> "AccessEntry":
@@ -585,7 +583,6 @@ class AccessEntry(object):
             google.cloud.bigquery.dataset.AccessEntry:
                 Access entry parsed from ``resource``.
         """
-        
         role = resource.get("role")
         condition = None
         if "condition" in resource:
@@ -595,7 +592,7 @@ class AccessEntry(object):
         entity_id = None
 
         for key, value in resource.items():
-            if key in ("role", "condition"):
+            if key in ("role","condition"):
                 continue
             entity_type = key
             entity_id = value

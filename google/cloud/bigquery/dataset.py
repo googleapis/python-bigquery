@@ -555,20 +555,7 @@ class AccessEntry(object):
         Returns:
             Dict[str, object]: Access entry represented as an API resource
         """
-        resource = {}
-
-        if self.role is not None:
-            resource["role"] = self.role
-        if self.entity_type is not None:
-            resource[self.entity_type] = self.entity_id
-        if self.condition is not None:
-            resource["condition"] = self.condition.to_api_repr()
-
-        # Include any extra items preserved in _properties
-        for k, v in self._properties.items():
-            if k not in resource:
-                resource[k] = v
-
+        resource = copy.deepcopy(self._properties)
         return resource
 
     @classmethod
@@ -583,31 +570,9 @@ class AccessEntry(object):
             google.cloud.bigquery.dataset.AccessEntry:
                 Access entry parsed from ``resource``.
         """
-        role = resource.get("role")
-        condition = None
-        if "condition" in resource:
-            condition = Condition.from_api_repr(resource["condition"])
-
-        entity_type = None
-        entity_id = None
-
-        for key, value in resource.items():
-            if key in ("role","condition"):
-                continue
-            entity_type = key
-            entity_id = value
-            break
-
-        entry = cls(
-            role=role,
-            entity_type=entity_type,
-            entity_id=entity_id,
-            condition=condition,
-        )
-
-        # Preserve additional _properties for roundtrip consistency:
-        entry._properties = dict(resource)
-        return entry
+        access_entry = cls()
+        access_entry._properties = resource.copy()
+        return access_entry
 
 
 class Dataset(object):

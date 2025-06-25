@@ -510,7 +510,8 @@ class AccessEntry(object):
         return (
             self.role == other.role
             and self.entity_type == other.entity_type
-            and self._normalize_entity_id(self.entity_id) == self._normalize_entity_id(other.entity_id)
+            and self._normalize_entity_id(self.entity_id)
+            == self._normalize_entity_id(other.entity_id)
             and self.condition == other.condition
         )
 

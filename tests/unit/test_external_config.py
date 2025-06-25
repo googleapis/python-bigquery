@@ -25,6 +25,11 @@ import pytest
 
 class TestExternalConfig(unittest.TestCase):
     SOURCE_URIS = ["gs://foo", "gs://bar"]
+    TIME_ZONE = "America/Los_Angeles"
+    DATE_FORMAT = "MM/DD/YYYY"
+    DATETIME_FORMAT = "MM/DD/YYYY HH24:MI:SS"
+    TIME_FORMAT = "HH24:MI:SS"
+    TIMESTAMP_FORMAT = "MM/DD/YYYY HH24:MI:SS.FF6 TZR"
 
     BASE_RESOURCE = {
         "sourceFormat": "",
@@ -33,6 +38,11 @@ class TestExternalConfig(unittest.TestCase):
         "autodetect": True,
         "ignoreUnknownValues": False,
         "compression": "compression",
+        "timeZone": TIME_ZONE,
+        "dateFormat": DATE_FORMAT,
+        "datetimeFormat": DATETIME_FORMAT,
+        "timeFormat": TIME_FORMAT,
+        "timestampFormat": TIMESTAMP_FORMAT,
     }
 
     def test_from_api_repr_base(self):
@@ -78,6 +88,11 @@ class TestExternalConfig(unittest.TestCase):
         ec.compression = "compression"
         ec.connection_id = "path/to/connection"
         ec.schema = [schema.SchemaField("full_name", "STRING", mode="REQUIRED")]
+        ec.time_zone = self.TIME_ZONE
+        ec.date_format = self.DATE_FORMAT
+        ec.datetime_format = self.DATETIME_FORMAT
+        ec.time_format = self.TIME_FORMAT
+        ec.timestamp_format = self.TIMESTAMP_FORMAT
 
         exp_schema = {
             "fields": [{"name": "full_name", "type": "STRING", "mode": "REQUIRED"}]
@@ -92,6 +107,11 @@ class TestExternalConfig(unittest.TestCase):
             "compression": "compression",
             "connectionId": "path/to/connection",
             "schema": exp_schema,
+            "timeZone": self.TIME_ZONE,
+            "dateFormat": self.DATE_FORMAT,
+            "datetimeFormat": self.DATETIME_FORMAT,
+            "timeFormat": self.TIME_FORMAT,
+            "timestampFormat": self.TIMESTAMP_FORMAT,
         }
         self.assertEqual(got_resource, exp_resource)
 
@@ -127,6 +147,11 @@ class TestExternalConfig(unittest.TestCase):
         self.assertEqual(ec.ignore_unknown_values, False)
         self.assertEqual(ec.max_bad_records, 17)
         self.assertEqual(ec.source_uris, self.SOURCE_URIS)
+        self.assertEqual(ec.time_zone, self.TIME_ZONE)
+        self.assertEqual(ec.date_format, self.DATE_FORMAT)
+        self.assertEqual(ec.datetime_format, self.DATETIME_FORMAT)
+        self.assertEqual(ec.time_format, self.TIME_FORMAT)
+        self.assertEqual(ec.timestamp_format, self.TIMESTAMP_FORMAT)
 
     def test_to_api_repr_source_format(self):
         ec = external_config.ExternalConfig("CSV")
@@ -238,6 +263,9 @@ class TestExternalConfig(unittest.TestCase):
         }
         self.assertEqual(got_resource, expected_resource)
 
+    NULL_MARKERS = ["", "N/A"]
+    SOURCE_COLUMN_NAME_MATCH_OPTION = "NAME"
+
     def test_from_api_repr_csv(self):
         resource = _copy_and_update(
             self.BASE_RESOURCE,
@@ -251,6 +279,8 @@ class TestExternalConfig(unittest.TestCase):
                     "allowJaggedRows": False,
                     "encoding": "encoding",
                     "preserveAsciiControlCharacters": False,
+                    "nullMarkers": self.NULL_MARKERS,
+                    "sourceColumnMatch": self.SOURCE_COLUMN_NAME_MATCH_OPTION,
                 },
             },
         )
@@ -267,6 +297,11 @@ class TestExternalConfig(unittest.TestCase):
         self.assertEqual(ec.options.allow_jagged_rows, False)
         self.assertEqual(ec.options.encoding, "encoding")
         self.assertEqual(ec.options.preserve_ascii_control_characters, False)
+        self.assertEqual(ec.options.null_markers, self.NULL_MARKERS)
+        self.assertEqual(
+            ec.options.source_column_name_match_option,
+            self.SOURCE_COLUMN_NAME_MATCH_OPTION,
+        )
 
         got_resource = ec.to_api_repr()
 
@@ -288,6 +323,10 @@ class TestExternalConfig(unittest.TestCase):
         options.skip_leading_rows = 123
         options.allow_jagged_rows = False
         options.preserve_ascii_control_characters = False
+        options.null_markers = self.NULL_MARKERS
+        options.source_column_name_match_option = (
+            self.SOURCE_COLUMN_NAME_MATCH_OPTION
+        )
         ec.csv_options = options
 
         exp_resource = {
@@ -300,6 +339,8 @@ class TestExternalConfig(unittest.TestCase):
                 "allowJaggedRows": False,
                 "encoding": "encoding",
                 "preserveAsciiControlCharacters": False,
+                "nullMarkers": self.NULL_MARKERS,
+                "sourceColumnMatch": self.SOURCE_COLUMN_NAME_MATCH_OPTION,
             },
         }
 
@@ -861,6 +902,8 @@ class CSVOptions(unittest.TestCase):
         options.allow_jagged_rows = False
         options.encoding = "UTF-8"
         options.preserve_ascii_control_characters = False
+        options.null_markers = ["NA"]
+        options.source_column_name_match_option = "POSITION"
 
         resource = options.to_api_repr()
 
@@ -874,6 +917,8 @@ class CSVOptions(unittest.TestCase):
                 "allowJaggedRows": False,
                 "encoding": "UTF-8",
                 "preserveAsciiControlCharacters": False,
+                "nullMarkers": ["NA"],
+                "sourceColumnMatch": "POSITION",
             },
         )
 

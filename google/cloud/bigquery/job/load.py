@@ -30,6 +30,7 @@ from google.cloud.bigquery.job.base import _AsyncJob
 from google.cloud.bigquery.job.base import _JobConfig
 from google.cloud.bigquery.job.base import _JobReference
 from google.cloud.bigquery.query import ConnectionProperty
+from google.cloud.bigquery.enums import SourceColumnMatch
 
 
 class ColumnNameCharacterMap:
@@ -550,8 +551,9 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def time_zone(self):
-        """Optional[str]: Default time zone that will apply when parsing
-        timestamp values that have no specific time zone.
+        """Optional[str]: Default time zone that will apply when parsing timestamp
+        values that have no specific time zone. This option is valid for CSV and
+        JSON sources.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.time_zone
@@ -565,6 +567,7 @@ class LoadJobConfig(_JobConfig):
     @property
     def date_format(self) -> Optional[str]:
         """Optional[str]: Date format used for parsing DATE values.
+        This option is valid for CSV and JSON sources.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.date_format
@@ -578,6 +581,7 @@ class LoadJobConfig(_JobConfig):
     @property
     def datetime_format(self) -> Optional[str]:
         """Optional[str]: Date format used for parsing DATETIME values.
+        This option is valid for CSV and JSON sources.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.datetime_format
@@ -591,6 +595,7 @@ class LoadJobConfig(_JobConfig):
     @property
     def time_format(self) -> Optional[str]:
         """Optional[str]: Date format used for parsing TIME values.
+        This option is valid for CSV and JSON sources.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.time_format
@@ -604,6 +609,7 @@ class LoadJobConfig(_JobConfig):
     @property
     def timestamp_format(self) -> Optional[str]:
         """Optional[str]: Date format used for parsing TIMESTAMP values.
+        This option is valid for CSV and JSON sources.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.timestamp_format
@@ -620,6 +626,15 @@ class LoadJobConfig(_JobConfig):
 
         (CSV only).
 
+        null_marker and null_markers can't be set at the same time.
+        If null_marker is set, null_markers has to be not set.
+        If null_markers is set, null_marker has to be not set.
+        If both null_marker and null_markers are set at the same time, a user
+        error would be thrown.
+        Any strings listed in null_markers, including
+        empty string would be interpreted as SQL NULL. This applies to all column
+        types.
+
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.null_markers
         """
@@ -630,21 +645,30 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("nullMarkers", value)
 
     @property
-    def source_column_name_match_option(self) -> Optional[str]:
-        """Optional[str]: Controls the strategy used to match loaded columns to the schema.
+    def source_column_match_strategy(self) -> Optional[SourceColumnMatch]:
+        """Optional[google.cloud.bigquery.enums.SourceColumnMatch]: Controls the strategy
+        used to match loaded columns to the schema. If not set, a sensible default is
+        chosen based on how the schema is provided. If autodetect is used, then
+        columns are matched by name. Otherwise, columns are matched by position.
+        This is done to keep the behavior backward-compatible.
 
         (CSV only).
-        Acceptable values are based on the SourceColumnMatch enum in the proto.
-        Example values: "MATCH_BY_NAME", "MATCH_BY_POSITION".
 
         See:
-        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.source_column_match
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.source_column_match_strategy
         """
-        return self._get_sub_prop("sourceColumnMatch")
+        value = self._get_sub_prop("sourceColumnMatchStrategy")
+        if value is not None:
+            return SourceColumnMatch(value)
+        return None
 
-    @source_column_name_match_option.setter
-    def source_column_name_match_option(self, value: Optional[str]):
-        self._set_sub_prop("sourceColumnMatch", value)
+    @source_column_match_strategy.setter
+    def source_column_match_strategy(self, value: Optional[SourceColumnMatch]):
+        if value is not None and not isinstance(value, SourceColumnMatch):
+            raise TypeError(
+                "value must be a google.cloud.bigquery.enums.SourceColumnMatch or None"
+            )
+        self._set_sub_prop("sourceColumnMatchStrategy", value.value if value else None)
 
     @property
     def time_partitioning(self):
@@ -1030,11 +1054,11 @@ class LoadJob(_AsyncJob):
         return self.configuration.null_markers
 
     @property
-    def source_column_name_match_option(self):
+    def source_column_match_strategy(self):
         """See
-        :attr:`google.cloud.bigquery.job.LoadJobConfig.source_column_name_match_option`.
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.source_column_match_strategy`.
         """
-        return self.configuration.source_column_name_match_option
+        return self.configuration.source_column_match_strategy
 
     @property
     def schema_update_options(self):

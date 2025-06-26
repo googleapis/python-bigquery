@@ -476,11 +476,19 @@ class CSVOptions(object):
 
     @property
     def null_markers(self) -> Optional[List[str]]:
-        """Optional[List[str]]: A list of strings represented as SQL NULL value.
+        """Optional[List[str]]: A list of strings represented as SQL NULL value in a CSV file.
+
+        null_marker and null_markers can't be set at the same time.
+        If null_marker is set, null_markers has to be not set.
+        If null_markers is set, null_marker has to be not set.
+        If both null_marker and null_markers are set at the same time, a user
+        error would be thrown.
+        Any strings listed in null_markers, including
+        empty string would be interpreted as SQL NULL. This applies to all column
+        types.
 
         See
-        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#CsvOptions.FIELDS.null_marker
-        (Note: API doc refers to null_marker singular, but proto is null_markers plural and a list)
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#CsvOptions.FIELDS.null_markers
         """
         return self._properties.get("nullMarkers")
 
@@ -490,13 +498,19 @@ class CSVOptions(object):
 
     @property
     def source_column_name_match_option(self) -> Optional[str]:
-        """Optional[str]: Controls the strategy used to match loaded columns to the schema.
-        Acceptable values are: "POSITION", "NAME".
+        """Optional[str]: Controls the strategy used to match loaded columns to the schema. If not
+        set, a sensible default is chosen based on how the schema is provided. If
+        autodetect is used, then columns are matched by name. Otherwise, columns
+        are matched by position. This is done to keep the behavior
+        backward-compatible.
+        Acceptable values are:
+          POSITION - matches by position. This assumes that the columns are ordered
+              the same way as the schema.
+          NAME - matches by name. This reads the header row as column names and
+              reorders columns to match the field names in the schema.
 
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.source_column_match
-        (Note: This field is documented under ExternalDataConfiguration in the REST API docs but seems
-         more appropriate here for CSVOptions, matching the proto structure for external tables)
         """
         return self._properties.get("sourceColumnMatch")
 

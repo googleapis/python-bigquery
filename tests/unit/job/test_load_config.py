@@ -924,21 +924,34 @@ class TestLoadJobConfig(_Base):
         config.null_markers = null_markers
         self.assertEqual(config._properties["load"]["nullMarkers"], null_markers)
 
-    def test_source_column_name_match_option_missing(self):
+    def test_source_column_match_strategy_missing(self):
         config = self._get_target_class()()
-        self.assertIsNone(config.source_column_name_match_option)
+        self.assertIsNone(config.source_column_match_strategy)
 
-    def test_source_column_name_match_option_hit(self):
-        option = "MATCH_BY_NAME"
-        config = self._get_target_class()()
-        config._properties["load"]["sourceColumnMatch"] = option
-        self.assertEqual(config.source_column_name_match_option, option)
+    def test_source_column_match_strategy_hit(self):
+        from google.cloud.bigquery.enums import SourceColumnMatch
 
-    def test_source_column_name_match_option_setter(self):
-        option = "MATCH_BY_POSITION"
+        option_enum = SourceColumnMatch.NAME
         config = self._get_target_class()()
-        config.source_column_name_match_option = option
-        self.assertEqual(config._properties["load"]["sourceColumnMatch"], option)
+        # Assume API stores the string value of the enum
+        config._properties["load"]["sourceColumnMatchStrategy"] = option_enum.value
+        self.assertEqual(config.source_column_match_strategy, option_enum)
+
+    def test_source_column_match_strategy_setter(self):
+        from google.cloud.bigquery.enums import SourceColumnMatch
+
+        option_enum = SourceColumnMatch.POSITION
+        config = self._get_target_class()()
+        config.source_column_match_strategy = option_enum
+        # Assert that the string value of the enum is stored
+        self.assertEqual(
+            config._properties["load"]["sourceColumnMatchStrategy"], option_enum.value
+        )
+
+    def test_source_column_match_strategy_setter_invalid_type(self):
+        config = self._get_target_class()()
+        with self.assertRaises(TypeError):
+            config.source_column_match_strategy = "INVALID_STRING_TYPE"
 
     def test_parquet_options_missing(self):
         config = self._get_target_class()()

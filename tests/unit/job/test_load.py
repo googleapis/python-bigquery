@@ -42,7 +42,7 @@ class TestLoadJob(_Base):
         self.DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
         self.TIME_FORMAT = "%H:%M:%S"
         self.TIMESTAMP_FORMAT = "YYYY-MM-DD HH:MM:SS.SSSSSSZ"
-        self.NULL_MARKERS = ["N/A", "\\N"]
+        self.NULL_MARKERS = ["N/A", "NA"]
         self.SOURCE_COLUMN_NAME_MATCH_OPTION = "MATCH_BY_NAME"
 
     def _make_resource(self, started=False, ended=False):

@@ -624,8 +624,6 @@ class LoadJobConfig(_JobConfig):
     def null_markers(self) -> Optional[List[str]]:
         """Optional[List[str]]: A list of strings represented as SQL NULL value in a CSV file.
 
-        (CSV only).
-
         null_marker and null_markers can't be set at the same time.
         If null_marker is set, null_markers has to be not set.
         If null_markers is set, null_marker has to be not set.
@@ -645,14 +643,16 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("nullMarkers", value)
 
     @property
-    def source_column_match_strategy(self) -> Optional[SourceColumnMatch]:
-        """Optional[google.cloud.bigquery.enums.SourceColumnMatch]: Controls the strategy
-        used to match loaded columns to the schema. If not set, a sensible default is
-        chosen based on how the schema is provided. If autodetect is used, then
-        columns are matched by name. Otherwise, columns are matched by position.
-        This is done to keep the behavior backward-compatible.
-
-        (CSV only).
+    def source_column_match(self) -> Optional[SourceColumnMatch]:
+        """Optional[google.cloud.bigquery.enums.SourceColumnMatch]: Controls the strategy used to match
+        loaded columns to the schema. If not set, a sensible default is chosen based on how the schema
+        is provided. If autodetect is used, then columns are matched by name. Otherwise, columns
+        are matched by position. This is done to keep the behavior backward-compatible.
+        Acceptable values are:
+          POSITION - matches by position. This assumes that the columns are ordered
+              the same way as the schema.
+          NAME - matches by name. This reads the header row as column names and
+              reorders columns to match the field names in the schema.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.source_column_match_strategy
@@ -662,8 +662,8 @@ class LoadJobConfig(_JobConfig):
             return SourceColumnMatch(value)
         return None
 
-    @source_column_match_strategy.setter
-    def source_column_match_strategy(self, value: Optional[SourceColumnMatch]):
+    @source_column_match.setter
+    def source_column_match(self, value: Optional[SourceColumnMatch]):
         if value is not None and not isinstance(value, SourceColumnMatch):
             raise TypeError(
                 "value must be a google.cloud.bigquery.enums.SourceColumnMatch or None"

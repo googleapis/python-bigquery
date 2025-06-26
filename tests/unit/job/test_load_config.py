@@ -906,7 +906,9 @@ class TestLoadJobConfig(_Base):
         timestamp_format = "YYYY/MM/DD HH24:MI:SS.FF6 TZR"
         config = self._get_target_class()()
         config.timestamp_format = timestamp_format
-        self.assertEqual(config._properties["load"]["timestampFormat"], timestamp_format)
+        self.assertEqual(
+            config._properties["load"]["timestampFormat"], timestamp_format
+        )
 
     def test_null_markers_missing(self):
         config = self._get_target_class()()
@@ -924,34 +926,34 @@ class TestLoadJobConfig(_Base):
         config.null_markers = null_markers
         self.assertEqual(config._properties["load"]["nullMarkers"], null_markers)
 
-    def test_source_column_match_strategy_missing(self):
+    def test_source_column_match_missing(self):
         config = self._get_target_class()()
-        self.assertIsNone(config.source_column_match_strategy)
+        self.assertIsNone(config.source_column_match)
 
-    def test_source_column_match_strategy_hit(self):
+    def test_source_column_match_hit(self):
         from google.cloud.bigquery.enums import SourceColumnMatch
 
         option_enum = SourceColumnMatch.NAME
         config = self._get_target_class()()
         # Assume API stores the string value of the enum
-        config._properties["load"]["sourceColumnMatchStrategy"] = option_enum.value
-        self.assertEqual(config.source_column_match_strategy, option_enum)
+        config._properties["load"]["sourceColumnMatch"] = option_enum.value
+        self.assertEqual(config.source_column_match, option_enum)
 
-    def test_source_column_match_strategy_setter(self):
+    def test_source_column_match_setter(self):
         from google.cloud.bigquery.enums import SourceColumnMatch
 
         option_enum = SourceColumnMatch.POSITION
         config = self._get_target_class()()
-        config.source_column_match_strategy = option_enum
+        config.source_column_match = option_enum
         # Assert that the string value of the enum is stored
         self.assertEqual(
-            config._properties["load"]["sourceColumnMatchStrategy"], option_enum.value
+            config._properties["load"]["sourceColumnMatch"], option_enum.value
         )
 
-    def test_source_column_match_strategy_setter_invalid_type(self):
+    def test_source_column_match_setter_invalid_type(self):
         config = self._get_target_class()()
         with self.assertRaises(TypeError):
-            config.source_column_match_strategy = "INVALID_STRING_TYPE"
+            config.source_column_match = "INVALID_STRING_TYPE"
 
     def test_parquet_options_missing(self):
         config = self._get_target_class()()

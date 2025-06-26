@@ -474,6 +474,8 @@ class CSVOptions(object):
     def skip_leading_rows(self, value):
         self._properties["skipLeadingRows"] = str(value)
 
+    # TODO: null_marker needs to be added to this code base.
+
     @property
     def null_markers(self) -> Optional[List[str]]:
         """Optional[List[str]]: A list of strings represented as SQL NULL value in a CSV file.
@@ -497,7 +499,7 @@ class CSVOptions(object):
         self._properties["nullMarkers"] = value
 
     @property
-    def source_column_name_match_option(self) -> Optional[str]:
+    def source_column_match(self) -> Optional[str]:
         """Optional[str]: Controls the strategy used to match loaded columns to the schema. If not
         set, a sensible default is chosen based on how the schema is provided. If
         autodetect is used, then columns are matched by name. Otherwise, columns
@@ -514,8 +516,8 @@ class CSVOptions(object):
         """
         return self._properties.get("sourceColumnMatch")
 
-    @source_column_name_match_option.setter
-    def source_column_name_match_option(self, value: Optional[str]):
+    @source_column_match.setter
+    def source_column_match(self, value: Optional[str]):
         self._properties["sourceColumnMatch"] = value
 
     def to_api_repr(self) -> dict:

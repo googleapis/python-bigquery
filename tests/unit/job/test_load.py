@@ -43,7 +43,7 @@ class TestLoadJob(_Base):
         self.TIME_FORMAT = "%H:%M:%S"
         self.TIMESTAMP_FORMAT = "YYYY-MM-DD HH:MM:SS.SSSSSSZ"
         self.NULL_MARKERS = ["N/A", "NA"]
-        self.SOURCE_COLUMN_NAME_MATCH_OPTION = "NAME"  # Corrected to actual enum value
+        self.SOURCE_COLUMN_MATCH = "NAME"
 
     def _make_resource(self, started=False, ended=False):
         resource = super(TestLoadJob, self)._make_resource(started, ended)
@@ -55,7 +55,9 @@ class TestLoadJob(_Base):
         config["timeFormat"] = self.TIME_FORMAT
         config["timestampFormat"] = self.TIMESTAMP_FORMAT
         config["nullMarkers"] = self.NULL_MARKERS
-        config["sourceColumnMatchStrategy"] = self.SOURCE_COLUMN_NAME_MATCH_OPTION  # Keep value as string for mock API repr
+        config[
+            "sourceColumnMatch"
+        ] = self.SOURCE_COLUMN_MATCH  # Keep value as string for mock API repr
         config["destinationTable"] = {
             "projectId": self.PROJECT,
             "datasetId": self.DS_ID,
@@ -191,14 +193,14 @@ class TestLoadJob(_Base):
             self.assertEqual(job.null_markers, config["nullMarkers"])
         else:
             self.assertIsNone(job.null_markers)
-        if "sourceColumnMatchStrategy" in config:
-            # job.source_column_match_strategy will be an Enum, config[...] is a string
+        if "sourceColumnMatch" in config:
+            # job.source_column_match will be an Enum, config[...] is a string
             self.assertEqual(
-                job.source_column_match_strategy.value,
-                config["sourceColumnMatchStrategy"],
+                job.source_column_match.value,
+                config["sourceColumnMatch"],
             )
         else:
-            self.assertIsNone(job.source_column_match_strategy)
+            self.assertIsNone(job.source_column_match)
 
     def test_ctor(self):
         client = _make_client(project=self.PROJECT)
@@ -247,7 +249,7 @@ class TestLoadJob(_Base):
         self.assertIsNone(job.time_format)
         self.assertIsNone(job.timestamp_format)
         self.assertIsNone(job.null_markers)
-        self.assertIsNone(job.source_column_match_strategy)
+        self.assertIsNone(job.source_column_match)
 
     def test_ctor_w_config(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -631,7 +633,7 @@ class TestLoadJob(_Base):
             "timeFormat": self.TIME_FORMAT,
             "timestampFormat": self.TIMESTAMP_FORMAT,
             "nullMarkers": self.NULL_MARKERS,
-            "sourceColumnMatchStrategy": self.SOURCE_COLUMN_NAME_MATCH_OPTION,  # Keep value as string for mock API repr
+            "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
         }
         RESOURCE["configuration"]["load"] = LOAD_CONFIGURATION
         conn1 = make_connection()
@@ -668,7 +670,8 @@ class TestLoadJob(_Base):
         config.null_markers = self.NULL_MARKERS
         # Ensure we are setting with the Enum type if that's what the setter expects
         from google.cloud.bigquery.enums import SourceColumnMatch
-        config.source_column_match_strategy = SourceColumnMatch(self.SOURCE_COLUMN_NAME_MATCH_OPTION)
+
+        config.source_column_match = SourceColumnMatch(self.SOURCE_COLUMN_MATCH)
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:

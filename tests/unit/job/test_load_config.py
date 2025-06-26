@@ -828,6 +828,118 @@ class TestLoadJobConfig(_Base):
             config._properties["load"]["writeDisposition"], write_disposition
         )
 
+    def test_time_zone_missing(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.time_zone)
+
+    def test_time_zone_hit(self):
+        time_zone = "UTC"
+        config = self._get_target_class()()
+        config._properties["load"]["timeZone"] = time_zone
+        self.assertEqual(config.time_zone, time_zone)
+
+    def test_time_zone_setter(self):
+        time_zone = "America/New_York"
+        config = self._get_target_class()()
+        config.time_zone = time_zone
+        self.assertEqual(config._properties["load"]["timeZone"], time_zone)
+
+    def test_date_format_missing(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.date_format)
+
+    def test_date_format_hit(self):
+        date_format = "%Y-%m-%d"
+        config = self._get_target_class()()
+        config._properties["load"]["dateFormat"] = date_format
+        self.assertEqual(config.date_format, date_format)
+
+    def test_date_format_setter(self):
+        date_format = "YYYY/MM/DD"
+        config = self._get_target_class()()
+        config.date_format = date_format
+        self.assertEqual(config._properties["load"]["dateFormat"], date_format)
+
+    def test_datetime_format_missing(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.datetime_format)
+
+    def test_datetime_format_hit(self):
+        datetime_format = "%Y-%m-%dT%H:%M:%S"
+        config = self._get_target_class()()
+        config._properties["load"]["datetimeFormat"] = datetime_format
+        self.assertEqual(config.datetime_format, datetime_format)
+
+    def test_datetime_format_setter(self):
+        datetime_format = "YYYY/MM/DD HH24:MI:SS"
+        config = self._get_target_class()()
+        config.datetime_format = datetime_format
+        self.assertEqual(config._properties["load"]["datetimeFormat"], datetime_format)
+
+    def test_time_format_missing(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.time_format)
+
+    def test_time_format_hit(self):
+        time_format = "%H:%M:%S"
+        config = self._get_target_class()()
+        config._properties["load"]["timeFormat"] = time_format
+        self.assertEqual(config.time_format, time_format)
+
+    def test_time_format_setter(self):
+        time_format = "HH24:MI:SS"
+        config = self._get_target_class()()
+        config.time_format = time_format
+        self.assertEqual(config._properties["load"]["timeFormat"], time_format)
+
+    def test_timestamp_format_missing(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.timestamp_format)
+
+    def test_timestamp_format_hit(self):
+        timestamp_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+        config = self._get_target_class()()
+        config._properties["load"]["timestampFormat"] = timestamp_format
+        self.assertEqual(config.timestamp_format, timestamp_format)
+
+    def test_timestamp_format_setter(self):
+        timestamp_format = "YYYY/MM/DD HH24:MI:SS.FF6 TZR"
+        config = self._get_target_class()()
+        config.timestamp_format = timestamp_format
+        self.assertEqual(config._properties["load"]["timestampFormat"], timestamp_format)
+
+    def test_null_markers_missing(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.null_markers)
+
+    def test_null_markers_hit(self):
+        null_markers = ["", "NA", "\\N"]
+        config = self._get_target_class()()
+        config._properties["load"]["nullMarkers"] = null_markers
+        self.assertEqual(config.null_markers, null_markers)
+
+    def test_null_markers_setter(self):
+        null_markers = ["custom_null"]
+        config = self._get_target_class()()
+        config.null_markers = null_markers
+        self.assertEqual(config._properties["load"]["nullMarkers"], null_markers)
+
+    def test_source_column_name_match_option_missing(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.source_column_name_match_option)
+
+    def test_source_column_name_match_option_hit(self):
+        option = "MATCH_BY_NAME"
+        config = self._get_target_class()()
+        config._properties["load"]["sourceColumnMatch"] = option
+        self.assertEqual(config.source_column_name_match_option, option)
+
+    def test_source_column_name_match_option_setter(self):
+        option = "MATCH_BY_POSITION"
+        config = self._get_target_class()()
+        config.source_column_name_match_option = option
+        self.assertEqual(config._properties["load"]["sourceColumnMatch"], option)
+
     def test_parquet_options_missing(self):
         config = self._get_target_class()()
         self.assertIsNone(config.parquet_options)

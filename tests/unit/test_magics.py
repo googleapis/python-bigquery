@@ -1094,9 +1094,14 @@ def test_bigquery_magic_saves_query_job_to_variable_on_error(
     ip = IPython.get_ipython()
     monkeypatch.setattr(bigquery, "bigquery_magics", None)
     bigquery.load_ipython_extension(ip)
-    magics.context.credentials = mock.create_autospec(
-        google.auth.credentials.Credentials, instance=True
+    monkeypatch.setattr(
+        magics.context,
+        "credentials",
+        mock.create_autospec(google.auth.credentials.Credentials, instance=True),
     )
+    # magics.context.credentials = mock.create_autospec(
+    #     google.auth.credentials.Credentials, instance=True
+    # )
 
     ipython_ns_cleanup.append((ip, "result"))
 

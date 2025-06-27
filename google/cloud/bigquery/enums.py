@@ -467,9 +467,9 @@ class JobCreationMode(object):
 class SourceColumnMatch(str, enum.Enum):
     """Uses sensible defaults based on how the schema is provided.
 
-    If autodetect is used, then columns are matched by name. Otherwise, columns
-    are matched by position. This is done to keep the behavior backward-compati
-ble.
+        If autodetect is used, then columns are matched by name. Otherwise, columns
+        are matched by position. This is done to keep the behavior backward-compati
+    ble.
     """
 
     SOURCE_COLUMN_MATCH_UNSPECIFIED = "SOURCE_COLUMN_MATCH_UNSPECIFIED"

@@ -655,9 +655,9 @@ class LoadJobConfig(_JobConfig):
               reorders columns to match the field names in the schema.
 
         See:
-        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.source_column_match_strategy
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.source_column_match
         """
-        value = self._get_sub_prop("sourceColumnMatchStrategy")
+        value = self._get_sub_prop("sourceColumnMatch")
         if value is not None:
             return SourceColumnMatch(value)
         return None
@@ -668,7 +668,7 @@ class LoadJobConfig(_JobConfig):
             raise TypeError(
                 "value must be a google.cloud.bigquery.enums.SourceColumnMatch or None"
             )
-        self._set_sub_prop("sourceColumnMatchStrategy", value.value if value else None)
+        self._set_sub_prop("sourceColumnMatch", value.value if value else None)
 
     @property
     def time_partitioning(self):
@@ -1054,11 +1054,11 @@ class LoadJob(_AsyncJob):
         return self.configuration.null_markers
 
     @property
-    def source_column_match_strategy(self):
+    def source_column_match(self):
         """See
-        :attr:`google.cloud.bigquery.job.LoadJobConfig.source_column_match_strategy`.
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.source_column_match`.
         """
-        return self.configuration.source_column_match_strategy
+        return self.configuration.source_column_match
 
     @property
     def schema_update_options(self):

@@ -514,7 +514,8 @@ class CSVOptions(object):
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.source_column_match
         """
-        return self._properties.get("sourceColumnMatch")
+        result = self._properties.get("sourceColumnMatch")
+        return typing.cast(str, result)
 
     @source_column_match.setter
     def source_column_match(self, value: Optional[str]):
@@ -904,7 +905,9 @@ class ExternalConfig(object):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.time_zone
         """
-        return self._properties.get("timeZone")
+
+        result = self._properties.get("timeZone")
+        return typing.cast(str, result)
 
     @time_zone.setter
     def time_zone(self, value: Optional[str]):
@@ -919,7 +922,8 @@ class ExternalConfig(object):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.date_format
         """
-        return self._properties.get("dateFormat")
+        result = self._properties.get("dateFormat")
+        return typing.cast(str, result)
 
     @date_format.setter
     def date_format(self, value: Optional[str]):
@@ -934,7 +938,8 @@ class ExternalConfig(object):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.datetime_format
         """
-        return self._properties.get("datetimeFormat")
+        result = self._properties.get("datetimeFormat")
+        return typing.cast(str, result)
 
     @datetime_format.setter
     def datetime_format(self, value: Optional[str]):
@@ -949,7 +954,8 @@ class ExternalConfig(object):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.time_format
         """
-        return self._properties.get("timeFormat")
+        result = self._properties.get("timeFormat")
+        return typing.cast(str, result)
 
     @time_format.setter
     def time_format(self, value: Optional[str]):
@@ -964,7 +970,8 @@ class ExternalConfig(object):
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.timestamp_format
         """
-        return self._properties.get("timestampFormat")
+        result = self._properties.get("timestampFormat")
+        return typing.cast(str, result)
 
     @timestamp_format.setter
     def timestamp_format(self, value: Optional[str]):

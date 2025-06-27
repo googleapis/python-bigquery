@@ -264,7 +264,7 @@ class TestExternalConfig(unittest.TestCase):
         self.assertEqual(got_resource, expected_resource)
 
     NULL_MARKERS = ["", "N/A"]
-    SOURCE_COLUMN_NAME_MATCH_OPTION = "NAME"
+    SOURCE_COLUMN_MATCH = "NAME"
 
     def test_from_api_repr_csv(self):
         resource = _copy_and_update(
@@ -280,7 +280,7 @@ class TestExternalConfig(unittest.TestCase):
                     "encoding": "encoding",
                     "preserveAsciiControlCharacters": False,
                     "nullMarkers": self.NULL_MARKERS,
-                    "sourceColumnMatch": self.SOURCE_COLUMN_NAME_MATCH_OPTION,
+                    "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
                 },
             },
         )
@@ -299,8 +299,8 @@ class TestExternalConfig(unittest.TestCase):
         self.assertEqual(ec.options.preserve_ascii_control_characters, False)
         self.assertEqual(ec.options.null_markers, self.NULL_MARKERS)
         self.assertEqual(
-            ec.options.source_column_name_match_option,
-            self.SOURCE_COLUMN_NAME_MATCH_OPTION,
+            ec.options.source_column_match,
+            self.SOURCE_COLUMN_MATCH,
         )
 
         got_resource = ec.to_api_repr()
@@ -324,9 +324,7 @@ class TestExternalConfig(unittest.TestCase):
         options.allow_jagged_rows = False
         options.preserve_ascii_control_characters = False
         options.null_markers = self.NULL_MARKERS
-        options.source_column_name_match_option = (
-            self.SOURCE_COLUMN_NAME_MATCH_OPTION
-        )
+        options.source_column_match = self.SOURCE_COLUMN_MATCH
         ec.csv_options = options
 
         exp_resource = {
@@ -340,7 +338,7 @@ class TestExternalConfig(unittest.TestCase):
                 "encoding": "encoding",
                 "preserveAsciiControlCharacters": False,
                 "nullMarkers": self.NULL_MARKERS,
-                "sourceColumnMatch": self.SOURCE_COLUMN_NAME_MATCH_OPTION,
+                "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
             },
         }
 
@@ -903,7 +901,7 @@ class CSVOptions(unittest.TestCase):
         options.encoding = "UTF-8"
         options.preserve_ascii_control_characters = False
         options.null_markers = ["NA"]
-        options.source_column_name_match_option = "POSITION"
+        options.source_column_match = "POSITION"
 
         resource = options.to_api_repr()
 

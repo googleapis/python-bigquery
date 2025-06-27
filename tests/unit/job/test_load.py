@@ -815,6 +815,7 @@ class TestLoadJob(_Base):
             query_params={"projection": "full"},
             timeout=DEFAULT_GET_JOB_TIMEOUT,
         )
+        print(f"DINOSAUR:\n{job}\n{RESOURCE}")
         self._verifyResourceProperties(job, RESOURCE)
 
     def test_reload_w_alternate_client(self):

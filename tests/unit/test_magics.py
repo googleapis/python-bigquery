@@ -1099,7 +1099,7 @@ def test_bigquery_magic_saves_query_job_to_variable_on_error(
         "credentials",
         mock.create_autospec(google.auth.credentials.Credentials, instance=True),
     )
-    magics.context.project = None
+    magics.context.project = "project-from-context"
     # monkeypatch.setattr(magics.context, "project", "project-from-context")
     # magics.context.credentials = mock.create_autospec(
     #     google.auth.credentials.Credentials, instance=True

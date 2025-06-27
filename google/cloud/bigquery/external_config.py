@@ -505,10 +505,11 @@ class CSVOptions(object):
         autodetect is used, then columns are matched by name. Otherwise, columns
         are matched by position. This is done to keep the behavior
         backward-compatible.
+
         Acceptable values are:
-          POSITION - matches by position. This assumes that the columns are ordered
-              the same way as the schema.
-          NAME - matches by name. This reads the header row as column names and
+            POSITION - matches by position. This assumes that the columns are ordered
+                the same way as the schema.
+            NAME - matches by name. This reads the header row as column names and
               reorders columns to match the field names in the schema.
 
         See

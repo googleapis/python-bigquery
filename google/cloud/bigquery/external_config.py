@@ -484,10 +484,11 @@ class CSVOptions(object):
         position. This is done to keep the behavior backward-compatible.
 
         Acceptable values are:
-            SOURCE_COLUMN_MATCH_UNSPECIFIED - Unspecified column name match option.
-            POSITION - matches by position. This assumes that the columns are ordered
+
+            SOURCE_COLUMN_MATCH_UNSPECIFIED: Unspecified column name match option.
+            POSITION: matches by position. This assumes that the columns are ordered
                 the same way as the schema.
-            NAME - matches by name. This reads the header row as column names and
+            NAME: matches by name. This reads the header row as column names and
                 reorders columns to match the field names in the schema.
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.source_column_match

@@ -644,12 +644,14 @@ class LoadJobConfig(_JobConfig):
 
     @property
     def source_column_match(self) -> Optional[SourceColumnMatch]:
-        """Optional[google.cloud.bigquery.enums.SourceColumnMatch]: Controls the strategy used to match
-        loaded columns to the schema. If not set, a sensible default is chosen based on how the schema
-        is provided. If autodetect is used, then columns are matched by name. Otherwise, columns
-        are matched by position. This is done to keep the behavior backward-compatible.
+        """Optional[google.cloud.bigquery.enums.SourceColumnMatch]: Controls the
+        strategy used to match loaded columns to the schema. If not set, a sensible
+        default is chosen based on how the schema is provided. If autodetect is
+        used, then columns are matched by name. Otherwise, columns are matched by
+        position. This is done to keep the behavior backward-compatible.
 
         Acceptable values are:
+            SOURCE_COLUMN_MATCH_UNSPECIFIED - Unspecified column name match option.
             POSITION - matches by position. This assumes that the columns are ordered
                 the same way as the schema.
             NAME - matches by name. This reads the header row as column names and

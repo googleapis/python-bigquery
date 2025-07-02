@@ -30,6 +30,7 @@ from google.cloud.bigquery._helpers import _bytes_to_json
 from google.cloud.bigquery._helpers import _int_or_none
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery import _helpers
+from google.cloud.bigquery.enums import SourceColumnMatch
 from google.cloud.bigquery.format_options import AvroOptions, ParquetOptions
 from google.cloud.bigquery import schema
 from google.cloud.bigquery.schema import SchemaField
@@ -499,14 +500,15 @@ class CSVOptions(object):
         self._properties["nullMarkers"] = value
 
     @property
-    def source_column_match(self) -> Optional[str]:
-        """Optional[str]: Controls the strategy used to match loaded columns to the schema. If not
-        set, a sensible default is chosen based on how the schema is provided. If
-        autodetect is used, then columns are matched by name. Otherwise, columns
-        are matched by position. This is done to keep the behavior
-        backward-compatible.
+    def source_column_match(self) -> Optional[SourceColumnMatch]:
+        """Optional[SourceColumnMatch]: Controls the strategy used to match loaded
+        columns to the schema. If not set, a sensible default is chosen based on
+        how the schema is provided. If autodetect is used, then columns are matched
+        by name. Otherwise, columns are matched by position. This is done to keep
+        the behavior backward-compatible.
 
         Acceptable values are:
+            SOURCE_COLUMN_MATCH_UNSPECIFIED - Unspecified column name match option.
             POSITION - matches by position. This assumes that the columns are ordered
                 the same way as the schema.
             NAME - matches by name. This reads the header row as column names and
@@ -515,12 +517,19 @@ class CSVOptions(object):
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.source_column_match
         """
-        result = self._properties.get("sourceColumnMatch")
-        return typing.cast(str, result)
+
+        value = self._properties.get("sourceColumnMatch")
+        if value is not None:
+            return SourceColumnMatch(value)
+        return None
 
     @source_column_match.setter
-    def source_column_match(self, value: Optional[str]):
-        self._properties["sourceColumnMatch"] = value
+    def source_column_match(self, value: Optional[SourceColumnMatch]):
+        if value is not None and not isinstance(value, SourceColumnMatch):
+            raise TypeError(
+                "value must be a google.cloud.bigquery.enums.SourceColumnMatch or None"
+            )
+        self._properties["sourceColumnMatch"] = value.value if value else None
 
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.

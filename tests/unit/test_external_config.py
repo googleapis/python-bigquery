@@ -19,6 +19,7 @@ import unittest
 
 from google.cloud.bigquery import external_config
 from google.cloud.bigquery import schema
+from google.cloud.bigquery.enums import SourceColumnMatch
 
 import pytest
 
@@ -30,6 +31,8 @@ class TestExternalConfig(unittest.TestCase):
     DATETIME_FORMAT = "MM/DD/YYYY HH24:MI:SS"
     TIME_FORMAT = "HH24:MI:SS"
     TIMESTAMP_FORMAT = "MM/DD/YYYY HH24:MI:SS.FF6 TZR"
+    NULL_MARKERS = ["", "N/A"]
+    SOURCE_COLUMN_MATCH = SourceColumnMatch.NAME
 
     BASE_RESOURCE = {
         "sourceFormat": "",
@@ -262,9 +265,6 @@ class TestExternalConfig(unittest.TestCase):
             },
         }
         self.assertEqual(got_resource, expected_resource)
-
-    NULL_MARKERS = ["", "N/A"]
-    SOURCE_COLUMN_MATCH = "NAME"
 
     def test_from_api_repr_csv(self):
         resource = _copy_and_update(
@@ -891,6 +891,9 @@ class BigtableOptions(unittest.TestCase):
 
 
 class CSVOptions(unittest.TestCase):
+    NULL_MARKERS = ["", "N/A"]
+    SOURCE_COLUMN_MATCH = SourceColumnMatch.NAME
+
     def test_to_api_repr(self):
         options = external_config.CSVOptions()
         options.field_delimiter = "\t"
@@ -900,8 +903,8 @@ class CSVOptions(unittest.TestCase):
         options.allow_jagged_rows = False
         options.encoding = "UTF-8"
         options.preserve_ascii_control_characters = False
-        options.null_markers = ["NA"]
-        options.source_column_match = "POSITION"
+        options.null_markers = self.NULL_MARKERS
+        options.source_column_match = self.SOURCE_COLUMN_MATCH
 
         resource = options.to_api_repr()
 
@@ -915,8 +918,8 @@ class CSVOptions(unittest.TestCase):
                 "allowJaggedRows": False,
                 "encoding": "UTF-8",
                 "preserveAsciiControlCharacters": False,
-                "nullMarkers": ["NA"],
-                "sourceColumnMatch": "POSITION",
+                "nullMarkers": self.NULL_MARKERS,
+                "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
             },
         )
 

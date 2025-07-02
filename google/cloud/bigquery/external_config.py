@@ -475,8 +475,6 @@ class CSVOptions(object):
     def skip_leading_rows(self, value):
         self._properties["skipLeadingRows"] = str(value)
 
-    # TODO: null_marker needs to be added to this code base.
-
     @property
     def null_markers(self) -> Optional[List[str]]:
         """Optional[List[str]]: A list of strings represented as SQL NULL value in a CSV file.
@@ -501,18 +499,18 @@ class CSVOptions(object):
 
     @property
     def source_column_match(self) -> Optional[SourceColumnMatch]:
-        """Optional[SourceColumnMatch]: Controls the strategy used to match loaded
-        columns to the schema. If not set, a sensible default is chosen based on
-        how the schema is provided. If autodetect is used, then columns are matched
-        by name. Otherwise, columns are matched by position. This is done to keep
-        the behavior backward-compatible.
+        """Optional[google.cloud.bigquery.enums.SourceColumnMatch]: Controls the
+        strategy used to match loaded columns to the schema. If not set, a sensible
+        default is chosen based on how the schema is provided. If autodetect is
+        used, then columns are matched by name. Otherwise, columns are matched by
+        position. This is done to keep the behavior backward-compatible.
 
         Acceptable values are:
             SOURCE_COLUMN_MATCH_UNSPECIFIED - Unspecified column name match option.
             POSITION - matches by position. This assumes that the columns are ordered
                 the same way as the schema.
             NAME - matches by name. This reads the header row as column names and
-              reorders columns to match the field names in the schema.
+                reorders columns to match the field names in the schema.
 
         See
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.source_column_match

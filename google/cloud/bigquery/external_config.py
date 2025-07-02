@@ -23,13 +23,14 @@ from __future__ import absolute_import, annotations
 import base64
 import copy
 import typing
-from typing import Any, Dict, FrozenSet, Iterable, Optional, Union
+from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Union
 
 from google.cloud.bigquery._helpers import _to_bytes
 from google.cloud.bigquery._helpers import _bytes_to_json
 from google.cloud.bigquery._helpers import _int_or_none
 from google.cloud.bigquery._helpers import _str_or_none
 from google.cloud.bigquery import _helpers
+from google.cloud.bigquery.enums import SourceColumnMatch
 from google.cloud.bigquery.format_options import AvroOptions, ParquetOptions
 from google.cloud.bigquery import schema
 from google.cloud.bigquery.schema import SchemaField
@@ -474,6 +475,60 @@ class CSVOptions(object):
     def skip_leading_rows(self, value):
         self._properties["skipLeadingRows"] = str(value)
 
+    @property
+    def null_markers(self) -> Optional[List[str]]:
+        """Optional[List[str]]: A list of strings represented as SQL NULL value in a CSV file.
+
+        null_marker and null_markers can't be set at the same time.
+        If null_marker is set, null_markers has to be not set.
+        If null_markers is set, null_marker has to be not set.
+        If both null_marker and null_markers are set at the same time, a user
+        error would be thrown.
+        Any strings listed in null_markers, including
+        empty string would be interpreted as SQL NULL. This applies to all column
+        types.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#CsvOptions.FIELDS.null_markers
+        """
+        return self._properties.get("nullMarkers")
+
+    @null_markers.setter
+    def null_markers(self, value: Optional[List[str]]):
+        self._properties["nullMarkers"] = value
+
+    @property
+    def source_column_match(self) -> Optional[SourceColumnMatch]:
+        """Optional[google.cloud.bigquery.enums.SourceColumnMatch]: Controls the
+        strategy used to match loaded columns to the schema. If not set, a sensible
+        default is chosen based on how the schema is provided. If autodetect is
+        used, then columns are matched by name. Otherwise, columns are matched by
+        position. This is done to keep the behavior backward-compatible.
+
+        Acceptable values are:
+            SOURCE_COLUMN_MATCH_UNSPECIFIED - Unspecified column name match option.
+            POSITION - matches by position. This assumes that the columns are ordered
+                the same way as the schema.
+            NAME - matches by name. This reads the header row as column names and
+                reorders columns to match the field names in the schema.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.source_column_match
+        """
+
+        value = self._properties.get("sourceColumnMatch")
+        if value is not None:
+            return SourceColumnMatch(value)
+        return None
+
+    @source_column_match.setter
+    def source_column_match(self, value: Optional[SourceColumnMatch]):
+        if value is not None and not isinstance(value, SourceColumnMatch):
+            raise TypeError(
+                "value must be a google.cloud.bigquery.enums.SourceColumnMatch or None"
+            )
+        self._properties["sourceColumnMatch"] = value.value if value else None
+
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.
 
@@ -847,6 +902,87 @@ class ExternalConfig(object):
         if value is not None:
             prop = {"fields": [field.to_api_repr() for field in value]}
         self._properties["schema"] = prop
+
+    @property
+    def time_zone(self) -> Optional[str]:
+        """Optional[str]: Time zone used when parsing timestamp values that do not
+        have specific time zone information (e.g. 2024-04-20 12:34:56). The expected
+        format is an IANA timezone string (e.g. America/Los_Angeles).
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.time_zone
+        """
+
+        result = self._properties.get("timeZone")
+        return typing.cast(str, result)
+
+    @time_zone.setter
+    def time_zone(self, value: Optional[str]):
+        self._properties["timeZone"] = value
+
+    @property
+    def date_format(self) -> Optional[str]:
+        """Optional[str]: Date format used for parsing DATE values.
+
+        (Valid for CSV and NEWLINE_DELIMITED_JSON)
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.date_format
+        """
+        result = self._properties.get("dateFormat")
+        return typing.cast(str, result)
+
+    @date_format.setter
+    def date_format(self, value: Optional[str]):
+        self._properties["dateFormat"] = value
+
+    @property
+    def datetime_format(self) -> Optional[str]:
+        """Optional[str]: Date format used for parsing DATETIME values.
+
+        (Valid for CSV and NEWLINE_DELIMITED_JSON)
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.datetime_format
+        """
+        result = self._properties.get("datetimeFormat")
+        return typing.cast(str, result)
+
+    @datetime_format.setter
+    def datetime_format(self, value: Optional[str]):
+        self._properties["datetimeFormat"] = value
+
+    @property
+    def time_format(self) -> Optional[str]:
+        """Optional[str]: Date format used for parsing TIME values.
+
+        (Valid for CSV and NEWLINE_DELIMITED_JSON)
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.time_format
+        """
+        result = self._properties.get("timeFormat")
+        return typing.cast(str, result)
+
+    @time_format.setter
+    def time_format(self, value: Optional[str]):
+        self._properties["timeFormat"] = value
+
+    @property
+    def timestamp_format(self) -> Optional[str]:
+        """Optional[str]: Date format used for parsing TIMESTAMP values.
+
+        (Valid for CSV and NEWLINE_DELIMITED_JSON)
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.timestamp_format
+        """
+        result = self._properties.get("timestampFormat")
+        return typing.cast(str, result)
+
+    @timestamp_format.setter
+    def timestamp_format(self, value: Optional[str]):
+        self._properties["timestampFormat"] = value
 
     @property
     def connection_id(self):

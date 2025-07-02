@@ -19,6 +19,7 @@ from ..helpers import make_connection
 
 from .helpers import _Base
 from .helpers import _make_client
+from google.cloud.bigquery.enums import SourceColumnMatch
 
 
 class TestLoadJob(_Base):
@@ -37,11 +38,13 @@ class TestLoadJob(_Base):
         self.OUTPUT_BYTES = 23456
         self.OUTPUT_ROWS = 345
         self.REFERENCE_FILE_SCHEMA_URI = "gs://path/to/reference"
+        self.SOURCE_COLUMN_MATCH = "NAME"
 
     def _make_resource(self, started=False, ended=False):
         resource = super(TestLoadJob, self)._make_resource(started, ended)
         config = resource["configuration"]["load"]
         config["sourceUris"] = [self.SOURCE1]
+        config["sourceColumnMatch"] = self.SOURCE_COLUMN_MATCH
         config["destinationTable"] = {
             "projectId": self.PROJECT,
             "datasetId": self.DS_ID,
@@ -153,6 +156,15 @@ class TestLoadJob(_Base):
         else:
             self.assertIsNone(job.destination_encryption_configuration)
 
+        if "sourceColumnMatch" in config:
+            # job.source_column_match will be an Enum, config[...] is a string
+            self.assertEqual(
+                job.source_column_match.value,
+                config["sourceColumnMatch"],
+            )
+        else:
+            self.assertIsNone(job.source_column_match)
+
     def test_ctor(self):
         client = _make_client(project=self.PROJECT)
         job = self._make_one(self.JOB_ID, [self.SOURCE1], self.TABLE_REF, client)
@@ -194,6 +206,7 @@ class TestLoadJob(_Base):
         self.assertIsNone(job.clustering_fields)
         self.assertIsNone(job.schema_update_options)
         self.assertIsNone(job.reference_file_schema_uri)
+        self.assertIsNone(job.source_column_match)
 
     def test_ctor_w_config(self):
         from google.cloud.bigquery.schema import SchemaField
@@ -571,6 +584,7 @@ class TestLoadJob(_Base):
                 ]
             },
             "schemaUpdateOptions": [SchemaUpdateOption.ALLOW_FIELD_ADDITION],
+            "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
         }
         RESOURCE["configuration"]["load"] = LOAD_CONFIGURATION
         conn1 = make_connection()
@@ -599,6 +613,7 @@ class TestLoadJob(_Base):
         config.write_disposition = WriteDisposition.WRITE_TRUNCATE
         config.schema_update_options = [SchemaUpdateOption.ALLOW_FIELD_ADDITION]
         config.reference_file_schema_uri = "gs://path/to/reference"
+        config.source_column_match = SourceColumnMatch(self.SOURCE_COLUMN_MATCH)
         with mock.patch(
             "google.cloud.bigquery.opentelemetry_tracing._get_final_span_attributes"
         ) as final_attributes:

@@ -19,12 +19,14 @@ import unittest
 
 from google.cloud.bigquery import external_config
 from google.cloud.bigquery import schema
+from google.cloud.bigquery.enums import SourceColumnMatch
 
 import pytest
 
 
 class TestExternalConfig(unittest.TestCase):
     SOURCE_URIS = ["gs://foo", "gs://bar"]
+    SOURCE_COLUMN_MATCH = SourceColumnMatch.NAME
 
     BASE_RESOURCE = {
         "sourceFormat": "",
@@ -120,6 +122,20 @@ class TestExternalConfig(unittest.TestCase):
         got = ec.to_api_repr()
         want = {"sourceFormat": "", "schema": {"fields": []}}
         self.assertEqual(got, want)
+
+    def test_source_column_match_None(self):
+        ec = external_config.ExternalConfig("")
+        ec.source_column_match = None
+        expected = None
+        result = ec.source_column_match
+        self.assertEqual(expected, result)
+
+    def test_source_column_match_valid_input(self):
+        ec = external_config.ExternalConfig("")
+        ec.source_column_match = SourceColumnMatch.NAME
+        expected = "NAME"
+        result = ec.source_column_match
+        self.assertEqual(expected, result)
 
     def _verify_base(self, ec):
         self.assertEqual(ec.autodetect, True)
@@ -251,6 +267,7 @@ class TestExternalConfig(unittest.TestCase):
                     "allowJaggedRows": False,
                     "encoding": "encoding",
                     "preserveAsciiControlCharacters": False,
+                    "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
                 },
             },
         )
@@ -267,6 +284,10 @@ class TestExternalConfig(unittest.TestCase):
         self.assertEqual(ec.options.allow_jagged_rows, False)
         self.assertEqual(ec.options.encoding, "encoding")
         self.assertEqual(ec.options.preserve_ascii_control_characters, False)
+        self.assertEqual(
+            ec.options.source_column_match,
+            self.SOURCE_COLUMN_MATCH,
+        )
 
         got_resource = ec.to_api_repr()
 
@@ -288,6 +309,7 @@ class TestExternalConfig(unittest.TestCase):
         options.skip_leading_rows = 123
         options.allow_jagged_rows = False
         options.preserve_ascii_control_characters = False
+        options.source_column_match = self.SOURCE_COLUMN_MATCH
         ec.csv_options = options
 
         exp_resource = {
@@ -300,6 +322,7 @@ class TestExternalConfig(unittest.TestCase):
                 "allowJaggedRows": False,
                 "encoding": "encoding",
                 "preserveAsciiControlCharacters": False,
+                "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
             },
         }
 
@@ -852,6 +875,8 @@ class BigtableOptions(unittest.TestCase):
 
 
 class CSVOptions(unittest.TestCase):
+    SOURCE_COLUMN_MATCH = SourceColumnMatch.NAME
+
     def test_to_api_repr(self):
         options = external_config.CSVOptions()
         options.field_delimiter = "\t"
@@ -861,6 +886,7 @@ class CSVOptions(unittest.TestCase):
         options.allow_jagged_rows = False
         options.encoding = "UTF-8"
         options.preserve_ascii_control_characters = False
+        options.source_column_match = self.SOURCE_COLUMN_MATCH
 
         resource = options.to_api_repr()
 
@@ -874,6 +900,7 @@ class CSVOptions(unittest.TestCase):
                 "allowJaggedRows": False,
                 "encoding": "UTF-8",
                 "preserveAsciiControlCharacters": False,
+                "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
             },
         )
 

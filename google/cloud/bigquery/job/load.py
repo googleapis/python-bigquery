@@ -550,10 +550,9 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("sourceFormat", value)
 
     @property
-    def time_zone(self):
+    def time_zone(self) -> Optional[str]:
         """Optional[str]: Default time zone that will apply when parsing timestamp
-        values that have no specific time zone. This option is valid for CSV and
-        JSON sources.
+        values that have no specific time zone.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.time_zone

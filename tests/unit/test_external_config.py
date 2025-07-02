@@ -144,6 +144,20 @@ class TestExternalConfig(unittest.TestCase):
         want = {"sourceFormat": "", "schema": {"fields": []}}
         self.assertEqual(got, want)
 
+    def test_source_column_match_None(self):
+        ec = external_config.ExternalConfig("")
+        ec.source_column_match = None
+        expected = None
+        result = ec.source_column_match
+        self.assertEqual(expected, result)
+
+    def test_source_column_match_valid_input(self):
+        ec = external_config.ExternalConfig("")
+        ec.source_column_match = SourceColumnMatch.NAME
+        expected = "NAME"
+        result = ec.source_column_match
+        self.assertEqual(expected, result)
+
     def _verify_base(self, ec):
         self.assertEqual(ec.autodetect, True)
         self.assertEqual(ec.compression, "compression")

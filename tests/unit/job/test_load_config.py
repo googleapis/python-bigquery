@@ -828,6 +828,22 @@ class TestLoadJobConfig(_Base):
             config._properties["load"]["writeDisposition"], write_disposition
         )
 
+    def test_time_zone_missing(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.time_zone)
+
+    def test_time_zone_hit(self):
+        time_zone = "UTC"
+        config = self._get_target_class()()
+        config._properties["load"]["timeZone"] = time_zone
+        self.assertEqual(config.time_zone, time_zone)
+
+    def test_time_zone_setter(self):
+        time_zone = "America/New_York"
+        config = self._get_target_class()()
+        config.time_zone = time_zone
+        self.assertEqual(config._properties["load"]["timeZone"], time_zone)
+
     def test_parquet_options_missing(self):
         config = self._get_target_class()()
         self.assertIsNone(config.parquet_options)

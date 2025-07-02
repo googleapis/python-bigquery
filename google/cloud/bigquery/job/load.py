@@ -556,6 +556,7 @@ class LoadJobConfig(_JobConfig):
         default is chosen based on how the schema is provided. If autodetect is
         used, then columns are matched by name. Otherwise, columns are matched by
         position. This is done to keep the behavior backward-compatible.
+
         Acceptable values are:
             SOURCE_COLUMN_MATCH_UNSPECIFIED - Unspecified column name match option.
             POSITION - matches by position. This assumes that the columns are ordered

@@ -549,6 +549,19 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("sourceFormat", value)
 
     @property
+    def date_format(self) -> Optional[str]:
+        """Optional[str]: Date format used for parsing DATE values.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.date_format
+        """
+        return self._get_sub_prop("dateFormat")
+
+    @date_format.setter
+    def date_format(self, value: Optional[str]):
+        self._set_sub_prop("dateFormat", value)
+
+    @property
     def time_partitioning(self):
         """Optional[google.cloud.bigquery.table.TimePartitioning]: Specifies time-based
         partitioning for the destination table.
@@ -888,6 +901,13 @@ class LoadJob(_AsyncJob):
         :attr:`google.cloud.bigquery.job.LoadJobConfig.clustering_fields`.
         """
         return self.configuration.clustering_fields
+
+    @property
+    def date_format(self):
+        """See
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.date_format`.
+        """
+        return self.configuration.date_format
 
     @property
     def schema_update_options(self):

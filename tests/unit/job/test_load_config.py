@@ -828,6 +828,22 @@ class TestLoadJobConfig(_Base):
             config._properties["load"]["writeDisposition"], write_disposition
         )
 
+    def test_date_format_missing(self):
+        config = self._get_target_class()()
+        self.assertIsNone(config.date_format)
+
+    def test_date_format_hit(self):
+        date_format = "%Y-%m-%d"
+        config = self._get_target_class()()
+        config._properties["load"]["dateFormat"] = date_format
+        self.assertEqual(config.date_format, date_format)
+
+    def test_date_format_setter(self):
+        date_format = "YYYY/MM/DD"
+        config = self._get_target_class()()
+        config.date_format = date_format
+        self.assertEqual(config._properties["load"]["dateFormat"], date_format)
+
     def test_parquet_options_missing(self):
         config = self._get_target_class()()
         self.assertIsNone(config.parquet_options)

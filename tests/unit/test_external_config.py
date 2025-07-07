@@ -26,6 +26,8 @@ import pytest
 class TestExternalConfig(unittest.TestCase):
     SOURCE_URIS = ["gs://foo", "gs://bar"]
 
+    DATE_FORMAT = "MM/DD/YYYY"
+
     BASE_RESOURCE = {
         "sourceFormat": "",
         "sourceUris": SOURCE_URIS,
@@ -33,6 +35,7 @@ class TestExternalConfig(unittest.TestCase):
         "autodetect": True,
         "ignoreUnknownValues": False,
         "compression": "compression",
+        "dateFormat": DATE_FORMAT,
     }
 
     def test_from_api_repr_base(self):
@@ -79,6 +82,7 @@ class TestExternalConfig(unittest.TestCase):
         ec.connection_id = "path/to/connection"
         ec.schema = [schema.SchemaField("full_name", "STRING", mode="REQUIRED")]
 
+        ec.date_format = self.DATE_FORMAT
         exp_schema = {
             "fields": [{"name": "full_name", "type": "STRING", "mode": "REQUIRED"}]
         }
@@ -92,6 +96,7 @@ class TestExternalConfig(unittest.TestCase):
             "compression": "compression",
             "connectionId": "path/to/connection",
             "schema": exp_schema,
+            "dateFormat": self.DATE_FORMAT,
         }
         self.assertEqual(got_resource, exp_resource)
 
@@ -127,6 +132,8 @@ class TestExternalConfig(unittest.TestCase):
         self.assertEqual(ec.ignore_unknown_values, False)
         self.assertEqual(ec.max_bad_records, 17)
         self.assertEqual(ec.source_uris, self.SOURCE_URIS)
+
+        self.assertEqual(ec.date_format, self.DATE_FORMAT)
 
     def test_to_api_repr_source_format(self):
         ec = external_config.ExternalConfig("CSV")

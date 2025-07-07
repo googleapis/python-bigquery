@@ -849,6 +849,20 @@ class ExternalConfig(object):
         self._properties["schema"] = prop
 
     @property
+    def date_format(self) -> Optional[str]:
+        """Optional[str]: Format used to parse DATE values. Supports C-style and SQL-style values.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.date_format
+        """
+        result = self._properties.get("dateFormat")
+        return typing.cast(str, result)
+
+    @date_format.setter
+    def date_format(self, value: Optional[str]):
+        self._properties["dateFormat"] = value
+
+    @property
     def connection_id(self):
         """Optional[str]: [Experimental] ID of a BigQuery Connection API
         resource.

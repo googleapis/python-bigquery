@@ -450,7 +450,7 @@ class TestLoadJob(_Base):
         job = klass.from_api_repr(RESOURCE, client)
         api_repr = job.to_api_repr()
 
-        # as per the documentation in load.py > LoadJob.to_api_repr(),
+        # as per the documentation in load.py -> LoadJob.to_api_repr(),
         # the return value from to_api_repr should not include statistics
         expected = {
             "jobReference": RESOURCE["jobReference"],

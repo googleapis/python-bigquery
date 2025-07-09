@@ -441,6 +441,24 @@ class TestLoadJob(_Base):
         self.assertIs(job._client, client)
         self._verifyResourceProperties(job, RESOURCE)
 
+    def test_to_api_repr(self):
+        self._setUpConstants()
+        client = _make_client(project=self.PROJECT)
+        RESOURCE = self._make_resource(ended=False)
+
+        klass = self._get_target_class()
+        job = klass.from_api_repr(RESOURCE, client)
+        api_repr = job.to_api_repr()
+
+        # as per the documentation in load.py > LoadJob.to_api_repr(),
+        # the return value from to_api_repr should not include statistics
+        expected = {
+            "jobReference": RESOURCE["jobReference"],
+            "configuration": RESOURCE["configuration"],
+        }
+
+        self.assertEqual(api_repr, expected)
+
     def test_begin_w_already_running(self):
         conn = make_connection()
         client = _make_client(project=self.PROJECT, connection=conn)

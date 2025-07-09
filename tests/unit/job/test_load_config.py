@@ -959,7 +959,6 @@ class TestLoadJobConfig(_Base):
         from google.cloud.bigquery.schema import SchemaField
         from google.cloud.bigquery.table import TimePartitioning, TimePartitioningType
 
-        # from google.cloud.bigquery.format_options import ParquetOptions
         from google.cloud.bigquery.job.load import ColumnNameCharacterMap
 
         config = LoadJobConfig.from_api_repr(self.RESOURCE)

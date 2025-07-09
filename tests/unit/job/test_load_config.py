@@ -962,37 +962,6 @@ class TestLoadJobConfig(_Base):
         # from google.cloud.bigquery.format_options import ParquetOptions
         from google.cloud.bigquery.job.load import ColumnNameCharacterMap
 
-        # resource = {
-        #     "load": {
-        #         "allowJaggedRows": True,
-        #         "createDisposition": "CREATE_NEVER",
-        #         "encoding": "UTF-8",
-        #         "fieldDelimiter": ",",
-        #         "ignoreUnknownValues": True,
-        #         "maxBadRecords": 10,
-        #         "nullMarker": "\\N",
-        #         "quote": '"',
-        #         "schema": {
-        #             "fields": [
-        #                 {"name": "name", "type": "STRING", "mode": "NULLABLE"},
-        #                 {"name": "age", "type": "INTEGER", "mode": "NULLABLE"},
-        #             ]
-        #         },
-        #         "skipLeadingRows": "1",
-        #         "sourceFormat": "CSV",
-        #         "timePartitioning": {
-        #             "type": "DAY",
-        #             "field": "transaction_date",
-        #         },
-        #         "useAvroLogicalTypes": True,
-        #         "writeDisposition": "WRITE_TRUNCATE",
-        #         "timeZone": "America/New_York",
-        #         "parquetOptions": {"enableListInference": True},
-        #         "columnNameCharacterMap": "V2",
-        #         "someNewField": "some-value",
-        #     }
-        # }
-
         config = LoadJobConfig.from_api_repr(self.RESOURCE)
 
         self.assertTrue(config.allow_jagged_rows)
@@ -1058,35 +1027,5 @@ class TestLoadJobConfig(_Base):
 
         api_repr = config.to_api_repr()
 
-        # expected = {
-        #     "load": {
-        #         "allowJaggedRows": True,
-        #         "createDisposition": "CREATE_NEVER",
-        #         "encoding": "UTF-8",
-        #         "fieldDelimiter": ",",
-        #         "ignoreUnknownValues": True,
-        #         "maxBadRecords": 10,
-        #         "nullMarker": r"\N",
-        #         "quote": '"',
-        #         "schema": {
-        #             "fields": [
-        #                 {"name": "name", "type": "STRING", "mode": "NULLABLE"},
-        #                 {"name": "age", "type": "INTEGER", "mode": "NULLABLE"},
-        #             ]
-        #         },
-        #         "skipLeadingRows": "1",
-        #         "sourceFormat": "CSV",
-        #         "timePartitioning": {
-        #             "type": "DAY",
-        #             "field": "transaction_date",
-        #         },
-        #         "useAvroLogicalTypes": True,
-        #         "writeDisposition": "WRITE_TRUNCATE",
-        #         "timeZone": "America/New_York",
-        #         "parquetOptions": {"enableListInference": True},
-        #         "columnNameCharacterMap": "V2",
-        #         "someNewField": "some-value",
-        #     }
-        # }
         expected = self.RESOURCE
         self.assertEqual(api_repr, expected)

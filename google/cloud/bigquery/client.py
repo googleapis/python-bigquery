@@ -4145,7 +4145,6 @@ class Client(ClientWithProject):
         query: Optional[str] = None,
         total_bytes_processed: Optional[int] = None,
         slot_millis: Optional[int] = None,
-        
     ) -> RowIterator:
         """List the rows of a completed query.
         See

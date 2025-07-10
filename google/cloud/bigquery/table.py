@@ -1899,7 +1899,7 @@ class RowIterator(HTTPIterator):
     def total_bytes_processed(self) -> Optional[int]:
         """total bytes processed from job statistics, if present."""
         return self._total_bytes_processed
-    
+
     @property
     def slot_millis(self) -> Optional[int]:
         """Number of slot ms the user is actually billed for."""

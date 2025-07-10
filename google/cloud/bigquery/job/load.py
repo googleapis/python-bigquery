@@ -561,6 +561,7 @@ class LoadJobConfig(_JobConfig):
     def date_format(self, value: Optional[str]):
         self._set_sub_prop("dateFormat", value)
 
+    @property
     def time_zone(self) -> Optional[str]:
         """Optional[str]: Default time zone that will apply when parsing timestamp
         values that have no specific time zone.
@@ -922,6 +923,7 @@ class LoadJob(_AsyncJob):
         """
         return self.configuration.date_format
 
+    @property
     def time_zone(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.time_zone`.

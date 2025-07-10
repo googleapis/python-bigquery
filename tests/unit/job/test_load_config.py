@@ -958,6 +958,7 @@ class TestLoadJobConfig(_Base):
             },
             "useAvroLogicalTypes": True,
             "writeDisposition": "WRITE_TRUNCATE",
+            "dateFormat": "%Y-%m-%d",
             "timeZone": "America/New_York",
             "parquetOptions": {"enableListInference": True},
             "columnNameCharacterMap": "V2",
@@ -999,6 +1000,7 @@ class TestLoadJobConfig(_Base):
         )
         self.assertTrue(config.use_avro_logical_types)
         self.assertEqual(config.write_disposition, WriteDisposition.WRITE_TRUNCATE)
+        self.assertEqual(config.date_format, "%Y-%m-%d")
         self.assertEqual(config.time_zone, "America/New_York")
         self.assertTrue(config.parquet_options.enable_list_inference)
         self.assertEqual(config.column_name_character_map, ColumnNameCharacterMap.V2)
@@ -1033,6 +1035,7 @@ class TestLoadJobConfig(_Base):
         )
         config.use_avro_logical_types = True
         config.write_disposition = WriteDisposition.WRITE_TRUNCATE
+        config.date_format = "%Y-%m-%d"
         config.time_zone = "America/New_York"
         parquet_options = ParquetOptions()
         parquet_options.enable_list_inference = True

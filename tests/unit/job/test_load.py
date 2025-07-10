@@ -147,7 +147,6 @@ class TestLoadJob(_Base):
             )
         else:
             self.assertIsNone(job.reference_file_schema_uri)
-
         if "destinationEncryptionConfiguration" in config:
             self.assertIsNotNone(job.destination_encryption_configuration)
             self.assertEqual(
@@ -156,15 +155,14 @@ class TestLoadJob(_Base):
             )
         else:
             self.assertIsNone(job.destination_encryption_configuration)
-        if "timeZone" in config:
-            self.assertEqual(job.time_zone, config["timeZone"])
-        else:
-            self.assertIsNone(job.time_zone)
-
         if "dateFormat" in config:
             self.assertEqual(job.date_format, config["dateFormat"])
         else:
             self.assertIsNone(job.date_format)
+        if "timeZone" in config:
+            self.assertEqual(job.time_zone, config["timeZone"])
+        else:
+            self.assertIsNone(job.time_zone)
 
     def test_ctor(self):
         client = _make_client(project=self.PROJECT)

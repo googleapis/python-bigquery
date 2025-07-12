@@ -564,7 +564,7 @@ class LoadJobConfig(_JobConfig):
     @property
     def datetime_format(self) -> Optional[str]:
         """Optional[str]: Date format used for parsing DATETIME values.
-        This option is valid for CSV and JSON sources.
+
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.datetime_format
         """

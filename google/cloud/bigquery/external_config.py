@@ -864,8 +864,9 @@ class ExternalConfig(object):
 
     @property
     def datetime_format(self) -> Optional[str]:
-        """Optional[str]: Date format used for parsing DATETIME values.
-        (Valid for CSV and NEWLINE_DELIMITED_JSON)
+        """Optional[str]: Format used to parse DATETIME values. Supports C-style
+        and SQL-style values.
+
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.datetime_format
         """

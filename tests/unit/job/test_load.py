@@ -38,6 +38,7 @@ class TestLoadJob(_Base):
         self.OUTPUT_ROWS = 345
         self.REFERENCE_FILE_SCHEMA_URI = "gs://path/to/reference"
         self.DATE_FORMAT = "%Y-%m-%d"
+        self.DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
         self.TIME_ZONE = "UTC"
 
     def _make_resource(self, started=False, ended=False):
@@ -45,6 +46,7 @@ class TestLoadJob(_Base):
         config = resource["configuration"]["load"]
         config["sourceUris"] = [self.SOURCE1]
         config["dateFormat"] = self.DATE_FORMAT
+        config["datetimeFormat"] = self.DATETIME_FORMAT
         config["timeZone"] = self.TIME_ZONE
         config["destinationTable"] = {
             "projectId": self.PROJECT,
@@ -159,6 +161,10 @@ class TestLoadJob(_Base):
             self.assertEqual(job.date_format, config["dateFormat"])
         else:
             self.assertIsNone(job.date_format)
+        if "datetimeFormat" in config:
+            self.assertEqual(job.datetime_format, config["datetimeFormat"])
+        else:
+            self.assertIsNone(job.datetime_format)
         if "timeZone" in config:
             self.assertEqual(job.time_zone, config["timeZone"])
         else:
@@ -206,6 +212,7 @@ class TestLoadJob(_Base):
         self.assertIsNone(job.schema_update_options)
         self.assertIsNone(job.reference_file_schema_uri)
         self.assertIsNone(job.date_format)
+        self.assertIsNone(job.datetime_format)
         self.assertIsNone(job.time_zone)
 
     def test_ctor_w_config(self):
@@ -603,6 +610,7 @@ class TestLoadJob(_Base):
             },
             "schemaUpdateOptions": [SchemaUpdateOption.ALLOW_FIELD_ADDITION],
             "dateFormat": self.DATE_FORMAT,
+            "datetimeFormat": self.DATETIME_FORMAT,
             "timeZone": self.TIME_ZONE,
         }
         RESOURCE["configuration"]["load"] = LOAD_CONFIGURATION
@@ -633,6 +641,7 @@ class TestLoadJob(_Base):
         config.schema_update_options = [SchemaUpdateOption.ALLOW_FIELD_ADDITION]
         config.reference_file_schema_uri = "gs://path/to/reference"
         config.date_format = self.DATE_FORMAT
+        config.datetime_format = self.DATETIME_FORMAT
         config.time_zone = self.TIME_ZONE
 
         with mock.patch(

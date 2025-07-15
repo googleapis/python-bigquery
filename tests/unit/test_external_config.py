@@ -28,7 +28,10 @@ class TestExternalConfig(unittest.TestCase):
     SOURCE_URIS = ["gs://foo", "gs://bar"]
     SOURCE_COLUMN_MATCH = SourceColumnMatch.NAME
     DATE_FORMAT = "MM/DD/YYYY"
+    DATETIME_FORMAT = "MM/DD/YYYY HH24:MI:SS"
     TIME_ZONE = "America/Los_Angeles"
+    TIME_FORMAT = "HH24:MI:SS"
+    TIMESTAMP_FORMAT = "MM/DD/YYYY HH24:MI:SS.FF6 TZR"
 
     BASE_RESOURCE = {
         "sourceFormat": "",
@@ -38,7 +41,10 @@ class TestExternalConfig(unittest.TestCase):
         "ignoreUnknownValues": False,
         "compression": "compression",
         "dateFormat": DATE_FORMAT,
+        "datetimeFormat": DATETIME_FORMAT,
         "timeZone": TIME_ZONE,
+        "timeFormat": TIME_FORMAT,
+        "timestampFormat": TIMESTAMP_FORMAT,
     }
 
     def test_from_api_repr_base(self):
@@ -86,7 +92,11 @@ class TestExternalConfig(unittest.TestCase):
         ec.schema = [schema.SchemaField("full_name", "STRING", mode="REQUIRED")]
 
         ec.date_format = self.DATE_FORMAT
+        ec.datetime_format = self.DATETIME_FORMAT
         ec.time_zone = self.TIME_ZONE
+        ec.time_format = self.TIME_FORMAT
+        ec.timestamp_format = self.TIMESTAMP_FORMAT
+
         exp_schema = {
             "fields": [{"name": "full_name", "type": "STRING", "mode": "REQUIRED"}]
         }
@@ -101,7 +111,10 @@ class TestExternalConfig(unittest.TestCase):
             "connectionId": "path/to/connection",
             "schema": exp_schema,
             "dateFormat": self.DATE_FORMAT,
+            "datetimeFormat": self.DATETIME_FORMAT,
             "timeZone": self.TIME_ZONE,
+            "timeFormat": self.TIME_FORMAT,
+            "timestampFormat": self.TIMESTAMP_FORMAT,
         }
         self.assertEqual(got_resource, exp_resource)
 
@@ -152,7 +165,10 @@ class TestExternalConfig(unittest.TestCase):
         self.assertEqual(ec.max_bad_records, 17)
         self.assertEqual(ec.source_uris, self.SOURCE_URIS)
         self.assertEqual(ec.date_format, self.DATE_FORMAT)
+        self.assertEqual(ec.datetime_format, self.DATETIME_FORMAT)
         self.assertEqual(ec.time_zone, self.TIME_ZONE)
+        self.assertEqual(ec.time_format, self.TIME_FORMAT)
+        self.assertEqual(ec.timestamp_format, self.TIMESTAMP_FORMAT)
 
     def test_to_api_repr_source_format(self):
         ec = external_config.ExternalConfig("CSV")

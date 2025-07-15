@@ -596,6 +596,19 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("dateFormat", value)
 
     @property
+    def datetime_format(self) -> Optional[str]:
+        """Optional[str]: Date format used for parsing DATETIME values.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.datetime_format
+        """
+        return self._get_sub_prop("datetimeFormat")
+
+    @datetime_format.setter
+    def datetime_format(self, value: Optional[str]):
+        self._set_sub_prop("datetimeFormat", value)
+
+    @property
     def time_zone(self) -> Optional[str]:
         """Optional[str]: Default time zone that will apply when parsing timestamp
         values that have no specific time zone.
@@ -608,6 +621,32 @@ class LoadJobConfig(_JobConfig):
     @time_zone.setter
     def time_zone(self, value: Optional[str]):
         self._set_sub_prop("timeZone", value)
+
+    @property
+    def time_format(self) -> Optional[str]:
+        """Optional[str]: Date format used for parsing TIME values.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.time_format
+        """
+        return self._get_sub_prop("timeFormat")
+
+    @time_format.setter
+    def time_format(self, value: Optional[str]):
+        self._set_sub_prop("timeFormat", value)
+
+    @property
+    def timestamp_format(self) -> Optional[str]:
+        """Optional[str]: Date format used for parsing TIMESTAMP values.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.timestamp_format
+        """
+        return self._get_sub_prop("timestampFormat")
+
+    @timestamp_format.setter
+    def timestamp_format(self, value: Optional[str]):
+        self._set_sub_prop("timestampFormat", value)
 
     @property
     def time_partitioning(self):
@@ -965,11 +1004,32 @@ class LoadJob(_AsyncJob):
         return self.configuration.date_format
 
     @property
+    def datetime_format(self):
+        """See
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.datetime_format`.
+        """
+        return self.configuration.datetime_format
+
+    @property
     def time_zone(self):
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.time_zone`.
         """
         return self.configuration.time_zone
+
+    @property
+    def time_format(self):
+        """See
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.time_format`.
+        """
+        return self.configuration.time_format
+
+    @property
+    def timestamp_format(self):
+        """See
+        :attr:`google.cloud.bigquery.job.LoadJobConfig.timestamp_format`.
+        """
+        return self.configuration.timestamp_format
 
     @property
     def schema_update_options(self):

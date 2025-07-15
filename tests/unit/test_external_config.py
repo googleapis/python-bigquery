@@ -280,6 +280,7 @@ class TestExternalConfig(unittest.TestCase):
                     "encoding": "encoding",
                     "preserveAsciiControlCharacters": False,
                     "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
+                    "nullMarkers": ["", "NA"],
                 },
             },
         )
@@ -300,6 +301,7 @@ class TestExternalConfig(unittest.TestCase):
             ec.options.source_column_match,
             self.SOURCE_COLUMN_MATCH,
         )
+        self.assertEqual(ec.options.null_markers, ["", "NA"])
 
         got_resource = ec.to_api_repr()
 
@@ -322,6 +324,8 @@ class TestExternalConfig(unittest.TestCase):
         options.allow_jagged_rows = False
         options.preserve_ascii_control_characters = False
         options.source_column_match = self.SOURCE_COLUMN_MATCH
+        options.null_markers = ["", "NA"]
+
         ec.csv_options = options
 
         exp_resource = {
@@ -335,6 +339,7 @@ class TestExternalConfig(unittest.TestCase):
                 "encoding": "encoding",
                 "preserveAsciiControlCharacters": False,
                 "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
+                "nullMarkers": ["", "NA"],
             },
         }
 

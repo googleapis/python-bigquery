@@ -474,6 +474,19 @@ class CSVOptions(object):
     def skip_leading_rows(self, value):
         self._properties["skipLeadingRows"] = str(value)
 
+    @property
+    def null_markers(self) -> Optional[Iterable[str]]:
+        """Optional[Iterable[str]]: The strings that are interpreted as NULL values.
+
+        See
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#CsvOptions.FIELDS.null_markers
+        """
+        return self._properties.get("nullMarkers")
+
+    @null_markers.setter
+    def null_markers(self, value: Optional[Iterable[str]]):
+        self._properties["nullMarkers"] = value
+
     def to_api_repr(self) -> dict:
         """Build an API representation of this object.
 

@@ -140,6 +140,10 @@ class TestLoadJob(_Base):
             self.assertEqual(job.null_marker, config["nullMarker"])
         else:
             self.assertIsNone(job.null_marker)
+        if "nullMarkers" in config:
+            self.assertEqual(job.null_markers, config["nullMarkers"])
+        else:
+            self.assertIsNone(job.null_markers)
         if "quote" in config:
             self.assertEqual(job.quote_character, config["quote"])
         else:

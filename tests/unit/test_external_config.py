@@ -935,6 +935,11 @@ class TestCSVOptions(unittest.TestCase):
         result = ec.source_column_match
         self.assertEqual(expected, result)
 
+        ec.source_column_match = "POSITION"
+        expected = "POSITION"
+        result = ec.source_column_match
+        self.assertEqual(expected, result)
+
     def test_source_column_match_invalid_input(self):
         ec = external_config.CSVOptions()
         with self.assertRaisesRegex(

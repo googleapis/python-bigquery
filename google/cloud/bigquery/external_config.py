@@ -496,9 +496,9 @@ class CSVOptions(object):
         """
 
         value = self._properties.get("sourceColumnMatch")
-        if value is not None:
-            return SourceColumnMatch(value)
-        return None
+        # if value is not None:
+        return SourceColumnMatch(value) if value is not None else None
+        # return None
 
     @source_column_match.setter
     def source_column_match(self, value: Optional[SourceColumnMatch]):

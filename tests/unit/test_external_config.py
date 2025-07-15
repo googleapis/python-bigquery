@@ -144,20 +144,6 @@ class TestExternalConfig(unittest.TestCase):
         want = {"sourceFormat": "", "schema": {"fields": []}}
         self.assertEqual(got, want)
 
-    def test_source_column_match_None(self):
-        ec = external_config.ExternalConfig("")
-        ec.source_column_match = None
-        expected = None
-        result = ec.source_column_match
-        self.assertEqual(expected, result)
-
-    def test_source_column_match_valid_input(self):
-        ec = external_config.ExternalConfig("")
-        ec.source_column_match = SourceColumnMatch.NAME
-        expected = "NAME"
-        result = ec.source_column_match
-        self.assertEqual(expected, result)
-
     def _verify_base(self, ec):
         self.assertEqual(ec.autodetect, True)
         self.assertEqual(ec.compression, "compression")
@@ -900,7 +886,7 @@ class BigtableOptions(unittest.TestCase):
         )
 
 
-class CSVOptions(unittest.TestCase):
+class TestCSVOptions(unittest.TestCase):
     SOURCE_COLUMN_MATCH = SourceColumnMatch.NAME
 
     def test_to_api_repr(self):
@@ -929,6 +915,28 @@ class CSVOptions(unittest.TestCase):
                 "sourceColumnMatch": self.SOURCE_COLUMN_MATCH,
             },
         )
+
+    def test_source_column_match_None(self):
+        ec = external_config.CSVOptions()
+        ec.source_column_match = None
+        expected = None
+        result = ec.source_column_match
+        self.assertEqual(expected, result)
+
+    def test_source_column_match_valid_input(self):
+        ec = external_config.CSVOptions()
+        ec.source_column_match = SourceColumnMatch.NAME
+        expected = "NAME"
+        result = ec.source_column_match
+        self.assertEqual(expected, result)
+
+    def test_source_column_match_invalid_input(self):
+        ec = external_config.CSVOptions()
+        with self.assertRaisesRegex(
+            TypeError,
+            "value must be a google.cloud.bigquery.enums.SourceColumnMatch or None",
+        ):
+            ec.source_column_match = "neither None or enum value"
 
 
 class TestGoogleSheetsOptions(unittest.TestCase):

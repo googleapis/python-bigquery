@@ -867,11 +867,14 @@ class TestLoadJobConfig(_Base):
         self.assertEqual(
             config._properties["load"]["sourceColumnMatch"], option_enum.value
         )
+        option_str = "NAME"
+        config.source_column_match = option_str
+        self.assertEqual(config._properties["load"]["sourceColumnMatch"], option_str)
 
     def test_source_column_match_setter_invalid_type(self):
         config = self._get_target_class()()
         with self.assertRaises(TypeError):
-            config.source_column_match = "INVALID_STRING_TYPE"
+            config.source_column_match = 3.14
 
     def test_date_format_missing(self):
         config = self._get_target_class()()

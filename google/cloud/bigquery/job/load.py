@@ -15,7 +15,7 @@
 """Classes for load jobs."""
 
 import typing
-from typing import FrozenSet, List, Iterable, Optional
+from typing import FrozenSet, List, Iterable, Optional, Union
 
 from google.cloud.bigquery.encryption_configuration import EncryptionConfiguration
 from google.cloud.bigquery.enums import SourceColumnMatch
@@ -591,17 +591,17 @@ class LoadJobConfig(_JobConfig):
         https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.FIELDS.source_column_match
         """
         value = self._get_sub_prop("sourceColumnMatch")
-        if value is not None:
-            return SourceColumnMatch(value)
-        return None
+        return SourceColumnMatch(value) if value is not None else None
 
     @source_column_match.setter
-    def source_column_match(self, value: Optional[SourceColumnMatch]):
-        if value is not None and not isinstance(value, SourceColumnMatch):
+    def source_column_match(self, value: Union[SourceColumnMatch, str, None]):
+        if value is not None and not isinstance(value, (SourceColumnMatch, str)):
             raise TypeError(
-                "value must be a google.cloud.bigquery.enums.SourceColumnMatch or None"
+                "value must be a google.cloud.bigquery.enums.SourceColumnMatch, str, or None"
             )
-        self._set_sub_prop("sourceColumnMatch", value.value if value else None)
+        if isinstance(value, SourceColumnMatch):
+            value = value.value
+        self._set_sub_prop("sourceColumnMatch", value if value else None)
 
     @property
     def date_format(self) -> Optional[str]:
@@ -1018,7 +1018,7 @@ class LoadJob(_AsyncJob):
         return self.configuration.clustering_fields
 
     @property
-    def source_column_match(self):
+    def source_column_match(self) -> Optional[SourceColumnMatch]:
         """See
         :attr:`google.cloud.bigquery.job.LoadJobConfig.source_column_match`.
         """

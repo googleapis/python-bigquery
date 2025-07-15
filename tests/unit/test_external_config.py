@@ -939,9 +939,9 @@ class TestCSVOptions(unittest.TestCase):
         ec = external_config.CSVOptions()
         with self.assertRaisesRegex(
             TypeError,
-            "value must be a google.cloud.bigquery.enums.SourceColumnMatch or None",
+            "value must be a google.cloud.bigquery.enums.SourceColumnMatch, str, or None",
         ):
-            ec.source_column_match = "neither None or enum value"
+            ec.source_column_match = 3.14
 
 
 class TestGoogleSheetsOptions(unittest.TestCase):

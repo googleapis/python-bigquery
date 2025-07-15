@@ -496,17 +496,17 @@ class CSVOptions(object):
         """
 
         value = self._properties.get("sourceColumnMatch")
-        # if value is not None:
         return SourceColumnMatch(value) if value is not None else None
-        # return None
 
     @source_column_match.setter
-    def source_column_match(self, value: Optional[SourceColumnMatch]):
-        if value is not None and not isinstance(value, SourceColumnMatch):
+    def source_column_match(self, value: Union[SourceColumnMatch, str, None]):
+        if value is not None and not isinstance(value, (SourceColumnMatch, str)):
             raise TypeError(
-                "value must be a google.cloud.bigquery.enums.SourceColumnMatch or None"
+                "value must be a google.cloud.bigquery.enums.SourceColumnMatch, str, or None"
             )
-        self._properties["sourceColumnMatch"] = value.value if value else None
+        if isinstance(value, SourceColumnMatch):
+            value = value.value
+        self._properties["sourceColumnMatch"] = value if value else None
 
     @property
     def null_markers(self) -> Optional[Iterable[str]]:

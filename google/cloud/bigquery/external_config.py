@@ -492,7 +492,7 @@ class CSVOptions(object):
             reorders columns to match the field names in the schema.
 
         See
-        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#ExternalDataConfiguration.FIELDS.source_column_match
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#CsvOptions.FIELDS.source_column_match
         """
 
         value = self._properties.get("sourceColumnMatch")

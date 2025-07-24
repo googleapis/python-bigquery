@@ -1153,6 +1153,11 @@ def test_make_job_id_w_job_id_overrides_prefix():
             True,
             id="write_incremental_results",
         ),
+        pytest.param(
+            job_query.QueryJobConfig(max_slots=20),
+            20,
+            id="max_slots",
+        ),
     ),
 )
 def test_supported_by_jobs_query_from_queryjobconfig(

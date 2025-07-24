@@ -23,38 +23,36 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "ExternalCatalogDatasetOptions",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class ExternalCatalogDatasetOptions(proto.Message):
+    r"""Options defining open source compatible datasets living in
+    the BigQuery catalog. Contains metadata of open source database,
+    schema, or namespace represented by the current dataset.
 
     Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+        parameters (MutableMapping[str, str]):
+            Optional. A map of key value pairs defining
+            the parameters and properties of the open source
+            schema. Maximum size of 2MiB.
+        default_storage_location_uri (str):
+            Optional. The storage location URI for all
+            tables in the dataset. Equivalent to hive
+            metastore's database locationUri. Maximum length
+            of 1024 characters.
     """
 
-    project_id: str = proto.Field(
+    parameters: MutableMapping[str, str] = proto.MapField(
+        proto.STRING,
         proto.STRING,
         number=1,
     )
-    dataset_id: str = proto.Field(
+    default_storage_location_uri: str = proto.Field(
         proto.STRING,
         number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
     )
 
 

@@ -23,39 +23,24 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "MapTargetType",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class MapTargetType(proto.Enum):
+    r"""Indicates the map target type. Only applies to parquet maps.
 
-    Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+    Values:
+        MAP_TARGET_TYPE_UNSPECIFIED (0):
+            In this mode, the map will have the following schema: struct
+            map_field_name { repeated struct key_value { key value } }.
+        ARRAY_OF_STRUCT (1):
+            In this mode, the map will have the following schema:
+            repeated struct map_field_name { key value }.
     """
-
-    project_id: str = proto.Field(
-        proto.STRING,
-        number=1,
-    )
-    dataset_id: str = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
-    )
+    MAP_TARGET_TYPE_UNSPECIFIED = 0
+    ARRAY_OF_STRUCT = 1
 
 
 __all__ = tuple(sorted(__protobuf__.manifest))

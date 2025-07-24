@@ -23,39 +23,27 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "FileSetSpecType",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class FileSetSpecType(proto.Enum):
+    r"""This enum defines how to interpret source URIs for load jobs
+    and external tables.
 
-    Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+    Values:
+        FILE_SET_SPEC_TYPE_FILE_SYSTEM_MATCH (0):
+            This option expands source URIs by listing
+            files from the object store. It is the default
+            behavior if FileSetSpecType is not set.
+        FILE_SET_SPEC_TYPE_NEW_LINE_DELIMITED_MANIFEST (1):
+            This option indicates that the provided URIs
+            are newline-delimited manifest files, with one
+            URI per line. Wildcard URIs are not supported.
     """
-
-    project_id: str = proto.Field(
-        proto.STRING,
-        number=1,
-    )
-    dataset_id: str = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
-    )
+    FILE_SET_SPEC_TYPE_FILE_SYSTEM_MATCH = 0
+    FILE_SET_SPEC_TYPE_NEW_LINE_DELIMITED_MANIFEST = 1
 
 
 __all__ = tuple(sorted(__protobuf__.manifest))

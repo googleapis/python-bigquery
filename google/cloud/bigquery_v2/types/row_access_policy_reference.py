@@ -23,25 +23,28 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "RowAccessPolicyReference",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class RowAccessPolicyReference(proto.Message):
+    r"""Id path of a row access policy.
 
     Attributes:
         project_id (str):
             Required. The ID of the project containing
-            this model.
+            this row access policy.
         dataset_id (str):
             Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+            this row access policy.
+        table_id (str):
+            Required. The ID of the table containing this
+            row access policy.
+        policy_id (str):
+            Required. The ID of the row access policy. The ID must
+            contain only letters (a-z, A-Z), numbers (0-9), or
+            underscores (_). The maximum length is 256 characters.
     """
 
     project_id: str = proto.Field(
@@ -52,9 +55,13 @@ class ModelReference(proto.Message):
         proto.STRING,
         number=2,
     )
-    model_id: str = proto.Field(
+    table_id: str = proto.Field(
         proto.STRING,
         number=3,
+    )
+    policy_id: str = proto.Field(
+        proto.STRING,
+        number=4,
     )
 
 

@@ -23,38 +23,43 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "GetServiceAccountRequest",
+        "GetServiceAccountResponse",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class GetServiceAccountRequest(proto.Message):
+    r"""Request object of GetServiceAccount
 
     Attributes:
         project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+            Required. ID of the project.
     """
 
     project_id: str = proto.Field(
         proto.STRING,
         number=1,
     )
-    dataset_id: str = proto.Field(
+
+
+class GetServiceAccountResponse(proto.Message):
+    r"""Response object of GetServiceAccount
+
+    Attributes:
+        kind (str):
+            The resource type of the response.
+        email (str):
+            The service account email address.
+    """
+
+    kind: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    email: str = proto.Field(
         proto.STRING,
         number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
     )
 
 

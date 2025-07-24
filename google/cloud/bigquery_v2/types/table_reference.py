@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2022 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import annotations
+
+from typing import MutableMapping, MutableSequence
+
 import proto  # type: ignore
 
 
@@ -35,45 +39,27 @@ class TableReference(proto.Message):
             Required. The ID of the dataset containing
             this table.
         table_id (str):
-            Required. The ID of the table. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters. Certain operations allow
-            suffixing of the table ID with a partition decorator, such
-            as ``sample_table$20190123``.
-        project_id_alternative (Sequence[str]):
-            The alternative field that will be used when ESF is not able
-            to translate the received data to the project_id field.
-        dataset_id_alternative (Sequence[str]):
-            The alternative field that will be used when ESF is not able
-            to translate the received data to the project_id field.
-        table_id_alternative (Sequence[str]):
-            The alternative field that will be used when ESF is not able
-            to translate the received data to the project_id field.
+            Required. The ID of the table. The ID can contain Unicode
+            characters in category L (letter), M (mark), N (number), Pc
+            (connector, including underscore), Pd (dash), and Zs
+            (space). For more information, see `General
+            Category <https://wikipedia.org/wiki/Unicode_character_property#General_Category>`__.
+            The maximum length is 1,024 characters. Certain operations
+            allow suffixing of the table ID with a partition decorator,
+            such as ``sample_table$20190123``.
     """
 
-    project_id = proto.Field(
+    project_id: str = proto.Field(
         proto.STRING,
         number=1,
     )
-    dataset_id = proto.Field(
+    dataset_id: str = proto.Field(
         proto.STRING,
         number=2,
     )
-    table_id = proto.Field(
+    table_id: str = proto.Field(
         proto.STRING,
         number=3,
-    )
-    project_id_alternative = proto.RepeatedField(
-        proto.STRING,
-        number=4,
-    )
-    dataset_id_alternative = proto.RepeatedField(
-        proto.STRING,
-        number=5,
-    )
-    table_id_alternative = proto.RepeatedField(
-        proto.STRING,
-        number=6,
     )
 
 

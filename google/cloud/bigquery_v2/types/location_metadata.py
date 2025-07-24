@@ -23,38 +23,27 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "LocationMetadata",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class LocationMetadata(proto.Message):
+    r"""BigQuery-specific metadata about a location. This will be set
+    on google.cloud.location.Location.metadata in Cloud Location API
+    responses.
 
     Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+        legacy_location_id (str):
+            The legacy BigQuery location ID, e.g. “EU”
+            for the “europe” location. This is for any API
+            consumers that need the legacy “US” and “EU”
+            locations.
     """
 
-    project_id: str = proto.Field(
+    legacy_location_id: str = proto.Field(
         proto.STRING,
         number=1,
-    )
-    dataset_id: str = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
     )
 
 

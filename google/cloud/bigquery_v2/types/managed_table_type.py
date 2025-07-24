@@ -23,39 +23,27 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "ManagedTableType",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class ManagedTableType(proto.Enum):
+    r"""The classification of managed table types that can be
+    created.
 
-    Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+    Values:
+        MANAGED_TABLE_TYPE_UNSPECIFIED (0):
+            No managed table type specified.
+        NATIVE (1):
+            The managed table is a native BigQuery table.
+        BIGLAKE (2):
+            The managed table is a BigLake table for
+            Apache Iceberg in BigQuery.
     """
-
-    project_id: str = proto.Field(
-        proto.STRING,
-        number=1,
-    )
-    dataset_id: str = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
-    )
+    MANAGED_TABLE_TYPE_UNSPECIFIED = 0
+    NATIVE = 1
+    BIGLAKE = 2
 
 
 __all__ = tuple(sorted(__protobuf__.manifest))

@@ -19,42 +19,39 @@ from typing import MutableMapping, MutableSequence
 
 import proto  # type: ignore
 
+from google.cloud.bigquery_v2.types import standard_sql
+from google.protobuf import struct_pb2  # type: ignore
+
 
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "SystemVariables",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class SystemVariables(proto.Message):
+    r"""System variables given to a query.
 
     Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+        types (MutableMapping[str, google.cloud.bigquery_v2.types.StandardSqlDataType]):
+            Output only. Data type for each system
+            variable.
+        values (google.protobuf.struct_pb2.Struct):
+            Output only. Value for each system variable.
     """
 
-    project_id: str = proto.Field(
+    types: MutableMapping[str, standard_sql.StandardSqlDataType] = proto.MapField(
         proto.STRING,
+        proto.MESSAGE,
         number=1,
+        message=standard_sql.StandardSqlDataType,
     )
-    dataset_id: str = proto.Field(
-        proto.STRING,
+    values: struct_pb2.Struct = proto.Field(
+        proto.MESSAGE,
         number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
+        message=struct_pb2.Struct,
     )
 
 

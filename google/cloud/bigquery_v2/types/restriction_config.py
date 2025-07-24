@@ -23,38 +23,39 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "RestrictionConfig",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class RestrictionConfig(proto.Message):
+    r"""
 
     Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+        type_ (google.cloud.bigquery_v2.types.RestrictionConfig.RestrictionType):
+            Output only. Specifies the type of
+            dataset/table restriction.
     """
 
-    project_id: str = proto.Field(
-        proto.STRING,
+    class RestrictionType(proto.Enum):
+        r"""RestrictionType specifies the type of dataset/table
+        restriction.
+
+        Values:
+            RESTRICTION_TYPE_UNSPECIFIED (0):
+                Should never be used.
+            RESTRICTED_DATA_EGRESS (1):
+                Restrict data egress. See `Data
+                egress <https://cloud.google.com/bigquery/docs/analytics-hub-introduction#data_egress>`__
+                for more details.
+        """
+        RESTRICTION_TYPE_UNSPECIFIED = 0
+        RESTRICTED_DATA_EGRESS = 1
+
+    type_: RestrictionType = proto.Field(
+        proto.ENUM,
         number=1,
-    )
-    dataset_id: str = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
+        enum=RestrictionType,
     )
 
 

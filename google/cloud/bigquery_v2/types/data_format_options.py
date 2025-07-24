@@ -23,38 +23,23 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "DataFormatOptions",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class DataFormatOptions(proto.Message):
+    r"""Options for data format adjustments.
 
     Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+        use_int64_timestamp (bool):
+            Optional. Output timestamp as usec int64.
+            Default is false.
     """
 
-    project_id: str = proto.Field(
-        proto.STRING,
+    use_int64_timestamp: bool = proto.Field(
+        proto.BOOL,
         number=1,
-    )
-    dataset_id: str = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
     )
 
 

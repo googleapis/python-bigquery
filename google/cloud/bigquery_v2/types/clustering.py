@@ -23,38 +23,28 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "Clustering",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class Clustering(proto.Message):
+    r"""Configures table clustering.
 
     Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+        fields (MutableSequence[str]):
+            One or more fields on which data should be clustered. Only
+            top-level, non-repeated, simple-type fields are supported.
+            The ordering of the clustering fields should be prioritized
+            from most to least important for filtering purposes.
+
+            For additional information, see `Introduction to clustered
+            tables <https://cloud.google.com/bigquery/docs/clustered-tables#limitations>`__.
     """
 
-    project_id: str = proto.Field(
+    fields: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=1,
-    )
-    dataset_id: str = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
     )
 
 

@@ -23,39 +23,28 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "JsonExtension",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class JsonExtension(proto.Enum):
+    r"""Used to indicate that a JSON variant, rather than normal JSON, is
+    being used as the source_format. This should only be used in
+    combination with the JSON source format.
 
-    Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+    Values:
+        JSON_EXTENSION_UNSPECIFIED (0):
+            The default if provided value is not one
+            included in the enum, or the value is not
+            specified. The source format is parsed without
+            any modification.
+        GEOJSON (1):
+            Use GeoJSON variant of JSON. See
+            https://tools.ietf.org/html/rfc7946.
     """
-
-    project_id: str = proto.Field(
-        proto.STRING,
-        number=1,
-    )
-    dataset_id: str = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
-    )
+    JSON_EXTENSION_UNSPECIFIED = 0
+    GEOJSON = 1
 
 
 __all__ = tuple(sorted(__protobuf__.manifest))

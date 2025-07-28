@@ -19,42 +19,50 @@ from typing import MutableMapping, MutableSequence
 
 import proto  # type: ignore
 
+from google.protobuf import wrappers_pb2  # type: ignore
+
 
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "JobReference",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class JobReference(proto.Message):
+    r"""A job reference is a fully qualified identifier for referring
+    to a job.
 
     Attributes:
         project_id (str):
             Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+            this job.
+        job_id (str):
+            Required. The ID of the job. The ID must contain only
+            letters (a-z, A-Z), numbers (0-9), underscores (_), or
+            dashes (-). The maximum length is 1,024 characters.
+        location (google.protobuf.wrappers_pb2.StringValue):
+            Optional. The geographic location of the job.
+            The default value is US.
+            For more information about BigQuery locations,
+            see:
+
+            https://cloud.google.com/bigquery/docs/locations
     """
 
     project_id: str = proto.Field(
         proto.STRING,
         number=1,
     )
-    dataset_id: str = proto.Field(
+    job_id: str = proto.Field(
         proto.STRING,
         number=2,
     )
-    model_id: str = proto.Field(
-        proto.STRING,
+    location: wrappers_pb2.StringValue = proto.Field(
+        proto.MESSAGE,
         number=3,
+        message=wrappers_pb2.StringValue,
     )
 
 

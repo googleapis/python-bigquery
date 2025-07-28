@@ -23,38 +23,32 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "DatasetReference",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class DatasetReference(proto.Message):
+    r"""Identifier for a dataset.
 
     Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
         dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+            Required. A unique ID for this dataset, without the project
+            name. The ID must contain only letters (a-z, A-Z), numbers
+            (0-9), or underscores (_). The maximum length is 1,024
+            characters.
+        project_id (str):
+            Optional. The ID of the project containing
+            this dataset.
     """
 
-    project_id: str = proto.Field(
+    dataset_id: str = proto.Field(
         proto.STRING,
         number=1,
     )
-    dataset_id: str = proto.Field(
+    project_id: str = proto.Field(
         proto.STRING,
         number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
     )
 
 

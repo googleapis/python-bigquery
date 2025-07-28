@@ -23,38 +23,42 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "ErrorProto",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class ErrorProto(proto.Message):
+    r"""Error details.
 
     Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+        reason (str):
+            A short error code that summarizes the error.
+        location (str):
+            Specifies where the error occurred, if
+            present.
+        debug_info (str):
+            Debugging information. This property is
+            internal to Google and should not be used.
+        message (str):
+            A human-readable description of the error.
     """
 
-    project_id: str = proto.Field(
+    reason: str = proto.Field(
         proto.STRING,
         number=1,
     )
-    dataset_id: str = proto.Field(
+    location: str = proto.Field(
         proto.STRING,
         number=2,
     )
-    model_id: str = proto.Field(
+    debug_info: str = proto.Field(
         proto.STRING,
         number=3,
+    )
+    message: str = proto.Field(
+        proto.STRING,
+        number=4,
     )
 
 

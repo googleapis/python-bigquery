@@ -23,38 +23,22 @@ import proto  # type: ignore
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.v2",
     manifest={
-        "ModelReference",
+        "SessionInfo",
     },
 )
 
 
-class ModelReference(proto.Message):
-    r"""Id path of a model.
+class SessionInfo(proto.Message):
+    r"""[Preview] Information related to sessions.
 
     Attributes:
-        project_id (str):
-            Required. The ID of the project containing
-            this model.
-        dataset_id (str):
-            Required. The ID of the dataset containing
-            this model.
-        model_id (str):
-            Required. The ID of the model. The ID must contain only
-            letters (a-z, A-Z), numbers (0-9), or underscores (_). The
-            maximum length is 1,024 characters.
+        session_id (str):
+            Output only. The id of the session.
     """
 
-    project_id: str = proto.Field(
+    session_id: str = proto.Field(
         proto.STRING,
         number=1,
-    )
-    dataset_id: str = proto.Field(
-        proto.STRING,
-        number=2,
-    )
-    model_id: str = proto.Field(
-        proto.STRING,
-        number=3,
     )
 
 

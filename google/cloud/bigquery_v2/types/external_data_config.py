@@ -666,7 +666,6 @@ class ExternalDataConfiguration(proto.Message):
             scale, the type supporting the widest range in the specified
             list is picked, and if a value exceeds the supported range
             when reading the data, an error will be thrown.
-
             Example: Suppose the value of this field is ["NUMERIC",
             "BIGNUMERIC"]. If (precision,scale) is:
 
@@ -712,7 +711,6 @@ class ExternalDataConfiguration(proto.Message):
             the user can provide a reference file with the
             table schema. This is enabled for the following
             formats:
-
             AVRO, PARQUET, ORC.
         metadata_cache_mode (google.cloud.bigquery_v2.types.ExternalDataConfiguration.MetadataCacheMode):
             Optional. Metadata Cache Mode for the table.

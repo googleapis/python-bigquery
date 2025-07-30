@@ -716,6 +716,7 @@ class JobConfigurationLoad(proto.Message):
             names in the table schema   Avro, Parquet, ORC:
             Fields in the file schema that don't exist in
             the   table schema.
+            BigQuery treats as an extra value.
         projection_fields (MutableSequence[str]):
             If sourceFormat is set to "DATASTORE_BACKUP", indicates
             which entity properties to load into BigQuery from a Cloud
@@ -743,6 +744,8 @@ class JobConfigurationLoad(proto.Message):
                the schema.
             -  ALLOW_FIELD_RELAXATION: allow relaxing a required field
                in the original schema to nullable.
+            will always overwrite the schema. One or more of the.
+
         time_partitioning (google.cloud.bigquery_v2.types.TimePartitioning):
             Time-based partitioning specification for the
             destination table. Only one of timePartitioning

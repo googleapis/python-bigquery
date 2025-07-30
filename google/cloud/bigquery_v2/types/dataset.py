@@ -286,6 +286,9 @@ class Dataset(proto.Message):
             ``defaultPartitionExpirationMs`` is set, the
             ``defaultTableExpirationMs`` value is ignored and the table
             will not be inherit a table expiration deadline.
+        default_partition_expiration_ms (google.protobuf.wrappers_pb2.Int64Value):
+            This default partition expiration, expressed in
+            milliseconds.
         labels (MutableMapping[str, str]):
             The labels associated with this dataset. You can use these
             to organize and group your datasets. You can set this

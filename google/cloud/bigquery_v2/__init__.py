@@ -17,7 +17,6 @@ from google.cloud.bigquery_v2 import gapic_version as package_version
 
 __version__ = package_version.__version__
 
-
 from .services.dataset_service import DatasetServiceClient
 from .services.job_service import JobServiceClient
 from .services.model_service import ModelServiceClient

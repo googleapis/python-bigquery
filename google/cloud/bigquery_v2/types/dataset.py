@@ -256,7 +256,36 @@ class Dataset(proto.Message):
             lifetime value is 3600000 milliseconds (one
             hour). To clear an existing default expiration
             with a PATCH request, set to
-            0.
+            0. Once this property is set, all newly-created
+                tables in the dataset will have an
+                expirationTime property set to the creation
+                time plus the value in this property, and
+                changing the value will only affect new
+                tables, not existing ones. When the
+                expirationTime for a given table is reached,
+                that table will be deleted automatically.
+            If a table's expirationTime is modified or
+            removed before the table expires, or if you
+            provide an explicit expirationTime when creating
+            a table, that value takes precedence over the
+            default expiration time indicated by this
+            property.
+        default_partition_expiration_ms (google.protobuf.wrappers_pb2.Int64Value):
+            This default partition expiration, expressed in
+            milliseconds.
+
+            When new time-partitioned tables are created in a dataset
+            where this property is set, the table will inherit this
+            value, propagated as the ``TimePartitioning.expirationMs``
+            property on the new table. If you set
+            ``TimePartitioning.expirationMs`` explicitly when creating a
+            table, the ``defaultPartitionExpirationMs`` of the
+            containing dataset is ignored.
+
+            When creating a partitioned table, if
+            ``defaultPartitionExpirationMs`` is set, the
+            ``defaultTableExpirationMs`` value is ignored and the table
+            will not be inherit a table expiration deadline.
         default_partition_expiration_ms (google.protobuf.wrappers_pb2.Int64Value):
             This default partition expiration, expressed in
             milliseconds.

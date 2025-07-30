@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 #
 # google-cloud-bigquery documentation build configuration file
 #
@@ -33,16 +34,12 @@ import shlex
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(".."))
 
-# For plugins that can not read conf.py.
-# See also: https://github.com/docascode/sphinx-docfx-yaml/issues/85
-sys.path.insert(0, os.path.abspath("."))
-
-__version__ = ""
+__version__ = "0.1.0"
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "1.5.5"
+needs_sphinx = "4.0.1"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -52,25 +49,26 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.coverage",
-    "sphinx.ext.doctest",
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
-    "recommonmark",
 ]
 
 # autodoc/autosummary flags
 autoclass_content = "both"
-autodoc_default_options = {"members": True}
+autodoc_default_flags = ["members"]
 autosummary_generate = True
 
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
+# Allow markdown includes (so releases.md can include CHANGLEOG.md)
+# http://www.sphinx-doc.org/en/master/markdown.html
+source_parsers = {".md": "recommonmark.parser.CommonMarkParser"}
+
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
-# source_suffix = ['.rst', '.md']
 source_suffix = [".rst", ".md"]
 
 # The encoding of source files.
@@ -81,8 +79,8 @@ root_doc = "index"
 
 # General information about the project.
 project = "google-cloud-bigquery"
-copyright = "2019, Google"
-author = "Google APIs"
+copyright = "2023, Google, LLC"
+author = "Google APIs"  # TODO: autogenerate this bit
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -98,7 +96,7 @@ version = ".".join(release.split(".")[0:2])
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -108,13 +106,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = [
-    "_build",
-    "**/.nox/**/*",
-    "samples/AUTHORING_GUIDE.md",
-    "samples/CONTRIBUTING.md",
-    "samples/snippets/README.rst",
-]
+exclude_patterns = ["_build"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -154,9 +146,9 @@ html_theme = "alabaster"
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    "description": "Google Cloud Client Libraries for google-cloud-bigquery",
+    "description": "Google Cloud Client Libraries for Python",
     "github_user": "googleapis",
-    "github_repo": "python-bigquery",
+    "github_repo": "google-cloud-python",
     "github_banner": True,
     "font_family": "'Roboto', Georgia, sans",
     "head_font_family": "'Roboto', Georgia, serif",
@@ -266,13 +258,13 @@ suppress_warnings = [
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
     # Latex figure (float) alignment
-    #'figure_align': 'htbp',
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -317,7 +309,7 @@ man_pages = [
     (
         root_doc,
         "google-cloud-bigquery",
-        "google-cloud-bigquery Documentation",
+        "Google Cloud Bigquery Documentation",
         [author],
         1,
     )
@@ -339,7 +331,7 @@ texinfo_documents = [
         "google-cloud-bigquery Documentation",
         author,
         "google-cloud-bigquery",
-        "google-cloud-bigquery Library",
+        "GAPIC library for Google Cloud Bigquery API",
         "APIs",
     )
 ]
@@ -359,18 +351,15 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    "python": ("https://python.readthedocs.org/en/latest/", None),
-    "google-auth": ("https://googleapis.dev/python/google-auth/latest/", None),
-    "google.api_core": (
-        "https://googleapis.dev/python/google-api-core/latest/",
-        None,
-    ),
-    "grpc": ("https://grpc.github.io/grpc/python/", None),
-    "proto-plus": ("https://proto-plus-python.readthedocs.io/en/latest/", None),
+    "python": ("http://python.readthedocs.org/en/latest/", None),
+    "gax": ("https://gax-python.readthedocs.org/en/latest/", None),
+    "google-auth": ("https://google-auth.readthedocs.io/en/stable", None),
+    "google-gax": ("https://gax-python.readthedocs.io/en/latest/", None),
+    "google.api_core": ("https://googleapis.dev/python/google-api-core/latest/", None),
+    "grpc": ("https://grpc.io/grpc/python/", None),
+    "requests": ("http://requests.kennethreitz.org/en/stable/", None),
+    "proto": ("https://proto-plus-python.readthedocs.io/en/stable", None),
     "protobuf": ("https://googleapis.dev/python/protobuf/latest/", None),
-    "dateutil": ("https://dateutil.readthedocs.io/en/latest/", None),
-    "geopandas": ("https://geopandas.org/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
 }
 
 

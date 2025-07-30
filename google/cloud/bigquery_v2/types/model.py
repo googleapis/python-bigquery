@@ -230,7 +230,7 @@ class Model(proto.Message):
             TRANSFORM clause.
         label_columns (MutableSequence[google.cloud.bigquery_v2.types.StandardSqlField]):
             Output only. Label columns that were used to train this
-            model. The output of the model will have a
+            model. The output of the model will have a "predicted_"
             prefix to these columns.
         transform_columns (MutableSequence[google.cloud.bigquery_v2.types.TransformColumn]):
             Output only. This field will be populated if a TRANSFORM

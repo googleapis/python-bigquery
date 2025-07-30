@@ -211,6 +211,14 @@ class CsvOptions(proto.Message):
             columns are matched by name. Otherwise, columns
             are matched by position. This is done to keep
             the behavior backward-compatible. Acceptable
+            values are:
+
+              POSITION - matches by position. This assumes
+            that the columns are ordered              the
+            same way as the schema.
+              NAME - matches by name. This reads the header
+            row as column names and          reorders
+            columns to match the field names in the schema.
     """
 
     field_delimiter: str = proto.Field(
@@ -290,14 +298,14 @@ class BigtableColumn(proto.Message):
             qualifier_string field. Otherwise, a base-64 encoded value
             must be set to qualifier_encoded. The column field name is
             the same as the column qualifier. However, if the qualifier
-            is not a valid BigQuery field identifier i.e. does not match,
-            a valid identifier must be provided
+            is not a valid BigQuery field identifier i.e. does not match
+            [a-zA-Z][a-zA-Z0-9_]*, a valid identifier must be provided
             as field_name.
         qualifier_string (google.protobuf.wrappers_pb2.StringValue):
             Qualifier string.
         field_name (str):
             Optional. If the qualifier is not a valid BigQuery field
-            identifier i.e. does not match, a
+            identifier i.e. does not match [a-zA-Z][a-zA-Z0-9_]*, a
             valid identifier must be provided as the column field name
             and is used as field name in queries.
         type_ (str):
@@ -319,6 +327,15 @@ class BigtableColumn(proto.Message):
         encoding (str):
             Optional. The encoding of the values when the
             type is not STRING. Acceptable encoding values
+            are:
+
+              TEXT - indicates values are alphanumeric text
+            strings.   BINARY - indicates values are encoded
+            using HBase Bytes.toBytes family of
+            functions.
+            'encoding' can also be set at the column family
+            level. However, the setting at this level takes
+            precedence if 'encoding' is set at both levels.
         only_read_latest (google.protobuf.wrappers_pb2.BoolValue):
             Optional. If this is set, only the latest
             version of value in this column             are
@@ -382,7 +399,16 @@ class BigtableColumnFamily(proto.Message):
             type for it.
         encoding (str):
             Optional. The encoding of the values when the
-            type is not STRING. Acceptable encoding values.
+            type is not STRING. Acceptable encoding values
+            are:
+
+              TEXT - indicates values are alphanumeric text
+            strings.   BINARY - indicates values are encoded
+            using HBase Bytes.toBytes family of
+            functions.
+            This can be overridden for a specific column by
+            listing that column in 'columns' and specifying
+            an encoding for it.
         columns (MutableSequence[google.cloud.bigquery_v2.types.BigtableColumn]):
             Optional. Lists of columns that should be exposed as
             individual fields as opposed to a list of (column name,
@@ -586,6 +612,16 @@ class ExternalDataConfiguration(proto.Message):
             result.
             The default value is false.
             The sourceFormat property determines what
+            BigQuery treats as an extra value:
+
+              CSV: Trailing columns
+              JSON: Named values that don't match any column
+            names   Google Cloud Bigtable: This setting is
+            ignored.   Google Cloud Datastore backups: This
+            setting is ignored.   Avro: This setting is
+            ignored.
+              ORC: This setting is ignored.
+              Parquet: This setting is ignored.
         compression (str):
             Optional. The compression type of the data
             source. Possible values include GZIP and NONE.
@@ -630,6 +666,17 @@ class ExternalDataConfiguration(proto.Message):
             scale, the type supporting the widest range in the specified
             list is picked, and if a value exceeds the supported range
             when reading the data, an error will be thrown.
+            Example: Suppose the value of this field is ["NUMERIC",
+            "BIGNUMERIC"]. If (precision,scale) is:
+
+            -  (38,9) -> NUMERIC;
+            -  (39,9) -> BIGNUMERIC (NUMERIC cannot hold 30 integer
+               digits);
+            -  (38,10) -> BIGNUMERIC (NUMERIC cannot hold 10 fractional
+               digits);
+            -  (76,38) -> BIGNUMERIC;
+            -  (77,38) -> BIGNUMERIC (error if value exceeds supported
+               range).
 
             This field cannot contain duplicate types. The order of the
             types in this field is ignored. For example, ["BIGNUMERIC",
@@ -663,6 +710,7 @@ class ExternalDataConfiguration(proto.Message):
             Optional. When creating an external table,
             the user can provide a reference file with the
             table schema. This is enabled for the following
+            formats:
             AVRO, PARQUET, ORC.
         metadata_cache_mode (google.cloud.bigquery_v2.types.ExternalDataConfiguration.MetadataCacheMode):
             Optional. Metadata Cache Mode for the table.

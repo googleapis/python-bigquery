@@ -2,13 +2,12 @@
 branch = True
 
 [report]
-fail_under = 100
 show_missing = True
 omit =
     google/cloud/bigquery/__init__.py
-    google/cloud/bigquery_v2/*  # Legacy proto-based types.
+    google/cloud/bigquery/gapic_version.py
 exclude_lines =
     # Re-enable the standard pragma
-    pragma: (no cover|NO COVER)
+    pragma: NO COVER
     # Ignore debug-only repr
     def __repr__

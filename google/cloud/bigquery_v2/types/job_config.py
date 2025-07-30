@@ -709,6 +709,13 @@ class JobConfigurationLoad(proto.Message):
             records, an invalid error is returned in the job
             result. The default value is false.
             The sourceFormat property determines what
+            BigQuery treats as an extra value:
+
+              CSV: Trailing columns
+              JSON: Named values that don't match any column
+            names in the table schema   Avro, Parquet, ORC:
+            Fields in the file schema that don't exist in
+            the   table schema.
             BigQuery treats as an extra value.
         projection_fields (MutableSequence[str]):
             If sourceFormat is set to "DATASTORE_BACKUP", indicates
@@ -730,7 +737,15 @@ class JobConfigurationLoad(proto.Message):
             WRITE_APPEND; when writeDisposition is WRITE_TRUNCATE and
             the destination table is a partition of a table, specified
             by partition decorators. For normal tables, WRITE_TRUNCATE
+            will always overwrite the schema. One or more of the
+            following values are specified:
+
+            -  ALLOW_FIELD_ADDITION: allow adding a nullable field to
+               the schema.
+            -  ALLOW_FIELD_RELAXATION: allow relaxing a required field
+               in the original schema to nullable.
             will always overwrite the schema. One or more of the.
+
         time_partitioning (google.cloud.bigquery_v2.types.TimePartitioning):
             Time-based partitioning specification for the
             destination table. Only one of timePartitioning
@@ -776,6 +791,26 @@ class JobConfigurationLoad(proto.Message):
             scale, the type supporting the widest range in the specified
             list is picked, and if a value exceeds the supported range
             when reading the data, an error will be thrown.
+
+            Example: Suppose the value of this field is ["NUMERIC",
+            "BIGNUMERIC"]. If (precision,scale) is:
+
+            -  (38,9) -> NUMERIC;
+            -  (39,9) -> BIGNUMERIC (NUMERIC cannot hold 30 integer
+               digits);
+            -  (38,10) -> BIGNUMERIC (NUMERIC cannot hold 10 fractional
+               digits);
+            -  (76,38) -> BIGNUMERIC;
+            -  (77,38) -> BIGNUMERIC (error if value exceeds supported
+               range).
+
+            This field cannot contain duplicate types. The order of the
+            types in this field is ignored. For example, ["BIGNUMERIC",
+            "NUMERIC"] is the same as ["NUMERIC", "BIGNUMERIC"] and
+            NUMERIC always takes precedence over BIGNUMERIC.
+
+            Defaults to ["NUMERIC", "STRING"] for ORC and ["NUMERIC"]
+            for the other file formats.
         json_extension (google.cloud.bigquery_v2.types.JsonExtension):
             Optional. Load option to be used together with source_format
             newline-delimited JSON to indicate that a variant of JSON is
@@ -818,6 +853,19 @@ class JobConfigurationLoad(proto.Message):
             Optional. [Experimental] Configures the load job to copy
             files directly to the destination BigLake managed table,
             bypassing file content reading and rewriting.
+
+            Copying files only is supported when all the following are
+            true:
+
+            -  ``source_uris`` are located in the same Cloud Storage
+               location as the destination table's ``storage_uri``
+               location.
+            -  ``source_format`` is ``PARQUET``.
+            -  ``destination_table`` is an existing BigLake managed
+               table. The table's schema does not have flexible column
+               names. The table's columns do not have type parameters
+               other than precision and scale.
+            -  No options other than the above are specified.
         time_zone (google.protobuf.wrappers_pb2.StringValue):
             Optional. Default time zone that will apply
             when parsing timestamp values that have no

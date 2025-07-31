@@ -35,11 +35,14 @@ we still need a separate job_retry object because there are different
 predicates where it is safe to generate a new query ID.
 """
 
+from __future__ import annotations
+
 import copy
+import dataclasses
 import functools
 import uuid
 import textwrap
-from typing import Any, Dict, Optional, TYPE_CHECKING, Union
+from typing import Any, Callable, Dict, Optional, TYPE_CHECKING, Union
 import warnings
 
 import google.api_core.exceptions as core_exceptions
@@ -116,10 +119,15 @@ def query_jobs_insert(
     retry: Optional[retries.Retry],
     timeout: Optional[float],
     job_retry: Optional[retries.Retry],
+    callback: Callable,
 ) -> job.QueryJob:
     """Initiate a query using jobs.insert.
 
     See: https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert
+
+    Args:
+        callback (Callable):
+            A callback function used by bigframes to report query progress.
     """
     job_id_given = job_id is not None
     job_id_save = job_id
@@ -136,6 +144,15 @@ def query_jobs_insert(
 
         try:
             query_job._begin(retry=retry, timeout=timeout)
+            callback(
+                QueryRequestedEvent(
+                    query=query,
+                    billing_project=query_job.project,
+                    location=query_job.location,
+                    job_id=query_job.job_id,
+                    request_id=None,
+                )
+            )
         except core_exceptions.Conflict as create_exc:
             # The thought is if someone is providing their own job IDs and they get
             # their job ID generation wrong, this could end up returning results for
@@ -396,6 +413,7 @@ def query_and_wait(
     job_retry: Optional[retries.Retry],
     page_size: Optional[int] = None,
     max_results: Optional[int] = None,
+    callback: Callable = lambda _: None,
 ) -> table.RowIterator:
     """Run the query, wait for it to finish, and return the results.
 
@@ -415,9 +433,8 @@ def query_and_wait(
         location (Optional[str]):
             Location where to run the job. Must match the location of the
             table used in the query as well as the destination table.
-        project (Optional[str]):
-            Project ID of the project of where to run the job. Defaults
-            to the client's project.
+        project (str):
+            Project ID of the project of where to run the job.
         api_timeout (Optional[float]):
             The number of seconds to wait for the underlying HTTP transport
             before using ``retry``.
@@ -441,6 +458,8 @@ def query_and_wait(
             request. Non-positive values are ignored.
         max_results (Optional[int]):
             The maximum total number of rows from this request.
+        callback (Callable):
+            A callback function used by bigframes to report query progress.
 
     Returns:
         google.cloud.bigquery.table.RowIterator:
@@ -479,6 +498,7 @@ def query_and_wait(
                 retry=retry,
                 timeout=api_timeout,
                 job_retry=job_retry,
+                callback=callback,
             ),
             api_timeout=api_timeout,
             wait_timeout=wait_timeout,
@@ -497,8 +517,19 @@ def query_and_wait(
         request_body["jobCreationMode"] = client.default_job_creation_mode
 
     def do_query():
-        request_body["requestId"] = make_job_id()
+        request_id = make_job_id()
+        request_body["requestId"] = request_id
         span_attributes = {"path": path}
+
+        callback(
+            QueryRequestedEvent(
+                query=query,
+                billing_project=project,
+                location=location,
+                job_id=None,
+                request_id=request_id,
+            )
+        )
 
         # For easier testing, handle the retries ourselves.
         if retry is not None:
@@ -632,3 +663,12 @@ def _wait_or_cancel(
             # Don't eat the original exception if cancel fails.
             pass
         raise
+
+
+@dataclasses.dataclass(frozen=True)
+class QueryRequestedEvent:
+    query: str
+    billing_project: str
+    location: Optional[str]
+    job_id: Optional[str]
+    request_id: Optional[str]

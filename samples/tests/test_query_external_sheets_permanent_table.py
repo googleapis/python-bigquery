@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import typing
+import pytest
 
 from .. import query_external_sheets_permanent_table
 
-if typing.TYPE_CHECKING:
-    import pytest
 
-
+@pytest.mark.skip(reason="temporary until drive ADC auth is fixed")
 def test_query_external_sheets_permanent_table(
     capsys: "pytest.CaptureFixture[str]", dataset_id: str
 ) -> None:

@@ -155,11 +155,6 @@ def _job_should_retry(exc):
     # waiting for the query to complete.
     if _should_retry(exc):
         return True
-    
-    # Per b/436586523, ML/AI jobs don't seem to populate the structured errors
-    # reason. If these jobs fail, still try to retry them.
-    if "job encountered an internal error" in str(exc):
-
 
     if not hasattr(exc, "errors") or len(exc.errors) == 0:
         return False

@@ -145,7 +145,7 @@ def query_jobs_insert(
         try:
             query_job._begin(retry=retry, timeout=timeout)
             callback(
-                QueryRequestedEvent(
+                QuerySentEvent(
                     query=query,
                     billing_project=query_job.project,
                     location=query_job.location,
@@ -522,7 +522,7 @@ def query_and_wait(
         span_attributes = {"path": path}
 
         callback(
-            QueryRequestedEvent(
+            QuerySentEvent(
                 query=query,
                 billing_project=project,
                 location=location,
@@ -666,7 +666,7 @@ def _wait_or_cancel(
 
 
 @dataclasses.dataclass(frozen=True)
-class QueryRequestedEvent:
+class QuerySentEvent:
     query: str
     billing_project: str
     location: Optional[str]

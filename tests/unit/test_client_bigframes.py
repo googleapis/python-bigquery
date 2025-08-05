@@ -22,6 +22,7 @@ import pytest
 
 import google.auth.credentials
 import google.cloud.bigquery.client
+from google.cloud.bigquery import _job_helpers
 
 
 PROJECT = "test-project"
@@ -51,5 +52,12 @@ def test_query_and_wait_bigframes_callback(client):
             {"jobComplete": True}
         ),
     ]
-    callback = lambda _: None
+    callback = mock.Mock()
     client._query_and_wait_bigframes(query="SELECT 1", callback=callback)
+    callback.assert_has_calls(
+        mock.call(
+           _job_helpers.QuerySentEvent(
+               query="SELECT 1",
+            ),
+        )
+    )

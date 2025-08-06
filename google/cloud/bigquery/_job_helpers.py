@@ -581,7 +581,7 @@ def query_and_wait(
             )
 
         callback(
-            QueryCompleteEvent(
+            QueryFinishedEvent(
                 billing_project=project,
                 location=query_results.location,
                 query_id=query_results.query_id,
@@ -674,7 +674,7 @@ def _wait_or_cancel(
             timeout=wait_timeout,
         )
         callback(
-            QueryCompleteEvent(
+            QueryFinishedEvent(
                 billing_project=job.project,
                 location=query_results.location,
                 query_id=query_results.query_id,
@@ -697,7 +697,7 @@ def _wait_or_cancel(
 
 
 @dataclasses.dataclass(frozen=True)
-class QueryCompleteEvent:
+class QueryFinishedEvent:
     """Query finished successfully."""
 
     billing_project: str

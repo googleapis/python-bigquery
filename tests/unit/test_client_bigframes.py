@@ -82,7 +82,7 @@ def test_query_and_wait_bigframes_callback(client):
                 )
             ),
             mock.call(
-                _job_helpers.QueryCompleteEvent(
+                _job_helpers.QueryFinishedEvent(
                     billing_project=PROJECT,
                     location=LOCATION,
                     query_id="abcdefg",
@@ -135,7 +135,7 @@ def test_query_and_wait_bigframes_with_job_callback(client):
                 )
             ),
             mock.call(
-                _job_helpers.QueryCompleteEvent(
+                _job_helpers.QueryFinishedEvent(
                     billing_project=PROJECT,
                     location=LOCATION,
                     query_id="abcdefg",
@@ -193,7 +193,7 @@ def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
                 )
             ),
             mock.call(
-                _job_helpers.QueryCompleteEvent(
+                _job_helpers.QueryFinishedEvent(
                     billing_project=PROJECT,
                     location=LOCATION,
                     query_id=mock.ANY,

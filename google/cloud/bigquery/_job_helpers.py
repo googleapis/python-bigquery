@@ -506,6 +506,7 @@ def query_and_wait(
             retry=retry,
             page_size=page_size,
             max_results=max_results,
+            callback=callback,
         )
 
     path = _to_query_path(project)
@@ -516,7 +517,7 @@ def query_and_wait(
         request_body["maxResults"] = page_size or max_results
     if client.default_job_creation_mode:
         request_body["jobCreationMode"] = client.default_job_creation_mode
-    
+
     query_sent_factory = QuerySentEventFactory()
 
     def do_query():
@@ -576,6 +577,7 @@ def query_and_wait(
                 retry=retry,
                 page_size=page_size,
                 max_results=max_results,
+                callback=callback,
             )
 
         callback(
@@ -657,6 +659,7 @@ def _wait_or_cancel(
     retry: Optional[retries.Retry],
     page_size: Optional[int],
     max_results: Optional[int],
+    callback: Callable,
 ) -> table.RowIterator:
     """Wait for a job to complete and return the results.
 
@@ -664,12 +667,25 @@ def _wait_or_cancel(
     the job.
     """
     try:
-        return job.result(
+        query_results = job.result(
             page_size=page_size,
             max_results=max_results,
             retry=retry,
             timeout=wait_timeout,
         )
+        callback(
+            QueryCompleteEvent(
+                billing_project=job.project,
+                location=query_results.location,
+                query_id=query_results.query_id,
+                job_id=query_results.job_id,
+                total_rows=query_results.total_rows,
+                total_bytes_processed=query_results.total_bytes_processed,
+                slot_millis=query_results.slot_millis,
+                destination=job.destination,
+            )
+        )
+        return query_results
     except Exception:
         # Attempt to cancel the job since we can't return the results.
         try:
@@ -683,6 +699,7 @@ def _wait_or_cancel(
 @dataclasses.dataclass(frozen=True)
 class QueryCompleteEvent:
     """Query finished successfully."""
+
     billing_project: str
     location: Optional[str]
     query_id: Optional[str]
@@ -691,11 +708,12 @@ class QueryCompleteEvent:
     total_rows: Optional[int]
     total_bytes_processed: Optional[int]
     slot_millis: Optional[int]
-    
+
 
 @dataclasses.dataclass(frozen=True)
 class QuerySentEvent:
     """Query sent to BigQuery."""
+
     query: str
     billing_project: str
     location: Optional[str]
@@ -712,7 +730,7 @@ class QuerySentEventFactory:
 
     def __init__(self):
         self._event_constructor = QuerySentEvent
-    
+
     def __call__(self, **kwargs):
         result = self._event_constructor(**kwargs)
         self._event_constructor = QueryRetryEvent

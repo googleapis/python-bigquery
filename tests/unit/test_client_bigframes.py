@@ -22,6 +22,7 @@ import pytest
 
 import google.auth.credentials
 from google.api_core import exceptions
+from google.cloud import bigquery
 import google.cloud.bigquery.client
 from google.cloud.bigquery import _job_helpers
 
@@ -40,10 +41,15 @@ def make_response(body, *, status_code: int = 200):
 @pytest.fixture
 def client():
     """A real client object with mocked API requests."""
-    credentials = mock.create_autospec(google.auth.credentials.Credentials, instance=True)
+    credentials = mock.create_autospec(
+        google.auth.credentials.Credentials, instance=True
+    )
     http_session = mock.Mock()
     return google.cloud.bigquery.client.Client(
-        project=PROJECT, credentials=credentials, _http=http_session, location=LOCATION,
+        project=PROJECT,
+        credentials=credentials,
+        _http=http_session,
+        location=LOCATION,
     )
 
 
@@ -66,17 +72,17 @@ def test_query_and_wait_bigframes_callback(client):
     callback.assert_has_calls(
         [
             mock.call(
-               _job_helpers.QuerySentEvent(
-                   query="SELECT 1",
-                   billing_project=PROJECT,
-                   location=LOCATION,
-                   # No job ID, because a basic query is elegible for jobs.query.
-                   job_id=None,  
-                   request_id=mock.ANY,
-               )
+                _job_helpers.QuerySentEvent(
+                    query="SELECT 1",
+                    billing_project=PROJECT,
+                    location=LOCATION,
+                    # No job ID, because a basic query is elegible for jobs.query.
+                    job_id=None,
+                    request_id=mock.ANY,
+                )
             ),
             mock.call(
-               _job_helpers.QueryCompleteEvent(
+                _job_helpers.QueryCompleteEvent(
                     billing_project=PROJECT,
                     location=LOCATION,
                     query_id="abcdefg",
@@ -84,21 +90,71 @@ def test_query_and_wait_bigframes_callback(client):
                     total_bytes_processed=123,
                     slot_millis=987,
                     # No job ID or destination, because a basic query is elegible for jobs.query.
-                    job_id=None,  
+                    job_id=None,
                     destination=None,
-               ),
+                ),
             ),
         ]
     )
 
 
-def test_query_and_wait_bigframes_with_job_retry_callbacks(client):
+def test_query_and_wait_bigframes_with_job_callback(client):
+    client._http.request.side_effect = [
+        make_response(
+            {
+                # https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert
+                # https://cloud.google.com/bigquery/docs/reference/rest/v2/Job
+                "jobReference": {},
+            }
+        ),
+        make_response(
+            {
+                # https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert
+                # https://cloud.google.com/bigquery/docs/reference/rest/v2/Job
+                "jobReference": {},
+                "status": {"state": "DONE"},
+            }
+        ),
+    ]
+    callback = mock.Mock()
+    config = bigquery.QueryJobConfig()
+    config.destination = "proj.dset.table"
+    client._query_and_wait_bigframes(
+        query="SELECT 1", job_config=config, callback=callback
+    )
+    callback.assert_has_calls(
+        [
+            mock.call(
+                _job_helpers.QuerySentEvent(
+                    query="SELECT 1",
+                    billing_project=PROJECT,
+                    location=LOCATION,
+                    # No job ID, because a basic query is elegible for jobs.query.
+                    job_id=None,
+                    request_id=mock.ANY,
+                )
+            ),
+            mock.call(
+                _job_helpers.QueryCompleteEvent(
+                    billing_project=PROJECT,
+                    location=LOCATION,
+                    query_id="abcdefg",
+                    total_rows=100,
+                    total_bytes_processed=123,
+                    slot_millis=987,
+                    # No job ID or destination, because a basic query is elegible for jobs.query.
+                    job_id=None,
+                    destination=None,
+                ),
+            ),
+        ]
+    )
+
+
+def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
     client._http.request.side_effect = [
         exceptions.InternalServerError(
-            "first try",
-            errors=(
-                {"reason": "jobInternalError"},
-            )
+            "first try", errors=({"reason": "jobInternalError"},)
         ),
         make_response(
             {
@@ -117,27 +173,27 @@ def test_query_and_wait_bigframes_with_job_retry_callbacks(client):
     callback.assert_has_calls(
         [
             mock.call(
-               _job_helpers.QuerySentEvent(
+                _job_helpers.QuerySentEvent(
                     query="SELECT 1",
                     billing_project=PROJECT,
                     location=LOCATION,
                     # No job ID, because a basic query is elegible for jobs.query.
-                    job_id=None,  
+                    job_id=None,
                     request_id=mock.ANY,
-               )
+                )
             ),
             mock.call(
-               _job_helpers.QueryRetryEvent(
+                _job_helpers.QueryRetryEvent(
                     query="SELECT 1",
                     billing_project=PROJECT,
                     location=LOCATION,
                     # No job ID, because a basic query is elegible for jobs.query.
-                    job_id=None,  
+                    job_id=None,
                     request_id=mock.ANY,
-               )
+                )
             ),
             mock.call(
-               _job_helpers.QueryCompleteEvent(
+                _job_helpers.QueryCompleteEvent(
                     billing_project=PROJECT,
                     location=LOCATION,
                     query_id=mock.ANY,
@@ -145,9 +201,9 @@ def test_query_and_wait_bigframes_with_job_retry_callbacks(client):
                     total_bytes_processed=123,
                     slot_millis=987,
                     # No job ID or destination, because a basic query is elegible for jobs.query.
-                    job_id=None,  
+                    job_id=None,
                     destination=None,
-               ),
+                ),
             ),
         ]
     )

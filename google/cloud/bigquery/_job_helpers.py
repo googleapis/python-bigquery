@@ -132,6 +132,7 @@ def query_jobs_insert(
     job_id_given = job_id is not None
     job_id_save = job_id
     job_config_save = job_config
+    query_sent_factory = QuerySentEventFactory()
 
     def do_query():
         # Make a copy now, so that original doesn't get changed by the process
@@ -145,7 +146,7 @@ def query_jobs_insert(
         try:
             query_job._begin(retry=retry, timeout=timeout)
             callback(
-                QuerySentEvent(
+                query_sent_factory(
                     query=query,
                     billing_project=query_job.project,
                     location=query_job.location,
@@ -515,6 +516,8 @@ def query_and_wait(
         request_body["maxResults"] = page_size or max_results
     if client.default_job_creation_mode:
         request_body["jobCreationMode"] = client.default_job_creation_mode
+    
+    query_sent_factory = QuerySentEventFactory()
 
     def do_query():
         request_id = make_job_id()
@@ -522,7 +525,7 @@ def query_and_wait(
         span_attributes = {"path": path}
 
         callback(
-            QuerySentEvent(
+            query_sent_factory(
                 query=query,
                 billing_project=project,
                 location=location,
@@ -575,6 +578,18 @@ def query_and_wait(
                 max_results=max_results,
             )
 
+        callback(
+            QueryCompleteEvent(
+                billing_project=project,
+                location=query_results.location,
+                query_id=query_results.query_id,
+                job_id=query_results.job_id,
+                total_rows=query_results.total_rows,
+                total_bytes_processed=query_results.total_bytes_processed,
+                slot_millis=query_results.slot_millis,
+                destination=None,
+            )
+        )
         return table.RowIterator(
             client=client,
             api_request=functools.partial(client._call_api, retry, timeout=api_timeout),
@@ -666,9 +681,39 @@ def _wait_or_cancel(
 
 
 @dataclasses.dataclass(frozen=True)
+class QueryCompleteEvent:
+    """Query finished successfully."""
+    billing_project: str
+    location: Optional[str]
+    query_id: Optional[str]
+    job_id: Optional[str]
+    destination: Optional[table.TableReference]
+    total_rows: Optional[int]
+    total_bytes_processed: Optional[int]
+    slot_millis: Optional[int]
+    
+
+@dataclasses.dataclass(frozen=True)
 class QuerySentEvent:
+    """Query sent to BigQuery."""
     query: str
     billing_project: str
     location: Optional[str]
     job_id: Optional[str]
     request_id: Optional[str]
+
+
+class QueryRetryEvent(QuerySentEvent):
+    """Query sent another time because the previous failed."""
+
+
+class QuerySentEventFactory:
+    """Creates a QuerySentEvent first, then QueryRetryEvent after that."""
+
+    def __init__(self):
+        self._event_constructor = QuerySentEvent
+    
+    def __call__(self, **kwargs):
+        result = self._event_constructor(**kwargs)
+        self._event_constructor = QueryRetryEvent
+        return result

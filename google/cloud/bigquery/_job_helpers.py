@@ -49,6 +49,7 @@ import google.api_core.exceptions as core_exceptions
 from google.api_core import retry as retries
 
 from google.cloud.bigquery import job
+import google.cloud.bigquery.job.query
 import google.cloud.bigquery.query
 from google.cloud.bigquery import table
 import google.cloud.bigquery.retry
@@ -667,6 +668,16 @@ def _wait_or_cancel(
     the job.
     """
     try:
+        callback(
+            QueryReceivedEvent(
+                billing_project=job.project,
+                location=job.location,
+                job_id=job.job_id,
+                statement_type=job.statement_type,
+                state=job.state,
+                query_plan=job.query_plan,
+            )
+        )
         query_results = job.result(
             page_size=page_size,
             max_results=max_results,
@@ -708,6 +719,18 @@ class QueryFinishedEvent:
     total_rows: Optional[int]
     total_bytes_processed: Optional[int]
     slot_millis: Optional[int]
+
+
+@dataclasses.dataclass(frozen=True)
+class QueryReceivedEvent:
+    """Query received and acknowledged by the BigQuery API."""
+
+    billing_project: str
+    location: Optional[str]
+    job_id: Optional[str]
+    statement_type: Optional[str]
+    state: Optional[str]
+    query_plan: Optional[list[google.cloud.bigquery.job.query.QueryPlanEntry]]
 
 
 @dataclasses.dataclass(frozen=True)

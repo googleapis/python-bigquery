@@ -34,7 +34,7 @@ def _extract_classes(tree):
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef) and node.name.endswith(
             *CLASSES_TO_INCLUDE
-        ):  # TODO: currently this is one class. Refactor if necessary
+        ):  # TODO: currently this is variable includes only one class. Refactor if necessary
             classes.append(node)
     return classes
 

@@ -2,14 +2,13 @@ import ast
 import os
 from collections import defaultdict
 
-import jinja2
-
 from config_helper import (
     CLASSES_TO_INCLUDE,
     # CLASSES_TO_EXCLUDE, # Not currently being used.
     METHODS_TO_INCLUDE,
     METHODS_TO_EXCLUDE,
 )
+from template_utils import load_template
 
 # Constants
 BASE_DIR = "google/cloud/bigquery_v2/services"
@@ -112,27 +111,7 @@ def generate_client_class_source(data):
         for the BigQueryClient class.
     """
 
-    # TODO: move template strings to a separate file.
-    class_template_string = """\
-class BigQueryClient:
-    def __init__(self):
-        self._clients = {}
-
-{% for method in methods %}
-    def {{ method.name }}({{ method.args_for_def }}):
-        \"\"\"A generated method to call the BigQuery API.\"\"\"
-
-        if "{{ method.class_name }}" not in self._clients:
-            from google.cloud.bigquery_v2 import {{ method.class_name }}
-            self._clients["{{ method.class_name }}"] = {{ method.class_name }}()
-
-        client = self._clients["{{ method.class_name }}"]
-        from google.cloud.bigquery_v2 import types
-        request = types.{{ method.request_class_name }}({{ method.args_for_call }})
-        return client.{{ method.name }}(request=request)
-
-{% endfor %}
-"""
+    template = load_template("bigqueryclient.py.j2")
 
     # Prepare the context for the template.
     # We transform the input data into a flat list of methods
@@ -151,8 +130,7 @@ class BigQueryClient:
                 }
             )
 
-    # Create a Jinja2 Template object and render it with the context.
-    template = jinja2.Template(class_template_string, trim_blocks=True)
+    # Render the template with the context.
     generated_code = template.render(methods=methods_context)
 
     return generated_code

@@ -1,0 +1,21 @@
+# TODO: add header if needed.
+
+include_class_name_patterns:
+  - Client
+
+exclude_class_name_patterns: []
+
+include_method_name_patterns:
+  - batch_delete_
+  - cancel_
+  - create_
+  - delete_
+  - get_
+  - insert_
+  - list_
+  - patch_
+  - undelete_
+  - update_
+
+exclude_method_name_patterns:
+  - get_mtls_endpoint_and_cert_source

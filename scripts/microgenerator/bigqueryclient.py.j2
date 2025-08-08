@@ -1,0 +1,18 @@
+class BigQueryClient:
+    def __init__(self):
+        self._clients = {}
+
+{% for method in methods %}
+    def {{ method.name }}({{ method.args_for_def }}):
+        """A generated method to call the BigQuery API."""
+
+        if "{{ method.class_name }}" not in self._clients:
+            from google.cloud.bigquery_v2 import {{ method.class_name }}
+            self._clients["{{ method.class_name }}"] = {{ method.class_name }}()
+
+        client = self._clients["{{ method.class_name }}"]
+        from google.cloud.bigquery_v2 import types
+        request = types.{{ method.request_class_name }}({{ method.args_for_call }})
+        return client.{{ method.name }}(request=request)
+
+{% endfor %}

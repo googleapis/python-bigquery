@@ -1,4 +1,4 @@
-# TODO: add header if needed.
+# TODO: Add a header if needed.
 
 include_class_name_patterns:
   - Client

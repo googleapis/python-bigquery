@@ -37,4 +37,4 @@ jobs:
         # TODO(https://github.com/googleapis/google-cloud-python/issues/13775): Specify `PY_VERSION` rather than relying on the default python version of the nox session.
         PY_VERSION: "unused"
       run: |
-        nox -s lint
+        nox -s blacken lint

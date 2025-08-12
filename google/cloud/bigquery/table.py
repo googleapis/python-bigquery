@@ -1920,17 +1920,17 @@ class RowIterator(HTTPIterator):
         return self._slot_millis
 
     @property
-    def created(self) -> Optional[int]:
+    def created(self) -> Optional[datetime.datetime]:
         """Datetime at which the job was created."""
         return self._job_created
 
     @property
-    def started(self) -> Optional[int]:
+    def started(self) -> Optional[datetime.datetime]:
         """Datetime at which the job was started."""
         return self._job_started
 
     @property
-    def ended(self) -> Optional[int]:
+    def ended(self) -> Optional[datetime.datetime]:
         """Datetime at which the job finished."""
         return self._job_ended
 

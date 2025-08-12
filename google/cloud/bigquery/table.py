@@ -1789,6 +1789,14 @@ class RowIterator(HTTPIterator):
             The query text used.
         total_bytes_processed (Optional[int]):
             total bytes processed from job statistics, if present.
+        slot_millis (Optional[int]):
+            Number of slot ms the user is actually billed for.
+        created (Optional[datetime.datetime]):
+            Datetime at which the job was created.
+        started (Optional[datetime.datetime]):
+            Datetime at which the job was started.
+        ended (Optional[datetime.datetime]):
+            Datetime at which the job finished.
     """
 
     def __init__(
@@ -1813,6 +1821,9 @@ class RowIterator(HTTPIterator):
         query: Optional[str] = None,
         total_bytes_processed: Optional[int] = None,
         slot_millis: Optional[int] = None,
+        created: Optional[datetime.datetime] = None,
+        started: Optional[datetime.datetime] = None,
+        ended: Optional[datetime.datetime] = None,
     ):
         super(RowIterator, self).__init__(
             client,
@@ -1843,6 +1854,9 @@ class RowIterator(HTTPIterator):
         self._query = query
         self._total_bytes_processed = total_bytes_processed
         self._slot_millis = slot_millis
+        self._job_created = created
+        self._job_started = started
+        self._job_ended = ended
 
     @property
     def _billing_project(self) -> Optional[str]:
@@ -1904,6 +1918,21 @@ class RowIterator(HTTPIterator):
     def slot_millis(self) -> Optional[int]:
         """Number of slot ms the user is actually billed for."""
         return self._slot_millis
+
+    @property
+    def created(self) -> Optional[int]:
+        """Datetime at which the job was created."""
+        return self._job_created
+
+    @property
+    def started(self) -> Optional[int]:
+        """Datetime at which the job was started."""
+        return self._job_started
+
+    @property
+    def ended(self) -> Optional[int]:
+        """Datetime at which the job finished."""
+        return self._job_ended
 
     def _is_almost_completely_cached(self):
         """Check if all results are completely cached.

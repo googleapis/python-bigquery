@@ -857,6 +857,30 @@ class QueryJob(_AsyncJob):
         return typing.cast(QueryJobConfig, super().configuration)
 
     @property
+    def created(self):
+        """Datetime at which the job was created."""
+        millis = _helpers._int_or_none(self._job_statistics().get("creationTime"))
+        if millis is not None:
+            return _helpers._datetime_from_microseconds(millis * 1000)
+        return super().created
+
+    @property
+    def started(self):
+        """Datetime at which the job was started."""
+        millis = _helpers._int_or_none(self._job_statistics().get("startTime"))
+        if millis is not None:
+            return _helpers._datetime_from_microseconds(millis * 1000)
+        return super().started
+
+    @property
+    def ended(self):
+        """Datetime at which the job finished."""
+        millis = _helpers._int_or_none(self._job_statistics().get("endTime"))
+        if millis is not None:
+            return _helpers._datetime_from_microseconds(millis * 1000)
+        return super().ended
+
+    @property
     def connection_properties(self) -> List[ConnectionProperty]:
         """See
         :attr:`google.cloud.bigquery.job.QueryJobConfig.connection_properties`.
@@ -1767,6 +1791,9 @@ class QueryJob(_AsyncJob):
             query=self.query,
             total_bytes_processed=self.total_bytes_processed,
             slot_millis=self.slot_millis,
+            created=self.created,
+            started=self.started,
+            ended=self.ended,
             **list_rows_kwargs,
         )
         rows._preserve_order = _contains_order_by(self.query)

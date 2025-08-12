@@ -1287,7 +1287,7 @@ class _QueryResults(object):
         """Total number of slot ms the user is actually billed for.
 
         See:
-        https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.slot_millis
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.total_slot_ms
 
         Returns:
             Optional[int]: Count generated on the server (None until set by the server).
@@ -1309,6 +1309,50 @@ class _QueryResults(object):
         num_dml_affected_rows = self._properties.get("numDmlAffectedRows")
         if num_dml_affected_rows is not None:
             return int(num_dml_affected_rows)
+
+    @property
+    def created(self) -> Optional[datetime.datetime]:
+        """Datetime at which the job was created.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics.FIELDS.creation_time
+
+        Optional[datetime.datetime]:
+            the creation time (None until set from the server).
+        """
+        millis = self._properties.get("creationTime")
+        if millis is not None:
+            return _helpers._datetime_from_microseconds(int(millis) * 1000.0)
+
+    @property
+    def started(self) -> Optional[datetime.datetime]:
+        """Datetime at which the job was started.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics.FIELDS.start_time
+
+        Returns:
+            Optional[datetime.datetime]:
+                the start time (None until set from the server).
+        """
+        millis = self._properties.get("startTime")
+        if millis is not None:
+            return _helpers._datetime_from_microseconds(int(millis) * 1000.0)
+
+    @property
+    def ended(self) -> Optional[datetime.datetime]:
+        """Datetime at which the job finished.
+
+        See:
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics.FIELDS.end_time
+
+        Returns:
+            Optional[datetime.datetime]:
+                the end time (None until set from the server).
+        """
+        millis = self._properties.get("endTime", None)
+        if millis is not None:
+            return _helpers._datetime_from_microseconds(int(millis) * 1000.0)
 
     @property
     def rows(self):

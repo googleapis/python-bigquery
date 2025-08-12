@@ -1315,10 +1315,11 @@ class _QueryResults(object):
         """Datetime at which the job was created.
 
         See:
-        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics.FIELDS.creation_time
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.creation_time
 
-        Optional[datetime.datetime]:
-            the creation time (None until set from the server).
+        Returns:
+            Optional[datetime.datetime]:
+                the creation time (None until set from the server).
         """
         millis = self._properties.get("creationTime")
         if millis is not None:
@@ -1329,7 +1330,7 @@ class _QueryResults(object):
         """Datetime at which the job was started.
 
         See:
-        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics.FIELDS.start_time
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.start_time
 
         Returns:
             Optional[datetime.datetime]:
@@ -1344,13 +1345,13 @@ class _QueryResults(object):
         """Datetime at which the job finished.
 
         See:
-        https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics.FIELDS.end_time
+        https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.end_time
 
         Returns:
             Optional[datetime.datetime]:
                 the end time (None until set from the server).
         """
-        millis = self._properties.get("endTime", None)
+        millis = self._properties.get("endTime")
         if millis is not None:
             return _helpers._datetime_from_microseconds(int(millis) * 1000.0)
 

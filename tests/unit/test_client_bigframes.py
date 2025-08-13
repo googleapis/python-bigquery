@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import datetime
 from unittest import mock
 
 import pytest
@@ -53,6 +54,28 @@ def client():
     )
 
 
+def test_query_and_wait_bigframes_dry_run_no_callback(client):
+    client._http.request.side_effect = [
+        make_response(
+            {
+                # https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
+                "location": LOCATION,
+                "queryId": "abcdefg",
+                "totalBytesProcessed": "123",
+                "jobComplete": True,
+            }
+        ),
+    ]
+    callback = mock.Mock()
+    job_config = bigquery.QueryJobConfig(dry_run=True)
+    response = client._query_and_wait_bigframes(
+        query="SELECT 1", job_config=job_config, callback=callback
+    )
+    callback.assert_not_called()
+    assert response.total_bytes_processed == 123
+    assert response.query_id == "abcdefg"
+
+
 def test_query_and_wait_bigframes_callback(client):
     client._http.request.side_effect = [
         make_response(
@@ -64,6 +87,9 @@ def test_query_and_wait_bigframes_callback(client):
                 "totalBytesProcessed": "123",
                 "totalSlotMs": "987",
                 "jobComplete": True,
+                # TODO(tswast): After
+                # https://github.com/googleapis/python-bigquery/pull/2260 goes in, add
+                # created, started, ended properties here.
             }
         ),
     ]
@@ -89,6 +115,9 @@ def test_query_and_wait_bigframes_callback(client):
                     total_rows=100,
                     total_bytes_processed=123,
                     slot_millis=987,
+                    created=None,
+                    started=None,
+                    ended=None,
                     # No job ID or destination, because a basic query is elegible for jobs.query.
                     job_id=None,
                     destination=None,
@@ -98,20 +127,100 @@ def test_query_and_wait_bigframes_callback(client):
     )
 
 
-def test_query_and_wait_bigframes_with_job_callback(client):
+def _to_millis(dt: datetime.datetime) -> str:
+    return str(
+        int(
+            (dt - datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc))
+            / datetime.timedelta(milliseconds=1)
+        )
+    )
+
+
+def test_query_and_wait_bigframes_with_jobs_insert_callback_empty_results(client):
     client._http.request.side_effect = [
+        # jobs.insert because destination table present in job_config
         make_response(
             {
                 # https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert
                 # https://cloud.google.com/bigquery/docs/reference/rest/v2/Job
-                "jobReference": {},
+                "jobReference": {
+                    "projectId": "response-project",
+                    "jobId": "response-job-id",
+                    "location": "response-location",
+                },
+                "statistics": {
+                    "creationTime": _to_millis(
+                        datetime.datetime(
+                            2025, 8, 13, 13, 7, 31, 123000, tzinfo=datetime.timezone.utc
+                        )
+                    ),
+                    "query": {
+                        "statementType": "SELECT",
+                        # "queryPlan": [{"name": "part1"}, {"name": "part2"}],
+                    },
+                },
+                "status": {
+                    "state": "PENDING",
+                },
             }
         ),
+        # jobs.get waiting for query to finish
         make_response(
             {
                 # https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/insert
                 # https://cloud.google.com/bigquery/docs/reference/rest/v2/Job
-                "jobReference": {},
+                "jobReference": {
+                    "projectId": "response-project",
+                    "jobId": "response-job-id",
+                    "location": "response-location",
+                },
+                "status": {
+                    "state": "PENDING",
+                },
+            }
+        ),
+        # jobs.getQueryResults with max_results=0
+        make_response(
+            {
+                "jobReference": {
+                    "projectId": "response-project",
+                    "jobId": "response-job-id",
+                    "location": "response-location",
+                },
+                "jobComplete": True,
+                # totalRows is intentionally missing so we end up in the _EmptyRowIterator code path.
+            }
+        ),
+        # jobs.get
+        make_response(
+            {
+                "jobReference": {
+                    "projectId": "response-project",
+                    "jobId": "response-job-id",
+                    "location": "response-location",
+                },
+                "statistics": {
+                    "creationTime": _to_millis(
+                        datetime.datetime(
+                            2025, 8, 13, 13, 7, 31, 123000, tzinfo=datetime.timezone.utc
+                        )
+                    ),
+                    "startTime": _to_millis(
+                        datetime.datetime(
+                            2025, 8, 13, 13, 7, 32, 123000, tzinfo=datetime.timezone.utc
+                        )
+                    ),
+                    "endTime": _to_millis(
+                        datetime.datetime(
+                            2025, 8, 13, 13, 7, 33, 123000, tzinfo=datetime.timezone.utc
+                        )
+                    ),
+                    "query": {
+                        "statementType": "SELECT",
+                        "totalBytesProcessed": 123,
+                        "totalSlotMs": 987,
+                    },
+                },
                 "status": {"state": "DONE"},
             }
         ),
@@ -127,28 +236,97 @@ def test_query_and_wait_bigframes_with_job_callback(client):
             mock.call(
                 _job_helpers.QuerySentEvent(
                     query="SELECT 1",
-                    billing_project=PROJECT,
-                    location=LOCATION,
-                    # No job ID, because a basic query is elegible for jobs.query.
-                    job_id=None,
-                    request_id=mock.ANY,
+                    billing_project="response-project",
+                    location="response-location",
+                    job_id="response-job-id",
+                    # We use jobs.insert not jobs.query because destination is
+                    # present on job_config.
+                    request_id=None,
+                )
+            ),
+            mock.call(
+                _job_helpers.QueryReceivedEvent(
+                    billing_project="response-project",
+                    location="response-location",
+                    job_id="response-job-id",
+                    statement_type="SELECT",
+                    state="PENDING",
+                    query_plan=[],
+                    created=datetime.datetime(
+                        2025, 8, 13, 13, 7, 31, 123000, tzinfo=datetime.timezone.utc
+                    ),
+                    started=None,
+                    ended=None,
                 )
             ),
             mock.call(
                 _job_helpers.QueryFinishedEvent(
-                    billing_project=PROJECT,
-                    location=LOCATION,
-                    query_id="abcdefg",
-                    total_rows=100,
+                    billing_project="response-project",
+                    location="response-location",
+                    job_id="response-job-id",
+                    query_id=None,
+                    total_rows=0,
                     total_bytes_processed=123,
                     slot_millis=987,
-                    # No job ID or destination, because a basic query is elegible for jobs.query.
-                    job_id=None,
+                    created=datetime.datetime(
+                        2025, 8, 13, 13, 7, 31, 123000, tzinfo=datetime.timezone.utc
+                    ),
+                    started=datetime.datetime(
+                        2025, 8, 13, 13, 7, 32, 123000, tzinfo=datetime.timezone.utc
+                    ),
+                    ended=datetime.datetime(
+                        2025, 8, 13, 13, 7, 33, 123000, tzinfo=datetime.timezone.utc
+                    ),
                     destination=None,
                 ),
             ),
         ]
     )
+
+
+def test_query_and_wait_bigframes_with_jobs_insert_dry_run_no_callback(client):
+    client._http.request.side_effect = [
+        # jobs.insert because destination table present in job_config
+        make_response(
+            {
+                "jobReference": {
+                    "projectId": "response-project",
+                    "jobId": "response-job-id",
+                    "location": "response-location",
+                },
+                "statistics": {
+                    "creationTime": _to_millis(
+                        datetime.datetime(
+                            2025, 8, 13, 13, 7, 31, 123000, tzinfo=datetime.timezone.utc
+                        )
+                    ),
+                    "query": {
+                        "statementType": "SELECT",
+                        "totalBytesProcessed": 123,
+                        "schema": {
+                            "fields": [
+                                {"name": "_f0", "type": "INTEGER"},
+                            ],
+                        },
+                    },
+                },
+                "configuration": {
+                    "dryRun": True,
+                },
+                "status": {"state": "DONE"},
+            }
+        ),
+    ]
+    callback = mock.Mock()
+    config = bigquery.QueryJobConfig()
+    config.destination = "proj.dset.table"
+    config.dry_run = True
+    result = client._query_and_wait_bigframes(
+        query="SELECT 1", job_config=config, callback=callback
+    )
+    callback.assert_not_called()
+    assert result.total_bytes_processed == 123
+    assert result.schema == [bigquery.SchemaField("_f0", "INTEGER")]
 
 
 def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
@@ -165,6 +343,9 @@ def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
                 "totalBytesProcessed": "123",
                 "totalSlotMs": "987",
                 "jobComplete": True,
+                # TODO(tswast): After
+                # https://github.com/googleapis/python-bigquery/pull/2260 goes in, add
+                # created, started, ended properties here.
             }
         ),
     ]
@@ -200,6 +381,9 @@ def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
                     total_rows=100,
                     total_bytes_processed=123,
                     slot_millis=987,
+                    created=None,
+                    started=None,
+                    ended=None,
                     # No job ID or destination, because a basic query is elegible for jobs.query.
                     job_id=None,
                     destination=None,

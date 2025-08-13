@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import copy
 import dataclasses
+import datetime
 import functools
 import uuid
 import textwrap
@@ -120,7 +121,8 @@ def query_jobs_insert(
     retry: Optional[retries.Retry],
     timeout: Optional[float],
     job_retry: Optional[retries.Retry],
-    callback: Callable,
+    *,
+    callback: Callable = lambda _: None,
 ) -> job.QueryJob:
     """Initiate a query using jobs.insert.
 
@@ -146,15 +148,16 @@ def query_jobs_insert(
 
         try:
             query_job._begin(retry=retry, timeout=timeout)
-            callback(
-                query_sent_factory(
-                    query=query,
-                    billing_project=query_job.project,
-                    location=query_job.location,
-                    job_id=query_job.job_id,
-                    request_id=None,
+            if job_config is not None and not job_config.dry_run:
+                callback(
+                    query_sent_factory(
+                        query=query,
+                        billing_project=query_job.project,
+                        location=query_job.location,
+                        job_id=query_job.job_id,
+                        request_id=None,
+                    )
                 )
-            )
         except core_exceptions.Conflict as create_exc:
             # The thought is if someone is providing their own job IDs and they get
             # their job ID generation wrong, this could end up returning results for
@@ -526,15 +529,16 @@ def query_and_wait(
         request_body["requestId"] = request_id
         span_attributes = {"path": path}
 
-        callback(
-            query_sent_factory(
-                query=query,
-                billing_project=project,
-                location=location,
-                job_id=None,
-                request_id=request_id,
+        if "dryRun" not in request_body:
+            callback(
+                query_sent_factory(
+                    query=query,
+                    billing_project=project,
+                    location=location,
+                    job_id=None,
+                    request_id=request_id,
+                )
             )
-        )
 
         # For easier testing, handle the retries ourselves.
         if retry is not None:
@@ -581,18 +585,25 @@ def query_and_wait(
                 callback=callback,
             )
 
-        callback(
-            QueryFinishedEvent(
-                billing_project=project,
-                location=query_results.location,
-                query_id=query_results.query_id,
-                job_id=query_results.job_id,
-                total_rows=query_results.total_rows,
-                total_bytes_processed=query_results.total_bytes_processed,
-                slot_millis=query_results.slot_millis,
-                destination=None,
+        if "dryRun" not in request_body:
+            callback(
+                QueryFinishedEvent(
+                    billing_project=project,
+                    location=query_results.location,
+                    query_id=query_results.query_id,
+                    job_id=query_results.job_id,
+                    total_rows=query_results.total_rows,
+                    total_bytes_processed=query_results.total_bytes_processed,
+                    slot_millis=query_results.slot_millis,
+                    destination=None,
+                    # TODO(tswast): After
+                    # https://github.com/googleapis/python-bigquery/pull/2260 goes in, add
+                    # created, started, ended properties here.
+                    created=None,
+                    started=None,
+                    ended=None,
+                )
             )
-        )
         return table.RowIterator(
             client=client,
             api_request=functools.partial(client._call_api, retry, timeout=api_timeout),
@@ -660,7 +671,8 @@ def _wait_or_cancel(
     retry: Optional[retries.Retry],
     page_size: Optional[int],
     max_results: Optional[int],
-    callback: Callable,
+    *,
+    callback: Callable = lambda _: None,
 ) -> table.RowIterator:
     """Wait for a job to complete and return the results.
 
@@ -668,34 +680,42 @@ def _wait_or_cancel(
     the job.
     """
     try:
-        callback(
-            QueryReceivedEvent(
-                billing_project=job.project,
-                location=job.location,
-                job_id=job.job_id,
-                statement_type=job.statement_type,
-                state=job.state,
-                query_plan=job.query_plan,
+        if not job.dry_run:
+            callback(
+                QueryReceivedEvent(
+                    billing_project=job.project,
+                    location=job.location,
+                    job_id=job.job_id,
+                    statement_type=job.statement_type,
+                    state=job.state,
+                    query_plan=job.query_plan,
+                    created=job.created,
+                    started=job.started,
+                    ended=job.ended,
+                )
             )
-        )
         query_results = job.result(
             page_size=page_size,
             max_results=max_results,
             retry=retry,
             timeout=wait_timeout,
         )
-        callback(
-            QueryFinishedEvent(
-                billing_project=job.project,
-                location=query_results.location,
-                query_id=query_results.query_id,
-                job_id=query_results.job_id,
-                total_rows=query_results.total_rows,
-                total_bytes_processed=query_results.total_bytes_processed,
-                slot_millis=query_results.slot_millis,
-                destination=job.destination,
+        if not job.dry_run:
+            callback(
+                QueryFinishedEvent(
+                    billing_project=job.project,
+                    location=query_results.location,
+                    query_id=query_results.query_id,
+                    job_id=query_results.job_id,
+                    total_rows=query_results.total_rows,
+                    total_bytes_processed=query_results.total_bytes_processed,
+                    slot_millis=query_results.slot_millis,
+                    destination=job.destination,
+                    created=job.created,
+                    started=job.started,
+                    ended=job.ended,
+                )
             )
-        )
         return query_results
     except Exception:
         # Attempt to cancel the job since we can't return the results.
@@ -719,6 +739,9 @@ class QueryFinishedEvent:
     total_rows: Optional[int]
     total_bytes_processed: Optional[int]
     slot_millis: Optional[int]
+    created: Optional[datetime.datetime]
+    started: Optional[datetime.datetime]
+    ended: Optional[datetime.datetime]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -731,6 +754,9 @@ class QueryReceivedEvent:
     statement_type: Optional[str]
     state: Optional[str]
     query_plan: Optional[list[google.cloud.bigquery.job.query.QueryPlanEntry]]
+    created: Optional[datetime.datetime]
+    started: Optional[datetime.datetime]
+    ended: Optional[datetime.datetime]
 
 
 @dataclasses.dataclass(frozen=True)

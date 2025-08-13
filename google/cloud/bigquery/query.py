@@ -1311,7 +1311,7 @@ class _QueryResults(object):
             return int(num_dml_affected_rows)
 
     @property
-    def created(self) -> Optional[datetime.datetime]:
+    def created(self):
         """Datetime at which the job was created.
 
         See:
@@ -1326,7 +1326,7 @@ class _QueryResults(object):
             return _helpers._datetime_from_microseconds(int(millis) * 1000.0)
 
     @property
-    def started(self) -> Optional[datetime.datetime]:
+    def started(self):
         """Datetime at which the job was started.
 
         See:
@@ -1341,7 +1341,7 @@ class _QueryResults(object):
             return _helpers._datetime_from_microseconds(int(millis) * 1000.0)
 
     @property
-    def ended(self) -> Optional[datetime.datetime]:
+    def ended(self):
         """Datetime at which the job finished.
 
         See:

@@ -158,23 +158,3 @@ class BigQueryClient:
         """
         kwargs = _drop_self_key(locals())
         return self.model_service_client.list_models(**kwargs)
-
-
-# ===============================================
-# Sample TODO: Relocate this to a samples file
-# ===============================================
-
-# Instantiate BQClient class
-bqclient = BigQueryClient()
-
-# Instantiate Request class
-get_dataset_request = GetDatasetRequest(
-    project_id=PROJECT_ID,
-    dataset_id="experimental",
-)
-
-# Generate response
-dataset = bqclient.get_dataset(request=get_dataset_request)
-
-# Display response
-print(f"GET DATASET:\n\t{dataset.id=}\n")

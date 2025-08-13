@@ -1312,7 +1312,7 @@ class _QueryResults(object):
 
     @property
     def created(self):
-        """Datetime at which the job was created.
+        """Creation time of this query.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.creation_time

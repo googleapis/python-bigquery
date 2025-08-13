@@ -1327,7 +1327,10 @@ class _QueryResults(object):
 
     @property
     def started(self):
-        """Datetime at which the job was started.
+        """Start time of this query.
+
+        This field will be present when the query transitions from the
+        PENDING state to either RUNNING or DONE.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.start_time

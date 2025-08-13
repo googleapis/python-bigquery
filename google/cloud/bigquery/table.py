@@ -1788,15 +1788,15 @@ class RowIterator(HTTPIterator):
         query (Optional[str]):
             The query text used.
         total_bytes_processed (Optional[int]):
-            total bytes processed from job statistics, if present.
+            If representing query results, the total bytes processed by the associated query.
         slot_millis (Optional[int]):
-            Number of slot ms the user is actually billed for.
+            If representing query results, the number of slot ms billed for the associated query.
         created (Optional[datetime.datetime]):
-            Datetime at which the job was created.
+            If representing query results, the creation time of the associated query.
         started (Optional[datetime.datetime]):
-            Datetime at which the job was started.
+            If representing query results, the start time of the associated query.
         ended (Optional[datetime.datetime]):
-            Datetime at which the job finished.
+            If representing query results, the end time of the associated query.
     """
 
     def __init__(

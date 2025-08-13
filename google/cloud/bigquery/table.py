@@ -1921,17 +1921,17 @@ class RowIterator(HTTPIterator):
 
     @property
     def created(self) -> Optional[datetime.datetime]:
-        """Datetime at which the job was created."""
+        """If representing query results, the creation time of the associated query."""
         return self._job_created
 
     @property
     def started(self) -> Optional[datetime.datetime]:
-        """Datetime at which the job was started."""
+        """If representing query results, the start time of the associated query."""
         return self._job_started
 
     @property
     def ended(self) -> Optional[datetime.datetime]:
-        """Datetime at which the job finished."""
+        """If representing query results, the end time of the associated query."""
         return self._job_ended
 
     def _is_almost_completely_cached(self):

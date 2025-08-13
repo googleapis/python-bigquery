@@ -1342,7 +1342,9 @@ class _QueryResults(object):
 
     @property
     def ended(self):
-        """Datetime at which the job finished.
+        """End time of this query.
+
+        This field will be present whenever a query is in the DONE state.
 
         See:
         https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#body.QueryResponse.FIELDS.end_time

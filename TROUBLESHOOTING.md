@@ -5,7 +5,7 @@
 It can be helpful to get the BQ Storage Read API session to allow the BigQuery
 backend team to debug cases of API instability. The logs that share the session
 creation are in a module-specific logger. To enable the logs, refer to the
-following code sample:kj
+following code sample:
 
 ```python
 import logging

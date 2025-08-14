@@ -1,3 +1,5 @@
+# TODO: Add a header if needed.
+
 import ast
 import os
 from collections import defaultdict
@@ -140,8 +142,8 @@ if __name__ == "__main__":
     data = parse_files(FILES_TO_PARSE)
 
     final_code = generate_client_class_source(data)
-    # TODO: write final code to file.
 
+    # TODO: write final code to file instead of print to screen.
     print(final_code)
 
-    # Ensure black gets called on the generated source files as a final step.
+    # TODO: Ensure blacken gets called on the generated source files as a final step.

@@ -15,6 +15,7 @@
 """Client for interacting with the Google BigQuery API."""
 
 from __future__ import absolute_import
+from __future__ import annotations
 from __future__ import division
 
 from collections import abc as collections_abc
@@ -31,6 +32,7 @@ import tempfile
 import typing
 from typing import (
     Any,
+    Callable,
     Dict,
     IO,
     Iterable,
@@ -3682,10 +3684,10 @@ class Client(ClientWithProject):
         job_retry: retries.Retry = DEFAULT_JOB_RETRY,
         page_size: Optional[int] = None,
         max_results: Optional[int] = None,
-        callback = lambda _: None,
+        callback: Callable = lambda _: None,
     ) -> RowIterator:
         """See query_and_wait.
-        
+
         This method has an extra callback parameter, which is used by bigframes
         to create better progress bars.
         """

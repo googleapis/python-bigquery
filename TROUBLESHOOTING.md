@@ -24,7 +24,7 @@ to_dataframe_logger = logging.getLogger("google.cloud.bigquery._pandas_helpers")
 to_dataframe_logger.setLevel(logging.DEBUG)
 to_dataframe_logger.addHandler(handler)
 
-# Example code that touches 
+# Example code that touches the BQ Storage Read API.
 bqclient = google.cloud.bigquery.Client()
 results = bqclient.query_and_wait("SELECT * FROM `bigquery-public-data.usa_names.usa_1910_2013`")
 print(results.to_dataframe().head())

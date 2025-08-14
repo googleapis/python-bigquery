@@ -1,0 +1,41 @@
+# TODO: Add a header if needed.
+
+# ======== 🦕 HERE THERE BE DINOSAURS 🦖 =========
+# This content is subject to significant change. Not for review yet.
+# Included as a proof of concept for context or testing ONLY.
+# ================================================
+
+class BigQueryClient:
+    def __init__(self):
+        self._clients = {}
+
+{% for method in methods %}
+    def {{ method.name }}({{ method.args_for_def }}):
+        """TODO: extract docstring for use here.
+        A generated method to call the BigQuery API."""
+
+        if "{{ method.class_name }}" not in self._clients:
+            from google.cloud.bigquery_v2 import {{ method.class_name }}
+            self._clients["{{ method.class_name }}"] = {{ method.class_name }}()
+
+        client = self._clients["{{ method.class_name }}"]
+        from google.cloud.bigquery_v2 import types
+        request = types.{{ method.request_class_name }}({{ method.args_for_call }})
+        return client.{{ method.name }}(request=request)
+
+{% endfor %}
+
+# ======== An example of the code generated ======
+
+    def get_dataset(self, request, retry, timeout, metadata):
+        """TODO: extract docstring for use here.
+        A generated method to call the BigQuery API."""
+
+        if "DatasetServiceClient" not in self._clients:
+            from google.cloud.bigquery_v2 import DatasetServiceClient
+            self._clients["DatasetServiceClient"] = DatasetServiceClient()
+
+        client = self._clients["DatasetServiceClient"]
+        from google.cloud.bigquery_v2 import types
+        request = types.GetDatasetRequest(request=request, retry=retry, timeout=timeout, metadata=metadata)
+        return client.get_dataset(request=request)

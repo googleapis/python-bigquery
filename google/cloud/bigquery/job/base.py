@@ -14,8 +14,6 @@
 
 """Base classes and helpers for job classes."""
 
-from __future__ import annotations
-
 from collections import namedtuple
 import copy
 import http
@@ -442,12 +440,9 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         return configuration
 
     @property
-    def job_id(self) -> Optional[str]:
+    def job_id(self):
         """str: ID of the job."""
-        return typing.cast(
-            Optional[str],
-            _helpers._get_sub_prop(self._properties, ["jobReference", "jobId"]),
-        )
+        return _helpers._get_sub_prop(self._properties, ["jobReference", "jobId"])
 
     @property
     def parent_job_id(self):
@@ -498,24 +493,18 @@ class _AsyncJob(google.api_core.future.polling.PollingFuture):
         return int(count) if count is not None else 0
 
     @property
-    def project(self) -> Optional[str]:
+    def project(self):
         """Project bound to the job.
 
         Returns:
             str: the project (derived from the client).
         """
-        return typing.cast(
-            Optional[str],
-            _helpers._get_sub_prop(self._properties, ["jobReference", "projectId"]),
-        )
+        return _helpers._get_sub_prop(self._properties, ["jobReference", "projectId"])
 
     @property
-    def location(self) -> Optional[str]:
+    def location(self):
         """str: Location where the job runs."""
-        return typing.cast(
-            Optional[str],
-            _helpers._get_sub_prop(self._properties, ["jobReference", "location"]),
-        )
+        return _helpers._get_sub_prop(self._properties, ["jobReference", "location"])
 
     @property
     def reservation_id(self):

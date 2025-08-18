@@ -1335,7 +1335,7 @@ class TestQueryJob(_Base):
             [jobs_get_call, query_page_waiting_call, query_page_2_call]
         )
 
-    def test_result_w_custom_retry(self):
+    def test_result_w_custom_retry(self, global_time_lock):
         from google.cloud.bigquery.table import RowIterator
 
         query_resource = {
@@ -1455,7 +1455,7 @@ class TestQueryJob(_Base):
         self.assertEqual(result.location, "asia-northeast1")
         self.assertEqual(result.query_id, "xyz-abc")
 
-    def test_result_w_timeout_doesnt_raise(self):
+    def test_result_w_timeout_doesnt_raise(self, global_time_lock):
         import google.cloud.bigquery.client
 
         begun_resource = self._make_resource()
@@ -1505,7 +1505,7 @@ class TestQueryJob(_Base):
             ]
         )
 
-    def test_result_w_timeout_raises_concurrent_futures_timeout(self):
+    def test_result_w_timeout_raises_concurrent_futures_timeout(self, global_time_lock):
         import google.cloud.bigquery.client
 
         begun_resource = self._make_resource()

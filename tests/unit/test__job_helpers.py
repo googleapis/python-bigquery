@@ -450,7 +450,7 @@ def test_query_and_wait_uses_jobs_insert():
     )
 
 
-def test_query_and_wait_retries_job():
+def test_query_and_wait_retries_job(global_time_lock):
     freezegun.freeze_time(auto_tick_seconds=100)
     client = mock.create_autospec(Client)
     client._call_api.__name__ = "_call_api"
@@ -512,8 +512,8 @@ def test_query_and_wait_retries_job():
         assert kwargs["path"] == request_path
 
 
-@freezegun.freeze_time(auto_tick_seconds=100)
-def test_query_and_wait_retries_job_times_out():
+def test_query_and_wait_retries_job_times_out(global_time_lock):
+    freezegun.freeze_time(auto_tick_seconds=100)
     client = mock.create_autospec(Client)
     client._call_api.__name__ = "_call_api"
     client._call_api.__qualname__ = "Client._call_api"

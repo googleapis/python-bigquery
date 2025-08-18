@@ -313,7 +313,7 @@ class TestClient(unittest.TestCase):
         headers = kwargs["headers"]
         assert headers["x-goog-request-reason"] == "because-friday"
 
-    def test__call_api_applying_custom_retry_on_timeout(self):
+    def test__call_api_applying_custom_retry_on_timeout(self, global_time_lock):
         from concurrent.futures import TimeoutError
         from google.cloud.bigquery.retry import DEFAULT_RETRY
 
@@ -644,7 +644,7 @@ class TestClient(unittest.TestCase):
         )
         self.assertEqual(service_account_email, email)
 
-    def test_get_service_account_email_w_custom_retry(self):
+    def test_get_service_account_email_w_custom_retry(self, global_time_lock):
         from google.cloud.bigquery.retry import DEFAULT_RETRY
 
         api_path = "/projects/{}/serviceAccount".format(self.PROJECT)
@@ -3941,7 +3941,7 @@ class TestClient(unittest.TestCase):
     def test__initiate_resumable_upload_mtls(self):
         self._initiate_resumable_upload_helper(mtls=True)
 
-    def test__initiate_resumable_upload_with_retry(self):
+    def test__initiate_resumable_upload_with_retry(self, global_time_lock):
         self._initiate_resumable_upload_helper(num_retries=11)
 
     def _do_multipart_upload_success_helper(
@@ -4011,7 +4011,7 @@ class TestClient(unittest.TestCase):
         self._do_multipart_upload_success_helper(get_boundary, mtls=True)
 
     @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
-    def test__do_multipart_upload_with_retry(self, get_boundary):
+    def test__do_multipart_upload_with_retry(self, get_boundary, global_time_lock):
         self._do_multipart_upload_success_helper(get_boundary, num_retries=8)
 
     @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
@@ -5602,7 +5602,7 @@ class TestClient(unittest.TestCase):
         assert result.job_id == job_id
 
     def test_query_job_rpc_fail_w_conflict_random_id_job_fetch_retries_404_and_query_job_insert(
-        self,
+        self, global_time_lock
     ):
         """Regression test for https://github.com/googleapis/python-bigquery/issues/2134
 

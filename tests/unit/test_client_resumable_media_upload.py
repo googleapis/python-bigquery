@@ -80,7 +80,7 @@ def _make_resumable_upload_responses(num_bytes):
     return [
         _make_response(
             http.client.OK,
-            headers={"Location": "http://test.invalid/upload-id"},
+            headers={"location": "http://test.invalid/upload-id"},
         ),
         _make_response(
             http.client.OK, content=json.dumps({"size": num_bytes}).encode("utf-8")
@@ -197,7 +197,7 @@ def test_initiate_resumable_upload_with_retry():
 
 
 def _do_multipart_upload_success_helper(
-    client, get_boundary, num_retries=None, project=None, mtls=False
+    get_boundary, num_retries=None, project=None, mtls=False
 ):
     from google.cloud.bigquery.client import _get_upload_headers
     from google.cloud.bigquery.job import LoadJob
@@ -205,7 +205,7 @@ def _do_multipart_upload_success_helper(
     from google.cloud.bigquery.job import SourceFormat
 
     fake_transport = _mock_transport(http.client.OK, {})
-    client._transport = fake_transport
+    client = _make_client(_http=fake_transport)
     conn = client._connection = make_connection()
     if mtls:
         conn.get_api_base_url_for_mtls = mock.Mock(return_value="https://foo.mtls")
@@ -233,7 +233,7 @@ def _do_multipart_upload_success_helper(
 
     host_name = "https://foo.mtls" if mtls else "https://bigquery.googleapis.com"
     upload_url = (
-        f"{host_name}/upload/bigquery/v2/projects/{project}" "?uploadType=multipart"
+        f"{host_name}/upload/bigquery/v2/projects/{project}/jobs?uploadType=multipart"
     )
     payload = (
         b"--==0==\r\n"
@@ -256,26 +256,22 @@ def _do_multipart_upload_success_helper(
 
 @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
 def test__do_multipart_upload(get_boundary):
-    client = _make_client()
-    _do_multipart_upload_success_helper(client, get_boundary)
+    _do_multipart_upload_success_helper(get_boundary)
 
 
 @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
 def test__do_multipart_upload_mtls(get_boundary):
-    client = _make_client()
-    _do_multipart_upload_success_helper(client, get_boundary, mtls=True)
+    _do_multipart_upload_success_helper(get_boundary, mtls=True)
 
 
 @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
 def test_do_multipart_upload_with_retry(get_boundary):
-    client = _make_client()
-    _do_multipart_upload_success_helper(client, get_boundary, num_retries=8)
+    _do_multipart_upload_success_helper(get_boundary, num_retries=8)
 
 
 @mock.patch("google.resumable_media._upload.get_boundary", return_value=b"==0==")
 def test__do_multipart_upload_with_custom_project(get_boundary):
-    client = _make_client()
-    _do_multipart_upload_success_helper(client, get_boundary, project="custom-project")
+    _do_multipart_upload_success_helper(get_boundary, project="custom-project")
 
 
 def test__do_resumable_upload():
@@ -388,7 +384,8 @@ def test__do_multipart_upload_wrong_size():
 def test_schema_from_json_with_file_path():
     from google.cloud.bigquery.schema import SchemaField
 
-    file_content = """[
+    file_content = """
+    [
       {
         "description": "quarter",
         "mode": "REQUIRED",

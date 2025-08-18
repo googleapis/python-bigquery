@@ -54,10 +54,8 @@ def _make_credentials():
 def _make_client(*args, **kw):
     from google.cloud.bigquery.client import Client
 
-    if "credentials" not in kw:
-        kw["credentials"] = _make_credentials()
-    if "project" not in kw:
-        kw["project"] = PROJECT
+    kw["credentials"] = _make_credentials()
+    kw["project"] = PROJECT
     return Client(*args, **kw)
 
 

@@ -3775,23 +3775,6 @@ class TestClient(unittest.TestCase):
             timeout=DEFAULT_TIMEOUT,
         )
 
-    @staticmethod
-    def _mock_requests_response(status_code, headers, content=b""):
-        return mock.Mock(
-            content=content,
-            headers=headers,
-            status_code=status_code,
-            spec=["content", "headers", "status_code"],
-        )
-
-    def _mock_transport(self, status_code, headers, content=b""):
-        fake_transport = mock.Mock(spec=["request"])
-        fake_response = self._mock_requests_response(
-            status_code, headers, content=content
-        )
-        fake_transport.request.return_value = fake_response
-        return fake_transport
-
     def test_copy_table(self):
         from google.cloud.bigquery.job import CopyJob
 
@@ -9669,38 +9652,6 @@ class TestClientUpload(object):
         assert sent_data_file.getvalue() == expected_bytes
 
     # Low-level tests
-
-    @classmethod
-    def _make_resumable_upload_responses(cls, size):
-        """Make a series of responses for a successful resumable upload."""
-        from google import resumable_media
-
-        resumable_url = "http://test.invalid?upload_id=and-then-there-was-1"
-        initial_response = cls._make_response(
-            http.client.OK, "", {"location": resumable_url}
-        )
-        data_response = cls._make_response(
-            resumable_media.PERMANENT_REDIRECT,
-            "",
-            {"range": "bytes=0-{:d}".format(size - 1)},
-        )
-        final_response = cls._make_response(
-            http.client.OK,
-            json.dumps({"size": size}),
-            {"Content-Type": "application/json"},
-        )
-        return [initial_response, data_response, final_response]
-
-    @staticmethod
-    def _make_transport(responses=None):
-        import google.auth.transport.requests
-
-        transport = mock.create_autospec(
-            google.auth.transport.requests.AuthorizedSession, instance=True
-        )
-        transport.request.side_effect = responses
-        return transport
-
     def test_schema_from_json_with_file_object(self):
         from google.cloud.bigquery.schema import SchemaField
 

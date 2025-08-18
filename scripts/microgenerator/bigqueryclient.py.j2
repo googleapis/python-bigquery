@@ -24,18 +24,3 @@ class BigQueryClient:
         return client.{{ method.name }}(request=request)
 
 {% endfor %}
-
-# ======== An example of the code generated ======
-
-    def get_dataset(self, request, retry, timeout, metadata):
-        """TODO: extract docstring for use here.
-        A generated method to call the BigQuery API."""
-
-        if "DatasetServiceClient" not in self._clients:
-            from google.cloud.bigquery_v2 import DatasetServiceClient
-            self._clients["DatasetServiceClient"] = DatasetServiceClient()
-
-        client = self._clients["DatasetServiceClient"]
-        from google.cloud.bigquery_v2 import types
-        request = types.GetDatasetRequest(request=request, retry=retry, timeout=timeout, metadata=metadata)
-        return client.get_dataset(request=request)

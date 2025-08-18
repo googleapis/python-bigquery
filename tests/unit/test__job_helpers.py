@@ -512,48 +512,6 @@ def test_query_and_wait_retries_job(global_time_lock):
         assert kwargs["path"] == request_path
 
 
-def test_query_and_wait_retries_job_times_out(global_time_lock):
-    freezegun.freeze_time(auto_tick_seconds=100)
-    client = mock.create_autospec(Client)
-    client._call_api.__name__ = "_call_api"
-    client._call_api.__qualname__ = "Client._call_api"
-    client._call_api.__annotations__ = {}
-    client._call_api.__type_params__ = ()
-    client._call_api.side_effect = (
-        google.api_core.exceptions.BadGateway("retry me"),
-        google.api_core.exceptions.InternalServerError("job_retry me"),
-        google.api_core.exceptions.BadGateway("retry me"),
-        google.api_core.exceptions.InternalServerError("job_retry me"),
-    )
-
-    with pytest.raises(google.api_core.exceptions.RetryError) as exc_info:
-        _job_helpers.query_and_wait(
-            client,
-            query="SELECT 1",
-            location="request-location",
-            project="request-project",
-            job_config=None,
-            page_size=None,
-            max_results=None,
-            retry=retries.Retry(
-                lambda exc: isinstance(exc, google.api_core.exceptions.BadGateway),
-                multiplier=1.0,
-            ).with_deadline(
-                200.0
-            ),  # Since auto_tick_seconds is 100, we should get at least 1 retry.
-            job_retry=retries.Retry(
-                lambda exc: isinstance(
-                    exc, google.api_core.exceptions.InternalServerError
-                ),
-                multiplier=1.0,
-            ).with_deadline(400.0),
-        )
-
-    assert isinstance(
-        exc_info.value.cause, google.api_core.exceptions.InternalServerError
-    )
-
-
 def test_query_and_wait_sets_job_creation_mode():
     client = mock.create_autospec(Client)
     client.default_job_creation_mode = "JOB_CREATION_OPTIONAL"

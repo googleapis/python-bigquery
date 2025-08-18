@@ -22,6 +22,67 @@ from google.cloud.bigquery import _job_helpers
 from . import helpers
 
 
+def test_query_and_wait_retries_job(global_time_lock):
+    with freezegun.freeze_time(auto_tick_seconds=100):
+        conn = helpers.make_connection(
+            google.api_core.exceptions.BadGateway("retry me"),
+            google.api_core.exceptions.InternalServerError("job_retry me"),
+            google.api_core.exceptions.BadGateway("retry me"),
+            {
+                "jobReference": {
+                    "projectId": "response-project",
+                    "jobId": "abc",
+                    "location": "response-location",
+                },
+                "jobComplete": True,
+                "schema": {
+                    "fields": [
+                        {"name": "full_name", "type": "STRING", "mode": "REQUIRED"},
+                        {"name": "age", "type": "INT64", "mode": "NULLABLE"},
+                    ],
+                },
+                "rows": [
+                    {"f": [{"v": "Whillma Phlyntstone"}, {"v": "27"}]},
+                    {"f": [{"v": "Bhetty Rhubble"}, {"v": "28"}]},
+                    {"f": [{"v": "Phred Phlyntstone"}, {"v": "32"}]},
+                    {"f": [{"v": "Bharney Rhubble"}, {"v": "33"}]},
+                ],
+            },
+        )
+        client = helpers.make_client(project="client-project")
+        client._connection = conn
+        rows = _job_helpers.query_and_wait(
+            client,
+            query="SELECT 1",
+            location="request-location",
+            project="request-project",
+            job_config=None,
+            page_size=None,
+            max_results=None,
+            retry=retries.Retry(
+                lambda exc: isinstance(exc, google.api_core.exceptions.BadGateway),
+                multiplier=1.0,
+            ).with_deadline(
+                200.0
+            ),  # Since auto_tick_seconds is 100, we should get at least 1 retry.
+            job_retry=retries.Retry(
+                lambda exc: isinstance(
+                    exc, google.api_core.exceptions.InternalServerError
+                ),
+                multiplier=1.0,
+            ).with_deadline(600.0),
+        )
+        assert len(list(rows)) == 4
+
+        # For this code path, where the query has finished immediately, we should
+        # only be calling the jobs.query API and no other request path.
+        request_path = "/projects/request-project/queries"
+        for call in client._connection.api_request.call_args_list:
+            _, kwargs = call
+            assert kwargs["method"] == "POST"
+            assert kwargs["path"] == request_path
+
+
 def test_query_and_wait_retries_job_times_out(global_time_lock):
     with freezegun.freeze_time(auto_tick_seconds=100):
         conn = helpers.make_connection(

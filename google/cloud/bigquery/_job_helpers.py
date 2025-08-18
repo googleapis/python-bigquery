@@ -596,12 +596,9 @@ def query_and_wait(
                     total_bytes_processed=query_results.total_bytes_processed,
                     slot_millis=query_results.slot_millis,
                     destination=None,
-                    # TODO(tswast): After
-                    # https://github.com/googleapis/python-bigquery/pull/2260 goes in, add
-                    # created, started, ended properties here.
-                    created=None,
-                    started=None,
-                    ended=None,
+                    created=query_results.created,
+                    started=query_results.started,
+                    ended=query_results.ended,
                 )
             )
         return table.RowIterator(

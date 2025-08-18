@@ -77,6 +77,15 @@ def test_query_and_wait_bigframes_dry_run_no_callback(client):
 
 
 def test_query_and_wait_bigframes_callback(client):
+    created = datetime.datetime(
+        2025, 8, 18, 10, 11, 12, 345000, tzinfo=datetime.timezone.utc
+    )
+    started = datetime.datetime(
+        2025, 8, 18, 10, 11, 13, 456000, tzinfo=datetime.timezone.utc
+    )
+    ended = datetime.datetime(
+        2025, 8, 18, 10, 11, 14, 567000, tzinfo=datetime.timezone.utc
+    )
     client._http.request.side_effect = [
         make_response(
             {
@@ -87,9 +96,9 @@ def test_query_and_wait_bigframes_callback(client):
                 "totalBytesProcessed": "123",
                 "totalSlotMs": "987",
                 "jobComplete": True,
-                # TODO(tswast): After
-                # https://github.com/googleapis/python-bigquery/pull/2260 goes in, add
-                # created, started, ended properties here.
+                "creationTime": _to_millis(created),
+                "startTime": _to_millis(started),
+                "endTime": _to_millis(ended),
             }
         ),
     ]
@@ -115,9 +124,9 @@ def test_query_and_wait_bigframes_callback(client):
                     total_rows=100,
                     total_bytes_processed=123,
                     slot_millis=987,
-                    created=None,
-                    started=None,
-                    ended=None,
+                    created=created,
+                    started=started,
+                    ended=ended,
                     # No job ID or destination, because a basic query is eligible for jobs.query.
                     job_id=None,
                     destination=None,
@@ -330,6 +339,15 @@ def test_query_and_wait_bigframes_with_jobs_insert_dry_run_no_callback(client):
 
 
 def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
+    created = datetime.datetime(
+        2025, 8, 18, 10, 11, 12, 345000, tzinfo=datetime.timezone.utc
+    )
+    started = datetime.datetime(
+        2025, 8, 18, 10, 11, 13, 456000, tzinfo=datetime.timezone.utc
+    )
+    ended = datetime.datetime(
+        2025, 8, 18, 10, 11, 14, 567000, tzinfo=datetime.timezone.utc
+    )
     client._http.request.side_effect = [
         exceptions.InternalServerError(
             "first try", errors=({"reason": "jobInternalError"},)
@@ -343,9 +361,9 @@ def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
                 "totalBytesProcessed": "123",
                 "totalSlotMs": "987",
                 "jobComplete": True,
-                # TODO(tswast): After
-                # https://github.com/googleapis/python-bigquery/pull/2260 goes in, add
-                # created, started, ended properties here.
+                "creationTime": _to_millis(created),
+                "startTime": _to_millis(started),
+                "endTime": _to_millis(ended),
             }
         ),
     ]
@@ -381,9 +399,9 @@ def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
                     total_rows=100,
                     total_bytes_processed=123,
                     slot_millis=987,
-                    created=None,
-                    started=None,
-                    ended=None,
+                    created=created,
+                    started=started,
+                    ended=ended,
                     # No job ID or destination, because a basic query is eligible for jobs.query.
                     job_id=None,
                     destination=None,

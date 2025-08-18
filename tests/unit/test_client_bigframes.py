@@ -102,7 +102,7 @@ def test_query_and_wait_bigframes_callback(client):
                     query="SELECT 1",
                     billing_project=PROJECT,
                     location=LOCATION,
-                    # No job ID, because a basic query is elegible for jobs.query.
+                    # No job ID, because a basic query is eligible for jobs.query.
                     job_id=None,
                     request_id=mock.ANY,
                 )
@@ -118,7 +118,7 @@ def test_query_and_wait_bigframes_callback(client):
                     created=None,
                     started=None,
                     ended=None,
-                    # No job ID or destination, because a basic query is elegible for jobs.query.
+                    # No job ID or destination, because a basic query is eligible for jobs.query.
                     job_id=None,
                     destination=None,
                 ),
@@ -358,7 +358,7 @@ def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
                     query="SELECT 1",
                     billing_project=PROJECT,
                     location=LOCATION,
-                    # No job ID, because a basic query is elegible for jobs.query.
+                    # No job ID, because a basic query is eligible for jobs.query.
                     job_id=None,
                     request_id=mock.ANY,
                 )
@@ -368,7 +368,7 @@ def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
                     query="SELECT 1",
                     billing_project=PROJECT,
                     location=LOCATION,
-                    # No job ID, because a basic query is elegible for jobs.query.
+                    # No job ID, because a basic query is eligible for jobs.query.
                     job_id=None,
                     request_id=mock.ANY,
                 )
@@ -384,7 +384,7 @@ def test_query_and_wait_bigframes_with_query_retry_callbacks(client):
                     created=None,
                     started=None,
                     ended=None,
-                    # No job ID or destination, because a basic query is elegible for jobs.query.
+                    # No job ID or destination, because a basic query is eligible for jobs.query.
                     job_id=None,
                     destination=None,
                 ),

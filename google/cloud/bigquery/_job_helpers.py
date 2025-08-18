@@ -774,7 +774,7 @@ class QuerySentEvent:
 
 
 class QueryRetryEvent(QuerySentEvent):
-    """Query sent another time because the previous failed."""
+    """Query sent another time because the previous attempt failed."""
 
 
 class QuerySentEventFactory:

@@ -4181,6 +4181,9 @@ class Client(ClientWithProject):
         query: Optional[str] = None,
         total_bytes_processed: Optional[int] = None,
         slot_millis: Optional[int] = None,
+        created: Optional[datetime.datetime] = None,
+        started: Optional[datetime.datetime] = None,
+        ended: Optional[datetime.datetime] = None,
     ) -> RowIterator:
         """List the rows of a completed query.
         See
@@ -4234,6 +4237,12 @@ class Client(ClientWithProject):
                 total bytes processed from job statistics, if present.
             slot_millis (Optional[int]):
                 Number of slot ms the user is actually billed for.
+            created (Optional[datetime.datetime]):
+                Datetime at which the job was created.
+            started (Optional[datetime.datetime]):
+                Datetime at which the job was started.
+            ended (Optional[datetime.datetime]):
+                Datetime at which the job finished.
 
         Returns:
             google.cloud.bigquery.table.RowIterator:
@@ -4274,6 +4283,9 @@ class Client(ClientWithProject):
             query=query,
             total_bytes_processed=total_bytes_processed,
             slot_millis=slot_millis,
+            created=created,
+            started=started,
+            ended=ended,
         )
         return row_iterator
 

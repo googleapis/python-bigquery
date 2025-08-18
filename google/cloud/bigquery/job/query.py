@@ -1773,6 +1773,9 @@ class QueryJob(_AsyncJob):
             query=self.query,
             total_bytes_processed=self.total_bytes_processed,
             slot_millis=self.slot_millis,
+            created=self.created,
+            started=self.started,
+            ended=self.ended,
             **list_rows_kwargs,
         )
         rows._preserve_order = _contains_order_by(self.query)

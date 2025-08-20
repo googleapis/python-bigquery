@@ -72,16 +72,19 @@ class BigQueryClient:
         credentials: Optional[auth_credentials.Credentials] = None,
         client_options: Optional[Union[client_options_lib.ClientOptions, dict]] = None,
     ):
-        # *ServiceClient related initializations
-        self.dataset_service_client = dataset_service.DatasetServiceClient(
-            credentials=credentials, client_options=client_options
-        )
-        self.job_service_client = job_service.JobServiceClient(
-            credentials=credentials, client_options=client_options
-        )
-        self.model_service_client = model_service.ModelServiceClient(
-            credentials=credentials, client_options=client_options
-        )
+        # A dictionary mapping service names to their client classes.
+        service_clients_config = {
+            "dataset": dataset_service.DatasetServiceClient,
+            "job": job_service.JobServiceClient,
+            "model": model_service.ModelServiceClient,
+        }
+
+        # Dynamically initialize service clients.
+        for service_name, client_class in service_clients_config.items():
+            client_instance = client_class(
+                credentials=credentials, client_options=client_options
+            )
+            setattr(self, f"{service_name}_service_client", client_instance)
 
     def get_dataset(
         self,
@@ -167,4 +170,3 @@ class BigQueryClient:
         """
         kwargs = _drop_self_key(locals())
         return self.model_service_client.list_models(**kwargs)
-

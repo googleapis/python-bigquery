@@ -24,7 +24,6 @@ from .services.project_service import ProjectServiceClient
 from .services.routine_service import RoutineServiceClient
 from .services.row_access_policy_service import RowAccessPolicyServiceClient
 from .services.table_service import TableServiceClient
-from .services.centralized_services import BigQueryClient
 
 from .types.biglake_config import BigLakeConfiguration
 from .types.clustering import Clustering
@@ -215,7 +214,6 @@ __all__ = (
     "BiEngineReason",
     "BiEngineStatistics",
     "BigLakeConfiguration",
-    "BigQueryClient",
     "BigtableColumn",
     "BigtableColumnFamily",
     "BigtableOptions",

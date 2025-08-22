@@ -67,7 +67,7 @@ class CodeAnalyzer(ast.NodeVisitor):
             }
             self._current_class_info["methods"].append(method_info)
 
-            # Visit nodes inside the method to find instance attributes
+            # Visit nodes inside the method to find instance attributes.
             self._is_in_method = True
             self.generic_visit(node)
             self._is_in_method = False

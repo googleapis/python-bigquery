@@ -177,7 +177,6 @@ class TestQueryJobConfig(_Base):
         config.max_slots = 99
         self.assertEqual(config.max_slots, 99)
 
-
     def test_create_session(self):
         config = self._get_target_class()()
         self.assertIsNone(config.create_session)

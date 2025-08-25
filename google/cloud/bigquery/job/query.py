@@ -689,28 +689,6 @@ class QueryJobConfig(_JobConfig):
     def write_incremental_results(self, value):
         self._set_sub_prop("writeIncrementalResults", value)
 
-
-    @property
-    def max_slots(self) -> Optional[int]:
-        """The maximum rate of slot consumption to allow for this job.
-  
-        If set, the number of slots used to execute the job will be throttled
-        to try and keep its slot consumption below the requested rate.
-
-        This feature is not generally available.
-        """
-        max_slots = self._get_sub_prop("maxSlots")
-        if max_slots is not None:
-            if isinstance(max_slots, str):
-                return int(max_slots)
-            if isinstance(max_slots, int):
-                return max_slots
-        return None
-    
-    @max_slots.setter
-    def max_slots(self, value):
-        self._set_sub_prop("maxSlots", value)
-
     @property
     def table_definitions(self):
         """Dict[str, google.cloud.bigquery.external_config.ExternalConfig]:

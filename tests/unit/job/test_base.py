@@ -1276,3 +1276,27 @@ class Test_JobConfig(unittest.TestCase):
         job_config = self._make_one()
         job_config.reservation = "foo"
         self.assertEqual(job_config._properties["reservation"], "foo")
+
+    def test_max_slots_miss(self):
+        job_config = self._make_one()
+        self.assertEqual(job_config.max_slots, None)
+
+    def test_max_slots_hit(self):
+        job_config = self._make_one()
+        job_config._properties["maxSlots"] = 3
+        self.assertEqual(job_config.max_slots, 3)
+
+    def test_max_slots_update_in_place(self):
+        job_config = self._make_one()
+        job_config.max_slots = 45  # update in place
+        self.assertEqual(job_config.max_slots, 45)
+
+    def test_max_slots_setter_invalid(self):
+        job_config = self._make_one()
+        with self.assertRaises(ValueError):
+            job_config.max_slots = "foo"
+
+    def test_max_slots_setter(self):
+        job_config = self._make_one()
+        job_config.max_slots = 123
+        self.assertEqual(job_config._properties["maxSlots"], "123")

@@ -172,15 +172,21 @@ class TestCentralizedClientInitialization:
         )
 
         # Assert
-        # The BigQueryClient should have been initialized, and the underlying
-        # service clients should have been instantiated with the provided arguments.
-        # Note: We are asserting on the mock objects provided by the fixtures.
+        # The BigQueryClient should have been initialized. Accessing the
+        # service client properties should instantiate them with the correct arguments.
+
+        # Access the property to trigger instantiation
+        _ = client.dataset_service_client
         mock_dataset_service_client.assert_called_once_with(
             credentials=credentials, client_options=client_options
         )
+
+        _ = client.job_service_client
         mock_job_service_client.assert_called_once_with(
             credentials=credentials, client_options=client_options
         )
+
+        _ = client.model_service_client
         mock_model_service_client.assert_called_once_with(
             credentials=credentials, client_options=client_options
         )

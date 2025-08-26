@@ -1297,7 +1297,7 @@ class Test_JobConfig(unittest.TestCase):
         job_config = self._make_one()
         job_config._properties["maxSlots"] = int(3)
         self.assertEqual(job_config.max_slots, 3)
-    
+
     def test_max_slots_hit_invalid(self):
         job_config = self._make_one()
         job_config._properties["maxSlots"] = object()

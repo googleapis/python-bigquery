@@ -1339,6 +1339,17 @@ class QueryJob(_AsyncJob):
         else:
             return BiEngineStats.from_api_repr(stats)
 
+    @property
+    def incremental_result_stats(self):
+        """Optional[google.cloud.bigquery.job.IncrementalResultStats]: return information about incremental query results.
+
+        This feature is not generally available.
+        """
+        stats = self._job_statistics().get("incrementalResultStats")
+        if stats is not None:
+            prop = IncrementalResultStats.from_api_repr(stats)
+        return None
+
     def _blocking_poll(self, timeout=None, **kwargs):
         self._done_timeout = timeout
         self._transport_timeout = timeout
@@ -2565,3 +2576,63 @@ class TimelineEntry(object):
         """Optional[int]: Cumulative slot-milliseconds consumed by
         this query."""
         return _helpers._int_or_none(self._properties.get("totalSlotMs"))
+
+
+class IncrementalResultStats(object):
+    """IncrementalResultStats provides information about incremental query execution."""
+
+    def __init__(self):
+        self._properties = {}
+
+    @classmethod
+    def from_api_repr(cls, resource):
+        """Factory: construct instance from the JSON repr.
+
+        Args:
+            resource(Dict[str: object]):
+                QueryTimelineSample representation returned from API.
+
+        Returns:
+            google.cloud.bigquery.TimelineEntry:
+                Timeline sample parsed from ``resource``.
+        """
+        entry = cls()
+        entry._properties = resource
+        return entry
+
+    @property
+    def disabled_reason(self):
+        """Optional[string]: Reason why incremental reasons were not
+        written by the query.
+        """
+        return _helpers._str_or_none(self._properties.get("disabledReason"))
+
+    @property
+    def result_set_last_replace_time(self):
+        """Optional[datetime]: The time at which the result table's contents
+        were completely replaced.  May be absent if no results have been written
+        or the query has completed."""
+        from google.cloud._helpers import _rfc3339_nanos_to_datetime
+
+        value = self._properties.get("resultSetLastReplaceTime")
+        if value:
+            try:
+                return _rfc3339_nanos_to_datetime(value)
+            except ValueError:
+                pass
+        return None
+
+    @property
+    def result_set_last_modify_time(self):
+        """Optional[datetime]: The time at which the result table's contents
+        were completely replaced.  May be absent if no results have been written
+        or the query has completed."""
+        from google.cloud._helpers import _rfc3339_nanos_to_datetime
+
+        value = self._properties.get("resultSetLastModifyTime")
+        if value:
+            try:
+                return _rfc3339_nanos_to_datetime(value)
+            except ValueError:
+                pass
+        return None

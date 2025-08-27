@@ -535,9 +535,9 @@ class TestIncrementalResultStats:
 
     def test_ctor_defaults(self):
         stats = self._make_one()
-        assert stats.disabled_reason == None
-        assert stats.result_set_last_replace_time == None
-        assert stats.result_set_last_modify_time == None
+        assert stats.disabled_reason is None
+        assert stats.result_set_last_replace_time is None
+        assert stats.result_set_last_modify_time is None
 
     def test_from_api_repr_partial_stats(self):
         klass = self._get_target_class()
@@ -545,8 +545,8 @@ class TestIncrementalResultStats:
 
         assert isinstance(stats, klass)
         assert stats.disabled_reason == "FOO"
-        assert stats.result_set_last_replace_time == None
-        assert stats.result_set_last_modify_time == None
+        assert stats.result_set_last_replace_time is None
+        assert stats.result_set_last_modify_time is None
 
     def test_from_api_repr_full_stats(self):
         klass = self._get_target_class()
@@ -579,5 +579,5 @@ class TestIncrementalResultStats:
 
         assert isinstance(stats, klass)
         assert stats.disabled_reason == "BAR"
-        assert stats.result_set_last_replace_time == None
-        assert stats.result_set_last_modify_time == None
+        assert stats.result_set_last_replace_time is None
+        assert stats.result_set_last_modify_time is None

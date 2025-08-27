@@ -80,7 +80,7 @@ class BigQueryClient:
 
     @dataset_service_client.setter
     def dataset_service_client(self, value):
-        # Check for the methods that this class most commonly uses (duck typing)
+        # Check for the methods the centralized client exposes (to allow duck-typing)
         required_methods = [
             "get_dataset",
             "insert_dataset",

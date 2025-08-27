@@ -15,4 +15,4 @@
 #
 from .client import BigQueryClient
 
-__all__ = ("BigQueryClient",)
+__all__ = "BigQueryClient"

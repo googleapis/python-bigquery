@@ -73,7 +73,6 @@ class BigQueryClient:
     def dataset_service_client(self):
         if "dataset" not in self._clients:
             from google.cloud.bigquery_v2.services import dataset_service
-
             self._clients["dataset"] = dataset_service.DatasetServiceClient(
                 credentials=self._credentials, client_options=self._client_options
             )
@@ -102,7 +101,6 @@ class BigQueryClient:
     def job_service_client(self):
         if "job" not in self._clients:
             from google.cloud.bigquery_v2.services import job_service
-
             self._clients["job"] = job_service.JobServiceClient(
                 credentials=self._credentials, client_options=self._client_options
             )
@@ -128,7 +126,6 @@ class BigQueryClient:
     def model_service_client(self):
         if "model" not in self._clients:
             from google.cloud.bigquery_v2.services import model_service
-
             self._clients["model"] = model_service.ModelServiceClient(
                 credentials=self._credentials, client_options=self._client_options
             )

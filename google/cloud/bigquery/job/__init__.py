@@ -85,4 +85,5 @@ __all__ = [
     "SourceFormat",
     "TransactionInfo",
     "WriteDisposition",
+    "IncrementalResultStats",
 ]

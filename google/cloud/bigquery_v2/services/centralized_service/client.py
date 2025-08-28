@@ -69,6 +69,8 @@ class BigQueryClient:
         self._credentials = credentials
         self._client_options = client_options
 
+# --- SERVICE CLIENT ATTRIBUTES ---
+
     @property
     def dataset_service_client(self):
         if "dataset" not in self._clients:
@@ -148,6 +150,16 @@ class BigQueryClient:
                     f"Object assigned to model_service_client is missing a callable '{method}' method."
                 )
         self._clients["model"] = value
+
+# --- SERVICE CLIENT METHODS ---
+# TODO: refactor the microgenerator template so that everything related to 
+#       a single ServiceClient is kept close togetehr in the same section of this class:
+#       @property
+#       @setter
+#       _method_A()
+#       _method_B()
+#       _method_C()
+#       etc
 
     def get_dataset(
         self,

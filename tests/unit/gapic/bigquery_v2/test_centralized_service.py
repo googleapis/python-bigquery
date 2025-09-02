@@ -87,59 +87,36 @@ def assert_client_called_once_with(
 
 
 # --- FIXTURES ---
+
+
 @pytest.fixture
-def mock_dataset_service_client():
-    """Mocks the DatasetServiceClient."""
+def mock_dataset_service_client_class():
     with mock.patch(
         "google.cloud.bigquery_v2.services.dataset_service.DatasetServiceClient",
         autospec=True,
-    ) as mock_client:
-        yield mock_client
+    ) as mock_class:
+        yield mock_class
 
 
 @pytest.fixture
-def mock_job_service_client():
-    """Mocks the JobServiceClient."""
+def mock_job_service_client_class():
     with mock.patch(
         "google.cloud.bigquery_v2.services.job_service.JobServiceClient",
         autospec=True,
-    ) as mock_client:
-        yield mock_client
+    ) as mock_class:
+        yield mock_class
 
 
 @pytest.fixture
-def mock_model_service_client():
-    """Mocks the ModelServiceClient."""
+def mock_model_service_client_class():
     with mock.patch(
         "google.cloud.bigquery_v2.services.model_service.ModelServiceClient",
         autospec=True,
-    ) as mock_client:
-        yield mock_client
-
-
-# TODO: figure out a solution for this... is there an easier way to feed in clients?
-# TODO: is there an easier way to make mock_x_service_clients?
-@pytest.fixture
-def bq_client(
-    mock_dataset_service_client, mock_job_service_client, mock_model_service_client
-):
-    """Provides a BigQueryClient with mocked underlying services."""
-    client = centralized_service.BigQueryClient()
-    client.dataset_service_client = mock_dataset_service_client
-    client.job_service_client = mock_job_service_client
-    client.model_service_client = mock_model_service_client
-    ...
-    return client
+    ) as mock_class:
+        yield mock_class
 
 
 # --- TEST CLASSES ---
-
-from google.api_core import client_options as client_options_lib
-
-# from google.api_core.client_options import ClientOptions
-from google.auth import credentials as auth_credentials
-
-# from google.auth.credentials import Credentials
 
 
 class TestCentralizedClientInitialization:
@@ -162,9 +139,9 @@ class TestCentralizedClientInitialization:
         self,
         credentials,
         client_options,
-        mock_dataset_service_client,
-        mock_job_service_client,
-        mock_model_service_client,
+        mock_dataset_service_client_class,
+        mock_job_service_client_class,
+        mock_model_service_client_class,
     ):
         # Act
         client = centralized_service.BigQueryClient(
@@ -172,67 +149,106 @@ class TestCentralizedClientInitialization:
         )
 
         # Assert
-        # The BigQueryClient should have been initialized. Accessing the
-        # service client properties should instantiate them with the correct arguments.
-
-        # Access the property to trigger instantiation
         _ = client.dataset_service_client
-        mock_dataset_service_client.assert_called_once_with(
+        mock_dataset_service_client_class.assert_called_once_with(
             credentials=credentials, client_options=client_options
         )
 
         _ = client.job_service_client
-        mock_job_service_client.assert_called_once_with(
+        mock_job_service_client_class.assert_called_once_with(
             credentials=credentials, client_options=client_options
         )
 
         _ = client.model_service_client
-        mock_model_service_client.assert_called_once_with(
+        mock_model_service_client_class.assert_called_once_with(
             credentials=credentials, client_options=client_options
         )
 
 
 class TestCentralizedClientDatasetService:
-    def test_get_dataset(self, bq_client, mock_dataset_service_client):
+    def test_get_dataset(self, mock_dataset_service_client_class):
         # Arrange
+        mock_instance = mock_dataset_service_client_class.return_value
         expected_dataset = dataset.Dataset(
             kind="bigquery#dataset", id=f"{PROJECT_ID}:{DATASET_ID}"
         )
-        mock_dataset_service_client.get_dataset.return_value = expected_dataset
+        mock_instance.get_dataset.return_value = expected_dataset
         get_dataset_request = dataset.GetDatasetRequest(
             project_id=PROJECT_ID, dataset_id=DATASET_ID
         )
+        client = centralized_service.BigQueryClient()
 
         # Act
-        dataset_response = bq_client.get_dataset(request=get_dataset_request)
+        dataset_response = client.get_dataset(request=get_dataset_request)
 
         # Assert
         assert dataset_response == expected_dataset
-        assert_client_called_once_with(
-            mock_dataset_service_client.get_dataset, get_dataset_request
-        )
+        assert_client_called_once_with(mock_instance.get_dataset, get_dataset_request)
+
+    @pytest.mark.parametrize(
+        "call_args, expected_request",
+        [
+            (
+                {"project_id": PROJECT_ID},
+                dataset.ListDatasetsRequest(project_id=PROJECT_ID),
+            ),
+            (
+                {"request": dataset.ListDatasetsRequest(project_id=PROJECT_ID)},
+                dataset.ListDatasetsRequest(project_id=PROJECT_ID),
+            ),
+            ({}, dataset.ListDatasetsRequest(project_id=PROJECT_ID)),
+        ],
+    )
+    def test_list_datasets(
+        self, mock_dataset_service_client_class, call_args, expected_request
+    ):
+        # Arrange
+        mock_instance = mock_dataset_service_client_class.return_value
+        expected_datasets = [
+            dataset.Dataset(kind="bigquery#dataset", id=f"{PROJECT_ID}:{DATASET_ID}")
+        ]
+        mock_instance.list_datasets.return_value = expected_datasets
+        client = centralized_service.BigQueryClient()
+        client.project = PROJECT_ID
+
+        # Act
+        datasets_response = client.list_datasets(**call_args)
+
+        # Assert
+        assert datasets_response == expected_datasets
+        assert_client_called_once_with(mock_instance.list_datasets, expected_request)
+
+    def test_list_datasets_conflicting_args(self, mock_dataset_service_client_class):
+        # Arrange
+        client = centralized_service.BigQueryClient()
+        list_datasets_request = dataset.ListDatasetsRequest(project_id=PROJECT_ID)
+
+        # Act & Assert
+        with pytest.raises(ValueError):
+            client.list_datasets(project_id=PROJECT_ID, request=list_datasets_request)
 
 
 class TestCentralizedClientJobService:
-    def test_list_jobs(self, bq_client, mock_job_service_client):
+    def test_list_jobs(self, mock_job_service_client_class):
         # Arrange
+        mock_instance = mock_job_service_client_class.return_value
         expected_jobs = [job.Job(kind="bigquery#job", id=f"{PROJECT_ID}:{JOB_ID}")]
-        mock_job_service_client.list_jobs.return_value = expected_jobs
+        mock_instance.list_jobs.return_value = expected_jobs
         list_jobs_request = job.ListJobsRequest(project_id=PROJECT_ID)
+        client = centralized_service.BigQueryClient()
 
         # Act
-        jobs_response = bq_client.list_jobs(request=list_jobs_request)
+        jobs_response = client.list_jobs(request=list_jobs_request)
 
         # Assert
         assert jobs_response == expected_jobs
-        assert_client_called_once_with(
-            mock_job_service_client.list_jobs, list_jobs_request
-        )
+        assert_client_called_once_with(mock_instance.list_jobs, list_jobs_request)
 
 
 class TestCentralizedClientModelService:
-    def test_get_model(self, bq_client, mock_model_service_client):
+    def test_get_model(self, mock_model_service_client_class):
         # Arrange
+        mock_instance = mock_model_service_client_class.return_value
         expected_model = model.Model(
             etag=DEFAULT_ETAG,
             model_reference={
@@ -241,43 +257,38 @@ class TestCentralizedClientModelService:
                 "model_id": MODEL_ID,
             },
         )
-        mock_model_service_client.get_model.return_value = expected_model
+        mock_instance.get_model.return_value = expected_model
         get_model_request = model.GetModelRequest(
             project_id=PROJECT_ID, dataset_id=DATASET_ID, model_id=MODEL_ID
         )
+        client = centralized_service.BigQueryClient()
 
         # Act
-        model_response = bq_client.get_model(request=get_model_request)
+        model_response = client.get_model(request=get_model_request)
 
         # Assert
         assert model_response == expected_model
-        assert_client_called_once_with(
-            mock_model_service_client.get_model, get_model_request
-        )
+        assert_client_called_once_with(mock_instance.get_model, get_model_request)
 
-    def test_delete_model(self, bq_client, mock_model_service_client):
+    def test_delete_model(self, mock_model_service_client_class):
         # Arrange
-        # The underlying service call returns nothing on success.
-        mock_model_service_client.delete_model.return_value = None
+        mock_instance = mock_model_service_client_class.return_value
+        mock_instance.delete_model.return_value = None
         delete_model_request = model.DeleteModelRequest(
             project_id=PROJECT_ID, dataset_id=DATASET_ID, model_id=MODEL_ID
         )
+        client = centralized_service.BigQueryClient()
 
         # Act
-        # The wrapper method should also return nothing.
-        result = bq_client.delete_model(request=delete_model_request)
+        result = client.delete_model(request=delete_model_request)
 
         # Assert
-        # 1. Assert the return value is None. This fails if the method doesn't exist.
         assert result is None
-        # 2. Assert the underlying service was called correctly.
-        assert_client_called_once_with(
-            mock_model_service_client.delete_model,
-            delete_model_request,
-        )
+        assert_client_called_once_with(mock_instance.delete_model, delete_model_request)
 
-    def test_patch_model(self, bq_client, mock_model_service_client):
+    def test_patch_model(self, mock_model_service_client_class):
         # Arrange
+        mock_instance = mock_model_service_client_class.return_value
         expected_model = model.Model(
             etag="new_etag",
             model_reference={
@@ -287,7 +298,7 @@ class TestCentralizedClientModelService:
             },
             description="A newly patched description.",
         )
-        mock_model_service_client.patch_model.return_value = expected_model
+        mock_instance.patch_model.return_value = expected_model
 
         model_patch = model.Model(description="A newly patched description.")
         patch_model_request = model.PatchModelRequest(
@@ -296,18 +307,18 @@ class TestCentralizedClientModelService:
             model_id=MODEL_ID,
             model=model_patch,
         )
+        client = centralized_service.BigQueryClient()
 
         # Act
-        patched_model = bq_client.patch_model(request=patch_model_request)
+        patched_model = client.patch_model(request=patch_model_request)
 
         # Assert
         assert patched_model == expected_model
-        assert_client_called_once_with(
-            mock_model_service_client.patch_model, patch_model_request
-        )
+        assert_client_called_once_with(mock_instance.patch_model, patch_model_request)
 
-    def test_list_models(self, bq_client, mock_model_service_client):
+    def test_list_models(self, mock_model_service_client_class):
         # Arrange
+        mock_instance = mock_model_service_client_class.return_value
         expected_models = [
             model.Model(
                 etag=DEFAULT_ETAG,
@@ -318,15 +329,15 @@ class TestCentralizedClientModelService:
                 },
             )
         ]
-        mock_model_service_client.list_models.return_value = expected_models
+        mock_instance.list_models.return_value = expected_models
         list_models_request = model.ListModelsRequest(
             project_id=PROJECT_ID, dataset_id=DATASET_ID
         )
+        client = centralized_service.BigQueryClient()
+
         # Act
-        models_response = bq_client.list_models(request=list_models_request)
+        models_response = client.list_models(request=list_models_request)
 
         # Assert
         assert models_response == expected_models
-        assert_client_called_once_with(
-            mock_model_service_client.list_models, list_models_request
-        )
+        assert_client_called_once_with(mock_instance.list_models, list_models_request)

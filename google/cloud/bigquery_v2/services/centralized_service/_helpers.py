@@ -22,3 +22,31 @@ def _drop_self_key(kwargs):
         raise TypeError("kwargs must be a dict.")
     kwargs.pop("self", None)  # Essentially a no-op if 'self' key does not exist
     return kwargs
+
+
+def _make_request(
+    request_class,
+    user_request,
+    identifier_value,
+    identifier_name: str,
+    parser,
+    identifier_required: bool = True,
+):
+    if user_request is not None and identifier_value is not None:
+        raise ValueError(
+            f"Provide either a request object or '{identifier_name}', not both."
+        )
+
+    if user_request is not None:
+        return user_request
+
+    if identifier_required and identifier_value is None:
+        raise ValueError(
+            f"Either a request object or '{identifier_name}' must be provided."
+        )
+
+    if identifier_value is None:
+        request_fields = parser()
+    else:
+        request_fields = parser(identifier_value)
+    return request_class(**request_fields)

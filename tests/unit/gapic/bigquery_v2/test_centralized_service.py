@@ -87,8 +87,6 @@ def assert_client_called_once_with(
 
 
 # --- FIXTURES ---
-
-
 @pytest.fixture
 def mock_dataset_service_client_class():
     with mock.patch(
@@ -115,9 +113,10 @@ def mock_model_service_client_class():
     ) as mock_class:
         yield mock_class
 
-
 # --- TEST CLASSES ---
 
+from google.api_core import client_options as client_options_lib
+from google.auth import credentials as auth_credentials
 
 class TestCentralizedClientInitialization:
     @pytest.mark.parametrize(
@@ -249,14 +248,6 @@ class TestCentralizedClientModelService:
     def test_get_model(self, mock_model_service_client_class):
         # Arrange
         mock_instance = mock_model_service_client_class.return_value
-        expected_model = model.Model(
-            etag=DEFAULT_ETAG,
-            model_reference={
-                "project_id": PROJECT_ID,
-                "dataset_id": DATASET_ID,
-                "model_id": MODEL_ID,
-            },
-        )
         mock_instance.get_model.return_value = expected_model
         get_model_request = model.GetModelRequest(
             project_id=PROJECT_ID, dataset_id=DATASET_ID, model_id=MODEL_ID
@@ -299,7 +290,6 @@ class TestCentralizedClientModelService:
             description="A newly patched description.",
         )
         mock_instance.patch_model.return_value = expected_model
-
         model_patch = model.Model(description="A newly patched description.")
         patch_model_request = model.PatchModelRequest(
             project_id=PROJECT_ID,

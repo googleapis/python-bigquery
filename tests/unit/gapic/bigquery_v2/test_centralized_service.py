@@ -247,6 +247,14 @@ class TestCentralizedClientJobService:
 class TestCentralizedClientModelService:
     def test_get_model(self, mock_model_service_client_class):
         # Arrange
+        expected_model = model.Model(
+            etag=DEFAULT_ETAG,
+            model_reference={
+                "project_id": PROJECT_ID,
+                "dataset_id": DATASET_ID,
+                "model_id": MODEL_ID,
+            },
+        )
         mock_instance = mock_model_service_client_class.return_value
         mock_instance.get_model.return_value = expected_model
         get_model_request = model.GetModelRequest(

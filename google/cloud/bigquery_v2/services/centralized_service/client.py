@@ -89,7 +89,7 @@ class BigQueryClient:
     # --- HELPER METHODS ---
     def _parse_dataset_path(self, dataset_path: str) -> Tuple[Optional[str], str]:
         """
-        Helper to parse project and dataset from a string identifier.
+        Helper to parse project_id and/or dataset_id from a string identifier.
 
         Args:
             dataset_path: A string in the format 'project_id.dataset_id' or
@@ -104,6 +104,15 @@ class BigQueryClient:
         return self.project, dataset_path
 
     def _parse_dataset_id_to_dict(self, dataset_id: DatasetIdentifier) -> dict:
+        """
+        Helper to create a request dictionary from a project_id and dataset_id.
+
+        Args:
+            dataset_id: A string or DatasetReference.
+
+        Returns:
+            A dict of {"project_id": project_id, "dataset_id": dataset_id_str }.
+        """
         if isinstance(dataset_id, str):
             project_id, dataset_id_str = self._parse_dataset_path(dataset_id)
             return {"project_id": project_id, "dataset_id": dataset_id_str}
@@ -221,6 +230,13 @@ class BigQueryClient:
             timeout=timeout,
             metadata=metadata,
         )
+
+    # ============================================================================
+    # TODO: HERE THERE BE DRAGONS. Once the above changes have been approved the
+    # methods below this comment will be updated to look and function similar
+    # to the above.
+    # NOT YET READY FOR REVIEW. 
+    # ============================================================================
 
     def list_jobs(
         self,

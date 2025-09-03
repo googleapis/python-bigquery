@@ -244,8 +244,8 @@ class IncrementalResultStats:
     @property
     def result_set_last_modify_time(self):
         """Optional[datetime]: The time at which the result table's contents
-        were completely replaced.  May be absent if no results have been written
-        or the query has completed."""
+        were modified. May be absent if no results have been written or the 
+        query has completed."""
         from google.cloud._helpers import _rfc3339_nanos_to_datetime
 
         value = self._properties.get("resultSetLastModifyTime")

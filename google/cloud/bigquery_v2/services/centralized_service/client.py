@@ -54,7 +54,6 @@ except AttributeError:  # pragma: NO COVER
 DatasetIdentifier = Union[str, dataset_reference.DatasetReference]
 
 # TODO: This variable is here to simplify prototyping, etc.
-PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
 DEFAULT_RETRY: OptionalRetry = gapic_v1.method.DEFAULT
 DEFAULT_TIMEOUT: Union[float, object] = gapic_v1.method.DEFAULT
 DEFAULT_METADATA: Sequence[Tuple[str, Union[str, bytes]]] = ()
@@ -68,6 +67,7 @@ class BigQueryClient:
         *,
         credentials: Optional[auth_credentials.Credentials] = None,
         client_options: Optional[Union[client_options_lib.ClientOptions, dict]] = None,
+        project: Optional[str] = None
     ):
         """
         Initializes the BigQueryClient.
@@ -82,9 +82,59 @@ class BigQueryClient:
         """
 
         self._clients: Dict[str, object] = {}
-        self._credentials = credentials
-        self._client_options = client_options
-        self.project = PROJECT_ID
+        self._properties: Dict[str, object] = {
+            "credentials": credentials,
+            "client_options": client_options,
+            "project": project,
+        }
+
+    @property
+    def credentials(self):
+        """google.auth.credentials.Credentials: Credentials to use for queries
+        performed through the BigQueryClient.
+
+        Note:
+            These credentials do not need to be explicitly defined if you are
+            using Application Default Credentials. If you are not using
+            Application Default Credentials, manually construct a
+            :class:`google.auth.credentials.Credentials` object and set it as
+            the client credentials as demonstrated in the example below. See
+            `auth docs`_ for more information on obtaining credentials.
+
+        Example:
+            Manually setting the client credentials:
+
+            >>> from google.cloud.bigquery_v2 import BigQueryClient
+            >>> from google.oauth2 import service_account
+            >>> bqclient = BigQueryClient()
+            >>> credentials = (service_account
+            ...     .Credentials.from_service_account_file(
+            ...         '/path/to/key.json'))
+            >>> bqclient.credentials = credentials
+
+
+        .. _auth docs: http://google-auth.readthedocs.io
+            /en/latest/user-guide.html#obtaining-credentials
+        """
+        if self._properties["credentials"] is None:
+            self._properties["credentials"], _ = google.auth.default()
+        return self._properties["credentials"]
+
+    @credentials.setter
+    def credentials(self, value):
+        self._properties["credentials"] = value
+
+    @property
+    def project(self) -> str:
+        """Project bound to the table."""
+        if self._properties["project"] is None:
+            _, self._properties["project"] = google.auth.default()
+        return self._properties["project"]
+
+    @project.setter
+    def project(self, value):
+        self._properties["project"] = value
+
 
     # --- HELPER METHODS ---
     def _parse_dataset_path(self, dataset_path: str) -> Tuple[Optional[str], str]:
@@ -134,7 +184,7 @@ class BigQueryClient:
     def dataset_service_client(self):
         if "dataset" not in self._clients:
             self._clients["dataset"] = dataset_service.DatasetServiceClient(
-                credentials=self._credentials, client_options=self._client_options
+                credentials=self._properties["credentials"], client_options=self._properties["client_options"]
             )
         return self._clients["dataset"]
 
@@ -150,7 +200,7 @@ class BigQueryClient:
     def job_service_client(self):
         if "job" not in self._clients:
             self._clients["job"] = job_service.JobServiceClient(
-                credentials=self._credentials, client_options=self._client_options
+                credentials=self._properties["credentials"], client_options=self._properties["client_options"]
             )
         return self._clients["job"]
 
@@ -164,7 +214,7 @@ class BigQueryClient:
     def model_service_client(self):
         if "model" not in self._clients:
             self._clients["model"] = model_service.ModelServiceClient(
-                credentials=self._credentials, client_options=self._client_options
+                credentials=self._properties["credentials"], client_options=self._properties["client_options"]
             )
         return self._clients["model"]
 

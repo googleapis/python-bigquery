@@ -106,7 +106,8 @@ class BigQueryClient:
 
     def _parse_dataset_id_to_dict(self, dataset_id: DatasetIdentifier) -> dict:
         """
-        Helper to create a request dictionary from a project_id and dataset_id.
+        Helper to create a dictionary from a project_id and dataset_id to pass
+        internally between helper functions.
 
         Args:
             dataset_id: A string or DatasetReference.

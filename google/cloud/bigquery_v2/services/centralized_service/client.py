@@ -99,7 +99,8 @@ class BigQueryClient:
             A tuple of (project_id, dataset_id).
         """
         if "." in dataset_path:
-            project_id, dataset_id = dataset_path.split(".", 1)
+            # Use rsplit to handle legacy paths like `google.com:my-project.my_dataset`.
+            project_id, dataset_id = dataset_path.rsplit(".", 1)
             return project_id, dataset_id
         return self.project, dataset_path
 

@@ -1,0 +1,103 @@
+# TODO: Add a header if needed.
+
+# ======== 🦕 HERE THERE BE DINOSAURS 🦖 =========
+# This content is subject to significant change. Not for review yet.
+# Included as a proof of concept for context or testing ONLY.
+# ================================================
+
+# Imports
+import os
+
+from typing import (
+    Dict,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
+
+
+{% for imp in service_imports %}
+{{ imp }}
+{% endfor %}
+from google.cloud.bigquery_v2.services.centralized_service import _helpers
+
+{% for imp in type_imports %}
+{{ imp }}
+{% endfor %}
+from google.cloud.bigquery_v2.types import dataset_reference
+
+from google.api_core import client_options as client_options_lib
+from google.api_core import gapic_v1
+from google.api_core import retry as retries
+from google.auth import credentials as auth_credentials
+
+# Create type aliases
+try:
+    OptionalRetry = Union[retries.Retry, gapic_v1.method._MethodDefault, None]
+except AttributeError:  # pragma: NO COVER
+    OptionalRetry = Union[retries.Retry, object, None]  # type: ignore
+
+DatasetIdentifier = Union[str, dataset_reference.DatasetReference]
+
+DEFAULT_RETRY: OptionalRetry = gapic_v1.method.DEFAULT
+DEFAULT_TIMEOUT: Union[float, object] = gapic_v1.method.DEFAULT
+DEFAULT_METADATA: Sequence[Tuple[str, Union[str, bytes]]] = ()
+
+
+class BigQueryClient:
+    def __init__(self, credentials=None, client_options=None):
+        self._clients = {}
+        self._credentials = credentials
+        self._client_options = client_options
+
+    # --- *METHOD SECTION ---
+{% for method in methods %}
+    def {{ method.name }}(
+        self,
+        *,
+        request: Optional["{{ method.service_module_name.replace('_service', '') }}.{{ method.name.replace('_', ' ').title().replace(' ', '') }}Request"] = None,
+        retry: OptionalRetry = DEFAULT_RETRY,
+        timeout: Union[float, object] = DEFAULT_TIMEOUT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = DEFAULT_METADATA,
+    ) -> "{{ method.return_type }}":
+        """
+        TODO: Docstring is purposefully blank. microgenerator will add automatically.
+        """
+
+        return self.{{ method.service_module_name }}_client.{{ method.name }}(
+            request=request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+{% endfor %}
+    
+{#- *ServiceClient Properties Section: methods to get/set service clients -#}
+    # --- *SERVICECLIENT PROPERTIES ---
+{% for service in services %}
+    @property
+    def {{ service.property_name }}(self):
+        if "{{ service.service_name }}" not in self._clients:
+            self._clients["{{ service.service_name }}"] = {{ service.service_module_name }}.{{ service.service_client_class }}(
+                credentials=self._credentials, client_options=self._client_options
+            )
+        return self._clients["{{ service.service_name }}"]
+
+    @{{ service.property_name }}.setter
+    def {{ service.property_name }}(self, value):
+        if not isinstance(value, {{ service.service_module_name }}.{{ service.service_client_class }}):
+            raise TypeError(
+                "Expected an instance of {{ service.service_module_name }}.{{ service.service_client_class }}."
+            )
+        self._clients["{{ service.service_name }}"] = value
+{% endfor %}
+
+{#- Helper Section: methods included from partial template -#}
+    {%- include "partials/_client_helpers.j2" %}
+
+
+# ======== 🦕 HERE THERE WERE DINOSAURS 🦖 =========
+# The above content is subject to significant change. Not for review yet.
+# Included as a proof of concept for context or testing ONLY.
+# ================================================

@@ -1,0 +1,18 @@
+def {{ method.name }}(
+    self,
+    *,
+    request: Optional[dict] = None,
+    retry: OptionalRetry = DEFAULT_RETRY,
+    timeout: Union[float, object] = DEFAULT_TIMEOUT,
+    metadata: Sequence[Tuple[str, Union[str, bytes]]] = DEFAULT_METADATA,
+) -> "{{ method.return_type }}":
+    """
+    TODO: Docstring is purposefully blank. microgenerator will add automatically.
+    """
+
+    return self.{{ class_to_instance_map[method.class_name] }}.{{ method.name }}(
+        request=request,
+        retry=retry,
+        timeout=timeout,
+        metadata=metadata,
+    )

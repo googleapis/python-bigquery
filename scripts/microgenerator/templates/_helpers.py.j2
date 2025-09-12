@@ -19,6 +19,31 @@ def _create_request(
 
     Returns:
         An instantiated request object.
+    
+    Examples:
+        >>> # Example with project_id provided in path_identifier
+        >>> request = _create_request(
+        ...     request_class=GetDatasetRequest,
+        ...     path_identifier="my-project.my-dataset",
+        ...     expected_args=["project_id", "dataset_id"]
+        ... )
+        >>> request.project_id
+        'my-project'
+        >>> request.dataset_id
+        'my-dataset'
+
+        >>> # Example with project_id omitted from path_identifier, using default_project_id
+        >>> request = _create_request(
+        ...     request_class=GetDatasetRequest,
+        ...     path_identifier="my-dataset",
+        ...     expected_args=["project_id", "dataset_id"],
+        ...     default_project_id="my-default-project"
+        ... )
+        >>> request.project_id
+        'my-default-project'
+        >>> request.dataset_id
+        'my-dataset'
+
     """
     # Start of inlined parse_path_to_request_inputs
     segments = path_identifier.split(".")

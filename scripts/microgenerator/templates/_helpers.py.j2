@@ -1,0 +1,54 @@
+from typing import Any, Dict, List, Optional, Type
+
+
+def _create_request(
+    request_class: Type,
+    path_identifier: str,
+    expected_args: List[str],
+    default_project_id: Optional[str] = None,
+) -> Any:
+    """
+    Constructs a *Request object from a class, path_identifier, and expected args.
+
+    Args:
+        request_class: The class of the request object to create (e.g., GetDatasetRequest).
+        path_identifier: The dot-separated string of resource IDs.
+        expected_args: An ordered list of the argument names the request object
+                       expects (e.g., ['project_id', 'dataset_id', 'table_id']).
+        default_project_id: The default project ID to use if needed.
+
+    Returns:
+        An instantiated request object.
+    """
+    # Start of inlined parse_path_to_request_inputs
+    segments = path_identifier.split(".")
+    num_segments = len(segments)
+    num_expected = len(expected_args)
+    project_id_is_expected = "project_id" in expected_args
+
+    # Validate the number of segments.
+    if not (
+        num_segments == num_expected
+        or (project_id_is_expected and num_segments == num_expected - 1)
+    ):
+        raise ValueError(
+            f"Invalid path identifier '{path_identifier}'. Expected "
+            f"{num_expected} parts (or {num_expected - 1} if project_id is "
+            f"omitted), but got {num_segments}."
+        )
+
+    # If project_id is implicitly expected, use the default.
+    if project_id_is_expected and num_segments == num_expected - 1:
+        if not default_project_id:
+            raise ValueError(
+                f"Missing project_id in path '{path_identifier}' and no "
+                "default_project_id was provided."
+            )
+        # Prepend the default project_id to the segments.
+        segments.insert(0, default_project_id)
+
+    request_inputs = dict(zip(expected_args, segments))
+    # End of inlined parse_path_to_request_inputs
+
+    # Instantiate the request object.
+    return request_class(**request_inputs)

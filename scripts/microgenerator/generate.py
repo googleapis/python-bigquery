@@ -646,7 +646,7 @@ def setup_config_and_paths(config_path: str) -> Dict[str, Any]:
 
     # Determine the project root.
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = find_project_root(script_dir, ["setup.py"])
+    project_root = find_project_root(script_dir, ["setup.py", ".git"])
     if not project_root:
         project_root = os.getcwd()  # Fallback to current directory
 

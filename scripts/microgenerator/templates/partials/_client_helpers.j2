@@ -1,0 +1,49 @@
+    {#
+    This is a partial template file intended to be included in other templates.
+    It contains helper methods for the BigQueryClient class.
+    #}
+    
+    # --- HELPER METHODS ---
+    def _parse_dataset_path(self, dataset_path: str) -> Tuple[Optional[str], str]:
+        """
+        Helper to parse project_id and/or dataset_id from a string identifier.
+    
+        Args:
+            dataset_path: A string in the format 'project_id.dataset_id' or
+                'dataset_id'.
+    
+        Returns:
+            A tuple of (project_id, dataset_id).
+        """
+        if "." in dataset_path:
+            # Use rsplit to handle legacy paths like `google.com:my-project.my_dataset`.
+            project_id, dataset_id = dataset_path.rsplit(".", 1)
+            return project_id, dataset_id
+        return self.project, dataset_path
+    
+    def _parse_dataset_id_to_dict(self, dataset_id: "DatasetIdentifier") -> dict:
+        """
+        Helper to create a dictionary from a project_id and dataset_id to pass
+        internally between helper functions.
+    
+        Args:
+            dataset_id: A string or DatasetReference.
+    
+        Returns:
+            A dict of {"project_id": project_id, "dataset_id": dataset_id_str }.
+        """
+        if isinstance(dataset_id, str):
+            project_id, dataset_id_str = self._parse_dataset_path(dataset_id)
+            return {"project_id": project_id, "dataset_id": dataset_id_str}
+        elif isinstance(dataset_id, dataset_reference.DatasetReference):
+            return {
+                "project_id": dataset_id.project_id,
+                "dataset_id": dataset_id.dataset_id,
+            }
+        else:
+            raise TypeError(f"Invalid type for dataset_id: {type(dataset_id)}")
+    
+    def _parse_project_id_to_dict(self, project_id: Optional[str] = None) -> dict:
+        """Helper to create a request dictionary from a project_id."""
+        final_project_id = project_id or self.project
+        return {"project_id": final_project_id}

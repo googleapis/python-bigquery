@@ -615,3 +615,50 @@ def test_query_and_wait_retries_job_for_DDL_queries(global_time_lock):
     _, kwargs = calls[3]
     assert kwargs["method"] == "POST"
     assert kwargs["path"] == query_request_path
+
+
+@pytest.mark.parametrize(
+    "result_retry",
+    [
+        pytest.param(
+            # {"retry": google.cloud.bigquery.retry.DEFAULT_RETRY},
+            {},
+            id="default retry",
+        ),
+        pytest.param(
+            {
+                "retry": google.cloud.bigquery.retry.DEFAULT_RETRY.with_timeout(
+                    timeout=10.0
+                )
+            },
+            id="custom retry object",
+        ),
+    ],
+)
+def test_retry_load_job_result(result_retry, PROJECT, DS_ID):
+    from google.cloud.bigquery.dataset import DatasetReference
+    from google.cloud.bigquery.job.load import LoadJob
+
+    client = make_client()
+    conn = client._connection = make_connection(
+        dict(
+            status=dict(state="RUNNING"),
+            jobReference={"jobId": "id_1"},
+        ),
+        google.api_core.exceptions.ServiceUnavailable("retry me"),
+        dict(
+            status=dict(state="DONE"),
+            jobReference={"jobId": "id_1"},
+            statistics={"load": {"outputRows": 1}},
+        ),
+    )
+
+    table_ref = DatasetReference(project=PROJECT, dataset_id=DS_ID).table("new_table")
+    job = LoadJob("id_1", source_uris=None, destination=table_ref, client=client)
+    result = job.result(**result_retry)
+
+    assert job.state == "DONE"
+    assert result.output_rows == 1
+
+    # We made all the calls we expected to.
+    assert conn.api_request.call_count == 3

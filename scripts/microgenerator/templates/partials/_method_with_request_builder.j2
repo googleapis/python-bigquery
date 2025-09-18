@@ -1,0 +1,45 @@
+def {{ method.name }}(
+    self,
+    {# Assumes the primary resource ID is the last arg in request_id_args #}
+    {{ method.request_id_args[-1] }}: Optional[str] = None,
+    *,
+    {# Assumes the request class is a nested type within the service, e.g., bigquery_v2.types.dataset.GetDatasetRequest #}
+    request: Optional[{{ '.'.join(method.request_class_full_name.split('.')[-2:]) }}] = None,
+    retry: OptionalRetry = DEFAULT_RETRY,
+    timeout: Union[float, object] = DEFAULT_TIMEOUT,
+    metadata: Sequence[Tuple[str, Union[str, bytes]]] = DEFAULT_METADATA,
+) -> "{{ method.return_type }}":
+    """
+    TODO: Docstring is purposefully blank. microgenerator will add automatically.
+    """
+    if request and {{ method.request_id_args[-1] }} is not None:
+        raise ValueError("Cannot provide both request and {{ method.request_id_args[-1] }}.")
+
+    if request:
+        final_request = request
+    else:
+        path_identifier = {{ method.request_id_args[-1] }}
+        if path_identifier is None:
+            if len({{ method.request_id_args }}) == 1:
+                path_identifier = self.project
+            else:
+                raise ValueError("Either request or {{ method.request_id_args[-1] }} must be provided.")
+
+        if path_identifier is None:
+            raise ValueError("Could not determine a path identifier.")
+
+        request_class = {{ '.'.join(method.request_class_full_name.split('.')[-2:]) }}
+
+        final_request = _helpers._create_request(
+            request_class=request_class,
+            path_identifier=path_identifier,
+            expected_args={{ method.request_id_args }},
+            default_project_id=self.project,
+        )
+
+    return self.{{ class_to_instance_map[method.class_name] }}.{{ method.name }}(
+        request=final_request,
+        retry=retry,
+        timeout=timeout,
+        metadata=metadata,
+    )

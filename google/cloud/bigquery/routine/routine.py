@@ -625,6 +625,8 @@ class RemoteFunctionOptions(object):
         "connection": "connection",
         "max_batching_rows": "maxBatchingRows",
         "user_defined_context": "userDefinedContext",
+        "container_cpu": "containerCpu",
+        "container_memory": "containerMemory",
     }
 
     def __init__(
@@ -633,6 +635,8 @@ class RemoteFunctionOptions(object):
         connection=None,
         max_batching_rows=None,
         user_defined_context=None,
+        container_cpu=None,
+        container_memory=None,
         _properties=None,
     ) -> None:
         if _properties is None:
@@ -647,6 +651,10 @@ class RemoteFunctionOptions(object):
             self.max_batching_rows = max_batching_rows
         if user_defined_context is not None:
             self.user_defined_context = user_defined_context
+        if container_cpu is not None:
+            self.container_cpu = container_cpu
+        if container_memory is not None:
+            self.container_memory = container_memory
 
     @property
     def connection(self):
@@ -682,7 +690,7 @@ class RemoteFunctionOptions(object):
 
     @max_batching_rows.setter
     def max_batching_rows(self, value):
-        self._properties["maxBatchingRows"] = _helpers._str_or_none(value)
+        self._properties["maxBatchingRows"] = _helpers._int_or_none(value)
 
     @property
     def user_defined_context(self):
@@ -698,6 +706,24 @@ class RemoteFunctionOptions(object):
         if not isinstance(value, dict):
             raise ValueError("value must be dictionary")
         self._properties["userDefinedContext"] = value
+
+    @property
+    def container_cpu(self):
+        """Optional[str]: The container CPU for the remote service."""
+        return self._properties.get("containerCpu")
+
+    @container_cpu.setter
+    def container_cpu(self, value):
+        self._properties["containerCpu"] = _helpers._str_or_none(value)
+
+    @property
+    def container_memory(self):
+        """Optional[str]: The container memory for the remote service."""
+        return self._properties.get("containerMemory")
+
+    @container_memory.setter
+    def container_memory(self, value):
+        self._properties["containerMemory"] = _helpers._str_or_none(value)
 
     @classmethod
     def from_api_repr(cls, resource: dict) -> "RemoteFunctionOptions":

@@ -80,6 +80,8 @@ def test_ctor_w_properties(target_class):
         connection="connection_string",
         max_batching_rows=99,
         user_defined_context={"foo": "bar"},
+        container_cpu="1.0",
+        container_memory="512M",
     )
 
     actual_routine = target_class(
@@ -106,6 +108,8 @@ def test_ctor_w_properties(target_class):
         actual_routine.determinism_level == bigquery.DeterminismLevel.NOT_DETERMINISTIC
     )
     assert actual_routine.remote_function_options == options
+    assert actual_routine.remote_function_options.container_cpu == "1.0"
+    assert actual_routine.remote_function_options.container_memory == "512M"
 
 
 def test_ctor_invalid_remote_function_options(target_class):
@@ -153,6 +157,8 @@ def test_from_api_repr(target_class):
             "userDefinedContext": {
                 "foo": "bar",
             },
+            "containerCpu": "1.0",
+            "containerMemory": "512M",
         },
         "dataGovernanceType": "DATA_MASKING",
     }
@@ -193,6 +199,8 @@ def test_from_api_repr(target_class):
     assert actual_routine.remote_function_options.connection == "connection_string"
     assert actual_routine.remote_function_options.max_batching_rows == 50
     assert actual_routine.remote_function_options.user_defined_context == {"foo": "bar"}
+    assert actual_routine.remote_function_options.container_cpu == "1.0"
+    assert actual_routine.remote_function_options.container_memory == "512M"
     assert actual_routine.data_governance_type == "DATA_MASKING"
 
 
@@ -489,6 +497,28 @@ def test_from_api_repr_w_unknown_fields(target_class):
                 },
             },
         ),
+        (
+            {
+                "routineType": "SCALAR_FUNCTION",
+                "remoteFunctionOptions": {
+                    "endpoint": "https://some_endpoint",
+                    "connection": "connection_string",
+                    "max_batching_rows": 101,
+                    "containerCpu": "1.0",
+                    "containerMemory": "512M",
+                },
+            },
+            ["remote_function_options"],
+            {
+                "remoteFunctionOptions": {
+                    "endpoint": "https://some_endpoint",
+                    "connection": "connection_string",
+                    "max_batching_rows": 101,
+                    "containerCpu": "1.0",
+                    "containerMemory": "512M",
+                },
+            },
+        ),
     ],
 )
 def test_build_resource(object_under_test, resource, filter_fields, expected):
@@ -605,3 +635,13 @@ def test_repr(target_class):
     model = target_class("my-proj.my_dset.my_routine")
     actual_routine = repr(model)
     assert actual_routine == "Routine('my-proj.my_dset.my_routine')"
+
+
+def test_remote_function_options_max_batching_rows_setter():
+    options = bigquery.RemoteFunctionOptions()
+    options.max_batching_rows = 10
+    assert options.max_batching_rows == 10
+    assert options._properties["maxBatchingRows"] == 10
+    options.max_batching_rows = None
+    assert options.max_batching_rows is None
+    assert options._properties["maxBatchingRows"] is None

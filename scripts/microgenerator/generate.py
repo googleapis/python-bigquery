@@ -320,10 +320,6 @@ def list_code_objects(
 
             all_class_keys.append(key)
 
-            # Skip filling details if not needed for the dictionary.
-            if not show_methods and not show_attributes:
-                continue
-
             if show_attributes:
                 results[key]["attributes"] = sorted(class_info["attributes"])
 

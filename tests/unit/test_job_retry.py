@@ -626,7 +626,7 @@ def test_query_and_wait_retries_job_for_DDL_queries(global_time_lock):
         ),
         pytest.param(
             {"retry": google.cloud.bigquery.retry.DEFAULT_RETRY.with_timeout(timeout=10.0)},
-            id="custom retry object",
+            id="custom retry object use case",
         ),
     ],
 )

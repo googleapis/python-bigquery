@@ -25,7 +25,7 @@ any Python codebase using the `ast` module.
 import ast
 import os
 from collections import defaultdict
-from typing import List, Dict, Any, Iterator
+from typing import List, Dict, Any
 
 from . import utils
 
@@ -65,7 +65,7 @@ class CodeAnalyzer(ast.NodeVisitor):
             if isinstance(curr, ast.Name):
                 parts.append(curr.id)
                 return ".".join(reversed(parts))
-        # Handles subscripted types like 'list[str]', 'Optional[...]'  
+        # Handles subscripted types like 'list[str]', 'Optional[...]'
         if isinstance(node, ast.Subscript):
             value_str = self._get_type_str(node.value)
             slice_str = self._get_type_str(node.slice)
@@ -191,16 +191,20 @@ class CodeAnalyzer(ast.NodeVisitor):
             self._is_in_method = False
 
     def _add_attribute(self, attr_name: str, attr_type: str | None = None):
-        """Adds a unique attribute to the current class context."""
-        if self._current_class_info:
-            # Create a list of attribute names for easy lookup
-            attr_names = [
-                attr.get("name") for attr in self._current_class_info["attributes"]
-            ]
-            if attr_name not in attr_names:
-                self._current_class_info["attributes"].append(
-                    {"name": attr_name, "type": attr_type}
-                )
+        """Adds a unique attribute to the current class context.
+
+        Assumes self._current_class_info is not None, as this method
+        is only called from within visit_Assign and visit_AnnAssign
+        after checking for an active class context.
+        """
+        # Create a list of attribute names for easy lookup
+        attr_names = [
+            attr.get("name") for attr in self._current_class_info["attributes"]
+        ]
+        if attr_name not in attr_names:
+            self._current_class_info["attributes"].append(
+                {"name": attr_name, "type": attr_type}
+            )
 
     def visit_Assign(self, node: ast.Assign) -> None:
         """Handles attribute assignments: `x = ...` and `self.x = ...`."""

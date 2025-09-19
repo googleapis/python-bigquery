@@ -979,14 +979,8 @@ class ExternalConfig(object):
 
     @property
     def connection_id(self):
-        """Optional[str]: [Experimental] ID of a BigQuery Connection API
+        """Optional[str]: ID of a BigQuery Connection API
         resource.
-
-        .. WARNING::
-
-           This feature is experimental. Pre-GA features may have limited
-           support, and changes to pre-GA features may not be compatible with
-           other pre-GA versions.
         """
         return self._properties.get("connectionId")
 

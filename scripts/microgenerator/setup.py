@@ -24,7 +24,10 @@ if version[0] == "0":
 else:
     release_status = "Development Status :: 5 - Production/Stable"
 
-dependencies = []
+dependencies = [  # TODO: break out development reqs from generation requirements
+    "PyYAML",
+    "Jinja2",
+]
 extras = {}
 
 packages = [

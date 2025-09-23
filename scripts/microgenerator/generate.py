@@ -491,3 +491,4 @@ def analyze_source_files(
     )
 
     return parsed_data, all_imports, all_types, request_arg_schema
+

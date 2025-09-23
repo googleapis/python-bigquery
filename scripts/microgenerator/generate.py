@@ -25,7 +25,7 @@ any Python codebase using the `ast` module.
 import ast
 import os
 from collections import defaultdict
-from typing import List, Dict, Any, Iterator
+from typing import List, Dict, Any
 
 from . import utils
 

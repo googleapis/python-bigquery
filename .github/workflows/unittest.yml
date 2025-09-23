@@ -40,10 +40,18 @@ jobs:
       env:
         COVERAGE_FILE: .coverage-${{ matrix.python }}
         BUILD_TYPE: presubmit
-        TEST_TYPE: unit
+        TEST_TYPE: unit xxx
         PY_VERSION: ${{ matrix.python }}
       run: |
         nox -s unit-${{ matrix.python }}
+    - name: Run microgenerator unit tests
+      env:
+        COVERAGE_FILE: .coverage-microgenerator-${{ matrix.python }}
+        BUILD_TYPE: presubmit
+        TEST_TYPE: unit μgen
+        PY_VERSION: ${{ matrix.python }}
+      run: |
+        nox -f scripts/microgenerator/noxfile.py -s unit-${{ matrix.python }}
     - name: Upload coverage results
       uses: actions/upload-artifact@v4
       with:

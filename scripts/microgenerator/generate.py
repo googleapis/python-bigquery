@@ -24,10 +24,6 @@ any Python codebase using the `ast` module.
 
 import ast
 import os
-import argparse
-import glob
-import logging
-import re
 from collections import defaultdict
 from typing import List, Dict, Any, Iterator
 

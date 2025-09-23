@@ -27,7 +27,6 @@ import os
 from collections import defaultdict
 from typing import List, Dict, Any, Iterator
 
-from . import name_utils
 from . import utils
 
 # =============================================================================

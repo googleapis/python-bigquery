@@ -1,7 +1,9 @@
 def {{ method.name }}(
     self,
+    {# Assumes the primary resource ID is the last arg in request_id_args #}
     {{ method.request_id_args[-1] }}: Optional[str] = None,
     *,
+    {# Assumes the request class is a nested type within the service, e.g., bigquery_v2.types.dataset.GetDatasetRequest #}
     request: Optional[{{ '.'.join(method.request_class_full_name.split('.')[-2:]) }}] = None,
     retry: OptionalRetry = DEFAULT_RETRY,
     timeout: Union[float, object] = DEFAULT_TIMEOUT,

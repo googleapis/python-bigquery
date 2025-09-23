@@ -19,7 +19,10 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python: ["3.13"]
+        python: ["3.13"] # TODO: For alpha release purposes, microgenerator tests
+                         # are limited to Python 3.13. By default this also limits
+                         # GAPIC tests. Once the testing kinks are worked out we can
+                         # explore a more comprehensive approach.
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -36,19 +39,21 @@ jobs:
       run: |
         python -m pip install --upgrade setuptools pip wheel
         python -m pip install nox
+    # These unit tests cover the GAPIC generated code.
     - name: Run unit tests
       env:
         COVERAGE_FILE: .coverage-${{ matrix.python }}
         BUILD_TYPE: presubmit
-        TEST_TYPE: unit xxx
+        TEST_TYPE: unit
         PY_VERSION: ${{ matrix.python }}
       run: |
         nox -s unit-${{ matrix.python }}
+    # These unit tests cover the microgenerator module.
     - name: Run microgenerator unit tests
       env:
         COVERAGE_FILE: .coverage-microgenerator-${{ matrix.python }}
         BUILD_TYPE: presubmit
-        TEST_TYPE: unit μgen
+        TEST_TYPE: unit
         PY_VERSION: ${{ matrix.python }}
       run: |
         nox -f scripts/microgenerator/noxfile.py -s unit-${{ matrix.python }}

@@ -24,7 +24,6 @@ any Python codebase using the `ast` module.
 
 import ast
 import os
-import argparse
 import glob
 import logging
 import re
@@ -196,16 +195,20 @@ class CodeAnalyzer(ast.NodeVisitor):
             self._is_in_method = False
 
     def _add_attribute(self, attr_name: str, attr_type: str | None = None):
-        """Adds a unique attribute to the current class context."""
-        if self._current_class_info:
-            # Create a list of attribute names for easy lookup
-            attr_names = [
-                attr.get("name") for attr in self._current_class_info["attributes"]
-            ]
-            if attr_name not in attr_names:
-                self._current_class_info["attributes"].append(
-                    {"name": attr_name, "type": attr_type}
-                )
+        """Adds a unique attribute to the current class context.
+
+        Assumes self._current_class_info is not None, as this method
+        is only called from within visit_Assign and visit_AnnAssign
+        after checking for an active class context.
+        """
+        # Create a list of attribute names for easy lookup
+        attr_names = [
+            attr.get("name") for attr in self._current_class_info["attributes"]
+        ]
+        if attr_name not in attr_names:
+            self._current_class_info["attributes"].append(
+                {"name": attr_name, "type": attr_type}
+            )
 
     def visit_Assign(self, node: ast.Assign) -> None:
         """Handles attribute assignments: `x = ...` and `self.x = ...`."""
@@ -320,10 +323,6 @@ def list_code_objects(
                 key = f"{key} (in {file_name})"
 
             all_class_keys.append(key)
-
-            # Skip filling details if not needed for the dictionary.
-            if not show_methods and not show_attributes:
-                continue
 
             if show_attributes:
                 results[key]["attributes"] = sorted(class_info["attributes"])
@@ -492,255 +491,3 @@ def analyze_source_files(
     )
 
     return parsed_data, all_imports, all_types, request_arg_schema
-
-
-# =============================================================================
-# Section 3: Code Generation
-# =============================================================================
-
-
-def _generate_import_statement(
-    context: List[Dict[str, Any]], key: str, path: str
-) -> str:
-    """Generates a formatted import statement from a list of context dictionaries.
-
-    Args:
-        context: A list of dictionaries containing the data.
-        key: The key to extract from each dictionary in the context.
-        path: The base import path (e.g., "google.cloud.bigquery_v2.services").
-
-    Returns:
-        A formatted, multi-line import statement string.
-    """
-    names = sorted(list(set([item[key] for item in context])))
-    names_str = ",\n    ".join(names)
-    return f"from {path} import (\n    {names_str}\n)"
-
-
-def generate_code(config: Dict[str, Any], analysis_results: tuple) -> None:
-    """
-    Generates source code files using Jinja2 templates.
-    """
-    data, all_imports, all_types, request_arg_schema = analysis_results
-    project_root = config["project_root"]
-    config_dir = config["config_dir"]
-
-    templates_config = config.get("templates", [])
-    for item in templates_config:
-        template_path = os.path.join(config_dir, item["template"])
-        output_path = os.path.join(project_root, item["output"])
-
-        template = utils.load_template(template_path)
-        methods_context = []
-        for class_name, methods in data.items():
-            for method_name, method_info in methods.items():
-                context = {
-                    "name": method_name,
-                    "class_name": class_name,
-                    "return_type": method_info["return_type"],
-                }
-
-                # Infer the request class and find its schema.
-                inferred_request_name = name_utils.method_to_request_class_name(
-                    method_name
-                )
-
-                # Check for a request class name override in the config.
-                method_overrides = (
-                    config.get("filter", {}).get("methods", {}).get("overrides", {})
-                )
-                if method_name in method_overrides:
-                    inferred_request_name = method_overrides[method_name].get(
-                        "request_class_name", inferred_request_name
-                    )
-
-                fq_request_name = ""
-                for key in request_arg_schema.keys():
-                    if key.endswith(f".{inferred_request_name}"):
-                        fq_request_name = key
-                        break
-
-                # If found, augment the method context.
-                if fq_request_name:
-                    context["request_class_full_name"] = fq_request_name
-                    context["request_id_args"] = request_arg_schema[fq_request_name]
-
-                methods_context.append(context)
-
-        # Prepare imports for the template
-        services_context = []
-        client_class_names = sorted(
-            list(set([m["class_name"] for m in methods_context]))
-        )
-
-        for class_name in client_class_names:
-            service_name_cluster = name_utils.generate_service_names(class_name)
-            services_context.append(service_name_cluster)
-
-        # Also need to update methods_context to include the service_name and module_name
-        # so the template knows which client to use for each method.
-        class_to_service_map = {s["service_client_class"]: s for s in services_context}
-        for method in methods_context:
-            service_info = class_to_service_map.get(method["class_name"])
-            if service_info:
-                method["service_name"] = service_info["service_name"]
-                method["service_module_name"] = service_info["service_module_name"]
-
-        # Prepare new imports
-        service_imports = [
-            _generate_import_statement(
-                services_context,
-                "service_module_name",
-                "google.cloud.bigquery_v2.services",
-            )
-        ]
-
-        # Prepare type imports
-        type_imports = [
-            _generate_import_statement(
-                services_context, "service_name", "google.cloud.bigquery_v2.types"
-            )
-        ]
-
-        final_code = template.render(
-            service_name=config.get("service_name"),
-            methods=methods_context,
-            services=services_context,
-            service_imports=service_imports,
-            type_imports=type_imports,
-            request_arg_schema=request_arg_schema,
-        )
-
-        utils.write_code_to_file(output_path, final_code)
-
-
-# =============================================================================
-# Section 4: Main Execution
-# =============================================================================
-
-
-def setup_config_and_paths(config_path: str) -> Dict[str, Any]:
-    """Loads the configuration and sets up necessary paths.
-
-    Args:
-        config_path: The path to the YAML configuration file.
-
-    Returns:
-        A dictionary containing the loaded configuration and paths.
-    """
-
-    def find_project_root(start_path: str, markers: list[str]) -> str | None:
-        """Finds the project root by searching upwards for a marker."""
-        current_path = os.path.abspath(start_path)
-        while True:
-            for marker in markers:
-                if os.path.exists(os.path.join(current_path, marker)):
-                    return current_path
-            parent_path = os.path.dirname(current_path)
-            if parent_path == current_path:  # Filesystem root
-                return None
-            current_path = parent_path
-
-    # Load configuration from the YAML file.
-    config = utils.load_config(config_path)
-
-    # Determine the project root.
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = find_project_root(script_dir, ["setup.py", ".git"])
-    if not project_root:
-        project_root = os.getcwd()  # Fallback to current directory
-
-    # Set paths in the config dictionary.
-    config["project_root"] = project_root
-    config["config_dir"] = os.path.dirname(os.path.abspath(config_path))
-
-    return config
-
-
-def _execute_post_processing(config: Dict[str, Any]):
-    """
-    Executes post-processing steps, such as patching existing files.
-    """
-    project_root = config["project_root"]
-    post_processing_jobs = config.get("post_processing_templates", [])
-
-    for job in post_processing_jobs:
-        template_path = os.path.join(config["config_dir"], job["template"])
-        target_file_path = os.path.join(project_root, job["target_file"])
-
-        if not os.path.exists(target_file_path):
-            logging.warning(
-                f"Target file {target_file_path} not found, skipping post-processing job."
-            )
-            continue
-
-        # Read the target file
-        with open(target_file_path, "r") as f:
-            lines = f.readlines()
-
-        # --- Extract existing imports and __all__ members ---
-        imports = []
-        all_list = []
-        all_start_index = -1
-        all_end_index = -1
-
-        for i, line in enumerate(lines):
-            if line.strip().startswith("from ."):
-                imports.append(line.strip())
-            if line.strip() == "__all__ = (":
-                all_start_index = i
-            if all_start_index != -1 and line.strip() == ")":
-                all_end_index = i
-
-        if all_start_index != -1 and all_end_index != -1:
-            for i in range(all_start_index + 1, all_end_index):
-                member = lines[i].strip().replace('"', "").replace(",", "")
-                if member:
-                    all_list.append(member)
-
-        # --- Add new items and sort ---
-        for new_import in job.get("add_imports", []):
-            if new_import not in imports:
-                imports.append(new_import)
-        imports.sort()
-        imports = [f"{imp}\n" for imp in imports]  # re-add newlines
-
-        for new_member in job.get("add_to_all", []):
-            if new_member not in all_list:
-                all_list.append(new_member)
-        all_list.sort()
-
-        # --- Render the new file content ---
-        template = utils.load_template(template_path)
-        new_content = template.render(
-            imports=imports,
-            all_list=all_list,
-        )
-
-        # --- Overwrite the target file ---
-        with open(target_file_path, "w") as f:
-            f.write(new_content)
-
-        logging.info(f"Successfully post-processed and overwrote {target_file_path}")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="A generic Python code generator for clients."
-    )
-    parser.add_argument("config", help="Path to the YAML configuration file.")
-    args = parser.parse_args()
-
-    # Load config and set up paths.
-    config = setup_config_and_paths(args.config)
-
-    # Analyze the source code.
-    analysis_results = analyze_source_files(config)
-
-    # Generate the new client code.
-    generate_code(config, analysis_results)
-
-    # Run post-processing steps.
-    _execute_post_processing(config)
-
-    # TODO: Ensure blacken gets called on the generated source files as a final step.

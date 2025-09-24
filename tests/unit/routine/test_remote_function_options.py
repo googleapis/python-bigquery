@@ -37,11 +37,15 @@ def test_ctor(target_class):
         connection=CONNECTION,
         max_batching_rows=MAX_BATCHING_ROWS,
         user_defined_context=USER_DEFINED_CONTEXT,
+        container_cpu="1.0",
+        container_memory="512M",
     )
     assert options.endpoint == ENDPOINT
     assert options.connection == CONNECTION
     assert options.max_batching_rows == MAX_BATCHING_ROWS
     assert options.user_defined_context == USER_DEFINED_CONTEXT
+    assert options.container_cpu == "1.0"
+    assert options.container_memory == "512M"
 
 
 def test_empty_ctor(target_class):
@@ -64,6 +68,8 @@ def test_from_api_repr(target_class):
         "connection": CONNECTION,
         "maxBatchingRows": MAX_BATCHING_ROWS,
         "userDefinedContext": USER_DEFINED_CONTEXT,
+        "containerCpu": "1.0",
+        "containerMemory": "512M",
         "someRandomField": "someValue",
     }
     options = target_class.from_api_repr(resource)
@@ -71,6 +77,8 @@ def test_from_api_repr(target_class):
     assert options.connection == CONNECTION
     assert options.max_batching_rows == MAX_BATCHING_ROWS
     assert options.user_defined_context == USER_DEFINED_CONTEXT
+    assert options.container_cpu == "1.0"
+    assert options.container_memory == "512M"
     assert options._properties["someRandomField"] == "someValue"
 
 
@@ -81,6 +89,8 @@ def test_from_api_repr_w_minimal_resource(target_class):
     assert options.connection is None
     assert options.max_batching_rows is None
     assert options.user_defined_context is None
+    assert options.container_cpu is None
+    assert options.container_memory is None
 
 
 def test_from_api_repr_w_unknown_fields(target_class):
@@ -95,12 +105,16 @@ def test_eq(target_class):
         connection=CONNECTION,
         max_batching_rows=MAX_BATCHING_ROWS,
         user_defined_context=USER_DEFINED_CONTEXT,
+        container_cpu="1.0",
+        container_memory="512M",
     )
     other_options = target_class(
         endpoint=ENDPOINT,
         connection=CONNECTION,
         max_batching_rows=MAX_BATCHING_ROWS,
         user_defined_context=USER_DEFINED_CONTEXT,
+        container_cpu="1.0",
+        container_memory="512M",
     )
     assert options == other_options
     assert not (options != other_options)
@@ -120,8 +134,12 @@ def test_repr(target_class):
         connection=CONNECTION,
         max_batching_rows=MAX_BATCHING_ROWS,
         user_defined_context=USER_DEFINED_CONTEXT,
+        container_cpu="1.0",
+        container_memory="512M",
     )
     actual_repr = repr(options)
     assert actual_repr == (
-        "RemoteFunctionOptions(connection='connection_string', endpoint='https://some.endpoint', max_batching_rows=50, user_defined_context={'foo': 'bar'})"
+        "RemoteFunctionOptions(connection='connection_string', container_cpu='1.0', "
+        "container_memory='512M', endpoint='https://some.endpoint', "
+        "max_batching_rows=50, user_defined_context={'foo': 'bar'})"
     )

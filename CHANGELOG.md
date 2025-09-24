@@ -5,6 +5,18 @@
 [1]: https://pypi.org/project/google-cloud-bigquery/#history
 
 
+## [3.38.1](https://github.com/googleapis/python-bigquery/compare/v3.38.0...v3.38.1) (2025-09-24)
+
+
+### Bug Fixes
+
+* Remove ambiguous error codes from query retries ([#2308](https://github.com/googleapis/python-bigquery/issues/2308)) ([8bbd3d0](https://github.com/googleapis/python-bigquery/commit/8bbd3d01026c493dfa5903b397d2b01c0e9bf43b))
+
+
+### Documentation
+
+* Remove experimental annotations from GA features ([#2303](https://github.com/googleapis/python-bigquery/issues/2303)) ([1f1f9d4](https://github.com/googleapis/python-bigquery/commit/1f1f9d41e8a2c9016198d848ad3f1cbb88cf77b0))
+
 ## [3.38.0](https://github.com/googleapis/python-bigquery/compare/v3.37.0...v3.38.0) (2025-09-15)
 
 

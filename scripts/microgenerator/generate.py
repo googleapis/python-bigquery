@@ -26,9 +26,9 @@ import ast
 import os
 import glob
 import logging
-import re
 from collections import defaultdict
-from typing import List, Dict, Any, Iterator
+from pathlib import Path
+from typing import List, Dict, Any
 
 from . import name_utils
 from . import utils
@@ -497,22 +497,23 @@ def analyze_source_files(
 # Section 3: Code Generation
 # =============================================================================
 
+
 def _generate_import_statement(
-    context: List[Dict[str, Any]], key: str, path: str
+    context: List[Dict[str, Any]], key: str, package: str
 ) -> str:
     """Generates a formatted import statement from a list of context dictionaries.
 
     Args:
         context: A list of dictionaries containing the data.
         key: The key to extract from each dictionary in the context.
-        path: The base import path (e.g., "google.cloud.bigquery_v2.services").
+        package: The base import package (e.g., "google.cloud.bigquery_v2.services").
 
     Returns:
         A formatted, multi-line import statement string.
     """
     names = sorted(list(set([item[key] for item in context])))
     names_str = ",\n    ".join(names)
-    return f"from {path} import (\n    {names_str}\n)"
+    return f"from {package} import (\n    {names_str}\n)"
 
 
 def generate_code(config: Dict[str, Any], analysis_results: tuple) -> None:
@@ -525,8 +526,8 @@ def generate_code(config: Dict[str, Any], analysis_results: tuple) -> None:
 
     templates_config = config.get("templates", [])
     for item in templates_config:
-        template_path = os.path.join(config_dir, item["template"])
-        output_path = os.path.join(project_root, item["output"])
+        template_path = str(Path(config_dir) / item["template"])
+        output_path = str(Path(project_root) / item["output"])
 
         template = utils.load_template(template_path)
         methods_context = []

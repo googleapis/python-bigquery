@@ -30,7 +30,6 @@ def to_snake_case(name: str) -> str:
     return name.lower()
 
 
-
 def generate_service_names(class_name: str) -> Dict[str, str]:
     """
     Generates various name formats for a service based on its client class name.

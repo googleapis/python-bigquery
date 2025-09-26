@@ -211,7 +211,6 @@ class CodeAnalyzer(ast.NodeVisitor):
                 {"name": attr_name, "type": attr_type}
             )
 
-
     def visit_Assign(self, node: ast.Assign) -> None:
         """Handles attribute assignments: `x = ...` and `self.x = ...`."""
         if self._current_class_info:

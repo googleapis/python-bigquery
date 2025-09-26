@@ -511,15 +511,38 @@ def _generate_import_statement(
     Returns:
         A formatted, multi-line import statement string.
     """
+
     names = sorted(list(set([item[key] for item in context])))
     names_str = ",\n    ".join(names)
     return f"from {package} import (\n    {names_str}\n)"
+
+
+def _get_request_class_name(method_name: str, config: Dict[str, Any]) -> str:
+    """Gets the inferred request class name, applying overrides from config."""
+    inferred_request_name = name_utils.method_to_request_class_name(method_name)
+    method_overrides = config.get("filter", {}).get("methods", {}).get("overrides", {})
+    if method_name in method_overrides:
+        return method_overrides[method_name].get(
+            "request_class_name", inferred_request_name
+        )
+    return inferred_request_name
+
+
+def _find_fq_request_name(
+    request_name: str, request_arg_schema: Dict[str, List[str]]
+) -> str:
+    """Finds the fully qualified request name in the schema."""
+    for key in request_arg_schema.keys():
+        if key.endswith(f".{request_name}"):
+            return key
+    return ""
 
 
 def generate_code(config: Dict[str, Any], analysis_results: tuple) -> None:
     """
     Generates source code files using Jinja2 templates.
     """
+
     data, all_imports, all_types, request_arg_schema = analysis_results
     project_root = config["project_root"]
     config_dir = config["config_dir"]
@@ -539,27 +562,11 @@ def generate_code(config: Dict[str, Any], analysis_results: tuple) -> None:
                     "return_type": method_info["return_type"],
                 }
 
-                # Infer the request class and find its schema.
-                inferred_request_name = name_utils.method_to_request_class_name(
-                    method_name
+                request_name = _get_request_class_name(method_name, config)
+                fq_request_name = _find_fq_request_name(
+                    request_name, request_arg_schema
                 )
 
-                # Check for a request class name override in the config.
-                method_overrides = (
-                    config.get("filter", {}).get("methods", {}).get("overrides", {})
-                )
-                if method_name in method_overrides:
-                    inferred_request_name = method_overrides[method_name].get(
-                        "request_class_name", inferred_request_name
-                    )
-
-                fq_request_name = ""
-                for key in request_arg_schema.keys():
-                    if key.endswith(f".{inferred_request_name}"):
-                        fq_request_name = key
-                        break
-
-                # If found, augment the method context.
                 if fq_request_name:
                     context["request_class_full_name"] = fq_request_name
                     context["request_id_args"] = request_arg_schema[fq_request_name]

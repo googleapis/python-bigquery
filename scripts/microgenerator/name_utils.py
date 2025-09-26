@@ -20,8 +20,15 @@ from typing import Dict
 
 
 def to_snake_case(name: str) -> str:
-    """Converts a PascalCase name to snake_case."""
-    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+    """Converts a PascalCase name to snake_case, handling acronyms."""
+    if not name:
+        return ""
+    # Add underscore between lower and upper case
+    name = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name)
+    # Add underscore between multiple upper case and a following lower case
+    name = re.sub(r"([A-Z])([A-Z][a-z])", r"\1_\2", name)
+    return name.lower()
+
 
 
 def generate_service_names(class_name: str) -> Dict[str, str]:
@@ -60,12 +67,20 @@ def method_to_request_class_name(method_name: str) -> str:
     Returns:
         The inferred PascalCase name for the corresponding request class.
 
+
+    Raises:
+        ValueError: If method_name is empty.
+
     Example:
         >>> method_to_request_class_name('get_dataset')
         'GetDatasetRequest'
         >>> method_to_request_class_name('list_jobs')
         'ListJobsRequest'
     """
+
+    if not method_name:
+        raise ValueError("method_name cannot be empty")
+
     # e.g., "get_dataset" -> ["get", "dataset"]
     parts = method_name.split("_")
     # e.g., ["get", "dataset"] -> "GetDataset"

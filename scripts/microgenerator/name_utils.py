@@ -75,7 +75,6 @@ def method_to_request_class_name(method_name: str) -> str:
         >>> method_to_request_class_name('list_jobs')
         'ListJobsRequest'
     """
-
     if not method_name:
         raise ValueError("method_name cannot be empty")
 

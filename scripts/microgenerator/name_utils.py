@@ -66,7 +66,6 @@ def method_to_request_class_name(method_name: str) -> str:
     Returns:
         The inferred PascalCase name for the corresponding request class.
 
-
     Raises:
         ValueError: If method_name is empty.
 

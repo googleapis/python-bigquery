@@ -831,7 +831,7 @@ class ExternalRuntimeOptions(object):
     @property
     def container_memory(self) -> Optional[str]:
         """Optional. Amount of memory provisioned for a Python UDF container instance."""
-        return self._properties.get("containerMemory")
+        return _helpers._str_or_none(self._properties.get("containerMemory"))
 
     @container_memory.setter
     def container_memory(self, value: Optional[str]):
@@ -842,7 +842,7 @@ class ExternalRuntimeOptions(object):
     @property
     def container_cpu(self) -> Optional[int]:
         """Optional. Amount of CPU provisioned for a Python UDF container instance."""
-        return self._properties.get("containerCpu")
+        return _helpers._int_or_none(self._properties.get("containerCpu"))
 
     @container_cpu.setter
     def container_cpu(self, value: Optional[int]):
@@ -853,7 +853,7 @@ class ExternalRuntimeOptions(object):
     @property
     def runtime_connection(self) -> Optional[str]:
         """Optional. Fully qualified name of the connection."""
-        return self._properties.get("runtimeConnection")
+        return _helpers._str_or_none(self._properties.get("runtimeConnection"))
 
     @runtime_connection.setter
     def runtime_connection(self, value: Optional[str]):
@@ -875,7 +875,7 @@ class ExternalRuntimeOptions(object):
     @property
     def runtime_version(self) -> Optional[str]:
         """Optional. Language runtime version."""
-        return self._properties.get("runtimeVersion")
+        return _helpers._str_or_none(self._properties.get("runtimeVersion"))
 
     @runtime_version.setter
     def runtime_version(self, value: Optional[str]):

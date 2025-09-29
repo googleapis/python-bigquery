@@ -772,6 +772,7 @@ class RemoteFunctionOptions(object):
 
 class ExternalRuntimeOptions(object):
     """Options for the runtime of the external system.
+
     Args:
         container_memory (str):
             Optional. Amount of memory provisioned for a Python UDF container

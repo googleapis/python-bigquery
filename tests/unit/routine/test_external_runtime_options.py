@@ -81,6 +81,32 @@ def test_runtime_version(object_under_test):
     assert object_under_test.runtime_version == runtime_version
 
 
+def test_ctor_w_properties(target_class):
+    properties = {
+        "containerMemory": "1G",
+        "containerCpu": 1,
+    }
+    instance = target_class(_properties=properties)
+    assert instance._properties == properties
+
+
+def test_ne(target_class):
+    instance1 = target_class(container_memory="1G")
+    instance2 = target_class(container_memory="2G")
+    assert instance1 != instance2
+
+
+def test_ne_false(target_class):
+    instance1 = target_class(container_memory="1G")
+    instance2 = target_class(container_memory="1G")
+    assert not (instance1 != instance2)
+
+
+def test_eq_not_implemented(object_under_test):
+    assert not (object_under_test == object())
+    assert object_under_test != object()
+
+
 def test_from_api_repr(target_class):
     resource = {
         "containerMemory": "1G",

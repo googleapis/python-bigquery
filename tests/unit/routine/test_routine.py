@@ -607,6 +607,12 @@ def test_set_remote_function_options_w_none(object_under_test):
     assert object_under_test._properties["remoteFunctionOptions"] is None
 
 
+def test_set_external_runtime_options_w_none(object_under_test):
+    object_under_test.external_runtime_options = None
+    assert object_under_test.external_runtime_options is None
+    assert object_under_test._properties["externalRuntimeOptions"] is None
+
+
 def test_set_data_governance_type_w_none(object_under_test):
     object_under_test.data_governance_type = None
     assert object_under_test.data_governance_type is None

@@ -27,8 +27,9 @@ import os
 import argparse
 import glob
 import logging
+import re
 from collections import defaultdict
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Iterator
 
 from . import name_utils
 from . import utils
@@ -82,11 +83,13 @@ class CodeAnalyzer(ast.NodeVisitor):
         # Handles forward references as strings, e.g., '"Dataset"'
         if isinstance(node, ast.Constant):
             return repr(node.value)
+
         # Handles | union types, e.g., int | float
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
             left_str = self._get_type_str(node.left)
             right_str = self._get_type_str(node.right)
             return f"{left_str} | {right_str}"
+
         return None  # Fallback for unhandled types
 
     def _collect_types_from_node(self, node: ast.AST | None) -> None:
@@ -200,16 +203,20 @@ class CodeAnalyzer(ast.NodeVisitor):
             self._is_in_method = False
 
     def _add_attribute(self, attr_name: str, attr_type: str | None = None):
-        """Adds a unique attribute to the current class context."""
-        if self._current_class_info:
-            # Create a list of attribute names for easy lookup
-            attr_names = [
-                attr.get("name") for attr in self._current_class_info["attributes"]
-            ]
-            if attr_name not in attr_names:
-                self._current_class_info["attributes"].append(
-                    {"name": attr_name, "type": attr_type}
-                )
+        """Adds a unique attribute to the current class context.
+
+        Assumes self._current_class_info is not None, as this method
+        is only called from within visit_Assign and visit_AnnAssign
+        after checking for an active class context.
+        """
+        # Create a list of attribute names for easy lookup
+        attr_names = [
+            attr.get("name") for attr in self._current_class_info["attributes"]
+        ]
+        if attr_name not in attr_names:
+            self._current_class_info["attributes"].append(
+                {"name": attr_name, "type": attr_type}
+            )
 
     def visit_Assign(self, node: ast.Assign) -> None:
         """Handles attribute assignments: `x = ...` and `self.x = ...`."""
@@ -324,10 +331,6 @@ def list_code_objects(
                 key = f"{key} (in {file_name})"
 
             all_class_keys.append(key)
-
-            # Skip filling details if not needed for the dictionary.
-            if not show_methods and not show_attributes:
-                continue
 
             if show_attributes:
                 results[key]["attributes"] = sorted(class_info["attributes"])
@@ -504,21 +507,42 @@ def analyze_source_files(
 
 
 def _generate_import_statement(
-    context: List[Dict[str, Any]], key: str, path: str
+    context: List[Dict[str, Any]], key: str, package: str
 ) -> str:
     """Generates a formatted import statement from a list of context dictionaries.
 
     Args:
         context: A list of dictionaries containing the data.
         key: The key to extract from each dictionary in the context.
-        path: The base import path (e.g., "google.cloud.bigquery_v2.services").
+        package: The base import package (e.g., "google.cloud.bigquery_v2.services").
 
     Returns:
         A formatted, multi-line import statement string.
     """
     names = sorted(list(set([item[key] for item in context])))
     names_str = ",\n    ".join(names)
-    return f"from {path} import (\n    {names_str}\n)"
+    return f"from {package} import (\n    {names_str}\n)"
+
+
+def _get_request_class_name(method_name: str, config: Dict[str, Any]) -> str:
+    """Gets the inferred request class name, applying overrides from config."""
+    inferred_request_name = name_utils.method_to_request_class_name(method_name)
+    method_overrides = config.get("filter", {}).get("methods", {}).get("overrides", {})
+    if method_name in method_overrides:
+        return method_overrides[method_name].get(
+            "request_class_name", inferred_request_name
+        )
+    return inferred_request_name
+
+
+def _find_fq_request_name(
+    request_name: str, request_arg_schema: Dict[str, List[str]]
+) -> str:
+    """Finds the fully qualified request name in the schema."""
+    for key in request_arg_schema.keys():
+        if key.endswith(f".{request_name}"):
+            return key
+    return ""
 
 
 def generate_code(config: Dict[str, Any], analysis_results: tuple) -> None:
@@ -531,8 +555,8 @@ def generate_code(config: Dict[str, Any], analysis_results: tuple) -> None:
 
     templates_config = config.get("templates", [])
     for item in templates_config:
-        template_path = os.path.join(config_dir, item["template"])
-        output_path = os.path.join(project_root, item["output"])
+        template_path = str(Path(config_dir) / item["template"])
+        output_path = str(Path(project_root) / item["output"])
 
         template = utils.load_template(template_path)
         methods_context = []
@@ -544,27 +568,11 @@ def generate_code(config: Dict[str, Any], analysis_results: tuple) -> None:
                     "return_type": method_info["return_type"],
                 }
 
-                # Infer the request class and find its schema.
-                inferred_request_name = name_utils.method_to_request_class_name(
-                    method_name
+                request_name = _get_request_class_name(method_name, config)
+                fq_request_name = _find_fq_request_name(
+                    request_name, request_arg_schema
                 )
 
-                # Check for a request class name override in the config.
-                method_overrides = (
-                    config.get("filter", {}).get("methods", {}).get("overrides", {})
-                )
-                if method_name in method_overrides:
-                    inferred_request_name = method_overrides[method_name].get(
-                        "request_class_name", inferred_request_name
-                    )
-
-                fq_request_name = ""
-                for key in request_arg_schema.keys():
-                    if key.endswith(f".{inferred_request_name}"):
-                        fq_request_name = key
-                        break
-
-                # If found, augment the method context.
                 if fq_request_name:
                     context["request_class_full_name"] = fq_request_name
                     context["request_id_args"] = request_arg_schema[fq_request_name]

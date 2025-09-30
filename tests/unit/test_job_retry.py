@@ -618,11 +618,11 @@ def test_query_and_wait_retries_job_for_DDL_queries(global_time_lock):
 
 
 @pytest.mark.parametrize(
-    "result_retry",
+    "result_retry_param",
     [
         pytest.param(
             {},
-            id="default retry use case",
+            id="default retry {}",
         ),
         pytest.param(
             {
@@ -630,13 +630,14 @@ def test_query_and_wait_retries_job_for_DDL_queries(global_time_lock):
                     timeout=10.0
                 )
             },
-            id="custom retry object use case",
+            id="custom retry object with timeout 10.0",
         ),
     ],
 )
-def test_retry_load_job_result(result_retry, PROJECT, DS_ID):
+def test_retry_load_job_result(result_retry_param, PROJECT, DS_ID):
     from google.cloud.bigquery.dataset import DatasetReference
     from google.cloud.bigquery.job.load import LoadJob
+    import google.cloud.bigquery.retry
 
     client = make_client()
     conn = client._connection = make_connection(
@@ -654,10 +655,106 @@ def test_retry_load_job_result(result_retry, PROJECT, DS_ID):
 
     table_ref = DatasetReference(project=PROJECT, dataset_id=DS_ID).table("new_table")
     job = LoadJob("id_1", source_uris=None, destination=table_ref, client=client)
-    result = job.result(**result_retry)
+
+    with mock.patch.object(
+        client, "_call_api", wraps=client._call_api
+    ) as wrapped_call_api:
+        result = job.result(**result_retry_param)
 
     assert job.state == "DONE"
     assert result.output_rows == 1
 
-    # We made all the calls we expected to.
+    # Check that _call_api was called multiple times due to retry
+    assert wrapped_call_api.call_count > 1
+
+    # Verify the retry object used in the calls to _call_api
+    expected_retry = result_retry_param.get(
+        "retry", google.cloud.bigquery.retry.DEFAULT_RETRY
+    )
+
+    for call in wrapped_call_api.mock_calls:
+        name, args, kwargs = call
+        # The retry object is the first positional argument to _call_api
+        called_retry = args[0]
+
+        # We only care about the calls made during the job.result() polling
+        if kwargs.get("method") == "GET" and "jobs/id_1" in kwargs.get("path", ""):
+            assert called_retry._predicate == expected_retry._predicate
+            assert called_retry._initial == expected_retry._initial
+            assert called_retry._maximum == expected_retry._maximum
+            assert called_retry._multiplier == expected_retry._multiplier
+            assert called_retry._deadline == expected_retry._deadline
+            if "retry" in result_retry_param:
+                # Specifically check the timeout for the custom retry case
+                assert called_retry._timeout == 10.0
+                print(10.0)
+            else:
+                assert called_retry._timeout == expected_retry._timeout
+                print("not 10.0")
+
+    # The number of api_request calls should still be 3
     assert conn.api_request.call_count == 3
+
+
+# @pytest.mark.parametrize(
+#     "result_retry",
+#     [
+#         pytest.param(
+#             {},
+#             id="default retry use case",
+#         ),
+#         pytest.param(
+#             {
+#                 "retry": google.cloud.bigquery.retry.DEFAULT_RETRY.with_timeout(
+#                     timeout=10.0
+#                 )
+#             },
+#             id="custom retry object use case",
+#         ),
+#     ],
+# )
+# def test_retry_load_job_result(result_retry, PROJECT, DS_ID):
+
+# from google.cloud.bigquery.dataset import DatasetReference
+# from google.cloud.bigquery.job.load import LoadJob
+# import google.cloud.bigquery.retry
+
+# client = make_client()
+# conn = client._connection = make_connection(
+#     dict(
+#         status=dict(state="RUNNING"),
+#         jobReference={"jobId": "id_1"},
+#     ),
+#     google.api_core.exceptions.ServiceUnavailable("retry me"),
+#     dict(
+#         status=dict(state="DONE"),
+#         jobReference={"jobId": "id_1"},
+#         statistics={"load": {"outputRows": 1}},
+#     ),
+# )
+
+# table_ref = DatasetReference(project=PROJECT, dataset_id=DS_ID).table("new_table")
+# job = LoadJob("id_1", source_uris=None, destination=table_ref, client=client)
+# result = job.result(**result_retry)
+
+# print(f"Test Case ID: {result_retry}")
+# for call in conn.api_request.mock_calls:
+#     name, args, kwargs = call
+#     print(f"  Call to api_request with kwargs: {kwargs}")
+
+# if result_retry:
+#     custom_retry_used = False
+#     for name, args, kwargs in conn.api_request.mock_calls:
+#         if 'retry' in kwargs:
+#             # Check if the retry object passed has the custom timeout
+#             if kwargs['retry']._timeout == 10.0:
+#                 custom_retry_used = True
+#                 assert kwargs['retry']._deadline == 10.0 # Deadline should also be updated
+#             # Optional: check other properties if needed
+#     assert custom_retry_used, "Custom retry object with timeout 10.0 was not used"
+
+# assert job.state == "DONE"
+# assert result.output_rows == 1
+
+# # We made all the calls we expected to.
+# assert conn.api_request.call_count == 3

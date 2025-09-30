@@ -17,7 +17,6 @@ from __future__ import absolute_import
 from functools import wraps
 import pathlib
 import os
-import shutil
 import nox
 import time
 
@@ -28,7 +27,6 @@ BLACK_VERSION = "black==23.7.0"
 BLACK_PATHS = (".",)
 
 DEFAULT_PYTHON_VERSION = "3.9"
-SYSTEM_TEST_PYTHON_VERSIONS = ["3.9", "3.11", "3.12", "3.13"]
 UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.11", "3.12", "3.13"]
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
@@ -56,14 +54,12 @@ def _calculate_duration(func):
 # 'docfx' is excluded since it only needs to run in 'docs-presubmit'
 nox.options.sessions = [
     "unit",
-    "system",
     "cover",
     "lint",
     "lint_setup_py",
     "blacken",
     "mypy",
     "pytype",
-    "docs",
 ]
 
 
@@ -95,10 +91,8 @@ def default(session, install_extras=True):
     # If no, we use our own context object from magics.py. In order to exercise
     # that logic (and the associated tests) we avoid installing the [ipython] extra
     # which has a downstream effect of then avoiding installing bigquery_magics.
-    if install_extras and session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        install_target = ".[bqstorage,pandas,ipywidgets,geopandas,matplotlib,tqdm,opentelemetry,bigquery_v2]"
-    elif install_extras:  # run against all other UNIT_TEST_PYTHON_VERSIONS
-        install_target = ".[all]"
+    if install_extras:  # run against all other UNIT_TEST_PYTHON_VERSIONS
+        install_target = "."
     else:
         install_target = "."
     session.install("-e", install_target, "-c", constraints_path)
@@ -107,9 +101,6 @@ def default(session, install_extras=True):
     # directly. For example, pandas-gbq is recommended for pandas features, but
     # we want to test that we fallback to the previous behavior. For context,
     # see internal document go/pandas-gbq-and-bigframes-redundancy.
-    if session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
-        session.run("python", "-m", "pip", "uninstall", "pandas-gbq", "-y")
-
     session.run("python", "-m", "pip", "freeze")
 
     # Run py.test against the unit tests.
@@ -118,13 +109,12 @@ def default(session, install_extras=True):
         "-n=8",
         "--quiet",
         "-W default::PendingDeprecationWarning",
-        "--cov=google/cloud/bigquery",
-        "--cov=tests/unit",
+        "--cov=scripts.microgenerator",
         "--cov-append",
         "--cov-config=.coveragerc",
         "--cov-report=",
         "--cov-fail-under=0",
-        os.path.join("tests", "unit"),
+        "tests/unit",
         *session.posargs,
     )
 
@@ -142,7 +132,7 @@ def unit(session):
 def mypy(session):
     """Run type checks with mypy."""
 
-    session.install("-e", ".[all]")
+    session.install("-e", ".")
     session.install(MYPY_VERSION)
 
     # Just install the dependencies' type info directly, since "mypy --install-types"
@@ -166,77 +156,11 @@ def pytype(session):
     # https://github.com/googleapis/python-bigquery/issues/655
 
     session.install("attrs==20.3.0")
-    session.install("-e", ".[all]")
+    session.install("-e", ".")
     session.install(PYTYPE_VERSION)
     session.run("python", "-m", "pip", "freeze")
     # See https://github.com/google/pytype/issues/464
-    session.run("pytype", "-P", ".", "google/cloud/bigquery")
-
-
-@nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
-@_calculate_duration
-def system(session):
-    """Run the system test suite."""
-
-    constraints_path = str(
-        CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
-    )
-
-    # Sanity check: Only run system tests if the environment variable is set.
-    if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):
-        session.skip("Credentials must be set via environment variable.")
-
-    # Use pre-release gRPC for system tests.
-    # Exclude version 1.49.0rc1 which has a known issue.
-    # See https://github.com/grpc/grpc/pull/30642
-    session.install("--pre", "grpcio!=1.49.0rc1", "-c", constraints_path)
-
-    # Install all test dependencies, then install local packages in place.
-    session.install(
-        "pytest",
-        "psutil",
-        "pytest-xdist",
-        "google-cloud-testutils",
-        "-c",
-        constraints_path,
-    )
-    if os.environ.get("GOOGLE_API_USE_CLIENT_CERTIFICATE", "") == "true":
-        # mTLS test requires pyopenssl and latest google-cloud-storage
-        session.install("google-cloud-storage", "pyopenssl")
-    else:
-        session.install("google-cloud-storage", "-c", constraints_path)
-
-    # Data Catalog needed for the column ACL test with a real Policy Tag.
-    session.install("google-cloud-datacatalog", "-c", constraints_path)
-
-    # Resource Manager needed for test with a real Resource Tag.
-    session.install("google-cloud-resource-manager", "-c", constraints_path)
-
-    if session.python in ["3.11", "3.12"]:
-        extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
-    else:
-        extras = "[all]"
-    session.install("-e", f".{extras}", "-c", constraints_path)
-
-    # Test with some broken "extras" in case the user didn't install the extra
-    # directly. For example, pandas-gbq is recommended for pandas features, but
-    # we want to test that we fallback to the previous behavior. For context,
-    # see internal document go/pandas-gbq-and-bigframes-redundancy.
-    if session.python == SYSTEM_TEST_PYTHON_VERSIONS[0]:
-        session.run("python", "-m", "pip", "uninstall", "pandas-gbq", "-y")
-
-    # print versions of all dependencies
-    session.run("python", "-m", "pip", "freeze")
-
-    # Run py.test against the system tests.
-    session.run(
-        "py.test",
-        "-n=auto",
-        "--quiet",
-        "-W default::PendingDeprecationWarning",
-        os.path.join("tests", "system"),
-        *session.posargs,
-    )
+    session.run("pytype", "-P", ".", "scripts")
 
 
 @nox.session(python=DEFAULT_PYTHON_VERSION)
@@ -266,10 +190,8 @@ def lint(session):
     session.install("flake8", BLACK_VERSION)
     session.install("-e", ".")
     session.run("python", "-m", "pip", "freeze")
-    session.run("flake8", os.path.join("google", "cloud", "bigquery"))
+    session.run("flake8", os.path.join("scripts"))
     session.run("flake8", "tests")
-    session.run("flake8", os.path.join("docs", "samples"))
-    session.run("flake8", os.path.join("docs", "snippets.py"))
     session.run("flake8", "benchmark")
     session.run("black", "--check", *BLACK_PATHS)
 
@@ -294,89 +216,3 @@ def blacken(session):
     session.install(BLACK_VERSION)
     session.run("python", "-m", "pip", "freeze")
     session.run("black", *BLACK_PATHS)
-
-
-@nox.session(python="3.10")
-@_calculate_duration
-def docs(session):
-    """Build the docs."""
-
-    session.install(
-        # We need to pin to specific versions of the `sphinxcontrib-*` packages
-        # which still support sphinx 4.x.
-        # See https://github.com/googleapis/sphinx-docfx-yaml/issues/344
-        # and https://github.com/googleapis/sphinx-docfx-yaml/issues/345.
-        "sphinxcontrib-applehelp==1.0.4",
-        "sphinxcontrib-devhelp==1.0.2",
-        "sphinxcontrib-htmlhelp==2.0.1",
-        "sphinxcontrib-qthelp==1.0.3",
-        "sphinxcontrib-serializinghtml==1.1.5",
-        "sphinx==4.5.0",
-        "alabaster",
-        "recommonmark",
-    )
-    session.install("google-cloud-storage")
-    session.install("-e", ".[all]")
-
-    shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
-    session.run("python", "-m", "pip", "freeze")
-    session.run(
-        "sphinx-build",
-        "-W",  # warnings as errors
-        "-T",  # show full traceback on exception
-        "-N",  # no colors
-        "-b",
-        "html",
-        "-d",
-        os.path.join("docs", "_build", "doctrees", ""),
-        os.path.join("docs", ""),
-        os.path.join("docs", "_build", "html", ""),
-    )
-
-
-@nox.session(python="3.10")
-@_calculate_duration
-def docfx(session):
-    """Build the docfx yaml files for this library."""
-
-    session.install("-e", ".")
-    session.install(
-        # We need to pin to specific versions of the `sphinxcontrib-*` packages
-        # which still support sphinx 4.x.
-        # See https://github.com/googleapis/sphinx-docfx-yaml/issues/344
-        # and https://github.com/googleapis/sphinx-docfx-yaml/issues/345.
-        "sphinxcontrib-applehelp==1.0.4",
-        "sphinxcontrib-devhelp==1.0.2",
-        "sphinxcontrib-htmlhelp==2.0.1",
-        "sphinxcontrib-qthelp==1.0.3",
-        "sphinxcontrib-serializinghtml==1.1.5",
-        "gcp-sphinx-docfx-yaml",
-        "alabaster",
-        "recommonmark",
-    )
-
-    shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
-    session.run("python", "-m", "pip", "freeze")
-    session.run(
-        "sphinx-build",
-        "-T",  # show full traceback on exception
-        "-N",  # no colors
-        "-D",
-        (
-            "extensions=sphinx.ext.autodoc,"
-            "sphinx.ext.autosummary,"
-            "docfx_yaml.extension,"
-            "sphinx.ext.intersphinx,"
-            "sphinx.ext.coverage,"
-            "sphinx.ext.napoleon,"
-            "sphinx.ext.todo,"
-            "sphinx.ext.viewcode,"
-            "recommonmark"
-        ),
-        "-b",
-        "html",
-        "-d",
-        os.path.join("docs", "_build", "doctrees", ""),
-        os.path.join("docs", ""),
-        os.path.join("docs", "_build", "html", ""),
-    )

@@ -687,10 +687,8 @@ def test_retry_load_job_result(result_retry_param, PROJECT, DS_ID):
             if "retry" in result_retry_param:
                 # Specifically check the timeout for the custom retry case
                 assert called_retry._timeout == 10.0
-                print(10.0)
             else:
                 assert called_retry._timeout == expected_retry._timeout
-                print("not 10.0")
 
     # The number of api_request calls should still be 3
     assert conn.api_request.call_count == 3

@@ -692,4 +692,3 @@ def test_retry_load_job_result(result_retry_param, PROJECT, DS_ID):
 
     # The number of api_request calls should still be 3
     assert conn.api_request.call_count == 3
-

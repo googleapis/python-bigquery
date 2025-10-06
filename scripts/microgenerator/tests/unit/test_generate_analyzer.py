@@ -243,7 +243,8 @@ class MyClass:
             ),
         ],
     )
-    def test_attribute_extraction(self, code_snippet, expected_structure):
+    def test_attribute_extraction(self, code_snippet: str, expected_structure: list):
+        """Tests the extraction of class and instance attributes."""
         analyzer = CodeAnalyzer()
         tree = ast.parse(code_snippet)
         analyzer.visit(tree)

@@ -87,3 +87,185 @@ class TestCodeAnalyzerImports:
         expected = sorted(expected_imports)
 
         assert extracted == expected
+
+
+# --- Tests CodeAnalyzer handling of Attributes ---
+
+
+class TestCodeAnalyzerAttributes:
+    def assert_structures_equal(self, extracted, expected):
+        assert len(extracted) == len(expected)
+        for i in range(len(extracted)):
+            ext_class = extracted[i]
+            exp_class = expected[i]
+            assert ext_class["class_name"] == exp_class["class_name"]
+            assert ext_class["methods"] == exp_class["methods"]
+            # Sort attributes by name for order-independent comparison                               │
+            assert sorted(ext_class["attributes"], key=lambda x: x["name"]) == sorted(
+                exp_class["attributes"], key=lambda x: x["name"]
+            )
+
+    @pytest.mark.parametrize(
+        "code_snippet, expected_structure",
+        [
+            pytest.param(
+                """
+class MyClass:
+    CLASS_VAR = 123
+""",
+                [
+                    {
+                        "class_name": "MyClass",
+                        "methods": [],
+                        "attributes": [{"name": "CLASS_VAR", "type": None}],
+                    }
+                ],
+                id="class_var_assign",
+            ),
+            pytest.param(
+                """
+class MyClass:
+    class_var: int = 456
+""",
+                [
+                    {
+                        "class_name": "MyClass",
+                        "methods": [],
+                        "attributes": [{"name": "class_var", "type": "int"}],
+                    }
+                ],
+                id="class_var_annassign",
+            ),
+            pytest.param(
+                """
+class MyClass:
+    class_var: int
+""",
+                [
+                    {
+                        "class_name": "MyClass",
+                        "methods": [],
+                        "attributes": [{"name": "class_var", "type": "int"}],
+                    }
+                ],
+                id="class_var_annassign_no_value",
+            ),
+            pytest.param(
+                """
+class MyClass:
+    def __init__(self):
+        self.instance_var = 789
+""",
+                [
+                    {
+                        "class_name": "MyClass",
+                        "methods": [
+                            {
+                                "method_name": "__init__",
+                                "args": [{"name": "self", "type": None}],
+                                "return_type": None,
+                            }
+                        ],
+                        "attributes": [{"name": "instance_var", "type": None}],
+                    }
+                ],
+                id="instance_var_assign",
+            ),
+            pytest.param(
+                """
+class MyClass:
+    def __init__(self):
+        self.instance_var: str = 'hello'
+""",
+                [
+                    {
+                        "class_name": "MyClass",
+                        "methods": [
+                            {
+                                "method_name": "__init__",
+                                "args": [{"name": "self", "type": None}],
+                                "return_type": None,
+                            }
+                        ],
+                        "attributes": [{"name": "instance_var", "type": "str"}],
+                    }
+                ],
+                id="instance_var_annassign",
+            ),
+            pytest.param(
+                """
+class MyClass:
+    def __init__(self):
+        self.instance_var: str
+""",
+                [
+                    {
+                        "class_name": "MyClass",
+                        "methods": [
+                            {
+                                "method_name": "__init__",
+                                "args": [{"name": "self", "type": None}],
+                                "return_type": None,
+                            }
+                        ],
+                        "attributes": [{"name": "instance_var", "type": "str"}],
+                    }
+                ],
+                id="instance_var_annassign_no_value",
+            ),
+            pytest.param(
+                """
+class MyClass:
+    VAR_A = 1
+    var_b: int = 2
+    def __init__(self):
+        self.var_c = 3
+        self.var_d: float = 4.0
+""",
+                [
+                    {
+                        "class_name": "MyClass",
+                        "methods": [
+                            {
+                                "method_name": "__init__",
+                                "args": [{"name": "self", "type": None}],
+                                "return_type": None,
+                            }
+                        ],
+                        "attributes": [
+                            {"name": "VAR_A", "type": None},
+                            {"name": "var_b", "type": "int"},
+                            {"name": "var_c", "type": None},
+                            {"name": "var_d", "type": "float"},
+                        ],
+                    }
+                ],
+                id="mixed_attributes",
+            ),
+            pytest.param(
+                "a = 123 # Module level",
+                [],
+                id="module_level_assign",
+            ),
+            pytest.param(
+                "b: int = 456 # Module level",
+                [],
+                id="module_level_annassign",
+            ),
+        ],
+    )
+    def test_attribute_extraction(self, code_snippet, expected_structure):
+        analyzer = CodeAnalyzer()
+        tree = ast.parse(code_snippet)
+        analyzer.visit(tree)
+
+        extracted = analyzer.structure
+        # Normalize attributes for order-independent comparison
+        for item in extracted:
+            if "attributes" in item:
+                item["attributes"].sort(key=lambda x: x["name"])
+        for item in expected_structure:
+            if "attributes" in item:
+                item["attributes"].sort(key=lambda x: x["name"])
+
+        assert extracted == expected_structure

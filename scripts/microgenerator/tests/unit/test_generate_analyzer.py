@@ -32,7 +32,6 @@ class YetAnotherClass:
     pass
 
 
-# --- Existing Tests ---
 def test_codeanalyzer_finds_class():
     code = """
 class MyClass:
@@ -193,7 +192,6 @@ class TestClass:
 ]
 
 
-# --- Tests ---
 class TestCodeAnalyzerArgsReturns:
     @pytest.mark.parametrize(
         "code_snippet, expected_args, expected_return", TYPE_TEST_CASES

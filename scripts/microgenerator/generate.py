@@ -27,9 +27,9 @@ import os
 import argparse
 import glob
 import logging
-import re
 from collections import defaultdict
-from typing import List, Dict, Any, Iterator
+from pathlib import Path
+from typing import List, Dict, Any
 
 from . import name_utils
 from . import utils
@@ -51,6 +51,7 @@ class CodeAnalyzer(ast.NodeVisitor):
         self.types: set[str] = set()
         self._current_class_info: Dict[str, Any] | None = None
         self._is_in_method: bool = False
+        self._depth = 0
 
     def _get_type_str(self, node: ast.AST | None) -> str | None:
         """Recursively reconstructs a type annotation string from an AST node."""
@@ -119,30 +120,32 @@ class CodeAnalyzer(ast.NodeVisitor):
 
     def visit_Import(self, node: ast.Import) -> None:
         """Catches 'import X' and 'import X as Y' statements."""
-        for alias in node.names:
-            if alias.asname:
-                self.imports.add(f"import {alias.name} as {alias.asname}")
-            else:
-                self.imports.add(f"import {alias.name}")
+        if self._depth == 0:  # Only top-level imports
+            for alias in node.names:
+                if alias.asname:
+                    self.imports.add(f"import {alias.name} as {alias.asname}")
+                else:
+                    self.imports.add(f"import {alias.name}")
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         """Catches 'from X import Y' statements."""
-        module = node.module or ""
-        if not module:
-            module = "." * node.level
-        else:
-            module = "." * node.level + module
-
-        names = []
-        for alias in node.names:
-            if alias.asname:
-                names.append(f"{alias.name} as {alias.asname}")
+        if self._depth == 0:  # Only top-level imports
+            module = node.module or ""
+            if not module:
+                module = "." * node.level
             else:
-                names.append(alias.name)
+                module = "." * node.level + module
 
-        if names:
-            self.imports.add(f"from {module} import {', '.join(names)}")
+            names = []
+            for alias in node.names:
+                if alias.asname:
+                    names.append(f"{alias.name} as {alias.asname}")
+                else:
+                    names.append(alias.name)
+
+            if names:
+                self.imports.add(f"from {module} import {', '.join(names)}")
         self.generic_visit(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
@@ -162,12 +165,15 @@ class CodeAnalyzer(ast.NodeVisitor):
 
         self.structure.append(class_info)
         self._current_class_info = class_info
+        self._depth += 1
         self.generic_visit(node)
+        self._depth -= 1
         self._current_class_info = None
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         """Visits a function/method definition node."""
-        if self._current_class_info:  # This is a method
+        is_method = self._current_class_info is not None
+        if is_method:
             args_info = []
 
             # Get default values
@@ -196,10 +202,13 @@ class CodeAnalyzer(ast.NodeVisitor):
                 "return_type": return_type,
             }
             self._current_class_info["methods"].append(method_info)
-
-            # Visit nodes inside the method to find instance attributes.
             self._is_in_method = True
-            self.generic_visit(node)
+
+        self._depth += 1
+        self.generic_visit(node)
+        self._depth -= 1
+
+        if is_method:
             self._is_in_method = False
 
     def _add_attribute(self, attr_name: str, attr_type: str | None = None):

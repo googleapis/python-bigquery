@@ -158,7 +158,6 @@ class CodeAnalyzer(ast.NodeVisitor):
 
         self.structure.append(class_info)
         self._current_class_info = class_info
-
         self._depth += 1
         self.generic_visit(node)
         self._depth -= 1

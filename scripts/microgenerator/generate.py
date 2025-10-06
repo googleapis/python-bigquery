@@ -123,7 +123,6 @@ class CodeAnalyzer(ast.NodeVisitor):
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         """Catches 'from X import Y' statements."""
-
         if self._depth == 0:  # Only top-level imports
             module = node.module or ""
             if not module:

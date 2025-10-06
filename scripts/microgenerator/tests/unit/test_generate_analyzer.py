@@ -93,17 +93,6 @@ class TestCodeAnalyzerImports:
 
 
 class TestCodeAnalyzerAttributes:
-    def assert_structures_equal(self, extracted, expected):
-        assert len(extracted) == len(expected)
-        for i in range(len(extracted)):
-            ext_class = extracted[i]
-            exp_class = expected[i]
-            assert ext_class["class_name"] == exp_class["class_name"]
-            assert ext_class["methods"] == exp_class["methods"]
-            # Sort attributes by name for order-independent comparison                               │
-            assert sorted(ext_class["attributes"], key=lambda x: x["name"]) == sorted(
-                exp_class["attributes"], key=lambda x: x["name"]
-            )
 
     @pytest.mark.parametrize(
         "code_snippet, expected_structure",

@@ -16,6 +16,7 @@
 
 import ast
 import pytest
+import textwrap as tw
 from scripts.microgenerator.generate import parse_code, CodeAnalyzer
 
 # --- Tests CodeAnalyzer handling of Imports ---
@@ -274,10 +275,12 @@ class YetAnotherClass:
 
 
 def test_codeanalyzer_finds_class():
-    code = """
-class MyClass:
-    pass
-"""
+    code = tw.dedent(
+        """
+        class MyClass:
+            pass
+        """
+    )
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
@@ -286,14 +289,16 @@ class MyClass:
 
 
 def test_codeanalyzer_finds_multiple_classes():
-    code = """
-class ClassA:
-    pass
+    code = tw.dedent(
+        """
+        class ClassA:
+            pass
 
 
-class ClassB:
-    pass
-"""
+        class ClassB:
+            pass
+        """
+    )
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
@@ -303,11 +308,13 @@ class ClassB:
 
 
 def test_codeanalyzer_finds_method():
-    code = """
-class MyClass:
-    def my_method(self):
-        pass
-"""
+    code = tw.dedent(
+        """
+        class MyClass:
+            def my_method(self):
+                pass
+        """
+    )
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
@@ -317,14 +324,16 @@ class MyClass:
 
 
 def test_codeanalyzer_finds_multiple_methods():
-    code = """
-class MyClass:
-    def method_a(self):
-        pass
+    code = tw.dedent(
+        """
+        class MyClass:
+            def method_a(self):
+                pass
 
-    def method_b(self):
-        pass
-"""
+            def method_b(self):
+                pass
+        """
+    )
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
@@ -334,10 +343,12 @@ class MyClass:
 
 
 def test_codeanalyzer_no_classes():
-    code = """
-def top_level_function():
-    pass
-"""
+    code = tw.dedent(
+        """
+        def top_level_function():
+            pass
+        """
+    )
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
@@ -345,10 +356,12 @@ def top_level_function():
 
 
 def test_codeanalyzer_class_with_no_methods():
-    code = """
-class MyClass:
-    attribute = 123
-"""
+    code = tw.dedent(
+        """
+        class MyClass:
+            attribute = 123
+        """
+    )
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
@@ -360,72 +373,108 @@ class MyClass:
 # --- Test Data for Parameterization ---
 TYPE_TEST_CASES = [
     pytest.param(
-        """class TestClass:
-    def func(self, a: int, b: str) -> bool: return True""",
+        tw.dedent(
+            """
+            class TestClass:
+                def func(self, a: int, b: str) -> bool: return True
+            """
+        ),
         [("a", "int"), ("b", "str")],
         "bool",
         id="simple_types",
     ),
     pytest.param(
-        """from typing import Optional
-class TestClass:
-    def func(self, a: Optional[int]) -> str | None: return 'hello'""",
+        tw.dedent(
+            """
+            from typing import Optional
+            class TestClass:
+                def func(self, a: Optional[int]) -> str | None: return 'hello'
+            """
+        ),
         [("a", "Optional[int]")],
         "str | None",
         id="optional_union_none",
     ),
     pytest.param(
-        """from typing import Union
-class TestClass:
-    def func(self, a: int | float, b: Union[str, bytes]) -> None: pass""",
+        tw.dedent(
+            """
+            from typing import Union
+            class TestClass:
+                def func(self, a: int | float, b: Union[str, bytes]) -> None: pass
+            """
+        ),
         [("a", "int | float"), ("b", "Union[str, bytes]")],
         "None",
         id="union_types",
     ),
     pytest.param(
-        """from typing import List, Dict, Tuple
-class TestClass:
-    def func(self, a: List[int], b: Dict[str, float]) -> Tuple[int, str]: return (1, 'a')""",
+        tw.dedent(
+            """
+            from typing import List, Dict, Tuple
+            class TestClass:
+                def func(self, a: List[int], b: Dict[str, float]) -> Tuple[int, str]: return (1, 'a')
+            """
+        ),
         [("a", "List[int]"), ("b", "Dict[str, float]")],
         "Tuple[int, str]",
         id="generic_types",
     ),
     pytest.param(
-        """import datetime
-from scripts.microgenerator.tests.unit.test_generate_analyzer import MyClass
-class TestClass:
-    def func(self, a: datetime.date, b: MyClass) -> MyClass: return b""",
+        tw.dedent(
+            """
+            import datetime
+            from scripts.microgenerator.tests.unit.test_generate_analyzer import MyClass
+            class TestClass:
+                def func(self, a: datetime.date, b: MyClass) -> MyClass: return b
+            """
+        ),
         [("a", "datetime.date"), ("b", "MyClass")],
         "MyClass",
         id="imported_types",
     ),
     pytest.param(
-        """from scripts.microgenerator.tests.unit.test_generate_analyzer import AnotherClass, YetAnotherClass
-class TestClass:
-    def func(self, a: 'AnotherClass') -> 'YetAnotherClass': return AnotherClass()""",
+        tw.dedent(
+            """
+            from scripts.microgenerator.tests.unit.test_generate_analyzer import AnotherClass, YetAnotherClass
+            class TestClass:
+                def func(self, a: 'AnotherClass') -> 'YetAnotherClass': return AnotherClass()
+            """
+        ),
         [("a", "'AnotherClass'")],
         "'YetAnotherClass'",
         id="forward_refs",
     ),
     pytest.param(
-        """class TestClass:
-    def func(self, a, b): return a + b""",
+        tw.dedent(
+            """
+            class TestClass:
+                def func(self, a, b): return a + b
+            """
+        ),
         [("a", None), ("b", None)],  # No annotations means type is None
         None,
         id="no_annotations",
     ),
     pytest.param(
-        """from typing import List, Optional, Dict, Union, Any
-class TestClass:
-    def func(self, a: List[Optional[Dict[str, Union[int, str]]]]) -> Dict[str, Any]: return {}""",
+        tw.dedent(
+            """
+            from typing import List, Optional, Dict, Union, Any
+            class TestClass:
+                def func(self, a: List[Optional[Dict[str, Union[int, str]]]]) -> Dict[str, Any]: return {}
+            """
+        ),
         [("a", "List[Optional[Dict[str, Union[int, str]]]]")],
         "Dict[str, Any]",
         id="complex_nested",
     ),
     pytest.param(
-        """from typing import Literal
-class TestClass:
-    def func(self, a: Literal['one', 'two']) -> Literal[True]: return True""",
+        tw.dedent(
+            """
+        from typing import Literal
+        class TestClass:
+            def func(self, a: Literal['one', 'two']) -> Literal[True]: return True
+        """
+        ),
         [("a", "Literal['one', 'two']")],
         "Literal[True]",
         id="literal_type",

@@ -27,6 +27,7 @@ import os
 import argparse
 import glob
 import logging
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Dict, Any
@@ -709,9 +710,8 @@ def _execute_post_processing(config: Dict[str, Any]):
 
         if all_start_index != -1 and all_end_index != -1:
             all_content = "".join(lines[all_start_index + 1 : all_end_index])
-            # Extract quoted strings
-            import re
 
+            # Extract quoted strings
             found_members = re.findall(r'"([^"]+)"', all_content)
             for member in found_members:
                 if member not in all_list:

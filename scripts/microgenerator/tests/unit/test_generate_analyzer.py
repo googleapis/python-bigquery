@@ -94,7 +94,7 @@ class TestCodeAnalyzerImports:
 
 class TestCodeAnalyzerAttributes:
     @pytest.mark.parametrize(
-        "code_snippet, expected_structure",
+        "code_snippet, expected_analyzed_classes",
         [
             pytest.param(
                 """
@@ -242,19 +242,21 @@ class MyClass:
             ),
         ],
     )
-    def test_attribute_extraction(self, code_snippet: str, expected_structure: list):
+    def test_attribute_extraction(
+        self, code_snippet: str, expected_analyzed_classes: list
+    ):
         """Tests the extraction of class and instance attributes."""
         analyzer = CodeAnalyzer()
         tree = ast.parse(code_snippet)
         analyzer.visit(tree)
 
-        extracted = analyzer.structure
+        extracted = analyzer.analyzed_classes
         # Normalize attributes for order-independent comparison
         for item in extracted:
             if "attributes" in item:
                 item["attributes"].sort(key=lambda x: x["name"])
-        for item in expected_structure:
+        for item in expected_analyzed_classes:
             if "attributes" in item:
                 item["attributes"].sort(key=lambda x: x["name"])
 
-        assert extracted == expected_structure
+        assert extracted == expected_analyzed_classes

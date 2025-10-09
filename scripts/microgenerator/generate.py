@@ -85,6 +85,13 @@ class CodeAnalyzer(ast.NodeVisitor):
         # Handles forward references as strings, e.g., '"Dataset"'
         if isinstance(node, ast.Constant):
             return repr(node.value)
+
+        # Handles | union types, e.g., int | float
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+            left_str = self._get_type_str(node.left)
+            right_str = self._get_type_str(node.right)
+            return f"{left_str} | {right_str}"
+
         return None  # Fallback for unhandled types
 
     def _collect_types_from_node(self, node: ast.AST | None) -> None:

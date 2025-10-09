@@ -46,7 +46,7 @@ class CodeAnalyzer(ast.NodeVisitor):
     """
 
     def __init__(self):
-        self.structure: List[Dict[str, Any]] = []
+        self.analyzed_classes: List[Dict[str, Any]] = []
         self.imports: set[str] = set()
         self.types: set[str] = set()
         self._current_class_info: Dict[str, Any] | None = None
@@ -98,13 +98,19 @@ class CodeAnalyzer(ast.NodeVisitor):
             if type_str:
                 self.types.add(type_str)
         elif isinstance(node, ast.Subscript):
-            self._collect_types_from_node(node.value)
+            # Add the base type of the subscript (e.g., "List", "Dict")
+            if isinstance(node.value, ast.Name):
+                self.types.add(node.value.id)
+            self._collect_types_from_node(node.value)  # Recurse on value just in case
             self._collect_types_from_node(node.slice)
         elif isinstance(node, (ast.Tuple, ast.List)):
             for elt in node.elts:
                 self._collect_types_from_node(elt)
-        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            self.types.add(node.value)
+        elif isinstance(node, ast.Constant):
+            if isinstance(node.value, str):  # Forward references
+                self.types.add(node.value)
+            elif node.value is None:  # None type
+                self.types.add("None")
         elif isinstance(node, ast.BinOp) and isinstance(
             node.op, ast.BitOr
         ):  # For | union type

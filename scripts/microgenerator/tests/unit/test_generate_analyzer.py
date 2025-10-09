@@ -93,7 +93,6 @@ class TestCodeAnalyzerImports:
 
 
 class TestCodeAnalyzerAttributes:
-
     @pytest.mark.parametrize(
         "code_snippet, expected_structure",
         [

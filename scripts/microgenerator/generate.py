@@ -162,7 +162,7 @@ class CodeAnalyzer(ast.NodeVisitor):
                 type_str = self._get_type_str(item.annotation)
                 class_info["attributes"].append({"name": attr_name, "type": type_str})
 
-        self.structure.append(class_info)
+        self.analyzed_classes.append(class_info)
         self._current_class_info = class_info
         self._depth += 1
         self.generic_visit(node)
@@ -278,7 +278,7 @@ def parse_code(code: str) -> tuple[List[Dict[str, Any]], set[str], set[str]]:
     tree = ast.parse(code)
     analyzer = CodeAnalyzer()
     analyzer.visit(tree)
-    return analyzer.structure, analyzer.imports, analyzer.types
+    return analyzer.analyzed_classes, analyzer.imports, analyzer.types
 
 
 def parse_file(file_path: str) -> tuple[List[Dict[str, Any]], set[str], set[str]]:
@@ -330,10 +330,10 @@ def list_code_objects(
     all_class_keys = []
 
     def process_structure(
-        structure: List[Dict[str, Any]], file_name: str | None = None
+        analyzed_classes: List[Dict[str, Any]], file_name: str | None = None
     ):
         """Populates the results dictionary from the parsed AST structure."""
-        for class_info in structure:
+        for class_info in analyzed_classes:
             key = class_info["class_name"]
             if file_name:
                 key = f"{key} (in {file_name})"
@@ -359,13 +359,13 @@ def list_code_objects(
 
     # Determine if the path is a file or directory and process accordingly
     if os.path.isfile(path) and path.endswith(".py"):
-        structure, _, _ = parse_file(path)
-        process_structure(structure)
+        analyzed_classes, _, _ = parse_file(path)
+        process_structure(analyzed_classes)
     elif os.path.isdir(path):
         # This assumes `utils.walk_codebase` is defined elsewhere.
         for file_path in utils.walk_codebase(path):
-            structure, _, _ = parse_file(file_path)
-            process_structure(structure, file_name=os.path.basename(file_path))
+            analyzed_classes, _, _ = parse_file(file_path)
+            process_structure(analyzed_classes, file_name=os.path.basename(file_path))
 
     # Return the data in the desired format based on the flags
     if not show_methods and not show_attributes:
@@ -417,11 +417,11 @@ def _build_request_arg_schema(
         module_name = os.path.splitext(relative_path)[0].replace(os.path.sep, ".")
 
         try:
-            structure, _, _ = parse_file(file_path)
-            if not structure:
+            analyzed_classes, _, _ = parse_file(file_path)
+            if not analyzed_classes:
                 continue
 
-            for class_info in structure:
+            for class_info in analyzed_classes:
                 class_name = class_info.get("class_name", "Unknown")
                 if class_name.endswith("Request"):
                     full_class_name = f"{module_name}.{class_name}"
@@ -449,11 +449,11 @@ def _process_service_clients(
         if "/services/" not in file_path:
             continue
 
-        structure, imports, types = parse_file(file_path)
+        analyzed_classes, imports, types = parse_file(file_path)
         all_imports.update(imports)
         all_types.update(types)
 
-        for class_info in structure:
+        for class_info in analyzed_classes:
             class_name = class_info["class_name"]
             if not _should_include_class(class_name, class_filters):
                 continue

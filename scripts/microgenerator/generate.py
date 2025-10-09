@@ -258,6 +258,7 @@ class CodeAnalyzer(ast.NodeVisitor):
             # directly within the class body, not inside a method.
             elif isinstance(target, ast.Name) and not self._is_in_method:
                 self._add_attribute(target.id, self._get_type_str(node.annotation))
+            self._collect_types_from_node(node.annotation)
         self.generic_visit(node)
 
 

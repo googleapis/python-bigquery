@@ -286,8 +286,8 @@ def test_codeanalyzer_finds_class():
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
-    assert len(analyzer.structure) == 1
-    assert analyzer.structure[0]["class_name"] == "MyClass"
+    assert len(analyzer.analyzed_classes) == 1
+    assert analyzer.analyzed_classes[0]["class_name"] == "MyClass"
 
 
 def test_codeanalyzer_finds_multiple_classes():
@@ -304,8 +304,8 @@ def test_codeanalyzer_finds_multiple_classes():
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
-    assert len(analyzer.structure) == 2
-    class_names = sorted([c["class_name"] for c in analyzer.structure])
+    assert len(analyzer.analyzed_classes) == 2
+    class_names = sorted([c["class_name"] for c in analyzer.analyzed_classes])
     assert class_names == ["ClassA", "ClassB"]
 
 
@@ -320,9 +320,9 @@ def test_codeanalyzer_finds_method():
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
-    assert len(analyzer.structure) == 1
-    assert len(analyzer.structure[0]["methods"]) == 1
-    assert analyzer.structure[0]["methods"][0]["method_name"] == "my_method"
+    assert len(analyzer.analyzed_classes) == 1
+    assert len(analyzer.analyzed_classes[0]["methods"]) == 1
+    assert analyzer.analyzed_classes[0]["methods"][0]["method_name"] == "my_method"
 
 
 def test_codeanalyzer_finds_multiple_methods():
@@ -339,8 +339,8 @@ def test_codeanalyzer_finds_multiple_methods():
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
-    assert len(analyzer.structure) == 1
-    method_names = sorted([m["method_name"] for m in analyzer.structure[0]["methods"]])
+    assert len(analyzer.analyzed_classes) == 1
+    method_names = sorted([m["method_name"] for m in analyzer.analyzed_classes[0]["methods"]])
     assert method_names == ["method_a", "method_b"]
 
 
@@ -354,7 +354,7 @@ def test_codeanalyzer_no_classes():
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
-    assert len(analyzer.structure) == 0
+    assert len(analyzer.analyzed_classes) == 0
 
 
 def test_codeanalyzer_class_with_no_methods():
@@ -367,9 +367,9 @@ def test_codeanalyzer_class_with_no_methods():
     analyzer = CodeAnalyzer()
     tree = ast.parse(code)
     analyzer.visit(tree)
-    assert len(analyzer.structure) == 1
-    assert analyzer.structure[0]["class_name"] == "MyClass"
-    assert len(analyzer.structure[0]["methods"]) == 0
+    assert len(analyzer.analyzed_classes) == 1
+    assert analyzer.analyzed_classes[0]["class_name"] == "MyClass"
+    assert len(analyzer.analyzed_classes[0]["methods"]) == 0
 
 
 # --- Test Data for Parameterization ---
@@ -489,10 +489,10 @@ class TestCodeAnalyzerArgsReturns:
         "code_snippet, expected_args, expected_return", TYPE_TEST_CASES
     )
     def test_type_extraction(self, code_snippet, expected_args, expected_return):
-        structure, imports, types = parse_code(code_snippet)
+        analyzed_classes, imports, types = parse_code(code_snippet)
 
-        assert len(structure) == 1, "Should parse one class"
-        class_info = structure[0]
+        assert len(analyzed_classes) == 1, "Should parse one class"
+        class_info = analyzed_classes[0]
         assert class_info["class_name"] == "TestClass"
 
         assert len(class_info["methods"]) == 1, "Should find one method"

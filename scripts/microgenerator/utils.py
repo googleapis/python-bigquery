@@ -111,7 +111,7 @@ def write_code_to_file(output_path: str, content: str):
         print(f"  Ensuring output directory exists: {os.path.abspath(output_dir)}")
         os.makedirs(output_dir, exist_ok=True)
         if not os.path.isdir(output_dir):
-            print(f"  Error: Output directory was not created.", file=sys.stderr)
+            print("  Error: Output directory was not created.", file=sys.stderr)
             sys.exit(1)
 
     print(f"  Writing generated code to: {os.path.abspath(output_path)}")

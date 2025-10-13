@@ -39,7 +39,7 @@ BLACK_PATHS = (
 
 DEFAULT_PYTHON_VERSION = "3.9"
 SYSTEM_TEST_PYTHON_VERSIONS = ["3.9", "3.11", "3.12", "3.13"]
-UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.11", "3.12", "3.13"]
+UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.11", "3.12", "3.13", "3.14"]
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 
@@ -242,7 +242,7 @@ def system(session):
     # Resource Manager needed for test with a real Resource Tag.
     session.install("google-cloud-resource-manager", "-c", constraints_path)
 
-    if session.python in ["3.11", "3.12"]:
+    if session.python in ["3.11", "3.12", "3.13", "3.14"]:
         extras = "[bqstorage,ipywidgets,pandas,tqdm,opentelemetry]"
     else:
         extras = "[all]"
@@ -321,7 +321,7 @@ def snippets(session):
     session.install("google-cloud-storage", "-c", constraints_path)
     session.install("grpcio", "-c", constraints_path)
 
-    if session.python in ["3.11", "3.12"]:
+    if session.python in ["3.11", "3.12", "3.13", "3.14"]:
         extras = (
             "[bqstorage,pandas,ipywidgets,geopandas,tqdm,opentelemetry,bigquery_v2]"
         )
@@ -365,7 +365,7 @@ def cover(session):
     session.run("coverage", "erase")
 
 
-@nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS)
+@nox.session(python=SYSTEM_TEST_PYTHON_VERSIONS + ["3.14"])
 @_calculate_duration
 def prerelease_deps(session):
     """Run all tests with prerelease versions of dependencies installed.

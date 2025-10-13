@@ -27,6 +27,7 @@ import os
 import argparse
 import glob
 import logging
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Dict, Any
@@ -498,7 +499,6 @@ def analyze_source_files(
             # Make the pattern absolute
             absolute_pattern = os.path.join(project_root, pattern)
             source_files.extend(glob.glob(absolute_pattern, recursive=True))
-
     # PASS 1: Build the request argument schema from the types files.
     request_arg_schema = _build_request_arg_schema(source_files, project_root)
 
@@ -559,14 +559,14 @@ def generate_code(config: Dict[str, Any], analysis_results: tuple) -> None:
     Generates source code files using Jinja2 templates.
     """
     data, all_imports, all_types, request_arg_schema = analysis_results
-    project_root = config["project_root"]
-    config_dir = config["config_dir"]
 
     templates_config = config.get("templates", [])
     for item in templates_config:
-        template_path = str(Path(config_dir) / item["template"])
-        output_path = str(Path(project_root) / item["output"])
+        template_name = item["template"]
+        output_name = item["output"]
 
+        template_path = str(Path(config["config_dir"]) / template_name)
+        output_path = str(Path(config["project_root"]) / output_name)
         template = utils.load_template(template_path)
         methods_context = []
         for class_name, methods in data.items():
@@ -662,18 +662,20 @@ def setup_config_and_paths(config_path: str) -> Dict[str, Any]:
                 return None
             current_path = parent_path
 
-    # Load configuration from the YAML file.
-    config = utils.load_config(config_path)
+    # Get the absolute path of the config file
+    abs_config_path = os.path.abspath(config_path)
+    config = utils.load_config(abs_config_path)
 
-    # Determine the project root.
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = find_project_root(script_dir, ["setup.py", ".git"])
+    # Determine the project root
+    # Start searching from the directory of this script file
+    script_file_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = find_project_root(script_file_dir, [".git"])
     if not project_root:
-        project_root = os.getcwd()  # Fallback to current directory
+        # Fallback to the directory from which the script was invoked
+        project_root = os.getcwd()
 
-    # Set paths in the config dictionary.
     config["project_root"] = project_root
-    config["config_dir"] = os.path.dirname(os.path.abspath(config_path))
+    config["config_dir"] = os.path.dirname(abs_config_path)
 
     return config
 
@@ -714,9 +716,12 @@ def _execute_post_processing(config: Dict[str, Any]):
                 all_end_index = i
 
         if all_start_index != -1 and all_end_index != -1:
-            for i in range(all_start_index + 1, all_end_index):
-                member = lines[i].strip().replace('"', "").replace(",", "")
-                if member:
+            all_content = "".join(lines[all_start_index + 1 : all_end_index])
+
+            # Extract quoted strings
+            found_members = re.findall(r'"([^"]+)"', all_content)
+            for member in found_members:
+                if member not in all_list:
                     all_list.append(member)
 
         # --- Add new items and sort ---
@@ -729,7 +734,9 @@ def _execute_post_processing(config: Dict[str, Any]):
         for new_member in job.get("add_to_all", []):
             if new_member not in all_list:
                 all_list.append(new_member)
-        all_list.sort()
+        all_list = sorted(list(set(all_list)))  # Ensure unique and sorted
+        # Format for the template
+        all_list = [f'    "{item}",\n' for item in all_list]
 
         # --- Render the new file content ---
         template = utils.load_template(template_path)

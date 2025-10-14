@@ -23,7 +23,7 @@ __version__ = package_version.__version__
 {%- endfor %}
 
 __all__ = (
-{%- for item in all_list %}
-    "{{ item }}",
+{% for item in all_list %}
+{{ item }}
 {%- endfor %}
 )

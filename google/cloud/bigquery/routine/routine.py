@@ -872,7 +872,7 @@ class ExternalRuntimeOptions(object):
     def max_batching_rows(self, value: Optional[int]):
         if value is not None and not isinstance(value, int):
             raise ValueError("max_batching_rows must be an integer or None.")
-        self._properties["maxBatchingRows"] = value
+        self._properties["maxBatchingRows"] = _helpers._str_or_none(value)
 
     @property
     def runtime_version(self) -> Optional[str]:

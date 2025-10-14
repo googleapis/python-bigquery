@@ -381,7 +381,31 @@ def list_code_objects(
 
 
 def _should_include_class(class_name: str, class_filters: Dict[str, Any]) -> bool:
-    """Checks if a class should be included based on filter criteria."""
+    """Determines if a class should be included based on name filters.
+
+    Filters are defined in the configuration file and passed in the
+    `class_filters` dictionary.
+
+    Args:
+        class_name: The name of the class to check.
+        class_filters: A dictionary containing filter rules:
+            "include_suffixes": List of suffixes. If provided, the class name
+                                MUST end with one of these suffixes.
+            "exclude_suffixes": List of suffixes. If provided, the class name
+                                MUST NOT end with any of these suffixes.
+
+    Returns:
+        bool: True if the class should be included, False otherwise.
+
+    Example:
+        >>> filters = {"include_suffixes": ["Client"], "exclude_suffixes": ["BaseClient"]}
+        >>> _should_include_class("DatasetClient", filters)
+        True
+        >>> _should_include_class("BaseClient", filters)
+        False
+        >>> _should_include_class("SomeOtherClass", filters)
+        False
+    """
     if class_filters.get("include_suffixes"):
         if not class_name.endswith(tuple(class_filters["include_suffixes"])):
             return False
@@ -392,7 +416,31 @@ def _should_include_class(class_name: str, class_filters: Dict[str, Any]) -> boo
 
 
 def _should_include_method(method_name: str, method_filters: Dict[str, Any]) -> bool:
-    """Checks if a method should be included based on filter criteria."""
+    """Determines if a method should be included based on name filters.
+
+    Filters are defined in the configuration file and passed in the
+    `method_filters` dictionary.
+
+    Args:
+        method_name: The name of the method to check.
+        method_filters: A dictionary containing filter rules:
+            "include_prefixes": List of prefixes. If provided, the method name
+                                MUST start with one of these prefixes.
+            "exclude_prefixes": List of prefixes. If provided, the method name
+                                MUST NOT start with any of these prefixes.
+
+    Returns:
+        bool: True if the method should be included, False otherwise.
+
+    Example:
+        >>> filters = {"include_prefixes": ["get_", "list_"], "exclude_prefixes": ["_internal_"]}
+        >>> _should_include_method("get_dataset", filters)
+        True
+        >>> _should_include_method("create_dataset", filters)
+        False
+        >>> _should_include_method("_internal_get_dataset", filters)
+        False
+    """
     if method_filters.get("include_prefixes"):
         if not any(
             method_name.startswith(p) for p in method_filters["include_prefixes"]

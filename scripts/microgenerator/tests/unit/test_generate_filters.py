@@ -9,42 +9,49 @@ from scripts.microgenerator.generate import (
 @pytest.mark.parametrize(
     "class_name, filters, expected",
     [
-        ("MyClass", {}, True),  # No filters
-        (
+        pytest.param("MyClass", {}, True, id="No filters"),
+        pytest.param(
             "DatasetClient",
             {"include_suffixes": ["Client", "Service"]},
             True,
-        ),  # Include suffix match
-        (
+            id="Include suffix match",
+        ),
+        pytest.param(
             "MyClass",
             {"include_suffixes": ["Client", "Service"]},
             False,
-        ),  # Include suffix no match
-        (
+            id="Include suffix no match",
+        ),
+        pytest.param(
             "MyBase",
             {"exclude_suffixes": ["Base", "Util"]},
             False,
-        ),  # Exclude suffix match
-        (
+            id="Exclude suffix match",
+        ),
+        pytest.param(
             "MyClass",
             {"exclude_suffixes": ["Base", "Util"]},
             True,
-        ),  # Exclude suffix no match
-        (
+            id="Exclude suffix no match",
+        ),
+        pytest.param(
             "DatasetClient",
             {"include_suffixes": ["Client"], "exclude_suffixes": ["BaseClient"]},
             True,
-        ),  # Mix include/exclude
-        (
+            id="Mix include/exclude match",
+        ),
+        pytest.param(
             "BaseClient",
             {"include_suffixes": ["Client"], "exclude_suffixes": ["BaseClient"]},
             False,
-        ),  # Mix include/exclude
-        (
+            id="Mix include/exclude no match",
+        ),
+        pytest.param(
             "MyClass",
             {"include_suffixes": [], "exclude_suffixes": []},
             True,
-        ),  # Empty filters
+            id="Empty filters",
+        ),
     ],
 )
 def test_should_include_class(class_name, filters, expected):
@@ -55,57 +62,67 @@ def test_should_include_class(class_name, filters, expected):
 @pytest.mark.parametrize(
     "method_name, filters, expected",
     [
-        ("my_method", {}, True),  # No filters
-        (
+        pytest.param("my_method", {}, True, id="No filters"),
+        pytest.param(
             "get_dataset",
             {"include_prefixes": ["get_", "list_"]},
             True,
-        ),  # Include prefix match
-        (
+            id="Include prefix match (get)",
+        ),
+        pytest.param(
             "list_jobs",
             {"include_prefixes": ["get_", "list_"]},
             True,
-        ),  # Include prefix match
-        (
+            id="Include prefix match (list)",
+        ),
+        pytest.param(
             "create_dataset",
             {"include_prefixes": ["get_", "list_"]},
             False,
-        ),  # Include prefix no match
-        (
+            id="Include prefix no match",
+        ),
+        pytest.param(
             "_private_method",
             {"exclude_prefixes": ["_", "internal_"]},
             False,
-        ),  # Exclude prefix match
-        (
+            id="Exclude prefix match (private)",
+        ),
+        pytest.param(
             "internal_helper",
             {"exclude_prefixes": ["_", "internal_"]},
             False,
-        ),  # Exclude prefix match
-        (
+            id="Exclude prefix match (internal)",
+        ),
+        pytest.param(
             "get_dataset",
             {"exclude_prefixes": ["_", "internal_"]},
             True,
-        ),  # Exclude prefix no match
-        (
+            id="Exclude prefix no match",
+        ),
+        pytest.param(
             "get_dataset",
             {"include_prefixes": ["get_"], "exclude_prefixes": ["get_internal_"]},
             True,
-        ),  # Mix include/exclude
-        (
+            id="Mix include/exclude match",
+        ),
+        pytest.param(
             "get_internal_status",
             {"include_prefixes": ["get_"], "exclude_prefixes": ["get_internal_"]},
             False,
-        ),  # Mix include/exclude
-        (
+            id="Mix include/exclude no match (exclude wins)",
+        ),
+        pytest.param(
             "list_datasets",
             {"include_prefixes": ["get_"], "exclude_prefixes": ["get_internal_"]},
             False,
-        ),  # Mix include/exclude
-        (
+            id="Mix include/exclude no match (include fails)",
+        ),
+        pytest.param(
             "my_method",
             {"include_prefixes": [], "exclude_prefixes": []},
             True,
-        ),  # Empty filters
+            id="Empty filters",
+        ),
     ],
 )
 def test_should_include_method(method_name, filters, expected):

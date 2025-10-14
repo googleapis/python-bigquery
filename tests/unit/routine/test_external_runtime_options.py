@@ -32,7 +32,9 @@ def object_under_test(target_class):
 def test_ctor(target_class):
     container_memory = "1G"
     container_cpu = 1
-    runtime_connection = "projects/my-project/locations/us-central1/connections/my-connection"
+    runtime_connection = (
+        "projects/my-project/locations/us-central1/connections/my-connection"
+    )
     max_batching_rows = 100
     runtime_version = "python-3.11"
 
@@ -64,7 +66,9 @@ def test_container_cpu(object_under_test):
 
 
 def test_runtime_connection(object_under_test):
-    runtime_connection = "projects/my-project/locations/us-central1/connections/my-connection"
+    runtime_connection = (
+        "projects/my-project/locations/us-central1/connections/my-connection"
+    )
     object_under_test.runtime_connection = runtime_connection
     assert object_under_test.runtime_connection == runtime_connection
 
@@ -169,12 +173,16 @@ def test_invalid_container_cpu(object_under_test):
 
 
 def test_invalid_runtime_connection(object_under_test):
-    with pytest.raises(ValueError, match="runtime_connection must be a string or None."):
+    with pytest.raises(
+        ValueError, match="runtime_connection must be a string or None."
+    ):
         object_under_test.runtime_connection = 123
 
 
 def test_invalid_max_batching_rows(object_under_test):
-    with pytest.raises(ValueError, match="max_batching_rows must be an integer or None."):
+    with pytest.raises(
+        ValueError, match="max_batching_rows must be an integer or None."
+    ):
         object_under_test.max_batching_rows = "100"
 
 

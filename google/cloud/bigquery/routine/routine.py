@@ -15,7 +15,7 @@
 # limitations under the License.
 
 """Define resources for the BigQuery Routines API."""
-
+import typing
 from typing import Any, Dict, Optional, Union
 
 import google.cloud._helpers  # type: ignore
@@ -864,13 +864,15 @@ class ExternalRuntimeOptions(object):
     @property
     def max_batching_rows(self) -> Optional[int]:
         """Optional. Maximum number of rows in each batch sent to the external runtime."""
-        return _helpers._int_or_none(self._properties.get("maxBatchingRows"))
+        return typing.cast(
+            int, _helpers._int_or_none(self._properties.get("maxBatchingRows"))
+        )
 
     @max_batching_rows.setter
     def max_batching_rows(self, value: Optional[int]):
         if value is not None and not isinstance(value, int):
             raise ValueError("max_batching_rows must be an integer or None.")
-        self._properties["maxBatchingRows"] = _helpers._str_or_none(value)
+        self._properties["maxBatchingRows"] = value
 
     @property
     def runtime_version(self) -> Optional[str]:

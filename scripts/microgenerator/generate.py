@@ -47,7 +47,7 @@ class CodeAnalyzer(ast.NodeVisitor):
     """
 
     def __init__(self):
-        self.structure: List[Dict[str, Any]] = []
+        self.analyzed_classes: List[Dict[str, Any]] = []
         self.imports: set[str] = set()
         self.types: set[str] = set()
         self._current_class_info: Dict[str, Any] | None = None
@@ -106,13 +106,19 @@ class CodeAnalyzer(ast.NodeVisitor):
             if type_str:
                 self.types.add(type_str)
         elif isinstance(node, ast.Subscript):
-            self._collect_types_from_node(node.value)
+            # Add the base type of the subscript (e.g., "List", "Dict")
+            if isinstance(node.value, ast.Name):
+                self.types.add(node.value.id)
+            self._collect_types_from_node(node.value)  # Recurse on value just in case
             self._collect_types_from_node(node.slice)
         elif isinstance(node, (ast.Tuple, ast.List)):
             for elt in node.elts:
                 self._collect_types_from_node(elt)
-        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            self.types.add(node.value)
+        elif isinstance(node, ast.Constant):
+            if isinstance(node.value, str):  # Forward references
+                self.types.add(node.value)
+            elif node.value is None:  # None type
+                self.types.add("None")
         elif isinstance(node, ast.BinOp) and isinstance(
             node.op, ast.BitOr
         ):  # For | union type
@@ -164,7 +170,7 @@ class CodeAnalyzer(ast.NodeVisitor):
                 type_str = self._get_type_str(item.annotation)
                 class_info["attributes"].append({"name": attr_name, "type": type_str})
 
-        self.structure.append(class_info)
+        self.analyzed_classes.append(class_info)
         self._current_class_info = class_info
         self._depth += 1
         self.generic_visit(node)
@@ -260,6 +266,7 @@ class CodeAnalyzer(ast.NodeVisitor):
             # directly within the class body, not inside a method.
             elif isinstance(target, ast.Name) and not self._is_in_method:
                 self._add_attribute(target.id, self._get_type_str(node.annotation))
+            self._collect_types_from_node(node.annotation)
         self.generic_visit(node)
 
 
@@ -280,7 +287,7 @@ def parse_code(code: str) -> tuple[List[Dict[str, Any]], set[str], set[str]]:
     tree = ast.parse(code)
     analyzer = CodeAnalyzer()
     analyzer.visit(tree)
-    return analyzer.structure, analyzer.imports, analyzer.types
+    return analyzer.analyzed_classes, analyzer.imports, analyzer.types
 
 
 def parse_file(file_path: str) -> tuple[List[Dict[str, Any]], set[str], set[str]]:
@@ -332,10 +339,10 @@ def list_code_objects(
     all_class_keys = []
 
     def process_structure(
-        structure: List[Dict[str, Any]], file_name: str | None = None
+        analyzed_classes: List[Dict[str, Any]], file_name: str | None = None
     ):
         """Populates the results dictionary from the parsed AST structure."""
-        for class_info in structure:
+        for class_info in analyzed_classes:
             key = class_info["class_name"]
             if file_name:
                 key = f"{key} (in {file_name})"
@@ -361,13 +368,13 @@ def list_code_objects(
 
     # Determine if the path is a file or directory and process accordingly
     if os.path.isfile(path) and path.endswith(".py"):
-        structure, _, _ = parse_file(path)
-        process_structure(structure)
+        analyzed_classes, _, _ = parse_file(path)
+        process_structure(analyzed_classes)
     elif os.path.isdir(path):
         # This assumes `utils.walk_codebase` is defined elsewhere.
         for file_path in utils.walk_codebase(path):
-            structure, _, _ = parse_file(file_path)
-            process_structure(structure, file_name=os.path.basename(file_path))
+            analyzed_classes, _, _ = parse_file(file_path)
+            process_structure(analyzed_classes, file_name=os.path.basename(file_path))
 
     # Return the data in the desired format based on the flags
     if not show_methods and not show_attributes:
@@ -419,11 +426,11 @@ def _build_request_arg_schema(
         module_name = os.path.splitext(relative_path)[0].replace(os.path.sep, ".")
 
         try:
-            structure, _, _ = parse_file(file_path)
-            if not structure:
+            analyzed_classes, _, _ = parse_file(file_path)
+            if not analyzed_classes:
                 continue
 
-            for class_info in structure:
+            for class_info in analyzed_classes:
                 class_name = class_info.get("class_name", "Unknown")
                 if class_name.endswith("Request"):
                     full_class_name = f"{module_name}.{class_name}"
@@ -451,11 +458,11 @@ def _process_service_clients(
         if "/services/" not in file_path:
             continue
 
-        structure, imports, types = parse_file(file_path)
+        analyzed_classes, imports, types = parse_file(file_path)
         all_imports.update(imports)
         all_types.update(types)
 
-        for class_info in structure:
+        for class_info in analyzed_classes:
             class_name = class_info["class_name"]
             if not _should_include_class(class_name, class_filters):
                 continue

@@ -16,7 +16,6 @@ from __future__ import absolute_import
 
 from functools import wraps
 import pathlib
-import os
 import nox
 import time
 
@@ -26,7 +25,7 @@ PYTYPE_VERSION = "pytype==2024.9.13"
 BLACK_VERSION = "black==23.7.0"
 BLACK_PATHS = (".",)
 
-DEFAULT_PYTHON_VERSION = "3.9"
+DEFAULT_PYTHON_VERSION = "3.13"
 UNIT_TEST_PYTHON_VERSIONS = ["3.9", "3.11", "3.12", "3.13"]
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
@@ -190,9 +189,8 @@ def lint(session):
     session.install("flake8", BLACK_VERSION)
     session.install("-e", ".")
     session.run("python", "-m", "pip", "freeze")
-    session.run("flake8", os.path.join("scripts"))
+    session.run("flake8", ".")
     session.run("flake8", "tests")
-    session.run("flake8", "benchmark")
     session.run("black", "--check", *BLACK_PATHS)
 
 

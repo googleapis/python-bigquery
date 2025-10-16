@@ -24,8 +24,9 @@ jobs:
     - name: Install GDAL and Arrow
       run: |
         sudo apt-get update
-        sudo apt-get install -y -V ca-certificates lsb-release wget software-properties-common
-        wget -O - https://apache.jfrog.io/artifactory/arrow/$(lsb_release -sc)/apache-arrow-apt-source.list | sudo tee /etc/apt/sources.list.d/apache-arrow.list
+        sudo apt-get install -y -V ca-certificates lsb-release wget software-properties-common gpg
+        wget -qO- https://apache.jfrog.io/artifactory/arrow/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/apache-arrow-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/apache-arrow-keyring.gpg] https://apache.jfrog.io/artifactory/arrow/$(lsb_release -cs) $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/apache-arrow.list
         sudo apt-get update
         sudo apt-get install -y libgdal-dev libarrow-dev libarrow-dataset-dev
     - name: Run unit tests

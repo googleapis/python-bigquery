@@ -5,8 +5,8 @@ on:
 name: unittest
 jobs:
   unit:
-    # Use `ubuntu-latest` runner.
-    runs-on: ubuntu-latest
+    # Use `ubuntu-22.04` runner.
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         python: ['3.9', '3.11', '3.12', '3.13', '3.14']
@@ -22,7 +22,6 @@ jobs:
         python -m pip install --upgrade setuptools pip wheel
         python -m pip install nox
     - name: Install GDAL and Arrow
-      if: matrix.python != '3.14'
       run: |
         sudo apt-get update
         sudo apt-get install -y -V ca-certificates lsb-release wget software-properties-common

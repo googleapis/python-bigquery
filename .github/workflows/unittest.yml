@@ -21,8 +21,10 @@ jobs:
       run: |
         python -m pip install --upgrade setuptools pip wheel
         python -m pip install nox
-    - name: Install GDAL
-      run: sudo apt-get update && sudo apt-get install -y libgdal-dev
+    - name: Install GDAL and Arrow
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgdal-dev libarrow-dev libarrow-dataset-dev
     - name: Run unit tests
       env:
         COVERAGE_FILE: .coverage-${{ matrix.python }}

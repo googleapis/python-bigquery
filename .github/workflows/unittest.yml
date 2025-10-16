@@ -21,15 +21,6 @@ jobs:
       run: |
         python -m pip install --upgrade setuptools pip wheel
         python -m pip install nox
-    - name: Install GDAL and Arrow
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y -V ca-certificates lsb-release wget software-properties-common gpg
-        wget https://apache.jfrog.io/artifactory/arrow/gpg.key -O apache-arrow-gpg.key
-        cat apache-arrow-gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/apache-arrow-keyring.gpg
-        echo "deb [signed-by=/usr/share/keyrings/apache-arrow-keyring.gpg] https://apache.jfrog.io/artifactory/arrow/$(lsb_release -cs) $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/apache-arrow.list
-        sudo apt-get update
-        sudo apt-get install -y libgdal-dev libarrow-dev libarrow-dataset-dev
     - name: Run unit tests
       env:
         COVERAGE_FILE: .coverage-${{ matrix.python }}

@@ -25,7 +25,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y -V ca-certificates lsb-release wget software-properties-common
-        wget -O - https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source.list | sudo tee /etc/apt/sources.list.d/apache-arrow.list
+        wget -O - https://apache.jfrog.io/artifactory/arrow/$(lsb_release -sc)/apache-arrow-apt-source.list | sudo tee /etc/apt/sources.list.d/apache-arrow.list
         sudo apt-get update
         sudo apt-get install -y libgdal-dev libarrow-dev libarrow-dataset-dev
     - name: Run unit tests

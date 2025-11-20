@@ -177,6 +177,20 @@ class TestSchemaField(unittest.TestCase):
         self.assertNotIn("description", resource)
         self.assertNotIn("policyTags", resource)
 
+    def test_to_api_repr_with_subfield(self):
+        for record_type in ("RECORD", "STRUCT"):
+            subfield = self._make_one("bar", "INTEGER", "NULLABLE")
+            field = self._make_one("foo", record_type, "REQUIRED", fields=(subfield,))
+            self.assertEqual(
+                field.to_api_repr(),
+                {
+                    "fields": [{"mode": "NULLABLE", "name": "bar", "type": "INTEGER"}],
+                    "mode": "REQUIRED",
+                    "name": "foo",
+                    "type": record_type,
+                },
+            )
+
     def test_to_api_repr_w_timestamp_precision(self):
         field = self._make_one(
             "foo",

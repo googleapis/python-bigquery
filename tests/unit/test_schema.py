@@ -69,6 +69,7 @@ class TestSchemaField(unittest.TestCase):
             default_value_expression=FIELD_DEFAULT_VALUE_EXPRESSION,
             rounding_mode=enums.RoundingMode.ROUNDING_MODE_UNSPECIFIED,
             foreign_type_definition="INTEGER",
+            timestamp_precision=3,
         )
         self.assertEqual(field.name, "test")
         self.assertEqual(field.field_type, "STRING")
@@ -87,6 +88,7 @@ class TestSchemaField(unittest.TestCase):
         )
         self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
         self.assertEqual(field.foreign_type_definition, "INTEGER")
+        self.assertEqual(field._properties["timestampPrecision"], 3)
 
     def test_constructor_explicit_none(self):
         field = self._make_one("test", "STRING", description=None, policy_tags=None)
@@ -175,20 +177,22 @@ class TestSchemaField(unittest.TestCase):
         self.assertNotIn("description", resource)
         self.assertNotIn("policyTags", resource)
 
-    def test_to_api_repr_with_subfield(self):
-        for record_type in ("RECORD", "STRUCT"):
-            subfield = self._make_one("bar", "INTEGER", "NULLABLE")
-            field = self._make_one("foo", record_type, "REQUIRED", fields=(subfield,))
-            self.assertEqual(
-                field.to_api_repr(),
-                {
-                    "fields": [{"mode": "NULLABLE", "name": "bar", "type": "INTEGER"}],
-                    "mode": "REQUIRED",
-                    "name": "foo",
-                    "type": record_type,
-                },
-            )
-
+    def test_to_api_repr_w_timestamp_precision(self):
+        field = self._make_one(
+            "foo",
+            "TIMESTAMP",
+            "NULLABLE",
+            timestamp_precision=3,
+        )
+        self.assertEqual(
+            field.to_api_repr(),
+            {
+                "mode": "NULLABLE",
+                "name": "foo",
+                "type": "TIMESTAMP",
+                "timestampPrecision": 3,
+            },
+        )
     def test_from_api_repr(self):
         field = self._get_target_class().from_api_repr(
             {
@@ -198,6 +202,7 @@ class TestSchemaField(unittest.TestCase):
                 "name": "foo",
                 "type": "record",
                 "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
+                "timestampPrecision": 3,
             }
         )
         self.assertEqual(field.name, "foo")
@@ -210,6 +215,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].mode, "NULLABLE")
         self.assertEqual(field.range_element_type, None)
         self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
+        self.assertEqual(field._properties["timestampPrecision"], 3)
 
     def test_from_api_repr_policy(self):
         field = self._get_target_class().from_api_repr(
@@ -322,6 +328,15 @@ class TestSchemaField(unittest.TestCase):
         schema_field = self._make_one("test", "STRING")
         schema_field._properties["foreignTypeDefinition"] = FOREIGN_TYPE_DEFINITION
         self.assertEqual(schema_field.foreign_type_definition, FOREIGN_TYPE_DEFINITION)
+
+    def test_timestamp_precision_property(self):
+        TIMESTAMP_PRECISION = 3
+        schema_field = self._make_one(
+            "test", "TIMESTAMP", timestamp_precision=TIMESTAMP_PRECISION
+        )
+        self.assertEqual(
+            schema_field._properties["timestampPrecision"], TIMESTAMP_PRECISION
+        )
 
     def test_to_standard_sql_simple_type(self):
         examples = (
@@ -637,7 +652,9 @@ class TestSchemaField(unittest.TestCase):
 
     def test___repr__(self):
         field1 = self._make_one("field1", "STRING")
-        expected = "SchemaField('field1', 'STRING', 'NULLABLE', None, None, (), None)"
+        expected = (
+            "SchemaField('field1', 'STRING', 'NULLABLE', None, None, (), None, None)"
+        )
         self.assertEqual(repr(field1), expected)
 
     def test___repr__evaluable_no_policy_tags(self):

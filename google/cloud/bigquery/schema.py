@@ -196,6 +196,16 @@ class SchemaField(object):
 
             Only valid for top-level schema fields (not nested fields).
             If the type is FOREIGN, this field is required.
+
+        timestamp_precision: Optional[int]
+            Precision (maximum number of total digits in base 10) for seconds
+            of TIMESTAMP type.
+            
+            Possible values include:
+
+            - 6 (Default, for TIMESTAMP type with microsecond precision)
+
+            - 12 (For TIMESTAMP type with picosecond precision)
     """
 
     def __init__(
@@ -213,6 +223,7 @@ class SchemaField(object):
         range_element_type: Union[FieldElementType, str, None] = None,
         rounding_mode: Union[enums.RoundingMode, str, None] = None,
         foreign_type_definition: Optional[str] = None,
+        timestamp_precision: Optional[int] = None,
     ):
         self._properties: Dict[str, Any] = {
             "name": name,
@@ -237,6 +248,8 @@ class SchemaField(object):
                 if isinstance(policy_tags, PolicyTagList)
                 else None
             )
+        if timestamp_precision is not None:
+            self._properties["timestampPrecision"] = timestamp_precision
         if isinstance(range_element_type, str):
             self._properties["rangeElementType"] = {"type": range_element_type}
         if isinstance(range_element_type, FieldElementType):
@@ -373,6 +386,19 @@ class SchemaField(object):
         """
         resource = self._properties.get("policyTags")
         return PolicyTagList.from_api_repr(resource) if resource is not None else None
+    
+    @property
+    def timestamp_precision(self):
+        """Optional[int]: Subfields contained in this field.
+
+        Must be empty unset if ``field_type`` is not 'RECORD'.
+        """
+        return _helpers._int_or_none(self._properties.get("timestampPrecision"))
+
+    @timestamp_precision.setter
+    def timestamp_precision(self, value: Optional[int]):
+        value = _helpers._isinstance_or_raise(value, int, none_allowed=True)
+        self._properties["timestampPrecision"] = value
 
     def to_api_repr(self) -> dict:
         """Return a dictionary representing this schema field.
@@ -417,6 +443,7 @@ class SchemaField(object):
             self.description,
             self.fields,
             policy_tags,
+            self._properties.get("timestampPrecision"),
         )
 
     def to_standard_sql(self) -> standard_sql.StandardSqlField:
@@ -468,9 +495,9 @@ class SchemaField(object):
 
     def __repr__(self):
         key = self._key()
-        policy_tags = key[-1]
+        policy_tags = key[-2]
         policy_tags_inst = None if policy_tags is None else PolicyTagList(policy_tags)
-        adjusted_key = key[:-1] + (policy_tags_inst,)
+        adjusted_key = key[:-2] + (policy_tags_inst,) + (key[-1],)
         return f"{self.__class__.__name__}{adjusted_key}"
 
 

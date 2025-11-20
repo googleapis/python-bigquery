@@ -207,6 +207,7 @@ class TestSchemaField(unittest.TestCase):
                 "timestampPrecision": 3,
             },
         )
+
     def test_from_api_repr(self):
         field = self._get_target_class().from_api_repr(
             {

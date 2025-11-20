@@ -200,7 +200,7 @@ class SchemaField(object):
         timestamp_precision: Optional[int]
             Precision (maximum number of total digits in base 10) for seconds
             of TIMESTAMP type.
-            
+
             Possible values include:
 
             - 6 (Default, for TIMESTAMP type with microsecond precision)
@@ -386,7 +386,7 @@ class SchemaField(object):
         """
         resource = self._properties.get("policyTags")
         return PolicyTagList.from_api_repr(resource) if resource is not None else None
-    
+
     @property
     def timestamp_precision(self):
         """Optional[int]: Subfields contained in this field.

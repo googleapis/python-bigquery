@@ -395,11 +395,6 @@ class SchemaField(object):
         """
         return _helpers._int_or_none(self._properties.get("timestampPrecision"))
 
-    @timestamp_precision.setter
-    def timestamp_precision(self, value: Optional[int]):
-        value = _helpers._isinstance_or_raise(value, int, none_allowed=True)
-        self._properties["timestampPrecision"] = value
-
     def to_api_repr(self) -> dict:
         """Return a dictionary representing this schema field.
 

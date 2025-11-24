@@ -196,7 +196,7 @@ class TestSchemaField(unittest.TestCase):
             "foo",
             "TIMESTAMP",
             "NULLABLE",
-            timestamp_precision=3,
+            timestamp_precision=6,
         )
         self.assertEqual(
             field.to_api_repr(),
@@ -204,7 +204,7 @@ class TestSchemaField(unittest.TestCase):
                 "mode": "NULLABLE",
                 "name": "foo",
                 "type": "TIMESTAMP",
-                "timestampPrecision": 3,
+                "timestampPrecision": 6,
             },
         )
 

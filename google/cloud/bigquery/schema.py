@@ -443,7 +443,7 @@ class SchemaField(object):
             self.description,
             self.fields,
             policy_tags,
-            self._properties.get("timestampPrecision"),
+            self.timestamp_precision,
         )
 
     def to_standard_sql(self) -> standard_sql.StandardSqlField:

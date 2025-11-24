@@ -346,12 +346,9 @@ class TestSchemaField(unittest.TestCase):
 
     def test_timestamp_precision_property(self):
         TIMESTAMP_PRECISION = 3
-        schema_field = self._make_one(
-            "test", "TIMESTAMP", timestamp_precision=TIMESTAMP_PRECISION
-        )
-        self.assertEqual(
-            schema_field._properties["timestampPrecision"], TIMESTAMP_PRECISION
-        )
+        schema_field = self._make_one("test", "TIMESTAMP")
+        schema_field._properties["timestampPrecision"] = TIMESTAMP_PRECISION
+        self.assertEqual(schema_field.timestamp_precision, TIMESTAMP_PRECISION)
 
     def test_to_standard_sql_simple_type(self):
         examples = (

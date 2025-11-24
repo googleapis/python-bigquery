@@ -647,7 +647,6 @@ class TestBigQuery(unittest.TestCase):
 
         self.assertTrue(_table_exists(table))
         self.assertEqual(table.table_id, table_id)
-        # breakpoint()
         self.assertEqual(table.schema, SCHEMA_PICOSECOND)
 
     def test_delete_dataset_with_string(self):

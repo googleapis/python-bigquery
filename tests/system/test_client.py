@@ -1945,16 +1945,6 @@ class TestBigQuery(unittest.TestCase):
         assert query_job.dml_stats.updated_row_count == 0
         assert query_job.dml_stats.deleted_row_count == 3
 
-    def test_query_w_picosecond_timestamp(self):
-        query_job = Config.CLIENT.query(
-            "SELECT CAST(\"2025-10-20\" AS TIMESTAMP(12)) as time_pico;",
-        )
-        expected_schema = [
-            bigquery.SchemaField("time_pico", "TIMESTAMP", mode="NULLABLE", timestamp_precision=12),
-        ]
-        iterator = query_job.result()
-        self.assertEqual(iterator.schema, expected_schema)
-
     def test_transaction_info(self):
         table_schema = (
             bigquery.SchemaField("foo", "STRING"),

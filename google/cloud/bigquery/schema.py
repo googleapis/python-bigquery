@@ -203,7 +203,7 @@ class SchemaField(object):
 
             Possible values include:
 
-            - 6 (Default, for TIMESTAMP type with microsecond precision)
+            - None (Default, for TIMESTAMP type with microsecond precision)
 
             - 12 (For TIMESTAMP type with picosecond precision)
     """

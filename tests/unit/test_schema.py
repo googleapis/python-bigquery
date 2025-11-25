@@ -217,7 +217,7 @@ class TestSchemaField(unittest.TestCase):
                 "name": "foo",
                 "type": "record",
                 "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
-                "timestampPrecision": 3,
+                "timestampPrecision": 6,
             }
         )
         self.assertEqual(field.name, "foo")
@@ -230,7 +230,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].mode, "NULLABLE")
         self.assertEqual(field.range_element_type, None)
         self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
-        self.assertEqual(field._properties["timestampPrecision"], 3)
+        self.assertEqual(field._properties["timestampPrecision"], 6)
 
     def test_from_api_repr_policy(self):
         field = self._get_target_class().from_api_repr(

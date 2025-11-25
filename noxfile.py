@@ -112,9 +112,6 @@ def default(session, install_extras=True):
     if install_extras and session.python == UNIT_TEST_PYTHON_VERSIONS[0]:
         install_target = ".[bqstorage,pandas,ipywidgets,geopandas,matplotlib,tqdm,opentelemetry,bigquery_v2]"
     elif install_extras:  # run against all other UNIT_TEST_PYTHON_VERSIONS
-        install_target = (
-            ".[bqstorage,pandas,ipywidgets,matplotlib,tqdm,opentelemetry,bigquery_v2]"
-        )
     else:
         install_target = "."
     session.install("-e", install_target, "-c", constraints_path)

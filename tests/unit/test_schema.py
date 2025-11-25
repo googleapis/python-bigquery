@@ -69,7 +69,7 @@ class TestSchemaField(unittest.TestCase):
             default_value_expression=FIELD_DEFAULT_VALUE_EXPRESSION,
             rounding_mode=enums.RoundingMode.ROUNDING_MODE_UNSPECIFIED,
             foreign_type_definition="INTEGER",
-            timestamp_precision=3,
+            timestamp_precision=6,
         )
         self.assertEqual(field.name, "test")
         self.assertEqual(field.field_type, "STRING")
@@ -88,7 +88,7 @@ class TestSchemaField(unittest.TestCase):
         )
         self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
         self.assertEqual(field.foreign_type_definition, "INTEGER")
-        self.assertEqual(field._properties["timestampPrecision"], 3)
+        self.assertEqual(field._properties["timestampPrecision"], 6)
 
     def test_constructor_explicit_none(self):
         field = self._make_one("test", "STRING", description=None, policy_tags=None)

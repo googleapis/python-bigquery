@@ -389,12 +389,12 @@ class SchemaField(object):
 
     @property
     def timestamp_precision(self):
-        """Precision (maximum number of total digits in base 10)
-        for seconds of TIMESTAMP type.
+        """Precision (maximum number of total digits in base 10) for seconds of
+        TIMESTAMP type.
 
         Possible values include:
 
-        - 6 (Default, for TIMESTAMP type with microsecond precision)
+        - None (Default, for TIMESTAMP type with microsecond precision)
 
         - 12 (For TIMESTAMP type with picosecond precision)
         """

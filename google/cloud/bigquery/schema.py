@@ -494,10 +494,9 @@ class SchemaField(object):
         return hash(self._key())
 
     def __repr__(self):
-        key = self._key()
-        policy_tags = key[-2]
+        *initial_tags, policy_tags, timestamp_precision_tag = self._key()
         policy_tags_inst = None if policy_tags is None else PolicyTagList(policy_tags)
-        adjusted_key = key[:-2] + (policy_tags_inst,) + (key[-1],)
+        adjusted_key = (*initial_tags, policy_tags_inst, timestamp_precision_tag)
         return f"{self.__class__.__name__}{adjusted_key}"
 
 

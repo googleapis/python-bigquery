@@ -77,7 +77,9 @@ SCHEMA = [
 SCHEMA_PICOSECOND = [
     bigquery.SchemaField("full_name", "STRING", mode="REQUIRED"),
     bigquery.SchemaField("age", "INTEGER", mode="REQUIRED"),
-    bigquery.SchemaField("time_pico", "TIMESTAMP", mode="REQUIRED", timestamp_precision=12),
+    bigquery.SchemaField(
+        "time_pico", "TIMESTAMP", mode="REQUIRED", timestamp_precision=12
+    ),
 ]
 CLUSTERING_SCHEMA = [
     bigquery.SchemaField("full_name", "STRING", mode="REQUIRED"),

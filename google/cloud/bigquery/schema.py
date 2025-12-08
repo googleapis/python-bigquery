@@ -389,10 +389,6 @@ class SchemaField(object):
     def timestamp_precision(self):
         """Union[enums.TimestampPrecision, int, None]: Precision (maximum number
         of total digits in base 10) for seconds of TIMESTAMP type.
-
-        Defaults to `enums.TimestampPrecision.MICROSECOND` (`None`) for
-        microsecond precision. Use `enums.TimestampPrecision.PICOSECOND` (`12`)
-        for picosecond precision.
         """
         return _helpers._int_or_none(self._properties.get("timestampPrecision"))
 

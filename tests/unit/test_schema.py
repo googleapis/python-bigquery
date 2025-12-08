@@ -69,7 +69,7 @@ class TestSchemaField(unittest.TestCase):
             default_value_expression=FIELD_DEFAULT_VALUE_EXPRESSION,
             rounding_mode=enums.RoundingMode.ROUNDING_MODE_UNSPECIFIED,
             foreign_type_definition="INTEGER",
-            timestamp_precision=6,
+            timestamp_precision=enums.TimestampPrecision.PICOSECOND,
         )
         self.assertEqual(field.name, "test")
         self.assertEqual(field.field_type, "STRING")
@@ -88,7 +88,10 @@ class TestSchemaField(unittest.TestCase):
         )
         self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
         self.assertEqual(field.foreign_type_definition, "INTEGER")
-        self.assertEqual(field._properties["timestampPrecision"], 6)
+        self.assertEqual(
+            field._properties["timestampPrecision"],
+            enums.TimestampPrecision.PICOSECOND,
+        )
 
     def test_constructor_explicit_none(self):
         field = self._make_one("test", "STRING", description=None, policy_tags=None)
@@ -196,7 +199,7 @@ class TestSchemaField(unittest.TestCase):
             "foo",
             "TIMESTAMP",
             "NULLABLE",
-            timestamp_precision=6,
+            timestamp_precision=enums.TimestampPrecision.PICOSECOND,
         )
         self.assertEqual(
             field.to_api_repr(),
@@ -204,7 +207,7 @@ class TestSchemaField(unittest.TestCase):
                 "mode": "NULLABLE",
                 "name": "foo",
                 "type": "TIMESTAMP",
-                "timestampPrecision": 6,
+                "timestampPrecision": enums.TimestampPrecision.PICOSECOND,
             },
         )
 
@@ -217,7 +220,7 @@ class TestSchemaField(unittest.TestCase):
                 "name": "foo",
                 "type": "record",
                 "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
-                "timestampPrecision": 6,
+                "timestampPrecision": enums.TimestampPrecision.PICOSECOND,
             }
         )
         self.assertEqual(field.name, "foo")
@@ -230,7 +233,10 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.fields[0].mode, "NULLABLE")
         self.assertEqual(field.range_element_type, None)
         self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
-        self.assertEqual(field._properties["timestampPrecision"], 6)
+        self.assertEqual(
+            field._properties["timestampPrecision"],
+            enums.TimestampPrecision.PICOSECOND,
+        )
 
     def test_from_api_repr_policy(self):
         field = self._get_target_class().from_api_repr(
@@ -345,7 +351,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(schema_field.foreign_type_definition, FOREIGN_TYPE_DEFINITION)
 
     def test_timestamp_precision_property(self):
-        TIMESTAMP_PRECISION = 6
+        TIMESTAMP_PRECISION = enums.TimestampPrecision.PICOSECOND
         schema_field = self._make_one("test", "TIMESTAMP")
         schema_field._properties["timestampPrecision"] = TIMESTAMP_PRECISION
         self.assertEqual(schema_field.timestamp_precision, TIMESTAMP_PRECISION)

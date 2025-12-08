@@ -390,7 +390,7 @@ class SchemaField(object):
         """Union[enums.TimestampPrecision, int, None]: Precision (maximum number
         of total digits in base 10) for seconds of TIMESTAMP type.
         """
-        return _helpers._int_or_none(self._properties.get("timestampPrecision"))
+        return self._properties.get("timestampPrecision")
 
     def to_api_repr(self) -> dict:
         """Return a dictionary representing this schema field.

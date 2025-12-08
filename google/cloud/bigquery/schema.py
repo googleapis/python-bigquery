@@ -221,7 +221,7 @@ class SchemaField(object):
         range_element_type: Union[FieldElementType, str, None] = None,
         rounding_mode: Union[enums.RoundingMode, str, None] = None,
         foreign_type_definition: Optional[str] = None,
-        timestamp_precision: Optional[int] = None,
+        timestamp_precision: Union[enums.TimestampPrecision, int, None] = None,
     ):
         self._properties: Dict[str, Any] = {
             "name": name,

@@ -197,15 +197,13 @@ class SchemaField(object):
             Only valid for top-level schema fields (not nested fields).
             If the type is FOREIGN, this field is required.
 
-        timestamp_precision: Optional[int]
+        timestamp_precision: Union[enums.TimestampPrecision, int, None]
             Precision (maximum number of total digits in base 10) for seconds
             of TIMESTAMP type.
 
-            Possible values include:
-
-            - None (Default, for TIMESTAMP type with microsecond precision)
-
-            - 12 (For TIMESTAMP type with picosecond precision)
+            Defaults to `enums.TimestampPrecision.MICROSECOND` (`None`) for
+            microsecond precision. Use `enums.TimestampPrecision.PICOSECOND`
+            (`12`) for picosecond precision.
     """
 
     def __init__(
@@ -389,14 +387,12 @@ class SchemaField(object):
 
     @property
     def timestamp_precision(self):
-        """Precision (maximum number of total digits in base 10) for seconds of
-        TIMESTAMP type.
+        """Union[enums.TimestampPrecision, int, None]: Precision (maximum number
+        of total digits in base 10) for seconds of TIMESTAMP type.
 
-        Possible values include:
-
-        - None (Default, for TIMESTAMP type with microsecond precision)
-
-        - 12 (For TIMESTAMP type with picosecond precision)
+        Defaults to `enums.TimestampPrecision.MICROSECOND` (`None`) for
+        microsecond precision. Use `enums.TimestampPrecision.PICOSECOND` (`12`)
+        for picosecond precision.
         """
         return _helpers._int_or_none(self._properties.get("timestampPrecision"))
 

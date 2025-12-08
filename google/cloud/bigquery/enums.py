@@ -482,7 +482,7 @@ class SourceColumnMatch(str, enum.Enum):
     columns to match the field names in the schema."""
 
 
-class TimestampPrecision(enum.Enum):
+class TimestampPrecision(object):
     """Precision (maximum number of total digits in base 10) for seconds of
     TIMESTAMP type."""
 

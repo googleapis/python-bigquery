@@ -641,7 +641,7 @@ class TestBigQuery(unittest.TestCase):
         self.assertEqual(time_partitioning.field, "transaction_time")
         self.assertEqual(table.clustering_fields, ["user_email", "store_code"])
 
-    def test_create_tabl_w_picosecond_timestamp(self):
+    def test_create_table_w_picosecond_timestamp(self):
         dataset = self.temp_dataset(_make_dataset_id("create_table"))
         table_id = "test_table"
         table_arg = Table(dataset.table(table_id), schema=SCHEMA_PICOSECOND)

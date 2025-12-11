@@ -221,7 +221,7 @@ class SchemaField(object):
         range_element_type: Union[FieldElementType, str, None] = None,
         rounding_mode: Union[enums.RoundingMode, str, None] = None,
         foreign_type_definition: Optional[str] = None,
-        timestamp_precision: Union[enums.TimestampPrecision, int, None] = None,
+        timestamp_precision: Optional[enums.TimestampPrecision] = None,
     ):
         self._properties: Dict[str, Any] = {
             "name": name,
@@ -246,8 +246,13 @@ class SchemaField(object):
                 if isinstance(policy_tags, PolicyTagList)
                 else None
             )
-        if timestamp_precision is not None:
-            self._properties["timestampPrecision"] = timestamp_precision
+        if isinstance(timestamp_precision, enums.TimestampPrecision):
+            self._properties["timestampPrecision"] = timestamp_precision.value
+        elif timestamp_precision is not None:
+            raise ValueError(
+                "timestamp_precision must be class enums.TimestampPrecision "
+                f"or None, got {type(timestamp_precision)} instead."
+            )
         if isinstance(range_element_type, str):
             self._properties["rangeElementType"] = {"type": range_element_type}
         if isinstance(range_element_type, FieldElementType):
@@ -390,7 +395,7 @@ class SchemaField(object):
         """Union[enums.TimestampPrecision, int, None]: Precision (maximum number
         of total digits in base 10) for seconds of TIMESTAMP type.
         """
-        return _helpers._int_or_none(self._properties.get("timestampPrecision"))
+        return enums.TimestampPrecision(self._properties.get("timestampPrecision"))
 
     def to_api_repr(self) -> dict:
         """Return a dictionary representing this schema field.
@@ -426,6 +431,8 @@ class SchemaField(object):
             None if self.policy_tags is None else tuple(sorted(self.policy_tags.names))
         )
 
+        timestamp_precision = self._properties.get("timestampPrecision")
+
         return (
             self.name,
             field_type,
@@ -435,7 +442,7 @@ class SchemaField(object):
             self.description,
             self.fields,
             policy_tags,
-            self.timestamp_precision,
+            timestamp_precision,
         )
 
     def to_standard_sql(self) -> standard_sql.StandardSqlField:
@@ -548,9 +555,11 @@ def _to_schema_fields(schema):
     if isinstance(schema, Sequence):
         # Input is a Sequence (e.g. a list): Process and return a list of SchemaFields
         return [
-            field
-            if isinstance(field, SchemaField)
-            else SchemaField.from_api_repr(field)
+            (
+                field
+                if isinstance(field, SchemaField)
+                else SchemaField.from_api_repr(field)
+            )
             for field in schema
         ]
 

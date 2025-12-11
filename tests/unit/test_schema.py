@@ -52,6 +52,9 @@ class TestSchemaField(unittest.TestCase):
         self.assertIsNone(field.default_value_expression)
         self.assertEqual(field.rounding_mode, None)
         self.assertEqual(field.foreign_type_definition, None)
+        self.assertEqual(
+            field.timestamp_precision, enums.TimestampPrecision.MICROSECOND
+        )
 
     def test_constructor_explicit(self):
         FIELD_DEFAULT_VALUE_EXPRESSION = "This is the default value for this field"
@@ -89,7 +92,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
         self.assertEqual(field.foreign_type_definition, "INTEGER")
         self.assertEqual(
-            field._properties["timestampPrecision"],
+            field.timestamp_precision,
             enums.TimestampPrecision.PICOSECOND,
         )
 
@@ -207,7 +210,7 @@ class TestSchemaField(unittest.TestCase):
                 "mode": "NULLABLE",
                 "name": "foo",
                 "type": "TIMESTAMP",
-                "timestampPrecision": enums.TimestampPrecision.PICOSECOND,
+                "timestampPrecision": 12,
             },
         )
 

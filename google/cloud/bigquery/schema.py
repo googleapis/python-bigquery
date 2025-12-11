@@ -197,7 +197,7 @@ class SchemaField(object):
             Only valid for top-level schema fields (not nested fields).
             If the type is FOREIGN, this field is required.
 
-        timestamp_precision: Union[enums.TimestampPrecision, int, None]
+        timestamp_precision: Optional[enums.TimestampPrecision]
             Precision (maximum number of total digits in base 10) for seconds
             of TIMESTAMP type.
 
@@ -391,9 +391,12 @@ class SchemaField(object):
         return PolicyTagList.from_api_repr(resource) if resource is not None else None
 
     @property
-    def timestamp_precision(self):
-        """Union[enums.TimestampPrecision, int, None]: Precision (maximum number
-        of total digits in base 10) for seconds of TIMESTAMP type.
+    def timestamp_precision(self) -> enums.TimestampPrecision:
+        """Precision (maximum number of total digits in base 10) for seconds of
+        TIMESTAMP type.
+
+        Returns:
+            enums.TimestampPrecision: value of TimestampPrecision.
         """
         return enums.TimestampPrecision(self._properties.get("timestampPrecision"))
 

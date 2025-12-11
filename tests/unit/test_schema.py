@@ -223,7 +223,7 @@ class TestSchemaField(unittest.TestCase):
                 "name": "foo",
                 "type": "record",
                 "roundingMode": "ROUNDING_MODE_UNSPECIFIED",
-                "timestampPrecision": enums.TimestampPrecision.PICOSECOND,
+                "timestampPrecision": 12,
             }
         )
         self.assertEqual(field.name, "foo")
@@ -237,7 +237,7 @@ class TestSchemaField(unittest.TestCase):
         self.assertEqual(field.range_element_type, None)
         self.assertEqual(field.rounding_mode, "ROUNDING_MODE_UNSPECIFIED")
         self.assertEqual(
-            field._properties["timestampPrecision"],
+            field.timestamp_precision,
             enums.TimestampPrecision.PICOSECOND,
         )
 
@@ -356,7 +356,9 @@ class TestSchemaField(unittest.TestCase):
     def test_timestamp_precision_property(self):
         TIMESTAMP_PRECISION = enums.TimestampPrecision.PICOSECOND
         schema_field = self._make_one("test", "TIMESTAMP")
-        schema_field._properties["timestampPrecision"] = TIMESTAMP_PRECISION
+        schema_field._properties[
+            "timestampPrecision"
+        ] = enums.TimestampPrecision.PICOSECOND.value
         self.assertEqual(schema_field.timestamp_precision, TIMESTAMP_PRECISION)
 
     def test_to_standard_sql_simple_type(self):

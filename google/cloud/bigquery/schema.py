@@ -279,6 +279,15 @@ class SchemaField(object):
         """
         placeholder = cls("this_will_be_replaced", "PLACEHOLDER")
 
+        # The API would return a string despite we send an integer. To ensure
+        # success of resending received schema, we convert string to integer
+        # to ensure consistency.
+        if (
+            isinstance(api_repr, dict)
+            and type(api_repr.get("timestampPrecision")) is str
+        ):
+            api_repr["timestampPrecision"] = int(api_repr["timestampPrecision"])
+
         # Note: we don't make a copy of api_repr because this can cause
         # unnecessary slowdowns, especially on deeply nested STRUCT / RECORD
         # fields. See https://github.com/googleapis/python-bigquery/issues/6

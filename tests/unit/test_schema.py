@@ -294,6 +294,17 @@ class TestSchemaField(unittest.TestCase):
         self.assertNotIn("policyTags", field._properties)
         self.assertNotIn("rangeElementType", field._properties)
 
+    def test_from_api_repr_timestamp_precision_str(self):
+        # The backend would return timestampPrecision field as a string, even
+        # if we send over an integer. This test verifies we manually converted
+        # it into integer to ensure resending could succeed.
+        field = self._get_target_class().from_api_repr(
+            {
+                "timestampPrecision": "12",
+            }
+        )
+        self.assertEqual(field._properties["timestampPrecision"], 12)
+
     def test_name_property(self):
         name = "lemon-ness"
         schema_field = self._make_one(name, "INTEGER")
@@ -352,6 +363,14 @@ class TestSchemaField(unittest.TestCase):
         schema_field = self._make_one("test", "STRING")
         schema_field._properties["foreignTypeDefinition"] = FOREIGN_TYPE_DEFINITION
         self.assertEqual(schema_field.foreign_type_definition, FOREIGN_TYPE_DEFINITION)
+
+    def test_timestamp_precision_unsupported_type(self):
+        with pytest.raises(ValueError) as e:
+            self._make_one("test", "TIMESTAMP", timestamp_precision=12)
+
+        assert "timestamp_precision must be class enums.TimestampPrecision" in str(
+            e.value
+        )
 
     def test_timestamp_precision_property(self):
         TIMESTAMP_PRECISION = enums.TimestampPrecision.PICOSECOND

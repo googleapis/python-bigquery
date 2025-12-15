@@ -2,6 +2,7 @@ image: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/python-li
 libraries:
   - id: google-cloud-bigquery
     version: 3.38.0
+    last_generated_commit: ""
     apis: []
     source_roots:
       - .

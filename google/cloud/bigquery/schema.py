@@ -271,7 +271,7 @@ class SchemaField(object):
 
         Args:
             api_repr (dict): The serialized representation of the SchemaField,
-            such as what is output by :meth:`to_api_repr`.
+                such as what is output by :meth:`to_api_repr`.
 
         Returns:
             google.cloud.bigquery.schema.SchemaField: The ``SchemaField`` object.

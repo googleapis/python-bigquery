@@ -270,9 +270,8 @@ class SchemaField(object):
         """Return a ``SchemaField`` object deserialized from a dictionary.
 
         Args:
-            api_repr (Mapping[str, str]): The serialized representation
-                of the SchemaField, such as what is output by
-                :meth:`to_api_repr`.
+            api_repr (dict): The serialized representation of the SchemaField,
+            such as what is output by :meth:`to_api_repr`.
 
         Returns:
             google.cloud.bigquery.schema.SchemaField: The ``SchemaField`` object.
@@ -282,11 +281,10 @@ class SchemaField(object):
         # The API would return a string despite we send an integer. To ensure
         # success of resending received schema, we convert string to integer
         # to ensure consistency.
-        if (
-            isinstance(api_repr, dict)
-            and type(api_repr.get("timestampPrecision")) is str
-        ):
+        try:
             api_repr["timestampPrecision"] = int(api_repr["timestampPrecision"])
+        except (TypeError, KeyError):
+            pass
 
         # Note: we don't make a copy of api_repr because this can cause
         # unnecessary slowdowns, especially on deeply nested STRUCT / RECORD

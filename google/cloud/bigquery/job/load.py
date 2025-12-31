@@ -759,7 +759,6 @@ class LoadJobConfig(_JobConfig):
             value = ColumnNameCharacterMap.COLUMN_NAME_CHARACTER_MAP_UNSPECIFIED
         self._set_sub_prop("columnNameCharacterMap", value)
 
-
     @property
     def timestamp_target_precision(self) -> Optional[list[int]]:
         """Optional[list[int]]: [Private Preview] Precisions (maximum number of
@@ -776,7 +775,7 @@ class LoadJobConfig(_JobConfig):
             detected TIMESTAMP columns that have more than 6 digits of
             subseconds.
             [12]: timestamp(12) for all auto detected TIMESTAMP columns.
-        
+
         The order of the elements in this array is ignored. Inputs that have
         higher precision than the highest target precision in this array will
         be truncated.

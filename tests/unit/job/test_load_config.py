@@ -1072,19 +1072,26 @@ class TestLoadJobConfig(_Base):
     def test_timestamp_target_precision_hit(self):
         timestamp_target_precision = [6, 12]
         config = self._get_target_class()()
-        config._properties["load"]["timestampTargetPrecision"] = timestamp_target_precision
+        config._properties["load"][
+            "timestampTargetPrecision"
+        ] = timestamp_target_precision
         self.assertEqual(config.timestamp_target_precision, timestamp_target_precision)
 
     def test_timestamp_target_precision_setter(self):
         timestamp_target_precision = [6, 12]
         config = self._get_target_class()()
         config.timestamp_target_precision = timestamp_target_precision
-        self.assertEqual(config._properties["load"]["timestampTargetPrecision"], timestamp_target_precision)
+        self.assertEqual(
+            config._properties["load"]["timestampTargetPrecision"],
+            timestamp_target_precision,
+        )
 
     def test_timestamp_target_precision_setter_w_none(self):
         timestamp_target_precision = [6, 12]
         config = self._get_target_class()()
-        config._properties["load"]["timestampTargetPrecision"] = timestamp_target_precision
+        config._properties["load"][
+            "timestampTargetPrecision"
+        ] = timestamp_target_precision
         config.timestamp_target_precision = None
         self.assertFalse("timestampTargetPrecision" in config._properties["load"])
 

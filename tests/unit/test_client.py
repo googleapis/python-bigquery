@@ -55,7 +55,7 @@ import google.cloud._helpers
 from google.cloud import bigquery
 
 from google.cloud.bigquery.dataset import DatasetReference, Dataset
-from google.cloud.bigquery.enums import UpdateMode, DatasetView
+from google.cloud.bigquery.enums import UpdateMode, DatasetView, TimestampPrecision
 from google.cloud.bigquery import exceptions
 from google.cloud.bigquery import ParquetOptions
 import google.cloud.bigquery.retry
@@ -6815,6 +6815,39 @@ class TestClient(unittest.TestCase):
             path="/%s" % PATH,
             query_params={"formatOptions.useInt64Timestamp": True},
             timeout=7.5,
+        )
+
+    def test_list_rows_pico_timestamp(self):
+        from google.cloud.bigquery.schema import SchemaField
+        from google.cloud.bigquery.table import Table
+
+        PATH = "projects/%s/datasets/%s/tables/%s/data" % (
+            self.PROJECT,
+            self.DS_ID,
+            self.TABLE_ID,
+        )
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection({}, {})
+        pico_col = SchemaField(
+            "full_name",
+            "TIMESTAMP",
+            mode="REQUIRED",
+            timestamp_precision=TimestampPrecision.PICOSECOND,
+        )
+        table = Table(self.TABLE_REF, schema=[pico_col])
+
+        iterator = client.list_rows(
+            table, timestamp_precision=TimestampPrecision.PICOSECOND
+        )
+        next(iterator.pages)
+
+        conn.api_request.assert_called_once_with(
+            method="GET",
+            path="/%s" % PATH,
+            query_params={"formatOptions.timestampOutputFormat": "ISO8601_STRING"},
+            timeout=None,
         )
 
     def test_list_rows_w_start_index_w_page_size(self):

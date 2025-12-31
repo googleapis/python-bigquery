@@ -760,7 +760,7 @@ class LoadJobConfig(_JobConfig):
         self._set_sub_prop("columnNameCharacterMap", value)
 
     @property
-    def timestamp_target_precision(self) -> Optional[list[int]]:
+    def timestamp_target_precision(self) -> Optional[List[int]]:
         """Optional[list[int]]: [Private Preview] Precisions (maximum number of
         total digits in base 10) for seconds of TIMESTAMP types that are
         allowed to the destination table for autodetection mode.
@@ -783,7 +783,7 @@ class LoadJobConfig(_JobConfig):
         return self._get_sub_prop("timestampTargetPrecision")
 
     @timestamp_target_precision.setter
-    def timestamp_target_precision(self, value: Optional[list[int]]):
+    def timestamp_target_precision(self, value: Optional[List[int]]):
         if value is not None:
             self._set_sub_prop("timestampTargetPrecision", value)
         else:

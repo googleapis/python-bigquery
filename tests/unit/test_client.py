@@ -5214,6 +5214,56 @@ class TestClient(unittest.TestCase):
             },
         )
 
+    def test_query_pico_timestamp(self):
+        query = "select *;"
+        response = {
+            "jobReference": {
+                "projectId": self.PROJECT,
+                "location": "EU",
+                "jobId": "abcd",
+            },
+        }
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+        conn = client._connection = make_connection(response)
+
+        client.query(
+            query,
+            location="EU",
+            api_method="QUERY",
+            timestamp_precision=TimestampPrecision.PICOSECOND,
+        )
+
+        # Check that query actually starts the job.
+        expected_resource = {
+            "query": query,
+            "useLegacySql": False,
+            "location": "EU",
+            "formatOptions": {"timestampOutputFormat": "ISO8601_STRING"},
+            "requestId": mock.ANY,
+        }
+        conn.api_request.assert_called_once_with(
+            method="POST",
+            path=f"/projects/{self.PROJECT}/queries",
+            data=expected_resource,
+            timeout=None,
+        )
+
+    def test_query_pico_timestamp_insert_error(self):
+        query = "select *;"
+        creds = _make_credentials()
+        http = object()
+        client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
+
+        with pytest.raises(ValueError):
+            client.query(
+                query,
+                location="EU",
+                api_method="INSERT",
+                timestamp_precision=TimestampPrecision.PICOSECOND,
+            )
+
     def test_query_job_rpc_fail_w_random_error(self):
         from google.api_core.exceptions import Unknown
         from google.cloud.bigquery.job import QueryJob

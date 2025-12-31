@@ -5256,7 +5256,7 @@ class TestClient(unittest.TestCase):
         http = object()
         client = self._make_one(project=self.PROJECT, credentials=creds, _http=http)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Picosecond Timestamp is only"):
             client.query(
                 query,
                 location="EU",

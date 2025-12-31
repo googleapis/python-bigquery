@@ -4063,7 +4063,7 @@ class Client(ClientWithProject):
         retry: retries.Retry = DEFAULT_RETRY,
         timeout: TimeoutType = DEFAULT_TIMEOUT,
         *,
-        timestamp_precision: Union[enums.TimestampPrecision, int, None] = None,
+        timestamp_precision: Optional[enums.TimestampPrecision] = None,
     ) -> RowIterator:
         """List the rows of the table.
 

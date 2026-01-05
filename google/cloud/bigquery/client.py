@@ -3552,7 +3552,7 @@ class Client(ClientWithProject):
 
         if (
             timestamp_precision == enums.TimestampPrecision.PICOSECOND
-            and api_method == enums.QueryApiMethod.INSERT
+            and api_method != enums.QueryApiMethod.QUERY
         ):
             raise ValueError(
                 "Picosecond Timestamp is only supported when `api_method "
@@ -4167,13 +4167,11 @@ class Client(ClientWithProject):
         if start_index is not None:
             params["startIndex"] = start_index
 
-        params["formatOptions.useInt64Timestamp"] = True
-
+        # Cannot specify both use_int64_timestamp and timestamp_output_format.
         if timestamp_precision == enums.TimestampPrecision.PICOSECOND:
-            # Cannot specify both use_int64_timestamp and timestamp_output_format.
-            del params["formatOptions.useInt64Timestamp"]
-
             params["formatOptions.timestampOutputFormat"] = "ISO8601_STRING"
+        else:
+            params["formatOptions.useInt64Timestamp"] = True
 
         row_iterator = RowIterator(
             client=self,

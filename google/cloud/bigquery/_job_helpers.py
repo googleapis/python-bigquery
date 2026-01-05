@@ -287,16 +287,15 @@ def _to_query_request(
     # Default to standard SQL.
     request_body.setdefault("useLegacySql", False)
 
-    # Since jobs.query can return results, ensure we use the lossless timestamp
-    # format. See: https://github.com/googleapis/python-bigquery/issues/395
     request_body.setdefault("formatOptions", {})
-    request_body["formatOptions"]["useInt64Timestamp"] = True  # type: ignore
 
+    # Cannot specify both use_int64_timestamp and timestamp_output_format.
     if timestamp_precision == enums.TimestampPrecision.PICOSECOND:
-        # Cannot specify both use_int64_timestamp and timestamp_output_format.
-        del request_body["formatOptions"]["useInt64Timestamp"]
-
         request_body["formatOptions"]["timestampOutputFormat"] = "ISO8601_STRING"
+    else:
+        # Since jobs.query can return results, ensure we use the lossless
+        # timestamp format. See: https://github.com/googleapis/python-bigquery/issues/395
+        request_body["formatOptions"]["useInt64Timestamp"] = True
 
     if timeout is not None:
         # Subtract a buffer for context switching, network latency, etc.

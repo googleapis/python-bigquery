@@ -254,7 +254,7 @@ class CellDataParser:
         if _not_null(value, field):
             return base64.standard_b64decode(_to_bytes(value))
 
-    def timestamp_to_py(self, value, field) -> datetime.datetime | str | None:
+    def timestamp_to_py(self, value, field) -> Union[datetime.datetime, str, None]:
         """Coerce 'value' to a datetime, if set or not nullable. If timestamp
         is of picosecond precision, preserve the string format."""
         if field.timestamp_precision == enums.TimestampPrecision.PICOSECOND:

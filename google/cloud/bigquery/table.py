@@ -2961,6 +2961,7 @@ class _EmptyRowIterator(RowIterator):
         progress_bar_type=None,
         bqstorage_client=None,
         create_bqstorage_client=True,
+        timeout: Optional[float] = None,
     ) -> "pyarrow.Table":
         """[Beta] Create an empty class:`pyarrow.Table`.
 
@@ -2968,6 +2969,7 @@ class _EmptyRowIterator(RowIterator):
             progress_bar_type (str): Ignored. Added for compatibility with RowIterator.
             bqstorage_client (Any): Ignored. Added for compatibility with RowIterator.
             create_bqstorage_client (bool): Ignored. Added for compatibility with RowIterator.
+            timeout (Optional[float]): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pyarrow.Table: An empty :class:`pyarrow.Table`.
@@ -2994,6 +2996,7 @@ class _EmptyRowIterator(RowIterator):
         range_date_dtype=None,
         range_datetime_dtype=None,
         range_timestamp_dtype=None,
+        timeout: Optional[float] = None,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
 
@@ -3014,6 +3017,7 @@ class _EmptyRowIterator(RowIterator):
             range_date_dtype (Any): Ignored. Added for compatibility with RowIterator.
             range_datetime_dtype (Any): Ignored. Added for compatibility with RowIterator.
             range_timestamp_dtype (Any): Ignored. Added for compatibility with RowIterator.
+            timeout (Optional[float]): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -3032,6 +3036,7 @@ class _EmptyRowIterator(RowIterator):
         int_dtype: Union[Any, None] = DefaultPandasDTypes.INT_DTYPE,
         float_dtype: Union[Any, None] = None,
         string_dtype: Union[Any, None] = None,
+        timeout: Optional[float] = None,
     ) -> "pandas.DataFrame":
         """Create an empty dataframe.
 
@@ -3045,6 +3050,7 @@ class _EmptyRowIterator(RowIterator):
             int_dtype (Any): Ignored. Added for compatibility with RowIterator.
             float_dtype (Any): Ignored. Added for compatibility with RowIterator.
             string_dtype (Any): Ignored. Added for compatibility with RowIterator.
+            timeout (Optional[float]): Ignored. Added for compatibility with RowIterator.
 
         Returns:
             pandas.DataFrame: An empty :class:`~pandas.DataFrame`.
@@ -3062,6 +3068,7 @@ class _EmptyRowIterator(RowIterator):
         dtypes: Optional[Dict[str, Any]] = None,
         max_queue_size: Optional[int] = None,
         max_stream_count: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> Iterator["pandas.DataFrame"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -3080,6 +3087,9 @@ class _EmptyRowIterator(RowIterator):
             max_stream_count:
                 Ignored. Added for compatibility with RowIterator.
 
+            timeout (Optional[float]):
+                Ignored. Added for compatibility with RowIterator.
+
         Returns:
             An iterator yielding a single empty :class:`~pandas.DataFrame`.
 
@@ -3095,6 +3105,7 @@ class _EmptyRowIterator(RowIterator):
         bqstorage_client: Optional["bigquery_storage.BigQueryReadClient"] = None,
         max_queue_size: Optional[int] = None,
         max_stream_count: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> Iterator["pyarrow.RecordBatch"]:
         """Create an iterable of pandas DataFrames, to process the table as a stream.
 
@@ -3108,6 +3119,9 @@ class _EmptyRowIterator(RowIterator):
                 Ignored. Added for compatibility with RowIterator.
 
             max_stream_count:
+                Ignored. Added for compatibility with RowIterator.
+
+            timeout (Optional[float]):
                 Ignored. Added for compatibility with RowIterator.
 
         Returns:

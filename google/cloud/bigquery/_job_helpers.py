@@ -287,7 +287,9 @@ def _to_query_request(
     # Default to standard SQL.
     request_body.setdefault("useLegacySql", False)
 
-    request_body.setdefault("formatOptions", {})
+    format_options = request_body.get("formatOptions", None)
+    if not isinstance(format_options, dict):
+        request_body["formatOptions"] = {}
 
     # Cannot specify both use_int64_timestamp and timestamp_output_format.
     if timestamp_precision == enums.TimestampPrecision.PICOSECOND:

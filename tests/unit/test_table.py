@@ -5665,6 +5665,7 @@ class TestRowIterator(unittest.TestCase):
             int_dtype=DefaultPandasDTypes.INT_DTYPE,
             float_dtype=None,
             string_dtype=None,
+            timeout=None,
         )
 
         self.assertIsInstance(df, geopandas.GeoDataFrame)

@@ -1023,5 +1023,6 @@ def test_query_job_to_geodataframe_delegation(wait_for_query):
         int_dtype=DefaultPandasDTypes.INT_DTYPE,
         float_dtype=None,
         string_dtype=None,
+        timeout=None,
     )
     assert df is row_iterator.to_geodataframe.return_value

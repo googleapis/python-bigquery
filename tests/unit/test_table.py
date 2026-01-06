@@ -2495,6 +2495,18 @@ class Test_EmptyRowIterator(unittest.TestCase):
         else:
             assert not hasattr(df, "crs")
 
+    def test_methods_w_timeout(self):
+        # Ensure that timeout parameter is accepted by all methods and ignored.
+        row_iterator = self._make_one()
+        timeout = 42.0
+
+        # Just calling them to ensure no TypeError is raised
+        row_iterator.to_arrow(timeout=timeout)
+        row_iterator.to_arrow_iterable(timeout=timeout)
+        row_iterator.to_dataframe(timeout=timeout)
+        row_iterator.to_dataframe_iterable(timeout=timeout)
+        row_iterator.to_geodataframe(timeout=timeout)
+
 
 class TestRowIterator(unittest.TestCase):
     PYARROW_MINIMUM_VERSION = str(_versions_helpers._MIN_PYARROW_VERSION)

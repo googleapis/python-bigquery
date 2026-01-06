@@ -289,16 +289,15 @@ def _to_query_request(
 
     format_options = request_body.get("formatOptions", None)
     if not isinstance(format_options, dict):
-        format_options = {}
-        request_body["formatOptions"] = format_options
+        request_body["formatOptions"] = {}
 
     # Cannot specify both use_int64_timestamp and timestamp_output_format.
     if timestamp_precision == enums.TimestampPrecision.PICOSECOND:
-        format_options["timestampOutputFormat"] = "ISO8601_STRING"
+        request_body["formatOptions"]["timestampOutputFormat"] = "ISO8601_STRING"  # type: ignore
     else:
         # Since jobs.query can return results, ensure we use the lossless
         # timestamp format. See: https://github.com/googleapis/python-bigquery/issues/395
-        format_options["useInt64Timestamp"] = True
+        request_body["formatOptions"]["useInt64Timestamp"] = True
 
     if timeout is not None:
         # Subtract a buffer for context switching, network latency, etc.

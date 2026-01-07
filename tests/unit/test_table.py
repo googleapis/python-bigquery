@@ -2498,7 +2498,8 @@ class Test_EmptyRowIterator(unittest.TestCase):
     def test_methods_w_timeout(self):
         pytest.importorskip("pyarrow")
         pytest.importorskip("geopandas")
-        # Ensure that timeout parameter is accepted by all methods and ignored.
+        # Ensure that the timeout parameter is accepted by all methods without raising a TypeError,
+        # even though the _EmptyRowIterator implementations do not use the timeout value.
         timeout = 42.0
 
         # Call each type to ensure no TypeError is raised

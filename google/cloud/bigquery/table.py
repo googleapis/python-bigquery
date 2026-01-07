@@ -2941,9 +2941,6 @@ class _EmptyRowIterator(RowIterator):
     statements.
     """
 
-    pages = ()
-    total_rows = 0
-
     def __init__(
         self, client=None, api_request=None, path=None, schema=(), *args, **kwargs
     ):
@@ -2955,6 +2952,7 @@ class _EmptyRowIterator(RowIterator):
             *args,
             **kwargs,
         )
+        self._total_rows = 0
 
     def to_arrow(
         self,

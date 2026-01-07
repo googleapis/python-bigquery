@@ -981,7 +981,7 @@ def _download_table_bqstorage(
     worker_queue: queue.Queue[int] = queue.Queue(maxsize=max_queue_size)
 
     # Manually manage the pool to control shutdown behavior on timeout.
-    pool = concurrent.futures.ThreadPoolExecutor(max_workers=total_streams)
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=max(1, total_streams))
     wait_on_shutdown = True
     start_time = time.time()
 

@@ -2496,16 +2496,17 @@ class Test_EmptyRowIterator(unittest.TestCase):
             assert not hasattr(df, "crs")
 
     def test_methods_w_timeout(self):
+        pytest.importorskip("pyarrow")
+        pytest.importorskip("geopandas")
         # Ensure that timeout parameter is accepted by all methods and ignored.
-        row_iterator = self._make_one()
         timeout = 42.0
 
-        # Just calling them to ensure no TypeError is raised
-        row_iterator.to_arrow(timeout=timeout)
-        row_iterator.to_arrow_iterable(timeout=timeout)
-        row_iterator.to_dataframe(timeout=timeout)
-        row_iterator.to_dataframe_iterable(timeout=timeout)
-        row_iterator.to_geodataframe(timeout=timeout)
+        # Call each type to ensure no TypeError is raised
+        self._make_one().to_arrow(timeout=timeout)
+        self._make_one().to_arrow_iterable(timeout=timeout)
+        self._make_one().to_dataframe(timeout=timeout)
+        self._make_one().to_dataframe_iterable(timeout=timeout)
+        self._make_one().to_geodataframe(timeout=timeout)
 
 
 class TestRowIterator(unittest.TestCase):

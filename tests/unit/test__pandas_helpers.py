@@ -2181,16 +2181,19 @@ def test_determine_requested_streams_invalid_max_stream_count():
         determine_requested_streams(preserve_order=False, max_stream_count=-1)
 
 
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires google-cloud-bigquery-storage"
+)
 def test__download_table_bqstorage_w_timeout_error(module_under_test):
     from google.cloud.bigquery import dataset
     from google.cloud.bigquery import table
+    from unittest import mock
 
-    bqstorage_client = mock.create_autospec(
+    mock_bqstorage_client = mock.create_autospec(
         bigquery_storage.BigQueryReadClient, instance=True
     )
-    # Give it one stream
-    fake_session = mock.Mock(streams=["stream/s0"])
-    bqstorage_client.create_read_session.return_value = fake_session
+    fake_session = mock.Mock(streams=[mock.Mock()])
+    mock_bqstorage_client.create_read_session.return_value = fake_session
 
     table_ref = table.TableReference(
         dataset.DatasetReference("project-x", "dataset-y"),
@@ -2209,21 +2212,25 @@ def test__download_table_bqstorage_w_timeout_error(module_under_test):
     ):
         # Use a very small timeout
         result_gen = module_under_test._download_table_bqstorage(
-            "some-project", table_ref, bqstorage_client, timeout=0.01
+            "some-project", table_ref, mock_bqstorage_client, timeout=0.01
         )
         with pytest.raises(concurrent.futures.TimeoutError, match="timed out"):
             list(result_gen)
 
 
+@pytest.mark.skipif(
+    bigquery_storage is None, reason="Requires google-cloud-bigquery-storage"
+)
 def test__download_table_bqstorage_w_timeout_success(module_under_test):
     from google.cloud.bigquery import dataset
     from google.cloud.bigquery import table
+    from unittest import mock
 
-    bqstorage_client = mock.create_autospec(
+    mock_bqstorage_client = mock.create_autospec(
         bigquery_storage.BigQueryReadClient, instance=True
     )
     fake_session = mock.Mock(streams=["stream/s0"])
-    bqstorage_client.create_read_session.return_value = fake_session
+    mock_bqstorage_client.create_read_session.return_value = fake_session
 
     table_ref = table.TableReference(
         dataset.DatasetReference("project-x", "dataset-y"),
@@ -2240,7 +2247,7 @@ def test__download_table_bqstorage_w_timeout_success(module_under_test):
     ):
         # Use a generous timeout
         result_gen = module_under_test._download_table_bqstorage(
-            "some-project", table_ref, bqstorage_client, timeout=10.0
+            "some-project", table_ref, mock_bqstorage_client, timeout=10.0
         )
         results = list(result_gen)
 

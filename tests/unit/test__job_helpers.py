@@ -1192,3 +1192,30 @@ def test_wait_or_cancel_exception_raises_original_exception():
         timeout=123,
         retry=retry,
     )
+
+
+def test_wait_or_cancel_keyboard_interrupt_cancels_job():
+    job = mock.create_autospec(job_query.QueryJob, instance=True)
+    job.result.side_effect = KeyboardInterrupt()
+    retry = retries.Retry()
+
+    with pytest.raises(KeyboardInterrupt):
+        _job_helpers._wait_or_cancel(
+            job,
+            api_timeout=123,
+            wait_timeout=456,
+            retry=retry,
+            page_size=789,
+            max_results=101112,
+        )
+
+    job.result.assert_called_once_with(
+        timeout=456,
+        retry=retry,
+        page_size=789,
+        max_results=101112,
+    )
+    job.cancel.assert_called_once_with(
+        timeout=123,
+        retry=retry,
+    )

@@ -732,11 +732,11 @@ def _wait_or_cancel(
                 )
             )
         return query_results
-    except Exception:
+    except (KeyboardInterrupt, Exception):
         # Attempt to cancel the job since we can't return the results.
         try:
             job.cancel(retry=retry, timeout=api_timeout)
-        except Exception:
+        except (KeyboardInterrupt, Exception):
             # Don't eat the original exception if cancel fails.
             pass
         raise

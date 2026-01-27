@@ -1037,7 +1037,7 @@ def _download_table_bqstorage(
         while not_done:
             # Check for timeout
             if timeout is not None:
-                elapsed = time.time() - start_time
+                elapsed = time.monotonic() - start_time
                 if elapsed > timeout:
                     wait_on_shutdown = False
                     raise concurrent.futures.TimeoutError(

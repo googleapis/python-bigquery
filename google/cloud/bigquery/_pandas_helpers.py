@@ -741,7 +741,7 @@ def _row_iterator_page_to_arrow(page, column_names, arrow_types):
     return pyarrow.RecordBatch.from_arrays(arrays, names=column_names)
 
 
-def download_arrow_row_iterator(pages, bq_schema):
+def download_arrow_row_iterator(pages, bq_schema, timeout=None):
     """Use HTTP JSON RowIterator to construct an iterable of RecordBatches.
 
     Args:
@@ -752,6 +752,10 @@ def download_arrow_row_iterator(pages, bq_schema):
             Mapping[str, Any] \
         ]]):
             A decription of the fields in result pages.
+        timeout (Optional[float]):
+            The number of seconds to wait for the underlying download to complete.
+            If ``None``, wait indefinitely.
+
     Yields:
         :class:`pyarrow.RecordBatch`
         The next page of records as a ``pyarrow`` record batch.
@@ -760,8 +764,16 @@ def download_arrow_row_iterator(pages, bq_schema):
     column_names = bq_to_arrow_schema(bq_schema) or [field.name for field in bq_schema]
     arrow_types = [bq_to_arrow_data_type(field) for field in bq_schema]
 
-    for page in pages:
-        yield _row_iterator_page_to_arrow(page, column_names, arrow_types)
+    if timeout is None:
+        for page in pages:
+            yield _row_iterator_page_to_arrow(page, column_names, arrow_types)
+    else:
+        start_time = time.monotonic()
+        for page in pages:
+            if time.monotonic() - start_time > timeout:
+                raise concurrent.futures.TimeoutError()
+
+            yield _row_iterator_page_to_arrow(page, column_names, arrow_types)
 
 
 def _row_iterator_page_to_dataframe(page, column_names, dtypes):
@@ -779,7 +791,7 @@ def _row_iterator_page_to_dataframe(page, column_names, dtypes):
     return pandas.DataFrame(columns, columns=column_names)
 
 
-def download_dataframe_row_iterator(pages, bq_schema, dtypes):
+def download_dataframe_row_iterator(pages, bq_schema, dtypes, timeout=None):
     """Use HTTP JSON RowIterator to construct a DataFrame.
 
     Args:
@@ -793,14 +805,27 @@ def download_dataframe_row_iterator(pages, bq_schema, dtypes):
         dtypes(Mapping[str, numpy.dtype]):
             The types of columns in result data to hint construction of the
             resulting DataFrame. Not all column types have to be specified.
+        timeout (Optional[float]):
+            The number of seconds to wait for the underlying download to complete.
+            If ``None``, wait indefinitely.
+
     Yields:
         :class:`pandas.DataFrame`
         The next page of records as a ``pandas.DataFrame`` record batch.
     """
     bq_schema = schema._to_schema_fields(bq_schema)
     column_names = [field.name for field in bq_schema]
-    for page in pages:
-        yield _row_iterator_page_to_dataframe(page, column_names, dtypes)
+
+    if timeout is None:
+        for page in pages:
+            yield _row_iterator_page_to_dataframe(page, column_names, dtypes)
+    else:
+        start_time = time.monotonic()
+        for page in pages:
+            if time.monotonic() - start_time > timeout:
+                raise concurrent.futures.TimeoutError()
+
+            yield _row_iterator_page_to_dataframe(page, column_names, dtypes)
 
 
 def _bqstorage_page_to_arrow(page):

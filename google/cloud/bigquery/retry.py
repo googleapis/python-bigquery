@@ -64,11 +64,13 @@ def _should_retry(exc):
     We retry if and only if the 'reason' is 'backendError'
     or 'rateLimitExceeded'.
     """
-    if not hasattr(exc, "errors") or len(exc.errors) == 0:
-        # Check for unstructured error returns, e.g. from GFE
+    try:
+        reason = exc.errors[0]["reason"]
+    except (AttributeError, IndexError, TypeError, KeyError):
+        # Fallback for when errors attribute is missing, empty, or not a dict
+        # or doesn't contain "reason" (e.g. gRPC exceptions).
         return isinstance(exc, _UNSTRUCTURED_RETRYABLE_TYPES)
 
-    reason = exc.errors[0]["reason"]
     return reason in _RETRYABLE_REASONS
 
 

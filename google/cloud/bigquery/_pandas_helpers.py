@@ -33,6 +33,7 @@ from typing import Any, Union, Optional, Callable, Generator, List
 
 from google.cloud.bigquery import _pyarrow_helpers
 from google.cloud.bigquery import _versions_helpers
+from google.cloud.bigquery import retry as bq_retry
 from google.cloud.bigquery import schema
 
 
@@ -928,6 +929,7 @@ def _download_table_bqstorage(
     if "@" in table.table_id:
         raise ValueError("Reading from a specific snapshot is not currently supported.")
 
+    start_time = time.time()
     requested_streams = determine_requested_streams(preserve_order, max_stream_count)
 
     requested_session = bigquery_storage.types.stream.ReadSession(
@@ -944,10 +946,16 @@ def _download_table_bqstorage(
             ArrowSerializationOptions.CompressionCodec(1)
         )
 
+    retry_policy = None
+    if timeout is not None:
+        retry_policy = bq_retry.DEFAULT_RETRY.with_deadline(timeout)
+
     session = bqstorage_client.create_read_session(
         parent="projects/{}".format(project_id),
         read_session=requested_session,
         max_stream_count=requested_streams,
+        retry=retry_policy,
+        timeout=timeout,
     )
 
     _LOGGER.debug(
@@ -983,8 +991,6 @@ def _download_table_bqstorage(
     # Manually manage the pool to control shutdown behavior on timeout.
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=max(1, total_streams))
     wait_on_shutdown = True
-    start_time = time.time()
-
     try:
         # Manually submit jobs and wait for download to complete rather
         # than using pool.map because pool.map continues running in the

@@ -2263,6 +2263,7 @@ def test_download_arrow_row_iterator_timeout(module_under_test):
     mock_page = mock.Mock()
     mock_page.to_arrow.return_value = pyarrow.RecordBatch.from_pydict({"name": ["foo"]})
     mock_page.__iter__ = lambda self: iter(["row1"])
+    mock_page._columns = [["foo"]]
 
     def slow_pages():
         # First page yields quickly

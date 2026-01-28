@@ -2261,7 +2261,10 @@ def test_download_arrow_row_iterator_timeout(module_under_test):
 
     # Mock page with to_arrow method
     mock_page = mock.Mock()
-    mock_page.to_arrow.return_value = pyarrow.RecordBatch.from_pydict({"name": ["foo"]})
+    mock_page.to_arrow.return_value = pyarrow.RecordBatch.from_arrays(
+        [pyarrow.array(["foo"])],
+        names=["name"],
+    )
     mock_page.__iter__ = lambda self: iter(["row1"])
     mock_page._columns = [["foo"]]
 

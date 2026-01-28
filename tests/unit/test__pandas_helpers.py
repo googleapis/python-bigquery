@@ -2256,7 +2256,16 @@ def test__download_table_bqstorage_w_timeout_success(module_under_test):
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
-def test_download_arrow_row_iterator_timeout(module_under_test):
+@pytest.mark.parametrize(
+    "sleep_time, timeout, should_timeout",
+    [
+        (0.1, 0.05, True),  # Timeout case
+        (0, 10.0, False),  # Success case
+    ],
+)
+def test_download_arrow_row_iterator_with_timeout(
+    module_under_test, sleep_time, timeout, should_timeout
+):
     bq_schema = [schema.SchemaField("name", "STRING")]
 
     # Mock page with to_arrow method
@@ -2268,30 +2277,41 @@ def test_download_arrow_row_iterator_timeout(module_under_test):
     mock_page.__iter__ = lambda self: iter(["row1"])
     mock_page._columns = [["foo"]]
 
-    def slow_pages():
+    def pages_gen():
         # First page yields quickly
         yield mock_page
-        # Sleep to exceed timeout
-        time.sleep(0.1)
+        if sleep_time > 0:
+            time.sleep(sleep_time)
         yield mock_page
 
-    # Timeout of 0.05s
-    timeout = 0.05
     iterator = module_under_test.download_arrow_row_iterator(
-        slow_pages(), bq_schema, timeout=timeout
+        pages_gen(), bq_schema, timeout=timeout
     )
 
-    # First item should succeed
+    # First item should always succeed
     next(iterator)
 
-    # Second item should fail with TimeoutError
-    with pytest.raises(concurrent.futures.TimeoutError):
-        next(iterator)
+    if should_timeout:
+        with pytest.raises(concurrent.futures.TimeoutError):
+            next(iterator)
+    else:
+        # Should succeed and complete
+        results = list(iterator)
+        assert len(results) == 1  # 1 remaining item
 
 
 @pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
 @pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
-def test_download_dataframe_row_iterator_timeout(module_under_test):
+@pytest.mark.parametrize(
+    "sleep_time, timeout, should_timeout",
+    [
+        (0.1, 0.05, True),  # Timeout case
+        (0, 10.0, False),  # Success case
+    ],
+)
+def test_download_dataframe_row_iterator_with_timeout(
+    module_under_test, sleep_time, timeout, should_timeout
+):
     bq_schema = [schema.SchemaField("name", "STRING")]
     dtypes = {}
 
@@ -2301,17 +2321,21 @@ def test_download_dataframe_row_iterator_timeout(module_under_test):
     mock_page.__iter__ = lambda self: iter(["row1"])
     mock_page._columns = [["foo"]]
 
-    def slow_pages():
+    def pages_gen():
         yield mock_page
-        time.sleep(0.1)
+        if sleep_time > 0:
+            time.sleep(sleep_time)
         yield mock_page
 
-    timeout = 0.05
     iterator = module_under_test.download_dataframe_row_iterator(
-        slow_pages(), bq_schema, dtypes, timeout=timeout
+        pages_gen(), bq_schema, dtypes, timeout=timeout
     )
 
     next(iterator)
 
-    with pytest.raises(concurrent.futures.TimeoutError):
-        next(iterator)
+    if should_timeout:
+        with pytest.raises(concurrent.futures.TimeoutError):
+            next(iterator)
+    else:
+        results = list(iterator)
+        assert len(results) == 1

@@ -2252,3 +2252,90 @@ def test__download_table_bqstorage_w_timeout_success(module_under_test):
         results = list(result_gen)
 
     assert results == ["result_page"]
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+@pytest.mark.parametrize(
+    "sleep_time, timeout, should_timeout",
+    [
+        (0.1, 0.05, True),  # Timeout case
+        (0, 10.0, False),  # Success case
+    ],
+)
+def test_download_arrow_row_iterator_with_timeout(
+    module_under_test, sleep_time, timeout, should_timeout
+):
+    bq_schema = [schema.SchemaField("name", "STRING")]
+
+    # Mock page with to_arrow method
+    mock_page = mock.Mock()
+    mock_page.to_arrow.return_value = pyarrow.RecordBatch.from_arrays(
+        [pyarrow.array(["foo"])],
+        names=["name"],
+    )
+    mock_page.__iter__ = lambda self: iter(["row1"])
+    mock_page._columns = [["foo"]]
+
+    def pages_gen():
+        # First page yields quickly
+        yield mock_page
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+        yield mock_page
+
+    iterator = module_under_test.download_arrow_row_iterator(
+        pages_gen(), bq_schema, timeout=timeout
+    )
+
+    # First item should always succeed
+    next(iterator)
+
+    if should_timeout:
+        with pytest.raises(concurrent.futures.TimeoutError):
+            next(iterator)
+    else:
+        # Should succeed and complete
+        results = list(iterator)
+        assert len(results) == 1  # 1 remaining item
+
+
+@pytest.mark.skipif(pandas is None, reason="Requires `pandas`")
+@pytest.mark.skipif(isinstance(pyarrow, mock.Mock), reason="Requires `pyarrow`")
+@pytest.mark.parametrize(
+    "sleep_time, timeout, should_timeout",
+    [
+        (0.1, 0.05, True),  # Timeout case
+        (0, 10.0, False),  # Success case
+    ],
+)
+def test_download_dataframe_row_iterator_with_timeout(
+    module_under_test, sleep_time, timeout, should_timeout
+):
+    bq_schema = [schema.SchemaField("name", "STRING")]
+    dtypes = {}
+
+    # Mock page
+    mock_page = mock.Mock()
+    # Mock iterator for _row_iterator_page_to_dataframe checking next(iter(page))
+    mock_page.__iter__ = lambda self: iter(["row1"])
+    mock_page._columns = [["foo"]]
+
+    def pages_gen():
+        yield mock_page
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+        yield mock_page
+
+    iterator = module_under_test.download_dataframe_row_iterator(
+        pages_gen(), bq_schema, dtypes, timeout=timeout
+    )
+
+    next(iterator)
+
+    if should_timeout:
+        with pytest.raises(concurrent.futures.TimeoutError):
+            next(iterator)
+    else:
+        results = list(iterator)
+        assert len(results) == 1

@@ -6853,6 +6853,8 @@ def test_to_arrow_iterable_w_bqstorage_max_stream_count(preserve_order):
         parent=mock.ANY,
         read_session=mock.ANY,
         max_stream_count=max_stream_count if not preserve_order else 1,
+        retry=None,
+        timeout=None,
     )
 
 
@@ -6888,4 +6890,6 @@ def test_to_dataframe_iterable_w_bqstorage_max_stream_count(preserve_order):
         parent=mock.ANY,
         read_session=mock.ANY,
         max_stream_count=max_stream_count if not preserve_order else 1,
+        retry=None,
+        timeout=None,
     )

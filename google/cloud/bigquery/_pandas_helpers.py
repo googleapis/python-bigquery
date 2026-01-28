@@ -971,9 +971,9 @@ def _download_table_bqstorage(
             ArrowSerializationOptions.CompressionCodec(1)
         )
 
-    retry_policy = None
-    if timeout is not None:
-        retry_policy = bq_retry.DEFAULT_RETRY.with_deadline(timeout)
+    retry_policy = (
+        bq_retry.DEFAULT_RETRY.with_deadline(timeout) if timeout is not None else None
+    )
 
     session = bqstorage_client.create_read_session(
         parent="projects/{}".format(project_id),

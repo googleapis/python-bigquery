@@ -131,6 +131,7 @@ def test_default_job_attributes(setup):
     expected_attributes = {
         "db.system": "BigQuery",
         "db.name": "test_project_id",
+        "db.query.text": "SELECT 1",
         "location": "test_location",
         "num_child_jobs": "0",
         "job_id": "test_job_id",
@@ -148,6 +149,7 @@ def test_default_job_attributes(setup):
         test_job_ref.job_id = "test_job_id"
         test_job_ref.location = "test_location"
         test_job_ref.project = "test_project_id"
+        test_job_ref.query = "SELECT 1"
         test_job_ref.num_child_jobs = "0"
         test_job_ref.parent_job_id = "parent_job_id"
         test_job_ref.created = time_created

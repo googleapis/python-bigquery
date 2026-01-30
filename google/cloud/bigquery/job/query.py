@@ -1631,6 +1631,15 @@ class QueryJob(_AsyncJob):
         if page_size is None and max_results is not None and start_index is None:
             page_size = max_results
 
+        # The api is insensitive to start_index when page_size is set. See
+        # github issue #1569. This is a patch to produce the exepected behavior.
+        if start_index is not None and page_size is not None:
+            if max_results is not None:
+                max_results = min(max_results, page_size)
+            else:
+                max_results = page_size
+            page_size = None
+
         # When timeout has default sentinel value ``object()``, do not pass
         # anything to invoke default timeouts in subsequent calls.
         done_kwargs: Dict[str, Union[_helpers.TimeoutType, object]] = {}

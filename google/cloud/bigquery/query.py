@@ -694,7 +694,20 @@ class ArrayQueryParameter(_AbstractQueryParameter):
             struct_resource["parameterValue"] = array_value
             struct_value = StructQueryParameter.from_api_repr(struct_resource)
             converted.append(struct_value)
-        return cls(name, "STRUCT", converted)
+        return cls(
+            name,
+            StructQueryParameterType(
+                *[
+                    ScalarQueryParameterType(
+                        struct_type["type"]["type"], name=struct_type["name"]
+                    )
+                    for struct_type in resource["parameterType"]["arrayType"][
+                        "structTypes"
+                    ]
+                ]
+            ),
+            values=converted,
+        )
 
     @classmethod
     def _from_api_repr_scalar(cls, resource):

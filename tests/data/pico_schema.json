@@ -1,8 +1,0 @@
-[
-  {
-    "name": "pico_col",
-    "type": "TIMESTAMP",
-    "mode": "NULLABLE",
-    "timestampPrecision": "12"
-  }
-]
